@@ -217,14 +217,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     }
 
     public <E extends JanusGraphElement> Iterable<E> iterables(final GraphCentricQuery query, final Class<E> aClass) {
-        return new Iterable<E>() {
-            @Override
-            public CloseableIterator<E> iterator() {
-                return CloseableIteratorUtils.filter(new QueryProcessor(query, tx.elementProcessor).iterator(),
-                    (Predicate<? super E>) e -> aClass.isInstance(e));
-            }
-
-        };
+        return () -> CloseableIteratorUtils.filter(new QueryProcessor(query, tx.elementProcessor).iterator(),
+            (Predicate<? super E>) aClass::isInstance);
     }
 
 

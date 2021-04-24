@@ -278,10 +278,9 @@ public class IndexSerializer {
         final Set<IndexUpdate> updates = Sets.newHashSet();
         final IndexUpdate.Type updateType = getUpdateType(relation);
         final int ttl = updateType==IndexUpdate.Type.ADD?StandardJanusGraph.getTTL(relation):0;
-        for (final RelationType type : relation.getPropertyKeysDirect()) {
-            if (!(type instanceof PropertyKey)) continue;
-            final PropertyKey key = (PropertyKey)type;
-            for (final IndexType index : ((InternalRelationType)key).getKeyIndexes()) {
+        for (final PropertyKey type : relation.getPropertyKeysDirect()) {
+            if (type == null) continue;
+            for (final IndexType index : ((InternalRelationType) type).getKeyIndexes()) {
                 if (!indexAppliesTo(index,relation)) continue;
                 IndexUpdate update;
                 if (index instanceof CompositeIndexType) {
@@ -290,9 +289,9 @@ public class IndexSerializer {
                     if (record==null) continue;
                     update = new IndexUpdate<>(iIndex, updateType, getIndexKey(iIndex, record), getIndexEntry(iIndex, record, relation), relation);
                 } else {
-                    assert relation.valueOrNull(key)!=null;
-                    if (((MixedIndexType)index).getField(key).getStatus()== SchemaStatus.DISABLED) continue;
-                    update = getMixedIndexUpdate(relation, key, relation.valueOrNull(key), (MixedIndexType) index, updateType);
+                    assert relation.valueOrNull(type)!=null;
+                    if (((MixedIndexType)index).getField(type).getStatus()== SchemaStatus.DISABLED) continue;
+                    update = getMixedIndexUpdate(relation, type, relation.valueOrNull(type), (MixedIndexType) index, updateType);
                 }
                 if (ttl>0) update.setTTL(ttl);
                 updates.add(update);

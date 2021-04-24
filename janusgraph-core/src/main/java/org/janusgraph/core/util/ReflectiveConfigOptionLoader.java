@@ -207,7 +207,7 @@ public enum ReflectiveConfigOptionLoader {
             // We could probably narrow the caught exception type to Error or maybe even just LinkageError,
             // but in this case catching anything via Throwable seems appropriate.  RuntimeException is
             // not sufficient -- it wouldn't even catch NoClassDefFoundError.
-            log.error("Failed to iterate over classpath using Reflections; this usually indicates a broken classpath/classloader", PreInitializeConfigOptions.class, t);
+            log.error("Failed to iterate over classpath using Reflections; this usually indicates a broken classpath/classloader", t);
         }
     }
 

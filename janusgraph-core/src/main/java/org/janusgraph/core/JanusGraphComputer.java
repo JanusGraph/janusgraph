@@ -26,8 +26,9 @@ public interface JanusGraphComputer extends GraphComputer {
 
         public ResultGraph toResultGraph() {
             switch(this) {
-                case NONE: return ResultGraph.ORIGINAL;
-                case PERSIST: return ResultGraph.ORIGINAL;
+                case NONE:
+                case PERSIST:
+                    return ResultGraph.ORIGINAL;
                 case LOCALTX: return ResultGraph.NEW;
                 default: throw new AssertionError("Unrecognized option: " + this);
             }
@@ -36,8 +37,9 @@ public interface JanusGraphComputer extends GraphComputer {
         public Persist toPersist() {
             switch(this) {
                 case NONE: return Persist.NOTHING;
-                case PERSIST: return Persist.VERTEX_PROPERTIES;
-                case LOCALTX: return Persist.VERTEX_PROPERTIES;
+                case PERSIST:
+                case LOCALTX:
+                    return Persist.VERTEX_PROPERTIES;
                 default: throw new AssertionError("Unrecognized option: " + this);
             }
         }

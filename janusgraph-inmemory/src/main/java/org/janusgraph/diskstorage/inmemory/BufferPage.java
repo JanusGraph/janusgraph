@@ -130,8 +130,7 @@ class BufferPage {
         else // negative value in first byte indicates that key length doesn't fit in 1 byte - read as whole int and negate to get valuePosition
         {
             final ByteBuffer buf = (entryBuffer == null) ? ByteBuffer.wrap(rawData, entryOffset, rawData.length - entryOffset) : entryBuffer;
-            int valPos = - buf.getInt();
-            return valPos;
+            return - buf.getInt();
         }
     }
 

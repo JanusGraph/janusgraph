@@ -319,8 +319,7 @@ public class MultiPageEntryBuffer implements SharedEntryBuffer {
         int totalCompressableCount = 0;
         int currChunkNumEntries = 0;
         int achievablePageReduction = 0;
-        for (int i = 0; i < pages.size(); i++) {
-            BufferPage page = pages.get(i);
+        for (BufferPage page : pages) {
             if (page.numEntries() < maxPageSize) {
                 fragmentedPageCount++;
                 currCompressableCount++;

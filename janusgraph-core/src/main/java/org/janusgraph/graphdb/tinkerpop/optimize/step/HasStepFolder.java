@@ -48,6 +48,7 @@ import org.javatuples.Pair;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -169,7 +170,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);
             } else if (currentStep instanceof HasContainerHolder){
-                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(c -> JanusGraphPredicateUtils.convert(c)).collect(Collectors.toList());
+                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(JanusGraphPredicateUtils::convert).collect(Collectors.toList());
                 if  (validFoldInHasContainer(currentStep, true)) {
                     janusgraphStep.addAll(containers);
                     currentStep.getLabels().forEach(janusgraphStep::addLabel);
@@ -178,7 +179,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             } else if (isExistsStep(currentStep)) {
                 currentStep = foldInHasFilter(traversal, (TraversalFilterStep) currentStep);
                 continue;
-            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep) && !(currentStep instanceof HasContainerHolder)) {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep)) {
                 break;
             }
             currentStep = currentStep.getNextStep();
@@ -190,7 +191,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         Step<?, ?> currentStep = tinkerpopStep;
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
-                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(c -> JanusGraphPredicateUtils.convert(c)).collect(Collectors.toList());
+                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(JanusGraphPredicateUtils::convert).collect(Collectors.toList());
                 final List<HasContainer> hasContainers = janusgraphStep.addLocalAll(containers);
                 currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);
@@ -331,7 +332,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
 
             final OrderEntry that = (OrderEntry) o;
 
-            if (key != null ? !key.equals(that.key) : that.key != null) return false;
+            if (!Objects.equals(key, that.key)) return false;
             return order == that.order;
         }
 

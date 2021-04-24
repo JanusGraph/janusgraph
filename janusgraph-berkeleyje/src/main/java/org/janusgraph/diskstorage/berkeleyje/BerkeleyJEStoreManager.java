@@ -269,7 +269,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     @Override
     public void clearStorage() throws BackendException {
         if (!stores.isEmpty()) {
-            throw new IllegalStateException("Cannot delete store, since database is open: " + stores.keySet().toString());
+            throw new IllegalStateException("Cannot delete store, since database is open: " + stores.keySet());
         }
 
         for (final String db : environment.getDatabaseNames()) {

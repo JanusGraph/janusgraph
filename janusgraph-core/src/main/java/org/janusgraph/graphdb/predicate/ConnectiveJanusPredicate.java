@@ -45,17 +45,17 @@ public abstract class ConnectiveJanusPredicate extends ArrayList<JanusGraphPredi
             return false;
         }
         final Iterator<Object> itConditions = ((List<Object>) condition).iterator();
-        return !this.stream().anyMatch(internalCondition -> !internalCondition.isValidCondition(itConditions.next()));
+        return this.stream().allMatch(internalCondition -> internalCondition.isValidCondition(itConditions.next()));
     }
 
     @Override
     public boolean isValidValueType(Class<?> clazz) {
-        return !this.stream().anyMatch(internalCondition -> !(internalCondition.isValidValueType(clazz)));
+        return this.stream().allMatch(internalCondition -> internalCondition.isValidValueType(clazz));
     }
 
     @Override
     public boolean hasNegation() {
-        return !this.stream().anyMatch(internalCondition -> !(internalCondition.hasNegation()));
+        return this.stream().allMatch(JanusGraphPredicate::hasNegation);
     }
 
     @Override

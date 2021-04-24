@@ -159,9 +159,9 @@ public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest
                     JanusGraphVertex v = getVertex(tx,"uid", random.nextInt(maxUID) + 1);
                     assertCount(2, v.properties());
                     int count = 0;
-                    for (Object e : v.query().direction(Direction.BOTH).edges()) {
+                    for (JanusGraphEdge e : v.query().direction(Direction.BOTH).edges()) {
                         count++;
-                        assertTrue(((JanusGraphEdge) e).<Integer>value("time") >= 0);
+                        assertTrue(e.<Integer>value("time") >= 0);
                     }
                     assertTrue(count <= 2);
 //                        if (t%(trials/10)==0) System.out.println(t);

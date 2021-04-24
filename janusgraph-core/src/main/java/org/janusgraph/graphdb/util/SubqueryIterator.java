@@ -17,21 +17,19 @@
 
 package org.janusgraph.graphdb.util;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
-
-import org.janusgraph.graphdb.transaction.subquerycache.GuavaSubqueryCache;
 import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * @author davidclement90@laposte.net

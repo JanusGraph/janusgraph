@@ -74,7 +74,7 @@ public class JanusGraphManager implements GraphManager {
         // Open graphs defined at server start in settings.graphs
         settings.graphs.forEach((key, value) -> {
             final StandardJanusGraph graph = (StandardJanusGraph) JanusGraphFactory.open(value, key);
-            if (key.toLowerCase().equals(CONFIGURATION_MANAGEMENT_GRAPH_KEY.toLowerCase())) {
+            if (key.equalsIgnoreCase(CONFIGURATION_MANAGEMENT_GRAPH_KEY)) {
                 new ConfigurationManagementGraph(graph);
             }
         });
@@ -123,7 +123,7 @@ public class JanusGraphManager implements GraphManager {
                 } catch (Exception e) {
                     // cannot open graph, do nothing
                     log.error(String.format("Failed to open graph %s with the following error:\n %s.\n" +
-                    "Thus, it and its traversal will not be bound on this server.", it, e.toString()));
+                    "Thus, it and its traversal will not be bound on this server.", it, e));
                 }
             });
         }

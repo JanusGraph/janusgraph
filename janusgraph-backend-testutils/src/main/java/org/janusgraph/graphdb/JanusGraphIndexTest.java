@@ -2097,16 +2097,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         // approach might implement different methods/assertions depending on
         // whether the store is capable of deadlocking or detecting conflicting
         // writes and aborting a transaction.
-        Backend b = null;
-        try {
-            b = graph.getConfiguration().getBackend();
+        try (Backend b = graph.getConfiguration().getBackend()) {
             if (b.getStoreFeatures().hasTxIsolation()) {
                 log.info("Skipping " + getClass().getSimpleName() + "." + testInfo.getTestMethod().toString());
                 return;
             }
-        } finally {
-            if (null != b)
-                b.close();
         }
 
         final String propName = "foo";

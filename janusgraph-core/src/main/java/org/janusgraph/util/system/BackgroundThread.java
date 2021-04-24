@@ -138,7 +138,7 @@ public abstract class BackgroundThread extends Thread {
         try {
             join(maxWaitMs);
         } catch (InterruptedException e) {
-            log.error("Interrupted while waiting for thread {} to join",e);
+            log.error("Interrupted while waiting for thread {} to join", getName(), e);
         }
         if (isAlive()) {
             log.error("Thread {} did not terminate in time [{}]. This could mean that important clean up functions could not be called.", getName(), maxWaitMs);

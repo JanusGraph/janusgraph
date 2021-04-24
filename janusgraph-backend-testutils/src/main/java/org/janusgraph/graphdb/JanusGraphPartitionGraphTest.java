@@ -350,12 +350,11 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
             assertCount(groupDegrees[i],g.query().direction(Direction.OUT).edges());
             assertCount(groupDegrees[i],g.query().direction(Direction.IN).edges());
             assertCount(groupDegrees[i]*2,g.query().edges());
-            for (Object o : g.query().direction(Direction.IN).labels("member").vertices()) {
-                JanusGraphVertex v = (JanusGraphVertex) o;
-                int pid = getPartitionID(v);
+            for (JanusGraphVertex o : g.query().direction(Direction.IN).labels("member").vertices()) {
+                int pid = getPartitionID(o);
                 partitionIds.add(pid);
-                assertEquals(g, getOnlyElement(v.query().direction(Direction.OUT).labels("member").vertices()));
-                VertexList vertexList = v.query().direction(Direction.IN).labels("contain").vertexIds();
+                assertEquals(g, getOnlyElement(o.query().direction(Direction.OUT).labels("member").vertices()));
+                VertexList vertexList = o.query().direction(Direction.IN).labels("contain").vertexIds();
                 assertEquals(1,vertexList.size());
                 assertEquals(pid,idManager.getPartitionId(vertexList.getID(0)));
                 assertEquals(g,vertexList.get(0));
@@ -453,10 +452,9 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
         for (int i=0;i<groupDegrees.length;i++) {
             JanusGraphVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
             int partitionId = -1;
-            for (Object o : g.query().direction(Direction.IN).labels("member").vertices()) {
-                JanusGraphVertex v = (JanusGraphVertex) o;
-                if (partitionId<0) partitionId = getPartitionID(v);
-                assertEquals(partitionId,getPartitionID(v));
+            for (JanusGraphVertex o : g.query().direction(Direction.IN).labels("member").vertices()) {
+                if (partitionId<0) partitionId = getPartitionID(o);
+                assertEquals(partitionId,getPartitionID(o));
                 partitionIds.add(partitionId);
             }
         }

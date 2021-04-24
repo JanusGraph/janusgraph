@@ -333,7 +333,7 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
     public static int getThreadCount() {
         final String s = System.getProperty("janusgraph.test.threads");
         if (null != s)
-            return Integer.valueOf(s);
+            return Integer.parseInt(s);
         else
             return DEFAULT_THREAD_COUNT;
     }

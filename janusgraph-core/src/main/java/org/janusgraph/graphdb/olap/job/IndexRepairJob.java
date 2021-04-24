@@ -113,7 +113,9 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
         }
         Preconditions.checkArgument(isValidIndex, "The index %s is in an invalid state and cannot be indexed. %s", indexName, invalidIndexHint);
         // TODO consider retrieving the current Job object and calling killJob() if !isValidIndex -- would be more efficient than throwing an exception on the first pair processed by each mapper
-        log.debug("Index {} is valid for re-indexing");
+        if(log.isDebugEnabled()){
+            log.debug("Index "+index.name()+" is valid for re-indexing");
+        }
     }
 
 
@@ -127,7 +129,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 EdgeSerializer edgeSerializer = writeTx.getEdgeSerializer();
                 List<Entry> outAdditions = new ArrayList<>();
                 Map<StaticBuffer,List<Entry>> inAdditionsMap = new HashMap<>();
-                
+
                 for (Object relation : vertex.query().types(indexRelationTypeName).direction(Direction.OUT).relations()) {
                     InternalRelation janusgraphRelation = (InternalRelation) relation;
                     for (int pos = 0; pos < janusgraphRelation.getArity(); pos++) {
@@ -135,22 +137,22 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                             continue; //Directionality is not covered
 
                         Entry entry = edgeSerializer.writeRelation(janusgraphRelation, wrappedType, pos, writeTx);
-                        
+
                         if (pos == 0) {
                             outAdditions.add(entry);
                         } else {
                             assert pos == 1;
                             InternalVertex otherVertex = janusgraphRelation.getVertex(1);
                             StaticBuffer otherVertexKey = writeTx.getIdInspector().getKey(otherVertex.longId());
-                            inAdditionsMap.computeIfAbsent(otherVertexKey, k -> new ArrayList<Entry>()).add(entry);
+                            inAdditionsMap.computeIfAbsent(otherVertexKey, k -> new ArrayList<>()).add(entry);
                         }
                     }
                 }
-		
+
                 //Mutating all OUT relationships for the current vertex
                 StaticBuffer vertexKey = writeTx.getIdInspector().getKey(vertex.longId());
                 mutator.mutateEdges(vertexKey, outAdditions, KCVSCache.NO_DELETIONS);
-                
+
                 //Mutating all IN relationships for the current vertex
                 int totalInAdditions = 0;
                 for(Map.Entry<StaticBuffer, List<Entry>> entry : inAdditionsMap.entrySet()) {

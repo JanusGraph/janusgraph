@@ -47,7 +47,7 @@ public class ConfigurationPrinter {
 
     private final PrintStream stream;
 
-    public static void main(String args[]) throws IOException, ReflectiveOperationException {
+    public static void main(String[] args) throws IOException, ReflectiveOperationException {
 
         ReflectiveConfigOptionLoader.INSTANCE.loadStandard(ConfigurationPrinter.class);
 

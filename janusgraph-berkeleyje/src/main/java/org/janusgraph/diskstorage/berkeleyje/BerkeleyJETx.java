@@ -93,7 +93,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         super.rollback();
         if (tx == null) return;
         if (log.isTraceEnabled())
-            log.trace("{} rolled back", this.toString(), new TransactionClose(this.toString()));
+            log.trace("{} rolled back", this, new TransactionClose(this.toString()));
         try {
             isOpen = false;
             closeOpenCursors();
@@ -109,7 +109,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         super.commit();
         if (tx == null) return;
         if (log.isTraceEnabled())
-            log.trace("{} committed", this.toString(), new TransactionClose(this.toString()));
+            log.trace("{} committed", this, new TransactionClose(this.toString()));
         try {
             isOpen = false;
             closeOpenCursors();

@@ -104,9 +104,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
                 throw FastNoSuchElementException.instance();
             }
             final List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
-            starts.forEachRemaining(v -> {
-                vertices.add(v);
-            });
+            starts.forEachRemaining(vertices::add);
             starts.add(vertices.iterator());
             initializeMultiQuery(vertices);
         }
@@ -164,8 +162,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
                     parentPreviousStep = parentPreviousStep.getPreviousStep();
                 }
                 if (parentPreviousStep instanceof JanusGraphMultiQueryStep) {
-                    JanusGraphMultiQueryStep multiQueryStep = (JanusGraphMultiQueryStep)parentPreviousStep;
-                    parentMultiQueryStep = multiQueryStep;
+                    parentMultiQueryStep = (JanusGraphMultiQueryStep)parentPreviousStep;
                 }
             }
         }

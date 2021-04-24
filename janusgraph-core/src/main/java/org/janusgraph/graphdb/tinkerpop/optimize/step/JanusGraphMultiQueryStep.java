@@ -36,7 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
  */
 public final class JanusGraphMultiQueryStep extends AbstractStep<Vertex, Vertex> {
 
-    private final Set<Traverser.Admin<Vertex>> cachedStarts = new HashSet<Traverser.Admin<Vertex>>();
+    private final Set<Traverser.Admin<Vertex>> cachedStarts = new HashSet<>();
     private final String forStep;
     private boolean cachedStartsAccessed = false;
 

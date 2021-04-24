@@ -171,7 +171,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
             }
             entryCounts[i]++;
             if (e.getValue() instanceof InMemoryColumnValueStore) {
-                InMemoryColumnValueStore pbCvs = (InMemoryColumnValueStore) e.getValue();
+                InMemoryColumnValueStore pbCvs = e.getValue();
                 SharedEntryBufferFragmentationReport fr = pbCvs.createFragmentationReport(txh);
                 int pageCount = fr.getPageCount();
                 totalPageCount += pageCount;
@@ -293,7 +293,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
                 out.write(e.getKey().as(ARRAY_FACTORY));
 
-                InMemoryColumnValueStore sbKcv = (InMemoryColumnValueStore) e.getValue();
+                InMemoryColumnValueStore sbKcv = e.getValue();
                 sbKcv.dumpTo(out);
             }
 

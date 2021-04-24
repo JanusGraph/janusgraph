@@ -301,7 +301,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             if (!reload) {
                 p.remove();
             } else {
-                ((VertexProperty) graph.traversal().V().has("_v", 1).properties("_v").next()).remove();
+                graph.traversal().V().has("_v", 1).properties("_v").next().remove();
             }
             graph.tx().commit();
 
@@ -330,7 +330,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     public void testUpdatePropertyPropThenRemoveVertex() {
         initializeGraphWithVerticesAndEdges();
         Vertex v = graph.traversal().V().has("_v", 1).next();
-        VertexProperty p = (VertexProperty) v.properties("_v").next();
+        VertexProperty p = v.properties("_v").next();
         assertEquals(false, p.property("flag").value());
         p.property("flag", true);
         assertEquals(true, p.property("flag").value());
@@ -531,8 +531,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertCount(numE, tx.query().edges());
 
         //tx.V().range(0,deleteV).remove();
-        for (Object v : tx.query().limit(deleteV).vertices()) {
-            ((JanusGraphVertex) v).remove();
+        for (JanusGraphVertex v : tx.query().limit(deleteV).vertices()) {
+            v.remove();
         }
 
         for (int i = 0; i < 10; i++) { //Repeated vertex counts
@@ -620,8 +620,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
             assertCount(connectOff.length + knowsOff.length, n.query().direction(Direction.OUT).edges());
             assertCount(2, n.properties());
-            for (Object o : n.query().direction(Direction.OUT).labels("knows").edges()) {
-                JanusGraphEdge r = (JanusGraphEdge) o;
+            for (JanusGraphEdge o : n.query().direction(Direction.OUT).labels("knows").edges()) {
+                JanusGraphEdge r = o;
                 JanusGraphVertex n2 = r.vertex(Direction.IN);
                 int idSum = ((Number) n.value("uid")).intValue() + ((Number) n2.value("uid")).intValue();
                 assertEquals(idSum, ((Number) r.value("uid")).intValue());
@@ -631,8 +631,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             }
 
             Set edgeIds = new HashSet(10);
-            for (Object r : n.query().direction(Direction.OUT).edges()) {
-                edgeIds.add(((JanusGraphEdge) r).longId());
+            for (JanusGraphEdge r : n.query().direction(Direction.OUT).edges()) {
+                edgeIds.add(r.longId());
             }
             assertEquals(edgeIds, nodeEdgeIds[i], edgeIds + " vs " + nodeEdgeIds[i]);
         }
@@ -3030,9 +3030,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         JanusGraphException janusGraphException;
         if (isLockingOptimistic()) {
             tx1.commit();
-            janusGraphException = assertThrows(JanusGraphException.class, () -> tx2.commit());
+            janusGraphException = assertThrows(JanusGraphException.class, tx2::commit);
         } else {
-            janusGraphException = assertThrows(JanusGraphException.class, () -> tx1.commit());
+            janusGraphException = assertThrows(JanusGraphException.class, tx1::commit);
             tx2.commit();
         }
         Throwable rootCause = janusGraphException.getCause().getCause();
@@ -3807,9 +3807,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             JanusGraphVertexProperty<String> p = (JanusGraphVertexProperty<String>) o;
             if (p.<Long>value("time") < (numV / 2)) p.remove();
         }
-        for (Object o : v.query().direction(BOTH).edges()) {
-            JanusGraphEdge e = (JanusGraphEdge) o;
-            if (e.<Long>value("time") < (numV / 2)) e.remove();
+        for (JanusGraphEdge o : v.query().direction(BOTH).edges()) {
+            if (o.<Long>value("time") < (numV / 2)) o.remove();
         }
         ns = new JanusGraphVertex[numV * 3 / 2];
         for (int i = numV; i < numV * 3 / 2; i++) {
@@ -6008,14 +6007,14 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(3, backendQueryMetrics.size());
         int limit = 1000;
         // due to LimitAdjustingIterator, there are three backend queries with limits 1000, 2000, and 4000, respectively.
-        for (int i = 0; i < backendQueryMetrics.size(); i++) {
+        for (Metrics backendQueryMetric : backendQueryMetrics) {
             int queryLimit = limit;
             backendAnnotations = new HashMap() {{
                 put("query", "nameIdx:multiKSQ[1]@" + queryLimit);
                 put("limit", queryLimit);
             }};
-            assertEquals(backendAnnotations, backendQueryMetrics.get(i).getAnnotations());
-            assertTrue(backendQueryMetrics.get(i).getDuration(TimeUnit.MICROSECONDS) > 0);
+            assertEquals(backendAnnotations, backendQueryMetric.getAnnotations());
+            assertTrue(backendQueryMetric.getDuration(TimeUnit.MICROSECONDS) > 0);
             limit = limit * 2;
         }
     }
@@ -6792,7 +6791,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test with invalid filter
         assertEquals(false, IndexSelectionUtil.existsMatchingIndex(conditions, null));
     }
-    
+
     @Test
     public void testReindexingForEdgeIndex() throws InterruptedException, ExecutionException {
         //Schema creation
@@ -6860,7 +6859,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(SchemaStatus.ENABLED, relationIndex.getIndexStatus());
 
         GraphTraversalSource g = graph.traversal();
-    	
+
         //asserting before reindex
         for (int i = 0; i < propValues.length; i++) {
             final int expectedCount = resultsBeforeReindex[i];
@@ -6880,7 +6879,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         //Reindexing
         mgmt.updateIndex(relationIndex, SchemaAction.REINDEX).get();
         finishSchema();
-    	
+
         relationIndex = mgmt.getRelationIndex(t,indexName);
         assertEquals(SchemaStatus.ENABLED, relationIndex.getIndexStatus());
 

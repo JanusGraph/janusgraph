@@ -41,7 +41,7 @@ public class ReentrantTransactionLock extends ReentrantLock implements Transacti
         try {
             success = super.tryLock(timeout.toNanos(), TimeUnit.NANOSECONDS);
         } catch (InterruptedException e) {
-            log.warn("Interrupted waiting for lock: {}",e);
+            log.warn("Interrupted waiting for lock: {}", this, e);
         }
         if (!success) throw new JanusGraphException("Possible dead lock detected. Waited for transaction lock without success");
     }

@@ -63,9 +63,8 @@ public abstract class IndexMetricTest extends JanusGraphBaseTest {
         graph.indexQuery("idx", "p1:*").vertexTotals();
         graph.indexQuery("idx", "p1:*").vertexStream();
 
-        Assertions.assertThrows(JanusGraphException.class,  () -> {
-            graph.indexQuery("idx", "!@#$%^").vertexTotals();
-        });
+        Assertions.assertThrows(JanusGraphException.class,  () ->
+            graph.indexQuery("idx", "!@#$%^").vertexTotals());
 
         verifyIndexMetrics("search", METRICS_INDEX_PREFIX, ImmutableMap.of(M_MUTATE, 1L, M_QUERY, 1L, M_TOTALS, 2L, M_RAW_QUERY, 1L));
         assertEquals(1, metric.getCounter(METRICS_INDEX_PREFIX, "search", M_TOTALS, MetricInstrumentedStore.M_EXCEPTIONS).getCount());

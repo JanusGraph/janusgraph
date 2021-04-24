@@ -438,15 +438,15 @@ public class BackendTransaction implements LoggableTransaction {
         });
     }
 
-    private class TotalsCallable implements Callable<Long> {
+    private static class TotalsCallable implements Callable<Long> {
     	final private RawQuery query;
     	final private IndexTransaction indexTx;
-    	
+
     	public TotalsCallable(final RawQuery query, final IndexTransaction indexTx) {
     		this.query = query;
     		this.indexTx = indexTx;
     	}
-    	
+
         @Override
         public Long call() throws Exception {
             return indexTx.totals(this.query);
@@ -457,7 +457,7 @@ public class BackendTransaction implements LoggableTransaction {
             return "Totals";
         }
     }
-    
+
     public Long totals(final String index, final RawQuery query) {
         final IndexTransaction indexTx = getIndexTransaction(index);
         return executeRead(new TotalsCallable(query, indexTx));

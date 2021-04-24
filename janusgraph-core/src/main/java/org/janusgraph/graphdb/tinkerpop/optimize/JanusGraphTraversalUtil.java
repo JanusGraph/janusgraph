@@ -121,7 +121,7 @@ public class JanusGraphTraversalUtil {
                     RepeatStep repeatStep = (RepeatStep)parentStep;
                     List<RepeatEndStep> repeatEndSteps = TraversalHelper.getStepsOfClass(RepeatEndStep.class, repeatStep.getRepeatTraversal());
                     if (repeatEndSteps.size() == 1) {
-                        // Want the RepeatEndStep so the start of one iteration can feed into the next 
+                        // Want the RepeatEndStep so the start of one iteration can feed into the next
                         multiQueryCompatibleSteps.remove(parentStep);
                         multiQueryCompatibleSteps.add(repeatEndSteps.get(0));
                     }
@@ -142,6 +142,6 @@ public class JanusGraphTraversalUtil {
     }
 
     public static boolean isMultiQueryCompatibleStep(Step<?, ?> currentStep) {
-        return MULTIQUERY_COMPATIBLE_STEPS.stream().filter(stepClass -> stepClass.isInstance(currentStep)).findFirst().isPresent();
+        return MULTIQUERY_COMPATIBLE_STEPS.stream().anyMatch(stepClass -> stepClass.isInstance(currentStep));
     }
 }

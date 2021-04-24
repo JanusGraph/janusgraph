@@ -123,7 +123,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             if (entries.size()==1) {
                 deletions = entries.values().iterator().next();
             } else {
-                final int size = IteratorUtils.stream(entries.values().iterator()).map(List::size).reduce(0, (x,y) -> x+y);
+                final int size = IteratorUtils.stream(entries.values().iterator()).map(List::size).reduce(0, Integer::sum);
                 deletions = new ArrayList<>(size);
                 entries.values().forEach(deletions::addAll);
             }

@@ -219,7 +219,8 @@ public class JUnitBenchmarkProvider {
             int t = 0;
             String name       = tokens[t++];
             String rawscalar  = tokens[t++];
-            Preconditions.checkState(tokensPerLine == t);
+
+            assert tokensPerLine == t;
 
             Preconditions.checkNotNull(name);
 
@@ -228,11 +229,9 @@ public class JUnitBenchmarkProvider {
                 continue;
             }
 
-            Preconditions.checkState(0 < name.length());
-
-            Double scalar;
+            double scalar;
             try {
-                scalar = Double.valueOf(rawscalar);
+                scalar = Double.parseDouble(rawscalar);
             } catch (Exception e) {
                 log.warn("Parse error at {}:{}: failed to convert string \"{}\" to a double (skipping this line)",
                     filename, ln, rawscalar);
@@ -301,7 +300,7 @@ public class JUnitBenchmarkProvider {
 
         if (null != s) {
             try {
-                return Integer.valueOf(s);
+                return Integer.parseInt(s);
             } catch (NumberFormatException e) {
                 log.warn("Could not interpret value \"{}\" for environment variable {} as an integer", s, envKey, e);
             }

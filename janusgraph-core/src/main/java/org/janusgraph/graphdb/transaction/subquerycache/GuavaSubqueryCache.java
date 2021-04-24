@@ -19,10 +19,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
-
 /**
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */

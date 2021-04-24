@@ -14,6 +14,8 @@
 
 package org.janusgraph.graphdb.query.graph;
 
+import com.google.common.base.Preconditions;
+import org.apache.commons.collections.comparators.ComparableComparator;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.OrderList;
@@ -22,11 +24,7 @@ import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.ElementQuery;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.FixedCondition;
-import org.janusgraph.graphdb.query.profile.ProfileObservable;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
-
-import com.google.common.base.Preconditions;
-import org.apache.commons.collections.comparators.ComparableComparator;
 
 import java.util.Comparator;
 import java.util.Objects;

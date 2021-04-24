@@ -166,7 +166,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
      * known when that has step is executed. The batch property pre-fetching optimisation
      * loads those properties into the vertex cache with a multiQuery preventing the need to
      * go back to the storage back-end for each vertex to fetch the properties.
-     * 
+     *
      * @param traversal The traversal containing the step
      * @param vertexStep The step to potentially apply the optimisation to
      * @param nextStep The next step in the traversal
@@ -208,7 +208,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
         Step<?, ?> parent = currentStep.getTraversal().getParent().asStep();
         while (!parent.equals(EmptyStep.instance())) {
             final Step<?, ?> p = parent;
-            if(stepClasses.stream().filter(stepClass -> stepClass.isInstance(p)).findFirst().isPresent()) {
+            if(stepClasses.stream().anyMatch(stepClass -> stepClass.isInstance(p))) {
                 return true;
             }
             parent = parent.getTraversal().getParent().asStep();

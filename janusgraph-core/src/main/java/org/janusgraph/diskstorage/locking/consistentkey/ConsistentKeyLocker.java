@@ -453,7 +453,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 // Locks that this instance wrote that have now expired should not only log
                 // but also throw a descriptive exception
                 if (rid.equals(tr.getRid()) && ls.getWriteTimestamp().equals(tr.getTimestamp())) {
-                    throw new ExpiredLockException("Expired lock on " + kc.toString() +
+                    throw new ExpiredLockException("Expired lock on " + kc +
                             ": lock timestamp " + tr.getTimestamp() + " " + times.getUnit() + " is older than " +
                             ConfigElement.getPath(GraphDatabaseConfiguration.LOCK_EXPIRE) + "=" + lockExpire);
                     // Really shouldn't refer to GDC.LOCK_EXPIRE here,
@@ -577,12 +577,12 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         if (tx != null) {
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("Transaction is still open! Rolling back: " + tx.toString(), new Throwable());
+                    log.debug("Transaction is still open! Rolling back: " + tx, new Throwable());
                 }
 
                 tx.rollback();
             } catch (Throwable excp) {
-                log.error("Failed to rollback transaction " + tx.toString() + ". The transaction may be leaked.", excp);
+                log.error("Failed to rollback transaction " + tx + ". The transaction may be leaked.", excp);
             }
         }
 

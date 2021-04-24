@@ -108,9 +108,9 @@ public class CommonsConfiguration implements WriteConfiguration {
                         unit = Durations.parse(comps[1]);
                         break;
                     default:
-                        throw new IllegalArgumentException("Cannot parse time duration from: " + o.toString());
+                        throw new IllegalArgumentException("Cannot parse time duration from: " + o);
                 }
-                return (O) Duration.of(Long.valueOf(comps[0]), unit);
+                return (O) Duration.of(Long.parseLong(comps[0]), unit);
             }
         // Lists are deliberately not supported.  List's generic parameter
         // is subject to erasure and can't be checked at runtime.  Someone

@@ -356,8 +356,8 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
             for (JanusGraphVertex v : gview.query().vertices()) {
                 long degree2 = ((Integer)v.value(DegreeCounter.DEGREE)).longValue();
                 long actualDegree2 = 0;
-                for (Object w : v.query().direction(Direction.OUT).vertices()) {
-                    actualDegree2 += Iterables.size(((JanusGraphVertex) w).query().direction(Direction.OUT).vertices());
+                for (JanusGraphVertex w : v.query().direction(Direction.OUT).vertices()) {
+                    actualDegree2 += Iterables.size(w.query().direction(Direction.OUT).vertices());
                 }
                 assertEquals(actualDegree2,degree2);
             }
@@ -424,7 +424,6 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
     public static class DegreeCounter extends StaticVertexProgram<Integer> {
 
         public static final String DEGREE = "degree";
-        public static final MessageCombiner<Integer> ADDITION = (a,b) -> a+b;
         public static final MessageScope.Local<Integer> DEG_MSG = MessageScope.Local.of(__::inE);
 
         private final int length;
@@ -447,7 +446,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
             if (memory.isInitialIteration()) {
                 messenger.sendMessage(DEG_MSG, 1);
             } else {
-                int degree = IteratorUtils.stream(messenger.receiveMessages()).reduce(0, (a, b) -> a + b);
+                int degree = IteratorUtils.stream(messenger.receiveMessages()).reduce(0, Integer::sum);
                 vertex.property(VertexProperty.Cardinality.single, DEGREE, degree);
                 if (memory.getIteration()<length) messenger.sendMessage(DEG_MSG, degree);
             }
@@ -470,7 +469,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
         @Override
         public Optional<MessageCombiner<Integer>> getMessageCombiner() {
-            return Optional.of(ADDITION);
+            return Optional.of(Integer::sum);
         }
 
         @Override
@@ -526,7 +525,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         @Override
         public Map<Long, Integer> generateFinalResult(Iterator<KeyValue<Long, Integer>> keyValues) {
             Map<Long,Integer> result = new HashMap<>();
-            for (; keyValues.hasNext(); ) {
+            while (keyValues.hasNext()) {
                 KeyValue<Long, Integer> r =  keyValues.next();
                 result.put(r.getKey(),r.getValue());
             }

@@ -377,20 +377,17 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
 
         @Override
         public void run() {
-            while (true) {
+            do {
                 // Make or break relType between two (possibly same) random nodes
                 final JanusGraphVertex source = Iterables.getOnlyElement(tx.query().has(idKey, 0).vertices());
                 final JanusGraphVertex sink = Iterables.getOnlyElement(tx.query().has(idKey, 1).vertices());
-                for (Object o : source.query().direction(Direction.OUT).labels(edgeLabel).edges()) {
-                    Edge r = (Edge) o;
-                    if (getId(r.inVertex()) == getId(sink)) {
-                        r.remove();
+                for (Edge o : source.query().direction(Direction.OUT).labels(edgeLabel).edges()) {
+                    if (getId(o.inVertex()) == getId(sink)) {
+                        o.remove();
                     }
                 }
                 source.addEdge(edgeLabel, sink);
-                if (Thread.interrupted())
-                    break;
-            }
+            } while (!Thread.interrupted());
         }
 
     }
@@ -418,8 +415,8 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
 
             for (int i = 0; i < nodeTraversalCount; i++) {
                 assertCount(expectedEdges, v.query().labels(label2Traverse).direction(Direction.BOTH).edges());
-                for (Object r : v.query().direction(Direction.OUT).labels(label2Traverse).edges()) {
-                    v = ((JanusGraphEdge) r).vertex(Direction.IN);
+                for (JanusGraphEdge r : v.query().direction(Direction.OUT).labels(label2Traverse).edges()) {
+                    v = r.vertex(Direction.IN);
                 }
             }
         }

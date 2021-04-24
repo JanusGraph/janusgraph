@@ -299,8 +299,8 @@ public class ConfigurationManagementGraph {
                 }
             } catch (InterruptedException | ExecutionException e) {
                 log.warn("Failed to create index {} for ConfigurationManagementGraph with exception: {}",
-                        indexName,
-                        e.toString()
+                    indexName,
+                    e
                 );
                 management.rollback();
                 graph.tx().rollback();

@@ -230,8 +230,8 @@ public interface CQLConfigOptions {
             "Configuration options for SSL");
 
     ConfigNamespace SSL_KEYSTORE_NS = new ConfigNamespace(
-            SSL_NS, 
-            "keystore", 
+            SSL_NS,
+            "keystore",
             "Configuration options for SSL Keystore.");
 
     ConfigNamespace SSL_TRUSTSTORE_NS = new ConfigNamespace(
@@ -266,21 +266,21 @@ public interface CQLConfigOptions {
             "Marks the location of the SSL Keystore.",
             ConfigOption.Type.LOCAL,
             "");
-    
+
     ConfigOption<String> SSL_KEYSTORE_KEY_PASSWORD = new ConfigOption<>(
             SSL_KEYSTORE_NS,
             "keypassword",
             "The password to access the key in SSL Keystore.",
             ConfigOption.Type.LOCAL,
             "");
-    
+
     ConfigOption<String> SSL_KEYSTORE_STORE_PASSWORD = new ConfigOption<>(
             SSL_KEYSTORE_NS,
             "storepassword",
             "The password to access the SSL Keystore.",
             ConfigOption.Type.LOCAL,
             "");
-    
+
     ConfigOption<String> SSL_TRUSTSTORE_LOCATION = new ConfigOption<>(
             SSL_TRUSTSTORE_NS,
             "location",
@@ -509,7 +509,7 @@ public interface CQLConfigOptions {
         REQUEST_TRACKER,
         "logs-success-enabled",
         "Whether to log successful requests. " +
-            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+            "Can be used when `" + REQUEST_TRACKER_CLASS + "` is set to `RequestLogger`.",
         ConfigOption.Type.LOCAL,
         Boolean.class);
 
@@ -517,7 +517,7 @@ public interface CQLConfigOptions {
         REQUEST_TRACKER,
         "logs-slow-threshold",
         "The threshold to classify a successful request as `slow`. In milliseconds. " +
-            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+            "Can be used when `" + REQUEST_TRACKER_CLASS + "` is set to `RequestLogger`.",
         ConfigOption.Type.LOCAL,
         Long.class);
 
@@ -525,7 +525,7 @@ public interface CQLConfigOptions {
         REQUEST_TRACKER,
         "logs-slow-enabled",
         "Whether to log `slow` requests." +
-            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+            "Can be used when `" + REQUEST_TRACKER_CLASS + "` is set to `RequestLogger`.",
         ConfigOption.Type.LOCAL,
         Boolean.class);
 
@@ -533,7 +533,7 @@ public interface CQLConfigOptions {
         REQUEST_TRACKER,
         "logs-error-enabled",
         "Whether to log failed requests." +
-            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+            "Can be used when `" + REQUEST_TRACKER_CLASS + "` is set to `RequestLogger`.",
         ConfigOption.Type.LOCAL,
         Boolean.class);
 
@@ -541,7 +541,7 @@ public interface CQLConfigOptions {
         REQUEST_TRACKER,
         "logs-max-query-length",
         "The maximum length of the query string in the log message. " +
-            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+            "Can be used when `" + REQUEST_TRACKER_CLASS + "` is set to `RequestLogger`.",
         ConfigOption.Type.LOCAL,
         Integer.class);
 
@@ -549,7 +549,7 @@ public interface CQLConfigOptions {
         REQUEST_TRACKER,
         "logs-show-values",
         "Whether to log bound values in addition to the query string. " +
-            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+            "Can be used when `" + REQUEST_TRACKER_CLASS + "` is set to `RequestLogger`.",
         ConfigOption.Type.LOCAL,
         Boolean.class);
 
@@ -557,7 +557,7 @@ public interface CQLConfigOptions {
         REQUEST_TRACKER,
         "logs-max-value-length",
         "The maximum length for bound values in the log message. " +
-            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+            "Can be used when `" + REQUEST_TRACKER_CLASS + "` is set to `RequestLogger`.",
         ConfigOption.Type.LOCAL,
         Integer.class);
 
@@ -565,7 +565,7 @@ public interface CQLConfigOptions {
         REQUEST_TRACKER,
         "logs-max-values",
         "The maximum number of bound values to log. " +
-            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+            "Can be used when `" + REQUEST_TRACKER_CLASS + "` is set to `RequestLogger`.",
         ConfigOption.Type.LOCAL,
         Integer.class);
 
@@ -573,7 +573,7 @@ public interface CQLConfigOptions {
         REQUEST_TRACKER,
         "logs-show-stack-traces",
         "Whether to log stack traces for failed queries. " +
-            "Can be used when `" + REQUEST_TRACKER_CLASS.toString() + "` is set to `RequestLogger`.",
+            "Can be used when `" + REQUEST_TRACKER_CLASS + "` is set to `RequestLogger`.",
         ConfigOption.Type.LOCAL,
         Boolean.class);
 }

@@ -62,7 +62,7 @@ public class RelationIdentifierUtils {
         if (typeVertex.isEdgeLabel()) {
             return findEdgeRelations(v, typeVertex, rId, tx);
         } else {
-            return ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((PropertyKey) typeVertex).properties();
+            return ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types(typeVertex).properties();
         }
     }
 

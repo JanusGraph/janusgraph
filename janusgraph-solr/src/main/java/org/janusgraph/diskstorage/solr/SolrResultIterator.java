@@ -87,7 +87,7 @@ class SolrResultIterator<E> implements Iterator<E> {
         }
     }
 
-    private class SolrCallbackHandler<E> extends StreamingResponseCallback {
+    private static class SolrCallbackHandler<E> extends StreamingResponseCallback {
 
         private final SolrResultIterator<E> iterator;
         private final Function<SolrDocument, E> function;
