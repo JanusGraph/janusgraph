@@ -82,7 +82,7 @@ public class HBaseStoreManagerConfigTest {
     
     @Test
     // Test HBase preferred timestamp provider MILLI is set by default
-    public void testHBaseTimestampProvider() throws BackendException {
+    public void testHBaseTimestampProvider() {
         // Get an empty configuration
         // GraphDatabaseConfiguration.buildGraphConfiguration() only build an empty one.
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
