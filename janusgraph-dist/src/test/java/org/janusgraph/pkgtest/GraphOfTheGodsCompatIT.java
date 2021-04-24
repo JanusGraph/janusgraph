@@ -34,6 +34,11 @@ public class GraphOfTheGodsCompatIT extends JanusGraphAssemblyBaseIT {
 
     private static final String BDB_ES = "bdb-es";
 
+    @Override
+    protected String getGraphName() {
+        return "graph-of-the-gods";
+    }
+
     /**
      * Download and open databases created by previous versions of JanusGraph.
      * A basic check for cluster-restart forward-compatibility.

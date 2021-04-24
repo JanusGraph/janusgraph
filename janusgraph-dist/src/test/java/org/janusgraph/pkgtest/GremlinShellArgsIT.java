@@ -19,6 +19,11 @@ import org.junit.jupiter.api.Test;
 
 public class GremlinShellArgsIT extends JanusGraphAssemblyBaseIT {
 
+    @Override
+    protected String getGraphName() {
+        return "gremlin-shell";
+    }
+
     @Test
     public void testScriptFileArgument() throws Exception {
         unzipAndRunExpect("gremlin-shell-args.expect.vm", false);

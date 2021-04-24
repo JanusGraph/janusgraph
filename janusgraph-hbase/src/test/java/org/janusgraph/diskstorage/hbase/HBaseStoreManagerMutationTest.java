@@ -76,14 +76,13 @@ public class HBaseStoreManagerMutationTest {
                     if (row == 1) {
                       expectedColumnsWithTTL.add((long) i);
                     }
-                    additions.add(e);
                 } else {
                     // Collect the columns without TTL. Only do this for one row
                     if (row == 1) {
                         expectedColumnsWithoutTTL.add((long) i);
                     }
-                    additions.add(e);
                 }
+                additions.add(e);
             }
             // Add one deletion to the row
             if (row == 1) {

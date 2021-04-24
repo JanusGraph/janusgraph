@@ -18,6 +18,7 @@ import org.janusgraph.HBaseContainer;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphOperationCountingTest;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -36,6 +37,7 @@ public class HBaseOperationCountingTest extends JanusGraphOperationCountingTest 
 
     @Override
     @Disabled
+    @Test
     public void testCacheConcurrency() {
         //Don't run this test;
     }

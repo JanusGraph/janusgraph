@@ -647,24 +647,8 @@
                                         <failIfNoTests>false</failIfNoTests>
                                         <excludedGroups>${test.excluded.groups}</excludedGroups>
                                         <excludes>
-                                            <exclude>**/*HBase*IT.java</exclude>
                                             <exclude>**/*CompatIT.java</exclude>
                                         </excludes>
-                                    </configuration>
-                                </execution>
-                                <execution>
-                                    <id>hbase-integration-test</id>
-                                    <phase>integration-test</phase>
-                                    <goals>
-                                        <goal>integration-test</goal>
-                                    </goals>
-                                    <configuration>
-                                        <argLine>-Dtest.hbase.parentdir=${top.level.basedir}/janusgraph-hbase-parent/</argLine>
-                                        <reportNameSuffix>hbase</reportNameSuffix>
-                                        <failIfNoTests>false</failIfNoTests>
-                                        <includes>
-                                            <include>**/*HBase*IT.java</include>
-                                        </includes>
                                     </configuration>
                                 </execution>
                                 <!-- Commented until the first 0.9/1.0 release
