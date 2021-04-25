@@ -28,8 +28,8 @@ import java.util.stream.Stream;
 
 public abstract class SystemTypeManager {
 
-    private final static Map<Long, SystemRelationType> SYSTEM_TYPES_BY_ID;
-    private final static Map<String, SystemRelationType> SYSTEM_TYPES_BY_NAME;
+    private static final Map<Long, SystemRelationType> SYSTEM_TYPES_BY_ID;
+    private static final Map<String, SystemRelationType> SYSTEM_TYPES_BY_NAME;
     private static final Set<String> ADDITIONAL_RESERVED_NAMES;
     private static final char[] RESERVED_CHARS = {'{', '}', '"', Token.SEPARATOR_CHAR};
 

@@ -42,7 +42,7 @@ import java.util.Optional;
  */
 public class FulgoraUtil {
 
-    private final static TraversalStrategies FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(JanusGraphLocalQueryOptimizerStrategy.instance());
+    private static final TraversalStrategies FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(JanusGraphLocalQueryOptimizerStrategy.instance());
 
     public static JanusGraphVertexStep<Vertex> getReverseJanusGraphVertexStep(final MessageScope.Local<?> scope,
                                                                        final JanusGraphTransaction graph) {

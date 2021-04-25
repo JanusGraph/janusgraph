@@ -58,7 +58,7 @@ public class LuceneCustomAnalyzer extends DelegatingAnalyzerWrapper {
     }
 
     @Override
-    final protected Analyzer getWrappedAnalyzer(String fieldName) {
+    protected final Analyzer getWrappedAnalyzer(String fieldName) {
         if (LuceneIndex.DOCID.equals(fieldName)) {
             return analyzerFor(KEYWORD_ANALYZER);
         }

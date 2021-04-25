@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph</artifactId>
@@ -280,6 +282,66 @@
                     </excludes>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.1.2</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>8.42</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>true</failsOnError>
+                    <!-- define here because checkstyle and multi module is a PITA -->
+                    <checkstyleRules>
+                        <module name="Checker">
+                            <module name="NewlineAtEndOfFile" />
+                            <module name="UniqueProperties" />
+                            <module name="TreeWalker">
+                                <!-- <property name="tabWidth" value="4"/> -->
+                                <!-- Annotations: https://checkstyle.sourceforge.io/config_annotation.html -->
+                                <module name="MissingOverride" />
+                                <!-- Class Design: https://checkstyle.sourceforge.io/config_design.html -->
+                                <!-- <module name="OneTopLevelClass" /> -->
+                                <!-- Coding: https://checkstyle.sourceforge.io/config_coding.html-->
+                                <module name="CovariantEquals" />
+                                <!-- <module name="EqualsHashCode" /> -->
+                                <!-- <module name="OneStatementPerLine" /> -->
+                                <module name="PackageDeclaration" />
+                                <module name="SimplifyBooleanExpression" />
+                                <module name="StringLiteralEquality" />
+                                <module name="UnnecessarySemicolonAfterOuterTypeDeclaration" />
+                                <module name="UnnecessarySemicolonAfterTypeMemberDeclaration" />
+                                <module name="UnnecessarySemicolonInEnumeration" />
+                                <module name="UnnecessarySemicolonInTryWithResources" />
+                                <!-- Imports: https://checkstyle.sourceforge.io/config_imports.html -->
+                                <module name="RedundantImport" />
+                                <module name="UnusedImports" />
+                                <!-- Miscellaneous: https://checkstyle.sourceforge.io/config_misc.html -->
+                                <module name="ArrayTypeStyle" />
+                                <module name="OuterTypeFilename" />
+                                <module name="UpperEll" />
+                                <!-- Modifiers: https://checkstyle.sourceforge.io/config_modifier.html -->
+                                <module name="ModifierOrder" />
+                                <!-- <module name="RedundantModifier" /> -->
+                            </module>
+                        </module>
+                    </checkstyleRules>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
         </plugins>
         <pluginManagement>
@@ -294,7 +356,7 @@
                             <Xmaxerrs>500</Xmaxerrs>
                         </compilerArguments>
                         <compilerArgs>
-                          <arg>-Xlint:unchecked</arg>
+                            <arg>-Xlint:unchecked</arg>
                         </compilerArgs>
                     </configuration>
                 </plugin>
@@ -350,9 +412,9 @@
                                 <runOrder>alphabetical</runOrder>
                                 <skipTests>${test.skip.tp}</skipTests>
                                 <systemPropertyVariables>
-                                  <build.dir>${project.build.directory}</build.dir>
-                                  <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties</log4j.configuration>
-                                  <is.testing>true</is.testing>
+                                    <build.dir>${project.build.directory}</build.dir>
+                                    <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties</log4j.configuration>
+                                    <is.testing>true</is.testing>
                                 </systemPropertyVariables>
                             </configuration>
                         </execution>

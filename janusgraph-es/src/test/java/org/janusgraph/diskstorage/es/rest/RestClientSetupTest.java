@@ -611,10 +611,10 @@ public class RestClientSetupTest {
 
         private static final Map<String, TestCustomAuthenticator> instanceMap = new HashMap<>();
 
-        final private String[] args;
+        private final String[] args;
 
-        final private List<Builder> customizeRequestConfigHistory = new LinkedList<>();
-        final private List<HttpAsyncClientBuilder> customizeHttpClientHistory = new LinkedList<>();
+        private final List<Builder> customizeRequestConfigHistory = new LinkedList<>();
+        private final List<HttpAsyncClientBuilder> customizeHttpClientHistory = new LinkedList<>();
         private int numInitCalls = 0;
 
         public TestCustomAuthenticator(String[] args) {

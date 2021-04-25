@@ -27,8 +27,8 @@ public class RandomGenerator {
     private static final Logger log =
             LoggerFactory.getLogger(RandomGenerator.class);
 
-    private final static int standardLower = 7;
-    private final static int standardUpper = 21;
+    private static final int standardLower = 7;
+    private static final int standardUpper = 21;
 
     public static String[] randomStrings(int number) {
         return randomStrings(number, standardLower, standardUpper);

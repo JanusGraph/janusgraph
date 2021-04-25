@@ -98,8 +98,8 @@ public class ManagementSystem implements JanusGraphManagement {
     private boolean graphShutdownRequired;
     private boolean isOpen;
 
-    private final static String FIRSTDASH= "------------------------------------------------------------------------------------------------\n";
-    private final static String DASHBREAK = "---------------------------------------------------------------------------------------------------\n";
+    private static final String FIRSTDASH= "------------------------------------------------------------------------------------------------\n";
+    private static final String DASHBREAK = "---------------------------------------------------------------------------------------------------\n";
 
     public ManagementSystem(StandardJanusGraph graph, KCVSConfiguration config, Log sysLog,
                             ManagementLogger managementLogger, SchemaCache schemaCache) {

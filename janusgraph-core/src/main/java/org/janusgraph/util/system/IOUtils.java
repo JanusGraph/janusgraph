@@ -27,11 +27,11 @@ import java.io.File;
 public class IOUtils {
     private static final Logger logger = LoggerFactory.getLogger(IOUtils.class);
 
-    static public boolean deleteFromDirectory(File path) {
+    public static boolean deleteFromDirectory(File path) {
         return deleteDirectory(path, false);
     }
 
-    static public boolean deleteDirectory(File path, boolean includeDir) {
+    public static boolean deleteDirectory(File path, boolean includeDir) {
         boolean success = true;
         if (path.exists()) {
             File[] files = path.listFiles();

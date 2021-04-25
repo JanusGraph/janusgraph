@@ -71,7 +71,7 @@
             <outputDirectory>/examples</outputDirectory>
             <useProjectArtifact>false</useProjectArtifact>
             <includes>
-                <include>${project.groupId}:janusgraph-hadoop-core:zip:example-data:${project.version}</include>
+                <include>${project.groupId}:janusgraph-hadoop:zip:example-data:${project.version}</include>
             </includes>
         </dependencySet>
     </dependencySets>

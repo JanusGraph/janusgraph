@@ -40,7 +40,7 @@ import com.google.common.base.Preconditions;
 /**
  * An abstract class to handle the initial setup of indexes for authentication.
  */
-abstract public class JanusGraphAbstractAuthenticator implements Authenticator {
+public abstract class JanusGraphAbstractAuthenticator implements Authenticator {
 
     private static final Logger logger = LoggerFactory.getLogger(JanusGraphAbstractAuthenticator.class);
 
@@ -67,7 +67,7 @@ abstract public class JanusGraphAbstractAuthenticator implements Authenticator {
     }
 
     @Override
-    abstract public SaslNegotiator newSaslNegotiator(final InetAddress remoteAddress);
+    public abstract SaslNegotiator newSaslNegotiator(final InetAddress remoteAddress);
 
     public CredentialTraversalSource createCredentials(JanusGraph graph) {
         return graph.traversal(CredentialTraversalSource.class);

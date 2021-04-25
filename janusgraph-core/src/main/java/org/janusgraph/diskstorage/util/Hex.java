@@ -22,7 +22,7 @@ import java.lang.reflect.Constructor;
  */
 public class Hex {
     private static final Constructor<String> stringConstructor = getProtectedConstructor(String.class, int.class, int.class, char[].class);
-    private final static byte[] charToByte = new byte[256];
+    private static final byte[] charToByte = new byte[256];
 
     // package protected for use by BufferUtil. Do not modify this array !!
     static final char[] byteToChar = new char[16];

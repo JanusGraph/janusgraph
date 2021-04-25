@@ -44,7 +44,7 @@ public class UniqueInstanceIdRetriever {
 
     private UniqueInstanceIdRetriever(){}
 
-    public synchronized static UniqueInstanceIdRetriever getInstance(){
+    public static synchronized UniqueInstanceIdRetriever getInstance(){
         if(uniqueInstanceIdGenerator == null){
             uniqueInstanceIdGenerator = new UniqueInstanceIdRetriever();
         }

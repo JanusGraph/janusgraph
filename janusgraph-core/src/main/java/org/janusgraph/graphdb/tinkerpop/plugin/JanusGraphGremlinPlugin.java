@@ -81,9 +81,9 @@ public class JanusGraphGremlinPlugin extends JanusGraphGremlinDriverPlugin {
 
     private static final String NAME = "janusgraph.imports";
 
-    private final static Set<Class> CLASS_IMPORTS = new LinkedHashSet<>();
-    private final static Set<Enum> ENUM_IMPORTS = new LinkedHashSet<>();
-    private final static Set<Method> METHOD_IMPORTS = new LinkedHashSet<>();
+    private static final Set<Class> CLASS_IMPORTS = new LinkedHashSet<>();
+    private static final Set<Enum> ENUM_IMPORTS = new LinkedHashSet<>();
+    private static final Set<Method> METHOD_IMPORTS = new LinkedHashSet<>();
 
     static {
         /////////////

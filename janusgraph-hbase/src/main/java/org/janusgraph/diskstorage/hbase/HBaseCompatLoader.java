@@ -32,7 +32,7 @@ public class HBaseCompatLoader {
 
     private static HBaseCompat cachedCompat;
 
-    public synchronized static HBaseCompat getCompat(String classOverride) {
+    public static synchronized HBaseCompat getCompat(String classOverride) {
 
         if (null != cachedCompat) {
             log.debug("Returning cached HBase compatibility layer: {}", cachedCompat);

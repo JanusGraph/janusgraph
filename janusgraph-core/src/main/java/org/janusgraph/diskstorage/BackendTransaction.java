@@ -439,8 +439,8 @@ public class BackendTransaction implements LoggableTransaction {
     }
 
     private static class TotalsCallable implements Callable<Long> {
-    	final private RawQuery query;
-    	final private IndexTransaction indexTx;
+    	private final RawQuery query;
+    	private final IndexTransaction indexTx;
 
     	public TotalsCallable(final RawQuery query, final IndexTransaction indexTx) {
     		this.query = query;

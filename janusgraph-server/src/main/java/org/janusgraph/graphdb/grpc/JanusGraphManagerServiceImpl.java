@@ -17,7 +17,6 @@ package org.janusgraph.graphdb.grpc;
 import com.jcabi.manifests.Manifests;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang.NullArgumentException;
 import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
 import org.janusgraph.graphdb.server.JanusGraphServer;
 

@@ -761,7 +761,7 @@ public enum Text implements JanusGraphPredicate {
 
     //////////////// statics
 
-    public final static Set<Text> HAS_CONTAINS = Collections
+    public static final Set<Text> HAS_CONTAINS = Collections
             .unmodifiableSet(EnumSet.of(CONTAINS, CONTAINS_PREFIX, CONTAINS_REGEX, CONTAINS_FUZZY, CONTAINS_PHRASE,
                 NOT_CONTAINS, NOT_CONTAINS_PREFIX, NOT_CONTAINS_REGEX, NOT_CONTAINS_FUZZY, NOT_CONTAINS_PHRASE));
 

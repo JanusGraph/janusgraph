@@ -25,8 +25,8 @@ import static org.easymock.EasyMock.replay;
 
 public class MockedSaslAndHmacAuthenticatorFactory implements MockedJanusGraphAuthenticatorFactory {
 
-    final private MockedHmacAuthenticatorFactory hmacFactory = new MockedHmacAuthenticatorFactory();
-    final private MockedSimpleAuthenticatorFactory saslFactory = new MockedSimpleAuthenticatorFactory();
+    private final MockedHmacAuthenticatorFactory hmacFactory = new MockedHmacAuthenticatorFactory();
+    private final MockedSimpleAuthenticatorFactory saslFactory = new MockedSimpleAuthenticatorFactory();
 
     public JanusGraphAbstractAuthenticator createInitializedAuthenticator(final Map<String, Object> config,
                                                                              final JanusGraph graph) {
