@@ -73,7 +73,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
      * ############# IDENTICAL CODE ###############
      */
 
-    private volatile transient RelationCache cache;
+    private transient volatile RelationCache cache;
 
     @Override
     public RelationCache getCache() {

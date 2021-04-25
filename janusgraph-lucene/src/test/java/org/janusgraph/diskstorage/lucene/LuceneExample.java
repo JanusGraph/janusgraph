@@ -55,8 +55,8 @@ public abstract class LuceneExample {
 
     private static final int MAX_RESULT = 10000;
 
-    final private Map<String,SpatialStrategy> spatial= new HashMap<>();
-    final private SpatialContext ctx = SpatialContext.GEO;
+    private final Map<String,SpatialStrategy> spatial= new HashMap<>();
+    private final SpatialContext ctx = SpatialContext.GEO;
 
     @BeforeEach
     public void setup() {

@@ -116,7 +116,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
      * @param <S> The concrete type of {@link LockStatus}
      * @param <B> The concrete type of the subclass extending this builder
      */
-    public static abstract class Builder<S, B extends Builder<S, B>> {
+    public abstract static class Builder<S, B extends Builder<S, B>> {
 
         protected StaticBuffer rid;
         protected TimestampProvider times;

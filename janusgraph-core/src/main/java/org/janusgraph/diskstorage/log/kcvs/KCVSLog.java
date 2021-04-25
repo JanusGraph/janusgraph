@@ -114,24 +114,24 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      * this number. If the delivery delay is configured to be smaller than this time interval, messages
      * will be send immediately since batching will likely be ineffective.
      */
-    private final static Duration MIN_DELIVERY_DELAY = Duration.ofMillis(10L);
+    private static final Duration MIN_DELIVERY_DELAY = Duration.ofMillis(10L);
 
     /**
      * Multiplier for the maximum number of messages to hold in the outgoing message queue before producing back pressure.
      * Multiplied with the message sending batch size.
      * If back pressure is a regular occurrence, decrease the sending interval or increase the sending batch size
      */
-    private final static int BATCH_SIZE_MULTIPLIER = 10;
+    private static final int BATCH_SIZE_MULTIPLIER = 10;
     /**
      * Wait time after close() is called for all ongoing jobs to finish and shut down.
      */
-    private final static Duration CLOSE_DOWN_WAIT = Duration.ofSeconds(10L);
+    private static final Duration CLOSE_DOWN_WAIT = Duration.ofSeconds(10L);
     /**
      * Time before a registered reader starts processing messages
      */
-    private final static Duration INITIAL_READER_DELAY = Duration.ofMillis(100L);
+    private static final Duration INITIAL_READER_DELAY = Duration.ofMillis(100L);
 
-    private final static Duration FOREVER = Duration.ofNanos(Long.MAX_VALUE); // TODO remove this
+    private static final Duration FOREVER = Duration.ofNanos(Long.MAX_VALUE); // TODO remove this
 
     //########## INTERNAL SETTING MANAGEMENT #############
 
@@ -140,19 +140,19 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      * This is all 1s in binary representation which would be an illegal value for a partition id. Hence,
      * we avoid conflict.
      */
-    private final static int SYSTEM_PARTITION_ID = 0xFFFFFFFF;
+    private static final int SYSTEM_PARTITION_ID = 0xFFFFFFFF;
 
     /**
      * The first byte of any system column is used to indicate the type of column. The next two variables define
      * the prefixes for message counter columns (i.e. keeping of the log message numbers) and for the marker columns
      * (i.e. keeping track of the timestamps to which it has been read)
      */
-    private final static byte MESSAGE_COUNTER = 1;
-    private final static byte MARKER_PREFIX = 2;
+    private static final byte MESSAGE_COUNTER = 1;
+    private static final byte MARKER_PREFIX = 2;
     /**
      * Since the message counter column is nothing but the prefix, we can define it statically up front
      */
-    private final static StaticBuffer MESSAGE_COUNTER_COLUMN = new WriteByteBuffer(1).putByte(MESSAGE_COUNTER).getStaticBuffer();
+    private static final StaticBuffer MESSAGE_COUNTER_COLUMN = new WriteByteBuffer(1).putByte(MESSAGE_COUNTER).getStaticBuffer();
 
     private static final Random random = new Random();
 

@@ -51,8 +51,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
 
-    final static Random random = new Random();
-    final static int numPartitions = 8;
+    static final Random random = new Random();
+    static final int numPartitions = 8;
 
     public abstract WriteConfiguration getBaseConfiguration();
 

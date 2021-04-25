@@ -28,33 +28,33 @@ public class ElementLifeCycle {
     /**
      * The entity has been newly created and not yet persisted.
      */
-    public final static byte New = 1;
+    public static final byte New = 1;
 
     /**
      * The entity has been loaded from the database and has not changed
      * after initial loading.
      */
-    public final static byte Loaded = 2;
+    public static final byte Loaded = 2;
 
     /**
      * The entity has changed after being loaded from the database by adding relations.
      */
-    private final static byte AddedRelations = 3;
+    private static final byte AddedRelations = 3;
 
     /**
      * The entity has changed after being loaded from the database by deleting relations.
      */
-    private final static byte RemovedRelations = 4;
+    private static final byte RemovedRelations = 4;
 
     /**
      * The entity has changed after being loaded from the database by adding and/or deleting relations.
      */
-    private final static byte Modified = 5;
+    private static final byte Modified = 5;
 
     /**
      * The entity has been deleted but not yet erased from the database.
      */
-    public final static byte Removed = 6;
+    public static final byte Removed = 6;
 
 
     public static boolean isModified(byte lifecycle) {

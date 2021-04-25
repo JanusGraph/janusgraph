@@ -104,7 +104,7 @@ public class TestByteBuffer {
         return time;
     }
 
-    static abstract class Vertex implements Comparable<Vertex> {
+    abstract static class Vertex implements Comparable<Vertex> {
 
         protected final long id;
 

@@ -48,7 +48,7 @@ import java.util.Set;
  */
 public class VertexProgramScanJob<M> implements VertexScanJob {
 
-    private final static MessageScope.Global globalScope = MessageScope.Global.instance();
+    private static final MessageScope.Global globalScope = MessageScope.Global.instance();
     private final IDManager idManager;
     private final FulgoraMemory memory;
     private final FulgoraVertexMemory<M> vertexMemory;
