@@ -95,7 +95,7 @@ public class HBaseStoreManagerMutationTest {
         storeMutationMap.put("store1", rowkeyMutationMap);
         HBaseStoreManager manager = new HBaseStoreManager(hBaseContainer.getModifiableConfiguration());
         final Map<StaticBuffer, Pair<List<Put>, Delete>> commandsPerRowKey
-            = manager.convertToCommands(storeMutationMap, 0, 0);
+            = manager.convertToCommands(storeMutationMap, 0L, 0L);
 
         // 2 rows
         assertEquals(commandsPerRowKey.size(), 2);
@@ -163,7 +163,7 @@ public class HBaseStoreManagerMutationTest {
         storeMutationMap.put("store1", rowkeyMutationMap);
         HBaseStoreManager manager = new HBaseStoreManager(hBaseContainer.getModifiableConfiguration());
         final Map<StaticBuffer, Pair<List<Put>, Delete>> commandsPerRowKey
-            = manager.convertToCommands(storeMutationMap, 0, 0);
+            = manager.convertToCommands(storeMutationMap, 0L, 0L);
         Pair<List<Put>, Delete> commands = commandsPerRowKey.values().iterator().next();
 
         //Verify Put TTL

@@ -23,6 +23,7 @@ import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ASSIGN_TIMESTAMP;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TIMESTAMPS;
@@ -41,6 +42,7 @@ public abstract class AbstractStoreManager implements StoreManager {
     protected final boolean transactional;
     protected final boolean batchLoading;
     protected final Configuration storageConfig;
+    protected final boolean assignTimestamp;
 
     public AbstractStoreManager(Configuration storageConfig) {
         batchLoading = storageConfig.get(STORAGE_BATCH);
@@ -48,6 +50,7 @@ public abstract class AbstractStoreManager implements StoreManager {
         if (batchLoading) {
             transactional = false;
         }
+        assignTimestamp = storageConfig.get(ASSIGN_TIMESTAMP);
         this.transactional = transactional;
         this.storageConfig = storageConfig;
     }
