@@ -18,12 +18,22 @@ import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
+
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ASSIGN_TIMESTAMP;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @Testcontainers
 public class CQLGraphTest extends JanusGraphTest {
@@ -40,16 +50,48 @@ public class CQLGraphTest extends JanusGraphTest {
         assertTrue(features.hasCellTTL());
     }
 
-    @Test
-    public void testAddNodes() {
-        clopen(option(ATOMIC_BATCH_MUTATE), true);
-        graph.addVertex();
-        graph.tx().commit();
-    }
-
     @RepeatedIfExceptionsTest(repeats = 3)
     @Override
     public void simpleLogTest() throws InterruptedException{
         super.simpleLogTest();
+    }
+
+    protected static Stream<Arguments> generateConsistencyConfigs() {
+        return Arrays.stream(new Arguments[]{
+            arguments(true, true, 20),
+            arguments(true, false, 20),
+            arguments(true, false, 1),
+            arguments(false, true, 20),
+            arguments(false, false, 20),
+            arguments(false, false, 1),
+        });
+    }
+
+    @Override
+    @Test
+    @Disabled
+    public void testConsistencyEnforcement() {
+        // disable original test in favour of parameterized test
+    }
+
+    @ParameterizedTest
+    @MethodSource("generateConsistencyConfigs")
+    public void testConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize) {
+        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize);
+        super.testConsistencyEnforcement();
+    }
+
+    @Override
+    @Test
+    @Disabled
+    public void testConcurrentConsistencyEnforcement() {
+        // disable original test in favour of parameterized test
+    }
+
+    @ParameterizedTest
+    @MethodSource("generateConsistencyConfigs")
+    public void testConcurrentConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize) throws Exception {
+        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize);
+        super.testConcurrentConsistencyEnforcement();
     }
 }

@@ -19,8 +19,17 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.Arrays;
+import java.util.stream.Stream;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ASSIGN_TIMESTAMP;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @Testcontainers
 public class HBaseGraphTest extends JanusGraphTest {
@@ -38,4 +47,38 @@ public class HBaseGraphTest extends JanusGraphTest {
     @Override @Test @Disabled("HBase does not support retrieving cell TTL by client")
     public void testEdgeTTLImplicitKey() { }
 
+    protected static Stream<Arguments> generateConsistencyConfigs() {
+        return Arrays.stream(new Arguments[]{
+            arguments(true),
+            arguments(false)
+        });
+    }
+
+    @Override
+    @Test
+    @Disabled
+    public void testConsistencyEnforcement() {
+        // disable original test in favour of parameterized test
+    }
+
+    @ParameterizedTest
+    @MethodSource("generateConsistencyConfigs")
+    public void testConsistencyEnforcement(boolean assignTimestamp) {
+        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp);
+        super.testConsistencyEnforcement();
+    }
+
+    @Override
+    @Test
+    @Disabled
+    public void testConcurrentConsistencyEnforcement() {
+        // disable original test in favour of parameterized test
+    }
+
+    @ParameterizedTest
+    @MethodSource("generateConsistencyConfigs")
+    public void testConcurrentConsistencyEnforcement(boolean assignTimestamp) throws Exception {
+        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp);
+        super.testConcurrentConsistencyEnforcement();
+    }
 }

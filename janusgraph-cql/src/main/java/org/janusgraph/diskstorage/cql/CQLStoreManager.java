@@ -482,7 +482,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     // Use a single logged batch
     private void mutateManyLogged(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
-        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
+        final MaskedTimestamp commitTime = assignTimestamp ? new MaskedTimestamp(txh) : null;
 
         BatchStatementBuilder builder = BatchStatement.builder(DefaultBatchType.LOGGED);
         builder.setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel());
@@ -497,10 +497,17 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 final StaticBuffer key = keyAndMutations.getKey();
                 final KCVMutation keyMutations = keyAndMutations.getValue();
 
-                final Iterator<BatchableStatement<BoundStatement>> deletions = Iterator.of(commitTime.getDeletionTime(this.times))
+                Iterator<BatchableStatement<BoundStatement>> deletions;
+                Iterator<BatchableStatement<BoundStatement>> additions;
+                if (commitTime != null) {
+                    deletions = Iterator.of(commitTime.getDeletionTime(this.times))
                         .flatMap(deleteTime -> Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion, deleteTime)));
-                final Iterator<BatchableStatement<BoundStatement>> additions = Iterator.of(commitTime.getAdditionTime(this.times))
+                    additions = Iterator.of(commitTime.getAdditionTime(this.times))
                         .flatMap(addTime -> Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition, addTime)));
+                } else {
+                    deletions = Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion));
+                    additions = Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition));
+                }
 
                 return Iterator.concat(deletions, additions);
             });
@@ -512,12 +519,14 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         if (result.isFailure()) {
             throw EXCEPTION_MAPPER.apply(result.getCause().get());
         }
-        sleepAfterWrite(txh, commitTime);
+        if (commitTime != null) {
+            sleepAfterWrite(txh, commitTime);
+        }
     }
 
     // Create an async un-logged batch per partition key
     private void mutateManyUnlogged(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
-        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
+        final MaskedTimestamp commitTime = assignTimestamp ? new MaskedTimestamp(txh) : null;
 
         final Future<Seq<AsyncResultSet>> result = Future.sequence(this.executorService, Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
             final String tableName = tableNameAndMutations.getKey();
@@ -529,10 +538,17 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 final StaticBuffer key = keyAndMutations.getKey();
                 final KCVMutation keyMutations = keyAndMutations.getValue();
 
-                final Iterator<BatchableStatement<BoundStatement>> deletions = Iterator.of(commitTime.getDeletionTime(this.times))
+                Iterator<BatchableStatement<BoundStatement>> deletions;
+                Iterator<BatchableStatement<BoundStatement>> additions;
+                if (commitTime != null) {
+                    deletions = Iterator.of(commitTime.getDeletionTime(this.times))
                         .flatMap(deleteTime -> Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion, deleteTime)));
-                final Iterator<BatchableStatement<BoundStatement>> additions = Iterator.of(commitTime.getAdditionTime(this.times))
+                    additions = Iterator.of(commitTime.getAdditionTime(this.times))
                         .flatMap(addTime -> Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition, addTime)));
+                } else {
+                    deletions = Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion));
+                    additions = Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition));
+                }
 
                 return Iterator.concat(deletions, additions)
                         .grouped(this.batchSize)
@@ -549,7 +565,9 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         if (result.isFailure()) {
             throw EXCEPTION_MAPPER.apply(result.getCause().get());
         }
-        sleepAfterWrite(txh, commitTime);
+        if (commitTime != null) {
+            sleepAfterWrite(txh, commitTime);
+        }
     }
 
     private String determineKeyspaceName(Configuration config) {

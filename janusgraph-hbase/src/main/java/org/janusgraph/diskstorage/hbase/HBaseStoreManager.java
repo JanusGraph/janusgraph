@@ -425,15 +425,19 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
-        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
+        Long putTimestamp = null;
+        Long delTimestamp = null;
+        MaskedTimestamp commitTime = null;
+        if (assignTimestamp) {
+            commitTime = new MaskedTimestamp(txh);
+            putTimestamp = commitTime.getAdditionTime(times);
+            delTimestamp = commitTime.getDeletionTime(times);
+        }
         // In case of an addition and deletion with identical timestamps, the
         // deletion tombstone wins.
         // https://hbase.apache.org/book/versions.html#d244e4250
         final Map<StaticBuffer, Pair<List<Put>, Delete>> commandsPerKey =
-                convertToCommands(
-                        mutations,
-                        commitTime.getAdditionTime(times),
-                        commitTime.getDeletionTime(times));
+                convertToCommands(mutations, putTimestamp, delTimestamp);
 
         final List<Row> batch = new ArrayList<>(commandsPerKey.size()); // actual batch operation
 
@@ -459,7 +463,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new TemporaryBackendException(e);
         }
 
-        sleepAfterWrite(txh, commitTime);
+        if (commitTime != null) {
+            sleepAfterWrite(txh, commitTime);
+        }
     }
 
     @Override
@@ -883,8 +889,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
      @VisibleForTesting
      Map<StaticBuffer, Pair<List<Put>, Delete>> convertToCommands(Map<String, Map<StaticBuffer, KCVMutation>> mutations,
-                                                                   final long putTimestamp,
-                                                                   final long delTimestamp) throws PermanentBackendException {
+                                                                   final Long putTimestamp,
+                                                                   final Long delTimestamp) throws PermanentBackendException {
         // A map of rowkey to commands (list of Puts, Delete)
         final Map<StaticBuffer, Pair<List<Put>, Delete>> commandsPerKey = new HashMap<>();
 
@@ -912,19 +918,21 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 if (mutation.hasDeletions()) {
                     if (commands.getSecond() == null) {
                         Delete d = new Delete(key);
-                        compat.setTimestamp(d, delTimestamp);
+                        if (delTimestamp != null) {
+                            compat.setTimestamp(d, delTimestamp);
+                        }
                         commands.setSecond(d);
                     }
 
                     for (StaticBuffer b : mutation.getDeletions()) {
                         // commands.getSecond() is a Delete for this rowkey.
-                        commands.getSecond().addColumns(cfName, b.as(StaticBuffer.ARRAY_FACTORY), delTimestamp);
+                        addColumnToDelete(commands.getSecond(), cfName, b.as(StaticBuffer.ARRAY_FACTORY), delTimestamp);
                     }
                 }
 
                 if (mutation.hasAdditions()) {
                     // All the entries (column cells) with the rowkey use this one Put, except the ones with TTL.
-                    final Put putColumnsWithoutTtl = new Put(key, putTimestamp);
+                    final Put putColumnsWithoutTtl = putTimestamp != null ? new Put(key, putTimestamp) : new Put(key);
                     // At the end of this loop, there will be one Put entry in the commands.getFirst() list that
                     // contains all additions without TTL set, and possible multiple Put entries for columns
                     // that have TTL set.
@@ -940,7 +948,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                         final Integer ttl = (Integer) e.getMetaData().get(EntryMetaData.TTL);
                         if (null != ttl && ttl > 0) {
                             // Create a new Put
-                            Put putColumnWithTtl = new Put(key, putTimestamp);
+                            Put putColumnWithTtl = putTimestamp != null ? new Put(key, putTimestamp) : new Put(key);
                             addColumnToPut(putColumnWithTtl, cfName, putTimestamp, e);
                             // Convert ttl from second (JanusGraph TTL) to milliseconds (HBase TTL)
                             // @see JanusGraphManagement#setTTL(JanusGraphSchemaType, Duration)
@@ -964,9 +972,22 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return commandsPerKey;
     }
 
-    private void addColumnToPut(Put p, byte[] cfName, long putTimestamp, Entry e) {
-      p.addColumn(cfName, e.getColumnAs(StaticBuffer.ARRAY_FACTORY), putTimestamp,
-          e.getValueAs(StaticBuffer.ARRAY_FACTORY));
+    private void addColumnToDelete(Delete d, byte[] cfName, byte[] qualifier, Long delTimestamp) {
+         if (delTimestamp != null) {
+             d.addColumns(cfName, qualifier, delTimestamp);
+         } else {
+             d.addColumns(cfName, qualifier);
+         }
+    }
+
+    private void addColumnToPut(Put p, byte[] cfName, Long putTimestamp, Entry e) {
+         final byte[] qualifier = e.getColumnAs(StaticBuffer.ARRAY_FACTORY);
+         final byte[] value = e.getValueAs(StaticBuffer.ARRAY_FACTORY);
+         if (putTimestamp != null) {
+             p.addColumn(cfName, qualifier, putTimestamp, value);
+         } else {
+             p.addColumn(cfName, qualifier, value);
+         }
     }
 
     private String getCfNameForStoreName(String storeName) throws PermanentBackendException {

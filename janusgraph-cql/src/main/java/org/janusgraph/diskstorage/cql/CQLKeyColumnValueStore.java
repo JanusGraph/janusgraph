@@ -18,6 +18,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
@@ -383,36 +384,37 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    /*
-     * Used from CQLStoreManager
-     */
-    BatchableStatement<BoundStatement> deleteColumn(final StaticBuffer key, final StaticBuffer column, final long timestamp) {
-
-        return this.deleteColumn.boundStatementBuilder()
-            .setByteBuffer(KEY_BINDING, key.asByteBuffer())
-            .setByteBuffer(COLUMN_BINDING, column.asByteBuffer())
-            .setLong(TIMESTAMP_BINDING, timestamp).build();
+    BatchableStatement<BoundStatement> deleteColumn(final StaticBuffer key, final StaticBuffer column) {
+        return deleteColumn(key, column, null);
     }
 
-    /*
-     * Used from CQLStoreManager
-     */
-    BatchableStatement<BoundStatement> insertColumn(final StaticBuffer key, final Entry entry, final long timestamp) {
-
-        final Integer ttl = (Integer) entry.getMetaData().get(EntryMetaData.TTL);
-        if (ttl != null) {
-            return this.insertColumnWithTTL.boundStatementBuilder()
-                .setByteBuffer(KEY_BINDING, key.asByteBuffer())
-                .setByteBuffer(COLUMN_BINDING, entry.getColumn().asByteBuffer())
-                .setByteBuffer(VALUE_BINDING, entry.getValue().asByteBuffer())
-                .setLong(TIMESTAMP_BINDING, timestamp)
-                .setInt(TTL_BINDING, ttl).build();
-        }
-        return this.insertColumn.boundStatementBuilder()
+    BatchableStatement<BoundStatement> deleteColumn(final StaticBuffer key, final StaticBuffer column, final Long timestamp) {
+        BoundStatementBuilder builder = deleteColumn.boundStatementBuilder()
             .setByteBuffer(KEY_BINDING, key.asByteBuffer())
+            .setByteBuffer(COLUMN_BINDING, column.asByteBuffer());
+        if (timestamp != null) {
+            builder = builder.setLong(TIMESTAMP_BINDING, timestamp);
+        }
+        return builder.build();
+    }
+
+    BatchableStatement<BoundStatement> insertColumn(final StaticBuffer key, final Entry entry) {
+        return insertColumn(key, entry, null);
+    }
+
+    BatchableStatement<BoundStatement> insertColumn(final StaticBuffer key, final Entry entry, final Long timestamp) {
+        final Integer ttl = (Integer) entry.getMetaData().get(EntryMetaData.TTL);
+        BoundStatementBuilder builder = ttl != null ? insertColumnWithTTL.boundStatementBuilder() : insertColumn.boundStatementBuilder();
+        builder = builder.setByteBuffer(KEY_BINDING, key.asByteBuffer())
             .setByteBuffer(COLUMN_BINDING, entry.getColumn().asByteBuffer())
-            .setByteBuffer(VALUE_BINDING, entry.getValue().asByteBuffer())
-            .setLong(TIMESTAMP_BINDING, timestamp).build();
+            .setByteBuffer(VALUE_BINDING, entry.getValue().asByteBuffer());
+        if (ttl != null) {
+            builder = builder.setInt(TTL_BINDING, ttl);
+        }
+        if (timestamp != null) {
+            builder = builder.setLong(TIMESTAMP_BINDING, timestamp);
+        }
+        return builder.build();
     }
 
     @Override
