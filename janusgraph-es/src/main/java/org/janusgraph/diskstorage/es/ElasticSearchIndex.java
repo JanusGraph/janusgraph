@@ -965,41 +965,48 @@ public class ElasticSearchIndex implements IndexProvider {
                 if (predicate == Text.CONTAINS || predicate == Cmp.EQUAL) {
                     return compat.match(fieldName, value);
                 } else if (predicate == Text.NOT_CONTAINS) {
-                    return compat.boolMustNot(compat.match(fieldName, value));
+                    return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
+                        compat.boolMustNot(compat.match(fieldName, value))));
                 } else if (predicate == Text.CONTAINS_PHRASE) {
                     return compat.matchPhrase(fieldName, value);
                 } else if (predicate == Text.NOT_CONTAINS_PHRASE) {
-                    return compat.boolMustNot(compat.matchPhrase(fieldName, value));
+                    return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
+                        compat.boolMustNot(compat.matchPhrase(fieldName, value))));
                 } else if (predicate == Text.CONTAINS_PREFIX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
                         value = ((String) value).toLowerCase();
                     return compat.prefix(fieldName, value);
                 } else if (predicate == Text.NOT_CONTAINS_PREFIX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
-                            value = ((String) value).toLowerCase();
-                    return compat.boolMustNot(compat.prefix(fieldName, value));
+                        value = ((String) value).toLowerCase();
+                    return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
+                        compat.boolMustNot(compat.prefix(fieldName, value))));
                 } else if (predicate == Text.CONTAINS_REGEX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
                         value = ((String) value).toLowerCase();
                     return compat.regexp(fieldName, value);
                 } else if (predicate == Text.NOT_CONTAINS_REGEX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
-                            value = ((String) value).toLowerCase();
-                    return compat.boolMustNot(compat.regexp(fieldName, value));
+                        value = ((String) value).toLowerCase();
+                    return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
+                        compat.boolMustNot(compat.regexp(fieldName, value))));
                 } else if (predicate == Text.PREFIX) {
                     return compat.prefix(fieldName, value);
                 } else if (predicate == Text.NOT_PREFIX) {
-                    return compat.boolMustNot(compat.prefix(fieldName, value));
+                    return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
+                        compat.boolMustNot(compat.prefix(fieldName, value))));
                 } else if (predicate == Text.REGEX) {
                     return compat.regexp(fieldName, value);
                 } else if (predicate == Text.NOT_REGEX) {
-                    return compat.boolMustNot(compat.regexp(fieldName, value));
+                    return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
+                        compat.boolMustNot(compat.regexp(fieldName, value))));
                 } else if (predicate == Cmp.NOT_EQUAL) {
                     return compat.boolMustNot(compat.match(fieldName, value));
                 } else if (predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
                     return compat.fuzzyMatch(fieldName, value);
                 } else if (predicate == Text.NOT_FUZZY || predicate == Text.NOT_CONTAINS_FUZZY) {
-                    return compat.boolMustNot(compat.fuzzyMatch(fieldName, value));
+                    return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
+                        compat.boolMustNot(compat.fuzzyMatch(fieldName, value))));
                 } else if (predicate == Cmp.LESS_THAN) {
                     return compat.lt(fieldName, value);
                 } else if (predicate == Cmp.LESS_THAN_EQUAL) {
