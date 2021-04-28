@@ -273,6 +273,7 @@
                         <exclude>**/*.id</exclude>
                         <exclude>**/*.gz</exclude>
                         <exclude>.editorconfig</exclude>
+                        <exclude>.github/dependabot.yml</exclude>
                         <exclude>CC-BY-4.0.txt</exclude>
                         <exclude>**/cqlshrc</exclude>
                         <exclude>**/regionservers</exclude>
