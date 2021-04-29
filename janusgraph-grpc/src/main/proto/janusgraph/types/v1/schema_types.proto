@@ -21,6 +21,71 @@ import "google/protobuf/wrappers.proto";
 option java_multiple_files = true;
 option java_package = "org.janusgraph.graphdb.grpc.types";
 
+enum PropertyDataType {
+    STRING = 0;
+    CHARACTER = 1;
+    BOOLEAN = 2;
+    INT8 = 3;
+    INT16 = 4;
+    INT32 = 5;
+    INT64 = 6;
+    FLOAT32 = 7;
+    FLOAT64 = 8;
+    DATE = 9;
+    JAVA_OBJECT = 10;
+    GEO_SHAPE = 11;
+    UUID = 12;
+}
+
+enum VertexPropertyCardinality {
+    SINGLE = 0;
+    LIST = 1;
+    SET = 2;
+}
+
+enum PropertyConstraints {
+    // Property can be used on all vertices and properties (can only be used with locality: global)
+    OPEN = 0;
+    // Property can be used on all defined vertices or properties
+    DEFINED = 1;
+    // Property is required on all defined vertices or properties
+    REQUIRED = 2;
+}
+
+enum PropertyLocality {
+    // Property is defined globally for all vertices and all edges/meta properties (if cardinality is single)
+    GLOBAL = 0;
+    // Property is defined a side of a vertex or edge.
+    LOCAL = 1;
+}
+
+// current possibilities
+// * schema constraints: property is globally defined but bind to vertex or edge - PropertyConstraints: DEFINED, PropertyLocality: GLOBAL
+// * no schema constraints: property is globally defined but isn't bound to vertex or edge - PropertyConstraints: OPEN, PropertyLocality: GLOBAL
+// * only properties with the cardinality single can be used for edges PropertyConstraints: DEFINED/OPEN/REQUIRED, PropertyLocality: GLOBAL
+// future possibilities
+// * per vertex/edge property - PropertyConstraints: DEFINED/REQUIRED, PropertyLocality: LOCAL
+// * enforce schema constraints but special properties that can be bound to any vertex/edge allow properties with constraints to be OPEN or DEFINED in the same schema
+
+message VertexProperty {
+    google.protobuf.Int64Value id = 1;
+    string name = 2;
+    PropertyDataType data_type = 3;
+    PropertyConstraints constraints = 4;
+    PropertyLocality locality = 5;
+    reserved 6 to 9;
+    VertexPropertyCardinality cardinality = 10;
+}
+
+message EdgeProperty {
+    google.protobuf.Int64Value id = 1;
+    string name = 2;
+    PropertyDataType data_type = 3;
+    PropertyConstraints constraints = 4;
+    PropertyLocality locality = 5;
+    reserved 6 to 9;
+}
+
 message VertexLabel {
     // The Internal id.
     google.protobuf.Int64Value id = 1;
@@ -30,6 +95,7 @@ message VertexLabel {
     bool read_only = 3;
     // Marking as partitioned, default not partitioned.
     bool partitioned = 4;
+    repeated VertexProperty properties = 5;
 }
 
 message EdgeLabel {
@@ -62,4 +128,5 @@ message EdgeLabel {
     }
     // Defines Multiplicity of a edge.
     Multiplicity multiplicity = 4;
+    repeated EdgeProperty properties = 5;
 }
