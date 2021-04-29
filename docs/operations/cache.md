@@ -29,8 +29,8 @@ transaction builder `graph.buildTransaction()` and using the
 ### Vertex Cache
 
 The vertex cache contains vertices and the subset of their adjacency
-list that has been retrieved in a particular transaction. The maximum
-number of vertices maintained in this cache is equal to the transaction
+list (properties and edges) that has been retrieved in a particular transaction.
+The maximum number of vertices maintained in this cache is equal to the transaction
 cache size. If the transaction workload is an iterative traversal, the
 vertex cache will significantly speed it up. If the same vertex is not
 accessed again in the transaction, the transaction level cache will make
@@ -49,19 +49,20 @@ end up with a larger than configured vertex cache.
 
 Assuming your vertex is not evicted from cache, or it is evicted from
 cache but your program context still holds the reference to the vertex,
-then its properties are cached together with the vertex. This means once
+then its properties and edges are cached together with the vertex. This means once
 a property is queried, any subsequent reads will hit the cache. In case
-you want to force JanusGraph to read from the data storage again, or you
-simply want to save memory, you could clear the cache of that vertex manually.
-Note this is not gremlin compliant, so you need to cast your vertex into
-CacheVertex type to do the refresh:
+you want to force JanusGraph to read from the data storage again (provided you
+have disabled database-level cache), or you simply want to save memory, you could clear
+the cache of that vertex manually. Note this operation is not gremlin compliant, so
+you need to cast your vertex into CacheVertex type to do the refresh:
 
 ```groovy
 // first read automatically caches the property together with v
 v.property("prop").value();
 // force refresh to clear the cache
 ((CacheVertex) v).refresh();
-// now a subsequent read will lead to a data storage read
+// now a subsequent read will look up in JanusGraph's database-level
+// cache, and then backend storage read in case of cache miss
 v.property("prop").value();
 ```
 
@@ -84,15 +85,16 @@ half of the transaction cache size.
 
 ## Database Level Caching
 
-The database level cache retains adjacency lists (or subsets thereof)
-across multiple transactions and beyond the duration of a single
-transaction. The database level cache is shared by all transactions
+The database level cache contains vertices and the subset of their adjacency
+list (properties and edges) across multiple transactions and beyond the duration
+of a single transaction. The database level cache is shared by all transactions
 across a database. It is more space efficient than the transaction level
 caches but also slightly slower to access. In contrast to the
 transaction level caches, the database level caches do not expire
 immediately after closing a transaction. Hence, the database level cache
 significantly speeds up graph traversals for read heavy workloads across
-transactions.
+transactions. A read looks up in transaction-level cache first,
+and then database-level cache.
 
 [Configuration Reference](../configs/configuration-reference.md) lists all of the configuration
 options that pertain to JanusGraph’s database level cache. This page
@@ -148,6 +150,10 @@ additional software layers are running in the same JVM, those may occupy
 a significant amount of heap space as well (e.g. Gremlin Server, etc). 
 Be conservative in your heap memory estimation. Configuring a cache 
 that is too large can lead to out-of-memory exceptions and excessive GC.
+
+In practice, you might observe JanusGraph uses more memory than configured
+for database level cache. This is [a known limitation](https://github.com/JanusGraph/janusgraph/issues/2369)
+due to difficulty of estimating size of deserialized objects.
 
 ### Clean Up Wait Time
 
