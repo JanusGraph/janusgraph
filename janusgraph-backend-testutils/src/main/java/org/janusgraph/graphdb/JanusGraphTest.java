@@ -5897,14 +5897,22 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         nested = (Metrics) mUnfittedMultiOr.getNested().toArray()[4];
         assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        Map<String, String> fullScanAnnotations = new HashMap() {{
+        annotations = new HashMap() {{
             put("condition", "(prop = 100)");
             put("orders", "[]");
             put("isFitted", "false");
             put("isOrdered", "true");
             put("query", "[]");
         }};
+        assertEquals(annotations, nested.getAnnotations());
+        nested = (Metrics) nested.getNested().toArray()[0];
+        final Map<String, String> fullScanAnnotations = new HashMap() {{
+            put("query", "[]");
+            put("fullscan", "true");
+            put("condition", "VERTEX");
+        }};
         assertEquals(fullScanAnnotations, nested.getAnnotations());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
     }
 
     @Test

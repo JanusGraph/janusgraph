@@ -67,6 +67,7 @@ import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
 import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.util.IndexHelper;
+import org.janusgraph.graphdb.util.ProfiledIterator;
 import org.janusgraph.graphdb.util.SubqueryIterator;
 import org.janusgraph.graphdb.util.VertexCentricEdgeIterable;
 import org.janusgraph.graphdb.vertices.CacheVertex;
@@ -89,6 +90,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -1362,19 +1364,21 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 sub.setAnnotation(QueryProfiler.FULLSCAN_ANNOTATION,true);
                 sub.setAnnotation(QueryProfiler.CONDITION_ANNOTATION,query.getResultType());
 
+                Supplier<Iterator<JanusGraphElement>> iteratorSupplier;
                 switch (query.getResultType()) {
                     case VERTEX:
-                        return (Iterator) getVertices().iterator();
-
+                        iteratorSupplier = () -> (Iterator) getVertices().iterator();
+                        break;
                     case EDGE:
-                        return (Iterator) getEdges().iterator();
-
+                        iteratorSupplier = () -> (Iterator) getEdges().iterator();
+                        break;
                     case PROPERTY:
-                        return new VertexCentricEdgeIterable(getInternalVertices(),RelationCategory.PROPERTY).iterator();
-
+                        iteratorSupplier = () -> new VertexCentricEdgeIterable(getInternalVertices(),RelationCategory.PROPERTY).iterator();
+                        break;
                     default:
                         throw new IllegalArgumentException("Unexpected type: " + query.getResultType());
                 }
+                return new ProfiledIterator<>(sub, iteratorSupplier);
             }
 
             return iterator;
