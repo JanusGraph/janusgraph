@@ -45,7 +45,11 @@ public class TextArgument {
     private static Stream<Arguments> negate(Stream<Arguments> argStream) {
         return argStream.map(argList -> {
             Object[] rawArgs = argList.get();
-            return arguments(!((boolean) rawArgs[0]), rawArgs[1], rawArgs[2]);
+            if (rawArgs[1] == null)
+                // null values have the same result in both negated and non negated tests
+                return argList;
+            else
+                return arguments(!((boolean) rawArgs[0]), rawArgs[1], rawArgs[2]);
         });
     }
 
@@ -71,7 +75,10 @@ public class TextArgument {
             arguments(true, text, "full,surprises,world"),
             arguments(true, text, "a world"),
 
-            arguments(false, text, "full bunny")
+            arguments(false, text, "full bunny"),
+
+            // null value
+            arguments(false, null, "anything")
         });
     }
 
@@ -85,7 +92,10 @@ public class TextArgument {
             arguments(true, name, "fully"),
             arguments(true, name, "ful"),
             arguments(true, name, "fully fu"),
-            arguments(false, name, "fun")
+            arguments(false, name, "fun"),
+
+            // null value
+            arguments(false, null, "anything")
         });
     }
 
@@ -109,6 +119,9 @@ public class TextArgument {
             arguments(false, text, "ses"),
 
             arguments(true, name, "fun"),
+
+            // null value
+            arguments(false, null, "anything")
         });
     }
 
@@ -139,7 +152,10 @@ public class TextArgument {
 
             arguments(true, name, "(fu[ln]*y) (fu[ln]*y)"),
             arguments(false, name, "(fu[l]*y) (fu[l]*y)"),
-            arguments(true, name, "(fu[l]*y) .*")
+            arguments(true, name, "(fu[l]*y) .*"),
+
+            // null value
+            arguments(false, null, "anything")
         });
     }
 
@@ -173,7 +189,10 @@ public class TextArgument {
 
             arguments(false, text, "fo"),
             arguments(false, text, "wor[l]+"),
-            arguments(false, text, "wor[ld]{3,5}")
+            arguments(false, text, "wor[ld]{3,5}"),
+
+            // null value
+            arguments(false, null, "anything")
         });
     }
 
@@ -201,6 +220,9 @@ public class TextArgument {
             arguments(true, text, "is full of 1funny"),
             arguments(true, text, "This world is"),
             arguments(false, text, "A Full Yes Or No"),
+
+            // null value
+            arguments(false, null, "anything")
         });
     }
 
@@ -227,7 +249,10 @@ public class TextArgument {
             arguments(true, longValue, "surpprises"),
             arguments(true, longValue, "sutprises"),
             arguments(true, longValue, "surprise"),
-            arguments(false, longValue, "surppirsses")
+            arguments(false, longValue, "surppirsses"),
+
+            // null value
+            arguments(false, null, "anything")
         });
     }
 
@@ -274,6 +299,9 @@ public class TextArgument {
             arguments(true, text, "Sutrises"),
             arguments(true, text, "surprise"),
             arguments(false, text, "surppirsses"),
+
+            // null value
+            arguments(false, null, "anything")
         });
     }
 

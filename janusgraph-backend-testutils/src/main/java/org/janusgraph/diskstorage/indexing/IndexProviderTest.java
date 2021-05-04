@@ -1205,7 +1205,11 @@ public abstract class IndexProviderTest {
     @MethodSource("org.janusgraph.core.attribute.TextArgument#text")
     public void testTextPredicate(JanusGraphPredicate predicate, boolean expected, String value, String condition) throws BackendException {
         assumeIndexSupportFor(Mapping.TEXT, predicate);
-        initializeWithDoc("vertex", "test1", TEXT, value, true);
+        if (value != null)
+            initializeWithDoc("vertex", "test1", TEXT, value, true);
+        else
+            // if the value is null, replicate a missing field by indexing a different one
+            initializeWithDoc("vertex", "test1", BOOLEAN, true, true);
         testPredicateByCount((expected) ? 1 : 0, predicate, TEXT, condition);
     }
 
@@ -1213,7 +1217,11 @@ public abstract class IndexProviderTest {
     @MethodSource("org.janusgraph.core.attribute.TextArgument#string")
     public void testStringPredicate(JanusGraphPredicate predicate, boolean expected, String value, String condition) throws BackendException {
         assumeIndexSupportFor(Mapping.STRING, predicate);
-        initializeWithDoc("vertex", "test1", NAME, value, true);
+        if (value != null)
+            initializeWithDoc("vertex", "test1", NAME, value, true);
+        else
+            // if the value is null, replicate a missing field by indexing a different one
+            initializeWithDoc("vertex", "test1", BOOLEAN, true, true);
         testPredicateByCount((expected) ? 1 : 0, predicate, NAME, condition);
     }
 
@@ -1232,7 +1240,7 @@ public abstract class IndexProviderTest {
      * @param isNew
      * @throws BackendException
      */
-    private void initializeWithDoc(String store, String docId, String field, String value, boolean isNew) throws BackendException {
+    private void initializeWithDoc(String store, String docId, String field, Object value, boolean isNew) throws BackendException {
         initialize(store);
 
         Multimap<String, Object> doc = HashMultimap.create();
