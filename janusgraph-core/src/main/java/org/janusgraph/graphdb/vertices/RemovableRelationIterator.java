@@ -19,6 +19,7 @@ import org.janusgraph.graphdb.internal.InternalRelation;
 
 import java.util.Iterator;
 
+@Deprecated
 public class RemovableRelationIterator<O extends JanusGraphRelation>
         implements Iterator<O> {
 

@@ -392,18 +392,6 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         return result;
     }
 
-//    public static<E> E getOnlyElement(GraphTraversal<?,E> traversal) {
-//        if (!traversal.hasNext()) throw new NoSuchElementException();
-//        return getOnlyElement(traversal,null);
-//    }
-//
-//    public static<E> E getOnlyElement(GraphTraversal<?,E> traversal, E defaultElement) {
-//        if (!traversal.hasNext()) return defaultElement;
-//        E result = traversal.next();
-//        if (traversal.hasNext()) throw new IllegalArgumentException("Traversal contains more than 1 element: " + result + ", " + traversal.next());
-//        return result;
-//    }
-
     public static void assertMissing(Transaction g, Object vid) {
         assertFalse(g.vertices(vid).hasNext());
     }

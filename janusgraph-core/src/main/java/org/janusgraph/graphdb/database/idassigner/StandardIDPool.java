@@ -85,9 +85,6 @@ public class StandardIDPool implements IDPool {
     private IDBlock currentBlock;
     private long currentIndex;
     private long renewBlockIndex;
-//    private long nextID;
-//    private long currentMaxID;
-//    private long renewBufferID;
 
     private volatile IDBlock nextBlock;
     private Future<IDBlock> idBlockFuture;
@@ -123,8 +120,6 @@ public class StandardIDPool implements IDPool {
                         .setDaemon(false)
                         .setNameFormat("JanusGraphID(" + partition + ")("+idNamespace+")[%d]")
                         .build());
-        //exec.allowCoreThreadTimeOut(false);
-        //exec.prestartCoreThread();
         idBlockFuture = null;
 
         closeBlockers = new ArrayDeque<>(4);

@@ -35,8 +35,6 @@ public class LocalLockMediatorTest {
     private static final StaticBuffer LOCK_ROW = StaticArrayBuffer.of(new byte[]{1});
     private static final StaticBuffer LOCK_COL = StaticArrayBuffer.of(new byte[]{1});
     private static final KeyColumn kc = new KeyColumn(LOCK_ROW, LOCK_COL);
-    //	private static final long LOCK_EXPIRATION_TIME_MS = 1;
-//	private static final long SLEEP_MS = LOCK_EXPIRATION_TIME_MS * 1000;
     private static final ExpectedValueCheckingTransaction mockTx1 = mock(ExpectedValueCheckingTransaction.class);
     private static final ExpectedValueCheckingTransaction mockTx2 = mock(ExpectedValueCheckingTransaction.class);
 

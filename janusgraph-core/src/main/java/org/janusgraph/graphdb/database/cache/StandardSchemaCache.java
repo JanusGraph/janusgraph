@@ -175,13 +175,6 @@ public class StandardSchemaCache implements SchemaCache {
         return entries;
     }
 
-//    @Override
-//    public void expireSchemaName(final String name) {
-//        ConcurrentMap<String,Long> types = typeNames;
-//        if (types!=null) types.remove(name);
-//        typeNamesBackup.invalidate(name);
-//    }
-
     @Override
     public void expireSchemaElement(final long schemaId) {
         //1) expire relations

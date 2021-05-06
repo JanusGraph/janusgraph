@@ -197,24 +197,6 @@ public abstract class IDAuthorityTest {
         } catch (ArrayIndexOutOfBoundsException ignored) {}
     }
 
-//    private void checkIdList(List<Long> ids) {
-//        Collections.sort(ids);
-//        for (int i=1;i<ids.size();i++) {
-//            long current = ids.get(i);
-//            long previous = ids.get(i-1);
-//            Assert.assertTrue(current>0);
-//            Assert.assertTrue(previous>0);
-//            Assert.assertTrue("ID block allocated twice: blockstart=" + current + ", indices=(" + i + ", " + (i-1) + ")", current!=previous);
-//            Assert.assertTrue("ID blocks allocated in non-increasing order: " + previous + " then " + current, current>previous);
-//            Assert.assertTrue(previous+blockSize<=current);
-//
-//            if (hasFixedUid) {
-//                Assert.assertTrue(current + " vs " + previous, 0 == (current - previous) % blockSize);
-//                final long skipped = (current - previous) / blockSize;
-//                Assert.assertTrue(0 <= skipped);
-//            }
-//        }
-//    }
 
     @ParameterizedTest
     @MethodSource("configs")

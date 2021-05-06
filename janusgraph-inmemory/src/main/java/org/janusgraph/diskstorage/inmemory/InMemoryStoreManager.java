@@ -63,18 +63,6 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
             .optimisticLocking(true)
             .keyConsistent(GraphDatabaseConfiguration.buildGraphConfiguration())
             .build();
-
-//        features = new StoreFeatures();
-//        features.supportsOrderedScan = true;
-//        features.supportsUnorderedScan = true;
-//        features.supportsBatchMutation = false;
-//        features.supportsTxIsolation = false;
-//        features.supportsConsistentKeyOperations = true;
-//        features.supportsLocking = false;
-//        features.isDistributed = false;
-//        features.supportsMultiQuery = false;
-//        features.isKeyOrdered = true;
-//        features.hasLocalKeyPartition = false;
     }
 
     @Override

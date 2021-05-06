@@ -28,6 +28,7 @@ import java.util.Set;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
+@Deprecated
 public class AllEdgesIterable {
 
     private AllEdgesIterable() {

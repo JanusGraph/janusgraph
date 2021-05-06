@@ -155,14 +155,6 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
         return (Iterator)getEdges(ids).iterator();
     }
 
-
-
-
-//    @Override
-//    public GraphComputer compute(final Class... graphComputerClass) {
-//        throw new UnsupportedOperationException("Graph Computer not supported on an individual transaction. Call on graph instead.");
-//    }
-
     @Override
     public String toString() {
         int ihc = System.identityHashCode(this);

@@ -28,6 +28,7 @@ package org.janusgraph.graphdb.util;
  * <code>prepopulate</code> set to <code>true</code>.
  * 
 */
+@Deprecated
 public abstract class PriorityQueue<T> {
   private int size;
   private final int maxSize;

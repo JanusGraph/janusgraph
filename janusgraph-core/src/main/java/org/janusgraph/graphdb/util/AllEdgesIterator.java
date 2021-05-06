@@ -32,6 +32,7 @@ import java.util.Set;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
+@Deprecated
 public class AllEdgesIterator implements Iterator<Edge> {
 
     private final Set<? extends Vertex> vertices;
