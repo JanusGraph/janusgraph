@@ -427,19 +427,6 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         assertTrue(relationMisses <= metric.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, METRICS_RELATIONS, CacheMetricsAction.RETRIEVAL.getName()).getCount());
     }
 
-//    public void verifyCacheMetrics(String storeName) {
-//        verifyCacheMetrics(storeName,0,0);
-//    }
-//
-//    public void verifyCacheMetrics(String storeName, int misses, int retrievals) {
-//        verifyCacheMetrics(storeName, metricsPrefix, misses, retrievals);
-//    }
-//
-//    public void verifyCacheMetrics(String storeName, String prefix, int misses, int retrievals) {
-//        assertEquals("On "+storeName+"-cache retrievals",retrievals, metric.getCounter(prefix, storeName + Backend.METRICS_CACHE_SUFFIX, CacheMetricsAction.RETRIEVAL.getName()).getCount());
-//        assertEquals("On "+storeName+"-cache misses",misses, metric.getCounter(prefix, storeName + Backend.METRICS_CACHE_SUFFIX, CacheMetricsAction.MISS.getName()).getCount());
-//    }
-
     public void printAllMetrics(String prefix) {
         List<String> storeNames = new ArrayList<>();
         storeNames.add(EDGESTORE_NAME);

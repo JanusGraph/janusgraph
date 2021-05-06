@@ -50,6 +50,7 @@ import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
  *
  * @since solr 1.4
  */
+@Deprecated
 public class ConcurrentLRUCache<V> {
     private static final Logger log = LoggerFactory.getLogger(ConcurrentLRUCache.class);
 

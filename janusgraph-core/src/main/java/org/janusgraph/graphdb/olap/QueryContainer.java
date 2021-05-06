@@ -63,9 +63,6 @@ public class QueryContainer {
         return new QueryBuilder();
     }
 
-//    Query getQuery(String name) {
-//        return queries.get(name);
-//    }
 
     Set<Query> getQueries(SliceQuery slice) {
         return inverseQueries.get(slice);
@@ -101,9 +98,6 @@ public class QueryContainer {
             return slices;
         }
 
-//        public String getName() {
-//            return name;
-//        }
 
         public RelationCategory getReturnType() {
             return returnType;
@@ -119,12 +113,6 @@ public class QueryContainer {
         }
 
         private Query relations(RelationCategory returnType) {
-//            if (name==null) {
-//                if (hasSingleType()) name = getSingleType().name();
-//                else if (!requiresName) name = QUERY_NAME_PREFIX + queries.size();
-//                else throw new IllegalStateException("Need to specify an explicit name for this query");
-//            }
-
             BaseVertexCentricQuery vq = super.constructQuery(returnType);
             List<SliceQuery> slices = new ArrayList<>(vq.numSubQueries());
             for (int i = 0; i < vq.numSubQueries(); i++) {
@@ -141,24 +129,12 @@ public class QueryContainer {
                 }
             }
             return q;
-
         }
 
         @Override
         protected QueryBuilder getThis() {
             return this;
         }
-
-//        /**
-//         * Sets the name for this query
-//         * @param name
-//         * @return
-//         */
-//        public QueryBuilder setName(String name) {
-//            Preconditions.checkArgument(StringUtils.isNotBlank(name), "Invalid name provided: %s", name);
-//            this.name=name;
-//            return getThis();
-//        }
 
         public void edges() {
             relations(RelationCategory.EDGE);

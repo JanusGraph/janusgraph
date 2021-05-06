@@ -100,45 +100,6 @@ public class BackendOperation {
         throw new TemporaryBackendException("Could not successfully complete backend operation due to repeated temporary exceptions after "+totalWaitTime,lastException);
     }
 
-//    private static final double WAITTIME_PERTURBATION_PERCENTAGE = 0.5;
-//    private static final double WAITTIME_PERTURBATION_PERCENTAGE_HALF = WAITTIME_PERTURBATION_PERCENTAGE/2;
-//
-//    public static final<V> V execute(Callable<V> exe, int maxRetryAttempts, Duration waitBetweenRetries) throws JanusGraphException {
-//        long retryWaittime = waitBetweenRetries.getLength(TimeUnit.MILLISECONDS);
-//        Preconditions.checkArgument(maxRetryAttempts>0,"Retry attempts must be positive");
-//        Preconditions.checkArgument(retryWaittime>=0,"Retry wait time must be non-negative");
-//        int retryAttempts = 0;
-//        StorageException lastException = null;
-//        do {
-//            try {
-//                return exe.call();
-//            } catch (StorageException e) {
-//                if (e instanceof TemporaryStorageException) {
-//                    lastException = e;
-//                    log.debug("Temporary exception during backend operation", e);
-//                } else {
-//                    throw new JanusGraphException("Permanent exception during backend operation",e); //Its permanent
-//                }
-//            } catch (Throwable e) {
-//                throw new JanusGraphException("Unexpected exception during backend operation",e);
-//            }
-//            //Wait and retry
-//            retryAttempts++;
-//            Preconditions.checkNotNull(lastException);
-//            if (retryAttempts<maxRetryAttempts) {
-//                long waitTime = Math.round(retryWaittime+((Math.random()*WAITTIME_PERTURBATION_PERCENTAGE-WAITTIME_PERTURBATION_PERCENTAGE_HALF)*retryWaittime));
-//                Preconditions.checkArgument(waitTime>=0,"Invalid wait time: %s",waitTime);
-//                log.info("Temporary storage exception during backend operation [{}]. Attempting incremental retry",exe.toString(),lastException);
-//                try {
-//                    Thread.sleep(waitTime);
-//                } catch (InterruptedException r) {
-//                    throw new JanusGraphException("Interrupted while waiting to retry failed backend operation", r);
-//                }
-//            }
-//        } while (retryAttempts<maxRetryAttempts);
-//        throw new JanusGraphException("Could not successfully complete backend operation due to repeated temporary exceptions after "+maxRetryAttempts+" attempts",lastException);
-//    }
-
     public static<R> R execute(Transactional<R> exe, TransactionalProvider provider, TimestampProvider times) throws BackendException {
         StoreTransaction txh = null;
         try {

@@ -180,21 +180,6 @@ public class StandardScanner  {
                 txBuilder.customOptions(scanConfig);
             }
 
-//            if (!txOptions.isEmpty()) {
-//                ModifiableConfiguration writeConf = GraphDatabaseConfiguration.buildConfiguration();
-//                for (Map.Entry<String,Object> confEntry : txOptions.entrySet()) {
-//                    writeConf.set(
-//                            (ConfigOption<Object>) ConfigElement.parse(ROOT_NS, confEntry.getKey()).element,
-//                            confEntry.getValue());
-//                }
-//                Configuration customConf = writeConf;
-//                if (configuration!=Configuration.EMPTY) {
-//                    customConf = new MergedConfiguration(writeConf, configuration);
-//
-//                }
-//                txBuilder.customOptions(customConf);
-//            }
-
             StoreTransaction storeTx = manager.beginTransaction(txBuilder.build());
             KeyColumnValueStore kcvs = manager.openDatabase(dbName);
 

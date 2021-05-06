@@ -355,10 +355,6 @@ public class Backend implements LockerProvider, AutoCloseable {
     public Map<String, IndexInformation> getIndexInformation() {
         return Collections.unmodifiableMap(new HashMap<>(indexes));
     }
-//
-//    public IndexProvider getIndexProvider(String name) {
-//        return indexes.get(name);
-//    }
 
     public KCVSLog getSystemTxLog() {
         try {

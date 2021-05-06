@@ -176,38 +176,4 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         return keys.map(rt -> (Property<V>) new SimpleJanusGraphProperty<V>(this, rt, valueInternal(rt))).iterator();
     }
 
-    /* ---------------------------------------------------------------
-     * Blueprints Iterators
-     * ---------------------------------------------------------------
-     */
-
-//    @Override
-//    public Iterator<Vertex> vertexIterator(Direction direction) {
-//        verifyAccess();
-//
-//        List<Vertex> vertices;
-//        if (direction==Direction.BOTH) {
-//            vertices = ImmutableList.of((Vertex)getVertex(0),getVertex(1));
-//        } else {
-//            vertices = ImmutableList.of((Vertex)getVertex(EdgeDirection.position(direction)));
-//        }
-//        return vertices.iterator();
-//    }
-//
-//    @Override
-//    public <V> Iterator<Property<V>> propertyIterator(String... keyNames) {
-//        verifyAccess();
-//
-//        Stream<RelationType> keys;
-//
-//        if (keyNames==null || keyNames.length==0) {
-//            keys = IteratorUtils.stream(it().getPropertyKeysDirect());
-//        } else {
-//            keys = Stream.of(keyNames)
-//                    .map(s -> tx().getRelationType(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);
-//        }
-//        return keys.map( rt -> (Property<V>)new SimpleJanusGraphProperty<V>(this,rt,valueInternal(rt))).iterator();
-//    }
-
-
 }
