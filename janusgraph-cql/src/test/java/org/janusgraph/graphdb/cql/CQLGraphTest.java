@@ -47,6 +47,13 @@ public class CQLGraphTest extends JanusGraphTest {
         assertTrue(features.hasCellTTL());
     }
 
+    @Test
+    public void testAddNodes() {
+        clopen(option(ATOMIC_BATCH_MUTATE), true);
+        graph.addVertex();
+        graph.tx().commit();
+    }
+
     @RepeatedIfExceptionsTest(repeats = 3)
     @Override
     public void simpleLogTest() throws InterruptedException{

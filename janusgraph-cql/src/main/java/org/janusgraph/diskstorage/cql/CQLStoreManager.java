@@ -487,7 +487,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         BatchStatementBuilder builder = BatchStatement.builder(DefaultBatchType.LOGGED);
         builder.setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel());
 
-        builder.addStatements(Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
+        Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
             final String tableName = tableNameAndMutations.getKey();
             final Map<StaticBuffer, KCVMutation> tableMutations = tableNameAndMutations.getValue();
 
@@ -504,7 +504,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
                 return Iterator.concat(deletions, additions);
             });
-        }));
+        }).forEach(builder::addStatement);
+
         final Future<AsyncResultSet> result = Future.fromJavaFuture(this.executorService, this.session.executeAsync(builder.build()).toCompletableFuture());
 
         result.await();
