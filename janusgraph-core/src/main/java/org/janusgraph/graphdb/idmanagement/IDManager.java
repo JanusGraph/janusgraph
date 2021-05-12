@@ -40,7 +40,7 @@ public class IDManager {
      *    000 -     * Normal vertices
      *    010 -     * Partitioned vertices
      *    100 -     * Unmodifiable (e.g. TTL'ed) vertices
-     *    110 -     + Reserved for additional vertex type
+     *    110 -     * Proxy vertices
      *      1 - + Invisible
      *     11 -     * Invisible (user created/triggered) Vertex [for later]
      *     01 -     + Schema related vertices
@@ -119,6 +119,22 @@ public class IDManager {
             final long suffix() {
                 return 4L;
             } // 100b
+
+            @Override
+            final boolean isProper() {
+                return true;
+            }
+        },
+        ProxyVertex {
+            @Override
+            final long offset() {
+                return 3L;
+            }
+
+            @Override
+            final long suffix() {
+                return 6L;
+            }
 
             @Override
             final boolean isProper() {
@@ -463,6 +479,7 @@ public class IDManager {
         if (VertexIDType.NormalVertex.is(vertexId)) type=VertexIDType.NormalVertex;
         else if (VertexIDType.PartitionedVertex.is(vertexId)) type=VertexIDType.PartitionedVertex;
         else if (VertexIDType.UnmodifiableVertex.is(vertexId)) type=VertexIDType.UnmodifiableVertex;
+        else if (VertexIDType.ProxyVertex.is(vertexId)) type=VertexIDType.ProxyVertex;
         if (null == type) {
             throw new InvalidIDException("Vertex ID " + vertexId + " has unrecognized type");
         }
@@ -471,7 +488,7 @@ public class IDManager {
 
     public final boolean isUserVertexId(Object vertexId) {
         if (vertexId instanceof Number) {
-            return (VertexIDType.NormalVertex.is(vertexId) || VertexIDType.PartitionedVertex.is(vertexId) || VertexIDType.UnmodifiableVertex.is(vertexId))
+            return (VertexIDType.NormalVertex.is(vertexId) || VertexIDType.PartitionedVertex.is(vertexId) || VertexIDType.UnmodifiableVertex.is(vertexId) || VertexIDType.ProxyVertex.is(vertexId))
                 && ((((Number) vertexId).longValue() >>> (partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
         } else {
             return true;
@@ -637,6 +654,10 @@ public class IDManager {
 
     public boolean isPartitionedVertex(Object id) {
         return isUserVertexId(id) && VertexIDType.PartitionedVertex.is(id);
+    }
+
+    public boolean isProxyVertex(Object id) {
+        return isUserVertexId(id) && VertexIDType.ProxyVertex.is(id);
     }
 
     public long getRelationCountBound() {
