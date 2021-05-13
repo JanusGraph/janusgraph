@@ -64,7 +64,7 @@ compile "org.janusgraph:janusgraph-core:0.6.0"
 * Elasticsearch 6.0.1, 6.6.0, 7.12.0
 * Apache Lucene 8.6.0
 * Apache Solr 7.7.2, 8.5.2
-* Apache TinkerPop 3.4.10
+* Apache TinkerPop 3.5.0
 * Java 1.8
 
 #### Changes
@@ -81,6 +81,23 @@ For more information on features and bug fixes in 0.6.0, see the GitHub mileston
 * [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.0/janusgraph-full-0.6.0.zip)
 
 #### Upgrade Instructions
+
+##### Breaking change for Configuration objects
+
+Prior to JanusGraph 0.6.0, `Configuration` objects were from the Apache `commons-configuration` library.
+To comply with the [TinkerPop change](http://tinkerpop.apache.org/docs/3.5.0-SNAPSHOT/upgrade/#_versions_and_dependencies),
+JanusGraph now uses the `commons-configuration2` library. A typical usage of configuration object is to
+create configuration using `ConfigurationGraphFactory`. Now you would need to use the new configuration2 library.
+Please refer to the
+[commons-configuration 2.0 migration guide](https://commons.apache.org/proper/commons-configuration/userguide/upgradeto2_0.html)
+for details. Note that this very likely does not affect gremlin console usage, since the new library
+is auto-imported, and the basic APIs remain the same. For java code usage, you need to import
+configuration2 library rather than the old configuration library.
+
+##### Breaking change for gremlin server configs
+
+`scriptEvaluationTimeout` is renamed to `evaluationTimeout`. You can refer to `conf/gremlin-server/gremlin-server.yaml`
+for example.
 
 ##### Breaking change for gremlin EventStrategy usage
 

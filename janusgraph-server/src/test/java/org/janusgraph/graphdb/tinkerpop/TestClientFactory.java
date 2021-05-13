@@ -31,7 +31,6 @@
 package org.janusgraph.graphdb.tinkerpop;
 
 import org.apache.tinkerpop.gremlin.driver.Cluster;
-import org.apache.tinkerpop.gremlin.driver.simple.NioClient;
 import org.apache.tinkerpop.gremlin.driver.simple.WebSocketClient;
 
 import java.net.URI;
@@ -56,10 +55,6 @@ public final class TestClientFactory {
 
     public static WebSocketClient createWebSocketClient() {
         return new WebSocketClient(WEBSOCKET_URI);
-    }
-
-    public static NioClient createNioClient() {
-        return new NioClient(NIO_URI);
     }
 
     public static String createURLString() {

@@ -26,7 +26,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.IdStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
@@ -76,10 +75,10 @@ public class AdjacentVertexHasUniquePropertyOptimizerStrategy
             return;
         }
 
-        Graph graph = traversal.getGraph().get();
-        StandardJanusGraph janusGraph = graph instanceof StandardJanusGraph
-            ? (StandardJanusGraph) graph
-            : ((StandardJanusGraphTx) graph).getGraph();
+        final StandardJanusGraph janusGraph = JanusGraphTraversalUtil.getJanusGraph(traversal);
+        if (janusGraph == null) {
+            return;
+        }
 
         if (!janusGraph.getConfiguration().optimizerBackendAccess()) {
             return;

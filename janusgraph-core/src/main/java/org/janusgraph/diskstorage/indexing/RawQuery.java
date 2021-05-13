@@ -18,7 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.graphdb.query.BaseQuery;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

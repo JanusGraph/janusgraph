@@ -18,7 +18,7 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.MetaAnnotatable;
 import org.janusgraph.diskstorage.MetaAnnotated;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 

@@ -14,12 +14,12 @@
 
 import org.janusgraph.core.JanusGraphFactory
 import com.tinkerpop.blueprints.Graph
-import org.apache.commons.configuration.BaseConfiguration
+import org.janusgraph.util.system.ConfigurationUtil
 
 Graph g
 
 def setup(args) {
-    conf = new BaseConfiguration()
+    conf = ConfigurationUtil.createBaseConfiguration()
     conf.setProperty('storage.backend', args[0])
     conf.setProperty('storage.hostname', 'localhost')
     g = JanusGraphFactory.open(conf)

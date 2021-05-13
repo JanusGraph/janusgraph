@@ -64,8 +64,8 @@ public enum Order {
 
     public static Order convert(org.apache.tinkerpop.gremlin.process.traversal.Order order) {
         switch(order) {
-            case asc: case incr: return ASC;
-            case desc: case decr: return DESC;
+            case asc: return ASC;
+            case desc: return DESC;
             default: throw new AssertionError();
         }
     }

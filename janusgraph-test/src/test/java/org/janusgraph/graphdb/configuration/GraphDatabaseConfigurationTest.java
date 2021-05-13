@@ -16,7 +16,7 @@ package org.janusgraph.graphdb.configuration;
 
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.graphdb.idmanagement.UniqueInstanceIdRetriever;
 import org.junit.jupiter.api.Test;
 

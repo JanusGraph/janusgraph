@@ -25,8 +25,7 @@ import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEn
 import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
+import org.apache.commons.configuration2.Configuration;
 
 import com.google.common.base.Preconditions;
 
@@ -37,6 +36,8 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
+
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,9 +89,9 @@ public class ConfiguredGraphFactory {
 
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-        final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(templateConfigMap));
+        final CommonsConfiguration config = new CommonsConfiguration(ConfigurationUtil.loadMapConfiguration(templateConfigMap));
         final JanusGraph g = (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config)));
-        configManagementGraph.createConfiguration(new MapConfiguration(templateConfigMap));
+        configManagementGraph.createConfiguration(ConfigurationUtil.loadMapConfiguration(templateConfigMap));
         return g;
     }
 
@@ -113,7 +114,7 @@ public class ConfiguredGraphFactory {
                                 "Please create configuration for this graph using the ConfigurationManagementGraph#createConfiguration API.");
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-        final CommonsConfiguration config = new CommonsConfiguration(new MapConfiguration(graphConfigMap));
+        final CommonsConfiguration config = new CommonsConfiguration(ConfigurationUtil.loadMapConfiguration(graphConfigMap));
         return (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config)));
     }
 

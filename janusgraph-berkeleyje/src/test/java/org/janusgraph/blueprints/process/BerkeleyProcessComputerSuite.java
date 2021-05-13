@@ -19,7 +19,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalInterruptionCompu
 
 import java.lang.reflect.Field;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
 

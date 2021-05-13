@@ -144,6 +144,11 @@ public class JanusGraphFeatures implements Graph.Features {
         public boolean supportsUuidIds() {
             return false;
         }
+
+        @Override
+        public boolean supportsNullPropertyValues() {
+            return false;
+        }
     }
 
     private static class JanusGraphEdgePropertyFeatures extends JanusGraphDataTypeFeatures implements EdgePropertyFeatures {
@@ -200,6 +205,11 @@ public class JanusGraphFeatures implements Graph.Features {
         {
             return false;
         }
+
+        @Override
+        public boolean supportsNullPropertyValues() {
+            return false;
+        }
     }
 
     private static class JanusGraphEdgeFeatures implements EdgeFeatures {
@@ -235,6 +245,11 @@ public class JanusGraphFeatures implements Graph.Features {
         @Override
         public boolean supportsStringIds()
         {
+            return false;
+        }
+
+        @Override
+        public boolean supportsNullPropertyValues() {
             return false;
         }
     }

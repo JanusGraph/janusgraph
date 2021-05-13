@@ -21,12 +21,13 @@ import org.janusgraph.graphdb.database.management.ManagementSystem;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 
-import org.apache.commons.configuration.MapConfiguration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.apache.tinkerpop.gremlin.server.Settings;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,7 +43,7 @@ public class ManagementLoggerGraphCacheEvictionTest {
     public void shouldNotBeAbleToEvictGraphWhenJanusGraphManagerIsNull() {
         final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-        final MapConfiguration config = new MapConfiguration(map);
+        final MapConfiguration config = ConfigurationUtil.loadMapConfiguration(map);
         final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
         final ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
         mgmt.evictGraphFromCache();
@@ -61,7 +62,7 @@ public class ManagementLoggerGraphCacheEvictionTest {
         final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(GRAPH_NAME.toStringWithoutRoot(), "graph1");
-        final MapConfiguration config = new MapConfiguration(map);
+        final MapConfiguration config = ConfigurationUtil.loadMapConfiguration(map);
         final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
         jgm.putGraph("graph1", graph);
         assertEquals("graph1", ((StandardJanusGraph) JanusGraphManager.getInstance().getGraph("graph1")).getGraphName());

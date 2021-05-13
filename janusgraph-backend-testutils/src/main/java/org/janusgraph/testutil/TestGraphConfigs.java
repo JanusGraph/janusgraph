@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.util.time.Temporals;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +55,7 @@ public class TestGraphConfigs {
                 log.warn("Graph configuration overrides file {} does not exist or is not an ordinary file", overridesFile);
             } else {
                 try {
-                    Configuration cc = new  PropertiesConfiguration(overridesFile);
+                    PropertiesConfiguration cc = ConfigurationUtil.loadPropertiesConfig(overridesFile);
                     o = new CommonsConfiguration(cc);
                     log.info("Loaded configuration from file {}", overridesFile);
                 } catch (ConfigurationException e) {

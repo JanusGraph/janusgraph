@@ -14,8 +14,9 @@
 
 package org.janusgraph.core.inmemory;
 
-import org.apache.commons.configuration.MapConfiguration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.janusgraph.core.AbstractConfiguredGraphFactoryTest;
+import org.janusgraph.util.system.ConfigurationUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +29,7 @@ public class InmemoryConfiguredGraphFactoryTest extends AbstractConfiguredGraphF
     protected MapConfiguration getManagementConfig() {
         final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-        return new MapConfiguration(map);
+        return ConfigurationUtil.loadMapConfiguration(map);
     }
 
     protected MapConfiguration getTemplateConfig() {
@@ -38,7 +39,7 @@ public class InmemoryConfiguredGraphFactoryTest extends AbstractConfiguredGraphF
     protected MapConfiguration getGraphConfig() {
         final Map<String, Object> map = getTemplateConfig().getMap();
         map.put(GRAPH_NAME.toStringWithoutRoot(), "inmemory_test_graph_name");
-        return new MapConfiguration(map);
+        return ConfigurationUtil.loadMapConfiguration(map);
     }
 }
 

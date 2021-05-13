@@ -20,9 +20,10 @@ import org.janusgraph.diskstorage.util.time.Durations;
 import org.janusgraph.diskstorage.configuration.ReadConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.configuration2.BaseConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,8 @@ public class CommonsConfiguration implements WriteConfiguration {
             LoggerFactory.getLogger(CommonsConfiguration.class);
 
     public CommonsConfiguration() {
-        this(new BaseConfiguration());
+        BaseConfiguration baseConfiguration = ConfigurationUtil.createBaseConfiguration();
+        this.config = baseConfiguration;
     }
 
     public CommonsConfiguration(Configuration config) {
@@ -174,7 +176,7 @@ public class CommonsConfiguration implements WriteConfiguration {
 
     @Override
     public WriteConfiguration copy() {
-        BaseConfiguration copy = new BaseConfiguration();
+        BaseConfiguration copy = ConfigurationUtil.createBaseConfiguration();
         copy.copy(config);
         return new CommonsConfiguration(copy);
     }

@@ -14,7 +14,7 @@
 
 package org.janusgraph.example;
 
-import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -26,6 +26,8 @@ import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public class JanusGraphApp extends GraphApp {
     private static final Logger LOGGER = LoggerFactory.getLogger(JanusGraphApp.class);
@@ -64,7 +66,7 @@ public class JanusGraphApp extends GraphApp {
     }
 
     @Override
-    public GraphTraversalSource openGraph() throws ConfigurationException {
+    public GraphTraversalSource openGraph() throws ConfigurationException, IOException {
         super.openGraph();
         useMixedIndex = useMixedIndex && conf.containsKey("index." + mixedIndexConfigName + ".backend");
         return g;

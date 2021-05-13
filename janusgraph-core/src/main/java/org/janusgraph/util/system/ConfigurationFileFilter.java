@@ -15,10 +15,10 @@
 package org.janusgraph.util.system;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.text.WordUtils;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.lang.WordUtils;
 import org.janusgraph.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

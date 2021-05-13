@@ -25,7 +25,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.Hex;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.apache.commons.configuration.BaseConfiguration;
+import org.janusgraph.util.system.ConfigurationUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -271,7 +271,7 @@ public class SimpleScanJob implements ScanJob {
     public static Configuration getJobConf(List<SliceQuery> queries, Long modulus, Long modVal) {
         ModifiableConfiguration conf2 =
                 new ModifiableConfiguration(SimpleScanJob.ROOT_NS,
-                        new CommonsConfiguration(new BaseConfiguration()), BasicConfiguration.Restriction.NONE);
+                        new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration()), BasicConfiguration.Restriction.NONE);
         if (null != queries)
             conf2.set(HEX_QUERIES, encodeQueries(queries));
         if (null != modulus)

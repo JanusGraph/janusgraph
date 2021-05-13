@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLContext;
 
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -49,6 +48,7 @@ import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.janusgraph.diskstorage.es.rest.util.RestClientAuthenticator;
 import org.janusgraph.diskstorage.es.rest.util.SSLConfigurationCallback;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -108,7 +108,7 @@ public class RestClientSetupTest {
     }
 
     private ElasticSearchClient baseConfigTest(Map<String, String> extraConfigValues) throws Exception {
-        final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
+        final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
         cc.set("index." + INDEX_NAME + ".backend", "elasticsearch");
         cc.set("index." + INDEX_NAME + ".elasticsearch.interface", "REST_CLIENT");
         for(Map.Entry<String, String> me: extraConfigValues.entrySet()) {

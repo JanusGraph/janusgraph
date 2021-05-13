@@ -15,16 +15,17 @@
 package org.janusgraph.hadoop.serialize;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.HadoopPoolShimService;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.HadoopPools;
 import org.apache.tinkerpop.gremlin.structure.io.IoRegistry;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
+import org.janusgraph.util.system.ConfigurationUtil;
 
 public class JanusGraphKryoShimService extends HadoopPoolShimService {
 
     public JanusGraphKryoShimService() {
-        final BaseConfiguration c = new BaseConfiguration();
+        final BaseConfiguration c = ConfigurationUtil.createBaseConfiguration();
         c.setProperty(IoRegistry.IO_REGISTRY, ImmutableList.of(JanusGraphIoRegistry.class.getCanonicalName()));
         HadoopPools.initialize(c);
     }

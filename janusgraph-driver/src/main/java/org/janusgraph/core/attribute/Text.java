@@ -17,7 +17,7 @@ package org.janusgraph.core.attribute;
 import java.util.*;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;

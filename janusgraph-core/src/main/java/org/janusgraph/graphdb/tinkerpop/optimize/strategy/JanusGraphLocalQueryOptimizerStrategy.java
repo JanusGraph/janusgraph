@@ -20,7 +20,6 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.*;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.*;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
@@ -31,7 +30,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collections;
@@ -54,10 +52,12 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
         if (!traversal.getGraph().isPresent())
             return;
 
-        final Graph graph = traversal.getGraph().get();
+        final StandardJanusGraph janusGraph = JanusGraphTraversalUtil.getJanusGraph(traversal);
+        if (janusGraph == null) {
+            return;
+        }
 
         //If this is a compute graph then we can't apply local traversal optimisation at this stage.
-        final StandardJanusGraph janusGraph = graph instanceof StandardJanusGraphTx ? ((StandardJanusGraphTx) graph).getGraph() : (StandardJanusGraph) graph;
         final boolean useMultiQuery = !TraversalHelper.onGraphComputer(traversal) && janusGraph.getConfiguration().useMultiQuery();
 
         /*

@@ -15,11 +15,12 @@
 package org.janusgraph.core.cql;
 
 import com.datastax.driver.core.Session;
-import org.apache.commons.configuration.MapConfiguration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.AbstractConfiguredGraphFactoryTest;
 import org.janusgraph.core.ConfiguredGraphFactory;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -31,6 +32,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_PORT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -45,7 +47,7 @@ public class CQLConfiguredGraphFactoryTest extends AbstractConfiguredGraphFactor
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "cql");
         map.put(STORAGE_HOSTS.toStringWithoutRoot(), cqlContainer.getContainerIpAddress());
         map.put(STORAGE_PORT.toStringWithoutRoot(), cqlContainer.getMappedCQLPort());
-        return new MapConfiguration(map);
+        return ConfigurationUtil.loadMapConfiguration(map);
     }
 
     protected MapConfiguration getTemplateConfig() {
@@ -55,7 +57,54 @@ public class CQLConfiguredGraphFactoryTest extends AbstractConfiguredGraphFactor
     protected MapConfiguration getGraphConfig() {
         final Map<String, Object> map = getTemplateConfig().getMap();
         map.put(GRAPH_NAME.toStringWithoutRoot(), "cql_test_graph_name");
+        return ConfigurationUtil.loadMapConfiguration(map);
+    }
+
+    protected MapConfiguration getTemplateConfigWithMultiHosts() {
+        final Map<String, Object> map = new HashMap<>();
+        map.put(STORAGE_BACKEND.toStringWithoutRoot(), "cql");
+        final String host = cqlContainer.getContainerIpAddress();
+        // Add multiple hosts delimited by comma. ConfiguredGraphFactory should handle this properly and parse it into
+        // a list of hosts when establishing CQL connections
+        map.put(STORAGE_HOSTS.toStringWithoutRoot(), host + "," + host);
+        map.put(STORAGE_PORT.toStringWithoutRoot(), cqlContainer.getMappedCQLPort());
+        // we should let comma delimited values remain as they are when generating and storing the configuration in the graph.
+        // thus, we shall not set list delimiter here.
         return new MapConfiguration(map);
+    }
+
+    protected MapConfiguration getGraphConfigWithMultiHosts() {
+        final Map<String, Object> map = getTemplateConfigWithMultiHosts().getMap();
+        map.put(GRAPH_NAME.toStringWithoutRoot(), "cql_test_graph_name");
+        return new MapConfiguration(map);
+    }
+
+    @Test
+    public void templateConfigurationShouldSupportMultiHosts() throws Exception {
+        try {
+            ConfiguredGraphFactory.createTemplateConfiguration(getTemplateConfigWithMultiHosts());
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");
+            final StandardJanusGraph graph1 = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
+            assertNotNull(graph);
+            assertEquals(graph, graph1);
+        } finally {
+            ConfiguredGraphFactory.removeConfiguration("graph1");
+            ConfiguredGraphFactory.close("graph1");
+        }
+    }
+
+    @Test
+    public void createConfigurationShouldSupportMultiHosts() throws Exception {
+        final MapConfiguration graphConfig = getGraphConfigWithMultiHosts();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
+        try {
+            ConfiguredGraphFactory.createConfiguration(graphConfig);
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open(graphName);
+            assertNotNull(graph);
+        } finally {
+            ConfiguredGraphFactory.removeConfiguration(graphName);
+            ConfiguredGraphFactory.close(graphName);
+        }
     }
 
     @Test

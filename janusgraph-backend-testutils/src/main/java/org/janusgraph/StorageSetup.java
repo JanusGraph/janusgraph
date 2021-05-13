@@ -24,7 +24,7 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.time.Duration;

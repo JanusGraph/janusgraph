@@ -17,7 +17,8 @@ package org.janusgraph.core.attribute;
 import com.google.common.base.Preconditions;
 import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.apache.commons.lang.ArrayUtils;
+
+import java.util.Objects;
 
 /**
  * Basic comparison relations for comparable (i.e. linearly ordered) objects.
@@ -44,7 +45,7 @@ public enum Cmp implements JanusGraphPredicate {
             if (condition==null) {
                 return value==null;
             } else {
-                return condition.equals(value) || (condition.getClass().isArray() && ArrayUtils.isEquals(condition, value));
+                return condition.equals(value) || (condition.getClass().isArray() && Objects.deepEquals(condition, value));
             }
         }
 

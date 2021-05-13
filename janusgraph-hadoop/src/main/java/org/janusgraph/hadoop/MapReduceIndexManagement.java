@@ -151,7 +151,7 @@ public class MapReduceIndexManagement {
         janusGraphMapReduceConfiguration.set(JanusGraphHadoopConfiguration.SCAN_JOB_CONFIG_ROOT,
                 GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
         // Copy the StandardJanusGraph configuration under JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS
-        org.apache.commons.configuration.Configuration localConfiguration = graph.getConfiguration().getConfigurationAtOpen();
+        org.apache.commons.configuration2.Configuration localConfiguration = graph.getConfiguration().getConfigurationAtOpen();
         localConfiguration.clearProperty(Graph.GRAPH);
         copyInputKeys(hadoopConf, localConfiguration);
 
@@ -164,7 +164,7 @@ public class MapReduceIndexManagement {
         }
     }
 
-    private static void copyInputKeys(org.apache.hadoop.conf.Configuration hadoopConf, org.apache.commons.configuration.Configuration source) {
+    private static void copyInputKeys(org.apache.hadoop.conf.Configuration hadoopConf, org.apache.commons.configuration2.Configuration source) {
         // Copy IndexUpdateJob settings into the hadoop-backed cfg
         Iterator<String> keyIter = source.getKeys();
         while (keyIter.hasNext()) {

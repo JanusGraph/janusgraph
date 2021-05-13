@@ -19,8 +19,8 @@ import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ public class ConfigurationLint {
 
         final PropertiesConfiguration apc;
         try {
-            apc = new PropertiesConfiguration(filename);
+            apc = ConfigurationUtil.loadPropertiesConfig(filename);
         } catch (ConfigurationException e) {
             throw new IOException(e);
         }

@@ -39,7 +39,7 @@ public class SaslAndHMACAuthenticationHandler extends SaslAuthenticationHandler 
     private final String HMAC_AUTH = "hmac_authenticator";
     private HMACAuthenticator hmacAuthenticator;
 
-    public SaslAndHMACAuthenticationHandler(final Authenticator authenticator, final Settings.AuthenticationSettings authenticationSettings) {
+    public SaslAndHMACAuthenticationHandler(final Authenticator authenticator, final Settings authenticationSettings) {
         super(((SaslAndHMACAuthenticator) authenticator).getSimpleAuthenticator(), authenticationSettings);
         hmacAuthenticator = ((SaslAndHMACAuthenticator) authenticator).getHMACAuthenticator();
     }

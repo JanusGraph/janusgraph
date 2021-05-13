@@ -15,7 +15,7 @@
 package org.janusgraph.graphdb.tinkerpop.optimize.step;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
@@ -98,9 +98,9 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         final List<Pair<Traversal.Admin, Object>> comparators = orderGlobalStep.getComparators();
         for(final Pair<Traversal.Admin, Object> comp : comparators) {
             final String key;
-            if (comp.getValue0() instanceof ElementValueTraversal &&
+            if (comp.getValue0() instanceof ValueTraversal &&
                 comp.getValue1() instanceof Order) {
-                key = ((ElementValueTraversal) comp.getValue0()).getPropertyKey();
+                key = ((ValueTraversal) comp.getValue0()).getPropertyKey();
             } else if (comp.getValue1() instanceof ElementValueComparator) {
                 final ElementValueComparator evc = (ElementValueComparator) comp.getValue1();
                 if (!(evc.getValueComparator() instanceof Order)) return false;
@@ -282,8 +282,8 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             for (final Pair<Traversal.Admin<Object, Comparable>, Comparator<Object>> comp : (List<Pair<Traversal.Admin<Object, Comparable>, Comparator<Object>>>) ((OrderGlobalStep) lastOrder).getComparators()) {
                 final String key;
                 final Order order;
-                if (comp.getValue0() instanceof ElementValueTraversal) {
-                    final ElementValueTraversal evt = (ElementValueTraversal) comp.getValue0();
+                if (comp.getValue0() instanceof ValueTraversal) {
+                    final ValueTraversal evt = (ValueTraversal) comp.getValue0();
                     key = evt.getPropertyKey();
                     order = (Order) comp.getValue1();
                 } else {
