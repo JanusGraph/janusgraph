@@ -19,10 +19,9 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.*;
@@ -47,6 +46,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -126,7 +126,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
 
     public Configuration getESTestConfig() {
         final String index = "es";
-        final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
+        final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
         cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         return makeESTestConfig(index, cc);
     }
@@ -449,11 +449,11 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         final String index1 = "es1";
         final String index2 = "es2";
 
-        final CommonsConfiguration cc1 = new CommonsConfiguration(new BaseConfiguration());
+        final CommonsConfiguration cc1 = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
         cc1.set("index." + index1 + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         cc1.set("index." + index1 + ".elasticsearch.enable_index_names_cache", true);
 
-        final CommonsConfiguration cc2 = new CommonsConfiguration(new BaseConfiguration());
+        final CommonsConfiguration cc2 = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
         cc1.set("index." + index2 + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         cc1.set("index." + index2 + ".elasticsearch.enable_index_names_cache", true);
 
@@ -493,7 +493,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     public void testShouldNotUseIndexStoreNameCache() throws BackendException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         final String index = "es1";
 
-        final CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
+        final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
         cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         cc.set("index." + index + ".elasticsearch.enable_index_names_cache", false);
 

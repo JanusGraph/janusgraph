@@ -14,10 +14,11 @@
 
 package org.janusgraph.core;
 
-import org.apache.commons.configuration.MapConfiguration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -35,7 +36,7 @@ public class EnsureCacheTest {
     public void NopTest() {
         final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-        final MapConfiguration config = new MapConfiguration(map);
+        final MapConfiguration config = ConfigurationUtil.loadMapConfiguration(map);
         final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
 
         graph.traversal().addV().iterate();

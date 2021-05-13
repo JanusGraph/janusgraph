@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.relations;
 
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.InvalidElementException;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
@@ -128,6 +129,17 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
         PropertyKey propertyKey = tx().getOrCreatePropertyKey(key, value);
         if (propertyKey == null) {
+            return JanusGraphVertexProperty.empty();
+        }
+        if (value == null) {
+            VertexProperty.Cardinality cardinality = propertyKey.cardinality().convert();
+            if (cardinality.equals(VertexProperty.Cardinality.single)) {
+                // putting null value with SINGLE cardinality is equivalent to removing existing value
+                properties(key).forEachRemaining(Property::remove);
+            } else {
+                // simply ignore this mutation
+                assert cardinality.equals(VertexProperty.Cardinality.list) || cardinality.equals(VertexProperty.Cardinality.set);
+            }
             return JanusGraphVertexProperty.empty();
         }
         Object normalizedValue = tx().verifyAttribute(propertyKey,value);

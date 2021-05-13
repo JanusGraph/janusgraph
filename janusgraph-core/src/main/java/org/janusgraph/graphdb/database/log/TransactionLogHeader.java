@@ -28,7 +28,7 @@ import org.janusgraph.graphdb.log.StandardTransactionId;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
 import java.util.*;

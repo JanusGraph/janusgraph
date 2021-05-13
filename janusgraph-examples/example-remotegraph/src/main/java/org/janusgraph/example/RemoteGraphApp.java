@@ -14,11 +14,11 @@
 
 package org.janusgraph.example;
 
+import java.io.IOException;
 import java.util.stream.Stream;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.driver.Client;
 import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.Result;
@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,9 +64,9 @@ public class RemoteGraphApp extends JanusGraphApp {
     }
 
     @Override
-    public GraphTraversalSource openGraph() throws ConfigurationException {
+    public GraphTraversalSource openGraph() throws ConfigurationException, IOException {
         LOGGER.info("opening graph");
-        conf = new PropertiesConfiguration(propFileName);
+        conf = ConfigurationUtil.loadPropertiesConfig(propFileName);
 
         // using the remote driver for schema
         try {

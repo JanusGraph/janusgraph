@@ -16,7 +16,7 @@ package org.janusgraph.diskstorage.configuration.converter;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration2.BaseConfiguration;
 import org.janusgraph.diskstorage.configuration.ReadConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

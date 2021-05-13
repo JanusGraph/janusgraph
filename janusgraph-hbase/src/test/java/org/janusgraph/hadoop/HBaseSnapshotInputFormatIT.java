@@ -14,8 +14,8 @@
 
 package org.janusgraph.hadoop;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.process.computer.Computer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -30,6 +30,7 @@ import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
@@ -263,8 +264,7 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
     }
 
     protected Graph getGraph() throws IOException, ConfigurationException {
-        final PropertiesConfiguration config =
-                new PropertiesConfiguration("target/test-classes/hbase-read-snapshot.properties");
+        final PropertiesConfiguration config = ConfigurationUtil.loadPropertiesConfig("target/test-classes/hbase-read-snapshot.properties");
         Path baseOutDir = Paths.get((String) config.getProperty("gremlin.hadoop.outputLocation"));
         baseOutDir.toFile().mkdirs();
         String outDir = Files.createTempDirectory(baseOutDir, null).toAbsolutePath().toString();

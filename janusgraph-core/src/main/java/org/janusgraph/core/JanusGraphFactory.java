@@ -33,11 +33,12 @@ import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MA
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.log.StandardLogProcessorFramework;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.configuration2.BaseConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -48,6 +49,7 @@ import java.io.File;
 import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
@@ -302,7 +304,7 @@ public class JanusGraphFactory {
             Preconditions.checkArgument(StandardStoreManager.getAllManagerClasses().containsKey(backend.toLowerCase()), "Backend shorthand unknown: %s", backend);
             String secondArg = null;
             if (pos+1<shortcutOrFile.length()) secondArg = shortcutOrFile.substring(pos + 1).trim();
-            BaseConfiguration config = new BaseConfiguration();
+            BaseConfiguration config = ConfigurationUtil.createBaseConfiguration();
             ModifiableConfiguration writeConfig = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(config), BasicConfiguration.Restriction.NONE);
             writeConfig.set(STORAGE_BACKEND,backend);
             ConfigOption option = Backend.getOptionForShorthand(backend);
@@ -323,7 +325,7 @@ public class JanusGraphFactory {
      * Load a properties file containing a JanusGraph graph configuration.
      * <p>
      * <ol>
-     * <li>Load the file contents into a {@link org.apache.commons.configuration.PropertiesConfiguration}</li>
+     * <li>Load the file contents into a {@link org.apache.commons.configuration2.PropertiesConfiguration}</li>
      * <li>For each key that points to a configuration object that is either a directory
      * or local file, check
      * whether the associated value is a non-null, non-absolute path. If so,
@@ -344,7 +346,7 @@ public class JanusGraphFactory {
                 "Need to specify a readable configuration file, but was given: %s", file.toString());
 
         try {
-            PropertiesConfiguration configuration = new PropertiesConfiguration(file);
+            PropertiesConfiguration configuration = ConfigurationUtil.loadPropertiesConfig(file);
 
             final File tmpParent = file.getParentFile();
             final File configParent;
@@ -374,12 +376,11 @@ public class JanusGraphFactory {
                                   Pattern.quote(INDEX_CONF_FILE.getName()) +  ")"
             + ")");
 
-            final Iterator<String> keysToMangle = StreamSupport.stream(
+            final List<String> keysToMangle = StreamSupport.stream(
                 Spliterators.spliteratorUnknownSize(configuration.getKeys(), 0), false)
-                .filter(key -> null != key && p.matcher(key).matches()).iterator();
+                .filter(key -> null != key && p.matcher(key).matches()).collect(Collectors.toList());
 
-            while (keysToMangle.hasNext()) {
-                String k = keysToMangle.next();
+            for (String k : keysToMangle) {
                 Preconditions.checkNotNull(k);
                 final String s = configuration.getString(k);
                 Preconditions.checkArgument(StringUtils.isNotBlank(s),"Invalid Configuration: key %s has null empty value",k);

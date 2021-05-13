@@ -14,8 +14,9 @@
 
 package org.janusgraph.diskstorage.configuration.converter;
 
-import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration2.BaseConfiguration;
 import org.janusgraph.diskstorage.configuration.ReadConfiguration;
+import org.janusgraph.util.system.ConfigurationUtil;
 
 /**
  * Converter from {@link ReadConfiguration} into {@link BaseConfiguration}
@@ -34,7 +35,7 @@ public class ReadConfigurationConverter {
     }
 
     public BaseConfiguration convert(ReadConfiguration readConfiguration) {
-        BaseConfiguration result = new BaseConfiguration();
+        BaseConfiguration result = ConfigurationUtil.createBaseConfiguration();
         for (String k : readConfiguration.getKeys("")) {
             result.setProperty(k, readConfiguration.get(k, Object.class));
         }

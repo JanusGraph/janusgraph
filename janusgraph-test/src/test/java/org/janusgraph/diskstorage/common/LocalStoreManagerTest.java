@@ -34,7 +34,7 @@ import static org.janusgraph.diskstorage.configuration.BasicConfiguration.Restri
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.commons.configuration.BaseConfiguration;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -89,7 +89,7 @@ public class LocalStoreManagerTest {
     }
 
     public LocalStoreManager getStoreManager(Map<ConfigOption, String> map) throws BackendException {
-        final ModifiableConfiguration mc = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration(new BaseConfiguration()), NONE);
+        final ModifiableConfiguration mc = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration()), NONE);
         map.forEach(mc::set);
         return new LocalStoreManagerSampleImplementation(mc);
     }

@@ -29,11 +29,12 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ST
 import static org.janusgraph.graphdb.management.ConfigurationManagementGraph.PROPERTY_GRAPH_NAME;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.commons.configuration.MapConfiguration;
+import org.apache.commons.configuration2.MapConfiguration;
 
 import java.util.Map;
 import java.util.HashMap;
 
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,7 +51,7 @@ public class ConfigurationManagementGraphTest {
     public void shouldReindexIfPropertyKeyExists() {
         final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
-        final MapConfiguration config = new MapConfiguration(map);
+        final MapConfiguration config = ConfigurationUtil.loadMapConfiguration(map);
         final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
 
         final String propertyKeyName = "Created_Using_Template";
@@ -98,7 +99,7 @@ public class ConfigurationManagementGraphTest {
         // Create a configuration
         final Map<String, Object> map = new HashMap<>();
         map.put(PROPERTY_GRAPH_NAME, "tx_test_graph");
-        configurationManagementGraph.createConfiguration(new MapConfiguration(map));
+        configurationManagementGraph.createConfiguration(ConfigurationUtil.loadMapConfiguration(map));
 
         // Get the vertex id from the new configuration
         long vertexId = (Long) graph.traversal().V().limit(1).next().id();

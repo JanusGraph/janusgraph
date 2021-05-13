@@ -17,9 +17,10 @@ package org.janusgraph.example;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.util.Set;
 
-import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -30,7 +31,7 @@ public class TinkerGraphAppTest {
     protected static final String CONF_FILE = "conf/jgex-tinkergraph.properties";
 
     @Test
-    public void createSchema() throws ConfigurationException {
+    public void createSchema() throws ConfigurationException, IOException {
         final TinkerGraphApp app = new TinkerGraphApp(CONF_FILE);
         final GraphTraversalSource g = app.openGraph();
         app.createSchema();

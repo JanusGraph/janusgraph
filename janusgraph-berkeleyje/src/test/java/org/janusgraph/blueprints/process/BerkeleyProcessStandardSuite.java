@@ -14,7 +14,7 @@
 
 package org.janusgraph.blueprints.process;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalInterruptionTest;
 import org.junit.runners.model.InitializationError;

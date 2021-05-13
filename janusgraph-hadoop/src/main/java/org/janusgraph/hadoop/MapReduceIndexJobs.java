@@ -14,7 +14,6 @@
 
 package org.janusgraph.hadoop;
 
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
@@ -22,6 +21,7 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,7 @@ public class MapReduceIndexJobs {
 
     public static ModifiableConfiguration getIndexJobConf(String indexName, String relationType) {
         ModifiableConfiguration mc = new ModifiableConfiguration(GraphDatabaseConfiguration.JOB_NS,
-                new CommonsConfiguration(new BaseConfiguration()), BasicConfiguration.Restriction.NONE);
+                new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration()), BasicConfiguration.Restriction.NONE);
         mc.set(org.janusgraph.graphdb.olap.job.IndexUpdateJob.INDEX_NAME, indexName);
         mc.set(org.janusgraph.graphdb.olap.job.IndexUpdateJob.INDEX_RELATION_TYPE, relationType);
         mc.set(GraphDatabaseConfiguration.JOB_START_TIME, System.currentTimeMillis());

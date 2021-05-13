@@ -30,7 +30,7 @@ import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.janusgraph.util.encoding.ConversionHelper;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.util.system.IOUtils;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -36,6 +36,21 @@ import org.apache.tinkerpop.gremlin.util.Gremlin;
         method = "shouldHandleSetVertexProperties",
         reason = "JanusGraph can only handle SET cardinality for properties when defined in the schema.")
 @Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.VertexPropertyTest$VertexPropertyAddition",
+        method = "shouldHandleListVertexPropertiesWithoutNullPropertyValues",
+        reason = "This test case requires EmptyVertexProperty instance when setting null value to a property, while JanusGraph " +
+            "returns an EmptyJanusGraphVertexProperty instance in such case.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddVertexTest",
+        method = "g_V_hasLabelXpersonX_propertyXname_nullX",
+        reason = "TinkerPop assumes cardinality is SINGLE when not explicitly given, while JanusGraph uses the cardinality " +
+            "already defined in the schema.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddEdgeTest",
+        method = "g_V_outE_propertyXweight_nullX",
+        reason = "TinkerPop assumes cardinality is SINGLE when not explicitly given, while JanusGraph uses the cardinality " +
+            "already defined in the schema.")
+@Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
         method = "shouldOnlyAllowReadingVertexPropertiesInMapReduce",
         reason = "JanusGraph simply throws the wrong exception -- should not be a ReadOnly transaction exception but a specific one for MapReduce. This is too cumbersome to refactor in JanusGraph.")

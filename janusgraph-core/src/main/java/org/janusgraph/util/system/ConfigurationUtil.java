@@ -15,8 +15,17 @@
 package org.janusgraph.util.system;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.BaseConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.MapConfiguration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.builder.fluent.PropertiesBuilderParameters;
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -27,6 +36,7 @@ import java.util.*;
 public class ConfigurationUtil {
 
     private static final char CONFIGURATION_SEPARATOR = '.';
+    private static final DefaultListDelimiterHandler COMMA_DELIMITER_HANDLER = new DefaultListDelimiterHandler(',');
 
     public static List<String> getUniquePrefixes(Configuration config) {
         final Set<String> nameSet = new HashSet<>();
@@ -65,4 +75,55 @@ public class ConfigurationUtil {
         }
     }
 
+    /**
+     * Create a new BaseConfiguration object and set a comma delimiter handler, which interprets
+     * comma-delimited values as a list of values.
+     * @return
+     */
+    public static BaseConfiguration createBaseConfiguration() {
+        final BaseConfiguration baseConfiguration = new BaseConfiguration();
+        baseConfiguration.setListDelimiterHandler(COMMA_DELIMITER_HANDLER);
+        return baseConfiguration;
+    }
+
+    /**
+     * Load properties from a map object and return a MapConfiguration object. Comma-delimited values are interpreted as
+     * a list of values.
+     * @param configMap
+     * @return
+     */
+    public static MapConfiguration loadMapConfiguration(Map<String, Object> configMap) {
+        final MapConfiguration mapConfiguration = new MapConfiguration(configMap);
+        mapConfiguration.setListDelimiterHandler(COMMA_DELIMITER_HANDLER);
+        return mapConfiguration;
+    }
+
+    /**
+     * Load properties from a given file name and return a PropertiesConfiguration object. Comma-delimited values are
+     * interpreted as a list of values.
+     * @param filename
+     * @return
+     * @throws ConfigurationException
+     */
+    public static PropertiesConfiguration loadPropertiesConfig(String filename) throws ConfigurationException {
+        return loadPropertiesConfig(new Parameters().properties().setFileName(filename));
+    }
+
+    /**
+     * Load properties from a given file object and return a PropertiesConfiguration object. Comma-delimited values are
+     * interpreted as a list of values.
+     * @param file
+     * @return
+     * @throws ConfigurationException
+     */
+    public static PropertiesConfiguration loadPropertiesConfig(File file) throws ConfigurationException {
+        return loadPropertiesConfig(new Parameters().properties().setFile(file));
+    }
+
+    private static PropertiesConfiguration loadPropertiesConfig(PropertiesBuilderParameters params) throws ConfigurationException {
+        FileBasedConfigurationBuilder<PropertiesConfiguration> builder =
+            new FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration.class)
+                .configure(params.setListDelimiterHandler(COMMA_DELIMITER_HANDLER));
+        return builder.getConfiguration();
+    }
 }

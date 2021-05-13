@@ -18,11 +18,12 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.HashMap;
-import org.apache.commons.configuration.MapConfiguration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
@@ -40,7 +41,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(UNIQUE_INSTANCE_ID.toStringWithoutRoot(), "not-unique");
         map.put(REPLACE_INSTANCE_IF_EXISTS.toStringWithoutRoot(), true);
-        final MapConfiguration config = new MapConfiguration(map);
+        final MapConfiguration config = ConfigurationUtil.loadMapConfiguration(map);
         final StandardJanusGraph graph1 = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
 
         assertEquals(graph1.openManagement().getOpenInstances().size(), 1);
@@ -61,7 +62,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
         final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(UNIQUE_INSTANCE_ID.toStringWithoutRoot(), "not-unique");
-        final MapConfiguration config = new MapConfiguration(map);
+        final MapConfiguration config = ConfigurationUtil.loadMapConfiguration(map);
         final StandardJanusGraph graph1 = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
 
         assertEquals(graph1.openManagement().getOpenInstances().size(), 1);
@@ -78,7 +79,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
         final Map<String, Object> map = new HashMap<>();
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(UNIQUE_INSTANCE_ID_HOSTNAME.toStringWithoutRoot(), true);
-        final MapConfiguration config = new MapConfiguration(map);
+        final MapConfiguration config = ConfigurationUtil.loadMapConfiguration(map);
         final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
         assertEquals(graph.openManagement().getOpenInstances().size(), 1);
         assertEquals(graph.openManagement().getOpenInstances().toArray()[0], Inet4Address.getLocalHost().getHostName());
@@ -91,7 +92,7 @@ public class GraphDatabaseConfigurationInstanceIdTest {
         map.put(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory");
         map.put(UNIQUE_INSTANCE_ID_HOSTNAME.toStringWithoutRoot(), true);
         map.put(UNIQUE_INSTANCE_ID_SUFFIX.toStringWithoutRoot(), 1);
-				final MapConfiguration config = new MapConfiguration(map);
+				final MapConfiguration config = ConfigurationUtil.loadMapConfiguration(map);
         final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
         assertEquals(graph.openManagement().getOpenInstances().size(), 1);
         assertEquals(graph.openManagement().getOpenInstances().toArray()[0], Inet4Address.getLocalHost().getHostName() + "1");

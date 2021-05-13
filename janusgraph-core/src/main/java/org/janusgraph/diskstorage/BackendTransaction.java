@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.log.kcvs.ExternalCachePersistor;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

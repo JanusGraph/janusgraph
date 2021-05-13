@@ -77,7 +77,7 @@ import org.janusgraph.util.datastructures.Retriever;
 import org.janusgraph.util.stats.MetricManager;
 import org.apache.tinkerpop.gremlin.structure.*;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -561,7 +561,6 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     }
 
     public final Object verifyAttribute(PropertyKey key, Object attribute) {
-        if (attribute==null) throw new SchemaViolationException("Property value cannot be null");
         Class<?> datatype = key.dataType();
         if (datatype.equals(Object.class)) {
             if (!attributeHandler.validDataType(attribute.getClass())) {
@@ -1005,21 +1004,18 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     @Override
     public PropertyKey getOrCreatePropertyKey(String name, Object value) {
-        RelationType et = getRelationType(name);
-        if (et == null) {
-            return config.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name), value);
-        } else if (et.isPropertyKey()) {
-            return (PropertyKey) et;
-        } else {
-            throw new IllegalArgumentException("The type of given name is not a key: " + name);
-        }
+        return getOrCreatePropertyKey(name, value, null);
     }
 
     @Override
     public PropertyKey getOrCreatePropertyKey(String name, Object value, VertexProperty.Cardinality cardinality) {
         RelationType et = getRelationType(name);
         if (et == null) {
-            return config.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name).cardinality(cardinality), value);
+            PropertyKeyMaker propertyKeyMaker = makePropertyKey(name);
+            if (cardinality != null) {
+                propertyKeyMaker = propertyKeyMaker.cardinality(cardinality);
+            }
+            return config.getAutoSchemaMaker().makePropertyKey(propertyKeyMaker, value);
         } else if (et.isPropertyKey()) {
             return (PropertyKey) et;
         } else {

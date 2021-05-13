@@ -23,7 +23,7 @@ import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.graphdb.internal.*;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
 import java.time.Instant;

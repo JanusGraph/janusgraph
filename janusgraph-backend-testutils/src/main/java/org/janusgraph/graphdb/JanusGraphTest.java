@@ -57,6 +57,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -5688,6 +5689,62 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(tx.traversal().V().has("p2", (Object) null).hasNext());
         // property registered in schema and has composite index
         assertTrue(tx.traversal().V().has("p3", (Object) null).hasNext());
+    }
+
+    /**
+     * To comply with TinkerPop 3.5.0, now null value can be used in mutations. When the given cardinality is SINGLE,
+     * property(key, null) removes key. When the given cardinality is LIST or SET, property(key, null) is simply ignored.
+     */
+    @Test
+    public void testNullValueMutation() {
+        mgmt.makePropertyKey("single").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("list").dataType(String.class).cardinality(Cardinality.LIST).make();
+        mgmt.makePropertyKey("set").dataType(String.class).cardinality(Cardinality.SET).make();
+        finishSchema();
+
+        Vertex v1 = graph.addVertex("single", null);
+        assertFalse(v1.properties("single").hasNext());
+        assertFalse(v1.values().hasNext());
+
+        v1.property("single", "oldValue");
+        newTx();
+        assertTrue(v1.properties("single").hasNext());
+        assertEquals("oldValue", v1.values().next());
+        v1.property("single", null);
+        assertFalse(v1.properties("single").hasNext());
+        assertFalse(v1.values().hasNext());
+
+        newTx();
+        assertFalse(v1.properties("single").hasNext());
+        assertFalse(v1.values().hasNext());
+
+        Vertex v2 = graph.addVertex();
+        v2.property("list", "a");
+        v2.property("list", null);
+        v2.property("list", "b");
+        assertTrue(Objects.deepEquals(new String[] {"a", "b"}, Iterators.toArray(v2.values(), String.class)));
+
+        newTx();
+        assertTrue(Objects.deepEquals(new String[] {"a", "b"}, Iterators.toArray(v2.values(), String.class)));
+
+        // If SINGLE cardinality is explicitly provided, remove this property even if it's of LIST/SET cardinality
+        v2.property(VertexProperty.Cardinality.single, "list", null);
+        assertFalse(v2.values().hasNext());
+        newTx();
+        assertFalse(v2.values().hasNext());
+
+        Edge e = v1.addEdge("connect", v2);
+        e.property("set", "a");
+        e.property("set", "a");
+        e.property("set", null);
+        assertTrue(Objects.deepEquals(new String[] {"a"}, Iterators.toArray(e.values(), String.class)));
+
+        e.property("single", "b");
+        assertTrue(e.values("single").hasNext());
+        e.property("single", null);
+        assertFalse(e.values("single").hasNext());
+        newTx();
+        assertFalse(e.values("single").hasNext());
     }
 
     /**

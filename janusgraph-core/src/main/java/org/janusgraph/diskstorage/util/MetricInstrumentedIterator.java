@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class is used by {@code MetricInstrumentedStore} to measure wall clock

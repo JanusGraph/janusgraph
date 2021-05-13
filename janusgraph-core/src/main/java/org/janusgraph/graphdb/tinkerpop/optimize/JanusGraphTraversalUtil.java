@@ -14,8 +14,10 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.olap.computer.FulgoraElementTraversal;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
@@ -53,6 +55,33 @@ public class JanusGraphTraversalUtil {
      */
     private static final List<Class<? extends TraversalParent>> MULTIQUERY_COMPATIBLE_STEPS =
             Arrays.asList(BranchStep.class, OptionalStep.class, RepeatStep.class, TraversalFilterStep.class);
+
+    /**
+     * This is needed as a workaround for https://issues.apache.org/jira/browse/TINKERPOP-2568. Once that is fixed
+     * and released, this utility method can be removed.
+     * @param traversal
+     * @return
+     */
+    public static StandardJanusGraph getJanusGraph(final Traversal.Admin<?, ?> traversal) {
+        Traversal.Admin<?, ?> t = traversal;
+        do {
+            Optional<Graph> optionalGraph = t.getGraph();
+            if (!optionalGraph.isPresent()) {
+                return null;
+            }
+            Graph graph = optionalGraph.get();
+            if (graph instanceof StandardJanusGraph) {
+                return (StandardJanusGraph) graph;
+            }
+            if (graph instanceof StandardJanusGraphTx) {
+                return ((StandardJanusGraphTx) graph).getGraph();
+            }
+            if (t.getParent() instanceof EmptyStep) {
+                return null;
+            }
+            t = t.getParent().asStep().getTraversal();
+        } while (true);
+    }
 
     public static JanusGraphVertex getJanusGraphVertex(Element v) {
         while (v instanceof WrappedVertex) {

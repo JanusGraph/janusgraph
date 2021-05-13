@@ -68,7 +68,8 @@ public class ConfigurationManagementGraphServerTest extends AbstractGremlinServe
 
         //create newGraph
         client.submit("Map<String, Object> map = new HashMap<String, Object>(); map.put(\"storage.backend\", \"inmemory\"); " +
-            "org.janusgraph.core.ConfiguredGraphFactory.createTemplateConfiguration(new MapConfiguration(map));" +
+            "org.janusgraph.core.ConfiguredGraphFactory.createTemplateConfiguration(" +
+            "org.janusgraph.util.system.ConfigurationUtil.loadMapConfiguration(map));" +
             "org.janusgraph.core.ConfiguredGraphFactory.create(\"newGraph\")");
 
         Thread.sleep(1000,0);

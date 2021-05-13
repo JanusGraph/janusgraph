@@ -15,8 +15,7 @@
 package org.janusgraph.diskstorage;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.JanusGraphConfigurationException;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -597,9 +596,8 @@ public class Backend implements LockerProvider, AutoCloseable {
     }
 
     private ModifiableConfiguration buildJobConfiguration() {
-
         return new ModifiableConfiguration(JOB_NS,
-            new CommonsConfiguration(new BaseConfiguration()),
+            new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration()),
             BasicConfiguration.Restriction.NONE);
     }
 

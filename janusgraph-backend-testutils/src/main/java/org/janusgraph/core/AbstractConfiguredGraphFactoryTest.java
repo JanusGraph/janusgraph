@@ -14,7 +14,7 @@
 
 package org.janusgraph.core;
 
-import org.apache.commons.configuration.MapConfiguration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutor;
 import org.apache.tinkerpop.gremlin.jsr223.GremlinScriptEngineManager;
 import org.apache.tinkerpop.gremlin.server.Settings;
@@ -24,6 +24,7 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
 import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -224,7 +225,7 @@ public abstract class AbstractConfiguredGraphFactoryTest {
 
             final Map<String, Object> map = graphConfig.getMap();
             map.put(STORAGE_BACKEND.toStringWithoutRoot(), "bogusBackend");
-            ConfiguredGraphFactory.updateConfiguration(graphName, new MapConfiguration(map));
+            ConfiguredGraphFactory.updateConfiguration(graphName, ConfigurationUtil.loadMapConfiguration(map));
             assertNull(gm.getGraph(graphName));
             // we should throw an error since the config has been updated and we are attempting
             // to open a bogus backend

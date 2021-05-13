@@ -54,7 +54,6 @@ import java.util.*;
 import javax.annotation.Nullable;
 import javax.management.MBeanServerFactory;
 
-import org.apache.commons.configuration.*;
 import org.apache.commons.lang3.ClassUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1151,7 +1150,7 @@ public class GraphDatabaseConfiguration {
 
     public static ModifiableConfiguration buildGraphConfiguration() {
         return new ModifiableConfiguration(ROOT_NS,
-            new CommonsConfiguration(new BaseConfiguration()),
+            new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration()),
             BasicConfiguration.Restriction.NONE);
     }
 
@@ -1309,13 +1308,13 @@ public class GraphDatabaseConfiguration {
         else return new StandardSchemaCache(retriever);
     }
 
-    public org.apache.commons.configuration.Configuration getLocalConfiguration() {
-        org.apache.commons.configuration.Configuration config = ((CommonsConfiguration)localConfiguration.getConfiguration()).getCommonConfiguration();
+    public org.apache.commons.configuration2.Configuration getLocalConfiguration() {
+        org.apache.commons.configuration2.Configuration config = ((CommonsConfiguration)localConfiguration.getConfiguration()).getCommonConfiguration();
         config.setProperty(Graph.GRAPH, JanusGraphFactory.class.getName());
         return config;
     }
 
-    public org.apache.commons.configuration.Configuration getConfigurationAtOpen() {
+    public org.apache.commons.configuration2.Configuration getConfigurationAtOpen() {
         return ReadConfigurationConverter.getInstance().convert(configurationAtOpen);
     }
 
