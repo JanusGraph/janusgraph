@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.tinkerpop.optimize.step;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
@@ -45,11 +46,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.javatuples.Pair;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -59,23 +56,23 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
 
     void addAll(Iterable<HasContainer> hasContainers);
 
-    List<HasContainer> addLocalAll(Iterable<HasContainer> hasContainers);
+    List<HasContainer> addLocalAll(TraversalParent parent, Iterable<HasContainer> hasContainers);
 
     void orderBy(String key, Order order);
 
-    void localOrderBy(List<HasContainer> hasContainers, String key, Order order);
+    void localOrderBy(TraversalParent parent, List<HasContainer> hasContainers, String key, Order order);
 
     void setLimit(int low, int high);
 
-    void setLocalLimit(List<HasContainer> hasContainers, int low, int high);
+    void setLocalLimit(TraversalParent parent, List<HasContainer> hasContainers, int low, int high);
 
     int getLowLimit();
 
-    int getLocalLowLimit(List<HasContainer> hasContainers);
+    int getLocalLowLimit(TraversalParent parent, List<HasContainer> hasContainers);
 
     int getHighLimit();
 
-    int getLocalHighLimit(List<HasContainer> hasContainers);
+    int getLocalHighLimit(TraversalParent parent, List<HasContainer> hasContainers);
 
     static boolean validJanusGraphHas(HasContainer has) {
         if (has.getPredicate() instanceof ConnectiveP) {
@@ -192,7 +189,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
                 final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(JanusGraphPredicateUtils::convert).collect(Collectors.toList());
-                final List<HasContainer> hasContainers = janusgraphStep.addLocalAll(containers);
+                final List<HasContainer> hasContainers = janusgraphStep.addLocalAll(traversal.getParent(), containers);
                 currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);
                 currentStep = foldInOrder(janusgraphStep, currentStep, traversal, rootTraversal, janusgraphStep instanceof JanusGraphStep && ((JanusGraphStep)janusgraphStep).returnsVertex(), hasContainers);
@@ -294,7 +291,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 if (hasContainers == null) {
                     janusgraphStep.orderBy(key, order);
                 } else {
-                    janusgraphStep.localOrderBy(hasContainers, key, order);
+                    janusgraphStep.localOrderBy(traversal.getParent(), hasContainers, key, order);
                 }
             }
             lastOrder.getLabels().forEach(janusgraphStep::addLabel);
@@ -359,14 +356,14 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             int low = 0;
             if (janusgraphStep instanceof JanusGraphStep) {
                 low = QueryUtil.convertLimit(range.getLowRange());
-                low = QueryUtil.mergeLowLimits(low, hasContainers == null ? janusgraphStep.getLowLimit(): janusgraphStep.getLocalLowLimit(hasContainers));
+                low = QueryUtil.mergeLowLimits(low, hasContainers == null ? janusgraphStep.getLowLimit(): janusgraphStep.getLocalLowLimit(traversal.getParent(), hasContainers));
             }
             int high = QueryUtil.convertLimit(range.getHighRange());
-            high = QueryUtil.mergeHighLimits(high, hasContainers == null ? janusgraphStep.getHighLimit(): janusgraphStep.getLocalHighLimit(hasContainers));
+            high = QueryUtil.mergeHighLimits(high, hasContainers == null ? janusgraphStep.getHighLimit(): janusgraphStep.getLocalHighLimit(traversal.getParent(), hasContainers));
             if (hasContainers == null) {
                 janusgraphStep.setLimit(low, high);
             } else {
-                janusgraphStep.setLocalLimit(hasContainers, low, high);
+                janusgraphStep.setLocalLimit(traversal.getParent(), hasContainers, low, high);
             }
             if (janusgraphStep instanceof JanusGraphStep || range.getLowRange() == 0) { //Range can be removed since there is JanusGraphStep or no offset
                 nextStep.getLabels().forEach(janusgraphStep::addLabel);
