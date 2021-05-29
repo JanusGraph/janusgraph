@@ -17,21 +17,26 @@ package org.janusgraph.graphdb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.TestCategory;
-import org.janusgraph.core.*;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraphRelation;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Cmp;
-
-
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.diskstorage.util.TestLockerManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import static org.apache.tinkerpop.gremlin.structure.Direction.*;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -39,8 +44,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 
+import static org.apache.tinkerpop.gremlin.structure.Direction.IN;
+import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

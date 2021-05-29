@@ -15,10 +15,10 @@
 package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.MetaAnnotatable;
 import org.janusgraph.diskstorage.MetaAnnotated;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 

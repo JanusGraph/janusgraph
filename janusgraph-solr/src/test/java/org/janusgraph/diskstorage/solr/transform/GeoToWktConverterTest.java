@@ -17,19 +17,17 @@ package org.janusgraph.diskstorage.solr.transform;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.JtsGeoshapeHelper;
 import org.janusgraph.diskstorage.BackendException;
-
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.Polygon;
 
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.text.ParseException;
 import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnologies.com)

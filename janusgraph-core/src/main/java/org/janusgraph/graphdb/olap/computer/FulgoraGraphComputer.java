@@ -17,18 +17,6 @@ package org.janusgraph.graphdb.olap.computer;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphComputer;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.util.WorkerPool;
-
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
@@ -52,7 +40,17 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
-
+import org.janusgraph.core.JanusGraphComputer;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.util.WorkerPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

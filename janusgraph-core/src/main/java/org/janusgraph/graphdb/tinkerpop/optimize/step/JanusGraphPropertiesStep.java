@@ -17,14 +17,6 @@ package org.janusgraph.graphdb.tinkerpop.optimize.step;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import org.janusgraph.core.*;
-import org.janusgraph.graphdb.query.BaseQuery;
-import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
-import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
-import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
@@ -37,8 +29,25 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
+import org.janusgraph.core.BaseVertexQuery;
+import org.janusgraph.core.JanusGraphMultiVertexQuery;
+import org.janusgraph.core.JanusGraphProperty;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexQuery;
+import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
+import org.janusgraph.graphdb.query.Query;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
+import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

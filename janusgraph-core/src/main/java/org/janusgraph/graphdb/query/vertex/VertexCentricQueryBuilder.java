@@ -15,7 +15,12 @@
 package org.janusgraph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.*;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphRelation;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.JanusGraphVertexQuery;
+import org.janusgraph.core.VertexList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.RelationCategory;

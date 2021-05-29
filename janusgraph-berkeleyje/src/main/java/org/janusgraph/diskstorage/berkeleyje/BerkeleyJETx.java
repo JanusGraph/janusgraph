@@ -22,10 +22,9 @@ import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.Transaction;
 import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

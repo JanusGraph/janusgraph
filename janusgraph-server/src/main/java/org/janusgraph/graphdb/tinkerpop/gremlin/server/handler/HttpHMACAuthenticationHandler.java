@@ -14,21 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.gremlin.server.handler;
 
-import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
-import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import static org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.CredentialGraphTokens.PROPERTY_PASSWORD;
-import static org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.CredentialGraphTokens.PROPERTY_USERNAME;
-
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.tinkerpop.gremlin.server.auth.Authenticator;
-import org.apache.tinkerpop.gremlin.server.handler.AbstractAuthenticationHandler;
-
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -37,6 +22,20 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.util.ReferenceCountUtil;
+import org.apache.tinkerpop.gremlin.server.auth.Authenticator;
+import org.apache.tinkerpop.gremlin.server.handler.AbstractAuthenticationHandler;
+
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+
+import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
+import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.CredentialGraphTokens.PROPERTY_PASSWORD;
+import static org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.CredentialGraphTokens.PROPERTY_USERNAME;
 
 /**
  * An Authentication Handler intended to be used with the HMACAuthenticator

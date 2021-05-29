@@ -14,7 +14,12 @@
 
 package org.janusgraph.util.datastructures;
 
-import java.util.*;
+import java.util.AbstractSet;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Florian Grieskamp (Florian.Grieskamp@gdata.de)

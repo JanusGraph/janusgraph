@@ -16,13 +16,17 @@ package org.janusgraph.graphdb.log;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.*;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphRelation;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.RelationType;
 import org.janusgraph.core.log.Change;
 import org.janusgraph.core.log.ChangeState;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalVertex;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.EnumMap;

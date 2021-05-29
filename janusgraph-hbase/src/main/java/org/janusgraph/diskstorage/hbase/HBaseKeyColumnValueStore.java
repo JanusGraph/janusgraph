@@ -18,29 +18,52 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
+import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
+import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.janusgraph.diskstorage.*;
-import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.EntryMetaData;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.TemporaryBackendException;
+import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
+import org.janusgraph.diskstorage.keycolumnvalue.KCVSUtil;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 import org.janusgraph.util.system.IOUtils;
-
-import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
-import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
-import org.apache.hadoop.hbase.filter.Filter;
-import org.apache.hadoop.hbase.filter.FilterList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import javax.annotation.Nullable;
 
 /**
  * Here are some areas that might need work:

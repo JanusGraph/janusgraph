@@ -18,7 +18,6 @@ import org.janusgraph.HBaseContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.IDAuthorityTest;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 

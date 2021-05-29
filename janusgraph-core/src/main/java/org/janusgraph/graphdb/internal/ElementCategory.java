@@ -15,16 +15,20 @@
 package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.*;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.relations.RelationIdentifierUtils;
 import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
 import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
 * @author Matthias Broecheler (me@matthiasb.com)

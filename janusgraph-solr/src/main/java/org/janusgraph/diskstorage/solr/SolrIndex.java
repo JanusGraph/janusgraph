@@ -14,23 +14,8 @@
 
 package org.janusgraph.diskstorage.solr;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.UncheckedIOException;
-import java.lang.reflect.Constructor;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.*;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
+import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
@@ -106,8 +91,36 @@ import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.UncheckedIOException;
+import java.lang.reflect.Constructor;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.TimeZone;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnologies.com), Pavel Yaskevich (pavel@thinkaurelius.com)

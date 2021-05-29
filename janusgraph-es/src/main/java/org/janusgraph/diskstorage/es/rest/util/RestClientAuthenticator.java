@@ -14,10 +14,10 @@
 
 package org.janusgraph.diskstorage.es.rest.util;
 
-import java.io.IOException;
-
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.elasticsearch.client.RestClientBuilder.RequestConfigCallback;
+
+import java.io.IOException;
 
 /**
  * <p>

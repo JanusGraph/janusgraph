@@ -24,12 +24,17 @@ import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.junit.jupiter.api.Test;
 
-import static org.janusgraph.diskstorage.inmemory.BufferPageTest.makeEntry;
-import static org.janusgraph.diskstorage.inmemory.BufferPageTest.makeStaticBuffer;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.janusgraph.diskstorage.inmemory.BufferPageTest.makeEntry;
+import static org.janusgraph.diskstorage.inmemory.BufferPageTest.makeStaticBuffer;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

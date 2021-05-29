@@ -15,10 +15,13 @@
 package org.janusgraph.graphdb.types.indextype;
 
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.graphdb.types.*;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.graphdb.types.MixedIndexType;
+import org.janusgraph.graphdb.types.ParameterIndexField;
+import org.janusgraph.graphdb.types.SchemaSource;
+import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

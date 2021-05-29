@@ -14,8 +14,9 @@
 
 package org.janusgraph.core;
 
-import java.time.Instant;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+
+import java.time.Instant;
 
 /**
  * Constructor returned by {@link org.janusgraph.core.JanusGraph#buildTransaction()} to build a new transaction.

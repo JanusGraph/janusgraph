@@ -14,23 +14,28 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.strategy;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.query.QueryUtil;
-import org.janusgraph.graphdb.tinkerpop.optimize.*;
-import org.janusgraph.graphdb.tinkerpop.optimize.step.*;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.query.QueryUtil;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphEdgeVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable;
 
 import java.util.Collections;
 import java.util.List;

@@ -14,19 +14,18 @@
 
 package org.janusgraph.hadoop.serialize;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
-import com.google.common.base.Preconditions;
-import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.spark.serializer.KryoRegistrator;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.common.base.Preconditions;
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.spark.serializer.KryoRegistrator;
 import org.janusgraph.core.attribute.Geoshape;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Register JanusGraph classes requiring custom Kryo serialization for Spark.

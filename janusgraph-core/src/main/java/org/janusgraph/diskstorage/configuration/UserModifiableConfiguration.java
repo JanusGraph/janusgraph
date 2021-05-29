@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
-
 import org.janusgraph.core.schema.JanusGraphConfiguration;
 
 import java.lang.reflect.Array;

@@ -14,10 +14,10 @@
 
 package org.janusgraph.graphdb.types.system;
 
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.types.IndexType;
 
 import java.util.Collections;
 

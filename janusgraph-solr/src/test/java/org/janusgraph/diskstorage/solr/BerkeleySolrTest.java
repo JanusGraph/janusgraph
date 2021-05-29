@@ -15,8 +15,6 @@
 package org.janusgraph.diskstorage.solr;
 
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;

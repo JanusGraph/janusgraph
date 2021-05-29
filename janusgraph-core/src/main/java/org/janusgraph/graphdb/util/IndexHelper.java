@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.util;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
@@ -22,7 +23,6 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
-import org.apache.tinkerpop.gremlin.structure.Element;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

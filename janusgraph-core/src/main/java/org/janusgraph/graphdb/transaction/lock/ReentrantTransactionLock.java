@@ -15,8 +15,6 @@
 package org.janusgraph.graphdb.transaction.lock;
 
 import org.janusgraph.core.JanusGraphException;
-
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -49,10 +49,21 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SPECULATIVE_RETRY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Testcontainers

@@ -14,17 +14,17 @@
 
 package org.janusgraph.diskstorage.log;
 
-import java.time.Duration;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
-
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+
+import java.time.Duration;
 
 /**
  * Implementation of the {@link LogTest} for {@link KCVSLogManager} based log implementations.

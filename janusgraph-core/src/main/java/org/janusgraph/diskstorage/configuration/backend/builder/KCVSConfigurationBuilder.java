@@ -25,7 +25,10 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SETUP_WAITTIME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_CONFIGURATION_IDENTIFIER;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
  * Builder to build {@link KCVSConfiguration} instances

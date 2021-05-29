@@ -15,15 +15,16 @@
 package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.MergedConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashSet;
 import java.util.Map;

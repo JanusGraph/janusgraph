@@ -15,20 +15,24 @@
 package org.janusgraph.hadoop.scan;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.JobStatus;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.olap.VertexScanJob;
 import org.janusgraph.hadoop.CountersScanMetrics;
-import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
 import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
+import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

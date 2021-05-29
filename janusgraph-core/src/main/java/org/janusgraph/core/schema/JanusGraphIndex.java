@@ -14,8 +14,8 @@
 
 package org.janusgraph.core.schema;
 
-import org.janusgraph.core.PropertyKey;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.janusgraph.core.PropertyKey;
 
 /**
  * A JanusGraphIndex is an index installed on the graph in order to be able to efficiently retrieve graph elements

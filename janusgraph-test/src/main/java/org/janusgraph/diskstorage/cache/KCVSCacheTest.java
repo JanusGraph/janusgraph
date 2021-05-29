@@ -19,14 +19,21 @@ import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.inmemory.InMemoryStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
-
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.junit.jupiter.api.AfterEach;
@@ -39,7 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

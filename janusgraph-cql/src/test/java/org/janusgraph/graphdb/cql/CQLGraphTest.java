@@ -14,23 +14,16 @@
 
 package org.janusgraph.graphdb.cql;
 
-import com.datastax.oss.driver.internal.core.tracker.RequestLogger;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.JanusGraphCassandraContainer;
-import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.configuration.JanusGraphConstants;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 public class CQLGraphTest extends JanusGraphTest {

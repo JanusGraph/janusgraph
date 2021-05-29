@@ -30,9 +30,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.Map;
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
-import java.util.Map;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;

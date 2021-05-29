@@ -15,24 +15,35 @@
 package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Geo;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.Mapping;
-import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.core.attribute.*;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
-
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.janusgraph.graphdb.query.condition.*;
+import org.janusgraph.graphdb.query.condition.And;
+import org.janusgraph.graphdb.query.condition.Not;
+import org.janusgraph.graphdb.query.condition.Or;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.testutil.RandomGenerator;
-
 import org.junit.Assume;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,12 +54,23 @@ import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

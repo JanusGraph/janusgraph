@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.types.indextype;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.graphdb.internal.ElementCategory;
@@ -23,7 +24,6 @@ import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collections;
 import java.util.HashMap;

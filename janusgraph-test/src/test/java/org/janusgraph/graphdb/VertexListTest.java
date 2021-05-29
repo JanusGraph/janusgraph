@@ -15,8 +15,8 @@
 package org.janusgraph.graphdb;
 
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.query.vertex.VertexArrayList;
 import org.janusgraph.graphdb.query.vertex.VertexLongList;
@@ -26,7 +26,9 @@ import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

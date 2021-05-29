@@ -21,13 +21,6 @@ import com.codahale.metrics.jmx.ObjectNameFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.InstanceNotFoundException;
-import javax.management.JMException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MBeanServer;
-import javax.management.ObjectInstance;
-import javax.management.ObjectName;
 import java.io.Closeable;
 import java.lang.management.ManagementFactory;
 import java.util.Collections;
@@ -35,6 +28,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import javax.management.InstanceAlreadyExistsException;
+import javax.management.InstanceNotFoundException;
+import javax.management.JMException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.ObjectInstance;
+import javax.management.ObjectName;
 
 /**
  * A reporter which listens for new metrics and exposes them as namespaced MBeans.

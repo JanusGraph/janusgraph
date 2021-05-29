@@ -14,20 +14,16 @@
 
 package org.janusgraph.core.schema;
 
-import static org.easymock.EasyMock.expect;
-
 import org.easymock.EasyMockSupport;
-import org.janusgraph.core.schema.JanusGraphDefaultSchemaMaker;
-import org.junit.jupiter.api.Test;
-
-import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.PropertyKeyMaker;
-import org.janusgraph.core.schema.DefaultSchemaMaker;
+import org.janusgraph.core.attribute.Geoshape;
+import org.junit.jupiter.api.Test;
 
 import java.util.Date;
 import java.util.UUID;
+
+import static org.easymock.EasyMock.expect;
 
 public class JanusGraphDefaultSchemaMakerTest extends EasyMockSupport {
 

@@ -15,12 +15,20 @@
 package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.EntryMetaData;
+import org.janusgraph.diskstorage.ReadBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.graphdb.relations.RelationCache;
 import org.janusgraph.util.encoding.StringEncoding;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.AbstractList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static org.janusgraph.diskstorage.util.ArrayUtil.growSpace;
 

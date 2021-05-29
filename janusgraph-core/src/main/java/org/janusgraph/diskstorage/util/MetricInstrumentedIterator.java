@@ -14,13 +14,13 @@
 
 package org.janusgraph.diskstorage.util;
 
-import java.io.IOException;
-
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
 import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
+
+import java.io.IOException;
 
 /**
  * This class is used by {@code MetricInstrumentedStore} to measure wall clock

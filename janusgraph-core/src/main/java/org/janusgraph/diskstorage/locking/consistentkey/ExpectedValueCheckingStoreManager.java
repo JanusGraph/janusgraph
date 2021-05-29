@@ -16,20 +16,25 @@ package org.janusgraph.diskstorage.locking.consistentkey;
 
 
 import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.MergedConfiguration;
-import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
+import org.janusgraph.diskstorage.keycolumnvalue.KCVSManagerProxy;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.locking.LockerProvider;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

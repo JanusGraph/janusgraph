@@ -15,9 +15,10 @@
 package org.janusgraph.core;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.janusgraph.core.schema.Parameter;
-import java.util.stream.Stream;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.janusgraph.core.schema.Parameter;
+
+import java.util.stream.Stream;
 
 /**
  * A GraphQuery that queries for graph elements directly against a particular indexing backend and hence allows this

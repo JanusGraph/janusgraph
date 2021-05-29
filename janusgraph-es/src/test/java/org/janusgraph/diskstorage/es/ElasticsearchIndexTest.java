@@ -18,13 +18,17 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
-import org.apache.http.client.methods.*;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -33,15 +37,22 @@ import org.apache.http.util.EntityUtils;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.attribute.*;
+import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Geo;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.attribute.Text;
+import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.diskstorage.indexing.*;
-import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.diskstorage.indexing.IndexProvider;
+import org.janusgraph.diskstorage.indexing.IndexProviderTest;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
+import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
@@ -70,7 +81,11 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

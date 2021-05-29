@@ -14,34 +14,18 @@
 
 package org.janusgraph.diskstorage;
 
-import static org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_DELETIONS;
-
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import com.google.common.base.Preconditions;
-
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.keycolumnvalue.*;
-import org.janusgraph.diskstorage.util.BufferUtil;
-import org.janusgraph.diskstorage.util.KeyColumn;
-import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
+import org.janusgraph.diskstorage.keycolumnvalue.KCVSUtil;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.locking.LocalLockMediators;
 import org.janusgraph.diskstorage.locking.Locker;
 import org.janusgraph.diskstorage.locking.LockerProvider;
@@ -51,10 +35,38 @@ import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingStoreManager;
 import org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.KeyColumn;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.easymock.EasyMock.*;
-import static org.junit.jupiter.api.Assertions.*;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import static org.easymock.EasyMock.anyObject;
+import static org.easymock.EasyMock.createStrictMock;
+import static org.easymock.EasyMock.eq;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
+import static org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_DELETIONS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 

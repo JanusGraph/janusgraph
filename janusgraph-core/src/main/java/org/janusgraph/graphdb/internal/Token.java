@@ -15,8 +15,8 @@
 package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

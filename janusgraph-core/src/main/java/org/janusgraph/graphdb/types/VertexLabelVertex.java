@@ -15,8 +15,8 @@
 package org.janusgraph.graphdb.types;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.Connection;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;

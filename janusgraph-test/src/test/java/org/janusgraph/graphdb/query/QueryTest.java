@@ -15,11 +15,16 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.collect.Iterators;
-import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.*;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.JanusGraphIndex;
@@ -41,7 +46,10 @@ import java.util.List;
 import static org.janusgraph.testutil.JanusGraphAssert.assertBackendHit;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.janusgraph.testutil.JanusGraphAssert.assertNoBackendHit;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

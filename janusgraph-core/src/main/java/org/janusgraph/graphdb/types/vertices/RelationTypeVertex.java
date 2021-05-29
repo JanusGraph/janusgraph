@@ -15,16 +15,16 @@
 package org.janusgraph.graphdb.types.vertices;
 
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.schema.ConsistencyModifier;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.Multiplicity;
-import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeUtil;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collections;
 import java.util.LinkedList;

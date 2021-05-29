@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.util.time;
 
 import com.google.common.base.Preconditions;
 
-
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;

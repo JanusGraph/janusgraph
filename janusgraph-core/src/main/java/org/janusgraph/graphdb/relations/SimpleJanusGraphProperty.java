@@ -15,12 +15,13 @@
 package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphProperty;
-import org.janusgraph.graphdb.internal.InternalRelation;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.JanusGraphProperty;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.graphdb.internal.InternalRelation;
+
 import java.util.NoSuchElementException;
 
 /**

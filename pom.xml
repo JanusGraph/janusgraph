@@ -324,6 +324,11 @@
                                 <!-- Imports: https://checkstyle.sourceforge.io/config_imports.html -->
                                 <module name="RedundantImport" />
                                 <module name="UnusedImports" />
+                                <module name="AvoidStarImport" />
+                                <module name="CustomImportOrder">
+                                    <property name="customImportOrderRules" 
+                                    value="THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
+                                </module>                                  
                                 <!-- Miscellaneous: https://checkstyle.sourceforge.io/config_misc.html -->
                                 <module name="ArrayTypeStyle" />
                                 <module name="OuterTypeFilename" />

@@ -14,15 +14,14 @@
 
 package org.janusgraph.diskstorage.lucene;
 
-import org.janusgraph.core.schema.Mapping;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.graphdb.types.ParameterType;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.graphdb.types.ParameterType;
 
 import java.util.HashMap;
 import java.util.Map;

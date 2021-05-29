@@ -15,10 +15,10 @@
 
 package org.janusgraph.core;
 
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 
 /**
  * BaseVertexQuery constructs and executes a query over incident edges or properties from the perspective of a vertex.

@@ -17,8 +17,9 @@ package org.janusgraph.graphdb.query.vertex;
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
-import org.janusgraph.core.*;
+import com.google.common.collect.Iterables;
+import org.janusgraph.core.JanusGraphRelation;
+import org.janusgraph.core.VertexList;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
@@ -29,8 +30,8 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.RelationConstructor;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
+import java.util.Iterator;
 import javax.annotation.Nullable;
-import java.util.*;
 
 /**
  * This is an optimization of specifically for {@link VertexCentricQuery} that addresses the special but

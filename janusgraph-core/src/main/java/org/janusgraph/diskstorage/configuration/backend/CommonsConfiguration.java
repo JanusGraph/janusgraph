@@ -15,14 +15,12 @@
 package org.janusgraph.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.util.time.Durations;
-
-import org.janusgraph.diskstorage.configuration.ReadConfiguration;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-
 import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.diskstorage.configuration.ReadConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.util.time.Durations;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +29,9 @@ import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * {@link ReadConfiguration} wrapper for Apache Configuration

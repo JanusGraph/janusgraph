@@ -14,28 +14,11 @@
 
 package org.janusgraph.diskstorage.locking;
 
-import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
-import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
-import static org.easymock.EasyMock.anyObject;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.time.Instant;
-import java.util.List;
-
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.util.*;
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.easymock.EasyMock;
-import org.easymock.IMocksControl;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.easymock.EasyMock;
+import org.easymock.IMocksControl;
+import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -44,6 +27,26 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerRunnable;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.KeyColumn;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.diskstorage.util.StaticArrayEntryList;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.List;
+
+import static org.easymock.EasyMock.anyObject;
+import static org.easymock.EasyMock.eq;
+import static org.easymock.EasyMock.expect;
+import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
+import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LockCleanerRunnableTest {
 

@@ -15,22 +15,22 @@
 package org.janusgraph.example;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 /**
  * Example Graph factory that creates a {@link JanusGraph} based on roman mythology.

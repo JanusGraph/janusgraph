@@ -15,18 +15,19 @@
 package org.janusgraph.util.system;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Properties;
 
 public class ConfigurationLint {
 

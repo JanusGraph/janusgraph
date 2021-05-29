@@ -14,20 +14,6 @@
 
 package org.janusgraph.graphdb.database;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.PropertyKey;
@@ -44,6 +30,20 @@ import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
 import org.janusgraph.graphdb.vertices.StandardVertex;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 public class IndexSerializerTest {
 

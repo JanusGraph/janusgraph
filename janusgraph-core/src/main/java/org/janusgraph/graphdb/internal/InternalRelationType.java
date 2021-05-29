@@ -14,12 +14,12 @@
 
 package org.janusgraph.graphdb.internal;
 
-import org.janusgraph.core.schema.ConsistencyModifier;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.graphdb.types.IndexType;
+import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.graphdb.types.IndexType;
 
 /**
  * Internal Type interface adding methods that should only be used by JanusGraph

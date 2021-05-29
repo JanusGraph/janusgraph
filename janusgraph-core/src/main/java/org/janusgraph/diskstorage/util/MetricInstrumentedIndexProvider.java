@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.util;
 
+import com.codahale.metrics.Timer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransaction;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
@@ -27,8 +28,6 @@ import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.util.stats.MetricManager;
-
-import com.codahale.metrics.Timer;
 
 import java.util.Arrays;
 import java.util.Collections;

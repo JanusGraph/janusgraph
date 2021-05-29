@@ -14,13 +14,13 @@
 
 package org.janusgraph.blueprints;
 
+import org.apache.tinkerpop.gremlin.GraphProvider;
 import org.janusgraph.BerkeleyStorageSetup;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.diskstorage.berkeleyje.BerkeleyJETx;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
-import org.apache.tinkerpop.gremlin.GraphProvider;
 
 import java.time.Duration;
 import java.util.Set;

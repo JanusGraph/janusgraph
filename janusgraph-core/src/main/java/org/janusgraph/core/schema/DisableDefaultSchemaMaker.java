@@ -14,7 +14,10 @@
 
 package org.janusgraph.core.schema;
 
-import org.janusgraph.core.*;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.VertexLabel;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

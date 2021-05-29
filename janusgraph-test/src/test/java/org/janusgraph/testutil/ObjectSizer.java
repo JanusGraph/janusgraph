@@ -17,8 +17,15 @@ package org.janusgraph.testutil;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.HashMultimap;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Measures the approximate size of an object in memory, given a Class which

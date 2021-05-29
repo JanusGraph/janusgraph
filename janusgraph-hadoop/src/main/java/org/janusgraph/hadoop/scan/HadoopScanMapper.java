@@ -15,6 +15,8 @@
 package org.janusgraph.hadoop.scan;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -25,16 +27,17 @@ import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.EntryArrayList;
-import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
 import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.Mapper;
+import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**

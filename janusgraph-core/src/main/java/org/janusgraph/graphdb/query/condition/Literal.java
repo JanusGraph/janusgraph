@@ -14,9 +14,9 @@
 
 package org.janusgraph.graphdb.query.condition;
 
-import java.util.Collections;
-
 import org.janusgraph.core.JanusGraphElement;
+
+import java.util.Collections;
 
 /**
  * Abstract literal condition.

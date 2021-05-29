@@ -14,12 +14,7 @@
 
 package org.janusgraph.graphdb.olap.computer;
 
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.graphdb.vertices.PreloadedVertex;
-
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -29,8 +24,11 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-
-import com.google.common.base.Preconditions;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.graphdb.vertices.PreloadedVertex;
 
 import java.util.ArrayList;
 import java.util.Collections;

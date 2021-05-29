@@ -18,7 +18,12 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import org.janusgraph.core.JanusGraphConfigurationException;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.configuration.BasicConfiguration;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.ReadConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.builder.KCVSConfigurationBuilder;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -34,15 +39,28 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STALE_CONFIG;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_UPGRADE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for building ReadConfiguration

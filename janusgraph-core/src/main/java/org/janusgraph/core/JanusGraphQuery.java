@@ -14,8 +14,8 @@
 
 package org.janusgraph.core;
 
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 
 /**
  * Constructs a query against a mixed index to retrieve all elements (either vertices or edges)

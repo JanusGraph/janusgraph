@@ -17,7 +17,6 @@ package org.janusgraph.graphdb.hbase;
 import org.janusgraph.HBaseContainer;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
-
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;

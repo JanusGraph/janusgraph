@@ -14,28 +14,6 @@
 
 package org.janusgraph.diskstorage.hbase;
 
-import static org.janusgraph.diskstorage.Backend.EDGESTORE_NAME;
-import static org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME;
-import static org.janusgraph.diskstorage.Backend.LOCK_STORE_SUFFIX;
-import static org.janusgraph.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
-import static org.janusgraph.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -43,7 +21,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HRegionInfo;
@@ -93,6 +70,28 @@ import org.janusgraph.util.system.IOUtils;
 import org.janusgraph.util.system.NetworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+
+import static org.janusgraph.diskstorage.Backend.EDGESTORE_NAME;
+import static org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME;
+import static org.janusgraph.diskstorage.Backend.LOCK_STORE_SUFFIX;
+import static org.janusgraph.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
+import static org.janusgraph.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
 
 /**
  * Storage Manager for HBase

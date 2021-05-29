@@ -14,9 +14,6 @@
 
 package org.janusgraph.diskstorage.solr;
 
-import java.util.Date;
-import java.util.UUID;
-
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.janusgraph.core.Cardinality;
@@ -35,7 +32,13 @@ import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.Date;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnologies.com)

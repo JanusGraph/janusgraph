@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import org.janusgraph.hadoop.FaunusVertex
+
 import com.tinkerpop.blueprints.Direction
+import org.janusgraph.hadoop.FaunusVertex
 
 boolean read(FaunusVertex v, String line) {
     parts = line.split(':')

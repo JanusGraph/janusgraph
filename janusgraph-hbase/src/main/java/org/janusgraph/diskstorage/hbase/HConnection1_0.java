@@ -14,12 +14,12 @@
 
 package org.janusgraph.diskstorage.hbase;
 
-import java.io.IOException;
-import java.util.List;
-
 import org.apache.hadoop.hbase.HRegionLocation;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
+
+import java.io.IOException;
+import java.util.List;
 
 public class HConnection1_0 implements ConnectionMask
 {

@@ -14,9 +14,9 @@
 
 package org.janusgraph.hadoop.config.job;
 
-import java.io.IOException;
-
 import org.apache.hadoop.mapreduce.Job;
+
+import java.io.IOException;
 
 /**
  * Configures a Job a map reduce jar and/or additional classpath elements hosted

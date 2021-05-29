@@ -14,11 +14,11 @@
 
 package org.janusgraph.graphdb.tinkerpop.gremlin.server.auth;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetAddress;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SaslAndHMACAuthenticatorTest extends JanusGraphAbstractAuthenticatorTest {
 

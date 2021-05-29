@@ -14,6 +14,16 @@
 
 package org.janusgraph.graphdb.database.idassigner;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.IDAuthority;
+import org.janusgraph.diskstorage.IDBlock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -25,18 +35,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import com.google.common.base.Preconditions;
-import com.google.common.base.Stopwatch;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.IDBlock;
-
-import org.janusgraph.diskstorage.IDAuthority;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

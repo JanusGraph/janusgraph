@@ -14,13 +14,12 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.strategy;
 
-import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
-
 import org.apache.tinkerpop.gremlin.process.traversal.IO;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IoStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 
 /**
  * JanusGraphIoRegistrationStrategy registers the {@link JanusGraphIoRegistry} for the {@link IoStep}:

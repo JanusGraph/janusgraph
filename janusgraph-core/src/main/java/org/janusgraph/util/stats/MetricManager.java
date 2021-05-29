@@ -14,20 +14,28 @@
 
 package org.janusgraph.util.stats;
 
-import com.codahale.metrics.*;
+import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.CsvReporter;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.JmxReporter;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Slf4jReporter;
+import com.codahale.metrics.Timer;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 
 
 /**

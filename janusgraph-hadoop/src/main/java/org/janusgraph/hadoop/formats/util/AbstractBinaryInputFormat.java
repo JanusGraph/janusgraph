@@ -14,14 +14,14 @@
 
 package org.janusgraph.hadoop.formats.util;
 
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
-import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.HadoopPoolsConfigurable;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
+import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
 
 public abstract class AbstractBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Entry>> implements HadoopPoolsConfigurable {
 

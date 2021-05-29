@@ -14,12 +14,12 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 /**
  * Blueprint's features of a JanusGraph.

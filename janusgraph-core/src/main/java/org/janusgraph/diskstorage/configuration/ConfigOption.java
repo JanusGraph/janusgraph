@@ -16,19 +16,22 @@ package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode;
-
-
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.database.serialize.StandardSerializer;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -27,13 +27,17 @@ import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
+
 import static org.janusgraph.diskstorage.inmemory.BufferPageTest.makeEntry;
 import static org.janusgraph.diskstorage.inmemory.BufferPageTest.makeStaticBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.io.File;
-import java.util.*;
-import java.util.concurrent.ForkJoinPool;
 
 public class InMemoryStoreManagerTest
 {

@@ -14,11 +14,40 @@
 
 package org.janusgraph.diskstorage.locking;
 
-import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
-import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+import org.easymock.EasyMock;
+import org.easymock.IAnswer;
+import org.easymock.IMocksControl;
+import org.easymock.LogicalOperator;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.TemporaryBackendException;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
+import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
+import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
+import org.janusgraph.diskstorage.locking.consistentkey.ExpiredLockException;
+import org.janusgraph.diskstorage.locking.consistentkey.LockCleanerService;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.KeyColumn;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.diskstorage.util.StaticArrayEntryList;
+import org.janusgraph.diskstorage.util.time.Timer;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -31,33 +60,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.easymock.IAnswer;
-import org.janusgraph.diskstorage.locking.consistentkey.*;
-
-import org.janusgraph.diskstorage.util.time.Timer;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.diskstorage.util.*;
-import org.janusgraph.diskstorage.util.KeyColumn;
-
-import org.easymock.EasyMock;
-import org.easymock.IMocksControl;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import org.janusgraph.diskstorage.*;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-
-import org.easymock.LogicalOperator;
-
-import static org.easymock.EasyMock.*;
+import static org.easymock.EasyMock.cmp;
+import static org.easymock.EasyMock.eq;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
+import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
+import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 public class ConsistentKeyLockerTest {

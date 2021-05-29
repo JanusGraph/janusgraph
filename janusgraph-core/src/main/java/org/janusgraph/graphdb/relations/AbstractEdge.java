@@ -15,13 +15,13 @@
 package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.internal.InternalVertex;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

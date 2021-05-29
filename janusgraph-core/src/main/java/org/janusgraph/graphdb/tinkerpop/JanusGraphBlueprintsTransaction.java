@@ -15,6 +15,17 @@
 package org.janusgraph.graphdb.tinkerpop;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.io.Io;
+import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadedTransaction;
+import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexLabel;
@@ -23,13 +34,6 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
-import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.io.Io;
-import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadedTransaction;
-import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.commons.configuration2.Configuration;
 
 import java.util.Arrays;
 import java.util.Collections;

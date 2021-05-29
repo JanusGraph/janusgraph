@@ -14,13 +14,7 @@
 
 package org.janusgraph.hadoop.formats.hbase;
 
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.PermanentBackendException;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
-import org.janusgraph.hadoop.formats.util.AbstractBinaryInputFormat;
+import com.google.common.collect.BiMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
@@ -34,6 +28,13 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
+import org.janusgraph.hadoop.formats.util.AbstractBinaryInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +42,6 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.collect.BiMap;
 
 public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
 

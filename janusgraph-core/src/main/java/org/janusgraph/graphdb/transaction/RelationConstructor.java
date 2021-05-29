@@ -15,9 +15,10 @@
 package org.janusgraph.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.JanusGraphRelation;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.internal.InternalRelation;
@@ -28,7 +29,6 @@ import org.janusgraph.graphdb.relations.CacheVertexProperty;
 import org.janusgraph.graphdb.relations.RelationCache;
 import org.janusgraph.graphdb.types.TypeInspector;
 import org.janusgraph.graphdb.types.TypeUtil;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Iterator;
 

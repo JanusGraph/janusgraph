@@ -14,9 +14,9 @@
 
 package org.janusgraph.hadoop;
 
+import org.apache.hadoop.mapreduce.Counters;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.hadoop.scan.HadoopContextScanMetrics;
-import org.apache.hadoop.mapreduce.Counters;
 
 public class CountersScanMetrics implements ScanMetrics {
 

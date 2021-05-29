@@ -14,10 +14,10 @@
 
 package org.janusgraph.diskstorage.util;
 
-import java.lang.Thread.UncaughtExceptionHandler;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.Thread.UncaughtExceptionHandler;
 
 public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
 

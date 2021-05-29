@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -23,7 +24,6 @@ import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.util.WorkerPool;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
-import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

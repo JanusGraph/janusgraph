@@ -16,9 +16,8 @@ package org.janusgraph.pkgtest;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.Tag;
+import org.janusgraph.util.system.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

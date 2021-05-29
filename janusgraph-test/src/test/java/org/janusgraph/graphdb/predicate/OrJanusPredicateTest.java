@@ -19,13 +19,13 @@
 
 package org.janusgraph.graphdb.predicate;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

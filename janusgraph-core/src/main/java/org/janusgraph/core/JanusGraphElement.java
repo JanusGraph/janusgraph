@@ -15,9 +15,9 @@
 package org.janusgraph.core;
 
 
-import org.janusgraph.util.datastructures.Removable;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.janusgraph.util.datastructures.Removable;
 
 /**
  * JanusGraphElement represents the abstract concept of an entity in the graph and specifies basic methods for interacting

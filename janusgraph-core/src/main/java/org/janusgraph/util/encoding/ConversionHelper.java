@@ -16,7 +16,6 @@ package org.janusgraph.util.encoding;
 
 import com.google.common.base.Preconditions;
 
-
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
 

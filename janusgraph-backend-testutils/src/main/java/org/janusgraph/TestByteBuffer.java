@@ -14,12 +14,16 @@
 
 package org.janusgraph;
 
-import com.carrotsearch.hppc.LongObjectMap;
 import com.carrotsearch.hppc.LongObjectHashMap;
+import com.carrotsearch.hppc.LongObjectMap;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 

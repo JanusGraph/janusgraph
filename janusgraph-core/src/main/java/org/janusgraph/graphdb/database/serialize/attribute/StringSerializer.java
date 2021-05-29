@@ -23,7 +23,10 @@ import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
 import org.janusgraph.graphdb.database.serialize.SupportsNullSerializer;
 import org.janusgraph.util.encoding.StringEncoding;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;

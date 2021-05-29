@@ -14,8 +14,8 @@
 
 package org.janusgraph.hadoop.scan;
 
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.apache.hadoop.mapreduce.TaskInputOutputContext;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 
 public class HadoopContextScanMetrics implements ScanMetrics {
 

@@ -18,32 +18,32 @@ import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphVertex;
-
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.inmemory.InMemoryStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.inmemory.InMemoryStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalVertex;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

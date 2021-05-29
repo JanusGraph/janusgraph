@@ -14,6 +14,12 @@
 
 package org.janusgraph.testutil;
 
+import com.carrotsearch.junitbenchmarks.IResultsConsumer;
+import com.carrotsearch.junitbenchmarks.Result;
+import com.google.common.base.Joiner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -21,13 +27,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.carrotsearch.junitbenchmarks.IResultsConsumer;
-import com.carrotsearch.junitbenchmarks.Result;
-import com.google.common.base.Joiner;
 
 public class CsvConsumer implements IResultsConsumer {
 

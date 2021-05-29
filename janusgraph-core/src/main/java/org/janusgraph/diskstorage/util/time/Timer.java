@@ -14,10 +14,11 @@
 
 package org.janusgraph.diskstorage.util.time;
 
+import com.google.common.base.Preconditions;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.TemporalUnit;
-import com.google.common.base.Preconditions;
 
 /**
  * A utility to measure time durations.

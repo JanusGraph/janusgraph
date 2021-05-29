@@ -20,7 +20,9 @@ import org.janusgraph.core.schema.VertexLabelMaker;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.SystemTypeManager;
-import static org.janusgraph.graphdb.types.TypeDefinitionCategory.*;
+
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.PARTITIONED;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.STATIC;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

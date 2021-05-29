@@ -22,12 +22,13 @@ import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.log.*;
+import org.janusgraph.diskstorage.log.Log;
+import org.janusgraph.diskstorage.log.LogManager;
+import org.janusgraph.diskstorage.log.Message;
+import org.janusgraph.diskstorage.log.MessageReader;
+import org.janusgraph.diskstorage.log.ReadMarker;
 import org.janusgraph.diskstorage.log.util.FutureMessage;
-
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
-
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -35,6 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

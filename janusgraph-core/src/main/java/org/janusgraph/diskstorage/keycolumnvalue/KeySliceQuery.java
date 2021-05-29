@@ -14,9 +14,8 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue;
 
-import org.janusgraph.diskstorage.StaticBuffer;
-
 import com.google.common.base.Preconditions;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 import java.util.Objects;
 

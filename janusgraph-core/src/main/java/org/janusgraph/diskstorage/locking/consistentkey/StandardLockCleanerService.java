@@ -14,6 +14,17 @@
 
 package org.janusgraph.diskstorage.locking.consistentkey;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.KeyColumn;
+import org.janusgraph.diskstorage.util.UncaughtExceptionLogger;
+import org.janusgraph.diskstorage.util.UncaughtExceptionLogger.UELevel;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ConcurrentMap;
@@ -23,18 +34,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.cache.CacheBuilder;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.util.KeyColumn;
-import org.janusgraph.diskstorage.util.UncaughtExceptionLogger;
-import org.janusgraph.diskstorage.util.UncaughtExceptionLogger.UELevel;
 
 /**
  * Encapsulates an ExecutorService that creates and runs

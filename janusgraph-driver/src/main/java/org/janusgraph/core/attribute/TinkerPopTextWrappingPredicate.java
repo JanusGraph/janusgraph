@@ -14,11 +14,9 @@
 
 package org.janusgraph.core.attribute;
 
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
-
-import org.apache.tinkerpop.gremlin.process.traversal.Text;
-
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Text;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 
 /**
  * A {@link JanusGraphPredicate} that just wraps a TinkerPop {@link Text} predicate.

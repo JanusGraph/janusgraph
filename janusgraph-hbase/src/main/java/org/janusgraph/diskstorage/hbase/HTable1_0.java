@@ -14,15 +14,15 @@
 
 package org.janusgraph.diskstorage.hbase;
 
-import java.io.IOException;
-import java.util.List;
-
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
+
+import java.io.IOException;
+import java.util.List;
 
 public class HTable1_0 implements TableMask
 {

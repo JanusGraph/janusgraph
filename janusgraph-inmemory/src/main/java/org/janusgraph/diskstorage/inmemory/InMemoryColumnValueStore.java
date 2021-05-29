@@ -17,7 +17,8 @@ package org.janusgraph.diskstorage.inmemory;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.NoLock;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 

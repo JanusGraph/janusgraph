@@ -15,18 +15,27 @@
 package org.janusgraph.graphdb.serializer;
 
 import com.google.common.collect.Iterators;
-import org.janusgraph.core.*;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.serializer.attributes.*;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.*;
+import org.janusgraph.graphdb.serializer.attributes.TClass1;
+import org.janusgraph.graphdb.serializer.attributes.TClass1Serializer;
+import org.janusgraph.graphdb.serializer.attributes.TClass2;
+import org.janusgraph.graphdb.serializer.attributes.TEnum;
+import org.janusgraph.graphdb.serializer.attributes.TEnumSerializer;
+import org.junit.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

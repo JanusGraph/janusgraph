@@ -14,15 +14,7 @@
 
 package org.janusgraph.diskstorage.es.rest;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_PORT;
-
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.client.config.RequestConfig;
@@ -36,15 +28,22 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchIndex;
 import org.janusgraph.diskstorage.es.rest.util.BasicAuthHttpClientConfigCallback;
+import org.janusgraph.diskstorage.es.rest.util.ConnectionKeepAliveConfigCallback;
 import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.janusgraph.diskstorage.es.rest.util.RestClientAuthenticator;
 import org.janusgraph.diskstorage.es.rest.util.SSLConfigurationCallback;
 import org.janusgraph.diskstorage.es.rest.util.SSLConfigurationCallback.Builder;
-import org.janusgraph.diskstorage.es.rest.util.ConnectionKeepAliveConfigCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_PORT;
 
 /**
  * Create an instance of Elasticsearch REST {@link org.elasticsearch.client.RestClient} from a JanusGraph

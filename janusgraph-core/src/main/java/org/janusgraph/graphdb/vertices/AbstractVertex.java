@@ -16,8 +16,19 @@ package org.janusgraph.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.janusgraph.core.*;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.janusgraph.core.InvalidElementException;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphRelation;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.VertexLabel;
 import org.janusgraph.graphdb.internal.AbstractElement;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalVertex;
@@ -27,14 +38,9 @@ import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.util.ElementHelper;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
-import javax.annotation.Nullable;
 import java.util.Iterator;
+import javax.annotation.Nullable;
 
 public abstract class AbstractVertex extends AbstractElement implements InternalVertex, Vertex {
 

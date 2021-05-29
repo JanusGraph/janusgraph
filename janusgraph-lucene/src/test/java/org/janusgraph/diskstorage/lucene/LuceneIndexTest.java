@@ -16,25 +16,29 @@ package org.janusgraph.diskstorage.lucene;
 
 import org.janusgraph.StorageSetup;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Geo;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.attribute.Text;
+import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.core.attribute.*;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
-import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
-
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

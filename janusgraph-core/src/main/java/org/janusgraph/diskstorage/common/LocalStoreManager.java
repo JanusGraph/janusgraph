@@ -14,16 +14,16 @@
 
 package org.janusgraph.diskstorage.common;
 
+import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.util.DirectoryUtil;
 
 import java.io.File;
-import com.google.common.base.Preconditions;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_ROOT;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 
 /**
  * Abstract Store Manager used as the basis for local StoreManager implementations.

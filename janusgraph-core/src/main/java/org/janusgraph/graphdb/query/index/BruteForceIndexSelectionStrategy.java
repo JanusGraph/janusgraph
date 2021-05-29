@@ -14,10 +14,6 @@
 
 package org.janusgraph.graphdb.query.index;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.graphdb.database.IndexSerializer;
@@ -28,6 +24,11 @@ import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.util.datastructures.PowerSet;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Florian Grieskamp (Florian.Grieskamp@gdata.de)

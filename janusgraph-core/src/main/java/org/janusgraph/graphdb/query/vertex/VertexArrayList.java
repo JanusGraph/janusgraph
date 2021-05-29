@@ -23,7 +23,10 @@ import org.janusgraph.core.VertexList;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.util.datastructures.IterablesUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * An implementation of {@link VertexListInternal} that stores the actual vertex references

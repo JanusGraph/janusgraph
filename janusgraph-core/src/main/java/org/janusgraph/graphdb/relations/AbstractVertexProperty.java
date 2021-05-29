@@ -15,10 +15,13 @@
 package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.*;
-import org.janusgraph.graphdb.internal.InternalVertex;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.graphdb.internal.InternalVertex;
 
 import java.util.Iterator;
 

@@ -15,8 +15,10 @@
 package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-
-import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransaction;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.LoggableTransaction;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;

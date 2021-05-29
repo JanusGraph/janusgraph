@@ -14,11 +14,6 @@
 
 package org.janusgraph.diskstorage.lucene;
 
-import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.graphdb.database.serialize.AttributeUtils;
-
-import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.IntPoint;
@@ -27,6 +22,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
+import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
+import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -17,7 +17,11 @@ package org.janusgraph.graphdb.query.profile;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

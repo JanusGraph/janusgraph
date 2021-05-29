@@ -14,32 +14,30 @@
 
 package org.janusgraph.core;
 
-import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
-import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
-import org.janusgraph.graphdb.management.JanusGraphManager;
-import org.janusgraph.graphdb.database.management.ManagementSystem;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
+import com.google.common.base.Preconditions;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.database.management.ManagementSystem;
+import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
+import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
-import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
+import org.janusgraph.util.system.ConfigurationUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.commons.configuration2.Configuration;
-
-import com.google.common.base.Preconditions;
-
-import java.util.Map;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
-import org.janusgraph.util.system.ConfigurationUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
 
 /**
  * This class provides static methods to: 1) create graph references denoted by a

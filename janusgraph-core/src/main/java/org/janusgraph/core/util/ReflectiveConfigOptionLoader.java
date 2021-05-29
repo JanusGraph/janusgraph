@@ -14,15 +14,11 @@
 
 package org.janusgraph.core.util;
 
-import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.*;
-
+import com.google.common.base.Preconditions;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.reflections8.Reflections;
 import org.reflections8.scanners.SubTypesScanner;
 import org.reflections8.scanners.TypeAnnotationsScanner;
@@ -30,9 +26,19 @@ import org.reflections8.vfs.Vfs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This class supports iteration over JanusGraph's ConfigNamespaces at runtime.

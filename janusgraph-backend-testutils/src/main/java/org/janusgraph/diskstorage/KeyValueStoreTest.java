@@ -15,16 +15,18 @@
 package org.janusgraph.diskstorage;
 
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import com.google.common.collect.Lists;
 import org.janusgraph.JanusGraphBaseStoreFeaturesTest;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.*;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KVQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KVUtil;
+import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
+import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.JanusGraphFeature;
 import org.junit.jupiter.api.AfterEach;
@@ -33,11 +35,16 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.util.RecordIterator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class KeyValueStoreTest extends AbstractKCVSTest implements JanusGraphBaseStoreFeaturesTest {
 

@@ -14,10 +14,10 @@
 
 package org.janusgraph.diskstorage.es.rest.util;
 
-import java.io.IOException;
-
 import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+
+import java.io.IOException;
 
 /**
  * Base class for custom REST client authenticators.

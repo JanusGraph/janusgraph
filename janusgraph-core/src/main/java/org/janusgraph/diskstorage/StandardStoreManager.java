@@ -14,7 +14,12 @@
 
 package org.janusgraph.diskstorage;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * This enum is only intended for use by JanusGraph internals.

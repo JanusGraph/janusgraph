@@ -15,15 +15,22 @@
 package org.janusgraph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.*;
-
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraphProperty;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.diskstorage.EntryMetaData;
-
-import org.janusgraph.graphdb.internal.*;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.graphdb.internal.InternalElement;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.internal.InternalVertexLabel;
+import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
+import org.janusgraph.graphdb.internal.Token;
 
 import java.time.Duration;
 import java.time.Instant;

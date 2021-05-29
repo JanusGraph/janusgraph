@@ -14,10 +14,10 @@
 
 package org.janusgraph.graphdb.util;
 
-import org.janusgraph.core.JanusGraphEdge;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraphEdge;
 
 import java.util.Collections;
 import java.util.Iterator;

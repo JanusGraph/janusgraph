@@ -14,8 +14,20 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.step;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphQuery;
@@ -31,20 +43,6 @@ import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.QueryInfo;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.janusgraph.graphdb.util.MultiDistinctOrderedIterator;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
-import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.janusgraph.graphdb.util.MultiDistinctUnorderedIterator;
 import org.janusgraph.graphdb.util.ProfiledIterator;
 

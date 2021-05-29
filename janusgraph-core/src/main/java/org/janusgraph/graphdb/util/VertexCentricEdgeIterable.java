@@ -15,10 +15,11 @@
 package org.janusgraph.graphdb.util;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.RelationCategory;
-import org.apache.tinkerpop.gremlin.structure.Direction;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 

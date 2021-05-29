@@ -14,9 +14,6 @@
 
 package org.janusgraph.example;
 
-import java.io.IOException;
-import java.util.stream.Stream;
-
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.driver.Client;
@@ -31,6 +28,9 @@ import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
 

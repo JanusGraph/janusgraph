@@ -15,9 +15,9 @@
 package org.janusgraph.diskstorage;
 
 import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

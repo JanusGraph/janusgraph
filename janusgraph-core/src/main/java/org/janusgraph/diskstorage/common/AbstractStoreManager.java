@@ -23,7 +23,11 @@ import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TIMESTAMPS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TTL;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_VISIBILITY;
 
 /**
  * Abstract Store Manager used as the basis for concrete StoreManager implementations.

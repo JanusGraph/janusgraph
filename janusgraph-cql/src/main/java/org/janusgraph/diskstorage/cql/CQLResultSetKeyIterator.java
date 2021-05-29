@@ -14,8 +14,11 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import java.io.IOException;
-
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.google.common.collect.AbstractIterator;
+import io.vavr.Tuple;
+import io.vavr.Tuple3;
+import io.vavr.collection.Iterator;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
@@ -24,12 +27,7 @@ import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.google.common.collect.AbstractIterator;
-
-import io.vavr.Tuple;
-import io.vavr.Tuple3;
-import io.vavr.collection.Iterator;
+import java.io.IOException;
 
 /**
  * {@link SliceQuery} iterator that handles CQL result sets that may have more

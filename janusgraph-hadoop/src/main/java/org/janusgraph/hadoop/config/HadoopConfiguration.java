@@ -14,6 +14,13 @@
 
 package org.janusgraph.hadoop.config;
 
+import com.google.common.base.Preconditions;
+import org.apache.hadoop.conf.Configuration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.util.time.Durations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -21,14 +28,6 @@ import java.time.temporal.TemporalUnit;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-import org.apache.hadoop.conf.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.diskstorage.util.time.Durations;
 
 public class HadoopConfiguration implements WriteConfiguration {
 

@@ -18,8 +18,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphElement;
 
-import javax.annotation.Nullable;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 /**
  * Utility methods for transforming and inspecting {@link Condition}s.

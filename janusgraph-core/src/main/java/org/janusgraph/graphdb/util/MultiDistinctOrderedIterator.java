@@ -14,6 +14,12 @@
 
 package org.janusgraph.graphdb.util;
 
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
+import org.apache.tinkerpop.gremlin.util.function.MultiComparator;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder.OrderEntry;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -23,12 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
-import org.apache.tinkerpop.gremlin.util.function.MultiComparator;
-import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder.OrderEntry;
 
 
 public class MultiDistinctOrderedIterator<E extends Element> implements CloseableIterator<E> {

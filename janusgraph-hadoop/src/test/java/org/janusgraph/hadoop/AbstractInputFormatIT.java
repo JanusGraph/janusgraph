@@ -14,23 +14,28 @@
 
 package org.janusgraph.hadoop;
 
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.example.GraphOfTheGodsFactory;
-import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.process.computer.Computer;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.spark.process.computer.SparkGraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.example.GraphOfTheGodsFactory;
+import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

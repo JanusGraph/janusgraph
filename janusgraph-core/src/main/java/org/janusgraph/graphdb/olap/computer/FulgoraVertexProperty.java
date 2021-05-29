@@ -14,13 +14,14 @@
 
 package org.janusgraph.graphdb.olap.computer;
 
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;

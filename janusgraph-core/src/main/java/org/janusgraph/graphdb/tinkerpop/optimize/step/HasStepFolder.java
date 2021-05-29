@@ -14,34 +14,33 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.step;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
-import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
-import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
-import org.janusgraph.graphdb.query.QueryUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-
+import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
+import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
+import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.javatuples.Pair;
 

@@ -14,10 +14,10 @@
 
 package org.janusgraph.core;
 
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.util.Gremlin;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 
 /**
  * JanusGraph graph database implementation of the Blueprint's interface.

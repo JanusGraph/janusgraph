@@ -16,10 +16,10 @@ package org.janusgraph.graphdb.database;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.RelationCategory;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.EnumMap;
 import java.util.concurrent.ExecutionException;

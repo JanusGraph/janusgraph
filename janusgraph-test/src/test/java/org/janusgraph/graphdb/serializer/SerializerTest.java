@@ -18,13 +18,23 @@ package org.janusgraph.graphdb.serializer;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.janusgraph.core.attribute.*;
+import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
+import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
+import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
+import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
-import org.janusgraph.graphdb.database.serialize.attribute.*;
-import org.janusgraph.graphdb.serializer.attributes.*;
+import org.janusgraph.graphdb.database.serialize.attribute.StringSerializer;
+import org.janusgraph.graphdb.serializer.attributes.TClass1;
+import org.janusgraph.graphdb.serializer.attributes.TClass1Serializer;
+import org.janusgraph.graphdb.serializer.attributes.TClass2;
+import org.janusgraph.graphdb.serializer.attributes.TClass2Serializer;
+import org.janusgraph.graphdb.serializer.attributes.TEnum;
+import org.janusgraph.graphdb.serializer.attributes.TEnumSerializer;
+import org.janusgraph.graphdb.serializer.attributes.THashMapSerializer;
 import org.janusgraph.testutil.RandomGenerator;
 import org.junit.jupiter.api.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -35,17 +45,24 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
-import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
-
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SerializerTest extends SerializerTestCommon {
 

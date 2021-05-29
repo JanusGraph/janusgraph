@@ -14,16 +14,16 @@
 
 package org.janusgraph.graphdb;
 
-import static org.janusgraph.StorageSetup.getHomeDir;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
-
 import org.janusgraph.BerkeleyStorageSetup;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+
+import static org.janusgraph.StorageSetup.getHomeDir;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
 
 public class BerkeleyLuceneIndexMetricTest extends IndexMetricTest {
 

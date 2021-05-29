@@ -14,10 +14,10 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 
 import java.util.HashSet;
 import java.util.Optional;

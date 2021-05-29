@@ -14,27 +14,25 @@
 
 package org.janusgraph.core.attribute;
 
-import org.janusgraph.core.attribute.GeoshapeSerializer;
-import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
-import org.janusgraph.core.attribute.Geoshape;
-
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
+import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 
-import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
-import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
-import org.janusgraph.core.attribute.JtsGeoshapeHelper;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

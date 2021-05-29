@@ -17,15 +17,19 @@ package org.janusgraph.graphdb.log;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.JanusGraphException;
-
+import org.janusgraph.core.log.Change;
+import org.janusgraph.core.log.ChangeProcessor;
 import org.janusgraph.core.log.LogProcessorBuilder;
 import org.janusgraph.core.log.LogProcessorFramework;
 import org.janusgraph.core.schema.JanusGraphSchemaElement;
-import org.janusgraph.core.log.Change;
-import org.janusgraph.core.log.ChangeProcessor;
-import org.janusgraph.diskstorage.*;
-import org.janusgraph.diskstorage.log.*;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.ReadBuffer;
+import org.janusgraph.diskstorage.log.Log;
+import org.janusgraph.diskstorage.log.Message;
+import org.janusgraph.diskstorage.log.MessageReader;
+import org.janusgraph.diskstorage.log.ReadMarker;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.log.LogTxMeta;
@@ -36,16 +40,15 @@ import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.vertices.StandardVertex;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -18,13 +18,12 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.SchemaStatus;
 
-
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
-import java.util.concurrent.Callable;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
 
 
 public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatusWatcher<R,S>> implements Callable<R> {

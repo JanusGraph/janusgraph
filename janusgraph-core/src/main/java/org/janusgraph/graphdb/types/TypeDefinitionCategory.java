@@ -15,16 +15,16 @@
 package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.Multiplicity;
-import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.graphdb.database.management.ModifierType;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.database.management.ModifierType;
 import org.janusgraph.graphdb.internal.ElementCategory;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.RelationCategory;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Arrays;
 import java.util.Collections;

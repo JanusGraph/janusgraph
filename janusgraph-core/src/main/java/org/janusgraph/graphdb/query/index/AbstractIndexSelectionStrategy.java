@@ -40,7 +40,6 @@ import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 
-import javax.annotation.Nullable;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.StreamSupport;
+import javax.annotation.Nullable;
 
 public abstract class AbstractIndexSelectionStrategy implements IndexSelectionStrategy {
     private static final double EQUAL_CONDITION_SCORE = 4;

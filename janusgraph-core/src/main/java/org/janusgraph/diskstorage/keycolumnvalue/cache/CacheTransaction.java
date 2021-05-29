@@ -15,7 +15,11 @@
 package org.janusgraph.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.LoggableTransaction;
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -26,7 +30,11 @@ import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**

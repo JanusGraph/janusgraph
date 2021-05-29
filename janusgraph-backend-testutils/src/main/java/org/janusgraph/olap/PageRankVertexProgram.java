@@ -15,6 +15,7 @@
 package org.janusgraph.olap;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -22,15 +23,13 @@ import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.apache.commons.configuration2.Configuration;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Set;
-
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 /**
  * This implementation is only intended for testing.

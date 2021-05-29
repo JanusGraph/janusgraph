@@ -14,14 +14,13 @@
 
 package org.janusgraph.blueprints.process;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tinkerpop.gremlin.process.ProcessComputerSuite;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalInterruptionComputerTest;
-
-import java.lang.reflect.Field;
-
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
+
+import java.lang.reflect.Field;
 
 /**
  * Custom TinkerPop {@link ProcessComputerSuite} that excludes {@link TraversalInterruptionComputerTest} for compatibility with

@@ -14,10 +14,10 @@
 
 package org.janusgraph.core;
 
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 
 import java.util.Collection;
 import java.util.Map;

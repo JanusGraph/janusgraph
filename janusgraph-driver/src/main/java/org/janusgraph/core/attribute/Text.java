@@ -14,8 +14,6 @@
 
 package org.janusgraph.core.attribute;
 
-import java.util.*;
-
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
@@ -23,6 +21,13 @@ import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Comparison relations for text objects. These comparisons are based on a tokenized representation

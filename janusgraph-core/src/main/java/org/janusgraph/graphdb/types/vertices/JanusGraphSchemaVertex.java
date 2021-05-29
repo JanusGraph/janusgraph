@@ -16,23 +16,29 @@ package org.janusgraph.graphdb.types.vertices;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.JanusGraphVertexQuery;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.transaction.RelationConstructor;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.*;
+import org.janusgraph.graphdb.types.IndexType;
+import org.janusgraph.graphdb.types.SchemaSource;
+import org.janusgraph.graphdb.types.TypeDefinitionCategory;
+import org.janusgraph.graphdb.types.TypeDefinitionDescription;
+import org.janusgraph.graphdb.types.TypeDefinitionMap;
 import org.janusgraph.graphdb.types.indextype.CompositeIndexTypeWrapper;
 import org.janusgraph.graphdb.types.indextype.MixedIndexTypeWrapper;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.vertices.CacheVertex;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource {
 

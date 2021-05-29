@@ -15,10 +15,9 @@
 package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.collect.ImmutableMap;
-import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-
-import org.janusgraph.diskstorage.util.time.Temporals;
 import org.apache.commons.configuration2.BaseConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.util.time.Temporals;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +27,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

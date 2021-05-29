@@ -16,10 +16,17 @@ package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.StaticBuffer;
-import static org.janusgraph.diskstorage.util.StaticArrayBuffer.*;
 import org.janusgraph.diskstorage.WriteBuffer;
 
 import java.nio.ByteBuffer;
+
+import static org.janusgraph.diskstorage.util.StaticArrayBuffer.BYTE_LEN;
+import static org.janusgraph.diskstorage.util.StaticArrayBuffer.CHAR_LEN;
+import static org.janusgraph.diskstorage.util.StaticArrayBuffer.DOUBLE_LEN;
+import static org.janusgraph.diskstorage.util.StaticArrayBuffer.FLOAT_LEN;
+import static org.janusgraph.diskstorage.util.StaticArrayBuffer.INT_LEN;
+import static org.janusgraph.diskstorage.util.StaticArrayBuffer.LONG_LEN;
+import static org.janusgraph.diskstorage.util.StaticArrayBuffer.SHORT_LEN;
 
 
 /**

@@ -14,6 +14,21 @@
 
 package org.janusgraph.testutil;
 
+import com.carrotsearch.junitbenchmarks.AutocloseConsumer;
+import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
+import com.carrotsearch.junitbenchmarks.BenchmarkRule;
+import com.carrotsearch.junitbenchmarks.IResultsConsumer;
+import com.carrotsearch.junitbenchmarks.Result;
+import com.carrotsearch.junitbenchmarks.WriterConsumer;
+import com.carrotsearch.junitbenchmarks.XMLConsumer;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
@@ -31,22 +46,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.carrotsearch.junitbenchmarks.AutocloseConsumer;
-import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
-import com.carrotsearch.junitbenchmarks.BenchmarkRule;
-import com.carrotsearch.junitbenchmarks.IResultsConsumer;
-import com.carrotsearch.junitbenchmarks.Result;
-import com.carrotsearch.junitbenchmarks.WriterConsumer;
-import com.carrotsearch.junitbenchmarks.XMLConsumer;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 
 /**
  * JUB can write the results of a single JVM run to an XML file, but it does not

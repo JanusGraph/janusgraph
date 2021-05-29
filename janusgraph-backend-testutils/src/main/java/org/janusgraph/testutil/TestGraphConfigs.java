@@ -14,20 +14,19 @@
 
 package org.janusgraph.testutil;
 
-import java.io.File;
-import java.time.temporal.ChronoUnit;
-import java.util.concurrent.TimeUnit;
-
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.util.time.Temporals;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.util.time.Temporals;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import java.io.File;
+import java.time.temporal.ChronoUnit;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A central mechanism for overriding graph configuration parameters during

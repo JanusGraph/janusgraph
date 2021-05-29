@@ -18,7 +18,9 @@ import com.google.common.collect.ImmutableList;
 import org.janusgraph.util.encoding.StringEncoding;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

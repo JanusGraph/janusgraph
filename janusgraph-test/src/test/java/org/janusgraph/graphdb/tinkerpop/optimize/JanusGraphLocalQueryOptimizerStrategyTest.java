@@ -18,30 +18,30 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.graphdb.JanusGraphBaseTest;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.janusgraph.graphdb.JanusGraphBaseTest.option;
-import static org.janusgraph.graphdb.JanusGraphBaseTest.validateConfigOptions;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BATCH_PROPERTY_PREFETCHING;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.janusgraph.testutil.JanusGraphAssert.assertNumStep;
 import static org.janusgraph.testutil.JanusGraphAssert.queryProfilerAnnotationIsPresent;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Florian Grieskamp (Florian.Grieskamp@gdata.de)

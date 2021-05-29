@@ -15,10 +15,17 @@
 package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.*;
-import org.janusgraph.graphdb.internal.*;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.core.JanusGraphRelation;
+import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.graphdb.internal.AbstractElement;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.internal.OrderList;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Comparator;
 

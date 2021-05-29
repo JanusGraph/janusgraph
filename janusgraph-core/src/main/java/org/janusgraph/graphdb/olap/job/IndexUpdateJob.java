@@ -15,9 +15,10 @@
 package org.janusgraph.graphdb.olap.job;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.JanusGraphException;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.RelationType;
 import org.janusgraph.core.schema.Index;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -29,7 +30,6 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

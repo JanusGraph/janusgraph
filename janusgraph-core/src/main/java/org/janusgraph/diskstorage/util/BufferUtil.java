@@ -15,7 +15,11 @@
 package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryMetaData;
+import org.janusgraph.diskstorage.ReadBuffer;
+import org.janusgraph.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
