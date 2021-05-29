@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.server.util;
 
 import org.apache.tinkerpop.gremlin.server.Settings;
+import org.janusgraph.graphdb.server.JanusGraphSettings;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -23,28 +24,25 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class GremlinSettingsUtilsTest {
+public class JanusGraphSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializers() throws Exception {
-        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
-            Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
+        Settings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-without-serializers.yaml");
 
         assertEquals(5, settings.serializers.size());
     }
 
     @Test
     public void testDontOverwriteSerializers() throws Exception {
-        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
-            Settings.read("src/test/resources/janusgraph-server-with-serializers.yaml"));
+        Settings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-with-serializers.yaml");
 
         assertEquals(11, settings.serializers.size());
     }
 
     @Test
     public void testSetDefaultSerializersWithGraphBinaryWithRegistry() throws Exception {
-        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
-            Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
+        Settings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-without-serializers.yaml");
 
         Optional<Settings.SerializerSettings> graphBinary = settings.serializers
             .stream()
@@ -57,8 +55,7 @@ public class GremlinSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializersWithGraphBinaryWithResultToString() throws Exception {
-        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
-            Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
+        Settings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-without-serializers.yaml");
 
         Optional<Settings.SerializerSettings> graphBinary = settings.serializers
             .stream()
@@ -71,8 +68,7 @@ public class GremlinSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializersWithGryoWithRegistry() throws Exception {
-        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
-            Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
+        Settings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-without-serializers.yaml");
 
         Optional<Settings.SerializerSettings> gryo = settings.serializers
             .stream()
@@ -85,8 +81,7 @@ public class GremlinSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializersWithGryoWithResultToString() throws Exception {
-        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
-            Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
+        Settings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-without-serializers.yaml");
 
         Optional<Settings.SerializerSettings> graphBinary = settings.serializers
             .stream()
@@ -99,8 +94,7 @@ public class GremlinSettingsUtilsTest {
 
     @Test
     public void testSetDefaultSerializersWithGraphSONWithRegistry() throws Exception {
-        Settings settings = GremlinSettingsUtils.configureDefaultSerializersIfNotSet(
-            Settings.read("src/test/resources/janusgraph-server-without-serializers.yaml"));
+        Settings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-without-serializers.yaml");
 
         Optional<Settings.SerializerSettings> graphson = settings.serializers
             .stream()

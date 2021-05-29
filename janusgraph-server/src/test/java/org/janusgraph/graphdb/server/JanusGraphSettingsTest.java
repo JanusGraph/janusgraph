@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.server;
 
-import org.apache.tinkerpop.gremlin.server.Settings;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,10 +42,8 @@ public class JanusGraphSettingsTest {
     public void testLoadGremlinServerCorrectly() throws Exception {
         JanusGraphSettings janusGraphSettings = JanusGraphSettings.read("src/test/resources/janusgraph-server-with-grpc.yaml");
 
-        Settings settings = janusGraphSettings.getGremlinSettings();
-
-        assertEquals("0.0.0.0", settings.host);
-        assertEquals(1, settings.graphs.size());
-        assertEquals(11, settings.serializers.size());
+        assertEquals("0.0.0.0", janusGraphSettings.host);
+        assertEquals(1, janusGraphSettings.graphs.size());
+        assertEquals(11, janusGraphSettings.serializers.size());
     }
 }

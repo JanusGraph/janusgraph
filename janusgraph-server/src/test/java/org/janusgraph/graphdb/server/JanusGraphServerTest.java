@@ -51,7 +51,7 @@ public class JanusGraphServerTest {
 
         assertFalse(start.isCompletedExceptionally());
 
-        Settings settings = server.getGremlinSettings();
+        Settings settings = server.getJanusGraphSettings();
         assertEquals(5, settings.serializers.size());
 
         CompletableFuture<Void> stop = server.stop();

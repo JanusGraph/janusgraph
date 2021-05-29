@@ -17,20 +17,21 @@ package org.janusgraph.graphdb.server.util;
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.server.util.DefaultGraphManager;
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
+import org.janusgraph.graphdb.server.JanusGraphSettings;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class GremlinSettingsUtils {
+public class JanusGraphSettingsUtils {
 
     private static final String CONFIGURATION_MANAGEMENT_GRAPH_KEY = ConfigurationManagementGraph.class.getSimpleName();
 
-    public static Settings configureDefaults(Settings settings) {
+    public static JanusGraphSettings configureDefaults(JanusGraphSettings settings) {
         return configureDefaultOfDynamicGraphs(configureDefaultSerializersIfNotSet(settings));
     }
 
-    public static Settings configureDefaultOfDynamicGraphs(Settings settings) {
+    private static JanusGraphSettings configureDefaultOfDynamicGraphs(JanusGraphSettings settings) {
         if (!settings.graphs.containsKey(CONFIGURATION_MANAGEMENT_GRAPH_KEY)) {
             return settings;
         }
@@ -46,7 +47,7 @@ public class GremlinSettingsUtils {
      * @param settings Parsed Gremlin Server {@link Settings}.
      * @return Update Gremlin Server {@link Settings}.
      */
-    public static Settings configureDefaultSerializersIfNotSet(Settings settings) {
+    private static JanusGraphSettings configureDefaultSerializersIfNotSet(JanusGraphSettings settings) {
         if (settings.serializers.size() != 0)
             return settings;
 
