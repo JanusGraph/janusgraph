@@ -15,19 +15,21 @@
 package org.janusgraph.graphdb.transaction.vertexcache;
 
 import com.google.common.base.Preconditions;
-import com.google.common.cache.*;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
+import com.google.common.cache.RemovalListener;
+import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.vertices.AbstractVertex;
 import org.janusgraph.util.datastructures.Retriever;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class GuavaVertexCache implements VertexCache {
 

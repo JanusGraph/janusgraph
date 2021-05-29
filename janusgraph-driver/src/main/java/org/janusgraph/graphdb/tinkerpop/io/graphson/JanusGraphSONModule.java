@@ -14,31 +14,31 @@
 
 package org.janusgraph.graphdb.tinkerpop.io.graphson;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.TinkerPopJacksonModule;
+import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
+import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
+import org.apache.tinkerpop.shaded.jackson.core.JsonToken;
+import org.apache.tinkerpop.shaded.jackson.core.type.WritableTypeId;
+import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
+import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
+import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
+import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
+import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.tinkerpop.DeprecatedJanusGraphPSerializer;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphPSerializer;
+import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
-import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
-import org.apache.tinkerpop.shaded.jackson.core.JsonToken;
-import org.apache.tinkerpop.shaded.jackson.core.type.WritableTypeId;
-import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
-import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
-import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.graphdb.tinkerpop.DeprecatedJanusGraphPSerializer;
-import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
-import org.janusgraph.graphdb.relations.RelationIdentifier;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.TinkerPopJacksonModule;
-import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
-import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
-import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
-import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphPSerializer;
 
 /**
  * @author Stephen Mallette (https://stephen.genoprime.com)

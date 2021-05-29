@@ -14,8 +14,8 @@
 
 package org.janusgraph.graphdb;
 
-import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
 import org.junit.jupiter.api.Test;
 
 /**

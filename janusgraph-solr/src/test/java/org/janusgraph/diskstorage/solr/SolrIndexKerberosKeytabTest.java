@@ -14,20 +14,19 @@
 
 package org.janusgraph.diskstorage.solr;
 
-import java.io.File;
-
+import com.google.common.base.Joiner;
 import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.base.Joiner;
+import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

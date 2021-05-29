@@ -14,17 +14,17 @@
 
 package org.janusgraph.diskstorage.lucene;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
-import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**

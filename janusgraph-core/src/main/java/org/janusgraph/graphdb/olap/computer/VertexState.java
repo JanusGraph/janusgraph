@@ -14,12 +14,11 @@
 
 package org.janusgraph.graphdb.olap.computer;
 
-import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
-import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
-
 import com.carrotsearch.hppc.ObjectArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 
 import java.util.HashSet;
 import java.util.Iterator;

@@ -14,19 +14,20 @@
 
 package org.janusgraph.graphdb.serializer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-import org.janusgraph.graphdb.serializer.attributes.*;
+import org.janusgraph.diskstorage.ReadBuffer;
+import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.database.serialize.Serializer;
+import org.janusgraph.graphdb.database.serialize.StandardSerializer;
+import org.janusgraph.graphdb.serializer.attributes.TClass1;
+import org.janusgraph.graphdb.serializer.attributes.TClass2;
+import org.janusgraph.graphdb.serializer.attributes.TEnum;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.janusgraph.diskstorage.ReadBuffer;
-import org.janusgraph.graphdb.database.serialize.DataOutput;
-import org.janusgraph.graphdb.database.serialize.Serializer;
-import org.janusgraph.graphdb.database.serialize.StandardSerializer;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class SerializerTestCommon {
 

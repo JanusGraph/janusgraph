@@ -17,8 +17,8 @@ package org.janusgraph.graphdb.schema;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.schema.JanusGraphManagement;
 

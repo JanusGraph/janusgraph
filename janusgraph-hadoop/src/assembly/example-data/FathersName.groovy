@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import org.janusgraph.core.JanusGraphFactory
+
 import com.tinkerpop.blueprints.Graph
+import org.janusgraph.core.JanusGraphFactory
 import org.janusgraph.util.system.ConfigurationUtil
 
 Graph g

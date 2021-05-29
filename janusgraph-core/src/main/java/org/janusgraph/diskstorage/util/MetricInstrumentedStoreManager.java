@@ -19,12 +19,21 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.StoreMetaData;
-import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.util.stats.MetricManager;
-import static org.janusgraph.diskstorage.util.MetricInstrumentedStore.*;
 
 import java.util.List;
 import java.util.Map;
+
+import static org.janusgraph.diskstorage.util.MetricInstrumentedStore.M_CALLS;
+import static org.janusgraph.diskstorage.util.MetricInstrumentedStore.M_EXCEPTIONS;
+import static org.janusgraph.diskstorage.util.MetricInstrumentedStore.M_MUTATE;
+import static org.janusgraph.diskstorage.util.MetricInstrumentedStore.M_TIME;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

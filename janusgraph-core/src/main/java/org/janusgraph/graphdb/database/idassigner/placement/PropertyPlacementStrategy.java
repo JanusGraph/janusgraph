@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -25,7 +26,6 @@ import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.internal.InternalVertex;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Iterator;
 import java.util.Map;

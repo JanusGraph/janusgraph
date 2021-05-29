@@ -14,10 +14,10 @@
 
 package org.janusgraph.graphdb.schema;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

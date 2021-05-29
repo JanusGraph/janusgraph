@@ -14,9 +14,9 @@
 
 package org.janusgraph.graphdb.olap.computer;
 
-import org.janusgraph.core.JanusGraphTransaction;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.janusgraph.core.JanusGraphTransaction;
 
 import java.util.Optional;
 

@@ -15,10 +15,10 @@
 package org.janusgraph.core;
 
 import com.google.common.collect.Iterables;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 
 /**
  * A JanusGraphVertexQuery is a VertexQuery executed for a single vertex.

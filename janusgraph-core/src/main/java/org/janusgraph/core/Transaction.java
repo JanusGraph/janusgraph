@@ -14,8 +14,8 @@
 
 package org.janusgraph.core;
 
-import org.janusgraph.core.schema.SchemaManager;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.janusgraph.core.schema.SchemaManager;
 
 import java.util.Collection;
 

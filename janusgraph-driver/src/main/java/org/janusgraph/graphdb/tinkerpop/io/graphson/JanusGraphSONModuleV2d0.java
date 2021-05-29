@@ -16,8 +16,8 @@ package org.janusgraph.graphdb.tinkerpop.io.graphson;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 
 /**
  * Supports GraphSON 2.0

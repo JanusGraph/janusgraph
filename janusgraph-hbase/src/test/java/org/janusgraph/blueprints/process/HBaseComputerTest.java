@@ -14,10 +14,10 @@
 
 package org.janusgraph.blueprints.process;
 
-import org.janusgraph.blueprints.HBaseGraphComputerProvider;
-import org.janusgraph.core.JanusGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.process.ProcessComputerSuite;
+import org.janusgraph.blueprints.HBaseGraphComputerProvider;
+import org.janusgraph.core.JanusGraph;
 import org.junit.runner.RunWith;
 
 /**

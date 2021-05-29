@@ -14,10 +14,10 @@
 
 package org.janusgraph.hadoop;
 
-import java.io.IOException;
-
-import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
 import org.apache.hadoop.mapreduce.Job;
+import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
+
+import java.io.IOException;
 
 public class MapredJarConfigurer implements JobClasspathConfigurer {
 

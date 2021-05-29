@@ -21,11 +21,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import org.janusgraph.graphdb.internal.InternalRelation;
 
-import javax.annotation.Nonnull;
 import java.util.AbstractCollection;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import javax.annotation.Nonnull;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

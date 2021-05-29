@@ -14,10 +14,11 @@
 
 package org.janusgraph.graphdb.predicate;
 
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 
 /**
  * @author David Clement (david.clement90@laposte.net)

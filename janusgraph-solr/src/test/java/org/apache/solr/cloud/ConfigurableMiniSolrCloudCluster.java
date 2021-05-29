@@ -14,10 +14,10 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+
 import java.nio.file.Path;
 import java.util.Optional;
-
-import org.apache.solr.client.solrj.embedded.JettyConfig;
 
 /**
 * The constructor necessary to create a MiniSolrCloudCluster enabled for kerberos is protected

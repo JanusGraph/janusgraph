@@ -14,30 +14,29 @@
 
 package org.janusgraph.graphdb.management;
 
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
-import org.janusgraph.core.schema.JanusGraphIndex;
+import org.apache.commons.configuration2.MapConfiguration;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.PropertyKey;
-
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
-import static org.janusgraph.graphdb.management.ConfigurationManagementGraph.PROPERTY_GRAPH_NAME;
-
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.commons.configuration2.MapConfiguration;
-
-import java.util.Map;
-import java.util.HashMap;
-
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
+import static org.janusgraph.graphdb.management.ConfigurationManagementGraph.PROPERTY_GRAPH_NAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ConfigurationManagementGraphTest {
 

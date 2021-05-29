@@ -15,13 +15,13 @@
 package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

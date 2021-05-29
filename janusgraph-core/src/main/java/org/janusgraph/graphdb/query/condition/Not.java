@@ -14,9 +14,8 @@
 
 package org.janusgraph.graphdb.query.condition;
 
-import org.janusgraph.core.JanusGraphElement;
-
 import com.google.common.base.Preconditions;
+import org.janusgraph.core.JanusGraphElement;
 
 import java.util.Collections;
 import java.util.Objects;

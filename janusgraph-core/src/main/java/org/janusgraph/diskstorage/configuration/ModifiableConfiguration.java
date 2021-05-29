@@ -14,11 +14,11 @@
 
 package org.janusgraph.diskstorage.configuration;
 
-import static org.janusgraph.graphdb.configuration.JanusGraphConstants.UPGRADEABLE_FIXED;
-
 import com.google.common.base.Preconditions;
 
 import java.util.Map;
+
+import static org.janusgraph.graphdb.configuration.JanusGraphConstants.UPGRADEABLE_FIXED;
 
 /**
  *

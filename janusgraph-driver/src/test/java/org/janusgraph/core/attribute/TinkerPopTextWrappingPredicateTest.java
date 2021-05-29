@@ -14,15 +14,14 @@
 
 package org.janusgraph.core.attribute;
 
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Text;
 import org.apache.tinkerpop.gremlin.process.traversal.TextP;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TinkerPopTextWrappingPredicateTest {
 

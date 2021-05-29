@@ -19,10 +19,11 @@
  */
 package org.janusgraph.diskstorage.hbase;
 
+import org.apache.hadoop.hbase.HRegionLocation;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
-import org.apache.hadoop.hbase.HRegionLocation;
 
 /**
  * This interface hides ABI/API breaking changes that HBase has made to its (H)Connection class over the course

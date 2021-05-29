@@ -15,8 +15,8 @@
 package org.janusgraph.diskstorage;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.JanusGraphException;
 import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.core.JanusGraphException;
 
 /**
  * This exception is thrown if a resource is being accessed that is unavailable.

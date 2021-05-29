@@ -15,12 +15,12 @@
 package org.janusgraph.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.time.StopWatch;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
-import org.apache.commons.lang3.time.StopWatch;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

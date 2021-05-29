@@ -14,9 +14,9 @@
 
 package org.janusgraph.diskstorage.es.mapping;
 
-import java.util.Map;
-
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
+
+import java.util.Map;
 
 /**
  * Serialization of Elasticsearch index mappings with types.

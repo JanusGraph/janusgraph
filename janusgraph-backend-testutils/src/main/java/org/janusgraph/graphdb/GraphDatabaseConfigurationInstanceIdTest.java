@@ -14,10 +14,6 @@
 
 package org.janusgraph.graphdb;
 
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.util.Map;
-import java.util.HashMap;
 import org.apache.commons.configuration2.MapConfiguration;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
@@ -26,12 +22,18 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.Test;
 
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class GraphDatabaseConfigurationInstanceIdTest {
 

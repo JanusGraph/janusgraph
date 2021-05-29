@@ -16,8 +16,8 @@ package org.janusgraph.pkgtest;
 
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.es.JanusGraphElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 public class CqlESAssemblyIT extends AbstractJanusGraphAssemblyIT {

@@ -15,9 +15,8 @@
 package org.janusgraph.diskstorage.util;
 
 
-import org.junit.jupiter.api.Test;
-
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Random;

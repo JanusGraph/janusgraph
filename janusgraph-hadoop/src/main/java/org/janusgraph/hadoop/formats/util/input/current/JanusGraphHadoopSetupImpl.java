@@ -15,6 +15,8 @@
 package org.janusgraph.hadoop.formats.util.input.current;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -33,12 +35,10 @@ import org.janusgraph.graphdb.types.TypeInspector;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
 import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
+import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
 import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetup;
 import org.janusgraph.hadoop.formats.util.input.SystemTypeInspector;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.hadoop.conf.Configuration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

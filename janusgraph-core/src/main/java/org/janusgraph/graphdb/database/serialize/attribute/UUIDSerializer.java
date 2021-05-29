@@ -14,13 +14,12 @@
 
 package org.janusgraph.graphdb.database.serialize.attribute;
 
-import java.util.UUID;
-
+import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
 
-import com.google.common.base.Preconditions;
+import java.util.UUID;
 
 /**
  *  @author Bryn Cooke (bryn.cooke@datastax.com)

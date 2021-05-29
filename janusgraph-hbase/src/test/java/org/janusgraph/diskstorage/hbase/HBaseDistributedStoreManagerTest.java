@@ -17,7 +17,6 @@ package org.janusgraph.diskstorage.hbase;
 import org.janusgraph.HBaseContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.DistributedStoreManagerTest;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.junit.jupiter.Container;

@@ -14,8 +14,6 @@
 
 package org.janusgraph.graphdb.query.index;
 
-import java.util.Set;
-
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -24,6 +22,8 @@ import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.types.IndexType;
+
+import java.util.Set;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.QUERY_NS;
 

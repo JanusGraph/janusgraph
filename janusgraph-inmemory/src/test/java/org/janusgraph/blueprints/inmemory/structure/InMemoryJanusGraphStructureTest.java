@@ -14,10 +14,10 @@
 
 package org.janusgraph.blueprints.inmemory.structure;
 
-import org.janusgraph.blueprints.inmemory.InMemoryGraphProvider;
-import org.janusgraph.core.JanusGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
+import org.janusgraph.blueprints.inmemory.InMemoryGraphProvider;
+import org.janusgraph.core.JanusGraph;
 import org.junit.runner.RunWith;
 
 

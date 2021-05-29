@@ -16,12 +16,18 @@ package org.janusgraph.graphdb.types.indextype;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.*;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.types.*;
-import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.graphdb.types.CompositeIndexType;
+import org.janusgraph.graphdb.types.IndexField;
+import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.graphdb.types.SchemaSource;
+import org.janusgraph.graphdb.types.TypeDefinitionCategory;
+import org.janusgraph.graphdb.types.TypeUtil;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

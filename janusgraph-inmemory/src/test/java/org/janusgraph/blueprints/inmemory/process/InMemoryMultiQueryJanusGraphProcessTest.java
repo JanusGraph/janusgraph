@@ -14,10 +14,10 @@
 
 package org.janusgraph.blueprints.inmemory.process;
 
-import org.janusgraph.blueprints.inmemory.InMemoryMultiQueryGraphProvider;
-import org.janusgraph.core.JanusGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
+import org.janusgraph.blueprints.inmemory.InMemoryMultiQueryGraphProvider;
+import org.janusgraph.core.JanusGraph;
 import org.junit.runner.RunWith;
 
 /**

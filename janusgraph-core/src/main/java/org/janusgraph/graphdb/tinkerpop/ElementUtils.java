@@ -14,12 +14,12 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 
 /**
  * Created by bryn on 07/05/15.

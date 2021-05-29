@@ -16,13 +16,11 @@ package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphException;
-
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

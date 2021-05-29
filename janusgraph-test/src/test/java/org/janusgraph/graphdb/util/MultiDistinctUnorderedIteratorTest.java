@@ -14,12 +14,10 @@
 
 package org.janusgraph.graphdb.util;
 
-import org.janusgraph.graphdb.query.Query;
-
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertex;
-
+import org.janusgraph.graphdb.query.Query;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

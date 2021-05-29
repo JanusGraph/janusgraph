@@ -14,12 +14,8 @@
 
 package org.janusgraph.diskstorage.es.compat;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.schema.Mapping;
@@ -27,10 +23,20 @@ import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.es.ElasticSearchRequest;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import static org.janusgraph.diskstorage.es.ElasticSearchConstants.*;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_ANALYZER;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_ID_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_LANG_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_PARAMS_FIELDS_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_PARAMS_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_SCRIPT_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_SOURCE_KEY;
+import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_TYPE_KEY;
 
 /**
  * Base class for building Elasticsearch mapping and query objects.

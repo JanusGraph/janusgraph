@@ -16,8 +16,8 @@ package org.janusgraph.graphdb.relations;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelation;

@@ -14,13 +14,12 @@
 
 package org.janusgraph.graphdb.query.graph;
 
+import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
-
-import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;

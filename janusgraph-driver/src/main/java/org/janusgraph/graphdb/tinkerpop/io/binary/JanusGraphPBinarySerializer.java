@@ -17,8 +17,8 @@ package org.janusgraph.graphdb.tinkerpop.io.binary;
 import org.apache.tinkerpop.gremlin.structure.io.Buffer;
 import org.apache.tinkerpop.gremlin.structure.io.binary.GraphBinaryReader;
 import org.apache.tinkerpop.gremlin.structure.io.binary.GraphBinaryWriter;
-import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphPSerializer;
+import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 
 import java.io.IOException;
 

@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.idmanagement;
 
 import com.google.common.base.Preconditions;
-
 import org.janusgraph.diskstorage.IDAuthority;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.Configuration;

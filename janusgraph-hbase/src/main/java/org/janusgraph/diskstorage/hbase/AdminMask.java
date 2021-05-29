@@ -19,13 +19,13 @@
  */
 package org.janusgraph.diskstorage.hbase;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 import org.apache.hadoop.hbase.ClusterStatus;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
+
+import java.io.Closeable;
+import java.io.IOException;
 
 /**
  * This interface hides ABI/API breaking changes that HBase has made to its Admin/HBaseAdmin over the course

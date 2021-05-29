@@ -15,9 +15,9 @@
 package org.janusgraph.graphdb.serializer;
 
 import org.janusgraph.StorageSetup;
-import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.junit.jupiter.api.Test;

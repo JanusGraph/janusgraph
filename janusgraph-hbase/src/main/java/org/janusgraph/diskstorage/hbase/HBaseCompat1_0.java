@@ -14,8 +14,6 @@
 
 package org.janusgraph.diskstorage.hbase;
 
-import java.io.IOException;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -23,6 +21,8 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.io.compress.Compression;
+
+import java.io.IOException;
 
 public class HBaseCompat1_0 implements HBaseCompat {
 

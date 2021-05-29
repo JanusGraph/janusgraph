@@ -15,8 +15,8 @@
 package org.janusgraph.graphdb.types.system;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.Connection;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 
 import java.util.ArrayList;

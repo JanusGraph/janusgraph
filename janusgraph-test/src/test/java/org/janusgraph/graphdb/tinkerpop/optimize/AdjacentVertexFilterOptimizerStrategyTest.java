@@ -14,12 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import static java.time.Duration.ofSeconds;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inV;
-import static org.janusgraph.testutil.JanusGraphAssert.assertNumStep;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -27,6 +21,12 @@ import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.AdjacentVertexFilterOptimizerStrategy;
 import org.junit.jupiter.api.Test;
+
+import static java.time.Duration.ofSeconds;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inV;
+import static org.janusgraph.testutil.JanusGraphAssert.assertNumStep;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Florian Grieskamp (Florian.Grieskamp@gdata.de)

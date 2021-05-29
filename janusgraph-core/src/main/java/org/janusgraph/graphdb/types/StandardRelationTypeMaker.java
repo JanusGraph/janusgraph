@@ -15,19 +15,28 @@
 package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.*;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.RelationTypeMaker;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.serialize.AttributeHandler;
-import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.SystemTypeManager;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 
-import static org.janusgraph.graphdb.types.TypeDefinitionCategory.*;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.INVISIBLE;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.MULTIPLICITY;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.SIGNATURE;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.SORT_KEY;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.SORT_ORDER;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.STATUS;
 
 public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 

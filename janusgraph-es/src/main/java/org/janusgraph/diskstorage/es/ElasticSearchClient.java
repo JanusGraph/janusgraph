@@ -14,13 +14,13 @@
 
 package org.janusgraph.diskstorage.es;
 
+import org.janusgraph.diskstorage.es.mapping.IndexMapping;
+import org.janusgraph.diskstorage.es.script.ESScriptResponse;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
-import org.janusgraph.diskstorage.es.mapping.IndexMapping;
-import org.janusgraph.diskstorage.es.script.ESScriptResponse;
 
 public interface ElasticSearchClient extends Closeable {
 

@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.es.rest.util;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -21,8 +22,6 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
-
-import com.google.common.base.Preconditions;
 
 public class BasicAuthHttpClientConfigCallback implements HttpClientConfigCallback {
 

@@ -14,15 +14,14 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Random;
-
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import io.vavr.Function1;
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
+import io.vavr.collection.Array;
+import io.vavr.collection.Iterator;
+import io.vavr.collection.Seq;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -31,15 +30,14 @@ import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.RecordIterator;
 import org.junit.jupiter.api.Test;
 
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Random;
 
-import io.vavr.Function1;
-import io.vavr.Tuple;
-import io.vavr.Tuple2;
-import io.vavr.collection.Array;
-import io.vavr.collection.Iterator;
-import io.vavr.collection.Seq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class CQLResultSetKeyIteratorTest {
 

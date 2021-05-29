@@ -15,7 +15,8 @@
 package org.janusgraph.hadoop.config;
 
 import org.janusgraph.diskstorage.Backend;
-import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
 
 public class JanusGraphHadoopConfiguration {
 

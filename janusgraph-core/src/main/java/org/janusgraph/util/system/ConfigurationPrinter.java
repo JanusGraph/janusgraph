@@ -14,6 +14,12 @@
 
 package org.janusgraph.util.system;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -22,12 +28,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
 
 import static org.janusgraph.util.encoding.StringEncoding.UTF8_ENCODING;
 

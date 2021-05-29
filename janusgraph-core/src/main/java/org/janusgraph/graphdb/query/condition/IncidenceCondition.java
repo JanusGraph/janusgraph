@@ -14,11 +14,10 @@
 
 package org.janusgraph.graphdb.query.condition;
 
+import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
-
-import com.google.common.base.Preconditions;
 
 import java.util.Objects;
 

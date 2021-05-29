@@ -14,9 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.strategy;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
@@ -30,6 +27,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Florian Grieskamp (Florian.Grieskamp@gdata.de)

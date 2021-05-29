@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.database.idhandling;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
@@ -22,9 +23,11 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.RelationCategory;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.*;
+import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.SystemEdgeLabel;
+import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.SystemPropertyKey;
+import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.UserEdgeLabel;
+import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.UserPropertyKey;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

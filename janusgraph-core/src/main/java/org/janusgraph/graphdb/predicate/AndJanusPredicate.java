@@ -14,8 +14,9 @@
 
 package org.janusgraph.graphdb.predicate;
 
-import java.util.List;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+
+import java.util.List;
 
 /**
  * @author David Clement (david.clement90@laposte.net)

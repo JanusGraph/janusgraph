@@ -16,7 +16,19 @@ package org.janusgraph.diskstorage.berkeleyje;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.sleepycat.je.*;
+import com.sleepycat.je.Cursor;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.DatabaseException;
+import com.sleepycat.je.EnvironmentFailureException;
+import com.sleepycat.je.Get;
+import com.sleepycat.je.OperationResult;
+import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.Put;
+import com.sleepycat.je.ReadOptions;
+import com.sleepycat.je.Transaction;
+import com.sleepycat.je.WriteOptions;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -34,9 +46,9 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.NoSuchElementException;
 
 public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 

@@ -16,7 +16,7 @@ package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

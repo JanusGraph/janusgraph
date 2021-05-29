@@ -14,14 +14,13 @@
 
 package org.janusgraph.diskstorage.solr;
 
-import java.io.File;
-import java.util.Properties;
-
+import com.google.common.base.Joiner;
 import org.apache.kerby.kerberos.kerb.KrbException;
 import org.apache.kerby.kerberos.kerb.server.SimpleKdcServer;
 import org.apache.kerby.util.NetworkUtil;
 
-import com.google.common.base.Joiner;
+import java.io.File;
+import java.util.Properties;
 
 public class MiniKDC {
 

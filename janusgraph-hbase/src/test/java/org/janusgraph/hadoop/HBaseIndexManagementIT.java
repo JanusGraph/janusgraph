@@ -16,7 +16,6 @@ package org.janusgraph.hadoop;
 
 import org.janusgraph.HBaseContainer;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 

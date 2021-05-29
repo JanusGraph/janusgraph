@@ -14,13 +14,13 @@
 
 package org.janusgraph.graphdb.predicate;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Text;
 import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

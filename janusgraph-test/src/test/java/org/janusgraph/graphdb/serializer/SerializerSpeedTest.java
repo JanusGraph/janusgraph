@@ -15,13 +15,17 @@
 package org.janusgraph.graphdb.serializer;
 
 import org.janusgraph.TestCategory;
-import org.janusgraph.graphdb.serializer.attributes.*;
+import org.janusgraph.graphdb.serializer.attributes.TClass1;
+import org.janusgraph.graphdb.serializer.attributes.TClass1Serializer;
+import org.janusgraph.graphdb.serializer.attributes.TClass2;
+import org.janusgraph.graphdb.serializer.attributes.TClass2Serializer;
+import org.janusgraph.graphdb.serializer.attributes.TEnum;
+import org.janusgraph.graphdb.serializer.attributes.TEnumSerializer;
+import org.janusgraph.testutil.JUnitBenchmarkProvider;
 import org.junit.Rule;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.TestRule;
-
-import org.janusgraph.testutil.JUnitBenchmarkProvider;
 
 @Tag(TestCategory.PERFORMANCE_TESTS)
 public class SerializerSpeedTest extends SerializerTestCommon {

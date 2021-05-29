@@ -16,8 +16,19 @@ package org.janusgraph.diskstorage.berkeleyje;
 
 
 import com.google.common.base.Preconditions;
-import com.sleepycat.je.*;
-import org.janusgraph.diskstorage.*;
+import com.sleepycat.je.CacheMode;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseException;
+import com.sleepycat.je.Environment;
+import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.LockMode;
+import com.sleepycat.je.Transaction;
+import com.sleepycat.je.TransactionConfig;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.common.LocalStoreManager;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -34,7 +45,6 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.util.system.IOUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

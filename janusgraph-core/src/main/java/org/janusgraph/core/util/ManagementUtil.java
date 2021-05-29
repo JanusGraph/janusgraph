@@ -15,18 +15,16 @@
 package org.janusgraph.core.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.JanusGraphException;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.schema.RelationTypeIndex;
-import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.Index;
+import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
-
-
+import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
 import java.time.Instant;

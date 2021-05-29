@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.strategy;
 
-import java.util.List;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -25,6 +24,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.List;
 
 import static org.janusgraph.graphdb.types.system.ImplicitKey.ADJACENT_ID;
 

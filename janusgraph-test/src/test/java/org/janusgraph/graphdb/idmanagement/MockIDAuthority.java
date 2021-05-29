@@ -15,8 +15,10 @@
 package org.janusgraph.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.*;
-
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.IDAuthority;
+import org.janusgraph.diskstorage.IDBlock;
+import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
 import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;

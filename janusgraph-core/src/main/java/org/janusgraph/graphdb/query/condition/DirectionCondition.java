@@ -14,13 +14,12 @@
 
 package org.janusgraph.graphdb.query.condition;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.graphdb.relations.CacheEdge;
-
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Objects;
 

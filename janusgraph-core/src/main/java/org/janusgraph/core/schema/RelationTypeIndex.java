@@ -14,9 +14,9 @@
 
 package org.janusgraph.core.schema;
 
-import org.janusgraph.core.RelationType;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.core.RelationType;
 
 /**
  * A RelationTypeIndex is an index installed on a {@link RelationType} to speed up vertex-centric indexes for that type.

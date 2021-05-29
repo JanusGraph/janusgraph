@@ -14,8 +14,8 @@
 
 package org.janusgraph.graphdb.internal;
 
-import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.JanusGraphRelation;
+import org.janusgraph.core.PropertyKey;
 
 /**
  * Internal Relation interface adding methods that should only be used by JanusGraph.

@@ -14,20 +14,8 @@
 
 package org.janusgraph.diskstorage.locking;
 
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.ExecutorService;
-
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
@@ -36,6 +24,17 @@ import org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerRunna
 import org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerService;
 import org.janusgraph.diskstorage.util.KeyColumn;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.ExecutorService;
+
+import static org.easymock.EasyMock.eq;
+import static org.easymock.EasyMock.expect;
 
 public class LockCleanerServiceTest {
     private IMocksControl ctrl;

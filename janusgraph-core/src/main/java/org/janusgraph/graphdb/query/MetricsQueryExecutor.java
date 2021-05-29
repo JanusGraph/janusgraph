@@ -13,13 +13,15 @@
 // limitations under the License.
 
 package org.janusgraph.graphdb.query;
-import java.util.Iterator;
+
 import com.codahale.metrics.Timer;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.util.stats.MetricManager;
+
+import java.util.Iterator;
 
 /**
  * Wraps a {@link QueryExecutor} to gather metrics on the query execution and forward them to METRICS.

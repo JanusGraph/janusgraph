@@ -14,15 +14,14 @@
 
 package org.janusgraph.hadoop;
 
-import java.io.IOException;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
-
 import org.janusgraph.hadoop.config.job.AbstractDistCacheConfigurer;
 import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
+
+import java.io.IOException;
 
 public class DistCacheConfigurer extends AbstractDistCacheConfigurer implements JobClasspathConfigurer {
 

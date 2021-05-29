@@ -14,10 +14,10 @@
 
 package org.janusgraph.graphdb.serializer.attributes;
 
-import java.util.HashMap;
-
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.graphdb.database.serialize.attribute.SerializableSerializer;
+
+import java.util.HashMap;
 
 /**
  * @author Scott McQuillan (scott.mcquillan@uk.ibm.com)

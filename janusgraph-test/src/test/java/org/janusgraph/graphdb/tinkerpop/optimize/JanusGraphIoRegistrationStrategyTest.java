@@ -14,12 +14,10 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
-
 import org.apache.tinkerpop.gremlin.process.traversal.IO;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IoStep;
-
+import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -14,25 +14,24 @@
 
 package org.janusgraph.diskstorage.locking.consistentkey;
 
-import java.time.Instant;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.KeyColumn;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+
 import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
+import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
 
 /**
  * Attempt to delete locks before a configurable timestamp cutoff using the

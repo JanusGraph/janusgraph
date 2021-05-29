@@ -14,11 +14,11 @@
 
 package org.janusgraph.graphdb.types.vertices;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class PropertyKeyVertex extends RelationTypeVertex implements PropertyKey {
 

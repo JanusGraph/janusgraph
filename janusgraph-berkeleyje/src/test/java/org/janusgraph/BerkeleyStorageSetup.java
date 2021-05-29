@@ -14,16 +14,20 @@
 
 package org.janusgraph;
 
+import com.sleepycat.je.dbi.TTL;
+import com.sleepycat.je.utilint.TestHookAdapter;
 import org.janusgraph.diskstorage.berkeleyje.BerkeleyJEKeyValueStore;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-
 import java.time.Instant;
 
-import com.sleepycat.je.dbi.TTL;
-import com.sleepycat.je.utilint.TestHookAdapter;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TX_CACHE_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
 
 public class BerkeleyStorageSetup extends StorageSetup {
     static {

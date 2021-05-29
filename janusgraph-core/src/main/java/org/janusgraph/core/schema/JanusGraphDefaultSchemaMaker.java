@@ -14,11 +14,11 @@
 
 package org.janusgraph.core.schema;
 
+import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.PropertyKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

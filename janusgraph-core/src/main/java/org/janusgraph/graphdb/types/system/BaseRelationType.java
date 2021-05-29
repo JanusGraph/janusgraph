@@ -15,11 +15,11 @@
 package org.janusgraph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.internal.Token;
-import org.apache.commons.lang3.StringUtils;
 
 public abstract class BaseRelationType extends EmptyRelationType implements SystemRelationType {
 

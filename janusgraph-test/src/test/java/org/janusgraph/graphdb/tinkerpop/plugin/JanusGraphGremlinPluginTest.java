@@ -14,10 +14,11 @@
 
 package org.janusgraph.graphdb.tinkerpop.plugin;
 
-import java.lang.reflect.Method;
-import java.util.Set;
 import org.apache.tinkerpop.gremlin.jsr223.ImportCustomizer;
 import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Method;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

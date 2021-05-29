@@ -16,12 +16,14 @@ package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.janusgraph.core.*;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.serialize.AttributeHandler;
-import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.lang.reflect.Modifier;

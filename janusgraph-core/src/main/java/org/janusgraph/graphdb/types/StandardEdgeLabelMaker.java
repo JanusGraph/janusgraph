@@ -15,14 +15,16 @@
 package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.*;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.EdgeLabelMaker;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.serialize.AttributeHandler;
-import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
+import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import static org.janusgraph.graphdb.types.TypeDefinitionCategory.INVISIBLE;
 import static org.janusgraph.graphdb.types.TypeDefinitionCategory.UNIDIRECTIONAL;

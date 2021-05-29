@@ -14,13 +14,12 @@
 
 package org.janusgraph.diskstorage.locking;
 
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import org.janusgraph.diskstorage.util.KeyColumn;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

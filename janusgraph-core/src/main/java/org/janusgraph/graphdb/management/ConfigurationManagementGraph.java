@@ -14,37 +14,35 @@
 
 package org.janusgraph.graphdb.management;
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.graphdb.database.management.ManagementSystem;
-import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
-import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphAlreadyInstantiatedException;
-import static org.janusgraph.core.schema.SchemaAction.ENABLE_INDEX;
-import static org.janusgraph.core.schema.SchemaAction.REINDEX;
-import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
-import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-
+import com.google.common.base.Preconditions;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.ConfigurationConverter;
-import com.google.common.base.Preconditions;
-
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.database.management.ManagementSystem;
+import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphAlreadyInstantiatedException;
+import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import static org.janusgraph.core.schema.SchemaAction.ENABLE_INDEX;
+import static org.janusgraph.core.schema.SchemaAction.REINDEX;
+import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
+import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
 
 /**
  * This class allows you to create/update/remove configuration objects used to open a graph.

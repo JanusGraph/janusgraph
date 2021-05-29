@@ -14,9 +14,9 @@
 
 package org.janusgraph.diskstorage.util;
 
-import java.util.concurrent.Callable;
-
 import org.janusgraph.diskstorage.BackendException;
+
+import java.util.concurrent.Callable;
 
 /**
  * Like {@link Callable}, except the exception type is narrowed from

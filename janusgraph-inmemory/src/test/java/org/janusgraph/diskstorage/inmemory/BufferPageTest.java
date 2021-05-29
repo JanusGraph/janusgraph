@@ -19,11 +19,11 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.janusgraph.diskstorage.inmemory.BufferPageUtils.buildFromEntryArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
 
 public class BufferPageTest
 {
