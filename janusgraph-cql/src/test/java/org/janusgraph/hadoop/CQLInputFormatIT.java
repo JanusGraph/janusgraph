@@ -16,11 +16,14 @@ package org.janusgraph.hadoop;
 
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.spark.process.computer.SparkGraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.util.system.ConfigurationUtil;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -29,14 +32,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @Testcontainers
 public class CQLInputFormatIT extends AbstractInputFormatIT {
 
     @Container
     private static JanusGraphCassandraContainer cql = new JanusGraphCassandraContainer();
 
-    private PropertiesConfiguration getGraphConfiguration() throws ConfigurationException, IOException {
-        final PropertiesConfiguration config = ConfigurationUtil.loadPropertiesConfig("target/test-classes/cql-read.properties");
+    private PropertiesConfiguration getGraphConfiguration(final String filename) throws ConfigurationException, IOException {
+        final PropertiesConfiguration config = ConfigurationUtil.loadPropertiesConfig(filename, false);
         Path baseOutDir = Paths.get((String) config.getProperty("gremlin.hadoop.outputLocation"));
         baseOutDir.toFile().mkdirs();
         String outDir = Files.createTempDirectory(baseOutDir, null).toAbsolutePath().toString();
@@ -52,6 +58,24 @@ public class CQLInputFormatIT extends AbstractInputFormatIT {
 
     @Override
     protected Graph getGraph() throws ConfigurationException, IOException {
-        return GraphFactory.open(getGraphConfiguration());
+        return GraphFactory.open(getGraphConfiguration("target/test-classes/cql-read.properties"));
+    }
+
+    @Test
+    public void testOpenFromConfigWithMultiHosts() throws ConfigurationException, IOException {
+        final Graph g = GraphFactory.open(getGraphConfiguration("target/test-classes/cql-read-multi-hosts.properties"));
+        runTraversalWithInvalidHost(g, "invalid-host");
+    }
+
+    @Test
+    public void testOpenFromFileWithMultiHosts() throws ConfigurationException, IOException {
+        final Graph g = GraphFactory.open("target/test-classes/cql-read-multi-hosts.properties");
+        runTraversalWithInvalidHost(g, "invalid-host");
+    }
+
+    private void runTraversalWithInvalidHost(final Graph g, final String hostname) {
+        final GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> t.V().next());
+        assertEquals("java.lang.IllegalArgumentException: Failed to add contact point: " + hostname, exception.getMessage());
     }
 }

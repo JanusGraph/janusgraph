@@ -264,7 +264,7 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
     }
 
     protected Graph getGraph() throws IOException, ConfigurationException {
-        final PropertiesConfiguration config = ConfigurationUtil.loadPropertiesConfig("target/test-classes/hbase-read-snapshot.properties");
+        final PropertiesConfiguration config = ConfigurationUtil.loadPropertiesConfig("target/test-classes/hbase-read-snapshot.properties", false);
         Path baseOutDir = Paths.get((String) config.getProperty("gremlin.hadoop.outputLocation"));
         baseOutDir.toFile().mkdirs();
         String outDir = Files.createTempDirectory(baseOutDir, null).toAbsolutePath().toString();

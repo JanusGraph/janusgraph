@@ -111,7 +111,19 @@ public class ConfigurationUtil {
      * @throws ConfigurationException
      */
     public static PropertiesConfiguration loadPropertiesConfig(String filename) throws ConfigurationException {
-        return loadPropertiesConfig(new Parameters().properties().setFileName(filename));
+        return loadPropertiesConfig(filename, true);
+    }
+
+    /**
+     * Load properties from a given file name and return a PropertiesConfiguration object.
+     * @param filename
+     * @param setCommaDelimiterHandler
+     * @return
+     * @throws ConfigurationException
+     */
+    public static PropertiesConfiguration loadPropertiesConfig(String filename,
+                                                               boolean setCommaDelimiterHandler) throws ConfigurationException {
+        return loadPropertiesConfig(new Parameters().properties().setFileName(filename), setCommaDelimiterHandler);
     }
 
     /**
@@ -122,13 +134,17 @@ public class ConfigurationUtil {
      * @throws ConfigurationException
      */
     public static PropertiesConfiguration loadPropertiesConfig(File file) throws ConfigurationException {
-        return loadPropertiesConfig(new Parameters().properties().setFile(file));
+        return loadPropertiesConfig(new Parameters().properties().setFile(file), true);
     }
 
-    private static PropertiesConfiguration loadPropertiesConfig(PropertiesBuilderParameters params) throws ConfigurationException {
+    private static PropertiesConfiguration loadPropertiesConfig(PropertiesBuilderParameters params,
+                                                                boolean setCommaDelimiterHandler) throws ConfigurationException {
         FileBasedConfigurationBuilder<PropertiesConfiguration> builder =
-            new FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration.class)
-                .configure(params.setListDelimiterHandler(COMMA_DELIMITER_HANDLER));
-        return builder.getConfiguration();
+            new FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration.class);
+        PropertiesBuilderParameters newParams = params;
+        if (setCommaDelimiterHandler) {
+            newParams = newParams.setListDelimiterHandler(COMMA_DELIMITER_HANDLER);
+        }
+        return builder.configure(newParams).getConfiguration();
     }
 }
