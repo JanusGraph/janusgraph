@@ -24,7 +24,6 @@ import org.janusgraph.graphdb.grpc.JanusGraphContextHandler;
 import org.janusgraph.graphdb.grpc.JanusGraphManagerServiceImpl;
 import org.janusgraph.graphdb.grpc.schema.SchemaManagerImpl;
 import org.janusgraph.graphdb.management.JanusGraphManager;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
