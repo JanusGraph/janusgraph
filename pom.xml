@@ -301,6 +301,7 @@
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
                     <sourceDirectory>${project.build.sourceDirectories}</sourceDirectory>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
                     <!-- define here because checkstyle and multi module is a PITA -->
                     <checkstyleRules>
                         <module name="Checker">
@@ -311,7 +312,7 @@
                                 <!-- Annotations: https://checkstyle.sourceforge.io/config_annotation.html -->
                                 <module name="MissingOverride" />
                                 <!-- Class Design: https://checkstyle.sourceforge.io/config_design.html -->
-                                <!-- <module name="OneTopLevelClass" /> -->
+                                <module name="OneTopLevelClass" />
                                 <!-- Coding: https://checkstyle.sourceforge.io/config_coding.html-->
                                 <module name="CovariantEquals" />
                                 <!-- <module name="EqualsHashCode" /> -->
