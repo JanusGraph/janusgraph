@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.janusgraph</groupId>
@@ -897,14 +897,14 @@
             <dependency>
                 <groupId>org.locationtech.spatial4j</groupId>
                 <artifactId>spatial4j</artifactId>
-                <version>0.7</version>
+                <version>0.8</version>
             </dependency>
 
             <!-- Java Topology Suite (JTS) -->
             <dependency>
                 <groupId>org.locationtech.jts</groupId>
                 <artifactId>jts-core</artifactId>
-                <version>1.16.1</version>
+                <version>1.17.0</version>
             </dependency>
 
             <!-- Package prefix is org.apache.commons.httpclient -->
