@@ -67,8 +67,9 @@ public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
     public void uncaughtException(Thread t, Throwable e) {
         level.dispatch("Uncaught exception in thread " + t, e);
     }
+
+    interface UELogLevel {
+        void dispatch(String message, Throwable t);
+    }
 }
 
-interface UELogLevel {
-    void dispatch(String message, Throwable t);
-}
