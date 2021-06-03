@@ -46,7 +46,7 @@ consistent with the graph and hence disables its own checks in the
 interest of performance.
 
 In many bulk loading scenarios it is significantly cheaper to ensure
-data consistency prior to loading the data then ensuring data
+data consistency prior to loading the data than ensuring data
 consistency while loading it into the database. The
 `storage.batch-loading` configuration option exists because of this
 observation.
