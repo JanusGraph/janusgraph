@@ -37,7 +37,7 @@ first time. The following listing describes the mutability levels.
 * LOCAL
     These options can only be provided through a local configuration file
 
-Refer to [Global Configuration](#configuration-global) for information
+Refer to [Global Configuration](index.md#global-configuration) for information
 on how to change non-local configuration options.
 
 ## Umbrella Namespace
