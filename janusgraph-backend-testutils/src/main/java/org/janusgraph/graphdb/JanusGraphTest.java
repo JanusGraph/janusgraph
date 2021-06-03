@@ -136,6 +136,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,6 +175,7 @@ import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ADJUST_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STALE_CONFIG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTO_TYPE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BATCH_PROPERTY_PREFETCHING;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CUSTOM_ATTRIBUTE_CLASS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CUSTOM_SERIALIZER_CLASS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
@@ -187,9 +189,11 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_READONLY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_LOG_TRANSACTIONS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TX_CACHE_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.VERBOSE_TX_RECOVERY;
@@ -4584,6 +4588,34 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         List<Object> result = graph.traversal().V(vertex).bothE().properties().hasKey("weight").hasValue(P.lt(3)).value().toList();
         assertEquals(1, result.size());
         assertEquals(result.get(0), 2);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3, 10, 15, Integer.MAX_VALUE})
+    public void testBatchPropertiesPrefetching(int txCacheSize){
+        boolean inmemoryBackend = getConfig().get(STORAGE_BACKEND).equals("inmemory");
+        int numV = 10;
+        int expectedVerticesPrefetch = Math.min(txCacheSize, numV);
+        JanusGraphVertex mainVertex = graph.addVertex("id", 0);
+        for (int i = 1; i <= numV; i++) {
+            JanusGraphVertex adjacentVertex = graph.addVertex("id", i);
+            mainVertex.addEdge("knows", adjacentVertex);
+        }
+        graph.tx().commit();
+
+        if(!inmemoryBackend){
+            clopen(option(BATCH_PROPERTY_PREFETCHING), true, option(TX_CACHE_SIZE), txCacheSize);
+        }
+        GraphTraversalSource gts = graph.traversal();
+
+        TraversalMetrics traversalMetrics = gts.V().has("id", 0).out("knows").has("id", P.within(4,5,6,7)).values("id").profile().next();
+        String traversalMetricsStr = traversalMetrics.toString();
+        if(expectedVerticesPrefetch>1 && !inmemoryBackend){
+            assertTrue(traversalMetricsStr.contains("multiPreFetch=true"));
+            assertTrue(traversalMetricsStr.contains("vertices="+expectedVerticesPrefetch));
+        } else {
+            assertFalse(traversalMetricsStr.contains("multiPreFetch=true"));
+        }
     }
 
     private Vertex prepareDataForEdgePropertyFilterTest(){

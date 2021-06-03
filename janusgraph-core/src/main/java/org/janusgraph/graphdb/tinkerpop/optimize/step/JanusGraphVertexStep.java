@@ -194,13 +194,14 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
             result = (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices() : query.edges();
         }
 
-        if (batchPropertyPrefetching) {
+        if (batchPropertyPrefetching && txVertexCacheSize > 1) {
             Set<Vertex> vertices = new HashSet<>();
-            result.forEach(v -> {
-                if (vertices.size() < txVertexCacheSize ) {
-                    vertices.add((Vertex) v);
+            for(JanusGraphElement v : result){
+                vertices.add((Vertex) v);
+                if (vertices.size() >= txVertexCacheSize) {
+                    break;
                 }
-            });
+            }
 
             // If there are multiple vertices then fetch the properties for all of them in a single multiQuery to
             // populate the vertex cache so subsequent queries of properties don't have to go to the storage back end
