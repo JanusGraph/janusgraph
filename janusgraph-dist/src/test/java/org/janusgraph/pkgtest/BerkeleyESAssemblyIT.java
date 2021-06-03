@@ -22,7 +22,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class BerkeleyESAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
     @Container
-    private static JanusGraphElasticsearchContainer es = new JanusGraphElasticsearchContainer(true);
+    private static final JanusGraphElasticsearchContainer _es = new JanusGraphElasticsearchContainer(true);
 
     @Override
     protected String getConfigPath() {

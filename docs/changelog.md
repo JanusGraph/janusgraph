@@ -27,7 +27,7 @@ All currently supported verions of JanusGraph are listed below.
 | JanusGraph | Storage Version | Cassandra | HBase | Bigtable | Elasticsearch | Solr | TinkerPop | Spark | Scala |
 | ----- | ---- | ---- | ---- | ---- | ---- | ---- | --- | ---- | ---- |
 | 0.5.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 7.y | 3.4.z | 2.2.z | 2.11.z | 
-| 0.6.z | 2 | 3.0.z, 3.11.z | 1.6.z, 2.2.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 7.y, 8.y | 3.5.z | 2.2.z | 2.11.z | 
+| 0.6.z | 2 | 3.0.z, 3.11.z | 2.2.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 7.y, 8.y | 3.5.z | 2.2.z | 2.11.z | 
 
 #### End-of-Life
 The versions of JanusGraph listed below are outdated and will no longer receive bugfixes.
@@ -58,7 +58,7 @@ compile "org.janusgraph:janusgraph-core:0.6.0"
 **Tested Compatibility:**
 
 * Apache Cassandra 3.0.14, 3.11.10
-* Apache HBase 1.6.0, 2.2.7
+* Apache HBase 2.2.7
 * Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0, 1.14.0
 * Oracle BerkeleyJE 7.5.11
 * Elasticsearch 6.0.1, 6.6.0, 7.12.0
@@ -319,6 +319,9 @@ distance, where previously they used the backend's default max distance of 2:
 | surprises | surpprises | true | true |
 | surprises | surpprisess | false | false |
 
+##### Drop support for HBase 1
+
+We are dropping support for HBase 1.
 
 ### Version 0.5.3 (Release Date: December 24, 2020)
 

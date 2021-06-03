@@ -62,25 +62,13 @@ jobs:
         include:
           - module: hbase
             args: "-Dtest=\"**/diskstorage/hbase/*\""
-            name: hbase1-diskstorage
+            name: hbase-diskstorage
           - module: hbase
             args: "-Dtest=\"**/graphdb/hbase/*\""
-            name: hbase1-graphdb
+            name: hbase-graphdb
           - module: hbase
             args: "-Dtest=\"**/hadoop/*\""
-            name: hbase1-hadoop
-          - module: hbase
-            install-args: "-Dhbase.profile -Phbase2"
-            args: "-Dtest=\"**/diskstorage/hbase/*\""
-            name: hbase2-diskstorage
-          - module: hbase
-            install-args: "-Dhbase.profile -Phbase2"
-            args: "-Dtest=\"**/graphdb/hbase/*\""
-            name: hbase2-graphdb
-          - module: hbase
-            install-args: "-Dhbase.profile -Phbase2"
-            args: "-Dtest=\"**/hadoop/*\""
-            name: hbase2-hadoop
+            name: hbase-hadoop
     steps:
       - uses: actions/checkout@v2
         with:

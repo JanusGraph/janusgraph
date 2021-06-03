@@ -63,12 +63,6 @@ The required Maven dependencies for HBase:
             <version>${janusgraph.version}</version>
             <scope>runtime</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-shaded-client</artifactId>
-            <version>${hbase1.version}</version>
-            <scope>runtime</scope>
-        </dependency>
 ```
 
 The required Maven dependency for Solr:

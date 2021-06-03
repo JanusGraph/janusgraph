@@ -14,33 +14,40 @@
 
 package org.janusgraph.pkgtest;
 
-import org.janusgraph.JanusGraphCassandraContainer;
-import org.janusgraph.diskstorage.es.JanusGraphElasticsearchContainer;
+import org.janusgraph.HBaseContainer;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class CqlESAssemblyIT extends AbstractJanusGraphAssemblyIT {
+public class HBaseAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
     @Container
-    private static final JanusGraphCassandraContainer _cql = new JanusGraphCassandraContainer(true);
-
-    @Container
-    private static final JanusGraphElasticsearchContainer _es = new JanusGraphElasticsearchContainer(true);
+    private static final HBaseContainer _hbase = new HBaseContainer();
 
     @Override
     protected String getConfigPath() {
-        return "conf/janusgraph-cql-es.properties";
+        return "conf/janusgraph-hbase.properties";
     }
 
     @Override
     protected String getServerConfigPath() {
-        return "conf/gremlin-server/gremlin-server-cql-es.yaml";
+        return "conf/gremlin-server/gremlin-server-hbase.yaml";
     }
 
     @Override
     protected String getGraphName() {
-        return "cql";
+        return "hbase";
     }
 
+    @Test
+    @Disabled
+    @Override
+    public void testGettingStartedAgainstGremlinSh() {}
+
+    @Test
+    @Disabled
+    @Override
+    public void testGettingStartedAgainstGremlinShFull() {}
 }

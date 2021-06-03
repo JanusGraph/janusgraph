@@ -271,7 +271,7 @@ public class HBaseSnapshotInputFormatIT extends AbstractInputFormatIT {
         config.setProperty("gremlin.hadoop.outputLocation", outDir);
         // Set the hbase.rootdir property. This is needed by HBaseSnapshotInputFormat.
         config.setProperty("janusgraphmr.ioformat.conf.storage.hbase.ext.hbase.rootdir",
-            hBaseContainer.getHBaseRootdir().toString());
+            hBaseContainer.getHBaseRootDir().toString());
         return GraphFactory.open(config);
     }
 

@@ -18,10 +18,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
 import org.apache.hadoop.hbase.filter.Filter;
@@ -83,24 +86,19 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseKeyColumnValueStore.class);
 
-    private final String tableName;
+    private final TableName tableName;
     private final HBaseStoreManager storeManager;
 
-    // When using shortened CF names, columnFamily is the shortname and storeName is the longname
-    // When not using shortened CF names, they are the same
-    //private final String columnFamily;
     private final String storeName;
-    // This is columnFamily.getBytes()
     private final byte[] columnFamilyBytes;
     private final HBaseGetter entryGetter;
 
-    private final ConnectionMask cnx;
+    private final Connection cnx;
 
-    HBaseKeyColumnValueStore(HBaseStoreManager storeManager, ConnectionMask cnx, String tableName, String columnFamily, String storeName) {
+    HBaseKeyColumnValueStore(HBaseStoreManager storeManager, Connection cnx, TableName tableName, String columnFamily, String storeName) {
         this.storeManager = storeManager;
         this.cnx = cnx;
         this.tableName = tableName;
-        //this.columnFamily = columnFamily;
         this.storeName = storeName;
         this.columnFamilyBytes = Bytes.toBytes(columnFamily);
         this.entryGetter = new HBaseGetter(storeManager.getMetaDataSchema(storeName));
@@ -131,7 +129,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     public void acquireLock(StaticBuffer key,
                             StaticBuffer column,
                             StaticBuffer expectedValue,
-                            StoreTransaction txh) throws BackendException {
+                            StoreTransaction txh) {
         throw new UnsupportedOperationException();
     }
 
@@ -154,7 +152,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public KeySlicesIterator getKeys(MultiSlicesQuery queries, StoreTransaction txh) throws BackendException {
+    public KeySlicesIterator getKeys(MultiSlicesQuery queries, StoreTransaction txh) {
         throw new UnsupportedOperationException();
     }
 
@@ -192,7 +190,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         final Map<StaticBuffer,EntryList> resultMap = new HashMap<>(keys.size());
 
         try {
-            TableMask table = null;
+            Table table = null;
             final Result[] results;
 
             try {
@@ -254,16 +252,16 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         if (startKey != null)
-            scan.setStartRow(startKey);
+            scan.withStartRow(startKey);
 
         if (endKey != null)
-            scan.setStopRow(endKey);
+            scan.withStopRow(endKey);
 
         if (columnSlice != null) {
             filters.addFilter(getFilter(columnSlice));
         }
 
-        TableMask table = null;
+        Table table = null;
 
         try {
             table = cnx.getTable(tableName);
@@ -381,12 +379,10 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         @Override
         public Object getMetaData(Map.Entry<byte[], NavigableMap<Long, byte[]>> element, EntryMetaData meta) {
-            switch(meta) {
-                case TIMESTAMP:
-                    return element.getValue().lastEntry().getKey();
-                default:
-                    throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+            if (meta == EntryMetaData.TIMESTAMP) {
+                return element.getValue().lastEntry().getKey();
             }
+            throw new UnsupportedOperationException("Unsupported meta data: " + meta);
         }
     }
 }

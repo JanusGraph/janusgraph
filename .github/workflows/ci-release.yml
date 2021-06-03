@@ -104,9 +104,6 @@ jobs:
             args: "-Pcassandra3-murmur -Dtest.skip.tp=false -DskipTests=true"
           - module: hbase
             args: "-Dtest.skip.tp=false -DskipTests=true"
-          - module: hbase
-            install-args: "-Dhbase.profile -Phbase2"
-            args: "-Dtest.skip.tp=false -DskipTests=true"
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2

@@ -22,23 +22,31 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.HRegionLocation;
-import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ServerName;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotEnabledException;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
+import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.RegionInfo;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Row;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.TableDescriptor;
+import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
-import org.apache.hadoop.hbase.util.VersionInfo;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
@@ -76,6 +84,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -202,42 +211,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             "The number of regions per regionserver to set when creating JanusGraph's HBase table",
             ConfigOption.Type.MASKABLE, Integer.class);
 
-    /**
-     * If this key is present in either the JVM system properties or the process
-     * environment (checked in the listed order, first hit wins), then its value
-     * must be the full package and class name of an implementation of
-     * {@link HBaseCompat} that has a no-arg public constructor.
-     * <p>
-     * When this <b>is not</b> set, JanusGraph attempts to automatically detect the
-     * HBase runtime version by calling {@link VersionInfo#getVersion()}. JanusGraph
-     * then checks the returned version string against a hard-coded list of
-     * supported version prefixes and instantiates the associated compat layer
-     * if a match is found.
-     * <p>
-     * When this <b>is</b> set, JanusGraph will not call
-     * {@code VersionInfo.getVersion()} or read its hard-coded list of supported
-     * version prefixes. JanusGraph will instead attempt to instantiate the class
-     * specified (via the no-arg constructor which must exist) and then attempt
-     * to cast it to HBaseCompat and use it as such. JanusGraph will assume the
-     * supplied implementation is compatible with the runtime HBase version and
-     * make no attempt to verify that assumption.
-     * <p>
-     * Setting this key incorrectly could cause runtime exceptions at best or
-     * silent data corruption at worst. This setting is intended for users
-     * running exotic HBase implementations that don't support VersionInfo or
-     * implementations which return values from {@code VersionInfo.getVersion()}
-     * that are inconsistent with Apache's versioning convention. It may also be
-     * useful to users who want to run against a new release of HBase that JanusGraph
-     * doesn't yet officially support.
-     *
-     */
-    public static final ConfigOption<String> COMPAT_CLASS =
-            new ConfigOption<>(HBASE_NS, "compat-class",
-            "The package and class name of the HBaseCompat implementation. HBaseCompat masks version-specific HBase API differences. " +
-            "When this option is unset, JanusGraph calls HBase's VersionInfo.getVersion() and loads the matching compat class " +
-            "at runtime.  Setting this option forces JanusGraph to instead reflectively load and instantiate the specified class.",
-            ConfigOption.Type.MASKABLE, String.class);
-
     public static final int PORT_DEFAULT = 2181;  // Not used. Just for the parent constructor.
 
     public static final TimestampProviders PREFERRED_TIMESTAMPS = TimestampProviders.MILLI;
@@ -249,14 +222,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     // Immutable instance fields
     private final BiMap<String, String> shortCfNameMap;
-    private final String tableName;
+    private final TableName tableName;
     private final String compression;
     private final int regionCount;
     private final int regionsPerServer;
-    private final ConnectionMask cnx;
+    private final Connection cnx;
     private final boolean shortCfNames;
     private final boolean skipSchemaCheck;
-    private final HBaseCompat compat;
     // Cached return value of getDeployment() as requesting it can be expensive.
     private Deployment deployment = null;
 
@@ -281,8 +253,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         this.regionCount = config.has(REGION_COUNT) ? config.get(REGION_COUNT) : -1;
         this.regionsPerServer = config.has(REGIONS_PER_SERVER) ? config.get(REGIONS_PER_SERVER) : -1;
         this.skipSchemaCheck = config.get(SKIP_SCHEMA_CHECK);
-        final String compatClass = config.has(COMPAT_CLASS) ? config.get(COMPAT_CLASS) : null;
-        this.compat = HBaseCompatLoader.getCompat(compatClass);
 
         /*
          * Specifying both region count options is permitted but may be
@@ -331,8 +301,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         this.shortCfNames = config.get(SHORT_CF_NAMES);
 
         try {
-            //this.cnx = HConnectionManager.createConnection(hconf);
-            this.cnx = compat.createConnection(hconf);
+            this.cnx = ConnectionFactory.createConnection(hconf);
         } catch (IOException e) {
             throw new PermanentBackendException(e);
         }
@@ -447,7 +416,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         try {
-            TableMask table = null;
+            Table table = null;
 
             try {
                 table = cnx.getTable(tableName);
@@ -494,13 +463,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public StoreTransaction beginTransaction(final BaseTransactionConfig config) throws BackendException {
+    public StoreTransaction beginTransaction(final BaseTransactionConfig config) {
         return new HBaseTransaction(config);
     }
 
     @Override
     public String getName() {
-        return tableName;
+        return tableName.getNameAsString();
     }
 
     /**
@@ -509,11 +478,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
     @Override
     public void clearStorage() throws BackendException {
-        try (AdminMask adm = getAdminInterface()) {
+        try (Admin adm = getAdminInterface()) {
             if (this.storageConfig.get(DROP_ON_CLEAR)) {
-                adm.dropTable(tableName);
+                dropTable(adm);
             } else {
-                adm.clearTable(tableName, times.getTime(times.getTime()));
+                clearTable(adm, times.getTime(times.getTime()));
             }
         } catch (IOException e)
         {
@@ -521,9 +490,51 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
     }
 
+    private void clearTable(Admin adm, long timestamp) throws IOException
+    {
+        if (!adm.tableExists(tableName)) {
+            logger.debug("Attempted to clear table {} before it exists (noop)", tableName.getNameAsString());
+            return;
+        }
+
+        // Unfortunately, linear scanning and deleting rows is faster in HBase when running integration tests than
+        // disabling and deleting/truncating tables.
+        final Scan scan = new Scan();
+        scan.setCacheBlocks(false);
+        scan.setCaching(2000);
+        scan.setTimeRange(0, Long.MAX_VALUE);
+        scan.readVersions(1);
+
+        try (final Table table = adm.getConnection().getTable(tableName);
+             final ResultScanner scanner = table.getScanner(scan)) {
+            final Iterator<Result> iterator = scanner.iterator();
+            final int batchSize = 1000;
+            final List<Delete> deleteList = new ArrayList<>();
+            while (iterator.hasNext()) {
+                deleteList.add(new Delete(iterator.next().getRow(), timestamp));
+                if (!iterator.hasNext() || deleteList.size() == batchSize) {
+                    table.delete(deleteList);
+                    deleteList.clear();
+                }
+            }
+        }
+    }
+
+    private void dropTable(Admin adm) throws IOException {
+        if (!adm.tableExists(tableName)) {
+            logger.debug("Attempted to drop table {} before it exists (noop)", tableName.getNameAsString());
+            return;
+        }
+
+        if (adm.isTableEnabled(tableName)) {
+            adm.disableTable(tableName);
+        }
+        adm.deleteTable(tableName);
+    }
+
     @Override
     public boolean exists() throws BackendException {
-        try (final AdminMask adm = getAdminInterface()) {
+        try (final Admin adm = getAdminInterface()) {
             return adm.tableExists(tableName);
         } catch (IOException e) {
             throw new TemporaryBackendException(e);
@@ -536,7 +547,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         try {
             ensureTableExists(
                 tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
-            Map<KeyRange, ServerName> normed = normalizeKeyBounds(cnx.getRegionLocations(tableName));
+            Map<KeyRange, ServerName> normed = normalizeKeyBounds(getRegionLocations(tableName));
 
             for (Map.Entry<KeyRange, ServerName> e : normed.entrySet()) {
                 if (NetworkUtil.isLocalConnection(e.getValue().getHostname())) {
@@ -556,9 +567,15 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return result;
     }
 
+    private List<HRegionLocation> getRegionLocations(TableName tableName)
+        throws IOException
+    {
+        return cnx.getRegionLocator(tableName).getAllRegionLocations();
+    }
+
     /**
-     * Given a map produced by {@link HTable#getRegionLocations()}, transform
-     * each key from an {@link HRegionInfo} to a {@link KeyRange} expressing the
+     * Given a map produced by {@link Connection#getRegionLocator(TableName)}, transform
+     * each key from an {@link RegionInfo} to a {@link KeyRange} expressing the
      * region's start and end key bounds using JanusGraph-partitioning-friendly
      * conventions (start inclusive, end exclusive, zero bytes appended where
      * necessary to make all keys at least 4 bytes long).
@@ -608,7 +625,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         ImmutableMap.Builder<KeyRange, ServerName> b = ImmutableMap.builder();
 
         for (HRegionLocation location : locations) {
-            HRegionInfo regionInfo = location.getRegionInfo();
+            RegionInfo regionInfo = location.getRegion();
             ServerName serverName = location.getServerName();
             byte[] startKey = regionInfo.getStartKey();
             byte[] endKey = regionInfo.getEndKey();
@@ -710,10 +727,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return s;
     }
 
-    private HTableDescriptor ensureTableExists(String tableName, String initialCFName, int ttlInSeconds) throws BackendException {
-        AdminMask adm = null;
+    private TableDescriptor ensureTableExists(TableName tableName, String initialCFName, int ttlInSeconds) throws BackendException {
+        Admin adm = null;
 
-        HTableDescriptor desc;
+        TableDescriptor desc;
 
         try { // Create our table, if necessary
             adm = getAdminInterface();
@@ -723,11 +740,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
              * the table avoids HBase carping.
              */
             if (adm.tableExists(tableName)) {
-                desc = adm.getTableDescriptor(tableName);
+                desc = adm.getDescriptor(tableName);
                 // Check and warn if long and short cf names are interchangeably used for the same table.
                 if (shortCfNames && initialCFName.equals(shortCfNameMap.get(SYSTEM_PROPERTIES_STORE_NAME))) {
                     String longCFName = shortCfNameMap.inverse().get(initialCFName);
-                    if (desc.getFamily(Bytes.toBytes(longCFName)) != null) {
+                    if (desc.getColumnFamily(Bytes.toBytes(longCFName)) != null) {
                         logger.warn("Configuration {}=true, but the table \"{}\" already has column family with long name \"{}\".",
                             SHORT_CF_NAMES.getName(), tableName, longCFName);
                         logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
@@ -735,7 +752,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 }
                 else if (!shortCfNames && initialCFName.equals(SYSTEM_PROPERTIES_STORE_NAME)) {
                     String shortCFName = shortCfNameMap.get(initialCFName);
-                    if (desc.getFamily(Bytes.toBytes(shortCFName)) != null) {
+                    if (desc.getColumnFamily(Bytes.toBytes(shortCFName)) != null) {
                         logger.warn("Configuration {}=false, but the table \"{}\" already has column family with short name \"{}\".",
                             SHORT_CF_NAMES.getName(), tableName, shortCFName);
                         logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
@@ -753,13 +770,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return desc;
     }
 
-    private HTableDescriptor createTable(String tableName, String cfName, int ttlInSeconds, AdminMask adm) throws IOException {
-        HTableDescriptor desc = compat.newTableDescriptor(tableName);
+    private TableDescriptor createTable(TableName tableName, String cfName, int ttlInSeconds, Admin adm) throws IOException {
 
-        HColumnDescriptor columnDescriptor = new HColumnDescriptor(cfName);
+        TableDescriptorBuilder desc = TableDescriptorBuilder.newBuilder(tableName);
+
+        ColumnFamilyDescriptorBuilder columnDescriptor = ColumnFamilyDescriptorBuilder.newBuilder(Bytes.toBytes(cfName));
         setCFOptions(columnDescriptor, ttlInSeconds);
-
-        compat.addColumnFamilyToTableDescriptor(desc, columnDescriptor);
+        desc.setColumnFamily(columnDescriptor.build());
+        TableDescriptor td = desc.build();
 
         int count; // total regions to create
         String src;
@@ -767,7 +785,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         if (MIN_REGION_COUNT <= (count = regionCount)) {
             src = "region count configuration";
         } else if (0 < regionsPerServer &&
-                   MIN_REGION_COUNT <= (count = regionsPerServer * adm.getEstimatedRegionServerCount())) {
+                   MIN_REGION_COUNT <= (count = regionsPerServer * getEstimatedRegionServerCount(adm))) {
             src = "ClusterStatus server count";
         } else {
             count = -1;
@@ -775,19 +793,31 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         if (MIN_REGION_COUNT < count) {
-            adm.createTable(desc, getStartKey(count), getEndKey(count), count);
+            adm.createTable(td, getStartKey(count), getEndKey(count), count);
             logger.debug("Created table {} with region count {} from {}", tableName, count, src);
         } else {
-            adm.createTable(desc);
+            adm.createTable(td);
             logger.debug("Created table {} with default start key, end key, and region count", tableName);
         }
 
-        return desc;
+        return td;
+    }
+
+    private int getEstimatedRegionServerCount(Admin adm)
+    {
+        int serverCount = -1;
+        try {
+            serverCount = adm.getRegionServers().size();
+            logger.debug("Read {} servers from HBase ClusterStatus", serverCount);
+        } catch (IOException e) {
+            logger.debug("Unable to retrieve HBase cluster status", e);
+        }
+        return serverCount;
     }
 
     /**
      * This method generates the second argument to
-     * {@link HBaseAdmin#createTable(HTableDescriptor, byte[], byte[], int)}.
+     * {@link Admin#createTable(TableDescriptor, byte[], byte[], int)}
      * <p/>
      * From the {@code createTable} javadoc:
      * "The start key specified will become the end key of the first region of
@@ -813,15 +843,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return StaticArrayBuffer.of(regionWidth).getBytes(0, 4);
     }
 
-    private void ensureColumnFamilyExists(String tableName, String columnFamily, int ttlInSeconds) throws BackendException {
-        AdminMask adm = null;
+    private void ensureColumnFamilyExists(TableName tableName, String columnFamily, int ttlInSeconds) throws BackendException {
+        Admin adm = null;
         try {
             adm = getAdminInterface();
-            HTableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
+            TableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
 
             Preconditions.checkNotNull(desc);
-
-            HColumnDescriptor cf = desc.getFamily(Bytes.toBytes(columnFamily));
+            ColumnFamilyDescriptor cf = desc.getColumnFamily(Bytes.toBytes(columnFamily));
 
             // Create our column family, if necessary
             if (cf == null) {
@@ -836,11 +865,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 }
 
                 try {
-                    HColumnDescriptor columnDescriptor = new HColumnDescriptor(columnFamily);
+                    ColumnFamilyDescriptorBuilder columnDescriptor = ColumnFamilyDescriptorBuilder.newBuilder(Bytes.toBytes(columnFamily));
 
                     setCFOptions(columnDescriptor, ttlInSeconds);
 
-                    adm.addColumn(tableName, columnDescriptor);
+                    adm.addColumnFamily(tableName, columnDescriptor.build());
 
                     try {
                         logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propagate.", columnFamily);
@@ -864,9 +893,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
     }
 
-    private void setCFOptions(HColumnDescriptor columnDescriptor, int ttlInSeconds) {
+    private void setCFOptions(ColumnFamilyDescriptorBuilder columnDescriptor, int ttlInSeconds) {
         if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
-            compat.setCompression(columnDescriptor, compression);
+            columnDescriptor.setCompressionType(Compression.Algorithm.valueOf(compression));
 
         if (ttlInSeconds > 0)
             columnDescriptor.setTimeToLive(ttlInSeconds);
@@ -912,7 +941,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 if (mutation.hasDeletions()) {
                     if (commands.getSecond() == null) {
                         Delete d = new Delete(key);
-                        compat.setTimestamp(d, delTimestamp);
+                        d.setTimestamp(delTimestamp);
                         commands.setSecond(d);
                     }
 
@@ -973,7 +1002,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return shortCfNames ? shortenCfName(shortCfNameMap, storeName) : storeName;
     }
 
-    private AdminMask getAdminInterface() {
+    private Admin getAdminInterface() {
         try {
             return cnx.getAdmin();
         } catch (IOException e) {
@@ -981,11 +1010,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
     }
 
-    private String determineTableName(org.janusgraph.diskstorage.configuration.Configuration config) {
+    private TableName determineTableName(Configuration config) {
         if ((!config.has(HBASE_TABLE)) && (config.has(GRAPH_NAME))) {
-            return config.get(GRAPH_NAME);
+            return TableName.valueOf(config.get(GRAPH_NAME));
         }
-        return config.get(HBASE_TABLE);
+        return TableName.valueOf(config.get(HBASE_TABLE));
     }
 
     @VisibleForTesting
@@ -994,7 +1023,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public Object getHadoopManager() throws BackendException {
+    public Object getHadoopManager() {
         return new HBaseHadoopStoreManager();
     }
 }
