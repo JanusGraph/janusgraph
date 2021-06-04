@@ -82,6 +82,12 @@ For more information on features and bug fixes in 0.6.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### Experimental support for Amazon Keyspaces
+
+[Amazon Keyspaces](https://aws.amazon.com/keyspaces/) is a serverless managed Apache Cassandra-compatible
+database service provided by Amazon. See [Deploying on Amazon Keyspaces](https://docs.janusgraph.org/storage-backend/cassandra/#deploying-on-amazon-keyspaces-experimental)
+for more details.
+
 ##### Breaking change for Configuration objects
 
 Prior to JanusGraph 0.6.0, `Configuration` objects were from the Apache `commons-configuration` library.

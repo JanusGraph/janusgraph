@@ -186,6 +186,131 @@ However, note that all these vertices and/or edges will be loaded into
 memory which can cause `OutOfMemoryException`. Use [JanusGraph with TinkerPop’s Hadoop-Gremlin](../advanced-topics/hadoop.md) to
 iterate over all vertices or edges in large graphs effectively.
 
+## Deploying on Amazon Keyspaces (Experimental)
+
+> Amazon Keyspaces (for Apache Cassandra) is a scalable, highly available, and managed
+> Apache Cassandra–compatible database service. Amazon Keyspaces is serverless, so you
+> pay for only the resources you use and the service can automatically scale tables up
+> and down in response to application traffic.
+>
+> —  [Amazon Keyspaces](https://aws.amazon.com/keyspaces/)
+
+!!! note
+    The support for Amazon Keyspaces is experimental. We discourage usage in production
+    systems unless you have thoroughly tested it against your use case.
+
+Follow these steps to set up a Amazon Keyspaces cluster and deploy JanusGraph over it.
+Prior to these instructions, make sure you have already followed
+[this guide](https://docs.aws.amazon.com/keyspaces/latest/devguide/accessing.html)
+to sign up for AWS and set up your identity and access management.
+
+### Creating Credentials
+
+You would need to generate service-specific credentials. See
+[this guide](https://docs.aws.amazon.com/keyspaces/latest/devguide/programmatic.credentials.html#programmatic.credentials.ssc)
+for more details.
+
+After your service-specific credential is generated, you would get an output similar to
+the following:
+
+```json
+{
+    "ServiceSpecificCredential": {
+        "CreateDate": "2019-10-09T16:12:04Z",
+        "ServiceName": "cassandra.amazonaws.com",
+        "ServiceUserName": "alice-at-111122223333",
+        "ServicePassword": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        "ServiceSpecificCredentialId": "ACCAYFI33SINPGJEBYESF",
+        "UserName": "alice",
+        "Status": "Active"
+    }
+}
+```
+
+Please save `ServiceUserName` and `ServicePassword` in a secure location and you would
+need them in JanusGraph config later.
+
+### Setting up SSL/TLS
+
+1.   Download the Starfield digital certificate using the following command
+
+```bash
+curl https://certs.secureserver.net/repository/sf-class2-root.crt -O
+```
+
+2.  Convert the Starfield digital certificate to a trustStore file
+
+```bash
+openssl x509 -outform der -in sf-class2-root.crt -out temp_file.der
+keytool -import -alias cassandra -keystore cassandra_truststore.jks -file temp_file.der
+```
+
+Now you would see a `cassandra_truststore.jks` file generated locally. You would need this file
+and your truststore password later.
+
+For more details, see [this doc](https://docs.aws.amazon.com/keyspaces/latest/devguide/using_java_driver.html).
+Note that you don't need to follow every step of that doc, since it is written for users who connect to Amazon
+Keyspaces using a Java client directly.
+.
+
+### Configurations
+
+Below is a complete sample of configuration. Unlike standard Apache Cassandra or
+ScyllaDB, Amazon Keyspaces only supports a subset of functionalities. Therefore,
+some specific configurations are needed.
+
+```properties
+# Basic settings for CQL
+gremlin.graph=org.janusgraph.core.JanusGraphFactory
+storage.backend=cql
+storage.hostname=cassandra.<your-datacenter, e.g. ap-east-1>.amazonaws.com
+storage.port=9142
+storage.username=<your-service-username>
+storage.password=<your-service-password>
+storage.cql.keyspace=janusgraph
+storage.cql.local-datacenter=<your-datacenter, e.g. ap-east-1>
+
+# SSL related settings
+storage.cql.ssl.enabled=true
+storage.cql.ssl.truststore.location=<your-trust-store-location>
+storage.cql.ssl.truststore.password=<your-trust-store-password>
+
+# Amazon Keyspaces does not support user-generated timestamps
+# Thus, the below config must be turned off
+graph.assign-timestamp=false
+
+# Amazon Keyspaces only supports LOCAL QUORUM consistency
+storage.cql.only-use-local-consistency-for-system-operations=true
+storage.cql.read-consistency-level=LOCAL_QUORUM
+storage.cql.write-consistency-level=LOCAL_QUORUM
+log.janusgraph.key-consistent=true
+log.tx.key-consistent=true
+
+# Amazon Keyspaces does not have metadata available to clients
+# Thus, we need to tell JanusGraph that metadata are disabled,
+# and provide a hint of which partitioner AWS is using.
+storage.cql.metadata-schema-enabled=false
+storage.cql.metadata-token-map-enabled=false
+storage.cql.partitioner-name=DefaultPartitioner
+```
+
+Now you should be able to open the graph via gremlin console
+or java code, using the above configuration file.
+
+### Known Problems
+
+-   Amazon Keyspaces creates tables on-demand. If you are connecting to it the first time, you
+would likely see error message like
+    ```
+    unconfigured table janusgraph.system_properties
+    ```
+    At the same time, you should be able to see the same table getting created on Amazon Keyspaces console UI.
+    The creation process typically takes a few seconds. Once the creation is done, you could open
+    the graph again, and the error will be gone. Unfortunately, you would *have to* follow the same process
+    for all tables. Alternatively, you could create the tables on AWS manually, if you are familiar with
+    JanusGraph. Typically nine tables are needed: `edgestore`, `edgestore_lock_`, `graphindex`, `graphindex_lock_`,
+    `janusgraph_ids`, `	system_properties`, `system_properties_lock_`, `systemlog`, and `txlog`.
+
 ## Deploying on Amazon EC2
 
 > Amazon Elastic Compute Cloud (Amazon EC2) is a web service that
@@ -193,6 +318,9 @@ iterate over all vertices or edges in large graphs effectively.
 > make web-scale computing easier for developers.
 >
 > —  [Amazon EC2](http://aws.amazon.com/ec2/)
+
+!!! note
+    The below documentation might be partially out-of-date.
 
 Follow these steps to setup a Cassandra cluster on EC2 and deploy
 JanusGraph over Cassandra. To follow these instructions, you need an
