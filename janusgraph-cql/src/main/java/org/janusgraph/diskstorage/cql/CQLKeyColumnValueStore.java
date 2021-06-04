@@ -26,6 +26,8 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.querybuilder.delete.DeleteSelection;
+import com.datastax.oss.driver.api.querybuilder.insert.Insert;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.datastax.oss.driver.api.querybuilder.schema.compaction.CompactionStrategy;
@@ -165,47 +167,68 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             .limit(bindMarker(LIMIT_BINDING));
         this.getSlice = this.session.prepare(addTTLFunction(addTimestampFunction(getSliceSelect)).build());
 
-        final Select getKeysRangedSelect = selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
-            .column(KEY_COLUMN_NAME)
-            .column(COLUMN_COLUMN_NAME)
-            .column(VALUE_COLUMN_NAME)
-            .allowFiltering()
-            .where(
-                Relation.token(KEY_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(KEY_START_BINDING)),
-                Relation.token(KEY_COLUMN_NAME).isLessThan(bindMarker(KEY_END_BINDING))
-            )
-            .whereColumn(COLUMN_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(SLICE_START_BINDING))
-            .whereColumn(COLUMN_COLUMN_NAME).isLessThanOrEqualTo(bindMarker(SLICE_END_BINDING));
-        this.getKeysRanged = this.session.prepare(addTTLFunction(addTimestampFunction(getKeysRangedSelect)).build());
+        if (this.storeManager.getFeatures().hasOrderedScan()) {
+            final Select getKeysRangedSelect = selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
+                .column(KEY_COLUMN_NAME)
+                .column(COLUMN_COLUMN_NAME)
+                .column(VALUE_COLUMN_NAME)
+                .allowFiltering()
+                .where(
+                    Relation.token(KEY_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(KEY_START_BINDING)),
+                    Relation.token(KEY_COLUMN_NAME).isLessThan(bindMarker(KEY_END_BINDING))
+                )
+                .whereColumn(COLUMN_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(SLICE_START_BINDING))
+                .whereColumn(COLUMN_COLUMN_NAME).isLessThanOrEqualTo(bindMarker(SLICE_END_BINDING));
+            this.getKeysRanged = this.session.prepare(addTTLFunction(addTimestampFunction(getKeysRangedSelect)).build());
+        } else {
+            this.getKeysRanged = null;
+        }
 
-        final Select getKeysAllSelect = selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
-            .column(KEY_COLUMN_NAME)
-            .column(COLUMN_COLUMN_NAME)
-            .column(VALUE_COLUMN_NAME)
-            .allowFiltering()
-            .whereColumn(COLUMN_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(SLICE_START_BINDING))
-            .whereColumn(COLUMN_COLUMN_NAME).isLessThanOrEqualTo(bindMarker(SLICE_END_BINDING));
-        this.getKeysAll = this.session.prepare(addTTLFunction(addTimestampFunction(getKeysAllSelect)).build());
+        if (this.storeManager.getFeatures().hasUnorderedScan()) {
+            final Select getKeysAllSelect = selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
+                .column(KEY_COLUMN_NAME)
+                .column(COLUMN_COLUMN_NAME)
+                .column(VALUE_COLUMN_NAME)
+                .allowFiltering()
+                .whereColumn(COLUMN_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(SLICE_START_BINDING))
+                .whereColumn(COLUMN_COLUMN_NAME).isLessThanOrEqualTo(bindMarker(SLICE_END_BINDING));
+            this.getKeysAll = this.session.prepare(addTTLFunction(addTimestampFunction(getKeysAllSelect)).build());
+        } else {
+            this.getKeysAll = null;
+        }
 
-        this.deleteColumn = this.session.prepare(deleteFrom(this.storeManager.getKeyspaceName(), this.tableName)
-                .usingTimestamp(bindMarker(TIMESTAMP_BINDING))
+        final DeleteSelection deleteSelection = addUsingTimestamp(deleteFrom(this.storeManager.getKeyspaceName(), this.tableName));
+        this.deleteColumn = this.session.prepare(deleteSelection
                 .whereColumn(KEY_COLUMN_NAME).isEqualTo(bindMarker(KEY_BINDING))
                 .whereColumn(COLUMN_COLUMN_NAME).isEqualTo(bindMarker(COLUMN_BINDING))
                 .build());
 
-        this.insertColumn = this.session.prepare(insertInto(this.storeManager.getKeyspaceName(), this.tableName)
+        final Insert insertColumnInsert = addUsingTimestamp(insertInto(this.storeManager.getKeyspaceName(), this.tableName)
                 .value(KEY_COLUMN_NAME, bindMarker(KEY_BINDING))
                 .value(COLUMN_COLUMN_NAME, bindMarker(COLUMN_BINDING))
-                .value(VALUE_COLUMN_NAME, bindMarker(VALUE_BINDING))
-                .usingTimestamp(bindMarker(TIMESTAMP_BINDING)).build());
+                .value(VALUE_COLUMN_NAME, bindMarker(VALUE_BINDING)));
+        this.insertColumn = this.session.prepare(insertColumnInsert.build());
 
-        this.insertColumnWithTTL = this.session.prepare(insertInto(this.storeManager.getKeyspaceName(), this.tableName)
-                .value(KEY_COLUMN_NAME, bindMarker(KEY_BINDING))
-                .value(COLUMN_COLUMN_NAME, bindMarker(COLUMN_BINDING))
-                .value(VALUE_COLUMN_NAME, bindMarker(VALUE_BINDING))
-                .usingTimestamp(bindMarker(TIMESTAMP_BINDING))
-                .usingTtl(bindMarker(TTL_BINDING)).build());
+        if (storeManager.getFeatures().hasCellTTL()) {
+            this.insertColumnWithTTL = this.session.prepare(insertColumnInsert.usingTtl(bindMarker(TTL_BINDING)).build());
+        } else {
+            this.insertColumnWithTTL = null;
+        }
         // @formatter:on
+    }
+
+    private DeleteSelection addUsingTimestamp(DeleteSelection deleteSelection) {
+        if (storeManager.isAssignTimestamp()) {
+            return deleteSelection.usingTimestamp(bindMarker(TIMESTAMP_BINDING));
+        }
+        return deleteSelection;
+    }
+
+    private Insert addUsingTimestamp(Insert insert) {
+        if (storeManager.isAssignTimestamp()) {
+            return insert.usingTimestamp(bindMarker(TIMESTAMP_BINDING));
+        }
+        return insert;
     }
 
     /**
@@ -453,7 +476,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public KeyIterator getKeys(final SliceQuery query, final StoreTransaction txh) throws BackendException {
-        if (this.storeManager.getFeatures().hasOrderedScan()) {
+        if (!this.storeManager.getFeatures().hasUnorderedScan()) {
             throw new PermanentBackendException("This operation is only allowed when a random partitioner (md5 or murmur3) is used.");
         }
 

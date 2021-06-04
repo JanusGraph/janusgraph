@@ -73,4 +73,7 @@ public abstract class AbstractStoreManager implements StoreManager {
         return schemaBuilder.toArray(new EntryMetaData[schemaBuilder.size()]);
     }
 
+    public boolean isAssignTimestamp() {
+        return this.assignTimestamp;
+    }
 }

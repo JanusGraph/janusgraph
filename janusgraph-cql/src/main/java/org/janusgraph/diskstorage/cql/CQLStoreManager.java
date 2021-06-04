@@ -231,6 +231,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
                 "server, please check %s and %s options", PARTITIONER_NAME.getName(), METADATA_TOKEN_MAP_ENABLED.getName()));
         }
         switch (partitioner) {
+            case "DefaultPartitioner": // Amazon managed KeySpace uses com.amazonaws.cassandra.DefaultPartitioner
+                fb.timestamps(false).cellTTL(false);
             case "RandomPartitioner":
             case "Murmur3Partitioner": {
                 fb.keyOrdered(false).orderedScan(false).unorderedScan(true);
