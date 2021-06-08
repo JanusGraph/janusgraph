@@ -14,11 +14,17 @@
 
 package org.janusgraph.graphdb.vertices;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -112,5 +118,30 @@ public class StandardVertexTest {
         });
 
         future.get(defaultTimeoutMilliseconds, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
+    public void modifiedVertexShouldNotEvictedFromCache() {
+        for (int i = 0; i < 50; i++) {
+            try (StandardJanusGraph g =
+                (StandardJanusGraph) JanusGraphFactory.build()
+                                                      .set("storage.backend", "inmemory")
+                                                      .set("cache.tx-cache-size", 0)
+                                                      .open()) {
+                Vertex v1 = g.traversal().addV().next();
+                Vertex v2 = g.traversal().addV().next();
+                v1.addEdge("E", v2);
+                g.tx().commit();
+                g.tx().close();
+                for (int k = 0; k < 120; k++) {
+                    g.traversal().addV().next();
+                }
+                g.tx().commit();
+                g.tx().close();
+
+                g.traversal().E().drop().iterate();
+                g.traversal().E().drop().iterate();
+            }
+        }
     }
 }

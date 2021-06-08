@@ -657,7 +657,11 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
         //Delete from Vertex
         for (int i = 0; i < relation.getLen(); i++) {
-            relation.getVertex(i).removeRelation(relation);
+            InternalVertex vertex = relation.getVertex(i);
+            vertex.removeRelation(relation);
+            if (!vertex.isNew()) {
+                vertexCache.add(vertex, vertex.longId());
+            }
         }
         //Update transaction data structures
         if (relation.isNew()) {
@@ -807,8 +811,15 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             if (!success) throw new AssertionError("Could not connect relation: " + r);
         }
         addedRelations.add(r);
-        for (int pos = 0; pos < r.getLen(); pos++) vertexCache.add(r.getVertex(pos), r.getVertex(pos).longId());
-        if (TypeUtil.hasSimpleInternalVertexKeyIndex(r)) newVertexIndexEntries.add((JanusGraphVertexProperty) r);
+        for (int pos = 0; pos < r.getLen(); pos++) {
+            InternalVertex vertex = r.getVertex(pos);
+            if (!vertex.isNew()) {
+                vertexCache.add(vertex, vertex.longId());
+            }
+        }
+        if (TypeUtil.hasSimpleInternalVertexKeyIndex(r)) {
+            newVertexIndexEntries.add((JanusGraphVertexProperty) r);
+        }
     }
 
     public JanusGraphVertexProperty addProperty(JanusGraphVertex vertex, PropertyKey key, Object value) {
