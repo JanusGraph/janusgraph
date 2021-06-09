@@ -64,7 +64,7 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
         super.setConf(config);
 
         // Copy some JanusGraph configuration keys to the Hadoop Configuration keys used by Cassandra's ColumnFamilyInputFormat
-        ConfigHelper.setInputInitialAddress(config, janusgraphConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
+        ConfigHelper.setInputInitialAddress(config, String.join(",", janusgraphConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)));
         if (janusgraphConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
             CqlConfigHelper.setInputNativePort(config, String.valueOf(janusgraphConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
         if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_USERNAME) && janusgraphConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD)) {
