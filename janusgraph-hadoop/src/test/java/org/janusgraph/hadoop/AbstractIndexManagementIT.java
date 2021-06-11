@@ -15,6 +15,7 @@
 package org.janusgraph.hadoop;
 
 import com.google.common.collect.Iterables;
+import org.apache.hadoop.util.ToolRunner;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -36,17 +37,18 @@ import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
 import org.junit.jupiter.api.Test;
 
+import java.io.FileNotFoundException;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractIndexManagementIT extends JanusGraphBaseTest {
 
-    @Test
-    public void testRemoveGraphIndex() throws InterruptedException, BackendException, ExecutionException {
+    private void prepareGraphIndex() throws InterruptedException {
         tx.commit();
         mgmt.commit();
 
@@ -62,15 +64,33 @@ public abstract class AbstractIndexManagementIT extends JanusGraphBaseTest {
 
         // Block until the SchemaStatus transitions to DISABLED
         assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "name")
-                .status(SchemaStatus.DISABLED).call().getSucceeded());
+            .status(SchemaStatus.DISABLED).call().getSucceeded());
+    }
+
+    @Test
+    public void testRemoveGraphIndex() throws InterruptedException, BackendException, ExecutionException {
+        prepareGraphIndex();
 
         // Remove index
         MapReduceIndexManagement mri = new MapReduceIndexManagement(graph);
-        m = graph.openManagement();
+        JanusGraphManagement m = graph.openManagement();
         JanusGraphIndex index = m.getGraphIndex("name");
         ScanMetrics metrics = mri.updateIndex(index, SchemaAction.REMOVE_INDEX).get();
 
         assertEquals(12, metrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
+    }
+
+    @Test
+    public void testRemoveGraphIndexWithToolRunner() throws Exception {
+        prepareGraphIndex();
+
+        MapReduceRemoveIndexApp app = new MapReduceRemoveIndexApp(graph, "name");
+
+        assertThrows(FileNotFoundException.class, () -> ToolRunner.run(app, new String[] {"-files", "invalid-file.txt"}));
+
+        // submit the MapReduce job together with a dummy file
+        ToolRunner.run(app, new String[] {"-files", getClass().getClassLoader().getResource("log4j.properties").getPath()});
+        assertEquals(12, app.getMetrics().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
     }
 
     @Test
