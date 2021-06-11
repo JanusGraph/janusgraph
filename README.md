@@ -130,6 +130,7 @@ CLAs and best practices for working with GitHub.
 The following users have deployed JanusGraph in production.
 
 * [CELUM](https://www.celum.com/) - [use case and system architecture](https://www.celum.com/en/graph-driven-and-reactive-architecture)
+* [Crédit Agricole CIB](https://www.ca-cib.com/) - [use case](https://github.com/JanusGraph/janusgraph/discussions/2734)
 * [eBay](https://www.ebay.com/) - [video](https://youtu.be/EtB1BPG00PE)
 * [FiNC](https://finc.com)
 * [G DATA](https://gdatasoftware.com) - [blog post series about malware analysis use case](https://www.gdatasoftware.com/blog/2018/11/31203-malware-analysis-with-a-graph-database)
