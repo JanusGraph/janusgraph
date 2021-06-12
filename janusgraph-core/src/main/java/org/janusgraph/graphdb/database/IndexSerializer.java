@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
@@ -208,7 +209,12 @@ public class IndexSerializer {
                         assert extIndex.getBackingIndexName().equals(index);
                         final ImmutableMap.Builder<String,KeyInformation> b = ImmutableMap.builder();
                         for (final ParameterIndexField field : extIndex.getFieldKeys()) b.put(key2Field(field),getKeyInformation(field));
-                        final ImmutableMap<String,KeyInformation> infoMap = b.build();
+                        ImmutableMap<String,KeyInformation> infoMap;
+                        try {
+                            infoMap = b.build();
+                        } catch (IllegalArgumentException e) {
+                            throw new JanusGraphException("Duplicate index field names found, likely you have multiple properties mapped to the same index field", e);
+                        }
                         final KeyInformation.StoreRetriever storeRetriever = infoMap::get;
                         indexes.put(store,storeRetriever);
                     }

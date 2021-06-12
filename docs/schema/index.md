@@ -276,6 +276,32 @@ properties previously written with the existing type. Redefining
 existing graph elements is not supported online and must be accomplished
 through a batch graph transformation.
 
+Be careful that if you change a property name that is part of some
+mixed index, you shall not reuse that property name in the same index.
+For example, the following code will fail.
+
+```java
+name = mgmt.makePropertyKey("name").dataType(String.class).make()
+mgmt.buildIndex("nameIndex", Vertex.class).addKey(name).buildMixedIndex("search")
+mgmt.commit()
+
+mgmt = graph.openManagement()
+mgmt.changeName(mgmt.getPropertyKey("name"), "oldName");
+name = mgmt.makePropertyKey("name").dataType(String.class).make()
+mgmt.addIndexKey(mgmt.getGraphIndex("nameIndex"), name)
+mgmt.commit()
+
+// the following query will throw an exception
+graph.traversal().V().has("name", textContains("value")).hasNext()
+```
+
+The reason is, JanusGraph does not attempt to alter the field name stored
+in the mixed index backend when you call `mgmt.changeName`. Instead, JanusGraph
+maintains a dual mapping between property name and index field name. If you
+create a new index using the old name and add it to the same index, conflicts
+will occur because JanusGraph cannot figure out which property should the index
+field map to.
+
 ## Schema Constraints
 
 The definition of the schema allows users to configure explicit property and connection constraints. Properties can be bound to specific vertex label and/or edge labels. Moreover, connection constraints allow users to explicitly define which two vertex labels can be connected by an edge label. These constraints can be used to ensure that a graph matches a given domain model. For example for the graph of the gods, a `god` can be a brother of another `god`, but not of a `monster` and a `god` can have a property `age`, but `location` can not have a property `age`. These constraints are disabled by default.
