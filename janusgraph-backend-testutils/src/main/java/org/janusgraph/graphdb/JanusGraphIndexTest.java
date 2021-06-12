@@ -129,6 +129,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -233,6 +234,48 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals("demigod", h.label());
         assertCount(5, h.query().direction(Direction.BOTH).edges());
         graphOfTheGods.tx().commit();
+    }
+
+    @Test
+    public void testUpdateSchemaChangeNameForPropertyKey() {
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        graph.addVertex("name", "original");
+        graph.tx().commit();
+
+        PropertyKey prop = mgmt.getPropertyKey("name");
+        mgmt.changeName(prop, "oldName");
+        assertEquals("oldName", prop.name());
+        finishSchema();
+
+        assertTrue(mgmt.containsPropertyKey("oldName"));
+        assertFalse(mgmt.containsPropertyKey("name"));
+
+        // the renamed property can now be used for insertion and query
+        graph.addVertex("oldName", "old");
+        graph.tx().commit();
+        clopen(option(FORCE_INDEX_USAGE), true);
+        assertTrue(graph.traversal().V().has("oldName", "old").hasNext());
+
+        // create a new property using the old name
+        name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+        graph.addVertex("name", "new");
+        JanusGraphException ex = assertThrows(JanusGraphException.class, () -> graph.traversal().V().has("name", "new").hasNext());
+        assertEquals("Could not find a suitable index to answer graph query and graph scans are disabled: [(name = new)]:VERTEX", ex.getMessage());
+        clopen();
+        assertTrue(graph.traversal().V().has("name", "new").hasNext());
+
+        // demonstrate that the same property name cannot be added to the same mixed index
+        // see https://github.com/JanusGraph/janusgraph/issues/2653
+        finishSchema();
+        mgmt.addIndexKey(mgmt.getGraphIndex("mixed"), mgmt.getPropertyKey("name"), getStringMapping());
+        mgmt.commit();
+        graph.addVertex("name", "new");
+        ex = assertThrows(JanusGraphException.class, () -> graph.tx().commit());
+        assertEquals("Duplicate index field names found, likely you have multiple properties mapped to the same index field", ex.getCause().getMessage());
     }
 
     @Test

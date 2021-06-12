@@ -1563,6 +1563,24 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testUpdateSchemaChangeNameForPropertyKey() {
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("timeIndex", Vertex.class).addKey(time).buildCompositeIndex();
+        finishSchema();
+
+        //UPDATE SCHEMA NAME FOR TIME PROPERTY
+        PropertyKey prop = mgmt.getPropertyKey("time");
+        mgmt.changeName(prop, "delTime");
+        assertEquals("delTime", prop.name());
+
+        finishSchema();
+
+        assertTrue(mgmt.containsPropertyKey("delTime"));
+        assertFalse(mgmt.containsPropertyKey("time"));
+    }
+
+
+    @Test
     public void testUpdateSchemaChangeNameForCompositeIndex() {
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         mgmt.buildIndex("timeIndex", Vertex.class).addKey(time).buildCompositeIndex();
