@@ -21,6 +21,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.TextP;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -122,6 +123,8 @@ import org.janusgraph.graphdb.schema.SchemaContainer;
 import org.janusgraph.graphdb.schema.VertexLabelDefinition;
 import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphEdgeVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
@@ -204,9 +207,12 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.VE
 import static org.janusgraph.graphdb.internal.RelationCategory.EDGE;
 import static org.janusgraph.graphdb.internal.RelationCategory.PROPERTY;
 import static org.janusgraph.graphdb.internal.RelationCategory.RELATION;
+import static org.janusgraph.testutil.JanusGraphAssert.assertContains;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.janusgraph.testutil.JanusGraphAssert.assertEmpty;
+import static org.janusgraph.testutil.JanusGraphAssert.assertNotContains;
 import static org.janusgraph.testutil.JanusGraphAssert.assertNotEmpty;
+import static org.janusgraph.testutil.JanusGraphAssert.getStepMetrics;
 import static org.janusgraph.testutil.JanusGraphAssert.queryProfilerAnnotationIsPresent;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -4738,12 +4744,64 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         GraphTraversalSource gts = graph.traversal();
 
         TraversalMetrics traversalMetrics = gts.V().has("id", 0).out("knows").has("id", P.within(4,5,6,7)).values("id").profile().next();
-        String traversalMetricsStr = traversalMetrics.toString();
+
+        Metrics janusGraphVertexStepMetrics = getStepMetrics(traversalMetrics, JanusGraphVertexStep.class);
+        assertNotNull(janusGraphVertexStepMetrics);
         if(expectedVerticesPrefetch>1 && !inmemoryBackend){
-            assertTrue(traversalMetricsStr.contains("multiPreFetch=true"));
-            assertTrue(traversalMetricsStr.contains("vertices="+expectedVerticesPrefetch));
+            assertContains(janusGraphVertexStepMetrics, "multiPreFetch", "true");
+            assertContains(janusGraphVertexStepMetrics, "vertices", expectedVerticesPrefetch);
         } else {
-            assertFalse(traversalMetricsStr.contains("multiPreFetch=true"));
+            assertNotContains(janusGraphVertexStepMetrics, "multiPreFetch", "true");
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3, 10, 15, Integer.MAX_VALUE})
+    public void testBatchPropertiesPrefetchingFromEdges(int txCacheSize){
+        boolean inmemoryBackend = getConfig().get(STORAGE_BACKEND).equals("inmemory");
+        int numV = 10;
+        int expectedVerticesPrefetch = Math.min(txCacheSize, 4);
+        JanusGraphVertex mainVertex = graph.addVertex("id", 0);
+        for (int i = 1; i <= numV; i++) {
+            JanusGraphVertex adjacentVertex = graph.addVertex("id", i);
+            mainVertex.addEdge("knows", adjacentVertex, "id", i);
+        }
+        graph.tx().commit();
+
+        if(!inmemoryBackend){
+            clopen(option(BATCH_PROPERTY_PREFETCHING), true, option(TX_CACHE_SIZE), txCacheSize);
+        }
+        GraphTraversalSource gts = graph.traversal();
+
+        for(Direction direction : Direction.values()){
+            GraphTraversal<Vertex, Edge> graphEdgeTraversal = gts.V().has("id", 0).outE("knows")
+                .has("id", P.within(4,5,6,7));
+            GraphTraversal<Vertex, Vertex> graphVertexTraversal;
+
+            switch (direction){
+                case IN: graphVertexTraversal = graphEdgeTraversal.inV(); break;
+                case OUT: graphVertexTraversal = graphEdgeTraversal.outV(); break;
+                case BOTH: graphVertexTraversal = graphEdgeTraversal.bothV(); break;
+                default: throw new NotImplementedException("No implementation found for direction: "+direction.name());
+            }
+
+            TraversalMetrics traversalMetrics = graphVertexTraversal
+                .has("id", P.within(4,5,6,7)).values("id").profile().next();
+
+            Metrics janusGraphEdgeVertexStepMetrics = getStepMetrics(traversalMetrics, JanusGraphEdgeVertexStep.class);
+            if(inmemoryBackend){
+                assertNull(janusGraphEdgeVertexStepMetrics);
+            } else {
+                assertNotNull(janusGraphEdgeVertexStepMetrics);
+                assertTrue(janusGraphEdgeVertexStepMetrics.getName().endsWith("("+direction.name()+")"));
+                if(expectedVerticesPrefetch>1 && !OUT.equals(direction)){
+                    assertContains(janusGraphEdgeVertexStepMetrics, "multiPreFetch", "true");
+                    boolean withAdditionalOutVertex = BOTH.equals(direction) && txCacheSize > 4; // 4 is the number of retrieved IN vertices
+                    assertContains(janusGraphEdgeVertexStepMetrics, "vertices", expectedVerticesPrefetch + (withAdditionalOutVertex?1:0));
+                } else {
+                    assertNotContains(janusGraphEdgeVertexStepMetrics, "multiPreFetch", "true");
+                }
+            }
         }
     }
 

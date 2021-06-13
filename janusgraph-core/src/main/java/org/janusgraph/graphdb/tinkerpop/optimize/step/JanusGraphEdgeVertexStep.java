@@ -58,20 +58,30 @@ public class JanusGraphEdgeVertexStep extends EdgeVertexStep implements Profilin
         if (!starts.hasNext()) {
             throw FastNoSuchElementException.instance();
         }
+
+        if(txVertexCacheSize < 2){
+            return;
+        }
+
         List<Traverser.Admin<Edge>> edges = new ArrayList<>();
         Set<Vertex> vertices = new HashSet<>();
-        starts.forEachRemaining(e -> {
+
+        do{
+            Traverser.Admin<Edge> e = starts.next();
             edges.add(e);
 
-            if (vertices.size() < txVertexCacheSize) {
-                if (Direction.IN.equals(direction) || Direction.BOTH.equals(direction)) {
+            if(vertices.size() < txVertexCacheSize){
+                if(Direction.IN.equals(direction)){
                     vertices.add(e.get().inVertex());
-                }
-                if (Direction.OUT.equals(direction) || Direction.BOTH.equals(direction)) {
+                } else if(Direction.OUT.equals(direction)){
+                    vertices.add(e.get().outVertex());
+                } else if(Direction.BOTH.equals(direction)){
+                    vertices.add(e.get().inVertex());
                     vertices.add(e.get().outVertex());
                 }
             }
-        });
+
+        } while (starts.hasNext());
 
         // If there are multiple vertices then fetch the properties for all of them in a single multiQuery to
         // populate the vertex cache so subsequent queries of properties don't have to go to the storage back end
