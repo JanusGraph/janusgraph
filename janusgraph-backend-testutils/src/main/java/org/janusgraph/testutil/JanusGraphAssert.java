@@ -35,6 +35,7 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -42,6 +43,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -175,5 +177,28 @@ public class JanusGraphAssert {
     public static boolean queryProfilerAnnotationIsPresent(Traversal t, String queryProfilerAnnotation) {
         TraversalMetrics metrics = t.asAdmin().getSideEffects().get("~metrics");
         return metrics.toString().contains(queryProfilerAnnotation + "=true");
+    }
+
+    public static void assertContains(Metrics metrics, String annotationKey, Object annotationValue){
+        Map<String, Object> annotations = metrics.getAnnotations();
+        assertTrue(annotations.containsKey(annotationKey));
+        assertEquals(annotationValue, annotations.get(annotationKey));
+    }
+
+    public static void assertNotContains(Metrics metrics, String annotationKey, Object annotationValue){
+        Map<String, Object> annotations = metrics.getAnnotations();
+        if(annotations.containsKey(annotationKey)){
+            assertNotEquals(annotationValue, annotations.get(annotationKey));
+        }
+    }
+
+    public static Metrics getStepMetrics(TraversalMetrics traversalMetrics, Class<? extends Step> stepClass){
+        String stepMetricsName = stepClass.getSimpleName();
+        for(Metrics metrics : traversalMetrics.getMetrics()){
+            if(metrics.getName().startsWith(stepMetricsName)){
+                return metrics;
+            }
+        }
+        return null;
     }
 }
