@@ -49,7 +49,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -168,13 +167,13 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 ((OrStep<?>) currentStep).getLocalChildren().forEach(t ->localFoldInHasContainer(janusgraphStep, t.getStartStep(), t, rootTraversal));
                 currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);
-            } else if (currentStep instanceof HasContainerHolder){
-                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(JanusGraphPredicateUtils::convert).collect(Collectors.toList());
-                if  (validFoldInHasContainer(currentStep, true)) {
-                    janusgraphStep.addAll(containers);
-                    currentStep.getLabels().forEach(janusgraphStep::addLabel);
-                    traversal.removeStep(currentStep);
-                }
+            } else if (currentStep instanceof HasContainerHolder && validFoldInHasContainer(currentStep, true)){
+                final HasContainerHolder currentHasContainerHolder = (HasContainerHolder) currentStep;
+                final Iterable<HasContainer> containers = () -> currentHasContainerHolder.getHasContainers()
+                    .stream().map(JanusGraphPredicateUtils::convert).iterator();
+                janusgraphStep.addAll(containers);
+                currentStep.getLabels().forEach(janusgraphStep::addLabel);
+                traversal.removeStep(currentStep);
             } else if (isExistsStep(currentStep)) {
                 currentStep = foldInHasFilter(traversal, (TraversalFilterStep) currentStep);
                 continue;
@@ -190,7 +189,9 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         Step<?, ?> currentStep = tinkerpopStep;
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
-                final Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers().stream().map(JanusGraphPredicateUtils::convert).collect(Collectors.toList());
+                HasContainerHolder currentHasContainerHolder = (HasContainerHolder) currentStep;
+                final Iterable<HasContainer> containers = () -> currentHasContainerHolder.getHasContainers()
+                    .stream().map(JanusGraphPredicateUtils::convert).iterator();
                 final List<HasContainer> hasContainers = janusgraphStep.addLocalAll(containers);
                 currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);
