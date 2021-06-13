@@ -57,7 +57,7 @@ public class AdjacentVertexHasIdOptimizerStrategy
             return null; // TODO does it make sense to allow steps with >1 containers here?
         }
 
-        HasContainer hc = hasStep.getHasContainers().get(0);
+        HasContainer hc = hasContainers.get(0);
         if (hc.getKey().equals(T.id.getAccessor())) {
             return hc.getPredicate();
         } else {

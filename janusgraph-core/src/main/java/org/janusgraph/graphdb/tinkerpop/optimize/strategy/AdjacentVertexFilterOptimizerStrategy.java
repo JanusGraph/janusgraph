@@ -110,13 +110,14 @@ public class AdjacentVertexFilterOptimizerStrategy
             return OptimizableQueryType.IS;
         } else if (steps.get(1) instanceof HasStep) {
             // Check if this filter traversal matches the pattern: _.inV/outV/otherV.hasId(x)
-            HasStep hasStep = (HasStep) steps.get(1);
-            if (hasStep.getHasContainers().size() != 1) {
+            HasStep<?> hasStep = (HasStep<?>) steps.get(1);
+            List<HasContainer> hasContainers = hasStep.getHasContainers();
+            if (hasContainers.size() != 1) {
                 // TODO does it make sense to allow steps with > 1 containers here?
                 return OptimizableQueryType.NONE;
             }
 
-            HasContainer has = (HasContainer) hasStep.getHasContainers().get(0);
+            HasContainer has = hasContainers.get(0);
             if (has.getKey().equals(T.id.getAccessor())) {
                 return OptimizableQueryType.HASID;
             } else {
