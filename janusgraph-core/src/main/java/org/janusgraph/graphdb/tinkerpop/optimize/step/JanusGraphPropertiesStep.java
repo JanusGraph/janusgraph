@@ -15,7 +15,6 @@
 package org.janusgraph.graphdb.tinkerpop.optimize.step;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -166,18 +165,27 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     ===== HOLDER =====
      */
 
-    private final List<HasContainer> hasContainers;
+    private final ArrayList<HasContainer> hasContainers;
     private int limit;
     private final List<HasStepFolder.OrderEntry> orders = new ArrayList<>();
 
-
     @Override
-    public void addAll(Iterable<HasContainer> has) {
-        Iterables.addAll(hasContainers, has);
+    public void ensureAdditionalHasContainersCapacity(int additionalSize) {
+        hasContainers.ensureCapacity(hasContainers.size() + additionalSize);
     }
 
     @Override
-    public List<HasContainer> addLocalAll(Iterable<HasContainer> has) {
+    public void addHasContainer(HasContainer hasContainer) {
+        hasContainers.add(hasContainer);
+    }
+
+    @Override
+    public List<HasContainer> addLocalHasContainersConvertingAndPContainers(List<HasContainer> localHasContainers) {
+        throw new UnsupportedOperationException("addLocalAll is not supported for properties step.");
+    }
+
+    @Override
+    public List<HasContainer> addLocalHasContainersSplittingAndPContainers(Iterable<HasContainer> has) {
         throw new UnsupportedOperationException("addLocalAll is not supported for properties step.");
     }
 

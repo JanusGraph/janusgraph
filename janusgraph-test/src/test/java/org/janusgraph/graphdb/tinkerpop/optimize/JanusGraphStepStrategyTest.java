@@ -55,11 +55,16 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMultiQueryStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphStepStrategy;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.P.eq;
@@ -76,7 +81,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class JanusGraphStepStrategyTest {
-    
+
     @ParameterizedTest
     @MethodSource("generateTestParameters")
     public void doTest(Traversal original, Traversal optimized, Collection<TraversalStrategy> otherStrategies) {
@@ -110,6 +115,32 @@ public class JanusGraphStepStrategyTest {
         assertEquals(optimized.toString(), original.toString());
     }
 
+    @Test
+    public void shouldTriggerHasContainerSplit(){
+        final GraphTraversal.Admin<?, ?> traversal = new DefaultGraphTraversal<>();
+        final JanusGraphStep<Vertex, Vertex> graphStep = new JanusGraphStep<>(new GraphStep<>(traversal, Vertex.class, true));
+        graphStep.addHasContainer(new HasContainer("age", P.between("1", "123")));
+        assertEquals(2, graphStep.getHasContainers().size());
+    }
+
+    @Test
+    public void shouldTriggerLocalHasContainerSplit(){
+        final GraphTraversal.Admin<?, ?> traversal = new DefaultGraphTraversal<>();
+        final JanusGraphStep<Vertex, Vertex> graphStep = new JanusGraphStep<>(new GraphStep<>(traversal, Vertex.class, true));
+        List<HasContainer> localHasContainers = graphStep.addLocalHasContainersSplittingAndPContainers(
+            Arrays.asList(new HasContainer("age", P.between("1", "123")), new HasContainer("age2", P.between("123", "234"))));
+        assertEquals(4, localHasContainers.size());
+    }
+
+    @Test
+    public void shouldTriggerLocalHasContainerConvert(){
+        final GraphTraversal.Admin<?, ?> traversal = new DefaultGraphTraversal<>();
+        final JanusGraphStep<Vertex, Vertex> graphStep = new JanusGraphStep<>(new GraphStep<>(traversal, Vertex.class, true));
+        List<HasContainer> localHasContainers = graphStep.addLocalHasContainersConvertingAndPContainers(
+            Arrays.asList(new HasContainer("age", P.between("1", "123")), new HasContainer("age2", P.between("123", "234"))));
+        assertEquals(2, localHasContainers.size());
+    }
+
     private void applyMultiQueryTraversalSteps(Traversal.Admin<?,?> traversal) {
         TraversalHelper.getStepsOfAssignableClassRecursively(VertexStep.class, traversal).forEach(vertexStep -> {
             JanusGraphVertexStep janusGraphVertexStep = new JanusGraphVertexStep<>(vertexStep);
@@ -141,10 +172,10 @@ public class JanusGraphStepStrategyTest {
             } else if (hasKeyValues[i] instanceof HasStepFolder.OrderEntry) {
                 final HasStepFolder.OrderEntry orderEntry = (HasStepFolder.OrderEntry) hasKeyValues[i];
                 graphStep.orderBy(orderEntry.key, orderEntry.order);
-            } else if (hasKeyValues[i] instanceof DefaultGraphTraversal &&  ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep() instanceof OrStep){
+            } else if (hasKeyValues[i] instanceof DefaultGraphTraversal && ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep() instanceof OrStep){
                 for (final Traversal.Admin<?, ?> child : ((OrStep<?>) ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep()).getLocalChildren()) {
                     final JanusGraphStep<Vertex, Vertex> localGraphStep = ((JanusGraphStep<Vertex, Vertex>) ((DefaultGraphTraversal) child).getStartStep());
-                    graphStep.addLocalAll(localGraphStep.getHasContainers());
+                    graphStep.addLocalHasContainersConvertingAndPContainers(localGraphStep.getHasContainers());
                     localGraphStep.getOrders().forEach(orderEntry -> graphStep.localOrderBy(localGraphStep.getHasContainers(), orderEntry.key, orderEntry.order));
                     graphStep.setLocalLimit(localGraphStep.getHasContainers(), localGraphStep.getLowLimit(), localGraphStep.getHighLimit());
                 }

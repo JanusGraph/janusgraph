@@ -55,9 +55,18 @@ import java.util.Set;
  */
 public interface HasStepFolder<S, E> extends Step<S, E> {
 
-    void addAll(Iterable<HasContainer> hasContainers);
+    /**
+     * Optional method which provides a hint to future has containers additions.
+     * The method will optionally resize the underlying array for future addition to ensure that it can hold additional
+     * elements. I.e. it will ensure that we can add `additionalSize` containers without any resizes.
+     */
+    void ensureAdditionalHasContainersCapacity(int additionalSize);
 
-    List<HasContainer> addLocalAll(Iterable<HasContainer> hasContainers);
+    void addHasContainer(final HasContainer hasContainer);
+
+    List<HasContainer> addLocalHasContainersConvertingAndPContainers(List<HasContainer> localHasContainers);
+
+    List<HasContainer> addLocalHasContainersSplittingAndPContainers(Iterable<HasContainer> has);
 
     void orderBy(String key, Order order);
 
@@ -168,10 +177,11 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);
             } else if (currentStep instanceof HasContainerHolder && validFoldInHasContainer(currentStep, true)){
-                final HasContainerHolder currentHasContainerHolder = (HasContainerHolder) currentStep;
-                final Iterable<HasContainer> containers = () -> currentHasContainerHolder.getHasContainers()
-                    .stream().map(JanusGraphPredicateUtils::convert).iterator();
-                janusgraphStep.addAll(containers);
+                List<HasContainer> hasContainersList = ((HasContainerHolder) currentStep).getHasContainers();
+                janusgraphStep.ensureAdditionalHasContainersCapacity(hasContainersList.size());
+                for(HasContainer hasContainer : hasContainersList){
+                    janusgraphStep.addHasContainer(JanusGraphPredicateUtils.convert(hasContainer));
+                }
                 currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);
             } else if (isExistsStep(currentStep)) {
@@ -189,14 +199,12 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         Step<?, ?> currentStep = tinkerpopStep;
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
-                HasContainerHolder currentHasContainerHolder = (HasContainerHolder) currentStep;
-                final Iterable<HasContainer> containers = () -> currentHasContainerHolder.getHasContainers()
-                    .stream().map(JanusGraphPredicateUtils::convert).iterator();
-                final List<HasContainer> hasContainers = janusgraphStep.addLocalAll(containers);
+                List<HasContainer> localHasContainers = janusgraphStep.addLocalHasContainersConvertingAndPContainers(
+                    ((HasContainerHolder) currentStep).getHasContainers());
                 currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);
-                currentStep = foldInOrder(janusgraphStep, currentStep, traversal, rootTraversal, janusgraphStep instanceof JanusGraphStep && ((JanusGraphStep)janusgraphStep).returnsVertex(), hasContainers);
-                foldInRange(janusgraphStep, currentStep, traversal, hasContainers);
+                currentStep = foldInOrder(janusgraphStep, currentStep, traversal, rootTraversal, janusgraphStep instanceof JanusGraphStep && ((JanusGraphStep)janusgraphStep).returnsVertex(), localHasContainers);
+                foldInRange(janusgraphStep, currentStep, traversal, localHasContainers);
             } else if (isExistsStep(currentStep)) {
                 currentStep = foldInHasFilter(traversal, (TraversalFilterStep) currentStep);
                 continue;
@@ -303,16 +311,14 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         return currentStep;
     }
 
-    static List<HasContainer> splitAndP(final List<HasContainer> hasContainers, final Iterable<HasContainer> has) {
-        has.forEach(hasContainer -> {
-            if (hasContainer.getPredicate() instanceof AndP) {
-                for (final P<?> predicate : ((AndP<?>) hasContainer.getPredicate()).getPredicates()) {
-                    hasContainers.add(new HasContainer(hasContainer.getKey(), predicate));
-                }
-            } else
-                hasContainers.add(hasContainer);
-        });
-        return hasContainers;
+    static void splitAndP(final List<HasContainer> hasContainers, final HasContainer hasContainer) {
+        if (hasContainer.getPredicate() instanceof AndP) {
+            for (final P<?> predicate : ((AndP<?>) hasContainer.getPredicate()).getPredicates()) {
+                hasContainers.add(new HasContainer(hasContainer.getKey(), predicate));
+            }
+        } else {
+            hasContainers.add(hasContainer);
+        }
     }
 
     class OrderEntry {
