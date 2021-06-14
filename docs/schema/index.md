@@ -218,8 +218,11 @@ the addition of an edge, vertex or the setting of a property. The
 types.
 
 By default, implicitly created edge labels have multiplicity MULTI and
-implicitly created property keys have cardinality SINGLE and data type
-`Object.class`. Users can control automatic schema element creation by
+implicitly created property keys have cardinality SINGLE. Data types of
+implicitly created property keys are inferred as long as they are natively
+supported by JanusGraph. `Object.class` is used if and only if the given value
+is not any of the `Native JanusGraph Data Types`.
+Users can control automatic schema element creation by
 implementing and registering their own `DefaultSchemaMaker`.
 
 When defining a cardinality for a vertex property which differs from SINGLE, 
