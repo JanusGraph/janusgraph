@@ -244,7 +244,7 @@ after a shiny new JanusGraph header.
 
 We are dropping Ganglia as we are using dropwizard for metrics. Dropwizard did drop Ganglia in the newest major version.
 
-##### DataStax cassandra driver upgrade from 3.9.0 to 4.11.0
+##### DataStax cassandra driver upgrade from 3.9.0 to 4.12.0
 
 All DataStax cassandra driver metrics are now disabled by default. To enable DataStax driver metrics you need to provide 
 a list of Session level metrics and / or Node level metrics you want to enable. To provide a list of enabled metrics, 
