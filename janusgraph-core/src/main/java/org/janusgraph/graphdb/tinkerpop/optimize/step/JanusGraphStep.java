@@ -60,7 +60,7 @@ import java.util.Map.Entry;
  */
 public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implements HasStepFolder<S, E>, Profiling, HasContainerHolder {
 
-    private final List<HasContainer> hasContainers = new ArrayList<>();
+    private final ArrayList<HasContainer> hasContainers = new ArrayList<>();
     private final Map<List<HasContainer>, QueryInfo> hasLocalContainers = new LinkedHashMap<>();
     private int lowLimit = 0;
     private int highLimit = BaseQuery.NO_LIMIT;
@@ -208,15 +208,28 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     }
 
     @Override
-    public void addAll(Iterable<HasContainer> has) {
-        HasStepFolder.splitAndP(hasContainers, has);
+    public void ensureAdditionalHasContainersCapacity(int additionalSize) {
+        hasContainers.ensureCapacity(hasContainers.size() + additionalSize);
     }
 
     @Override
-    public List<HasContainer> addLocalAll(Iterable<HasContainer> has) {
-        final List<HasContainer> containers = HasStepFolder.splitAndP(new ArrayList<>(), has);
-        hasLocalContainers.put(containers, new QueryInfo(new ArrayList<>(), 0, BaseQuery.NO_LIMIT));
-        return containers;
+    public List<HasContainer> addLocalHasContainersConvertingAndPContainers(List<HasContainer> unconvertedHasContainers){
+        List<HasContainer> localHasContainers = new ArrayList<>(unconvertedHasContainers.size());
+        for(HasContainer hasContainer : unconvertedHasContainers){
+            localHasContainers.add(JanusGraphPredicateUtils.convert(hasContainer));
+        }
+        hasLocalContainers.put(localHasContainers, new QueryInfo(new ArrayList<>(), 0, BaseQuery.NO_LIMIT));
+        return localHasContainers;
+    }
+
+    @Override
+    public List<HasContainer> addLocalHasContainersSplittingAndPContainers(Iterable<HasContainer> hasContainers) {
+        List<HasContainer> localHasContainers = new ArrayList<>();
+        for(HasContainer hasContainer : hasContainers){
+            HasStepFolder.splitAndP(localHasContainers, hasContainer);
+        }
+        hasLocalContainers.put(localHasContainers, new QueryInfo(new ArrayList<>(), 0, BaseQuery.NO_LIMIT));
+        return localHasContainers;
     }
 
     @Override
@@ -274,7 +287,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
 
     @Override
     public void addHasContainer(final HasContainer hasContainer) {
-        this.addAll(Collections.singleton(hasContainer));
+        HasStepFolder.splitAndP(hasContainers, hasContainer);
     }
 
     public List<OrderEntry> getOrders() {

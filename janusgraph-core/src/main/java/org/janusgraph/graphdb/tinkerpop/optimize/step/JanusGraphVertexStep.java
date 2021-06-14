@@ -161,17 +161,27 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     ===== HOLDER =====
      */
 
-    private final List<HasContainer> hasContainers;
+    private final ArrayList<HasContainer> hasContainers;
     private int limit;
     private final List<OrderEntry> orders = new ArrayList<>();
 
     @Override
-    public void addAll(Iterable<HasContainer> has) {
-        HasStepFolder.splitAndP(hasContainers, has);
+    public void ensureAdditionalHasContainersCapacity(int additionalSize) {
+        hasContainers.ensureCapacity(hasContainers.size() + additionalSize);
     }
 
     @Override
-    public List<HasContainer> addLocalAll(Iterable<HasContainer> has) {
+    public void addHasContainer(HasContainer hasContainer) {
+        HasStepFolder.splitAndP(hasContainers, hasContainer);
+    }
+
+    @Override
+    public List<HasContainer> addLocalHasContainersConvertingAndPContainers(List<HasContainer> localHasContainers) {
+        throw new UnsupportedOperationException("addLocalAll is not supported for graph vertex step.");
+    }
+
+    @Override
+    public List<HasContainer> addLocalHasContainersSplittingAndPContainers(Iterable<HasContainer> has) {
         throw new UnsupportedOperationException("addLocalAll is not supported for graph vertex step.");
     }
 
