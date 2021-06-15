@@ -58,6 +58,9 @@ public class InMemoryGraphTest extends JanusGraphTest {
     public void testLocalGraphConfiguration() {}
 
     @Override @Test @Disabled
+    public void testLimitBatchSizeForMultiQuery() {}
+
+    @Override @Test @Disabled
     public void testMaskableGraphConfig() {}
 
     @Override @Test @Disabled

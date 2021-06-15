@@ -24,6 +24,7 @@ import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.TextP;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
@@ -147,6 +148,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
@@ -163,6 +165,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -183,6 +186,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HARD_MAX_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMIT_BATCH_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
@@ -4547,6 +4551,113 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         t = gts.V().has("id", sid).values("names").profile("~metrics");
         assertCount(superV * numV, t);
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
+    }
+
+    @Test
+    public void testLimitBatchSizeForMultiQuery() {
+        int numV = 100;
+        JanusGraphVertex a = graph.addVertex();
+        JanusGraphVertex[] bs = new JanusGraphVertex[numV];
+        JanusGraphVertex[] cs = new JanusGraphVertex[numV];
+        for (int i = 0; i < numV; ++i) {
+            bs[i] = graph.addVertex();
+            cs[i] = graph.addVertex();
+            cs[i].property("foo", "bar");
+            a.addEdge("knows", bs[i]);
+            bs[i].addEdge("knows", cs[i]);
+        }
+
+        int barrierSize = 27;
+        int limit = 40;
+
+        // test batching for `out()`
+        Supplier<GraphTraversal<?, ?>> traversal = () -> graph.traversal().V(bs).barrier(barrierSize).out();
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        TraversalMetrics profile = traversal.get().profile().next();
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
+
+        // test early abort with limit for `out()`
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).out().limit(limit);
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
+
+        // test batching for `values()`
+        traversal = () -> graph.traversal().V(cs).barrier(barrierSize).values("foo");
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `values()`
+        traversal = () -> graph.traversal().V(cs).barrier(barrierSize).values("foo").limit(limit);
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+
+        // test batching with unlimited batch size
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).out();
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), false);
+        profile = traversal.get().profile().next();
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(bs.length * 2, profile.getMetrics()));
+
+        // test nested VertexStep with unlimited batch size
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).where(__.out());
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), false);
+        profile = traversal.get().profile().next();
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(bs.length * 2, profile.getMetrics()));
+
+        // test nested VertexStep with non-nested barrier
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).where(__.out());
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
+
+        // test batching with repeat step
+        traversal = () -> graph.traversal().V(a).repeat(__.barrier(barrierSize).out()).times(2);
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
+    }
+
+    private void assertEqualResultWithAndWithoutLimitBatchSize(Supplier<GraphTraversal<?, ?>> traversal) {
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        final List<?> resultLimitedBatch = traversal.get().toList();
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), false);
+        final List<?> resultUnimitedBatch = traversal.get().toList();
+        clopen(option(USE_MULTIQUERY), false);
+        final List<?> resultNoMultiQuery = traversal.get().toList();
+
+        assertEquals(resultLimitedBatch, resultUnimitedBatch);
+        assertEquals(resultLimitedBatch, resultNoMultiQuery);
+    }
+
+    private long countBackendQueriesOfSize(long size, Collection<? extends Metrics> metrics) {
+        long count = metrics.stream()
+            .filter(m -> m.getName().equals("backend-query"))
+            .map(m -> m.getCounts())
+            .flatMap(c -> c.values().stream())
+            .filter(s -> s == size)
+            .count();
+        long nestedCount = metrics.stream()
+            .mapToLong(m -> countBackendQueriesOfSize(size, m.getNested()))
+            .sum();
+        return count + nestedCount;
     }
 
     @Test

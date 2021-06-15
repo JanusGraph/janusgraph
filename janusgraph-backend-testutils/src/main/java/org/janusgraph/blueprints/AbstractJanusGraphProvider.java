@@ -62,11 +62,13 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+
 public abstract class AbstractJanusGraphProvider extends AbstractGraphProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractJanusGraphProvider.class);
@@ -233,5 +235,10 @@ public abstract class AbstractJanusGraphProvider extends AbstractGraphProvider {
             //throw new RuntimeException("Could not load graph with " + graphData);
         }
         management.commit();
+    }
+
+    @Override
+    public Optional<TestListener> getTestListener() {
+        return Optional.of(JanusGraphTestListener.instance());
     }
 }

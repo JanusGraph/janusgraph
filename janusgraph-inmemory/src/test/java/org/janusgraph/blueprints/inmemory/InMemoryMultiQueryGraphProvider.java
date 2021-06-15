@@ -22,6 +22,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 /**
  * @author Ted Wilmes (twilmes@gmail.com)
  */
+
 public class InMemoryMultiQueryGraphProvider extends AbstractJanusGraphProvider {
     @Override
     public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
