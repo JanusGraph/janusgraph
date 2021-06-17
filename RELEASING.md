@@ -182,7 +182,7 @@ You may also need to update the following files in the main repo for any new or 
 
 Create a release commit:
 ```Shell
-git commit -m "JanusGraph release <version> [tp-tests]" -s
+git commit -m "JanusGraph release <version> [cql-tests] [tp-tests]" -s
 ```
 
 After that create a release tag with the next command:
