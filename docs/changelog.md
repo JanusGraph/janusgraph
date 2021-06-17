@@ -263,7 +263,7 @@ storage.cql.metrics.node-enabled=pool.open-connections,pool.available-streams,by
 ```
 
 See `advanced.metrics.session.enabled` and `advanced.metrics.node.enabled` sections in 
-[DataStax Metrics Configuration](https://docs.datastax.com/en/developer/java-driver/4.11/manual/core/configuration/reference/) 
+[DataStax Metrics Configuration](https://docs.datastax.com/en/developer/java-driver/4.12/manual/core/configuration/reference/) 
 for a complete list of available Session level and Node level metrics.
 
 Due to driver upgrade the next cql configuration options have been removed:
