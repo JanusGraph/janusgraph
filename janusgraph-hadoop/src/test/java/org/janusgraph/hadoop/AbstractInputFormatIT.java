@@ -119,6 +119,37 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testReadMultipleSelfEdges() throws Exception {
+        GraphOfTheGodsFactory.load(graph, null, true);
+        assertEquals(12L, (long) graph.traversal().V().count().next());
+
+        // Similarly to testReadSelfEdge(), add multiple self-loop edges on sky with edge label "lives"
+        JanusGraphVertex sky = graph.query().has("name", "sky").vertices().iterator().next();
+        assertNotNull(sky);
+        assertEquals("sky", sky.value("name"));
+        assertEquals(1L, sky.query().direction(Direction.IN).edgeCount());
+        assertEquals(0L, sky.query().direction(Direction.OUT).edgeCount());
+        assertEquals(1L, sky.query().direction(Direction.BOTH).edgeCount());
+        sky.addEdge("lives", sky, "reason", "testReadMultipleSelfEdges1");
+        sky.addEdge("lives", sky, "reason", "testReadMultipleSelfEdges2");
+        sky.addEdge("lives", sky, "reason", "testReadMultipleSelfEdges3");
+        assertEquals(4L, sky.query().direction(Direction.IN).edgeCount());
+        assertEquals(3L, sky.query().direction(Direction.OUT).edgeCount());
+        assertEquals(7L, sky.query().direction(Direction.BOTH).edgeCount());
+        graph.tx().commit();
+
+        // Read all the new edges using the inputformat
+        Graph g = getGraph();
+        GraphTraversalSource t = g.traversal().withComputer(SparkGraphComputer.class);
+        Iterator<Object> edgeIdIterator = t.V().has("name", "sky").bothE().id();
+        assertNotNull(edgeIdIterator);
+        assertTrue(edgeIdIterator.hasNext());
+        Set<Object> edges = new HashSet<>();
+        edgeIdIterator.forEachRemaining(edges::add);
+        assertEquals(4, edges.size());
+    }
+
+    @Test
     public void testGeoshapeGetValues() throws Exception {
         GraphOfTheGodsFactory.load(graph, null, true);
 
