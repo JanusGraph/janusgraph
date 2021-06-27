@@ -194,7 +194,7 @@ public abstract class AbstractIndexSelectionStrategy implements IndexSelectionSt
         if (condition instanceof Or) {
             for (final Condition<JanusGraphElement> subClause : condition.getChildren()) {
                 if (subClause instanceof And) {
-                    for (final Condition<JanusGraphElement> subsubClause : condition.getChildren()) {
+                    for (final Condition<JanusGraphElement> subsubClause : subClause.getChildren()) {
                         if (!coversAll(index, subsubClause,indexInfo)) {
                             return null;
                         }
