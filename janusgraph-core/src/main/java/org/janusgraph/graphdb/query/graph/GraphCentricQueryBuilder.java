@@ -41,11 +41,8 @@ import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
-import org.janusgraph.graphdb.query.index.IndexSelectionUtil;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.util.CloseableIteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -281,14 +278,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         orders.makeImmutable();
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
-        //Compile all indexes that cover at least one of the query conditions
-        final Set<IndexType> indexCandidates = IndexSelectionUtil.getMatchingIndexes(conditions,
-            indexType -> indexType.getElement() == resultType
-                    && !(conditions instanceof Or && (indexType.isCompositeIndex() || !serializer.features((MixedIndexType) indexType).supportNotQueryNormalForm()))
-        );
-
         final Set<Condition> coveredClauses = new HashSet<>();
-        final IndexSelectionStrategy.SelectedIndexQuery selectedIndex = indexSelector.selectIndices(indexCandidates, conditions, coveredClauses, orders, serializer);
+        final IndexSelectionStrategy.SelectedIndexQuery selectedIndex = indexSelector.selectIndices(
+            resultType, conditions, coveredClauses, orders, serializer);
 
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {

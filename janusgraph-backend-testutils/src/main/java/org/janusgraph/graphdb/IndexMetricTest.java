@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.janusgraph.diskstorage.Backend.METRICS_INDEX_PROVIDER_NAME;
+import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_MIXED_COUNT_QUERY;
 import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_MUTATE;
 import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_QUERY;
 import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_RAW_QUERY;
@@ -60,13 +61,14 @@ public abstract class IndexMetricTest extends JanusGraphBaseTest {
         graph.tx().commit();
         graph.traversal().V().has("p1", "value").iterate();
         graph.traversal().V().has("p2", "value").iterate();
+        graph.traversal().V().has("p1", "value").count().next();
         graph.indexQuery("idx", "p1:*").vertexTotals();
         graph.indexQuery("idx", "p1:*").vertexStream();
 
         Assertions.assertThrows(JanusGraphException.class,  () ->
             graph.indexQuery("idx", "!@#$%^").vertexTotals());
 
-        verifyIndexMetrics("search", METRICS_INDEX_PREFIX, ImmutableMap.of(M_MUTATE, 1L, M_QUERY, 1L, M_TOTALS, 2L, M_RAW_QUERY, 1L));
+        verifyIndexMetrics("search", METRICS_INDEX_PREFIX, ImmutableMap.of(M_MUTATE, 1L, M_QUERY, 1L, M_MIXED_COUNT_QUERY, 1L, M_TOTALS, 2L, M_RAW_QUERY, 1L));
         assertEquals(1, metric.getCounter(METRICS_INDEX_PREFIX, "search", M_TOTALS, MetricInstrumentedStore.M_EXCEPTIONS).getCount());
     }
 

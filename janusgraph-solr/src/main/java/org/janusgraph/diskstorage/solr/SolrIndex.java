@@ -702,6 +702,27 @@ public class SolrIndex implements IndexProvider {
     }
 
     @Override
+    public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
+        try {
+            final String collection = query.getStore();
+            final String keyIdField = getKeyFieldId(collection);
+            final SolrQuery solrQuery = new SolrQuery("*:*");
+            solrQuery.set(CommonParams.FL, keyIdField);
+            final String queryFilter = buildQueryFilter(query.getCondition(), information.get(collection));
+            solrQuery.addFilterQuery(queryFilter);
+            final QueryResponse response = solrClient.query(collection, solrQuery);
+            logger.debug("Executed query [{}] in {} ms", query.toString(), response.getElapsedTime());
+            return response.getResults().getNumFound();
+        } catch (final IOException e) {
+            logger.error("Query did not complete : ", e);
+            throw new PermanentBackendException(e);
+        } catch (final SolrServerException e) {
+            logger.error("Unable to query Solr index.", e);
+            throw new PermanentBackendException(e);
+        }
+    }
+
+    @Override
     public Long totals(RawQuery query, KeyInformation.IndexRetriever information,
                        BaseTransaction tx) throws BackendException {
         try {

@@ -25,6 +25,7 @@ import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
@@ -60,6 +61,24 @@ public abstract class AbstractIndexSelectionStrategy implements IndexSelectionSt
 
     public AbstractIndexSelectionStrategy(Configuration config) {
 
+    }
+
+    @Override
+    public SelectedIndexQuery selectIndices(final ElementCategory resultType,
+                                            final MultiCondition<JanusGraphElement> conditions,
+                                            final Set<Condition> coveredClauses, OrderList orders,
+                                            IndexSerializer serializer) {
+        final Set<IndexType> rawCandidates = createIndexRawCandidates(conditions, resultType, serializer);
+        return selectIndices(rawCandidates, conditions, coveredClauses, orders, serializer);
+    }
+
+    //Compile all indexes that cover at least one of the query conditions
+    protected Set<IndexType> createIndexRawCandidates(final MultiCondition<JanusGraphElement> conditions,
+                                                      final ElementCategory resultType, final IndexSerializer serializer) {
+        return IndexSelectionUtil.getMatchingIndexes(conditions,
+            indexType -> indexType.getElement() == resultType
+                && !(conditions instanceof Or && (indexType.isCompositeIndex() || !serializer.features((MixedIndexType) indexType).supportNotQueryNormalForm()))
+        );
     }
 
     /**

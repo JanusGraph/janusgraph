@@ -51,6 +51,7 @@ public interface QueryProfiler {
     String CONSTRUCT_GRAPH_CENTRIC_QUERY = "constructGraphCentricQuery";
     // graph centric query execution phase
     String GRAPH_CENTRIC_QUERY = "GraphCentricQuery";
+    String MIXED_INEX_COUNT_QUERY = "MixedIndexCountQuery";
 
     QueryProfiler NO_OP = new QueryProfiler() {
         @Override

@@ -421,6 +421,22 @@ public class BackendTransaction implements LoggableTransaction {
         });
     }
 
+    public Long indexQueryCount(final String index, final IndexQuery query) {
+        final IndexTransaction indexTx = getIndexTransaction(index);
+        return executeRead(new Callable<Long>() {
+            @Override
+            public Long call() throws Exception {
+                return indexTx.queryCount(query);
+            }
+
+            @Override
+            public String toString() {
+                return "indexQueryCount";
+            }
+        });
+
+    }
+
     public Stream<RawQuery.Result<String>> rawQuery(final String index, final RawQuery query) {
         final IndexTransaction indexTx = getIndexTransaction(index);
         return executeRead(new Callable<Stream<RawQuery.Result<String>>>() {

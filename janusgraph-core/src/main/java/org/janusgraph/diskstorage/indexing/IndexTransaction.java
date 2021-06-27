@@ -110,6 +110,10 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         return index.query(query, keyInformation, indexTx);
     }
 
+    public Long queryCount(IndexQuery query) throws BackendException {
+        return index.queryCount(query, keyInformation, indexTx);
+    }
+
     /**
      * @deprecated use {@link #queryStream(RawQuery query)} instead.
      */

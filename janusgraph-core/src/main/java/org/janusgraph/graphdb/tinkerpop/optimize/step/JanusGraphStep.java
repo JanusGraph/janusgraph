@@ -66,26 +66,23 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     private int highLimit = BaseQuery.NO_LIMIT;
     private final List<OrderEntry> orders = new ArrayList<>();
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
+    private GraphCentricQuery globalQuery;
+    private JanusGraphTransaction tx;
 
 
     public JanusGraphStep(final GraphStep<S, E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.isStartStep(), originalStep.getIds());
         originalStep.getLabels().forEach(this::addLabel);
+
         this.setIteratorSupplier(() -> {
             if (this.ids == null) {
                 return Collections.emptyIterator();
-            }
-            else if (this.ids.length > 0) {
+            } else if (this.ids.length > 0) {
                 final Graph graph = (Graph)traversal.asAdmin().getGraph().get();
                 return iteratorList((Iterator)graph.vertices(this.ids));
             }
-            if (hasLocalContainers.isEmpty()) {
-                hasLocalContainers.put(new ArrayList<>(), new QueryInfo(new ArrayList<>(), 0, BaseQuery.NO_LIMIT));
-            }
-            final JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(traversal);
 
-            final GraphCentricQuery globalQuery = buildGlobalGraphCentricQuery(tx, queryProfiler);
-
+            buildGlobalGraphCentricQuery();
             final Multimap<Integer, GraphCentricQuery> queries = ArrayListMultimap.create();
             if (globalQuery != null && !globalQuery.getSubQuery(0).getBackendQuery().isEmpty()) {
                 globalQuery.observeWith(queryProfiler.addNested(QueryProfiler.GRAPH_CENTRIC_QUERY));
@@ -108,6 +105,23 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
                 return new MultiDistinctOrderedIterator<>(lowLimit, highLimit, responses, orders);
             }
         });
+    }
+
+    public GraphCentricQuery buildGlobalGraphCentricQuery() {
+        if (ids == null || ids.length > 0) {
+            return null;
+        }
+
+        if (globalQuery != null) {
+            return globalQuery;
+        }
+
+        if (hasLocalContainers.isEmpty()) {
+            hasLocalContainers.put(new ArrayList<>(), new QueryInfo(new ArrayList<>(), 0, BaseQuery.NO_LIMIT));
+        }
+        tx = JanusGraphTraversalUtil.getTx(traversal);
+        globalQuery = buildGlobalGraphCentricQuery(tx, queryProfiler);
+        return globalQuery;
     }
 
     private GraphCentricQuery buildGlobalGraphCentricQuery(final JanusGraphTransaction tx, final QueryProfiler globalQueryProfiler) {

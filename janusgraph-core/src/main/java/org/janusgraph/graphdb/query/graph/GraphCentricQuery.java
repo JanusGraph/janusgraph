@@ -126,6 +126,10 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
         return 1;
     }
 
+    public BackendQueryHolder<JointIndexQuery> getIndexQuery() {
+        return indexQuery;
+    }
+
     @Override
     public BackendQueryHolder<JointIndexQuery> getSubQuery(int position) {
         if (position == 0) return indexQuery;

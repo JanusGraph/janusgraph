@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.query.index;
 
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
@@ -33,6 +34,10 @@ public interface IndexSelectionStrategy {
                                      final Set<Condition> coveredClauses, OrderList orders,
                                      IndexSerializer serializer);
 
+    SelectedIndexQuery selectIndices(final ElementCategory resultType,
+                                     final MultiCondition<JanusGraphElement> conditions,
+                                     final Set<Condition> coveredClauses, OrderList orders,
+                                     IndexSerializer serializer);
     class SelectedIndexQuery {
         private JointIndexQuery query;
         private boolean isSorted;

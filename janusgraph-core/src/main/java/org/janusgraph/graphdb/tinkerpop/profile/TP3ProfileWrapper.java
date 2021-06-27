@@ -42,6 +42,10 @@ public class TP3ProfileWrapper implements QueryProfiler {
         return new TP3ProfileWrapper(nested);
     }
 
+    public MutableMetrics getMetrics() {
+        return metrics;
+    }
+
     @Override
     public QueryProfiler setAnnotation(String key, Object value) {
         Preconditions.checkNotNull(key, "Key must be not null");
