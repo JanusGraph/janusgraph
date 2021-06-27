@@ -33,6 +33,7 @@ import org.janusgraph.core.JanusGraphMultiVertexQuery;
 import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.MixedIndexCountQuery;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.VertexLabel;
@@ -175,6 +176,11 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
     @Override
     public JanusGraphQuery<? extends JanusGraphQuery> query() {
         return getAutoStartTx().query();
+    }
+
+    @Override
+    public MixedIndexCountQuery mixedIndexCountQuery() {
+        return getAutoStartTx().mixedIndexCountQuery();
     }
 
     @Override

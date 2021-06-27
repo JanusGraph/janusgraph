@@ -588,6 +588,12 @@ public class IndexSerializer {
         }
     }
 
+    public Long queryCount(final JointIndexQuery.Subquery query, final BackendTransaction tx) {
+        final IndexType index = query.getIndex();
+        assert index.isMixedIndex();
+        return tx.indexQueryCount(index.getBackingIndexName(), query.getMixedQuery());
+    }
+
     public MultiKeySliceQuery getQuery(final CompositeIndexType index, List<Object[]> values) {
         final List<KeySliceQuery> ksqs = new ArrayList<>(values.size());
         for (final Object[] value : values) {

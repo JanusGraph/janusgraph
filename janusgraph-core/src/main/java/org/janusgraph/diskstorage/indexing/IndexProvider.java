@@ -84,6 +84,8 @@ public interface IndexProvider extends IndexInformation {
      */
     void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
+    Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
+
     /**
      * Executes the given query against the index.
      *

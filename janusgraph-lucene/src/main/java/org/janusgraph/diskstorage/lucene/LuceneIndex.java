@@ -920,6 +920,30 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
+    public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
+        //Construct query
+        final String store = query.getStore();
+        final LuceneCustomAnalyzer delegatingAnalyzer = delegatingAnalyzerFor(store, information);
+        final SearchParams searchParams = convertQuery(query.getCondition(), information.get(store), delegatingAnalyzer);
+
+        try {
+            final IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
+            if (searcher == null) {
+                return 0L; //Index does not yet exist
+            }
+            Query q = searchParams.getQuery();
+
+            final long time = System.currentTimeMillis();
+            // We ignore offset and limit for totals
+            final TopDocs docs = searcher.search(q, 1);
+            log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
+            return docs.totalHits.value;
+        } catch (final IOException e) {
+            throw new TemporaryBackendException("Could not execute Lucene query", e);
+        }
+    }
+
+    @Override
     public Long totals(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         final Query q;
         try {

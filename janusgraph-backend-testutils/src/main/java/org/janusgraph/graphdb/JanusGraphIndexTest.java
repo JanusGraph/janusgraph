@@ -76,6 +76,9 @@ import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexCountStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
@@ -1124,6 +1127,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         if (indexFeatures.supportNotQueryNormalForm()) {
             newTx();
             assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).count().next());
+            assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).toList().size());
             Metrics mMixedOr = tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val"))
                 .profile().next().getMetrics(0);
             assertEquals("Or(JanusGraphStep([],[name.eq(bob)]),JanusGraphStep([],[prop.eq(val)]))", mMixedOr.getName());
@@ -1150,6 +1154,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         // satisfied by two graph-centric queries, one is mixed index query and the other one is full scan
         newTx();
         assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).count().next());
+        assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).toList().size());
         Metrics mMixedOr = tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20))
             .profile().next().getMetrics(0);
         assertEquals("Or(JanusGraphStep([],[name.eq(bob)]),JanusGraphStep([],[age.eq(20)]))", mMixedOr.getName());
@@ -1202,6 +1207,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         // satisfied by a single graph-centric query which is satisfied by a single mixed index query
         newTx();
         assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").count().next());
+        assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").toList().size());
         Metrics mMixedAnd = tx.traversal().V().has("name", "bob").has("prop", "val")
             .profile().next().getMetrics(0);
         assertEquals("JanusGraphStep([],[name.eq(bob), prop.eq(val)])", mMixedAnd.getName());
@@ -1228,6 +1234,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         // satisfied by a single graph centric query which is satisfied by union of two mixed index queries
         newTx();
         assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").count().next());
+        assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").toList().size());
         final Metrics mMixedAnd2 = tx.traversal().V().has("name", "bob").has("prop", "val")
             .has("desc", Text.textContains("coding")).profile().next().getMetrics(0);
         assertEquals("JanusGraphStep([],[name.eq(bob), prop.eq(val), desc.textContains(coding)])", mMixedAnd2.getName());
@@ -1521,6 +1528,235 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertCount(numV / strings.length * 2, graph.indexQuery(VINDEX, "xtext:ducks").vertexStream());
             assertCount(0, graph.indexQuery(EINDEX, "xtext:ducks").edgeStream());
         }
+    }
+
+    private void checkMixedIndexCountProfiling(TraversalMetrics profile, Map<String, String> annotations) {
+        Metrics metrics = profile.getMetrics(0);
+        assertTrue(metrics.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertTrue(metrics.getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        Metrics nested = (Metrics) metrics.getNested().toArray()[0];
+        assertEquals(QueryProfiler.MIXED_INEX_COUNT_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals(annotations, nested.getAnnotations());
+    }
+
+    /**
+     * Tests that if a given query can be satisfied by a single mixed index, and it is followed by a count step, then
+     * a count query will be built
+     */
+    @Test
+    public void testMixedIndexQueryFollowedByCount() {
+        final int numV = 100;
+        final String[] strings = {"Uncle Berry has a farm", "and on his farm he has five ducks", "ducks are beautiful animals", "the sky is very blue today"};
+        setupChainGraph(numV, strings, true);
+        clopen();
+
+        /* ===================================================
+        has(key, value) followed by count() can be optimized */
+
+        // vertex
+        long total = numV / strings.length * 2;
+        assertEquals(total, graph.indexQuery(VINDEX, "v.text:ducks").vertexTotals());
+        TraversalMetrics profile = graph.traversal().V().has("text", Text.textContains("ducks")).count().profile().next();
+        final String xtextKey = "xtext";
+        Map<String, String> annotations = new HashMap() {{
+            put("query", String.format("[(%s textContains ducks)]:vsearch", xtextKey));
+        }};
+        checkMixedIndexCountProfiling(profile, annotations);
+        assertEquals(total, graph.traversal().V().has("text", Text.textContains("ducks")).count().next());
+
+        // edge
+        total = numV / strings.length * 2;
+        assertEquals(total, graph.indexQuery(EINDEX, "e.text:ducks").edgeTotals());
+        profile = graph.traversal().E().has("text", Text.textContains("ducks")).count().profile().next();
+        final String textKey = getTextField("text");
+        annotations = new HashMap() {{
+            put("query", String.format("[(%s textContains ducks)]:esearch", textKey));
+        }};
+        checkMixedIndexCountProfiling(profile, annotations);
+        assertEquals(total, graph.traversal().E().has("text", Text.textContains("ducks")).count().next());
+
+        /* =====================================================================
+        has(key, value).has(key', value') followed by count() can be optimized */
+
+        // vertex
+        total = numV / strings.length;
+        assertEquals(total, graph.indexQuery(VINDEX, "v.text:farm AND v.name:\"Uncle Berry has a farm\"").vertexTotals());
+        profile = graph.traversal().V().has("text", Text.textContains("farm"))
+            .has("name", "Uncle Berry has a farm").count().profile().next();
+        final String nameKey = getStringField("name");
+        annotations = new HashMap() {{
+            put("query", String.format("[(%s textContains farm AND %s = Uncle Berry has a farm)]:vsearch", xtextKey, nameKey));
+        }};
+        checkMixedIndexCountProfiling(profile, annotations);
+        assertEquals(total, graph.traversal().V().has("text", Text.textContains("farm"))
+            .has("name", "Uncle Berry has a farm").count().next());
+
+        // edge
+        total = numV / strings.length;
+        assertEquals(total, graph.indexQuery(EINDEX, "e.text:farm AND e.name:\"Uncle Berry has a farm\"").edgeTotals());
+        profile = graph.traversal().E().has("text", Text.textContains("farm"))
+            .has("name", "Uncle Berry has a farm").count().profile().next();
+        annotations = new HashMap() {{
+            put("query", String.format("[(%s textContains farm AND %s = Uncle Berry has a farm)]:esearch", textKey, nameKey));
+        }};
+        checkMixedIndexCountProfiling(profile, annotations);
+        assertEquals(total, graph.traversal().E().has("text", Text.textContains("farm"))
+            .has("name", "Uncle Berry has a farm").count().next());
+
+        /* ==============================================================
+        has(key, P.within(values)) followed by count() can be optimized */
+
+        // vertex
+        total = numV / strings.length * 2;
+        assertEquals(total, graph.indexQuery(VINDEX, "v.name:(\"Uncle Berry has a farm\", \"ducks are beautiful animals\")").vertexTotals());
+        profile = graph.traversal().V().has("name", P.within("Uncle Berry has a farm", "ducks are beautiful animals"))
+            .count().profile().next();
+        annotations = new HashMap() {{
+            put("query", String.format("[((%s = Uncle Berry has a farm OR %s = ducks are beautiful animals))]:vsearch", nameKey, nameKey));
+        }};
+        checkMixedIndexCountProfiling(profile, annotations);
+        assertEquals(total, graph.traversal().V().has("name", P.within("Uncle Berry has a farm", "ducks are beautiful animals")).count().next());
+
+        // edge
+        total = numV / strings.length * 2;
+        assertEquals(total, graph.indexQuery(EINDEX, "e.name:(\"Uncle Berry has a farm\", \"ducks are beautiful animals\")").edgeTotals());
+        profile = graph.traversal().E().has("name", P.within("Uncle Berry has a farm", "ducks are beautiful animals"))
+            .count().profile().next();
+        assertTrue(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertEquals(total, graph.traversal().E().has("name", P.within("Uncle Berry has a farm", "ducks are beautiful animals")).count().next());
+
+
+        /* ==========================================================================
+        Or(has(key, value1), has(key, value2)) followed by count() can be optimized */
+
+        // vertex
+        total = numV / strings.length * 2;
+        assertEquals(total, graph.indexQuery(VINDEX, "v.name:(\"Uncle Berry has a farm\", \"and on his farm he has five ducks\")").vertexTotals());
+        profile = graph.traversal().V().or(__.has("name", "Uncle Berry has a farm"), __.has("name", "and on his farm he has five ducks"))
+            .count().profile().next();
+        annotations = new HashMap() {{
+            put("query", String.format("[((%s = Uncle Berry has a farm OR %s = and on his farm he has five ducks))]:vsearch", nameKey, nameKey));
+        }};
+        checkMixedIndexCountProfiling(profile, annotations);
+        assertEquals(total, graph.traversal().V().or(__.has("name", "Uncle Berry has a farm"), __.has("name", "and on his farm he has five ducks"))
+            .count().next());
+
+        // edge
+        total = numV / strings.length * 2;
+        assertEquals(total, graph.indexQuery(EINDEX, "e.name:(\"Uncle Berry has a farm\", \"and on his farm he has five ducks\")").edgeTotals());
+        profile = graph.traversal().E().or(__.has("name", "Uncle Berry has a farm"), __.has("name", "and on his farm he has five ducks"))
+            .count().profile().next();
+        assertTrue(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertEquals(total, graph.traversal().E().or(__.has("name", "Uncle Berry has a farm"), __.has("name", "and on his farm he has five ducks"))
+            .count().next());
+
+        /* ==========================================================================
+        Or(has(key1, value1), has(key2, value2)) followed by count() can be optimized
+        if both keys are included by a single index */
+        if (indexFeatures.supportNotQueryNormalForm()) {
+            total = numV / strings.length * 2;
+            profile = graph.traversal().V().or(__.has("name", "Uncle Berry has a farm"), __.has("text", Text.textContains("and on his farm he has five ducks")))
+                .count().profile().next();
+            annotations = new HashMap() {{
+                put("query", String.format("[((%s = Uncle Berry has a farm) OR (%s textContains and on his farm he has five ducks))]:vsearch", nameKey, xtextKey));
+            }};
+            checkMixedIndexCountProfiling(profile, annotations);
+            assertEquals(total, graph.traversal().V().or(__.has("name", "Uncle Berry has a farm"), __.has("text", Text.textContains("and on his farm he has five ducks")))
+                .count().next());
+        }
+
+        /* ==========================================================================
+        has(key, neq(value)) followed by count() can be optimized */
+        total = numV;
+        profile = graph.traversal().V().has("name", P.neq("value")).count().profile().next();
+        annotations = new HashMap() {{
+            put("query", String.format("[(%s <> value)]:vsearch", nameKey));
+        }};
+        checkMixedIndexCountProfiling(profile, annotations);
+        assertEquals(total, graph.traversal().V().has("name", P.neq("value")).count().next());
+
+        profile = graph.traversal().V().has("name", P.neq(null)).count().profile().next();
+        annotations = new HashMap() {{
+            put("query", String.format("[(%s <> null)]:vsearch", nameKey));
+        }};
+        checkMixedIndexCountProfiling(profile, annotations);
+        assertEquals(total, graph.traversal().V().has("name", P.neq(null)).count().next());
+
+        /* ==========================================================================
+        has(key) followed by count() can be optimized */
+
+        total = numV;
+        profile = graph.traversal().V().has("name").count().profile().next();
+        annotations = new HashMap() {{
+            put("query", String.format("[(%s <> null)]:vsearch", nameKey));
+        }};
+        checkMixedIndexCountProfiling(profile, annotations);
+        assertEquals(total, graph.traversal().V().has("name").count().next());
+
+        /* ==========================================================================
+        has(key, value) followed by other steps and then count() cannot be optimized */
+
+        total = numV / strings.length;
+        profile = graph.traversal().V().has("name", "Uncle Berry has a farm").out().count().profile().next();
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertTrue(profile.getMetrics(0).getName().contains(JanusGraphStep.class.getSimpleName()));
+        assertEquals(total, graph.traversal().V().has("name", "Uncle Berry has a farm").out().count().next());
+
+        /* ==========================================================================
+        has(key, value) with composite index followed by count() cannot be optimized */
+
+        final PropertyKey ageProperty = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.buildIndex("ageidx", Vertex.class).addKey(ageProperty).buildCompositeIndex();
+        finishSchema();
+
+        for (int i = 0; i < 10; i++) {
+            tx.addVertex("age", i % 2, "name", "anonymous");
+        }
+        newTx();
+
+        profile = graph.traversal().V().has("age", 0).count().profile().next();
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertTrue(profile.getMetrics(0).getName().contains(JanusGraphStep.class.getSimpleName()));
+        assertEquals(5, graph.traversal().V().has("age", 0).count().next());
+        profile = graph.traversal().V().has("age").count().profile().next();
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertTrue(profile.getMetrics(0).getName().contains(JanusGraphStep.class.getSimpleName()));
+        assertEquals(10, graph.traversal().V().has("age").count().next());
+
+        /* =============================================================================
+        count() cannot be optimized if a single mixed index cannot meet all conditions */
+
+        assertEquals(10, graph.traversal().V().has("name").has("age").count().next());
+        profile = graph.traversal().V().has("name").has("age").count().profile().next();
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertEquals(5, graph.traversal().V().has("name").has("age", 0).count().next());
+        profile = graph.traversal().V().has("name").has("age", 0).count().profile().next();
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        profile = graph.traversal().V().has("age").has("name").count().profile().next();
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+
+        /* ==========================
+        verify other special cases */
+
+        // cannot convert to JanusGraphMixedIndexCountStep if the first JanusGraphStep is not the start step
+        assertEquals((numV + 10) * numV, graph.traversal().V().V().has("text").count().next());
+        assertEquals(graph.traversal().withoutStrategies(JanusGraphMixedIndexCountStrategy.class).V().V().has("text").count().next(),
+            graph.traversal().V().V().has("text").count().next());
+
+        // count() step can be followed by another count step
+        assertEquals(1, graph.traversal().V().has("name").count().count().next());
+        assertEquals(graph.traversal().withoutStrategies(JanusGraphMixedIndexCountStrategy.class).V().has("name").count().count().next(),
+            graph.traversal().V().has("name").count().count().next());
+
+        // barrier() steps will be ignored
+        assertEquals(numV, graph.traversal().V().barrier().has("text").count().next());
+        assertEquals(graph.traversal().withoutStrategies(JanusGraphMixedIndexCountStrategy.class).V().barrier().has("text").count().next(),
+            graph.traversal().V().barrier().has("text").count().next());
+
+        // identity() steps will be ignored
+        assertEquals(numV, graph.traversal().V().has("text").identity().count().barrier().identity().next());
+        assertEquals(graph.traversal().withoutStrategies(JanusGraphMixedIndexCountStrategy.class).V().has("text").identity().count().barrier().identity().next(), graph.traversal().V().has("text").identity().count().barrier().identity().next());
     }
 
     /**

@@ -1291,6 +1291,20 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
+    public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
+        final ElasticSearchRequest sr = new ElasticSearchRequest();
+        final Map<String,Object> esQuery = getFilter(query.getCondition(), information.get(query.getStore()));
+        sr.setQuery(compat.prepareQuery(esQuery));
+        try {
+            return client.countTotal(
+                getIndexStoreName(query.getStore()),
+                compat.createRequestBody(sr, null));
+        } catch (final IOException | UncheckedIOException e) {
+            throw new PermanentBackendException(e);
+        }
+    }
+
+    @Override
     public Long totals(RawQuery query, KeyInformation.IndexRetriever information,
                        BaseTransaction tx) throws BackendException {
         long startTime = System.currentTimeMillis();

@@ -84,6 +84,11 @@ public class TestMockIndexProvider implements IndexProvider {
     }
 
     @Override
+    public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
+        return index.queryCount(query, information, tx);
+    }
+
+    @Override
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         return index.query(query, information,tx);
     }
