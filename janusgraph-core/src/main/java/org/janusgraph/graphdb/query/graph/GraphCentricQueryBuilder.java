@@ -266,7 +266,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         //Prepare constraints
         final MultiCondition<JanusGraphElement> conditions;
         if (this.globalConstraints.size() == 1) {
-            conditions = QueryUtil.constraints2QNF(tx, constraints);
+            conditions = QueryUtil.constraints2QNF(tx, globalConstraints.get(0));
             if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
         } else {
             conditions = new Or<>();
@@ -301,7 +301,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             indexLimit = Math.min(hardMaxLimit,
                 QueryUtil.adjustLimitForTxModifications(tx, conditions.numChildren() - coveredClauses.size(), indexLimit));
             query = new BackendQueryHolder<>(selectedIndex.getQuery().updateLimit(indexLimit),
-                    coveredClauses.size() == conditions.numChildren(), selectedIndex.isSorted());
+                    coveredClauses.size() == conditions.numChildren() || coveredClauses.contains(conditions), selectedIndex.isSorted());
         } else {
             query = new BackendQueryHolder<>(new JointIndexQuery(), false, selectedIndex.isSorted());
         }

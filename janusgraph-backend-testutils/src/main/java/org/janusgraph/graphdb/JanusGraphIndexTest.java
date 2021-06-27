@@ -1115,12 +1115,15 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         mgmt.buildIndex("mi", Vertex.class).addKey(description).buildMixedIndex(INDEX2);
         finishSchema();
 
-        tx.addVertex("name", "bob", "prop", "val", "desc", "he likes coding");
+        tx.addVertex("name", "bob", "prop", "val", "desc", "he likes coding", "age", 20);
+        tx.addVertex("name", "bob", "prop", "val2", "desc", "he likes coding", "age", 25);
+        tx.addVertex("name", "alex", "prop", "val", "desc", "he likes debugging", "age", 20);
         tx.commit();
 
         // satisfied by a single graph-centric query which is satisfied by a single mixed index query
         if (indexFeatures.supportNotQueryNormalForm()) {
             newTx();
+            assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).count().next());
             Metrics mMixedOr = tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val"))
                 .profile().next().getMetrics(0);
             assertEquals("Or(JanusGraphStep([],[name.eq(bob)]),JanusGraphStep([],[prop.eq(val)]))", mMixedOr.getName());
@@ -1135,7 +1138,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             Map<String, String> annotations = new HashMap() {{
                 put("condition", "((name = bob) OR (prop = val))");
                 put("orders", "[]");
-                put("isFitted", "false");
+                put("isFitted", "true");
                 put("isOrdered", "true");
                 put("query", "[((name = bob) OR (prop = val))]:mixed");
                 put("index", "mixed");
@@ -1144,25 +1147,74 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertEquals(annotations, nested.getAnnotations());
         }
 
+        // satisfied by two graph-centric queries, one is mixed index query and the other one is full scan
+        newTx();
+        assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).count().next());
+        Metrics mMixedOr = tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20))
+            .profile().next().getMetrics(0);
+        assertEquals("Or(JanusGraphStep([],[name.eq(bob)]),JanusGraphStep([],[age.eq(20)]))", mMixedOr.getName());
+        assertTrue(mMixedOr.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals(5, mMixedOr.getNested().size());
+        Metrics nested = (Metrics) mMixedOr.getNested().toArray()[0];
+        // it first tries constructing a single graph centric query but fails (no suitable index to cover the OR condition)
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mMixedOr.getNested().toArray()[1];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mMixedOr.getNested().toArray()[2];
+        assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        String nameKey = getStringField("name");
+        Map<String, String> annotations = new HashMap() {{
+            put("condition", "(name = bob)");
+            put("orders", "[]");
+            put("isFitted", "true");
+            put("isOrdered", "true");
+            put("query", String.format("[(%s = bob)]:mixed", nameKey));
+            put("index", "mixed");
+            put("index_impl", "search");
+        }};
+        assertEquals(annotations, nested.getAnnotations());
+        nested = (Metrics) mMixedOr.getNested().toArray()[3];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mMixedOr.getNested().toArray()[4];
+        assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        annotations = new HashMap() {{
+            put("condition", "(age = 20)");
+            put("orders", "[]");
+            put("isFitted", "false");
+            put("isOrdered", "true");
+            put("query", "[]");
+        }};
+        assertEquals(annotations, nested.getAnnotations());
+        nested = (Metrics) nested.getNested().toArray()[0];
+        final Map<String, String> fullScanAnnotations = new HashMap() {{
+            put("query", "[]");
+            put("fullscan", "true");
+            put("condition", "VERTEX");
+        }};
+        assertEquals(fullScanAnnotations, nested.getAnnotations());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+
         // satisfied by a single graph-centric query which is satisfied by a single mixed index query
         newTx();
+        assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").count().next());
         Metrics mMixedAnd = tx.traversal().V().has("name", "bob").has("prop", "val")
             .profile().next().getMetrics(0);
         assertEquals("JanusGraphStep([],[name.eq(bob), prop.eq(val)])", mMixedAnd.getName());
         assertTrue(mMixedAnd.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertEquals(3, mMixedAnd.getNested().size());
-        Metrics nested = (Metrics) mMixedAnd.getNested().toArray()[0];
+        assertEquals(2, mMixedAnd.getNested().size());
+        nested = (Metrics) mMixedAnd.getNested().toArray()[0];
         assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         nested = (Metrics) mMixedAnd.getNested().toArray()[1];
-        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
-        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        nested = (Metrics) mMixedAnd.getNested().toArray()[2];
         assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        String nameKey = getStringField("name");
         String propKey = getStringField("prop");
-        Map<String, String> annotations = new HashMap() {{
+        annotations = new HashMap() {{
             put("condition", "(name = bob AND prop = val)");
             put("orders", "[]");
             put("isFitted", "true");
@@ -1175,18 +1227,16 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         // satisfied by a single graph centric query which is satisfied by union of two mixed index queries
         newTx();
+        assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").count().next());
         final Metrics mMixedAnd2 = tx.traversal().V().has("name", "bob").has("prop", "val")
             .has("desc", Text.textContains("coding")).profile().next().getMetrics(0);
         assertEquals("JanusGraphStep([],[name.eq(bob), prop.eq(val), desc.textContains(coding)])", mMixedAnd2.getName());
         assertTrue(mMixedAnd2.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertEquals(3, mMixedAnd2.getNested().size());
+        assertEquals(2, mMixedAnd2.getNested().size());
         nested = (Metrics) mMixedAnd2.getNested().toArray()[0];
         assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         nested = (Metrics) mMixedAnd2.getNested().toArray()[1];
-        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
-        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        nested = (Metrics) mMixedAnd2.getNested().toArray()[2];
         assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         String descKey = getTextField("desc");

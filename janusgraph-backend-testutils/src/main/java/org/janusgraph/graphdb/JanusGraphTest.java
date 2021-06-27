@@ -6050,22 +6050,22 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         final PropertyKey prop = makeKey("prop", Integer.class);
         finishSchema();
 
-        JanusGraphVertex v = tx.addVertex("name", "bob", "prop", 100, "weight", 100);
+        tx.addVertex("name", "bob", "prop", 100, "weight", 100);
+        tx.addVertex("name", "alex", "prop", 100, "weight", 100);
+        tx.addVertex("name", "bob", "prop", 150, "weight", 120);
         tx.commit();
 
         // satisfied by a single composite index query
         newTx();
         Metrics mCompSingle = tx.traversal().V().has("name", "bob").profile().next().getMetrics(0);
+        assertEquals(2, tx.traversal().V().has("name", "bob").count().next());
         assertEquals("JanusGraphStep([],[name.eq(bob)])", mCompSingle.getName());
         assertTrue(mCompSingle.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertEquals(3, mCompSingle.getNested().size());
+        assertEquals(2, mCompSingle.getNested().size());
         Metrics nested = (Metrics) mCompSingle.getNested().toArray()[0];
         assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         nested = (Metrics) mCompSingle.getNested().toArray()[1];
-        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
-        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        nested = (Metrics) mCompSingle.getNested().toArray()[2];
         assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         Map<String, String> nameIdxAnnotations = new HashMap() {{
@@ -6085,6 +6085,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         newTx();
         Metrics mCompMultiOr = tx.traversal().V().or(__.has("name", "bob"), __.has("weight", 100))
             .profile().next().getMetrics(0);
+        assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("weight", 100)).count().next());
         assertEquals("Or(JanusGraphStep([],[name.eq(bob)]),JanusGraphStep([],[weight.eq(100)]))", mCompMultiOr.getName());
         assertTrue(mCompMultiOr.getDuration(TimeUnit.MICROSECONDS) > 0);
         assertEquals(5, mCompMultiOr.getNested().size());
@@ -6122,19 +6123,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         // satisfied by a single graph-centric query which satisfied by intersection of two composite index queries
         newTx();
+        assertEquals(1, tx.traversal().V().and(__.has("name", "bob"), __.has("weight", 100)).count().next());
         TraversalMetrics metrics = tx.traversal().V().and(__.has("name", "bob"), __.has("weight", 100))
             .profile().next();
         Metrics mCompMultiAnd = metrics.getMetrics(0);
         assertEquals("JanusGraphStep([],[name.eq(bob), weight.eq(100)])", mCompMultiAnd.getName());
         assertTrue(mCompMultiAnd.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertEquals(3, mCompMultiAnd.getNested().size());
+        assertEquals(2, mCompMultiAnd.getNested().size());
         nested = (Metrics) mCompMultiAnd.getNested().toArray()[0];
         assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         nested = (Metrics) mCompMultiAnd.getNested().toArray()[1];
-        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
-        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        nested = (Metrics) mCompMultiAnd.getNested().toArray()[2];
         assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         assertEquals("(name = bob AND weight = 100)", nested.getAnnotation("condition"));
@@ -6150,18 +6149,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         // satisfied by one graph-centric query, which satisfied by in-memory filtering after one composite index query
         newTx();
+        assertEquals(1, tx.traversal().V().and(__.has("name", "bob"), __.has("prop", 100)).count().next());
         Metrics mUnfittedMultiAnd = tx.traversal().V().and(__.has("name", "bob"), __.has("prop", 100))
             .profile().next().getMetrics(0);
         assertEquals("JanusGraphStep([],[name.eq(bob), prop.eq(100)])", mUnfittedMultiAnd.getName());
         assertTrue(mUnfittedMultiAnd.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertEquals(3, mUnfittedMultiAnd.getNested().size());
+        assertEquals(2, mUnfittedMultiAnd.getNested().size());
         nested = (Metrics) mUnfittedMultiAnd.getNested().toArray()[0];
         assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        nested = (Metrics) mUnfittedMultiAnd.getNested().toArray()[1];
-        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        nested = (Metrics) mUnfittedMultiAnd.getNested().toArray()[2];
+        nested = (Metrics) mUnfittedMultiAnd.getNested().toArray()[1];
         assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         Map<String, String> annotations = new HashMap() {{
@@ -6176,6 +6174,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         // satisfied by union of two separate graph-centric queries, one satisfied by a composite index query and the other requires full scan
         newTx();
+        assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", 100)).count().next());
         Metrics mUnfittedMultiOr = tx.traversal().V().or(__.has("name", "bob"), __.has("prop", 100))
             .profile().next().getMetrics(0);
         assertEquals("Or(JanusGraphStep([],[name.eq(bob)]),JanusGraphStep([],[prop.eq(100)]))", mUnfittedMultiOr.getName());
@@ -6234,8 +6233,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         newTx();
         Metrics mCompSingle = tx.traversal().V().has("name", "bob").profile().next().getMetrics(0);
-        assertEquals(3, mCompSingle.getNested().size());
-        Metrics nested = (Metrics) mCompSingle.getNested().toArray()[2];
+        assertEquals(2, mCompSingle.getNested().size());
+        Metrics nested = (Metrics) mCompSingle.getNested().toArray()[1];
         Map<String, String> nameIdxAnnotations = new HashMap() {{
             put("condition", "(name = bob)");
             put("orders", "[]");
@@ -6262,8 +6261,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         newTx();
         mCompSingle = tx.traversal().V().has("name", "bob").profile().next().getMetrics(0);
-        assertEquals(3, mCompSingle.getNested().size());
-        nested = (Metrics) mCompSingle.getNested().toArray()[2];
+        assertEquals(2, mCompSingle.getNested().size());
+        nested = (Metrics) mCompSingle.getNested().toArray()[1];
         nameIdxAnnotations = new HashMap() {{
             put("condition", "(name = bob)");
             put("orders", "[]");
@@ -6292,14 +6291,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         mCompSingle = tx.traversal().V().has("name", "bob").profile().next().getMetrics(0);
         assertEquals("JanusGraphStep([],[name.eq(bob)])", mCompSingle.getName());
         assertTrue(mCompSingle.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertEquals(3, mCompSingle.getNested().size());
+        assertEquals(2, mCompSingle.getNested().size());
         nested = (Metrics) mCompSingle.getNested().toArray()[0];
         assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         nested = (Metrics) mCompSingle.getNested().toArray()[1];
-        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
-        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        nested = (Metrics) mCompSingle.getNested().toArray()[2];
         assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         nameIdxAnnotations = new HashMap() {{
