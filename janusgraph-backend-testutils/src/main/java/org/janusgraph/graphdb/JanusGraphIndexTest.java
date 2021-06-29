@@ -2793,4 +2793,60 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     }
 
+    @Test
+    public void shouldUpdateIndexFieldsAfterIndexModification() throws InterruptedException, ExecutionException {
+        String key1 = "testKey1";
+        String key2 = "testKey2";
+        String key3 = "testKey3";
+        String vertexL = "testVertexLabel";
+        String indexName = "mixed";
+
+        PropertyKey p1 = mgmt.makePropertyKey(key1).dataType(Long.class).make();
+        PropertyKey p2 = mgmt.makePropertyKey(key2).dataType(Long.class).make();
+        mgmt.makeVertexLabel(vertexL).make();
+
+        JanusGraphIndex index = mgmt.buildIndex(indexName, Vertex.class)
+            .indexOnly(mgmt.getVertexLabel(vertexL))
+            .addKey(mgmt.getPropertyKey(key1))
+            .addKey(mgmt.getPropertyKey(key2))
+            .buildMixedIndex(INDEX);
+        if (index.getIndexStatus(p1) == SchemaStatus.INSTALLED) {
+            mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.REGISTER_INDEX).get();
+            mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.ENABLE_INDEX).get();
+        } else if (index.getIndexStatus(p1) == SchemaStatus.REGISTERED) {
+            mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.ENABLE_INDEX).get();
+        }
+        mgmt.commit();
+
+        JanusGraphVertex vertex = graph.addVertex(vertexL);
+        vertex.property(key1, 111L);
+        vertex.property(key2, 222L);
+
+        graph.tx().commit();
+        //By default ES indexes documents each second. By sleeping here we guarantee that documents are indexed.
+        // It is just for testing. A better approach is to use Refresh API.
+        Thread.sleep(1500L);
+
+        List<Vertex> result = graph.traversal().V().hasLabel(vertexL).has(key1, 111L).toList();
+
+        assertEquals(1, result.size());
+
+        mgmt = graph.openManagement();
+        PropertyKey testKey3 = mgmt.makePropertyKey(key3).dataType(Long.class).make();
+        mgmt.addIndexKey(mgmt.getGraphIndex(indexName), testKey3);
+        mgmt.commit();
+
+        ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(SchemaStatus.REGISTERED, SchemaStatus.ENABLED).call();
+
+        mgmt = graph.openManagement();
+        mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.REINDEX).get();
+        mgmt.commit();
+
+        vertex = graph.addVertex(vertexL);
+        vertex.property(key1, 1L);
+        vertex.property(key2, 2L);
+        vertex.property(key3, 3L);
+
+        graph.tx().commit();
+    }
 }
