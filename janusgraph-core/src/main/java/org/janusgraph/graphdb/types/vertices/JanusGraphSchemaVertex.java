@@ -40,6 +40,8 @@ import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 
+import java.util.List;
+
 public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource {
 
     public JanusGraphSchemaVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
@@ -47,6 +49,9 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
     }
 
     private String name = null;
+    private TypeDefinitionMap definition = null;
+    private ListMultimap<TypeDefinitionCategory,Entry> outRelations = null;
+    private ListMultimap<TypeDefinitionCategory,Entry> inRelations = null;
 
     @Override
     public String name() {
@@ -71,8 +76,6 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
     protected Vertex getVertexLabelInternal() {
         return null;
     }
-
-    private TypeDefinitionMap definition = null;
 
     @Override
     public TypeDefinitionMap getDefinition() {
@@ -100,12 +103,8 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
         return def;
     }
 
-    private ListMultimap<TypeDefinitionCategory,Entry> outRelations = null;
-    private ListMultimap<TypeDefinitionCategory,Entry> inRelations = null;
-
-
     @Override
-    public Iterable<Entry> getRelated(TypeDefinitionCategory def, Direction dir) {
+    public List<Entry> getRelated(TypeDefinitionCategory def, Direction dir) {
         assert dir==Direction.OUT || dir==Direction.IN;
         ListMultimap<TypeDefinitionCategory,Entry> relations = dir==Direction.OUT?outRelations:inRelations;
         if (relations==null) {
@@ -143,7 +142,7 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
      * This is needed when the type gets modified in the {@link org.janusgraph.graphdb.database.management.ManagementSystem}.
      */
     @Override
-  public void resetCache() {
+    public void resetCache() {
         name = null;
         definition=null;
         outRelations=null;
@@ -176,11 +175,9 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
     @Override
     public IndexType asIndexType() {
         Preconditions.checkArgument(getDefinition().containsKey(TypeDefinitionCategory.INTERNAL_INDEX),"Schema vertex is not a type vertex: [%s,%s]", longId(), name());
-        if (getDefinition().<Boolean>getValue(TypeDefinitionCategory.INTERNAL_INDEX)) {
-            return new CompositeIndexTypeWrapper(this);
-        } else {
-            return new MixedIndexTypeWrapper(this);
-        }
+        return getDefinition().<Boolean>getValue(TypeDefinitionCategory.INTERNAL_INDEX) ?
+            new CompositeIndexTypeWrapper(this) :
+            new MixedIndexTypeWrapper(this);
     }
 
 }
