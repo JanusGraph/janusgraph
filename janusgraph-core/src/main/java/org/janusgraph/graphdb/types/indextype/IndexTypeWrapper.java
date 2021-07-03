@@ -27,6 +27,7 @@ import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,6 +36,9 @@ import java.util.Map;
 public abstract class IndexTypeWrapper implements IndexType {
 
     protected final SchemaSource base;
+    private volatile Map<PropertyKey,IndexField> fieldMap = null;
+    private volatile boolean cachedTypeConstraint = false;
+    private volatile JanusGraphSchemaType schemaTypeConstraint = null;
 
     public IndexTypeWrapper(SchemaSource base) {
         Preconditions.checkNotNull(base);
@@ -57,10 +61,7 @@ public abstract class IndexTypeWrapper implements IndexType {
 
     @Override
     public boolean equals(Object oth) {
-        if (this==oth) return true;
-        else if (oth==null || !getClass().isInstance(oth)) return false;
-        IndexTypeWrapper other = (IndexTypeWrapper)oth;
-        return base.equals(other.base);
+        return this==oth || (oth instanceof IndexTypeWrapper && base.equals(((IndexTypeWrapper)oth).base));
     }
 
     @Override
@@ -72,8 +73,6 @@ public abstract class IndexTypeWrapper implements IndexType {
     public String getName() {
         return base.name();
     }
-
-    private volatile Map<PropertyKey,IndexField> fieldMap = null;
 
     @Override
     public IndexField getField(PropertyKey key) {
@@ -91,9 +90,6 @@ public abstract class IndexTypeWrapper implements IndexType {
         return result.get(key);
     }
 
-    private volatile boolean cachedTypeConstraint = false;
-    private volatile JanusGraphSchemaType schemaTypeConstraint = null;
-
     @Override
     public boolean hasSchemaTypeConstraint() {
         return getSchemaTypeConstraint()!=null;
@@ -103,12 +99,12 @@ public abstract class IndexTypeWrapper implements IndexType {
     public JanusGraphSchemaType getSchemaTypeConstraint() {
         JanusGraphSchemaType constraint;
         if (!cachedTypeConstraint) {
-            Iterable<SchemaSource.Entry> related = base.getRelated(TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT, Direction.OUT);
-            if (Iterables.isEmpty(related)) {
+            List<SchemaSource.Entry> related = base.getRelated(TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT, Direction.OUT);
+            if (related.isEmpty()) {
                 constraint=null;
             } else {
                 constraint =
-                        (JanusGraphSchemaType)Iterables.getOnlyElement(related,null).getSchemaType();
+                        (JanusGraphSchemaType)Iterables.getOnlyElement(related).getSchemaType();
                 assert constraint!=null;
             }
             schemaTypeConstraint = constraint;

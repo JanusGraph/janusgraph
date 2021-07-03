@@ -22,20 +22,22 @@ import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeUtil;
+import org.janusgraph.graphdb.util.CollectionsUtil;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implements InternalRelationType {
+
+    private ConsistencyModifier consistency = null;
+    private Integer ttl = null;
+    private List<IndexType> indexes = null;
 
     public RelationTypeVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
@@ -66,16 +68,13 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
         return getDefinition().getValue(TypeDefinitionCategory.MULTIPLICITY, Multiplicity.class);
     }
 
-    private ConsistencyModifier consistency = null;
-
+    @Override
     public ConsistencyModifier getConsistencyModifier() {
         if (consistency==null) {
             consistency = TypeUtil.getConsistencyModifier(this);
         }
         return consistency;
     }
-
-    private Integer ttl = null;
 
     @Override
     public Integer getTTL() {
@@ -85,6 +84,7 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
         return ttl;
     }
 
+    @Override
     public InternalRelationType getBaseType() {
         Entry entry = Iterables.getOnlyElement(getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX,Direction.IN),null);
         if (entry==null) return null;
@@ -92,33 +92,34 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
         return (InternalRelationType)entry.getSchemaType();
     }
 
+    @Override
     public Iterable<InternalRelationType> getRelationIndexes() {
         return Stream.concat(
             Stream.of(this),
-            StreamSupport.stream(getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX, Direction.OUT).spliterator(), false)
+            getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX, Direction.OUT).stream()
                 .map(entry -> {
                     assert entry.getSchemaType() instanceof InternalRelationType;
                     return (InternalRelationType) entry.getSchemaType();
                 }))::iterator;
     }
 
-    private List<IndexType> indexes = null;
-
+    @Override
     public Iterable<IndexType> getKeyIndexes() {
         List<IndexType> result = indexes;
         if (result==null) {
-            result = new LinkedList<>();
-            for (Entry entry : getRelated(TypeDefinitionCategory.INDEX_FIELD,Direction.IN)) {
-                SchemaSource index = entry.getSchemaType();
-                result.add(index.asIndexType());
-            }
-            result = Collections.unmodifiableList(result);
+            result = Collections.unmodifiableList(
+                CollectionsUtil.toArrayList(
+                    getRelated(TypeDefinitionCategory.INDEX_FIELD,Direction.IN),
+                    entry -> entry.getSchemaType().asIndexType()
+                )
+            );
             indexes=result;
         }
         assert result!=null;
         return result;
     }
 
+    @Override
     public void resetCache() {
         super.resetCache();
         indexes=null;
