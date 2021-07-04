@@ -1578,9 +1578,11 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     @Override
     public void expireSchemaElement(final long id) {
-        final InternalVertex v = vertexCache.get(id, externalVertexRetriever);
-        if (v instanceof JanusGraphSchemaVertex) {
-            ((JanusGraphSchemaVertex) v).resetCache();
+        if (vertexCache.contains(id)) {
+            final InternalVertex v = vertexCache.get(id, externalVertexRetriever);
+            if (v instanceof JanusGraphSchemaVertex) {
+                ((JanusGraphSchemaVertex) v).resetCache();
+            }
         }
     }
 }
