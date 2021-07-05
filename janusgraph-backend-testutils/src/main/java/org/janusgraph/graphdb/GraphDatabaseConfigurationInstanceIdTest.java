@@ -29,10 +29,13 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.Map;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS_THREAD_POOL_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -104,7 +107,22 @@ public abstract class GraphDatabaseConfigurationInstanceIdTest {
         graph.close();
     }
 
+    @Test
+    public void shouldCreateCustomBackendThreadPoolSize() throws UnknownHostException {
+        final Map<String, Object> map = getStorageConfiguration();
+        map.put(UNIQUE_INSTANCE_ID_HOSTNAME.toStringWithoutRoot(), true);
+        map.put(PARALLEL_BACKEND_OPS.toStringWithoutRoot(), true);
+        map.put(PARALLEL_BACKEND_OPS_THREAD_POOL_SIZE.toStringWithoutRoot(), 15);
+        final MapConfiguration config = ConfigurationUtil.loadMapConfiguration(map);
+        assertDoesNotThrow(() -> {
+            final StandardJanusGraph graph = new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(new CommonsConfiguration(config)));
+            graph.traversal().V().hasNext();
+            graph.close();
+        });
+    }
+
     private static String toCurrentInstance(String instanceId){
         return ConfigElement.replaceIllegalChars(instanceId) + ManagementSystem.CURRENT_INSTANCE_SUFFIX;
     }
+
 }

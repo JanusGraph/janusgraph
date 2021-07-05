@@ -93,6 +93,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS_THREAD_POOL_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
@@ -250,7 +251,9 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
 
         if (configuration.get(PARALLEL_BACKEND_OPS)) {
-            int poolSize = Runtime.getRuntime().availableProcessors() * THREAD_POOL_SIZE_SCALE_FACTOR;
+            int poolSize = configuration.has(PARALLEL_BACKEND_OPS_THREAD_POOL_SIZE) ?
+                configuration.get(PARALLEL_BACKEND_OPS_THREAD_POOL_SIZE) :
+                Runtime.getRuntime().availableProcessors() * THREAD_POOL_SIZE_SCALE_FACTOR;
             threadPool = Executors.newFixedThreadPool(poolSize);
             log.info("Initiated backend operations thread pool of size {}", poolSize);
         } else {
