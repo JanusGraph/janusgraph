@@ -526,6 +526,11 @@ public class GraphDatabaseConfiguration {
             "Whether JanusGraph should attempt to parallelize storage operations",
             ConfigOption.Type.MASKABLE, true);
 
+    public static final ConfigOption<Integer> PARALLEL_BACKEND_OPS_THREAD_POOL_SIZE = new ConfigOption<>(STORAGE_NS,"parallel-backend-ops-thread-pool-size",
+        "Thread pool size which is used for parallel requests when "+PARALLEL_BACKEND_OPS.toStringWithoutRoot()+" is enabled. " +
+            "If not set the pool size will be equal to number of processors multiplied by "+Backend.THREAD_POOL_SIZE_SCALE_FACTOR+".",
+        ConfigOption.Type.MASKABLE, Integer.class);
+
     public static final ConfigOption<String[]> STORAGE_HOSTS = new ConfigOption<>(STORAGE_NS,"hostname",
             "The hostname or comma-separated list of hostnames of storage backend servers.  " +
             "This is only applicable to some storage backends, such as cassandra and hbase.",

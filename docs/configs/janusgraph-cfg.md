@@ -348,6 +348,7 @@ Configuration options for the storage backend.  Some options are applicable only
 | storage.hostname | The hostname or comma-separated list of hostnames of storage backend servers.  This is only applicable to some storage backends, such as cassandra and hbase. | String[] | 127.0.0.1 | LOCAL |
 | storage.page-size | JanusGraph break requests that may return many results from distributed storage backends into a series of requests for small chunks/pages of results, where each chunk contains up to this many elements. | Integer | 100 | MASKABLE |
 | storage.parallel-backend-ops | Whether JanusGraph should attempt to parallelize storage operations | Boolean | true | MASKABLE |
+| storage.parallel-backend-ops-thread-pool-size | Thread pool size which is used for parallel requests when storage.parallel-backend-ops is enabled. If not set the pool size will be equal to number of processors multiplied by 2. | Integer | (no default value) | MASKABLE |
 | storage.password | Password to authenticate against backend | String | (no default value) | LOCAL |
 | storage.port | The port on which to connect to storage backend servers. For HBase, it is the Zookeeper port. | Integer | (no default value) | LOCAL |
 | storage.read-only | Read-only database | Boolean | false | LOCAL |
