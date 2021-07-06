@@ -87,6 +87,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLO
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.GC_GRACE_SECONDS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SPECULATIVE_RETRY;
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TIMESTAMPS;
@@ -277,6 +278,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
         createTable = compactionOptions(createTable, configuration);
         createTable = compressionOptions(createTable, configuration);
+        createTable = gcGraceSeconds(createTable, configuration);
         createTable = speculativeRetryOptions(createTable, configuration);
 
         session.execute(createTable.build());
@@ -315,6 +317,14 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         return createTable.withCompaction(compactionStrategy);
+    }
+
+    private static CreateTableWithOptions gcGraceSeconds(final CreateTableWithOptions createTable,
+                                                         final Configuration configuration) {
+        if (!configuration.has(GC_GRACE_SECONDS)) {
+            return createTable;
+        }
+        return createTable.withGcGraceSeconds(configuration.get(GC_GRACE_SECONDS));
     }
 
     private static CreateTableWithOptions speculativeRetryOptions(final CreateTableWithOptions createTable,

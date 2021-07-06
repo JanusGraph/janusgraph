@@ -141,6 +141,13 @@ public interface CQLConfigOptions {
         ConfigOption.Type.FIXED,
         String.class);
 
+    ConfigOption<Integer> GC_GRACE_SECONDS = new ConfigOption<>(
+        CQL_NS,
+        "gc-grace-seconds",
+        "The number of seconds before tombstones (deletion markers) are eligible for garbage-collection.",
+        ConfigOption.Type.FIXED,
+        Integer.class);
+
     // Compression
     ConfigOption<Boolean> CF_COMPRESSION = new ConfigOption<>(
             CQL_NS,
