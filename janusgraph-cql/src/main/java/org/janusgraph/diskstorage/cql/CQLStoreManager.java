@@ -399,6 +399,13 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     }
 
     @VisibleForTesting
+    Integer getGcGraceSeconds(final String name) throws BackendException {
+        TableMetadata tableMetadata = getTableMetadata(name);
+        Object gcGraceSeconds = tableMetadata.getOptions().get(CqlIdentifier.fromCql("gc_grace_seconds"));
+        return (Integer) gcGraceSeconds;
+    }
+
+    @VisibleForTesting
     String getSpeculativeRetry(final String name) throws BackendException {
         TableMetadata tableMetadata = getTableMetadata(name);
         Object res = tableMetadata.getOptions().get(CqlIdentifier.fromCql("speculative_retry"));

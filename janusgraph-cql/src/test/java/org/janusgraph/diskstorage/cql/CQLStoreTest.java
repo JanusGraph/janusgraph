@@ -52,6 +52,7 @@ import java.util.stream.Stream;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.GC_GRACE_SECONDS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SPECULATIVE_RETRY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -177,6 +178,19 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
             opts.remove("enabled");
         }
         assertEquals(Collections.emptyMap(), opts);
+    }
+
+    @Test
+    public void testSetGcGraceSeconds() throws BackendException {
+        final String cf = TEST_CF_NAME + "_set_gc_grace_seconds";
+        final int oneDayInSeconds = 86400;
+
+        final ModifiableConfiguration config = getBaseStorageConfiguration();
+        config.set(GC_GRACE_SECONDS, oneDayInSeconds);
+
+        final CQLStoreManager cqlStoreManager = openStorageManager(config);
+        cqlStoreManager.openDatabase(cf);
+        assertEquals(oneDayInSeconds, cqlStoreManager.getGcGraceSeconds(cf));
     }
 
     @ParameterizedTest
