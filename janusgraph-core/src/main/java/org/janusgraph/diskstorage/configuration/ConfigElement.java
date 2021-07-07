@@ -45,6 +45,14 @@ public abstract class ConfigElement {
         if (namespace!=null) namespace.registerChild(this);
     }
 
+    public static String replaceIllegalChars(String str){
+        String strWithReplacedChars = str;
+        for (char c : ILLEGAL_CHARS) {
+            strWithReplacedChars = StringUtils.replaceChars(strWithReplacedChars,c,'-');
+        }
+        return strWithReplacedChars;
+    }
+
     public ConfigNamespace getNamespace() {
         Preconditions.checkArgument(namespace !=null,"Cannot get namespace of root");
         return namespace;

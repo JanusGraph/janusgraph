@@ -132,7 +132,7 @@ public class ManagementSystem implements JanusGraphManagement {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(ManagementSystem.class);
 
-    private static final String CURRENT_INSTANCE_SUFFIX = "(current)";
+    public static final String CURRENT_INSTANCE_SUFFIX = "(current)";
 
     private final StandardJanusGraph graph;
     private final Log sysLog;
