@@ -1583,4 +1583,13 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         return !addedRelations.isEmpty() || !deletedRelations.isEmpty();
     }
 
+    @Override
+    public void expireSchemaElement(final long id) {
+        if (vertexCache.contains(id)) {
+            final InternalVertex v = vertexCache.get(id, externalVertexRetriever);
+            if (v instanceof JanusGraphSchemaVertex) {
+                ((JanusGraphSchemaVertex) v).resetCache();
+            }
+        }
+    }
 }
