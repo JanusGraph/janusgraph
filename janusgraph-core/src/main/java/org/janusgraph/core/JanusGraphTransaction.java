@@ -124,6 +124,4 @@ public interface JanusGraphTransaction extends Transaction {
      * @return true, if the transaction contains updates, else false.
      */
     boolean hasModifications();
-
-    void expireSchemaElement(final long id);
 }
