@@ -15,7 +15,8 @@
 package org.janusgraph.core;
 
 /**
- * JanusGraph represents element identifiers as longs, but not all numbers
+ * Thrown to indicate that schema is violated.
+ * For example, JanusGraph represents element identifiers as longs, but not all numbers
  * in the representable space of longs are valid.  This exception can
  * be thrown when an invalid long ID is encountered.
  */

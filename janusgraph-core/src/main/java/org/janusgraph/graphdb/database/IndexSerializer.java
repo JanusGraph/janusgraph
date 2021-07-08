@@ -31,6 +31,7 @@ import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaStatus;
@@ -380,7 +381,11 @@ public class IndexSerializer {
                         updates.add(update);
                     }
                 } else { //Update mixed indexes
-                    if (((MixedIndexType)index).getField(p.propertyKey()).getStatus()== SchemaStatus.DISABLED) continue;
+                    ParameterIndexField field = ((MixedIndexType)index).getField(p.propertyKey());
+                    if (field == null) {
+                        throw new SchemaViolationException(p.propertyKey() + " is not available in mixed index " + index);
+                    }
+                    if (field.getStatus() == SchemaStatus.DISABLED) continue;
                     final IndexUpdate update = getMixedIndexUpdate(vertex, p.propertyKey(), p.value(), (MixedIndexType) index, updateType);
                     final int ttl = getIndexTTL(vertex,p.propertyKey());
                     if (ttl>0 && updateType== IndexUpdate.Type.ADD) update.setTTL(ttl);

@@ -28,7 +28,6 @@ import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.Multiplicity;
@@ -248,9 +247,6 @@ public class ManagementSystem implements JanusGraphManagement {
             managementLogger.sendCacheEviction(updatedTypes, evictGraphFromCache, updatedTypeTriggers, getOpenInstancesInternal());
             for (JanusGraphSchemaVertex schemaVertex : updatedTypes) {
                 schemaCache.expireSchemaElement(schemaVertex.longId());
-                for (JanusGraphTransaction tx : graph.getOpenTransactions()) {
-                    tx.expireSchemaElement(schemaVertex.longId());
-                }
             }
         }
 

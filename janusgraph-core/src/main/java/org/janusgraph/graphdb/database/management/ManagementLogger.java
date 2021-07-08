@@ -93,9 +93,6 @@ public class ManagementLogger implements MessageReader {
                 for (int i = 0; i < numEvictions; i++) {
                     long typeId = VariableLong.readPositive(in);
                     schemaCache.expireSchemaElement(typeId);
-                    for (JanusGraphTransaction tx : graph.getOpenTransactions()) {
-                        tx.expireSchemaElement(typeId);
-                    }
                 }
                 final GraphCacheEvictionAction action = serializer.readObjectNotNull(in, GraphCacheEvictionAction.class);
                 Preconditions.checkNotNull(action);

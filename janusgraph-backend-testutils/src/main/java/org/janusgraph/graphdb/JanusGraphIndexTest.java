@@ -44,6 +44,7 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
@@ -3030,7 +3031,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void shouldUpdateIndexFieldsAfterIndexModification() throws InterruptedException, ExecutionException {
+    public void shouldAbortTransactionAfterIndexModification() throws InterruptedException, ExecutionException {
+        clopen(option(FORCE_INDEX_USAGE), true);
         String key1 = "testKey1";
         String key2 = "testKey2";
         String key3 = "testKey3";
@@ -3063,8 +3065,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         // It is just for testing. A better approach is to use Refresh API.
         Thread.sleep(1500L);
 
+        // we open an implicit transaction and do not commit/rollback it by intention, so that we can ensure
+        // adding new property to the index wouldn't cause existing transactions to fail
         List<Vertex> result = graph.traversal().V().hasLabel(vertexL).has(key1, 111L).toList();
-
         assertEquals(1, result.size());
 
         mgmt = graph.openManagement();
@@ -3078,11 +3081,16 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.REINDEX).get();
         mgmt.commit();
 
-        vertex = graph.addVertex(vertexL);
-        vertex.property(key1, 1L);
-        vertex.property(key2, 2L);
-        vertex.property(key3, 3L);
+        vertex = graph.addVertex(T.label, vertexL, key1, 1L, key2, 2L, key3, 3L);
 
+        JanusGraphException ex = assertThrows(JanusGraphException.class, () -> graph.tx().commit());
+        assertTrue(ex.getCause() instanceof SchemaViolationException);
+        assertEquals("testKey3 is not available in mixed index mixed", ex.getCause().getMessage());
+
+        // after rolling back the previous commit and open a new one (implicitly), commit succeeds
+        graph.tx().rollback();
+        vertex = graph.addVertex(T.label, vertexL, key1, 1L, key2, 2L, key3, 3L);
         graph.tx().commit();
+        assertTrue(graph.traversal().V().hasLabel(vertexL).has(key3, 3L).hasNext());
     }
 }
