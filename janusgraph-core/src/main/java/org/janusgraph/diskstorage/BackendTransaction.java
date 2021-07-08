@@ -113,6 +113,11 @@ public class BackendTransaction implements LoggableTransaction {
         return txConfig;
     }
 
+    public boolean hasIndexTransaction(String index) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(index), "index cannot be blank");
+        return indexTx.containsKey(index);
+    }
+
     public IndexTransaction getIndexTransaction(String index) {
         Preconditions.checkArgument(StringUtils.isNotBlank(index), "index cannot be blank");
         IndexTransaction itx = indexTx.get(index);

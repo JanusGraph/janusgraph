@@ -90,6 +90,7 @@ public interface KeyInformation {
          */
         StoreRetriever get(String store);
 
+        void invalidate(String store);
     }
 
     interface Retriever {

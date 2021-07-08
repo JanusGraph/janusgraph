@@ -44,7 +44,6 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
@@ -3031,7 +3030,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void shouldAbortTransactionAfterIndexModification() throws InterruptedException, ExecutionException {
+    public void shouldUpdateIndexFieldsAfterIndexModification() throws InterruptedException, ExecutionException {
         clopen(option(FORCE_INDEX_USAGE), true);
         String key1 = "testKey1";
         String key2 = "testKey2";
@@ -3083,13 +3082,6 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         vertex = graph.addVertex(T.label, vertexL, key1, 1L, key2, 2L, key3, 3L);
 
-        JanusGraphException ex = assertThrows(JanusGraphException.class, () -> graph.tx().commit());
-        assertTrue(ex.getCause() instanceof SchemaViolationException);
-        assertEquals("testKey3 is not available in mixed index mixed", ex.getCause().getMessage());
-
-        // after rolling back the previous commit and open a new one (implicitly), commit succeeds
-        graph.tx().rollback();
-        vertex = graph.addVertex(T.label, vertexL, key1, 1L, key2, 2L, key3, 3L);
         graph.tx().commit();
         assertTrue(graph.traversal().V().hasLabel(vertexL).has(key3, 3L).hasNext());
     }
