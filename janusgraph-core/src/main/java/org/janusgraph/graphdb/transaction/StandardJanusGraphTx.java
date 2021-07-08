@@ -52,6 +52,7 @@ import org.janusgraph.core.schema.VertexLabelMaker;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.query.graph.MixedIndexCountQueryBuilder;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
@@ -1581,5 +1582,28 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     @Override
     public boolean hasModifications() {
         return !addedRelations.isEmpty() || !deletedRelations.isEmpty();
+    }
+
+    @Override
+    public void expireSchemaElement(final long id) {
+        if (vertexCache.contains(id)) {
+            final InternalVertex v = vertexCache.get(id, externalVertexRetriever);
+            if (v instanceof JanusGraphSchemaVertex) {
+                JanusGraphSchemaVertex sv = (JanusGraphSchemaVertex) v;
+                sv.resetCache();
+                if (sv.getDefinition().containsKey(TypeDefinitionCategory.INTERNAL_INDEX)
+                    && !sv.getDefinition().<Boolean>getValue(TypeDefinitionCategory.INTERNAL_INDEX)) {
+                    try {
+                        // Invalidate mixed index
+                        String store = sv.getDefinition()
+                            .getValue(TypeDefinitionCategory.BACKING_INDEX, String.class);
+                        IndexTransaction indexTx = txHandle.getIndexTransaction(store);
+                        indexTx.invalidate(sv.name());
+                    } catch (Exception e) {
+                        log.info("Could not invalidate index [{}] from cache", sv.name());
+                    }
+                }
+            }
+        }
     }
 }
