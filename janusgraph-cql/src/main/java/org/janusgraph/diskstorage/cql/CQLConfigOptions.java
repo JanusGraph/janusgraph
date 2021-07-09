@@ -176,21 +176,21 @@ public interface CQLConfigOptions {
             CQL_NS,
             "local-max-connections-per-host",
             "The maximum number of connections that can be created per host for local datacenter",
-            ConfigOption.Type.FIXED,
+            ConfigOption.Type.MASKABLE,
             1);
 
     ConfigOption<Integer> REMOTE_MAX_CONNECTIONS_PER_HOST = new ConfigOption<>(
             CQL_NS,
             "remote-max-connections-per-host",
             "The maximum number of connections that can be created per host for remote datacenter",
-            ConfigOption.Type.FIXED,
+            ConfigOption.Type.MASKABLE,
             1);
 
     ConfigOption<Integer> MAX_REQUESTS_PER_CONNECTION = new ConfigOption<>(
             CQL_NS,
             "max-requests-per-connection",
             "The maximum number of requests that can be executed concurrently on a connection.",
-            ConfigOption.Type.FIXED,
+            ConfigOption.Type.MASKABLE,
             1024);
 
     ConfigOption<Long> HEARTBEAT_INTERVAL = new ConfigOption<>(
