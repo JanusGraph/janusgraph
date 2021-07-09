@@ -158,6 +158,7 @@ nav:
     - Transaction Log: advanced-topics/transaction-log.md
     - JanusGraph Data model: advanced-topics/data-model.md
     - JanusGraph Bus: advanced-topics/janusgraph-bus.md
+    - ExecutorService: advanced-topics/executor-service.md
     - Technical Limitations: advanced-topics/technical-limitations.md
   - Common Questions: common-questions.md
   - Development: development.md

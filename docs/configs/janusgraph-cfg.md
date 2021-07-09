@@ -348,7 +348,6 @@ Configuration options for the storage backend.  Some options are applicable only
 | storage.hostname | The hostname or comma-separated list of hostnames of storage backend servers.  This is only applicable to some storage backends, such as cassandra and hbase. | String[] | 127.0.0.1 | LOCAL |
 | storage.page-size | JanusGraph break requests that may return many results from distributed storage backends into a series of requests for small chunks/pages of results, where each chunk contains up to this many elements. | Integer | 100 | MASKABLE |
 | storage.parallel-backend-ops | Whether JanusGraph should attempt to parallelize storage operations | Boolean | true | MASKABLE |
-| storage.parallel-backend-ops-thread-pool-size | Thread pool size which is used for parallel requests when storage.parallel-backend-ops is enabled. If not set the pool size will be equal to number of processors multiplied by 2. | Integer | (no default value) | MASKABLE |
 | storage.password | Password to authenticate against backend | String | (no default value) | LOCAL |
 | storage.port | The port on which to connect to storage backend servers. For HBase, it is the Zookeeper port. | Integer | (no default value) | LOCAL |
 | storage.read-only | Read-only database | Boolean | false | LOCAL |
@@ -405,6 +404,17 @@ CQL storage backend options
 | storage.cql.speculative-retry | The speculative retry policy. One of: NONE, ALWAYS, <X>percentile, <N>ms. | String | (no default value) | FIXED |
 | storage.cql.use-external-locking | True to prevent JanusGraph from using its own locking mechanism. Setting this to true eliminates redundant checks when using an external locking mechanism outside of JanusGraph. Be aware that when use-external-locking is set to true, that failure to employ a locking algorithm which locks all columns that participate in a transaction upfront and unlocks them when the transaction ends, will result in a 'read uncommitted' transaction isolation level guarantee. If set to true without an appropriate external locking mechanism in place side effects such as dirty/non-repeatable/phantom reads should be expected. | Boolean | false | MASKABLE |
 | storage.cql.write-consistency-level | The consistency level of write operations against Cassandra | String | QUORUM | MASKABLE |
+
+### storage.cql.executor-service
+Configuration options for CQL executor service which is used to process CQL queries.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| storage.cql.executor-service.class | The implementation of `ExecutorService` to use. The full name of the class which extends `ExecutorService` which has either a public constructor with `ExecutorServiceConfiguration` argument (preferred constructor) or a public parameterless constructor. Other accepted options are: `fixed` - fixed thread pool size of `max-pool-size` size; `cached` - cached thread pool size; | String | fixed | LOCAL |
+| storage.cql.executor-service.core-pool-size | Core pool size for executor service. May be ignored if custom executor service is used (depending on the implementation of the executor service). | Integer | 10 | LOCAL |
+| storage.cql.executor-service.keep-alive-time | Keep alive time in milliseconds for executor service. When the number of threads is greater than the `core-pool-size`, this is the maximum time that excess idle threads will wait for new tasks before terminating. Ignored for `fixed` executor service and may be ignored if custom executor service is used (depending on the implementation of the executor service). | Long | 60000 | LOCAL |
+| storage.cql.executor-service.max-pool-size | Maximum pool size for executor service. Ignored for `fixed` and `cached` executor services. May be ignored if custom executor service is used (depending on the implementation of the executor service). | Integer | 2147483647 | LOCAL |
 
 ### storage.cql.metrics
 Configuration options for CQL metrics
@@ -520,6 +530,17 @@ Meta data to include in storage backend retrievals
 | storage.meta.[X].timestamps | Whether to include timestamps in retrieved entries for storage backends that automatically annotated entries with timestamps. If enabled, timestamp can be retrieved by `element.value(ImplicitKey.TIMESTAMP.name())` or equivalently, `element.value("~timestamp")`. | Boolean | false | GLOBAL |
 | storage.meta.[X].ttl | Whether to include ttl in retrieved entries for storage backends that support storage and retrieval of cell level TTL. If enabled, ttl can be retrieved by `element.value(ImplicitKey.TTL.name())` or equivalently, `element.value("~ttl")`. | Boolean | false | GLOBAL |
 | storage.meta.[X].visibility | Whether to include visibility in retrieved entries for storage backends that support cell level visibility. If enabled, visibility can be retrieved by `element.value(ImplicitKey.VISIBILITY.name())` or equivalently, `element.value("~visibility")`. | Boolean | true | GLOBAL |
+
+### storage.parallel-backend-executor-service
+Configuration options for executor service which is used for parallel requests when `storage.parallel-backend-ops` is enabled.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| storage.parallel-backend-executor-service.class | The implementation of `ExecutorService` to use. The full name of the class which extends `ExecutorService` which has either a public constructor with `ExecutorServiceConfiguration` argument (preferred constructor) or a public parameterless constructor. Other accepted options are: `fixed` - fixed thread pool size of `max-pool-size` size; `cached` - cached thread pool size; | String | fixed | LOCAL |
+| storage.parallel-backend-executor-service.core-pool-size | Core pool size for executor service. May be ignored if custom executor service is used (depending on the implementation of the executor service).If not set the core pool size will be equal to number of processors multiplied by 2. | Integer | (no default value) | LOCAL |
+| storage.parallel-backend-executor-service.keep-alive-time | Keep alive time in milliseconds for executor service. When the number of threads is greater than the `core-pool-size`, this is the maximum time that excess idle threads will wait for new tasks before terminating. Ignored for `fixed` executor service and may be ignored if custom executor service is used (depending on the implementation of the executor service). | Long | 60000 | LOCAL |
+| storage.parallel-backend-executor-service.max-pool-size | Maximum pool size for executor service. Ignored for `fixed` and `cached` executor services. May be ignored if custom executor service is used (depending on the implementation of the executor service). | Integer | 2147483647 | LOCAL |
 
 ### tx
 Configuration options for transaction handling
