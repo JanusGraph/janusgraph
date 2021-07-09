@@ -583,4 +583,42 @@ public interface CQLConfigOptions {
             "Can be used when `" + REQUEST_TRACKER_CLASS + "` is set to `RequestLogger`.",
         ConfigOption.Type.LOCAL,
         Boolean.class);
+
+    ConfigNamespace EXECUTOR_SERVICE = new ConfigNamespace(
+        CQL_NS,
+        "executor-service",
+        "Configuration options for CQL executor service which is used to process CQL queries.");
+
+    ConfigOption<Integer> EXECUTOR_SERVICE_CORE_POOL_SIZE = new ConfigOption<>(
+        EXECUTOR_SERVICE,
+        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE.getName(),
+        "Core pool size for executor service. May be ignored if custom executor service is used " +
+            "(depending on the implementation of the executor service).",
+        ConfigOption.Type.LOCAL,
+        Integer.class,
+        10);
+
+    ConfigOption<Integer> EXECUTOR_SERVICE_MAX_POOL_SIZE = new ConfigOption<>(
+        EXECUTOR_SERVICE,
+        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_POOL_SIZE.getName(),
+        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_POOL_SIZE.getDescription(),
+        ConfigOption.Type.LOCAL,
+        Integer.class,
+        Integer.MAX_VALUE);
+
+    ConfigOption<Long> EXECUTOR_SERVICE_KEEP_ALIVE_TIME = new ConfigOption<>(
+        EXECUTOR_SERVICE,
+        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_KEEP_ALIVE_TIME.getName(),
+        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_KEEP_ALIVE_TIME.getDescription(),
+        ConfigOption.Type.LOCAL,
+        Long.class,
+        60000L);
+
+    ConfigOption<String> EXECUTOR_SERVICE_CLASS = new ConfigOption<>(
+        EXECUTOR_SERVICE,
+        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CLASS.getName(),
+        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CLASS.getDescription(),
+        ConfigOption.Type.LOCAL,
+        String.class,
+        "fixed");
 }
