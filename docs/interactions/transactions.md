@@ -275,7 +275,14 @@ following aspects of a transaction to be configured:
     graph-wide setting `storage.batch-loading` due to the disabling of
     consistency checks and other optimizations. Unlike
     `storage.batch-loading` this option will not change the behavior of
-    the storage backend.
+    the storage backend. Similarly, you could call `disableBatchLoading()`
+    to disable batch-loading for an individual transaction.
+
+-   `propertyPrefetching(boolean)` - enables or disables property prefetching,
+    i.e. `query.fast-property`, for an individual transaction. If enabled,
+    all properties of a particular vertex will be pre-fetched on the first
+    vertex property access, which eliminates backend calls on subsequent
+    property access for the same vertex.
 
 -   `setTimestamp(long)` - Sets the timestamp for this transaction as
     communicated to the storage backend for persistence. Depending on

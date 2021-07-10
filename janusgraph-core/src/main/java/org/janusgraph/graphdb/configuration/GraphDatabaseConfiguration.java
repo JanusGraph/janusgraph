@@ -240,7 +240,7 @@ public class GraphDatabaseConfiguration {
 
 
     public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<>(QUERY_NS,"fast-property",
-            "Whether to pre-fetch all properties on first singular vertex property access. This can eliminate backend calls on subsequent" +
+            "Whether to pre-fetch all properties on first singular vertex property access. This can eliminate backend calls on subsequent " +
                     "property access for the same vertex at the expense of retrieving all properties at once. This can be " +
                     "expensive for vertices with many properties",
             ConfigOption.Type.MASKABLE, true);

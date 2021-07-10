@@ -61,7 +61,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean acquireLocks = true;
 
-    private final boolean propertyPrefetching;
+    private boolean propertyPrefetching;
 
     private boolean singleThreaded = false;
 
@@ -165,6 +165,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         hasEnabledBatchLoading = false;
         checkExternalVertexExistence(true);
         consistencyChecks(true);
+        return this;
+    }
+
+    @Override
+    public StandardTransactionBuilder propertyPrefetching(boolean enabled) {
+        propertyPrefetching = enabled;
         return this;
     }
 
@@ -315,6 +321,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         return verifyUniqueness;
     }
 
+    @Override
     public boolean hasPropertyPrefetching() {
         return propertyPrefetching;
     }
