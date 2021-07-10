@@ -59,6 +59,14 @@ public interface TransactionBuilder {
     TransactionBuilder disableBatchLoading();
 
     /**
+     * Enable or disable property pre-fetching, i.e. query.fast-property option.
+     *
+     * @param enabled
+     * @return Object containing properties that will enable/disable property pre-fetching
+     */
+    TransactionBuilder propertyPrefetching(boolean enabled);
+
+    /**
      * Configures the size of the internal caches used in the transaction.
      *
      * @param size The size of the initial cache for the transaction
