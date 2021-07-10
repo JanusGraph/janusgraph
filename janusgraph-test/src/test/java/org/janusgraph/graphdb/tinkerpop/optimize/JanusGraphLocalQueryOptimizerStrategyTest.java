@@ -20,6 +20,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
@@ -30,6 +31,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.janusgraph.graphdb.JanusGraphBaseTest.option;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BATCH_PROPERTY_PREFETCHING;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.janusgraph.testutil.JanusGraphAssert.assertNumStep;
 import static org.janusgraph.testutil.JanusGraphAssert.queryProfilerAnnotationIsPresent;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,10 +65,10 @@ public class JanusGraphLocalQueryOptimizerStrategyTest extends OptimizerStrategy
         assertNumStep(5, 1, g.V(sv[0]).local(__.outE("knows").has("weight", 1).has("weight", 1).order().by("weight", asc).range(10, 15)), LocalStep.class);
 
         //Property
-        assertNumStep(numV / 5, 1, g.V(sv[0]).properties("names").has("weight", 1), JanusGraphPropertiesStep.class);
-        assertNumStep(numV, 1, g.V(sv[0]).properties("names"), JanusGraphPropertiesStep.class);
+        assertNumStep(numV / 5, 1, g.V(sv[0]).properties("names").has("weight", 1), PropertiesStep.class);
+        assertNumStep(numV, 1, g.V(sv[0]).properties("names"), PropertiesStep.class);
         assertNumStep(10, 0, g.V(sv[0]).local(__.properties("names").order().by("weight", desc).limit(10)), LocalStep.class);
-        assertNumStep(numV, 2, g.V(sv[0]).outE("knows").values("weight"), JanusGraphVertexStep.class, JanusGraphPropertiesStep.class);
+        assertNumStep(numV, 2, g.V(sv[0]).outE("knows").values("weight"), JanusGraphVertexStep.class, PropertiesStep.class);
 
 
         //Global graph queries
@@ -115,4 +117,15 @@ public class JanusGraphLocalQueryOptimizerStrategyTest extends OptimizerStrategy
         assertFalse(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIPREFETCH_ANNOTATION));
     }
 
+    @Test
+    public void testMultiQuery() {
+        clopen(option(USE_MULTIQUERY), true);
+        makeSampleGraph();
+
+        //Property
+        assertNumStep(numV / 5, 1, g.V(sv[0]).properties("names").has("weight", 1), JanusGraphPropertiesStep.class);
+        assertNumStep(numV, 1, g.V(sv[0]).properties("names"), JanusGraphPropertiesStep.class);
+        assertNumStep(10, 0, g.V(sv[0]).local(__.properties("names").order().by("weight", desc).limit(10)), LocalStep.class);
+        assertNumStep(numV, 2, g.V(sv[0]).outE("knows").values("weight"), JanusGraphVertexStep.class, JanusGraphPropertiesStep.class);
+    }
 }

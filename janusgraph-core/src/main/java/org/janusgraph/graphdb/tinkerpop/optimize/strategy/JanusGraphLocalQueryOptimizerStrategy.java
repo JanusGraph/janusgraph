@@ -60,10 +60,11 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
         }
 
         boolean batchPropertyPrefetching = janusGraph.getConfiguration().batchPropertyPrefetching();
+        boolean useMultiQuery = janusGraph.getConfiguration().useMultiQuery();
         int txVertexCacheSize = janusGraph.getConfiguration().getTxVertexCacheSize();
 
         applyJanusGraphVertexSteps(traversal, batchPropertyPrefetching, txVertexCacheSize);
-        applyJanusGraphPropertiesSteps(traversal);
+        applyJanusGraphPropertiesSteps(traversal, useMultiQuery);
         inspectLocalTraversals(traversal);
     }
 
@@ -91,7 +92,11 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
         });
     }
 
-    private void applyJanusGraphPropertiesSteps(Admin<?, ?> traversal) {
+    private void applyJanusGraphPropertiesSteps(Admin<?, ?> traversal, boolean useMultiQuery) {
+        if (!useMultiQuery) {
+            // no need to replace PropertiesStep with JanusGraphPropertiesStep if multi-query is not enabled
+            return;
+        }
         TraversalHelper.getStepsOfAssignableClass(PropertiesStep.class, traversal).forEach(originalStep -> {
             final JanusGraphPropertiesStep propertiesStep = new JanusGraphPropertiesStep(originalStep);
             TraversalHelper.replaceStep(originalStep, propertiesStep, originalStep.getTraversal());
