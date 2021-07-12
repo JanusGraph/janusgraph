@@ -38,7 +38,7 @@ public class CacheVertexTest extends EasyMockSupport {
         replayAll();
 
         final CacheVertex cacheVertex = createMockBuilder(CacheVertex.class)
-            .withConstructor(createMock(StandardJanusGraphTx.class), 0l, (byte) 0)
+            .withConstructor(createMock(StandardJanusGraphTx.class), 0L, (byte) 0)
             .addMockedMethod("isNew")
             .createMock();
 

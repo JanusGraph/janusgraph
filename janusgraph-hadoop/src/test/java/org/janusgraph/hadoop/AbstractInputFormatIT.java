@@ -239,5 +239,5 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
             .properties("meta_property").count().next());
     }
 
-    abstract protected Graph getGraph() throws IOException, ConfigurationException;
+    protected abstract Graph getGraph() throws IOException, ConfigurationException;
 }

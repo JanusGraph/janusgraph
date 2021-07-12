@@ -107,7 +107,7 @@ public class IndexSerializerTest {
         doReturn(false).when(mit).hasSchemaTypeConstraint();
 
         PropertyKey pk = mock(PropertyKey.class);
-        doReturn(1l).when(pk).longId();
+        doReturn(1L).when(pk).longId();
         doReturn(key).when(pk).name();
         ParameterIndexField pif = mock(ParameterIndexField.class);
         Parameter[] parameter = { new Parameter(key, value) };
@@ -125,7 +125,7 @@ public class IndexSerializerTest {
 
     private JanusGraphElement mockIndexableElement(String key, String value, boolean indexable) {
         StandardJanusGraphTx tx = mock(StandardJanusGraphTx.class);
-        JanusGraphElement indexableElement = spy(new StandardVertex(tx, 1l, ElementLifeCycle.New));
+        JanusGraphElement indexableElement = spy(new StandardVertex(tx, 1L, ElementLifeCycle.New));
         Property pk2 = indexableElement.property(key, value);
         Iterator it = Arrays.asList(pk2).iterator();
         doReturn(it).when(indexableElement).properties(key);
