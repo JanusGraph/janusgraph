@@ -26,12 +26,9 @@ import org.janusgraph.diskstorage.configuration.ReadConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.builder.KCVSConfigurationBuilder;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.janusgraph.graphdb.configuration.validator.CompatibilityValidator;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
-import org.janusgraph.util.system.LoggerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +44,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ID
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TITAN_COMPATIBLE_VERSIONS;
 
 /**
@@ -84,7 +80,6 @@ public class ReadConfigurationBuilder {
 
                 setupJanusGraphVersion(globalWrite);
                 setupStorageVersion(globalWrite);
-                setupTimestampProvider(globalWrite, localBasicConfiguration, storeManager);
 
                 globalWrite.freezeConfiguration();
             } else {
@@ -144,29 +139,6 @@ public class ReadConfigurationBuilder {
     private void setupStorageVersion(ModifiableConfiguration globalWrite){
         Preconditions.checkArgument(!globalWrite.has(INITIAL_STORAGE_VERSION),"Database has already been initialized but not frozen");
         globalWrite.set(INITIAL_STORAGE_VERSION,JanusGraphConstants.STORAGE_VERSION);
-    }
-
-    private void setupTimestampProvider(ModifiableConfiguration globalWrite, BasicConfiguration localBasicConfiguration,
-                                        KeyColumnValueStoreManager storeManager){
-        /* If the configuration does not explicitly set a timestamp provider and
-         * the storage backend both supports timestamps and has a preference for
-         * a specific timestamp provider, then apply the backend's preference.
-         */
-        if (!localBasicConfiguration.has(TIMESTAMP_PROVIDER)) {
-            StoreFeatures f = storeManager.getFeatures();
-            final TimestampProviders backendPreference;
-            if (f.hasTimestamps() && null != (backendPreference = f.getPreferredTimestamps())) {
-                globalWrite.set(TIMESTAMP_PROVIDER, backendPreference);
-                log.info("Set timestamps to {} according to storage backend preference",
-                    LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
-            } else {
-                globalWrite.set(TIMESTAMP_PROVIDER, TIMESTAMP_PROVIDER.getDefaultValue());
-                log.info("Set default timestamp provider {}",
-                    LoggerUtil.sanitizeAndLaunder(globalWrite.get(TIMESTAMP_PROVIDER)));
-            }
-        } else {
-            log.info("Using configured timestamp provider {}", localBasicConfiguration.get(TIMESTAMP_PROVIDER));
-        }
     }
 
     private Map<ConfigElement.PathIdentifier, Object> getGlobalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
