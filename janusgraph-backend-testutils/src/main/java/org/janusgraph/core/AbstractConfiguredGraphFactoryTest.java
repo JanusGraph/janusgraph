@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Map;
+import java.util.Set;
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
 
@@ -358,6 +359,32 @@ public abstract class AbstractConfiguredGraphFactoryTest {
         } finally {
             ConfiguredGraphFactory.removeConfiguration(graphName);
             ConfiguredGraphFactory.close(graphName);
+        }
+    }
+
+    @Test
+    public void shouldGetGraphNames() throws Exception {
+        try {
+            ConfiguredGraphFactory.createTemplateConfiguration(getTemplateConfig());
+            final StandardJanusGraph graph1 = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");
+            final StandardJanusGraph graph2 = (StandardJanusGraph) ConfiguredGraphFactory.create("graph2");
+
+            assertNotNull(graph1);
+            assertNotNull(graph2);
+
+            Set<String> graphNames = ConfiguredGraphFactory.getGraphNames();
+
+            assertEquals(2, graphNames.size());
+            assertTrue(graphNames.contains("graph1"));
+            assertTrue(graphNames.contains("graph2"));
+
+            assertEquals("graph1", graph1.getConfiguration().getConfiguration().get(GRAPH_NAME));
+            assertEquals("graph2", graph2.getConfiguration().getConfiguration().get(GRAPH_NAME));
+        } finally {
+            ConfiguredGraphFactory.removeConfiguration("graph1");
+            ConfiguredGraphFactory.removeConfiguration("graph2");
+            ConfiguredGraphFactory.close("graph1");
+            ConfiguredGraphFactory.close("graph2");
         }
     }
 

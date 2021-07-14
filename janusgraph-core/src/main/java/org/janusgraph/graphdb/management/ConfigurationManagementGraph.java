@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -233,6 +234,16 @@ public class ConfigurationManagementGraph {
     public List<Map<String, Object>> getConfigurations() {
         final List<Map<Object, Object>> graphConfigurations = getTraversal().V().has(PROPERTY_TEMPLATE, false).valueMap().toList();
         return graphConfigurations.stream().map(this::deserializeVertexProperties).collect(Collectors.toList());
+    }
+
+    /**
+     * Get a set of all graph names, excluding the template configuration; if none exist,
+     * return an empty set
+     *
+     * @return all available graph names
+     */
+    public Set<String> getGraphNames() {
+        return getTraversal().V().has(PROPERTY_TEMPLATE, false).<String>values(PROPERTY_GRAPH_NAME).toSet();
     }
 
     /**

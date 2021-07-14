@@ -31,11 +31,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.Collectors;
 
 import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
 
@@ -122,10 +120,7 @@ public class ConfiguredGraphFactory {
      */
     public static Set<String> getGraphNames() {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
-        final List<Map<String, Object>> configurations = configManagementGraph.getConfigurations();
-        return configurations.stream()
-            .map(elem -> (String) elem.getOrDefault(ConfigurationManagementGraph.PROPERTY_GRAPH_NAME, null))
-            .filter(Objects::nonNull).collect(Collectors.toSet());
+        return configManagementGraph.getGraphNames();
     }
 
     /**
