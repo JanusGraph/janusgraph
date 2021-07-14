@@ -18,6 +18,7 @@ import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ExecutorServiceBuilder;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.JanusGraphConstants;
@@ -33,6 +34,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.stream.Stream;
 
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CLASS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_SCHEMA_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_TOKEN_MAP_ENABLED;
@@ -240,4 +242,14 @@ public class CQLConfigTest {
         });
     }
 
+    @Test
+    public void shouldCreateCachedThreadPool() {
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(EXECUTOR_SERVICE_CLASS), ExecutorServiceBuilder.CACHED_THREAD_POOL_CLASS);
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+        assertDoesNotThrow(() -> {
+            graph.traversal().V().hasNext();
+            graph.tx().rollback();
+        });
+    }
 }

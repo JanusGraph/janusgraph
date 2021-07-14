@@ -46,6 +46,8 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.StoreMetaData.Container;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ExecutorServiceBuilder;
+import org.janusgraph.diskstorage.configuration.ExecutorServiceConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -66,9 +68,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadFactory;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.truncate;
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createKeyspace;
@@ -78,6 +78,10 @@ import static io.vavr.API.Case;
 import static io.vavr.API.Match;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CLASS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CORE_POOL_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_KEEP_ALIVE_TIME;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_POOL_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_INTERVAL;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_TIMEOUT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
@@ -177,15 +181,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         this.batchSize = configuration.get(BATCH_STATEMENT_SIZE);
         this.atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
 
-        this.executorService = new ThreadPoolExecutor(10,
-                100,
-                1,
-                TimeUnit.MINUTES,
-                new LinkedBlockingQueue<>(),
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("CQLStoreManager[%02d]")
-                        .build());
+        this.executorService = buildExecutorService(configuration);
 
         this.session = initializeSession();
         initializeJmxMetrics();
@@ -339,6 +335,22 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         builder.withConfigLoader(configLoaderBuilder.build());
 
         return builder.build();
+    }
+
+    private ExecutorService buildExecutorService(Configuration configuration){
+        Integer corePoolSize = configuration.getOrDefault(EXECUTOR_SERVICE_CORE_POOL_SIZE);
+        Integer maxPoolSize = configuration.getOrDefault(EXECUTOR_SERVICE_MAX_POOL_SIZE);
+        Long keepAliveTime = configuration.getOrDefault(EXECUTOR_SERVICE_KEEP_ALIVE_TIME);
+        String executorServiceClass = configuration.getOrDefault(EXECUTOR_SERVICE_CLASS);
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+            .setDaemon(true)
+            .setNameFormat("CQLStoreManager[%02d]")
+            .build();
+
+        ExecutorServiceConfiguration executorServiceConfiguration =
+            new ExecutorServiceConfiguration(executorServiceClass, corePoolSize, maxPoolSize, keepAliveTime, threadFactory);
+
+        return ExecutorServiceBuilder.build(executorServiceConfiguration);
     }
 
     private void initializeJmxMetrics() {

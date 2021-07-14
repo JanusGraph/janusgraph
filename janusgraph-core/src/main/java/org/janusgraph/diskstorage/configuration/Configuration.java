@@ -34,7 +34,21 @@ public interface Configuration {
         return get(option, false, umbrellaElements);
     }
 
+    default <O> O getOrDefault(ConfigOption<O> option, String... umbrellaElements) {
+        if(has(option, false, umbrellaElements)){
+            return get(option, false, umbrellaElements);
+        }
+        return option.getDefaultValue();
+    }
+
     <O> O get(ConfigOption<O> option, boolean includeRoot, String... umbrellaElements);
+
+    default <O> O getOrDefault(ConfigOption<O> option, boolean includeRoot, String... umbrellaElements) {
+        if(has(option, includeRoot, umbrellaElements)){
+            return get(option, includeRoot, umbrellaElements);
+        }
+        return option.getDefaultValue();
+    }
 
     Set<String> getContainedNamespaces(ConfigNamespace umbrella, String... umbrellaElements);
 
