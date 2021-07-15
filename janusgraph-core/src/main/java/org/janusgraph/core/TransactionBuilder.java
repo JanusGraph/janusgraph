@@ -67,6 +67,14 @@ public interface TransactionBuilder {
     TransactionBuilder propertyPrefetching(boolean enabled);
 
     /**
+     * Enable or disable multi-query, i.e. query.batch
+     *
+     * @param enabled
+     * @return Object containing properties that will enable/disable multi-query
+     */
+    TransactionBuilder multiQuery(boolean enabled);
+
+    /**
      * Configures the size of the internal caches used in the transaction.
      *
      * @param size The size of the initial cache for the transaction

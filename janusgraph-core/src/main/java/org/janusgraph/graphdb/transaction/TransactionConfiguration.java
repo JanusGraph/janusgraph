@@ -115,6 +115,14 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
     boolean hasPropertyPrefetching();
 
     /**
+     * Whether this transaction should batch backend queries. This can lead to significant performance improvement
+     * if there is non-trivial latency to the backend.
+     *
+     * @return True, if this transaction has multi-query enabled
+     */
+    boolean useMultiQuery();
+
+    /**
      * Whether this transaction is only accessed by a single thread.
      * If so, then certain data structures may be optimized for single threaded access since locking can be avoided.
      *
