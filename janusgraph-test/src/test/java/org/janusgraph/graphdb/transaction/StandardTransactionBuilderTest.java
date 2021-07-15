@@ -47,6 +47,18 @@ public class StandardTransactionBuilderTest {
     }
 
     @Test
+    public void testMultiQuery() {
+        boolean graphWideEnabled = graph.getConfiguration().useMultiQuery();
+        assertEquals(graphWideEnabled, ((StandardJanusGraphTx) graph.newTransaction()).getConfiguration().useMultiQuery());
+
+        StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.buildTransaction().multiQuery(true).start();
+        assertTrue(tx.getConfiguration().useMultiQuery());
+
+        tx = (StandardJanusGraphTx) graph.buildTransaction().multiQuery(false).start();
+        assertFalse(tx.getConfiguration().useMultiQuery());
+    }
+
+    @Test
     public void testBatchLoading() {
         boolean graphWideEnabled = graph.getConfiguration().isBatchLoading();
         assertEquals(graphWideEnabled, ((StandardJanusGraphTx) graph.newTransaction()).getConfiguration().hasEnabledBatchLoading());

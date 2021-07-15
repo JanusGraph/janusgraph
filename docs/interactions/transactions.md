@@ -284,6 +284,11 @@ following aspects of a transaction to be configured:
     vertex property access, which eliminates backend calls on subsequent
     property access for the same vertex.
 
+-   `multiQuery(boolean)` - enables or disables query batching, i.e.
+    `query.batch`, for an individual transaction. If enabled, queries
+    for a single traversal will be batched when executed against the
+    storage backend.
+
 -   `setTimestamp(long)` - Sets the timestamp for this transaction as
     communicated to the storage backend for persistence. Depending on
     the storage backend, this setting may be ignored. For eventually

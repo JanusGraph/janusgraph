@@ -25,6 +25,7 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -55,7 +56,13 @@ public class JanusGraphMultiQueryStrategy extends AbstractTraversalStrategy<Trav
         }
 
         final StandardJanusGraph janusGraph = JanusGraphTraversalUtil.getJanusGraph(traversal);
-        if (janusGraph == null || !janusGraph.getConfiguration().useMultiQuery()) {
+        if (janusGraph == null) {
+            return;
+        }
+
+        final Optional<StandardJanusGraphTx> tx = JanusGraphTraversalUtil.getJanusGraphTx(traversal);
+        boolean useMultiQuery = tx.isPresent() ? tx.get().getConfiguration().useMultiQuery() : janusGraph.getConfiguration().useMultiQuery();
+        if (!useMultiQuery) {
             return;
         }
 
