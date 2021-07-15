@@ -52,6 +52,7 @@ import org.janusgraph.core.schema.VertexLabelMaker;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.query.graph.MixedIndexCountQueryBuilder;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
@@ -109,6 +110,7 @@ import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
 import org.janusgraph.graphdb.transaction.vertexcache.GuavaVertexCache;
 import org.janusgraph.graphdb.transaction.vertexcache.VertexCache;
 import org.janusgraph.graphdb.types.CompositeIndexType;
+import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
 import org.janusgraph.graphdb.types.StandardVertexLabelMaker;
@@ -1581,5 +1583,27 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     @Override
     public boolean hasModifications() {
         return !addedRelations.isEmpty() || !deletedRelations.isEmpty();
+    }
+
+    @Override
+    public void expireSchemaElement(final long id) {
+        if (vertexCache.contains(id)) {
+            final InternalVertex v = vertexCache.get(id, externalVertexRetriever);
+            if (v instanceof JanusGraphSchemaVertex) {
+                JanusGraphSchemaVertex sv = (JanusGraphSchemaVertex) v;
+                sv.resetCache();
+                if (sv.getDefinition().containsKey(TypeDefinitionCategory.INTERNAL_INDEX)) {
+                    IndexType indexType = sv.asIndexType();
+                    if (indexType.isMixedIndex()) {
+                        // Invalidate mixed index
+                        String store = indexType.getBackingIndexName();
+                        if (txHandle.hasIndexTransaction(store)) {
+                            IndexTransaction indexTx = txHandle.getIndexTransaction(store);
+                            indexTx.invalidate(sv.name());
+                        }
+                    }
+                }
+            }
+        }
     }
 }

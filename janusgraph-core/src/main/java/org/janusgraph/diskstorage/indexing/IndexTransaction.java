@@ -197,4 +197,7 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         out.writeClassAndObject(entry.value);
     }
 
+    public void invalidate(String store) {
+        keyInformation.invalidate(store);
+    }
 }

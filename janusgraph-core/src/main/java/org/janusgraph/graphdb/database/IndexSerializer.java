@@ -222,6 +222,10 @@ public class IndexSerializer {
                     return indexes.get(store);
                 }
 
+                @Override
+                public void invalidate(final String store) {
+                    indexes.remove(store);
+                }
             };
         }
     }

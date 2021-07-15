@@ -109,6 +109,11 @@ public abstract class IndexProviderTest {
             public KeyInformation.StoreRetriever get(String store) {
                 return mappings::get;
             }
+
+            @Override
+            public void invalidate(String store) {
+                mappings.remove(store);
+            }
         };
     }
 
