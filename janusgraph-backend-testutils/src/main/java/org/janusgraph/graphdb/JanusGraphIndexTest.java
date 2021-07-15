@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -3029,9 +3030,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = 4, minSuccess = 2)
     public void shouldUpdateIndexFieldsAfterIndexModification() throws InterruptedException, ExecutionException {
-        clopen(option(FORCE_INDEX_USAGE), true);
+        clopen(option(FORCE_INDEX_USAGE), true, option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(5000));
         String key1 = "testKey1";
         String key2 = "testKey2";
         String key3 = "testKey3";
@@ -3066,8 +3067,12 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         // we open an implicit transaction and do not commit/rollback it by intention, so that we can ensure
         // adding new property to the index wouldn't cause existing transactions to fail
-        List<Vertex> result = graph.traversal().V().hasLabel(vertexL).has(key1, 111L).toList();
-        assertEquals(1, result.size());
+        assertEquals(1, graph.traversal().V().hasLabel(vertexL).has(key1, 111L).count().next());
+        assertEquals(1, graph.traversal().V().hasLabel(vertexL).has(key1, 111L).toList().size());
+
+        JanusGraph graph2 = JanusGraphFactory.open(config);
+        assertEquals(1, graph2.traversal().V().hasLabel(vertexL).has(key1, 111L).count().next());
+        assertEquals(1, graph2.traversal().V().hasLabel(vertexL).has(key1, 111L).toList().size());
 
         mgmt = graph.openManagement();
         PropertyKey testKey3 = mgmt.makePropertyKey(key3).dataType(Long.class).make();
@@ -3080,9 +3085,25 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.REINDEX).get();
         mgmt.commit();
 
-        vertex = graph.addVertex(T.label, vertexL, key1, 1L, key2, 2L, key3, 3L);
-
+        graph.addVertex(T.label, vertexL, key1, 1L, key2, 2L, key3, 3L);
         graph.tx().commit();
         assertTrue(graph.traversal().V().hasLabel(vertexL).has(key3, 3L).hasNext());
+
+        try {
+            graph2.addVertex(T.label, vertexL, key1, 1L, key2, 2L, key3, 3L);
+            // this assertion might be flaky which is why we mark this test as RepeatedIfExceptionsTest.
+            // the reason is, we cannot make sure when the schema update broadcast will be received by the graph2
+            // instance.
+            JanusGraphException ex = assertThrows(JanusGraphException.class, () -> graph2.tx().commit());
+            assertEquals("testKey3 is not available in mixed index mixed", ex.getCause().getMessage());
+
+            // graph2 needs some time to read from ManagementLogger asynchronously and updates cache
+            // LOG_READ_INTERVAL is 5 seconds, so we wait for the same time here to ensure periodic read is triggered
+            Thread.sleep(5000);
+            graph2.tx().commit();
+            assertTrue(graph2.traversal().V().hasLabel(vertexL).has(key3, 3L).hasNext());
+        } finally {
+            graph2.close();
+        }
     }
 }
