@@ -15,7 +15,6 @@
 package org.janusgraph.diskstorage.cql;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
@@ -32,13 +31,11 @@ import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.datastax.oss.driver.api.querybuilder.schema.compaction.CompactionStrategy;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.internal.core.cql.ResultSets;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
 import io.vavr.collection.Array;
 import io.vavr.collection.Iterator;
-import io.vavr.concurrent.Future;
 import io.vavr.control.Try;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
@@ -48,6 +45,9 @@ import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.cql.function.slice.CQLExecutorServiceSliceFunction;
+import org.janusgraph.diskstorage.cql.function.slice.CQLSimpleSliceFunction;
+import org.janusgraph.diskstorage.cql.function.slice.CQLSliceFunction;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
@@ -59,13 +59,12 @@ import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal;
-import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
@@ -98,43 +97,43 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ST
  */
 public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
-    private static final String TTL_FUNCTION_NAME = "ttl";
-    private static final String WRITETIME_FUNCTION_NAME = "writetime";
+    public static final String TTL_FUNCTION_NAME = "ttl";
+    public static final String WRITETIME_FUNCTION_NAME = "writetime";
 
     public static final String KEY_COLUMN_NAME = "key";
     public static final String COLUMN_COLUMN_NAME = "column1";
     public static final String VALUE_COLUMN_NAME = "value";
-    static final String WRITETIME_COLUMN_NAME = "writetime";
-    static final String TTL_COLUMN_NAME = "ttl";
+    public static final String WRITETIME_COLUMN_NAME = "writetime";
+    public static final String TTL_COLUMN_NAME = "ttl";
 
-    private static final String KEY_BINDING = "key";
-    private static final String COLUMN_BINDING = "column1";
-    private static final String VALUE_BINDING = "value";
-    private static final String TIMESTAMP_BINDING = "timestamp";
-    private static final String TTL_BINDING = "ttl";
-    private static final String SLICE_START_BINDING = "sliceStart";
-    private static final String SLICE_END_BINDING = "sliceEnd";
-    private static final String KEY_START_BINDING = "keyStart";
-    private static final String KEY_END_BINDING = "keyEnd";
-    private static final String LIMIT_BINDING = "maxRows";
+    public static final String KEY_BINDING = "key";
+    public static final String COLUMN_BINDING = "column1";
+    public static final String VALUE_BINDING = "value";
+    public static final String TIMESTAMP_BINDING = "timestamp";
+    public static final String TTL_BINDING = "ttl";
+    public static final String SLICE_START_BINDING = "sliceStart";
+    public static final String SLICE_END_BINDING = "sliceEnd";
+    public static final String KEY_START_BINDING = "keyStart";
+    public static final String KEY_END_BINDING = "keyEnd";
+    public static final String LIMIT_BINDING = "maxRows";
 
-    static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> Match(cause).of(
+    public static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> Match(cause).of(
             Case($(instanceOf(QueryValidationException.class)), PermanentBackendException::new),
             Case($(), TemporaryBackendException::new));
 
     private final CQLStoreManager storeManager;
-    private final ExecutorService executorService;
     private final CqlSession session;
     private final String tableName;
     private final CQLColValGetter getter;
     private final Runnable closer;
 
-    private final PreparedStatement getSlice;
     private final PreparedStatement getKeysAll;
     private final PreparedStatement getKeysRanged;
     private final PreparedStatement deleteColumn;
     private final PreparedStatement insertColumn;
     private final PreparedStatement insertColumnWithTTL;
+
+    private final CQLSliceFunction cqlSliceFunction;
 
     /**
      * Creates an instance of the {@link KeyColumnValueStore} that stores the data in a CQL backed table.
@@ -146,7 +145,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
      */
     public CQLKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer) {
         this.storeManager = storeManager;
-        this.executorService = this.storeManager.getExecutorService();
+
         this.tableName = tableName;
         this.closer = closer;
         this.session = this.storeManager.getSession();
@@ -166,7 +165,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 Relation.column(COLUMN_COLUMN_NAME).isLessThan(bindMarker(SLICE_END_BINDING))
             )
             .limit(bindMarker(LIMIT_BINDING));
-        this.getSlice = this.session.prepare(addTTLFunction(addTimestampFunction(getSliceSelect)).build());
+        PreparedStatement getSlice = this.session.prepare(addTTLFunction(addTimestampFunction(getSliceSelect)).build());
 
         if (this.storeManager.getFeatures().hasOrderedScan()) {
             final Select getKeysRangedSelect = selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
@@ -215,6 +214,15 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         } else {
             this.insertColumnWithTTL = null;
         }
+
+        Optional<ExecutorService> executorService = this.storeManager.getExecutorService();
+
+        if(executorService.isPresent()){
+            cqlSliceFunction = new CQLExecutorServiceSliceFunction(session, getSlice, getter, executorService.get());
+        } else {
+            cqlSliceFunction = new CQLSimpleSliceFunction(session, getSlice, getter);
+        }
+
         // @formatter:on
     }
 
@@ -347,18 +355,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws BackendException {
-        final Future<EntryList> result = Future.fromJavaFuture(
-                this.executorService,
-                this.session.executeAsync(this.getSlice.boundStatementBuilder()
-                        .setByteBuffer(KEY_BINDING, query.getKey().asByteBuffer())
-                        .setByteBuffer(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
-                        .setByteBuffer(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
-                        .setInt(LIMIT_BINDING, query.getLimit())
-                        .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()).build())
-                        .toCompletableFuture())
-                .map(resultSet -> fromResultSet(resultSet, this.getter));
-        interruptibleWait(result);
-        return result.getValue().get().getOrElseThrow(EXCEPTION_MAPPER);
+        return cqlSliceFunction.getSlice(query, txh);
     }
 
     @Override
@@ -366,30 +363,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         throw new UnsupportedOperationException("The CQL backend does not support multi-key queries");
     }
 
-    /**
-     * VAVR Future.await will throw InterruptedException wrapped in a FatalException. If the Thread was in Object.wait, the interrupted
-     * flag will be cleared as a side effect and needs to be reset. This method checks that the underlying cause of the FatalException is
-     * InterruptedException and resets the interrupted flag.
-     *
-     * @param result the future to wait on
-     * @throws PermanentBackendException if the thread was interrupted while waiting for the future result
-     */
-    private void interruptibleWait(final Future<?> result) throws PermanentBackendException {
-        try {
-            result.await();
-        } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            throw new PermanentBackendException(e);
-        }
-    }
-
-    private static EntryList fromResultSet(final AsyncResultSet resultSet, final GetColVal<Tuple3<StaticBuffer, StaticBuffer, Row>, StaticBuffer> getter) {
-        return StaticArrayEntryList.ofStaticBuffer(new CQLResultSetIterator(ResultSets.newInstance(resultSet)), getter);
-    }
-
-    private static class CQLResultSetIterator implements RecordIterator<Tuple3<StaticBuffer, StaticBuffer, Row>> {
+    public static class CQLResultSetIterator implements RecordIterator<Tuple3<StaticBuffer, StaticBuffer, Row>> {
 
         private java.util.Iterator<Row> resultSetIterator;
 
@@ -417,11 +391,11 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    BatchableStatement<BoundStatement> deleteColumn(final StaticBuffer key, final StaticBuffer column) {
+    public BatchableStatement<BoundStatement> deleteColumn(final StaticBuffer key, final StaticBuffer column) {
         return deleteColumn(key, column, null);
     }
 
-    BatchableStatement<BoundStatement> deleteColumn(final StaticBuffer key, final StaticBuffer column, final Long timestamp) {
+    public BatchableStatement<BoundStatement> deleteColumn(final StaticBuffer key, final StaticBuffer column, final Long timestamp) {
         BoundStatementBuilder builder = deleteColumn.boundStatementBuilder()
             .setByteBuffer(KEY_BINDING, key.asByteBuffer())
             .setByteBuffer(COLUMN_BINDING, column.asByteBuffer());
@@ -431,11 +405,11 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         return builder.build();
     }
 
-    BatchableStatement<BoundStatement> insertColumn(final StaticBuffer key, final Entry entry) {
+    public BatchableStatement<BoundStatement> insertColumn(final StaticBuffer key, final Entry entry) {
         return insertColumn(key, entry, null);
     }
 
-    BatchableStatement<BoundStatement> insertColumn(final StaticBuffer key, final Entry entry, final Long timestamp) {
+    public BatchableStatement<BoundStatement> insertColumn(final StaticBuffer key, final Entry entry, final Long timestamp) {
         final Integer ttl = (Integer) entry.getMetaData().get(EntryMetaData.TTL);
         BoundStatementBuilder builder = ttl != null ? insertColumnWithTTL.boundStatementBuilder() : insertColumn.boundStatementBuilder();
         builder = builder.setByteBuffer(KEY_BINDING, key.asByteBuffer())

@@ -21,11 +21,6 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.BatchStatement;
-import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.BatchableStatement;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.DefaultBatchType;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.internal.core.auth.PlainTextAuthProvider;
@@ -38,7 +33,6 @@ import io.vavr.collection.HashMap;
 import io.vavr.collection.Iterator;
 import io.vavr.collection.Seq;
 import io.vavr.concurrent.Future;
-import io.vavr.control.Option;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.PermanentBackendException;
@@ -48,6 +42,11 @@ import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ExecutorServiceBuilder;
 import org.janusgraph.diskstorage.configuration.ExecutorServiceConfiguration;
+import org.janusgraph.diskstorage.cql.function.mutate.CQLExecutorServiceMutateManyLoggedFunction;
+import org.janusgraph.diskstorage.cql.function.mutate.CQLExecutorServiceMutateManyUnloggedFunction;
+import org.janusgraph.diskstorage.cql.function.mutate.CQLMutateManyFunction;
+import org.janusgraph.diskstorage.cql.function.mutate.CQLSimpleMutateManyLoggedFunction;
+import org.janusgraph.diskstorage.cql.function.mutate.CQLSimpleMutateManyUnloggedFunction;
 import org.janusgraph.diskstorage.configuration.ExecutorServiceInstrumentation;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -67,6 +66,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -81,6 +81,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTAT
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CLASS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CORE_POOL_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_KEEP_ALIVE_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_POOL_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_INTERVAL;
@@ -135,8 +136,6 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOC
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
-import static org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore.EXCEPTION_MAPPER;
-import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_PASSWORD;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
@@ -161,10 +160,9 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private static final int DEFAULT_PORT = 9042;
 
     private final String keyspace;
-    private final int batchSize;
-    private final boolean atomicBatch;
 
     final ExecutorService executorService;
+    private final CQLMutateManyFunction executeManyFunction;
 
     private CqlSession session;
     private final StoreFeatures storeFeatures;
@@ -179,14 +177,33 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     public CQLStoreManager(final Configuration configuration) throws BackendException {
         super(configuration, DEFAULT_PORT);
         this.keyspace = determineKeyspaceName(configuration);
-        this.batchSize = configuration.get(BATCH_STATEMENT_SIZE);
-        this.atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
-
-        this.executorService = buildExecutorService(configuration);
-
+        this.openStores = new ConcurrentHashMap<>();
         this.session = initializeSession();
         initializeJmxMetrics();
         initializeKeyspace();
+
+        int batchSize = configuration.get(BATCH_STATEMENT_SIZE);
+        boolean atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
+
+        if(configuration.get(EXECUTOR_SERVICE_ENABLED)){
+            this.executorService = buildExecutorService(configuration);
+            if(atomicBatch){
+                executeManyFunction = new CQLExecutorServiceMutateManyLoggedFunction(times,
+                    assignTimestamp, openStores, session, executorService, this::sleepAfterWrite);
+            } else {
+                executeManyFunction = new CQLExecutorServiceMutateManyUnloggedFunction(batchSize,
+                    session, openStores, times, executorService, assignTimestamp, this::sleepAfterWrite);
+            }
+        } else {
+            this.executorService = null;
+            if(atomicBatch){
+                executeManyFunction = new CQLSimpleMutateManyLoggedFunction(times,
+                    assignTimestamp, openStores, session, this::sleepAfterWrite);
+            } else {
+                executeManyFunction = new CQLSimpleMutateManyUnloggedFunction(batchSize,
+                    session, openStores, times, assignTimestamp, this::sleepAfterWrite);
+            }
+        }
 
         final Configuration global = buildGraphConfiguration()
                 .set(READ_CONSISTENCY, CONSISTENCY_QUORUM)
@@ -249,7 +266,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             }
         }
         this.storeFeatures = fb.build();
-        this.openStores = new ConcurrentHashMap<>();
     }
 
     CqlSession initializeSession() throws PermanentBackendException {
@@ -398,8 +414,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             .build());
     }
 
-    ExecutorService getExecutorService() {
-        return this.executorService;
+    Optional<ExecutorService> getExecutorService() {
+        return Optional.ofNullable(executorService);
     }
 
     CqlSession getSession() {
@@ -445,7 +461,9 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             clearJmxMetrics();
             this.session.close();
         } finally {
-            this.executorService.shutdownNow();
+            if(this.executorService != null){
+                this.executorService.shutdownNow();
+            }
         }
     }
 
@@ -501,101 +519,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public void mutateMany(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
-        if (this.atomicBatch) {
-            mutateManyLogged(mutations, txh);
-        } else {
-            mutateManyUnlogged(mutations, txh);
-        }
-    }
-
-    // Use a single logged batch
-    private void mutateManyLogged(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
-        final MaskedTimestamp commitTime = assignTimestamp ? new MaskedTimestamp(txh) : null;
-
-        BatchStatementBuilder builder = BatchStatement.builder(DefaultBatchType.LOGGED);
-        builder.setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel());
-
-        Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
-            final String tableName = tableNameAndMutations.getKey();
-            final Map<StaticBuffer, KCVMutation> tableMutations = tableNameAndMutations.getValue();
-
-            final CQLKeyColumnValueStore columnValueStore = Option.of(this.openStores.get(tableName))
-                    .getOrElseThrow(() -> new IllegalStateException("Store cannot be found: " + tableName));
-            return Iterator.ofAll(tableMutations.entrySet()).flatMap(keyAndMutations -> {
-                final StaticBuffer key = keyAndMutations.getKey();
-                final KCVMutation keyMutations = keyAndMutations.getValue();
-
-                Iterator<BatchableStatement<BoundStatement>> deletions;
-                Iterator<BatchableStatement<BoundStatement>> additions;
-                if (commitTime != null) {
-                    deletions = Iterator.of(commitTime.getDeletionTime(this.times))
-                        .flatMap(deleteTime -> Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion, deleteTime)));
-                    additions = Iterator.of(commitTime.getAdditionTime(this.times))
-                        .flatMap(addTime -> Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition, addTime)));
-                } else {
-                    deletions = Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion));
-                    additions = Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition));
-                }
-
-                return Iterator.concat(deletions, additions);
-            });
-        }).forEach(builder::addStatement);
-
-        final Future<AsyncResultSet> result = Future.fromJavaFuture(this.executorService, this.session.executeAsync(builder.build()).toCompletableFuture());
-
-        result.await();
-        if (result.isFailure()) {
-            throw EXCEPTION_MAPPER.apply(result.getCause().get());
-        }
-        if (commitTime != null) {
-            sleepAfterWrite(txh, commitTime);
-        }
-    }
-
-    // Create an async un-logged batch per partition key
-    private void mutateManyUnlogged(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
-        final MaskedTimestamp commitTime = assignTimestamp ? new MaskedTimestamp(txh) : null;
-
-        final Future<Seq<AsyncResultSet>> result = Future.sequence(this.executorService, Iterator.ofAll(mutations.entrySet()).flatMap(tableNameAndMutations -> {
-            final String tableName = tableNameAndMutations.getKey();
-            final Map<StaticBuffer, KCVMutation> tableMutations = tableNameAndMutations.getValue();
-
-            final CQLKeyColumnValueStore columnValueStore = Option.of(this.openStores.get(tableName))
-                    .getOrElseThrow(() -> new IllegalStateException("Store cannot be found: " + tableName));
-            return Iterator.ofAll(tableMutations.entrySet()).flatMap(keyAndMutations -> {
-                final StaticBuffer key = keyAndMutations.getKey();
-                final KCVMutation keyMutations = keyAndMutations.getValue();
-
-                Iterator<BatchableStatement<BoundStatement>> deletions;
-                Iterator<BatchableStatement<BoundStatement>> additions;
-                if (commitTime != null) {
-                    deletions = Iterator.of(commitTime.getDeletionTime(this.times))
-                        .flatMap(deleteTime -> Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion, deleteTime)));
-                    additions = Iterator.of(commitTime.getAdditionTime(this.times))
-                        .flatMap(addTime -> Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition, addTime)));
-                } else {
-                    deletions = Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion));
-                    additions = Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition));
-                }
-
-                return Iterator.concat(deletions, additions)
-                        .grouped(this.batchSize)
-                        .map(group -> Future.fromJavaFuture(this.executorService,
-                                this.session.executeAsync(
-                                    BatchStatement.newInstance(DefaultBatchType.UNLOGGED)
-                                                .addAll(group)
-                                                .setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel()))
-                                    .toCompletableFuture()));
-            });
-        }));
-
-        result.await();
-        if (result.isFailure()) {
-            throw EXCEPTION_MAPPER.apply(result.getCause().get());
-        }
-        if (commitTime != null) {
-            sleepAfterWrite(txh, commitTime);
-        }
+        executeManyFunction.mutateMany(mutations, txh);
     }
 
     private String determineKeyspaceName(Configuration config) {

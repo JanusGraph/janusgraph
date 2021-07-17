@@ -49,7 +49,9 @@ public class CachingCQLStoreManager extends CQLStoreManager {
             sessions.values().forEach(CqlSession::close);
             sessions.clear();
         }
-        this.executorService.shutdownNow();
+        if(this.executorService != null){
+            this.executorService.shutdownNow();
+        }
     }
 
 }

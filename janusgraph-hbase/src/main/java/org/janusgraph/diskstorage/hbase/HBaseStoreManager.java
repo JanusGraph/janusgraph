@@ -464,7 +464,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         if (commitTime != null) {
-            sleepAfterWrite(txh, commitTime);
+            sleepAfterWrite(commitTime);
         }
     }
 
