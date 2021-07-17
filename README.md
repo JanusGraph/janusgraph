@@ -13,6 +13,7 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [![Coverity Scan][coverity-shield]][coverity-link]
 [![Mentioned in Awesome Bigtable][awesome-shield]][awesome-link]
 [![CII Best Practices][bestpractices-shield]][bestpractices-link]
+[![Codacy Badge][codacy-shield]][codacy-link]
 
 [actions-shield]: https://img.shields.io/github/workflow/status/JanusGraph/janusgraph/CI%20Core
 [actions-link]: https://github.com/JanusGraph/janusgraph/actions
@@ -20,6 +21,8 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [awesome-link]: https://github.com/zrosenbauer/awesome-bigtable
 [bestpractices-shield]: https://bestpractices.coreinfrastructure.org/projects/5064/badge
 [bestpractices-link]: https://bestpractices.coreinfrastructure.org/projects/5064
+[codacy-shield]: https://app.codacy.com/project/badge/Grade/850c7549ea72424486664ffc4f64f526
+[codacy-link]: https://www.codacy.com/gh/JanusGraph/janusgraph/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=JanusGraph/janusgraph&amp;utm_campaign=Badge_Grade
 [maven-shield]: https://img.shields.io/maven-central/v/org.janusgraph/janusgraph-core.svg
 [maven-link]: https://search.maven.org/#search%7Cga%7C1%7Corg.janusgraph
 [javadoc-shield]: https://javadoc.io/badge/org.janusgraph/janusgraph-core.svg?color=blue
