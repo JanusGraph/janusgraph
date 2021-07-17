@@ -12,11 +12,14 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [![Codecov][codecov-shield]][codecov-link]
 [![Coverity Scan][coverity-shield]][coverity-link]
 [![Mentioned in Awesome Bigtable][awesome-shield]][awesome-link]
+[![CII Best Practices][bestpractices-shield]][bestpractices-link]
 
 [actions-shield]: https://img.shields.io/github/workflow/status/JanusGraph/janusgraph/CI%20Core
 [actions-link]: https://github.com/JanusGraph/janusgraph/actions
 [awesome-shield]: https://awesome.re/mentioned-badge-flat.svg
 [awesome-link]: https://github.com/zrosenbauer/awesome-bigtable
+[bestpractices-shield]: https://bestpractices.coreinfrastructure.org/projects/5064/badge
+[bestpractices-link]: https://bestpractices.coreinfrastructure.org/projects/5064
 [maven-shield]: https://img.shields.io/maven-central/v/org.janusgraph/janusgraph-core.svg
 [maven-link]: https://search.maven.org/#search%7Cga%7C1%7Corg.janusgraph
 [javadoc-shield]: https://javadoc.io/badge/org.janusgraph/janusgraph-core.svg?color=blue
