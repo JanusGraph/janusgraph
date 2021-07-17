@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_ENABLED;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ASSIGN_TIMESTAMP;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -58,12 +59,18 @@ public class CQLGraphTest extends JanusGraphTest {
 
     protected static Stream<Arguments> generateConsistencyConfigs() {
         return Arrays.stream(new Arguments[]{
-            arguments(true, true, 20),
-            arguments(true, false, 20),
-            arguments(true, false, 1),
-            arguments(false, true, 20),
-            arguments(false, false, 20),
-            arguments(false, false, 1),
+            arguments(true, true, 20, true),
+            arguments(true, false, 20, true),
+            arguments(true, false, 1, true),
+            arguments(false, true, 20, true),
+            arguments(false, false, 20, true),
+            arguments(false, false, 1, true),
+            arguments(true, true, 20, false),
+            arguments(true, false, 20, false),
+            arguments(true, false, 1, false),
+            arguments(false, true, 20, false),
+            arguments(false, false, 20, false),
+            arguments(false, false, 1, false),
         });
     }
 
@@ -76,8 +83,8 @@ public class CQLGraphTest extends JanusGraphTest {
 
     @ParameterizedTest
     @MethodSource("generateConsistencyConfigs")
-    public void testConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize) {
-        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize);
+    public void testConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize, boolean executorServiceEnabled) {
+        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize, option(EXECUTOR_SERVICE_ENABLED), executorServiceEnabled);
         super.testConsistencyEnforcement();
     }
 
@@ -90,8 +97,8 @@ public class CQLGraphTest extends JanusGraphTest {
 
     @ParameterizedTest
     @MethodSource("generateConsistencyConfigs")
-    public void testConcurrentConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize) throws Exception {
-        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize);
+    public void testConcurrentConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize, boolean executorServiceEnabled) throws Exception {
+        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize, option(EXECUTOR_SERVICE_ENABLED), executorServiceEnabled);
         super.testConcurrentConsistencyEnforcement();
     }
 }

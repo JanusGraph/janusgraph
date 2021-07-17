@@ -589,6 +589,17 @@ public interface CQLConfigOptions {
         "executor-service",
         "Configuration options for CQL executor service which is used to process CQL queries.");
 
+    ConfigOption<Boolean> EXECUTOR_SERVICE_ENABLED = new ConfigOption<>(
+        EXECUTOR_SERVICE,
+        "enabled",
+        "Whether to use CQL executor service to process queries or not. If not used, the parallelism will be " +
+            "controlled internally by the CQL driver via `"+MAX_REQUESTS_PER_CONNECTION.toStringWithoutRoot()+"` parameter " +
+            "which may be preferable in production environments. " +
+            "Disabling executor service reduces overhead of thread pool but might be more difficult to tune.",
+        ConfigOption.Type.LOCAL,
+        Boolean.class,
+        true);
+
     ConfigOption<Integer> EXECUTOR_SERVICE_CORE_POOL_SIZE = new ConfigOption<>(
         EXECUTOR_SERVICE,
         GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE.getName(),

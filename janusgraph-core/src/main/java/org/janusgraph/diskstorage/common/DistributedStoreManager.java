@@ -141,7 +141,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         return hn.substring(0, Math.min(hn.length(), 256)) + ":" + port;
     }
 
-    protected void sleepAfterWrite(StoreTransaction txh, MaskedTimestamp mustPass) throws BackendException {
+    protected void sleepAfterWrite(MaskedTimestamp mustPass) throws BackendException {
         assert mustPass.getDeletionTime(times) < mustPass.getAdditionTime(times);
         try {
             times.sleepPast(mustPass.getAdditionTimeInstant(times));
