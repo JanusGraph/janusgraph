@@ -648,16 +648,12 @@ public class GraphDatabaseConfiguration {
             "Number of times the system attempts to acquire a lock before giving up and throwing an exception",
             ConfigOption.Type.MASKABLE, 3);
 
-    /**
-     * The number of milliseconds the system waits for a lock application to be acknowledged by the storage backend.
-     * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
-     * This value should be a small multiple of the average consistent write time.
-     */
     public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<>(LOCK_NS, "wait-time",
             "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend. " +
             "Also, the time waited at the end of all lock applications before verifying that the applications were successful. " +
-            "This value should be a small multiple of the average consistent write time.",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.ofMillis(100L));
+            "This value should be a small multiple of the average consistent write time. Although this value is maskable, it is " +
+            "highly recommended to use the same value across JanusGraph instances in production environments.",
+            ConfigOption.Type.MASKABLE, Duration.ofMillis(100L));
 
     /**
      * Number of milliseconds after which a lock is considered to have expired. Lock applications that were not released
