@@ -44,7 +44,7 @@ public class LuceneCustomAnalyzer extends DelegatingAnalyzerWrapper {
     private static final String STANDARD_ANALYZER = StandardAnalyzer.class.getName();
 
     private final String store;
-    private final KeyInformation.IndexRetriever informations;
+    private volatile KeyInformation.IndexRetriever informations;
 
     private final Map<String, Analyzer> analyzers = new HashMap<>();
 
@@ -54,6 +54,10 @@ public class LuceneCustomAnalyzer extends DelegatingAnalyzerWrapper {
         this.informations = informations;
         analyzers.put(KEYWORD_ANALYZER, new KeywordAnalyzer());
         analyzers.put(STANDARD_ANALYZER, new StandardAnalyzer());
+    }
+
+    public void setInformations(KeyInformation.IndexRetriever informations) {
+        this.informations = informations;
     }
 
     @Override
