@@ -53,8 +53,12 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.GC_GRACE_SECONDS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_NODE_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_SESSION_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SPECULATIVE_RETRY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -178,6 +182,18 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
             opts.remove("enabled");
         }
         assertEquals(Collections.emptyMap(), opts);
+    }
+
+    @Test
+    public void testCqlMetricsInitialization() throws BackendException, InterruptedException {
+        final ModifiableConfiguration config = getBaseStorageConfiguration();
+        // override keyspace so a cached CQLStoreManager is not used and CQLStoreManager#initializeSession is called 
+        config.set(KEYSPACE, "testkeyspace_metrics");
+        config.set(BASIC_METRICS, true);
+        config.set(METRICS_NODE_ENABLED, "pool.open-connections,pool.available-streams,pool.in-flight,bytes-sent,bytes-received,cql-messages".split(","));
+        config.set(METRICS_SESSION_ENABLED, "bytes-sent,bytes-received,cql-requests,cql-client-timeouts,throttling.delay,throttling.queue-size,throttling.errors".split(","));
+        // Will update CQL Gauge metrics on graph creation
+        openStorageManager(config);  // throws NoSuchMethodError on metrics-core 3.x / 4.x conflict
     }
 
     @Test

@@ -531,6 +531,12 @@
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-server</artifactId>
                 <version>${tinkerpop.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.codahale.metrics</groupId>
+                        <artifactId>metrics-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
