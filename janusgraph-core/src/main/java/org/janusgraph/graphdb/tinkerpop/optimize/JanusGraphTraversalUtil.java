@@ -67,58 +67,31 @@ public class JanusGraphTraversalUtil {
     private static final List<Class<? extends TraversalParent>> MULTIQUERY_COMPATIBLE_PARENTS =
             Arrays.asList(BranchStep.class, OptionalStep.class, RepeatStep.class, TraversalFilterStep.class);
 
-    /**
-     * This is needed as a workaround for https://issues.apache.org/jira/browse/TINKERPOP-2568. Once that is fixed
-     * and released, this utility method can be removed.
-     * @param traversal
-     * @return
-     */
     public static StandardJanusGraph getJanusGraph(final Traversal.Admin<?, ?> traversal) {
-        Traversal.Admin<?, ?> t = traversal;
-        do {
-            Optional<Graph> optionalGraph = t.getGraph();
-            if (!optionalGraph.isPresent()) {
-                return null;
-            }
-            Graph graph = optionalGraph.get();
-            if (graph instanceof StandardJanusGraph) {
-                return (StandardJanusGraph) graph;
-            }
-            if (graph instanceof StandardJanusGraphTx) {
-                return ((StandardJanusGraphTx) graph).getGraph();
-            }
-            if (t.getParent() instanceof EmptyStep) {
-                return null;
-            }
-            t = t.getParent().asStep().getTraversal();
-        } while (true);
+        Optional<Graph> optionalGraph = traversal.getGraph();
+        if (!optionalGraph.isPresent()) {
+            return null;
+        }
+        Graph graph = optionalGraph.get();
+        if (graph instanceof StandardJanusGraph) {
+            return (StandardJanusGraph) graph;
+        }
+        if (graph instanceof StandardJanusGraphTx) {
+            return ((StandardJanusGraphTx) graph).getGraph();
+        }
+        return null;
     }
 
-    /**
-     * This is needed as a workaround for https://issues.apache.org/jira/browse/TINKERPOP-2568. Once that is fixed
-     * and released, this utility method can be removed.
-     * @param traversal
-     * @return
-     */
     public static Optional<StandardJanusGraphTx> getJanusGraphTx(final Traversal.Admin<?, ?> traversal) {
-        Traversal.Admin<?, ?> t = traversal;
-        do {
-            Optional<Graph> optionalGraph = t.getGraph();
-            if (!optionalGraph.isPresent()) {
-                return Optional.empty();
-            }
-            Graph graph = optionalGraph.get();
-            if (graph instanceof StandardJanusGraph) {
-                return Optional.empty();
-            }
-            if (graph instanceof StandardJanusGraphTx) {
-                return Optional.of((StandardJanusGraphTx) graph);
-            }
-            if (t.getParent() instanceof EmptyStep) {
-                return Optional.empty();
-            }
-            t = t.getParent().asStep().getTraversal();
-        } while (true);
+        Optional<Graph> optionalGraph = traversal.getGraph();
+        if (!optionalGraph.isPresent()) {
+            return Optional.empty();
+        }
+        Graph graph = optionalGraph.get();
+        if (graph instanceof StandardJanusGraphTx) {
+            return Optional.of((StandardJanusGraphTx) graph);
+        }
+        return Optional.empty();
     }
 
     public static JanusGraphVertex getJanusGraphVertex(Element v) {
