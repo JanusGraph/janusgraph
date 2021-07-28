@@ -28,7 +28,7 @@ import java.io.IOException;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 
 public class JanusGraphSolrContainer extends SolrContainer {
-    private static final String DEFAULT_SOLR_VERSION = "8.3.0";
+    private static final String DEFAULT_SOLR_VERSION = "8.9.0";
     private static final String DEFAULT_SOLR_IMAGE = "solr";
     private static final String COLLECTIONS = "store1 store2 vertex edge namev namee composite psearch esearch vsearch mi mixed index1 index2 index3 ecategory vcategory pcategory theIndex vertices edges booleanIndex dateIndex instantIndex uuidIndex randomMixedIndex collectionIndex nameidx oridx otheridx lengthidx";
 

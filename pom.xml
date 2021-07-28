@@ -72,8 +72,8 @@
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.5.1</tinkerpop.version>
-        <junit-platform.version>1.7.1</junit-platform.version>
-        <junit.version>5.7.1</junit.version>
+        <junit-platform.version>1.7.2</junit-platform.version>
+        <junit.version>5.7.2</junit.version>
         <mockito.version>3.8.0</mockito.version>
         <jamm.version>0.3.0</jamm.version>
         <metrics.version>4.1.18</metrics.version>
@@ -119,7 +119,7 @@
         <cassandra.version>3.11.10</cassandra.version>
         <cassandra-driver.version>4.12.0</cassandra-driver.version>
         <scylladb.version>4.4.0</scylladb.version>
-        <testcontainers.version>1.15.2</testcontainers.version>
+        <testcontainers.version>1.16.0</testcontainers.version>
         <easymock.version>4.2</easymock.version>
         <protobuf.version>3.15.6</protobuf.version>
         <grpc.version>1.38.1</grpc.version>
