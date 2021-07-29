@@ -51,7 +51,7 @@ public class JanusGraphServer {
         final String file = (args.length > 0) ? args[0] : "conf/janusgraph-server.yaml";
         JanusGraphServer janusGraphServer = new JanusGraphServer(file);
         janusGraphServer.start().exceptionally(t -> {
-            logger.error("JanusGraph Server was unable to start and will now begin shutdown: {}", t.getMessage());
+            logger.error("JanusGraph Server was unable to start and will now begin shutdown", t);
             janusGraphServer.stop().join();
             return null;
         }).join();
