@@ -14,7 +14,9 @@
 
 package org.janusgraph.diskstorage;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.JanusGraphConfigurationException;
 import org.janusgraph.core.JanusGraphException;
@@ -74,6 +76,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -669,15 +672,16 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
     }
 
-    private ExecutorService buildExecutorService(Configuration configuration){
-
+    @VisibleForTesting
+    static ExecutorService buildExecutorService(Configuration configuration){
         Integer corePoolSize = configuration.getOrDefault(PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE);
         Integer maxPoolSize = configuration.getOrDefault(PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_POOL_SIZE);
         Long keepAliveTime = configuration.getOrDefault(PARALLEL_BACKEND_EXECUTOR_SERVICE_KEEP_ALIVE_TIME);
         String executorServiceClass = configuration.getOrDefault(PARALLEL_BACKEND_EXECUTOR_SERVICE_CLASS);
 
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("Backend[%02d]").build();
         ExecutorServiceConfiguration executorServiceConfiguration =
-            new ExecutorServiceConfiguration(executorServiceClass, corePoolSize, maxPoolSize, keepAliveTime, null);
+            new ExecutorServiceConfiguration(executorServiceClass, corePoolSize, maxPoolSize, keepAliveTime, threadFactory);
 
         return ExecutorServiceBuilder.build(executorServiceConfiguration);
     }
