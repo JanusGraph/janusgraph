@@ -26,6 +26,7 @@ import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ExecutorServiceBuilder;
 import org.janusgraph.diskstorage.configuration.ExecutorServiceConfiguration;
+import org.janusgraph.diskstorage.configuration.ExecutorServiceInstrumentation;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
@@ -95,6 +96,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CLASS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE;
@@ -680,9 +682,16 @@ public class Backend implements LockerProvider, AutoCloseable {
         String executorServiceClass = configuration.getOrDefault(PARALLEL_BACKEND_EXECUTOR_SERVICE_CLASS);
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("Backend[%02d]").build();
+        if (configuration.get(BASIC_METRICS)) {
+            threadFactory = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "backend", threadFactory);
+        }
+
         ExecutorServiceConfiguration executorServiceConfiguration =
             new ExecutorServiceConfiguration(executorServiceClass, corePoolSize, maxPoolSize, keepAliveTime, threadFactory);
-
-        return ExecutorServiceBuilder.build(executorServiceConfiguration);
+        ExecutorService executorService = ExecutorServiceBuilder.build(executorServiceConfiguration);
+        if (configuration.get(BASIC_METRICS)) {
+            executorService = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "backend", executorService);
+        }
+        return executorService;
     }
 }

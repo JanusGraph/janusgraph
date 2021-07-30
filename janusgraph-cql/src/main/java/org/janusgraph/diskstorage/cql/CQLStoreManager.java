@@ -48,6 +48,7 @@ import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ExecutorServiceBuilder;
 import org.janusgraph.diskstorage.configuration.ExecutorServiceConfiguration;
+import org.janusgraph.diskstorage.configuration.ExecutorServiceInstrumentation;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -337,7 +338,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return builder.build();
     }
 
-    private ExecutorService buildExecutorService(Configuration configuration){
+    private ExecutorService buildExecutorService(Configuration configuration) {
         Integer corePoolSize = configuration.getOrDefault(EXECUTOR_SERVICE_CORE_POOL_SIZE);
         Integer maxPoolSize = configuration.getOrDefault(EXECUTOR_SERVICE_MAX_POOL_SIZE);
         Long keepAliveTime = configuration.getOrDefault(EXECUTOR_SERVICE_KEEP_ALIVE_TIME);
@@ -346,11 +347,17 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             .setDaemon(true)
             .setNameFormat("CQLStoreManager[%02d]")
             .build();
+        if (configuration.get(BASIC_METRICS)) {
+            threadFactory = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "CqlStoreManager", threadFactory);
+        }
 
         ExecutorServiceConfiguration executorServiceConfiguration =
             new ExecutorServiceConfiguration(executorServiceClass, corePoolSize, maxPoolSize, keepAliveTime, threadFactory);
-
-        return ExecutorServiceBuilder.build(executorServiceConfiguration);
+        ExecutorService executorService = ExecutorServiceBuilder.build(executorServiceConfiguration);
+        if (configuration.get(BASIC_METRICS)) {
+            executorService = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "CqlStoreManager", executorService);
+        }
+        return executorService;
     }
 
     private void initializeJmxMetrics() {
