@@ -728,7 +728,7 @@
             <dependency>
                 <artifactId>jboss-logging</artifactId>
                 <groupId>org.jboss.logging</groupId>
-                <version>3.4.1.Final</version>
+                <version>3.4.2.Final</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
