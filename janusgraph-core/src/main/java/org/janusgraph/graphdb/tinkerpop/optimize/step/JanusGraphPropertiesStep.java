@@ -19,6 +19,7 @@ import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
@@ -180,12 +181,12 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     @Override
-    public List<HasContainer> addLocalHasContainersConvertingAndPContainers(List<HasContainer> localHasContainers) {
+    public List<HasContainer> addLocalHasContainersConvertingAndPContainers(TraversalParent parent, List<HasContainer> localHasContainers) {
         throw new UnsupportedOperationException("addLocalAll is not supported for properties step.");
     }
 
     @Override
-    public List<HasContainer> addLocalHasContainersSplittingAndPContainers(Iterable<HasContainer> has) {
+    public List<HasContainer> addLocalHasContainersSplittingAndPContainers(TraversalParent parent, Iterable<HasContainer> has) {
         throw new UnsupportedOperationException("addLocalAll is not supported for properties step.");
     }
 
@@ -195,7 +196,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     @Override
-    public void localOrderBy(List<HasContainer> hasContainers, String key, Order order) {
+    public void localOrderBy(TraversalParent parent, List<HasContainer> hasContainers, String key, Order order) {
         throw new UnsupportedOperationException("LocalOrderBy is not supported for properties step.");
     }
 
@@ -206,7 +207,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     @Override
-    public void setLocalLimit(List<HasContainer> hasContainers, int low, int high) {
+    public void setLocalLimit(TraversalParent parent, List<HasContainer> hasContainers, int low, int high) {
         throw new UnsupportedOperationException("LocalLimit is not supported for properties step.");
     }
 
@@ -216,7 +217,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     @Override
-    public int getLocalLowLimit(List<HasContainer> hasContainers) {
+    public int getLocalLowLimit(TraversalParent parent, List<HasContainer> hasContainers) {
         throw new UnsupportedOperationException("getLocalLowLimit is not supported for properties step.");
     }
 
@@ -226,7 +227,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     @Override
-    public int getLocalHighLimit(List<HasContainer> hasContainers) {
+    public int getLocalHighLimit(TraversalParent parent, List<HasContainer> hasContainers) {
         throw new UnsupportedOperationException("getLocalHighLimit is not supported for properties step.");
     }
 

@@ -7203,4 +7203,139 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 g.V(v).properties("vtName").next().value(), indexName, dirs[i], propValues[i]));
         }
     }
+
+    @Test
+    public void testMultipleOrClauses() {
+        clopen();
+
+        Vertex v1 = tx.traversal().addV("test").property("a", true).property("b", true).property("c", true).property("d", true).next();
+        Vertex v2 = tx.traversal().addV("test").property("a", true).property("b", false).property("c", true).property("d", false).next();
+        Vertex v3 = tx.traversal().addV("test").property("a", false).property("b", true).property("c", false).property("d", true).next();
+        Vertex v4 = tx.traversal().addV("test").property("a", false).property("b", false).property("c", true).property("d", false).next();
+
+        newTx();
+
+        List<Vertex> vertices = tx.traversal().V()
+            .or(__.has("a", true), __.has("b", true))
+            .or(__.has("c", false), __.has("d", true))
+            .toList();
+
+        assertTrue(vertices.contains(v1));
+        assertFalse(vertices.contains(v2));
+        assertTrue(vertices.contains(v3));
+        assertFalse(vertices.contains(v4));
+        assertEquals(2, vertices.size());
+    }
+
+    @Test
+    public void testMultipleNestedOrClauses() {
+        clopen();
+
+        boolean[] values = new boolean[] {false, true};
+        List<Vertex> vertices = new ArrayList<>(16);
+        for (boolean a : values) {
+            for (boolean b : values) {
+                for (boolean c : values) {
+                    for (boolean d : values) {
+                        vertices.add(tx.traversal().addV("test").property("a", a).property("b", b).property("c", c).property("d", d).next());
+                    }
+                }
+            }
+        }
+
+        newTx();
+
+        // (A || B || !C) && (!C || D)
+        List<Vertex> result = tx.traversal().V()
+            .or(__.has("a", true), __.has("b", true), __.has("c", false))
+            .or(__.has("c", false), __.has("d", true))
+            .toList();
+
+        assertTrue(result.contains(vertices.get(0)));
+        assertTrue(result.contains(vertices.get(1)));
+        assertTrue(result.contains(vertices.get(4)));
+        assertTrue(result.contains(vertices.get(5)));
+        assertTrue(result.contains(vertices.get(7)));
+        assertTrue(result.contains(vertices.get(8)));
+        assertTrue(result.contains(vertices.get(9)));
+        assertTrue(result.contains(vertices.get(11)));
+        assertTrue(result.contains(vertices.get(12)));
+        assertTrue(result.contains(vertices.get(13)));
+        assertTrue(result.contains(vertices.get(15)));
+        assertEquals(11, result.size());
+
+        newTx();
+
+        // ((A || C) || B) && (!C || D)
+        result = tx.traversal().V()
+            .or(__.or(__.has("a", true), __.has("c", true)), __.has("b", true))
+            .or(__.has("c", false), __.has("d", true))
+            .toList();
+
+        assertTrue(result.contains(vertices.get(3)));
+        assertTrue(result.contains(vertices.get(4)));
+        assertTrue(result.contains(vertices.get(5)));
+        assertTrue(result.contains(vertices.get(7)));
+        assertTrue(result.contains(vertices.get(8)));
+        assertTrue(result.contains(vertices.get(9)));
+        assertTrue(result.contains(vertices.get(11)));
+        assertTrue(result.contains(vertices.get(12)));
+        assertTrue(result.contains(vertices.get(13)));
+        assertTrue(result.contains(vertices.get(15)));
+        assertEquals(10, result.size());
+
+        newTx();
+
+        // (((A || C) && (C || !D)) || B) && (!C || D)
+        result = tx.traversal().V()
+            .or(
+                __.or(
+                    __.has("a", true),
+                    __.has("c", true)
+                ).or(
+                    __.has("c", true),
+                    __.has("d", false)
+                ),
+                __.has("b", true)
+            )
+            .or(__.has("c", false), __.has("d", true))
+            .toList();
+
+        assertTrue(result.contains(vertices.get(3)));
+        assertTrue(result.contains(vertices.get(4)));
+        assertTrue(result.contains(vertices.get(5)));
+        assertTrue(result.contains(vertices.get(7)));
+        assertTrue(result.contains(vertices.get(8)));
+        assertTrue(result.contains(vertices.get(11)));
+        assertTrue(result.contains(vertices.get(12)));
+        assertTrue(result.contains(vertices.get(13)));
+        assertTrue(result.contains(vertices.get(15)));
+        assertEquals(9, result.size());
+
+        // (((A || C) && ((!A || B) || !D)) || B) && (!C || !D)
+        result = tx.traversal().V()
+            .or(
+                __.or(
+                    __.has("a", true),
+                    __.has("c", true)
+                ).or(
+                    __.or(__.has("a", false), __.has("b", true)),
+                    __.has("d", false)
+                ),
+                __.has("b", true)
+            )
+            .or(__.has("c", false), __.has("d", false))
+            .toList();
+
+        assertTrue(result.contains(vertices.get(2)));
+        assertTrue(result.contains(vertices.get(4)));
+        assertTrue(result.contains(vertices.get(5)));
+        assertTrue(result.contains(vertices.get(6)));
+        assertTrue(result.contains(vertices.get(8)));
+        assertTrue(result.contains(vertices.get(10)));
+        assertTrue(result.contains(vertices.get(12)));
+        assertTrue(result.contains(vertices.get(13)));
+        assertTrue(result.contains(vertices.get(14)));
+        assertEquals(9, result.size());
+    }
 }
