@@ -540,8 +540,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
         List<KeyRange> result = new LinkedList<>();
         try {
-            ensureTableExists(
-                tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
+            if (skipSchemaCheck) {
+                logger.debug("Skipping schema check");
+                if (!exists()) throw new PermanentBackendException("Table " + tableName + " doesn't exist in HBase!");
+            } else {
+                logger.debug("Performing schema check");
+                ensureTableExists(
+                    tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
+            }
             Map<KeyRange, ServerName> normed = normalizeKeyBounds(cnx.getRegionLocations(tableName));
 
             for (Map.Entry<KeyRange, ServerName> e : normed.entrySet()) {

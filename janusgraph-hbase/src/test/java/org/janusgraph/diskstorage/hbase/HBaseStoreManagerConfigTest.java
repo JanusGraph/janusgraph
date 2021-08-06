@@ -21,6 +21,8 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.WriterAppender;
 import org.janusgraph.HBaseContainer;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
@@ -101,5 +103,49 @@ public class HBaseStoreManagerConfigTest {
         // Check the native property in HBase conf.
         String port = manager.getHBaseConf().get("hbase.zookeeper.property.clientPort");
         assertEquals("2000", port);
+    }
+
+    @Test
+    // Test HBase skip-schema-check config
+    public void testHBaseSkipSchemaCheck() throws Exception {
+        Logger log = Logger.getLogger(HBaseStoreManager.class);
+        Level savedLevel = log.getLevel();
+        log.setLevel(Level.DEBUG);
+        StringWriter writer = new StringWriter();
+        Appender appender = new WriterAppender(new PatternLayout("%p: %m%n"), writer);
+        log.addAppender(appender);
+
+        // Open the HBaseStoreManager with default skip-schema-check false.
+        WriteConfiguration config = hBaseContainer.getWriteConfiguration();
+        HBaseStoreManager manager = new HBaseStoreManager(new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,
+                                                                                 config, BasicConfiguration.Restriction.NONE));
+        assertEquals(manager.getDeployment(), DistributedStoreManager.Deployment.REMOTE);
+        // Verify we get "Performing schema check".
+        assertTrue(writer.toString().contains("Performing schema check"), writer.toString());
+        manager.close();
+
+        // Open the HBaseStoreManager with skip-schema-check true.
+        config.set(ConfigElement.getPath(HBaseStoreManager.SKIP_SCHEMA_CHECK), true);
+        manager = new HBaseStoreManager(new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,
+                                                               config, BasicConfiguration.Restriction.NONE));
+        writer.getBuffer().setLength(0);
+
+        assertEquals(manager.getDeployment(), DistributedStoreManager.Deployment.REMOTE);
+        // Verify we get "Skipping schema check".
+        assertTrue(writer.toString().contains("Skipping schema check"), writer.toString());
+
+        log.removeAppender(appender);
+        log.setLevel(savedLevel);
+        // Test when hbase table does not exist with skip-schema-check true.
+        config.set(ConfigElement.getPath(HBaseStoreManager.HBASE_TABLE), "unknown_table");
+        manager = new HBaseStoreManager(new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,
+                                                                                 config, BasicConfiguration.Restriction.NONE));
+        String expectedException = "Table unknown_table doesn't exist in HBase!";
+        try {
+            manager.getLocalKeyPartition();
+        } catch (PermanentBackendException pbe) {
+            assertEquals(pbe.getMessage(), expectedException);
+        }
+        manager.close();
     }
 }
