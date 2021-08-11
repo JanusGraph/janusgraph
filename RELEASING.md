@@ -213,9 +213,10 @@ git stash save
 git clean -fdx
 ```
 
-* Deploy all jars (including javadoc and sources) and all signatures for jars to a staging repository on Sonatype.
+* Deploy all jars (including javadoc and sources) and all signatures for jars to a staging repository on Sonatype. Notice, this step includes 2 separate commands. The first command will clean repository before generating artifacts and the second command will deploy those generated artifacts. You should not change anything in the repository or run `clean` between the first and the second commands.
 ```Shell
-mvn clean javadoc:jar deploy -Pjanusgraph-release -DskipTests=true
+mvn clean install -Pjanusgraph-release -DskipTests=true
+mvn deploy -Pjanusgraph-release -DskipTests=true
 ```
 
 * Install MkDocs if not installed. It is needed to build documentation.
