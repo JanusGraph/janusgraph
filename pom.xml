@@ -299,6 +299,7 @@
                 <configuration>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
+                    <sourceDirectory>${project.build.sourceDirectories}</sourceDirectory>
                     <!-- define here because checkstyle and multi module is a PITA -->
                     <checkstyleRules>
                         <module name="Checker">
