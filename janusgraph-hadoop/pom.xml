@@ -59,10 +59,6 @@
             <artifactId>spark-gremlin</artifactId>
             <exclusions>
                 <exclusion>
-                    <groupId>com.fasterxml.jackson.module</groupId>
-                    <artifactId>jackson-module-scala_2.11</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>org.apache.commons</groupId>
                     <artifactId>commons-compress</artifactId>
                 </exclusion>
@@ -74,7 +70,7 @@
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-scala_2.11</artifactId>
+            <artifactId>jackson-module-scala_2.12</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.scala-lang</groupId>
