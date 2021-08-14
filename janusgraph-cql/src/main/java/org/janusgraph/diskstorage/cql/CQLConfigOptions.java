@@ -632,4 +632,15 @@ public interface CQLConfigOptions {
         ConfigOption.Type.LOCAL,
         String.class,
         "fixed");
+
+    ConfigOption<Integer> SESSION_LEAK_THRESHOLD = new ConfigOption<>(
+        CQL_NS,
+        "session-leak-threshold",
+        "The maximum number of live sessions that are allowed to coexist in a given VM until the warning " +
+            "starts to log for every new session. " +
+            "If the value is less than or equal to 0, the feature is disabled: no warning will be issued. "+
+            "See DataStax Java Driver option `" +
+            DefaultDriverOption.SESSION_LEAK_THRESHOLD.getPath() + "` for more information.",
+        ConfigOption.Type.MASKABLE, Integer.class);
+
 }

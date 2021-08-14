@@ -126,6 +126,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLO
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLOW_THRESHOLD;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SUCCESS_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_TRACKER_CLASS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SESSION_LEAK_THRESHOLD;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SESSION_NAME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_CLIENT_AUTHENTICATION_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
@@ -348,6 +349,10 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         }
 
         configureRequestTracker(configuration, configLoaderBuilder);
+
+        if(configuration.has(SESSION_LEAK_THRESHOLD)){
+            configLoaderBuilder.withInt(DefaultDriverOption.SESSION_LEAK_THRESHOLD, configuration.get(SESSION_LEAK_THRESHOLD));
+        }
 
         builder.withConfigLoader(configLoaderBuilder.build());
 
