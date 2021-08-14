@@ -14,13 +14,27 @@
 
 package org.janusgraph.diskstorage.cql;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import com.datastax.oss.driver.internal.core.session.DefaultSession;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.MultiWriteKeyColumnValueStoreTest;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.testutil.TestLoggerUtils;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SESSION_LEAK_THRESHOLD;
 
 @Testcontainers
 public class CQLMultiWriteStoreTest extends MultiWriteKeyColumnValueStoreTest {
@@ -39,5 +53,74 @@ public class CQLMultiWriteStoreTest extends MultiWriteKeyColumnValueStoreTest {
     @Override
     public CQLStoreManager openStorageManager() throws BackendException {
         return openStorageManager(getBaseStorageConfiguration());
+    }
+
+    @Test
+    public void shouldLogSessionLeakWarning() throws BackendException {
+
+        TestLoggerUtils.processWithLoggerReplacement(
+            logger -> {
+
+                ModifiableConfiguration configuration = getBaseStorageConfiguration();
+                configuration.set(SESSION_LEAK_THRESHOLD, 2);
+
+                ListAppender<ILoggingEvent> listAppender = TestLoggerUtils.registerListAppender(logger);
+
+                Assertions.assertFalse(hasWarnLog(listAppender));
+
+                List<CQLStoreManager> storeManagers = new ArrayList<>(3);
+                for(int i=0; i<3; i++){
+                    try {
+                        storeManagers.add(new CQLStoreManager(configuration));
+                    } catch (BackendException e) {
+                        Assertions.fail();
+                    }
+                }
+
+                Assertions.assertTrue(hasWarnLog(listAppender));
+
+                storeManagers.forEach(CQLStoreManager::close);
+
+            },
+            DefaultSession.class,
+            ch.qos.logback.classic.Level.WARN
+        );
+    }
+
+    @Test
+    public void shouldProperlyCloseSessionOnExceptionAndNotLogSessionLeakWarnings() {
+
+        TestLoggerUtils.processWithLoggerReplacement(
+            logger -> {
+
+                ModifiableConfiguration configuration = Mockito.spy(getBaseStorageConfiguration());
+                configuration.set(SESSION_LEAK_THRESHOLD, 2);
+
+                ListAppender<ILoggingEvent> listAppender = TestLoggerUtils.registerListAppender(logger);
+
+                Mockito.doThrow(RuntimeException.class).when(configuration).get(BATCH_STATEMENT_SIZE);
+
+                Assertions.assertFalse(hasWarnLog(listAppender));
+
+                for(int i=0; i<3; i++){
+                    Assertions.assertThrows(Throwable.class, () -> new CQLStoreManager(configuration));
+                }
+
+                Assertions.assertFalse(hasWarnLog(listAppender));
+
+            },
+            DefaultSession.class,
+            ch.qos.logback.classic.Level.WARN
+        );
+    }
+
+    private boolean hasWarnLog(ListAppender<ILoggingEvent> listAppender){
+        for (ILoggingEvent logEvent : listAppender.list){
+            if(Level.WARN.equals(logEvent.getLevel()) &&
+                logEvent.getMessage().startsWith("You have too many session instances")){
+                return true;
+            }
+        }
+        return false;
     }
 }
