@@ -50,6 +50,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLO
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLOW_THRESHOLD;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SUCCESS_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_TRACKER_CLASS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SESSION_LEAK_THRESHOLD;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -251,5 +252,12 @@ public class CQLConfigTest {
             graph.traversal().V().hasNext();
             graph.tx().rollback();
         });
+    }
+
+    @Test
+    public void shouldCreateCQLSessionWithDisabledSessionLeakThreshold() {
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(SESSION_LEAK_THRESHOLD), 0);
+        assertDoesNotThrow(() -> JanusGraphFactory.open(wc));
     }
 }
