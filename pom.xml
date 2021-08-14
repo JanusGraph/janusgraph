@@ -178,6 +178,7 @@
                                 <requireUpperBoundDeps>
                                     <excludes>
                                         <exclude>com.google.guava:guava</exclude>
+                                        <exclude>com.fasterxml.jackson.core:jackson-annotations</exclude>
                                         <exclude>com.fasterxml.jackson.core:jackson-databind</exclude>
                                         <exclude>com.fasterxml.jackson.core:jackson-core</exclude>
                                     </excludes>
@@ -622,7 +623,7 @@
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-scala_2.11</artifactId>
+                <artifactId>jackson-module-scala_2.12</artifactId>
                 <version>${jackson2.version}</version>
             </dependency>
             <dependency>
@@ -1103,10 +1104,6 @@
                     <exclusion>
                         <groupId>junit</groupId>
                         <artifactId>junit</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-annotations</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
