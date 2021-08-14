@@ -26,7 +26,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.internal.core.auth.PlainTextAuthProvider;
 import com.datastax.oss.driver.internal.core.ssl.DefaultSslEngineFactory;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.vavr.Tuple;
 import io.vavr.collection.Array;
 import io.vavr.collection.HashMap;
@@ -40,24 +39,19 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.StoreMetaData.Container;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.ExecutorServiceBuilder;
-import org.janusgraph.diskstorage.configuration.ExecutorServiceConfiguration;
-import org.janusgraph.diskstorage.cql.function.mutate.CQLExecutorServiceMutateManyLoggedFunction;
-import org.janusgraph.diskstorage.cql.function.mutate.CQLExecutorServiceMutateManyUnloggedFunction;
+import org.janusgraph.diskstorage.cql.builder.CQLMutateManyFunctionBuilder;
+import org.janusgraph.diskstorage.cql.builder.CQLMutateManyFunctionWrapper;
+import org.janusgraph.diskstorage.cql.builder.CQLStoreFeaturesBuilder;
+import org.janusgraph.diskstorage.cql.builder.CQLStoreFeaturesWrapper;
 import org.janusgraph.diskstorage.cql.function.mutate.CQLMutateManyFunction;
-import org.janusgraph.diskstorage.cql.function.mutate.CQLSimpleMutateManyLoggedFunction;
-import org.janusgraph.diskstorage.cql.function.mutate.CQLSimpleMutateManyUnloggedFunction;
-import org.janusgraph.diskstorage.configuration.ExecutorServiceInstrumentation;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
-import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.hadoop.CqlHadoopStoreManager;
 import org.janusgraph.util.stats.MetricManager;
-import org.janusgraph.util.system.NetworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +63,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.truncate;
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createKeyspace;
@@ -77,13 +70,6 @@ import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.dropKeyspac
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CLASS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CORE_POOL_SIZE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_KEEP_ALIVE_TIME;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_POOL_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_INTERVAL;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_TIMEOUT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
@@ -108,10 +94,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_ADMIN_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_IO_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_TIMER_TICKS_PER_WHEEL;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_TIMER_TICK_DURATION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PARTITIONER_NAME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECTIONS_PER_HOST;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
@@ -135,8 +118,6 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_KEYSTORE_KEY_P
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_KEYSTORE_LOCATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_PASSWORD;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
@@ -144,9 +125,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_JMX_ENABLED;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
 
 /**
  * This class creates see {@link CQLKeyColumnValueStore CQLKeyColumnValueStores} and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
@@ -155,10 +133,13 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.bu
 public class CQLStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(CQLStoreManager.class);
 
-    static final String CONSISTENCY_LOCAL_QUORUM = "LOCAL_QUORUM";
-    static final String CONSISTENCY_QUORUM = "QUORUM";
+    public static final String CONSISTENCY_LOCAL_QUORUM = "LOCAL_QUORUM";
+    public static final String CONSISTENCY_QUORUM = "QUORUM";
 
     private static final int DEFAULT_PORT = 9042;
+
+    private static final CQLMutateManyFunctionBuilder DEFAULT_MUTATE_MANY_FUNCTION_BUILDER = new CQLMutateManyFunctionBuilder();
+    private static final CQLStoreFeaturesBuilder DEFAULT_STORE_FEATURES_BUILDER = new CQLStoreFeaturesBuilder();
 
     private final String keyspace;
 
@@ -172,101 +153,47 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     /**
      * Constructor for the {@link CQLStoreManager} given a JanusGraph {@link Configuration}.
-     * @param configuration
-     * @throws BackendException
+     * @param configuration Graph configuration
+     * @throws BackendException throws {@link PermanentBackendException} in case CQL connection cannot be initialized or
+     * CQLStoreManager cannot be initialized
      */
     public CQLStoreManager(final Configuration configuration) throws BackendException {
+        this(configuration, DEFAULT_MUTATE_MANY_FUNCTION_BUILDER, DEFAULT_STORE_FEATURES_BUILDER);
+    }
+
+    /**
+     * Constructor for the {@link CQLStoreManager} given a JanusGraph {@link Configuration}.
+     * @param configuration Graph configuration
+     * @param mutateManyFunctionBuilder Builder for mutate many function with or without executor service
+     * @param storeFeaturesBuilder Builder for store features function with {@link DistributedStoreManager.Deployment}
+     * @throws BackendException throws {@link PermanentBackendException} in case CQL connection cannot be initialized or
+     * CQLStoreManager cannot be initialized
+     */
+    public CQLStoreManager(final Configuration configuration, final CQLMutateManyFunctionBuilder mutateManyFunctionBuilder,
+                           final CQLStoreFeaturesBuilder storeFeaturesBuilder) throws BackendException {
         super(configuration, DEFAULT_PORT);
         this.keyspace = determineKeyspaceName(configuration);
         this.openStores = new ConcurrentHashMap<>();
         this.session = initializeSession();
-        initializeJmxMetrics();
-        initializeKeyspace();
 
-        int batchSize = configuration.get(BATCH_STATEMENT_SIZE);
-        boolean atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
+        try{
 
-        if(configuration.get(EXECUTOR_SERVICE_ENABLED)){
-            this.executorService = buildExecutorService(configuration);
-            if(atomicBatch){
-                executeManyFunction = new CQLExecutorServiceMutateManyLoggedFunction(times,
-                    assignTimestamp, openStores, session, executorService, this::sleepAfterWrite);
-            } else {
-                executeManyFunction = new CQLExecutorServiceMutateManyUnloggedFunction(batchSize,
-                    session, openStores, times, executorService, assignTimestamp, this::sleepAfterWrite);
-            }
-        } else {
-            this.executorService = null;
-            if(atomicBatch){
-                executeManyFunction = new CQLSimpleMutateManyLoggedFunction(times,
-                    assignTimestamp, openStores, session, this::sleepAfterWrite);
-            } else {
-                executeManyFunction = new CQLSimpleMutateManyUnloggedFunction(batchSize,
-                    session, openStores, times, assignTimestamp, this::sleepAfterWrite);
-            }
+            initializeJmxMetrics();
+            initializeKeyspace();
+
+            CQLMutateManyFunctionWrapper mutateManyFunctionWrapper = mutateManyFunctionBuilder
+                .build(session, configuration, times, assignTimestamp, openStores, this::sleepAfterWrite);
+            this.executorService = mutateManyFunctionWrapper.getExecutorService();
+            this.executeManyFunction = mutateManyFunctionWrapper.getMutateManyFunction();
+
+            CQLStoreFeaturesWrapper storeFeaturesWrapper = storeFeaturesBuilder.build(session, configuration, hostnames);
+            deployment = storeFeaturesWrapper.getDeployment();
+            storeFeatures = storeFeaturesWrapper.getStoreFeatures();
+
+        } catch (Throwable throwable){
+            close();
+            throw new PermanentBackendException("Couldn't initialize CQLStoreManager", throwable);
         }
-
-        final Configuration global = buildGraphConfiguration()
-                .set(READ_CONSISTENCY, CONSISTENCY_QUORUM)
-                .set(WRITE_CONSISTENCY, CONSISTENCY_QUORUM)
-                .set(METRICS_PREFIX, METRICS_SYSTEM_PREFIX_DEFAULT);
-
-        final Configuration local = buildGraphConfiguration()
-                .set(READ_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM)
-                .set(WRITE_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM)
-                .set(METRICS_PREFIX, METRICS_SYSTEM_PREFIX_DEFAULT);
-
-        final Boolean onlyUseLocalConsistency = configuration.get(ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS);
-
-        final Boolean useExternalLocking = configuration.get(USE_EXTERNAL_LOCKING);
-
-        final StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
-
-        fb.batchMutation(true).distributed(true);
-        fb.timestamps(true).cellTTL(true);
-        fb.keyConsistent((onlyUseLocalConsistency ? local : global), local);
-        fb.locking(useExternalLocking);
-        fb.optimisticLocking(true);
-        fb.multiQuery(false);
-
-        String partitioner = null;
-        if (configuration.has(PARTITIONER_NAME)) {
-            partitioner = getShortPartitionerName(configuration.get(PARTITIONER_NAME));
-        }
-        if (session.getMetadata().getTokenMap().isPresent()) {
-            String retrievedPartitioner = getShortPartitionerName(session.getMetadata().getTokenMap().get().getPartitionerName());
-            if (partitioner == null) {
-                partitioner = retrievedPartitioner;
-            } else if (!partitioner.equals(retrievedPartitioner)) {
-                throw new IllegalArgumentException(String.format("Provided partitioner (%s) does not match with server (%s)",
-                    partitioner, retrievedPartitioner));
-            }
-        } else if (partitioner == null) {
-            throw new IllegalArgumentException(String.format("Partitioner name not provided and cannot retrieve it from " +
-                "server, please check %s and %s options", PARTITIONER_NAME.getName(), METADATA_TOKEN_MAP_ENABLED.getName()));
-        }
-        switch (partitioner) {
-            case "DefaultPartitioner": // Amazon managed KeySpace uses com.amazonaws.cassandra.DefaultPartitioner
-                fb.timestamps(false).cellTTL(false);
-            case "RandomPartitioner":
-            case "Murmur3Partitioner": {
-                fb.keyOrdered(false).orderedScan(false).unorderedScan(true);
-                deployment = Deployment.REMOTE;
-                break;
-            }
-            case "ByteOrderedPartitioner": {
-                fb.keyOrdered(true).orderedScan(true).unorderedScan(false);
-                deployment = (hostnames.length == 1)// mark deployment as local only in case we have byte ordered partitioner and local
-                                                    // connection
-                        ? (NetworkUtil.isLocalConnection(hostnames[0])) ? Deployment.LOCAL : Deployment.REMOTE
-                        : Deployment.REMOTE;
-                break;
-            }
-            default: {
-                throw new IllegalArgumentException("Unrecognized partitioner: " + partitioner);
-            }
-        }
-        this.storeFeatures = fb.build();
     }
 
     CqlSession initializeSession() throws PermanentBackendException {
@@ -359,28 +286,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return builder.build();
     }
 
-    private ExecutorService buildExecutorService(Configuration configuration) {
-        Integer corePoolSize = configuration.getOrDefault(EXECUTOR_SERVICE_CORE_POOL_SIZE);
-        Integer maxPoolSize = configuration.getOrDefault(EXECUTOR_SERVICE_MAX_POOL_SIZE);
-        Long keepAliveTime = configuration.getOrDefault(EXECUTOR_SERVICE_KEEP_ALIVE_TIME);
-        String executorServiceClass = configuration.getOrDefault(EXECUTOR_SERVICE_CLASS);
-        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-            .setDaemon(true)
-            .setNameFormat("CQLStoreManager[%02d]")
-            .build();
-        if (configuration.get(BASIC_METRICS)) {
-            threadFactory = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "CqlStoreManager", threadFactory);
-        }
-
-        ExecutorServiceConfiguration executorServiceConfiguration =
-            new ExecutorServiceConfiguration(executorServiceClass, corePoolSize, maxPoolSize, keepAliveTime, threadFactory);
-        ExecutorService executorService = ExecutorServiceBuilder.build(executorServiceConfiguration);
-        if (configuration.get(BASIC_METRICS)) {
-            executorService = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "CqlStoreManager", executorService);
-        }
-        return executorService;
-    }
-
     private void initializeJmxMetrics() {
         final Configuration configuration = getStorageConfig();
         if (configuration.get(METRICS_JMX_ENABLED) && configuration.get(BASIC_METRICS) && session.getMetrics().isPresent()) {
@@ -466,7 +371,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             clearJmxMetrics();
             this.session.close();
         } finally {
-            if(this.executorService != null){
+            if(this.executorService != null && !executorService.isShutdown()){
                 this.executorService.shutdownNow();
             }
         }
@@ -648,11 +553,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     @Override
     public Object getHadoopManager() {
         return new CqlHadoopStoreManager(this.session);
-    }
-
-    private String getShortPartitionerName(String partitioner) {
-        if (partitioner == null) return null;
-        return partitioner.substring(partitioner.lastIndexOf('.') + 1);
     }
 
 }
