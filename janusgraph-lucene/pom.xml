@@ -59,7 +59,11 @@
             <artifactId>lucene-spatial-extras</artifactId>
             <version>${lucene-solr.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-backward-codecs</artifactId>
+            <version>${lucene-solr.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
