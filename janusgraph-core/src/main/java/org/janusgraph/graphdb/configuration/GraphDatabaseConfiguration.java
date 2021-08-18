@@ -577,6 +577,15 @@ public class GraphDatabaseConfiguration {
         String.class,
         "fixed");
 
+    public static final ConfigOption<Long> PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME = new ConfigOption<>(
+        PARALLEL_BACKEND_EXECUTOR_SERVICE,
+        "max-shutdown-wait-time",
+        "Max shutdown wait time in milliseconds for executor service threads to be finished during shutdown. " +
+            "After this time threads will be interrupted (signalled with interrupt) without any additional wait time.",
+        ConfigOption.Type.LOCAL,
+        Long.class,
+        60000L);
+
     public static final ConfigOption<String[]> STORAGE_HOSTS = new ConfigOption<>(STORAGE_NS,"hostname",
             "The hostname or comma-separated list of hostnames of storage backend servers.  " +
             "This is only applicable to some storage backends, such as cassandra and hbase.",

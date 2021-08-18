@@ -30,6 +30,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.database.idassigner.placement.PartitionIDRange;
 import org.janusgraph.graphdb.database.serialize.StandardSerializer;
+import org.janusgraph.util.datastructures.ExceptionWrapper;
 import org.janusgraph.util.encoding.ConversionHelper;
 import org.janusgraph.util.stats.NumberUtil;
 import org.janusgraph.util.system.IOUtils;
@@ -45,6 +46,8 @@ import java.util.Map;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_STORE_TTL;
+import static org.janusgraph.util.system.ExecuteUtil.executeWithCatching;
+import static org.janusgraph.util.system.ExecuteUtil.throwIfException;
 
 /**
  * Implementation of {@link LogManager} against an arbitrary {@link KeyColumnValueStoreManager}. Issues {@link Log} instances
@@ -243,10 +246,12 @@ public class KCVSLogManager implements LogManager {
          * The path to ConcurrentModificationException in the absence of a copy is
          * log.close() -> manager.closedLog(log) -> openLogs.remove(log.getName()).
          */
+        ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
         for (KCVSLog log : new ArrayList<>(openLogs.values())) {
-            log.close();
+            executeWithCatching(log::close, exceptionWrapper);
         }
         IOUtils.closeQuietly(serializer);
+        throwIfException(exceptionWrapper);
     }
 
 }

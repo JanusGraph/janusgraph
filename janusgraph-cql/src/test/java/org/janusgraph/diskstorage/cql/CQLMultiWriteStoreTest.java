@@ -18,6 +18,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.datastax.oss.driver.internal.core.session.DefaultSession;
+import org.apache.commons.lang.UnhandledException;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.MultiWriteKeyColumnValueStoreTest;
@@ -79,7 +80,13 @@ public class CQLMultiWriteStoreTest extends MultiWriteKeyColumnValueStoreTest {
 
                 Assertions.assertTrue(hasWarnLog(listAppender));
 
-                storeManagers.forEach(CQLStoreManager::close);
+                storeManagers.forEach(cqlStoreManager -> {
+                    try{
+                        cqlStoreManager.close();
+                    } catch (BackendException backendException){
+                        throw new UnhandledException(backendException);
+                    }
+                });
 
             },
             DefaultSession.class,

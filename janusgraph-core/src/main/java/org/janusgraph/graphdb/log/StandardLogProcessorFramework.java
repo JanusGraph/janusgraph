@@ -40,6 +40,8 @@ import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.vertices.StandardVertex;
+import org.janusgraph.util.datastructures.ExceptionWrapper;
+import org.janusgraph.util.system.ExecuteUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,9 +98,11 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         if (!isOpen) return;
         isOpen = false;
         try {
+            ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
             for (Log log : processorLogs.values()) {
-                log.close();
+                ExecuteUtil.executeWithCatching(log::close, exceptionWrapper);
             }
+            ExecuteUtil.throwIfException(exceptionWrapper);
             processorLogs.clear();
         } catch (BackendException e) {
             throw new JanusGraphException(e);

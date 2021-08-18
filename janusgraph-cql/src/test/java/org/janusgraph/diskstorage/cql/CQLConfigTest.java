@@ -29,10 +29,13 @@ import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -41,11 +44,15 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BASE_PROGRAMMATIC_CONFIGURATION_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CLASS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.FILE_CONFIGURATION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_TIMEOUT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_SCHEMA_ENABLED;
@@ -70,7 +77,9 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.STRING_CONFIGURATI
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.URL_CONFIGURATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CONNECTION_TIMEOUT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_TIMEOUT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_PORT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -79,9 +88,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @Testcontainers
 public class CQLConfigTest {
+
+    private static final Logger log = LoggerFactory.getLogger(CQLConfigTest.class);
 
     private static final String DATASTAX_JAVA_DRIVER_STRING_CONFIGURATION_PATTERN =
         "datastax-java-driver {\n" +
@@ -109,6 +121,13 @@ public class CQLConfigTest {
 
     @Container
     public static final JanusGraphCassandraContainer cqlContainer = new JanusGraphCassandraContainer();
+
+    @BeforeEach
+    public void ensureCQLContainerIsOpened(){
+        if(!cqlContainer.isRunning()){
+            cqlContainer.start();
+        }
+    }
 
     @AfterEach
     public void tearDown() {
@@ -294,6 +313,55 @@ public class CQLConfigTest {
             graph.traversal().V().hasNext();
             graph.tx().rollback();
         });
+    }
+
+    @Test
+    public void shouldGracefullyCloseGraphWhichLostAConnection(){
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME), 60000);
+        wc.set(ConfigElement.getPath(PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME), 60000);
+        wc.set(ConfigElement.getPath(IDS_RENEW_TIMEOUT), 10000);
+        wc.set(ConfigElement.getPath(CONNECTION_TIMEOUT), 10000);
+        wc.set(ConfigElement.getPath(HEARTBEAT_TIMEOUT), 10000);
+
+        if(graph != null && graph.isOpen()){
+            graph.close();
+        }
+
+        Set<Thread> threadsFromPossibleOtherOpenedConnections = Thread.getAllStackTraces().keySet().stream().filter(thread -> {
+            String threadNameLowercase = thread.getName().toLowerCase();
+            return thread.isAlive() && (threadNameLowercase.startsWith("cql") || threadNameLowercase.startsWith("janusgraph"));
+        }).collect(Collectors.toSet());
+
+        boolean flakyTest = !threadsFromPossibleOtherOpenedConnections.isEmpty();
+
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+        assertDoesNotThrow(() -> {
+            graph.traversal().V().hasNext();
+            graph.tx().rollback();
+        });
+
+        Set<Thread> threadsToAwait = Thread.getAllStackTraces().keySet().stream().filter(thread -> {
+            String threadNameLowercase = thread.getName().toLowerCase();
+            return thread.isAlive() && !threadsFromPossibleOtherOpenedConnections.contains(thread) && (threadNameLowercase.startsWith("cql") || threadNameLowercase.startsWith("janusgraph"));
+        }).collect(Collectors.toSet());
+
+        cqlContainer.stop();
+
+        graph.close();
+
+        for(Thread thread : threadsToAwait){
+            if(thread.isAlive()){
+                if(flakyTest){
+                    log.warn("Test shouldGracefullyCloseGraphWhichLostAConnection is currently running in flaky mode " +
+                        "because there were open instances available before the test started. " +
+                        "Thus, we don't fail this test because we can't be sure that current thread {} " +
+                        "is leaked or were created by other JanusGraph instances.", thread.getName());
+                } else {
+                    fail("Thread "+thread.getName()+" was alive but expected to be terminated");
+                }
+            }
+        }
     }
 
     @Test
