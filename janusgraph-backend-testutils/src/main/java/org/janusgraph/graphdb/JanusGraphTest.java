@@ -197,6 +197,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_READONLY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_LOG_TRANSACTIONS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
@@ -7338,4 +7339,36 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(result.contains(vertices.get(14)));
         assertEquals(9, result.size());
     }
+
+    @Test
+    public void testVerticesDropAfterWhereWithBatchQueryEnabled() {
+        clopen(option(USE_MULTIQUERY),true,
+            option(BATCH_PROPERTY_PREFETCHING),false,
+            option(STORAGE_BATCH),false
+        );
+
+        long timestamp = System.currentTimeMillis();
+
+        Vertex v1 = tx.traversal().addV("test")
+            .property("a", timestamp).property("b", true).property("c", true).property("d", true).next();
+
+        Vertex v2 = tx.traversal().addV("test").next();
+        Vertex v3 = tx.traversal().addV("test").next();
+        Vertex v4 = tx.traversal().addV("test").next();
+
+        v1.addEdge("edgeLabel", v2);
+        v1.addEdge("edgeLabel", v3);
+        v1.addEdge("edgeLabel", v4);
+
+        newTx();
+
+        tx.traversal().V().has("a", timestamp).has("b", true).has("c", true)
+            .where(__.outE().hasLabel("edgeLabel")).both().drop().iterate();
+
+        newTx();
+
+        assertTrue(tx.traversal().V().has("a", timestamp).has("b", true).has("c", true).hasNext());
+        assertFalse(tx.traversal().V().has("a", timestamp).has("b", true).has("c", true).bothE().hasNext());
+    }
+
 }
