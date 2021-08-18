@@ -633,6 +633,14 @@ public interface CQLConfigOptions {
         String.class,
         "fixed");
 
+    ConfigOption<Long> EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME = new ConfigOption<>(
+        EXECUTOR_SERVICE,
+        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME.getName(),
+        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME.getDescription(),
+        ConfigOption.Type.LOCAL,
+        Long.class,
+        60000L);
+
     ConfigOption<Integer> SESSION_LEAK_THRESHOLD = new ConfigOption<>(
         CQL_NS,
         "session-leak-threshold",

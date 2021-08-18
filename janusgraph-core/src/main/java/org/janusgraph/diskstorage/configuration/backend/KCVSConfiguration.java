@@ -35,6 +35,7 @@ import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.StandardSerializer;
+import org.janusgraph.util.datastructures.ExceptionWrapper;
 import org.janusgraph.util.system.IOUtils;
 
 import java.nio.ByteBuffer;
@@ -47,6 +48,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
+import static org.janusgraph.util.system.ExecuteUtil.executeWithCatching;
+import static org.janusgraph.util.system.ExecuteUtil.throwIfException;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -221,9 +224,11 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     @Override
     public void close() {
         try {
-            store.close();
-            txProvider.close();
+            ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
+            executeWithCatching(store::close, exceptionWrapper);
+            executeWithCatching(txProvider::close, exceptionWrapper);
             IOUtils.closeQuietly(serializer);
+            throwIfException(exceptionWrapper);
         } catch (BackendException e) {
             throw new JanusGraphException("Could not close configuration store",e);
         }

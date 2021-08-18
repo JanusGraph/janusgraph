@@ -63,6 +63,7 @@ import org.janusgraph.diskstorage.util.MetricInstrumentedStoreManager;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
+import org.janusgraph.util.datastructures.ExceptionWrapper;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +103,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_KEEP_ALIVE_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_POOL_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
@@ -115,6 +117,9 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USER_CONFIGURATION_IDENTIFIER;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG_PREFIX;
+import static org.janusgraph.util.system.ExecuteUtil.executeWithCatching;
+import static org.janusgraph.util.system.ExecuteUtil.gracefulExecutorServiceShutdown;
+import static org.janusgraph.util.system.ExecuteUtil.throwIfException;
 
 /**
  * Orchestrates and configures all backend systems:
@@ -122,7 +127,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.US
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class Backend implements LockerProvider, AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(Backend.class);
@@ -216,6 +220,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     private final Duration maxReadTime;
     private final boolean cacheEnabled;
     private final ExecutorService threadPool;
+    private final long threadPoolShutdownMaxWaitTime;
 
     private final Function<String, Locker> lockerCreator;
     private final ConcurrentHashMap<String, Locker> lockers = new ConcurrentHashMap<>();
@@ -258,6 +263,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
 
         threadPool = configuration.get(PARALLEL_BACKEND_OPS) ? buildExecutorService(configuration) : null;
+        threadPoolShutdownMaxWaitTime = configuration.get(PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME);
 
         final String lockBackendName = configuration.get(LOCK_BACKEND);
         if (REGISTERED_LOCKERS.containsKey(lockBackendName)) {
@@ -580,22 +586,27 @@ public class Backend implements LockerProvider, AutoCloseable {
     public synchronized void close() throws BackendException {
         if (!hasAttemptedClose) {
             hasAttemptedClose = true;
-            managementLogManager.close();
-            txLogManager.close();
-            userLogManager.close();
 
-            scanner.close();
-            if (edgeStore != null) edgeStore.close();
-            if (indexStore != null) indexStore.close();
-            if (idAuthority != null) idAuthority.close();
-            if (systemConfig != null) systemConfig.close();
-            if (userConfig != null) userConfig.close();
-            storeManager.close();
-            if(threadPool != null) {
-            	threadPool.shutdown();
-            }
+            ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
+
+            executeWithCatching(managementLogManager::close, exceptionWrapper);
+            executeWithCatching(txLogManager::close, exceptionWrapper);
+            executeWithCatching(userLogManager::close, exceptionWrapper);
+
+            executeWithCatching(scanner::close, exceptionWrapper);
+
+            if (edgeStore != null) executeWithCatching(edgeStore::close, exceptionWrapper);
+            if (indexStore != null) executeWithCatching(indexStore::close, exceptionWrapper);
+            if (idAuthority != null) executeWithCatching(idAuthority::close, exceptionWrapper);
+            if (systemConfig != null) executeWithCatching(systemConfig::close, exceptionWrapper);
+            if (userConfig != null) executeWithCatching(userConfig::close, exceptionWrapper);
+            executeWithCatching(storeManager::close, exceptionWrapper);
+            gracefulExecutorServiceShutdown(threadPool, threadPoolShutdownMaxWaitTime);
             //Indexes
-            for (IndexProvider index : indexes.values()) index.close();
+            for (IndexProvider index : indexes.values()){
+                executeWithCatching(index::close, exceptionWrapper);
+            }
+            throwIfException(exceptionWrapper);
         } else {
             log.debug("Backend {} has already been closed or cleared", this);
         }
@@ -611,6 +622,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     public synchronized void clearStorage() throws BackendException {
         if (!hasAttemptedClose) {
             hasAttemptedClose = true;
+
             managementLogManager.close();
             txLogManager.close();
             userLogManager.close();

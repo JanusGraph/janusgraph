@@ -48,7 +48,9 @@ import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.util.datastructures.ExceptionWrapper;
 import org.janusgraph.util.system.BackgroundThread;
+import org.janusgraph.util.system.ExecuteUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -326,20 +328,47 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             try {
                 readExecutor.awaitTermination(1,TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                log.error("Could not terminate reader thread pool for KCVSLog "+name+" due to interruption");
+                log.error("Could not terminate reader thread pool for KCVSLog {} due to interruption", name, e);
             }
             if (!readExecutor.isTerminated()) {
                 readExecutor.shutdownNow();
-                log.error("Reader thread pool for KCVSLog "+name+" did not shut down in time - could not clean up or set read markers");
+                log.error("Reader thread pool for KCVSLog {} did not shut down in time - could not clean up or set read markers", name);
             } else {
                 for (MessagePuller puller : msgPullers) {
                     puller.close();
                 }
             }
         }
-        writeSetting(manager.senderId, MESSAGE_COUNTER_COLUMN, numMsgCounter.get());
-        store.close();
-        manager.closedLog(this);
+
+        ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
+        ExecuteUtil.executeWithCatching(() -> {
+            try{
+                writeSetting(manager.senderId, MESSAGE_COUNTER_COLUMN, numMsgCounter.get());
+            } catch (Throwable e){
+                log.error("Could not persist message counter [{}] ; message counter [{}]", manager.senderId, numMsgCounter.get(), e);
+                throw e;
+            }
+        }, exceptionWrapper);
+
+        ExecuteUtil.executeWithCatching(() -> {
+            try {
+                store.close();
+            } catch (Throwable e) {
+                log.error("Could not correctly close store [{}]",store.getName(),e);
+                throw e;
+            }
+        }, exceptionWrapper);
+
+        ExecuteUtil.executeWithCatching(() -> {
+            try {
+                manager.closedLog(this);
+            } catch (Throwable e) {
+                log.error("Could not correctly close log [{}] and remove it from manager.",getName(),e);
+                throw e;
+            }
+        }, exceptionWrapper);
+
+        ExecuteUtil.throwIfException(exceptionWrapper);
     }
 
     @Override
@@ -777,7 +806,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 if (e.getCause() instanceof PermanentBackendException) {
                     throw e;
                 }
-                log.warn("Could not read messages for timestamp ["+messageTimeStart+"] (this read will be retried)",e);
+                log.warn("Could not read messages for timestamp [{}] (this read will be retried)",messageTimeStart,e);
             }
         }
 
@@ -812,7 +841,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     log.debug("Persisted read marker: identifier={} partitionId={} buckedId={} nextTimepoint={}",
                             readMarker.getIdentifier(), partitionId, bucketId, messageTimeStart);
                 } catch (Throwable e) {
-                    log.error("Could not persist read marker [" + readMarker.getIdentifier() + "] on bucket ["+bucketId+"] + partition ["+partitionId+"]",e);
+                    log.error("Could not persist read marker [{}] on bucket [{}] + partition [{}]",readMarker.getIdentifier(),bucketId,partitionId,e);
                 }
             }
         }

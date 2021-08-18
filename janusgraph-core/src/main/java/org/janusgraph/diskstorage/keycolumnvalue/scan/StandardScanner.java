@@ -25,6 +25,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.util.datastructures.ExceptionWrapper;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -33,6 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+
+import static org.janusgraph.util.system.ExecuteUtil.executeWithCatching;
+import static org.janusgraph.util.system.ExecuteUtil.throwIfException;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -60,11 +64,15 @@ public class StandardScanner  {
 
     public void close() throws BackendException {
         //Interrupt running jobs
+        ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
         for (StandardScannerExecutor exe : runningJobs.values()) {
             if (exe.isCancelled() || exe.isDone()) continue;
-            exe.cancel(true);
+            executeWithCatching(() -> exe.cancel(true), exceptionWrapper);
         }
-        for (KeyColumnValueStore kcvs : openStores) kcvs.close();
+        for (KeyColumnValueStore kcvs : openStores) {
+            executeWithCatching(kcvs::close, exceptionWrapper);
+        }
+        throwIfException(exceptionWrapper);
     }
 
     private void addJob(Object jobId, StandardScannerExecutor executor) {

@@ -47,6 +47,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.hadoop.CqlHadoopStoreManager;
+import org.janusgraph.util.datastructures.ExceptionWrapper;
 import org.janusgraph.util.stats.MetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +64,7 @@ import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.dropKeyspac
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
@@ -71,6 +73,9 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_JMX_ENABLED;
+import static org.janusgraph.util.system.ExecuteUtil.executeWithCatching;
+import static org.janusgraph.util.system.ExecuteUtil.gracefulExecutorServiceShutdown;
+import static org.janusgraph.util.system.ExecuteUtil.throwIfException;
 
 /**
  * This class creates see {@link CQLKeyColumnValueStore CQLKeyColumnValueStores} and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
@@ -93,6 +98,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private final String keyspace;
 
     final ExecutorService executorService;
+    private final long threadPoolShutdownMaxWaitTime;
     private final CQLMutateManyFunction executeManyFunction;
 
     private CqlSession session;
@@ -129,6 +135,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         this.session = sessionBuilder.build(getStorageConfig(), hostnames, port, connectionTimeoutMS, baseConfigurationLoaderBuilder);
 
         try{
+
+            this.threadPoolShutdownMaxWaitTime = configuration.get(EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME);
 
             initializeJmxMetrics();
             initializeKeyspace();
@@ -228,14 +236,14 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     }
 
     @Override
-    public void close() {
+    public void close() throws BackendException {
         try {
-            clearJmxMetrics();
-            this.session.close();
+            ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
+            executeWithCatching(this::clearJmxMetrics, exceptionWrapper);
+            executeWithCatching(session::close, exceptionWrapper);
+            throwIfException(exceptionWrapper);
         } finally {
-            if(this.executorService != null && !executorService.isShutdown()){
-                this.executorService.shutdownNow();
-            }
+            gracefulExecutorServiceShutdown(executorService, threadPoolShutdownMaxWaitTime);
         }
     }
 
