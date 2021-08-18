@@ -337,9 +337,23 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 }
             }
         }
-        writeSetting(manager.senderId, MESSAGE_COUNTER_COLUMN, numMsgCounter.get());
-        store.close();
-        manager.closedLog(this);
+        try {
+            writeSetting(manager.senderId, MESSAGE_COUNTER_COLUMN, numMsgCounter.get());
+        } catch (Throwable e) {
+            log.error("Could not persist message counter [" + manager.senderId + "] ; message counter ["+numMsgCounter.get()+"]",e);
+        }
+
+        try {
+            store.close();
+        } catch (Throwable e) {
+            log.error("Could not correctly close store ["+store.getName()+"]",e);
+        }
+
+        try {
+            manager.closedLog(this);
+        } catch (Throwable e) {
+            log.error("Could not correctly close log ["+getName()+"] and remove it from manager.",e);
+        }
     }
 
     @Override
@@ -775,6 +789,10 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 messageTimeStart = messageTimeEnd;
             } catch (Throwable e) {
                 if (e.getCause() instanceof PermanentBackendException) {
+                    throw e;
+                }
+                if(Thread.currentThread().isInterrupted()){
+                    log.warn("Could not read messages for timestamp ["+messageTimeStart+"]. Thread was interrupted. Thus, no mo retries will be conducted.",e);
                     throw e;
                 }
                 log.warn("Could not read messages for timestamp ["+messageTimeStart+"] (this read will be retried)",e);
