@@ -599,6 +599,12 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-configuration2</artifactId>
+                <!-- align with TinkerPop -->
+                <version>2.7</version>
+            </dependency>
 
             <!-- Jackson 2.x -->
             <dependency>
