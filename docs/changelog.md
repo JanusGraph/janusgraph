@@ -274,6 +274,9 @@ Due to driver upgrade the next cql configuration options have been removed:
 * `remote-max-requests-per-connection`
 * `cluster-name`
 
+`storage.connection-timeout` is now used to control initial connection timeout to CQL storage and not request timeouts. 
+Please, use `storage.cql.request-timeout` to configure request timeouts instead.
+
 New cql configuration options should be used for upgrade:
 
 * `max-requests-per-connection`
