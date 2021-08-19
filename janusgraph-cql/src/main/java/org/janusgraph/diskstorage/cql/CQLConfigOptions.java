@@ -643,4 +643,10 @@ public interface CQLConfigOptions {
             DefaultDriverOption.SESSION_LEAK_THRESHOLD.getPath() + "` for more information.",
         ConfigOption.Type.MASKABLE, Integer.class);
 
+    ConfigOption<Long> REQUEST_TIMEOUT = new ConfigOption<>(
+        CQL_NS,
+        "request-timeout",
+        "Timeout for CQL requests in milliseconds. See DataStax Java Driver option `" +
+            DefaultDriverOption.REQUEST_TIMEOUT.getPath() + "` for more information.",
+        ConfigOption.Type.MASKABLE, Long.class);
 }

@@ -14,6 +14,7 @@
 package org.janusgraph.diskstorage.cql;
 
 import com.datastax.oss.driver.internal.core.tracker.RequestLogger;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -38,6 +39,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_C
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_SCHEMA_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_TOKEN_MAP_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_TIMER_TICK_DURATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PARTITIONER_NAME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_ERROR_ENABLED;
@@ -49,6 +51,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SHO
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLOW_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLOW_THRESHOLD;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SUCCESS_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_TIMEOUT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_TRACKER_CLASS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SESSION_LEAK_THRESHOLD;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
@@ -259,5 +262,40 @@ public class CQLConfigTest {
         WriteConfiguration wc = getConfiguration();
         wc.set(ConfigElement.getPath(SESSION_LEAK_THRESHOLD), 0);
         assertDoesNotThrow(() -> JanusGraphFactory.open(wc));
+    }
+
+    @Test
+    public void shouldBeAbleToSetupCustomRequestTimeout() {
+
+        assertDoesNotThrow(() -> {
+            WriteConfiguration wc = getConfiguration();
+            wc.set(ConfigElement.getPath(REQUEST_TIMEOUT), 12345);
+            wc.set(ConfigElement.getPath(NETTY_TIMER_TICK_DURATION), 1);
+            StandardJanusGraph graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+            GraphTraversalSource graphTraversalSource = graph.traversal();
+            for(int i=0; i<100; i++){
+                graphTraversalSource.addV();
+            }
+            graph.tx().commit();
+            graphTraversalSource.V().valueMap().toList();
+            graph.close();
+        });
+
+        assertThrows(Throwable.class, () -> {
+            WriteConfiguration wc = getConfiguration();
+            wc.set(ConfigElement.getPath(REQUEST_TIMEOUT), 1);
+            wc.set(ConfigElement.getPath(NETTY_TIMER_TICK_DURATION), 1);
+            StandardJanusGraph graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+           try{
+               GraphTraversalSource graphTraversalSource = graph.traversal();
+               for(int i=0; i<100; i++){
+                   graphTraversalSource.addV();
+               }
+               graph.tx().commit();
+               graphTraversalSource.V().valueMap().toList();
+           } finally {
+               graph.close();
+           }
+        });
     }
 }
