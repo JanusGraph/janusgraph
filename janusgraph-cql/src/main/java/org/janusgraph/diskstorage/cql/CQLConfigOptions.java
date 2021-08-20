@@ -649,4 +649,62 @@ public interface CQLConfigOptions {
         "Timeout for CQL requests in milliseconds. See DataStax Java Driver option `" +
             DefaultDriverOption.REQUEST_TIMEOUT.getPath() + "` for more information.",
         ConfigOption.Type.MASKABLE, 10000L);
+
+    ConfigNamespace INTERNAL_CONFIGURATION = new ConfigNamespace(
+        CQL_NS,
+        "internal",
+        "Advanced configuration of internal DataStax driver. Notice, all available configurations will be composed in the order. " +
+            "Non specified configurations will be skipped. By default only base configuration is enabled " +
+            "(which has the smallest priority. It means that you can overwrite any configuration used in base programmatic configuration by using any other configuration type). " +
+            "The configurations are composed in the next order (sorted by priority in descending order): " +
+            "`file-configuration`, " +
+            "`resource-configuration`, " +
+            "`string-configuration`, " +
+            "`url-configuration`, " +
+            "`base-programmatic-configuration` (which is controlled by `base-programmatic-configuration-enabled` property). " +
+            "Configurations with higher priority always overwrite configurations with lower priority. " +
+            "I.e. if the same configuration parameter is used in both `file-configuration` and `string-configuration` the configuration parameter " +
+            "from `file-configuration` will be used and configuration parameter from `string-configuration` will be ignored. "+
+            "See available configuration options and configurations structure here: https://docs.datastax.com/en/developer/java-driver/4.13/manual/core/configuration/reference/");
+
+    ConfigOption<Boolean> BASE_PROGRAMMATIC_CONFIGURATION_ENABLED = new ConfigOption<>(
+        INTERNAL_CONFIGURATION,
+        "base-programmatic-configuration-enabled",
+        "Whether to use main programmatic configuration provided by JanusGraph properties or not. " +
+            "We don't recommend to disable this property unless you want to disable usage of all "+
+            CQL_NS.toStringWithoutRoot()+" properties and use default configurations or other configurations. " +
+            "If programmatic configuration options miss some important configuration options you can provide those missing " +
+            "configurations with other configuration types which will be applied with programmatic configuration " +
+            "(see other configuration types in this section). For most use cases this option should always be `true`. " +
+            "JanusGraph behaviour might be unpredictable when using unspecified configuration options.",
+        ConfigOption.Type.MASKABLE,
+        true);
+
+    ConfigOption<String> URL_CONFIGURATION = new ConfigOption<>(
+        INTERNAL_CONFIGURATION,
+        "url-configuration",
+        "Url where to get DataStax configuration.",
+        ConfigOption.Type.MASKABLE,
+        String.class);
+
+    ConfigOption<String> STRING_CONFIGURATION = new ConfigOption<>(
+        INTERNAL_CONFIGURATION,
+        "string-configuration",
+        "String representing DataStax configuration.",
+        ConfigOption.Type.MASKABLE,
+        String.class);
+
+    ConfigOption<String> RESOURCE_CONFIGURATION = new ConfigOption<>(
+        INTERNAL_CONFIGURATION,
+        "resource-configuration",
+        "Classpath resource with DataStax configuration.",
+        ConfigOption.Type.MASKABLE,
+        String.class);
+
+    ConfigOption<String> FILE_CONFIGURATION = new ConfigOption<>(
+        INTERNAL_CONFIGURATION,
+        "file-configuration",
+        "Path to file with DataStax configuration.",
+        ConfigOption.Type.LOCAL,
+        String.class);
 }

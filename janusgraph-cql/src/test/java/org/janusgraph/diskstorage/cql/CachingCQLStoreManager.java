@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.cql;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 
 import java.util.HashMap;
@@ -29,18 +28,11 @@ public class CachingCQLStoreManager extends CQLStoreManager {
     private static final Map<String,CqlSession> sessions = new HashMap<>();
 
     public CachingCQLStoreManager(final Configuration configuration) throws BackendException {
-        super(configuration);
-    }
-
-    @Override
-    CqlSession initializeSession() throws PermanentBackendException {
-
-        String keyspaceName = this.getKeyspaceName();
-
-        if (!sessions.containsKey(keyspaceName)) {
-            sessions.put(keyspaceName, super.initializeSession());
-        }
-        return sessions.get(keyspaceName);
+        super(configuration,
+            DEFAULT_MUTATE_MANY_FUNCTION_BUILDER,
+            DEFAULT_STORE_FEATURES_BUILDER,
+            new CachingCQLSessionBuilder(sessions, determineKeyspaceName(configuration)),
+            DEFAULT_PROGRAMMATIC_CONFIGURATION_LOADER_BUILDER);
     }
 
     @Override

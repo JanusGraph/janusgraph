@@ -419,6 +419,18 @@ Configuration options for CQL executor service which is used to process CQL quer
 | storage.cql.executor-service.keep-alive-time | Keep alive time in milliseconds for executor service. When the number of threads is greater than the `core-pool-size`, this is the maximum time that excess idle threads will wait for new tasks before terminating. Ignored for `fixed` executor service and may be ignored if custom executor service is used (depending on the implementation of the executor service). | Long | 60000 | LOCAL |
 | storage.cql.executor-service.max-pool-size | Maximum pool size for executor service. Ignored for `fixed` and `cached` executor services. May be ignored if custom executor service is used (depending on the implementation of the executor service). | Integer | 2147483647 | LOCAL |
 
+### storage.cql.internal
+Advanced configuration of internal DataStax driver. Notice, all available configurations will be composed in the order. Non specified configurations will be skipped. By default only base configuration is enabled (which has the smallest priority. It means that you can overwrite any configuration used in base programmatic configuration by using any other configuration type). The configurations are composed in the next order (sorted by priority in descending order): `file-configuration`, `resource-configuration`, `string-configuration`, `url-configuration`, `base-programmatic-configuration` (which is controlled by `base-programmatic-configuration-enabled` property). Configurations with higher priority always overwrite configurations with lower priority. I.e. if the same configuration parameter is used in both `file-configuration` and `string-configuration` the configuration parameter from `file-configuration` will be used and configuration parameter from `string-configuration` will be ignored. See available configuration options and configurations structure here: https://docs.datastax.com/en/developer/java-driver/4.13/manual/core/configuration/reference/
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| storage.cql.internal.base-programmatic-configuration-enabled | Whether to use main programmatic configuration provided by JanusGraph properties or not. We don't recommend to disable this property unless you want to disable usage of all storage.cql properties and use default configurations or other configurations. If programmatic configuration options miss some important configuration options you can provide those missing configurations with other configuration types which will be applied with programmatic configuration (see other configuration types in this section). For most use cases this option should always be `true`. JanusGraph behaviour might be unpredictable when using unspecified configuration options. | Boolean | true | MASKABLE |
+| storage.cql.internal.file-configuration | Path to file with DataStax configuration. | String | (no default value) | LOCAL |
+| storage.cql.internal.resource-configuration | Classpath resource with DataStax configuration. | String | (no default value) | MASKABLE |
+| storage.cql.internal.string-configuration | String representing DataStax configuration. | String | (no default value) | MASKABLE |
+| storage.cql.internal.url-configuration | Url where to get DataStax configuration. | String | (no default value) | MASKABLE |
+
 ### storage.cql.metrics
 Configuration options for CQL metrics
 
