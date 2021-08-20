@@ -14,6 +14,7 @@
 package org.janusgraph.diskstorage.cql;
 
 import com.datastax.oss.driver.internal.core.tracker.RequestLogger;
+import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
@@ -35,10 +36,18 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.stream.Stream;
 
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BASE_PROGRAMMATIC_CONFIGURATION_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CLASS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.FILE_CONFIGURATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_SCHEMA_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_TOKEN_MAP_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_TIMER_TICK_DURATION;
@@ -55,9 +64,15 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLO
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SUCCESS_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_TIMEOUT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_TRACKER_CLASS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.RESOURCE_CONFIGURATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SESSION_LEAK_THRESHOLD;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.STRING_CONFIGURATION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.URL_CONFIGURATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CONNECTION_TIMEOUT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_PORT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,6 +82,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 public class CQLConfigTest {
+
+    private static final String DATASTAX_JAVA_DRIVER_STRING_CONFIGURATION_PATTERN =
+        "datastax-java-driver {\n" +
+            "advanced.address-translator.class = \"PassThroughAddressTranslator\"\n" +
+            "basic.contact-points = [ \"${hostname}:${port}\" ]\n" +
+            "basic.session-name = JanusGraphCQLSession\n" +
+            "basic.load-balancing-policy{\n" +
+            "    local-datacenter = \"${datacenter}\"\n" +
+            "}\n" +
+            "basic.request.timeout = ${timeout} milliseconds\n"+
+            "advanced.connection.connect-timeout = ${timeout} milliseconds\n"+
+            "}\n";
+
+    private static final String DATASTAX_JAVA_DRIVER_STRING_KEYSPACE_ONLY_CONFIGURATION_PATTERN =
+        "datastax-java-driver {\n" +
+            "basic.session-keyspace = testkeyspace\n" +
+            "}\n";
+
+    private static final String DATASTAX_JAVA_DRIVER_STRING_CONTACT_POINTS_ONLY_CONFIGURATION_PATTERN =
+        "datastax-java-driver {\n" +
+            "basic.contact-points = [ \"${hostname}:${port}\" ]\n" +
+            "}\n";
 
     private StandardJanusGraph graph;
 
@@ -263,7 +300,7 @@ public class CQLConfigTest {
     public void shouldCreateCQLSessionWithDisabledSessionLeakThreshold() {
         WriteConfiguration wc = getConfiguration();
         wc.set(ConfigElement.getPath(SESSION_LEAK_THRESHOLD), 0);
-        assertDoesNotThrow(() -> JanusGraphFactory.open(wc));
+        assertDoesNotThrow(() -> JanusGraphFactory.open(wc).close());
     }
 
     @Test
@@ -309,5 +346,161 @@ public class CQLConfigTest {
         } catch (Throwable throwable){
             // the throwable is expected
         }
+    }
+
+    @Test
+    public void shouldCreateCQLSessionWithStringConfigurationOnly() {
+        WriteConfiguration wc = getConfiguration();
+        String dataStaxConfiguration = prepareDataStaxConfiguration(wc);
+
+        wc.set(ConfigElement.getPath(BASE_PROGRAMMATIC_CONFIGURATION_ENABLED), false);
+        wc.set(ConfigElement.getPath(STRING_CONFIGURATION), dataStaxConfiguration);
+
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+        assertDoesNotThrow(() -> {
+            graph.traversal().V().hasNext();
+            graph.tx().rollback();
+        });
+    }
+
+    @Test
+    public void shouldCreateCQLSessionWithFileConfigurationOnly() throws IOException {
+        WriteConfiguration wc = getConfiguration();
+        String dataStaxConfiguration = prepareDataStaxConfiguration(wc);
+
+        File tempFile = File.createTempFile("datastaxTempExample", ".conf");
+        try{
+            tempFile.deleteOnExit();
+            FileUtils.writeStringToFile(tempFile, dataStaxConfiguration, Charset.defaultCharset(), false);
+
+            wc.set(ConfigElement.getPath(BASE_PROGRAMMATIC_CONFIGURATION_ENABLED), false);
+            wc.set(ConfigElement.getPath(FILE_CONFIGURATION), tempFile.getAbsolutePath());
+
+            graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+            assertDoesNotThrow(() -> {
+                graph.traversal().V().hasNext();
+                graph.tx().rollback();
+            });
+
+        } finally {
+            tempFile.delete();
+        }
+    }
+
+    @Test
+    public void shouldTryToCreateCQLSessionWithResourceConfigurationOnlyButFailDueToMisconfigurationOfPort() {
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(BASE_PROGRAMMATIC_CONFIGURATION_ENABLED), false);
+        wc.set(ConfigElement.getPath(RESOURCE_CONFIGURATION), "datastaxMisconfiguredResourceTestConfig.conf");
+        assertThrows(Throwable.class, () -> JanusGraphFactory.open(wc));
+    }
+
+    @Test
+    public void shouldCreateCQLSessionWithUrlConfigurationOnly() throws IOException {
+        WriteConfiguration wc = getConfiguration();
+        String dataStaxConfiguration = prepareDataStaxConfiguration(wc);
+
+        File tempFile = File.createTempFile("datastaxTempExample", ".conf");
+        try{
+            tempFile.deleteOnExit();
+            FileUtils.writeStringToFile(tempFile, dataStaxConfiguration, Charset.defaultCharset(), false);
+
+            wc.set(ConfigElement.getPath(BASE_PROGRAMMATIC_CONFIGURATION_ENABLED), false);
+            wc.set(ConfigElement.getPath(URL_CONFIGURATION), new URL("file", "", tempFile.getAbsolutePath()).toString());
+
+            graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+            assertDoesNotThrow(() -> {
+                graph.traversal().V().hasNext();
+                graph.tx().rollback();
+            });
+
+        } finally {
+            tempFile.delete();
+        }
+    }
+
+    @Test
+    public void shouldComposeProgrammaticConfigurationWithStringConfigurationAndFailDueToUnnecessaryKeyspaceConfigAdded() {
+        WriteConfiguration wc = getConfiguration();
+
+        wc.set(ConfigElement.getPath(BASE_PROGRAMMATIC_CONFIGURATION_ENABLED), true);
+        wc.set(ConfigElement.getPath(STRING_CONFIGURATION), DATASTAX_JAVA_DRIVER_STRING_KEYSPACE_ONLY_CONFIGURATION_PATTERN);
+
+        assertThrows(IllegalArgumentException.class, () -> JanusGraphFactory.open(wc));
+    }
+
+    @Test
+    public void shouldCreateCQLSessionWithResourceAndStringConfigurations() {
+        WriteConfiguration wc = getConfiguration();
+        String dataStaxConfiguration = prepareDataStaxContactPointsOnlyConfiguration(wc);
+
+        wc.set(ConfigElement.getPath(BASE_PROGRAMMATIC_CONFIGURATION_ENABLED), false);
+        wc.set(ConfigElement.getPath(RESOURCE_CONFIGURATION), "datastaxResourceTestConfigWithoutContactPoints.conf");
+        wc.set(ConfigElement.getPath(STRING_CONFIGURATION), dataStaxConfiguration);
+
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+        assertDoesNotThrow(() -> {
+            graph.traversal().V().hasNext();
+            graph.tx().rollback();
+        });
+    }
+
+    @Test
+    public void shouldCreateCQLSessionWithMultipleComposedConfigurations() throws IOException {
+        WriteConfiguration wc = getConfiguration();
+        String dataStaxConfiguration = prepareDataStaxConfiguration(wc);
+
+        File tempFile = File.createTempFile("datastaxTempExample", ".conf");
+        try{
+            tempFile.deleteOnExit();
+            FileUtils.writeStringToFile(tempFile, dataStaxConfiguration, Charset.defaultCharset(), false);
+
+            wc.set(ConfigElement.getPath(BASE_PROGRAMMATIC_CONFIGURATION_ENABLED), true);
+            wc.set(ConfigElement.getPath(URL_CONFIGURATION), new URL("file", "", tempFile.getAbsolutePath()).toString());
+            wc.set(ConfigElement.getPath(FILE_CONFIGURATION), tempFile.getAbsolutePath());
+            wc.set(ConfigElement.getPath(STRING_CONFIGURATION), dataStaxConfiguration);
+
+            graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+            assertDoesNotThrow(() -> {
+                graph.traversal().V().hasNext();
+                graph.tx().rollback();
+            });
+
+        } finally {
+            tempFile.delete();
+        }
+    }
+
+    @Test
+    public void shouldTryToCreateCQLSessionWithDefaultDataStaxConfigurationOnlyButFailDueToTestcontainersUseNonDefaultPort() {
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(BASE_PROGRAMMATIC_CONFIGURATION_ENABLED), false);
+        assertThrows(RuntimeException.class, () -> JanusGraphFactory.open(wc));
+    }
+
+    private static String prepareDataStaxConfiguration(WriteConfiguration wc){
+
+        String[] hostname = wc.get(ConfigElement.getPath(STORAGE_HOSTS), String[].class);
+        String port = wc.get(ConfigElement.getPath(STORAGE_PORT), Integer.class).toString();
+        Duration timeout = wc.get(ConfigElement.getPath(CONNECTION_TIMEOUT), Duration.class);
+        if(timeout == null){
+            timeout = CONNECTION_TIMEOUT.getDefaultValue();
+        }
+
+        return DATASTAX_JAVA_DRIVER_STRING_CONFIGURATION_PATTERN
+            .replace("${hostname}", hostname[0])
+            .replace("${port}", port)
+            .replace("${datacenter}", LOCAL_DATACENTER.getDefaultValue())
+            .replace("${timeout}", String.valueOf(timeout.toMillis()));
+    }
+
+    private static String prepareDataStaxContactPointsOnlyConfiguration(WriteConfiguration wc){
+
+        String[] hostname = wc.get(ConfigElement.getPath(STORAGE_HOSTS), String[].class);
+        String port = wc.get(ConfigElement.getPath(STORAGE_PORT), Integer.class).toString();
+
+        return DATASTAX_JAVA_DRIVER_STRING_CONTACT_POINTS_ONLY_CONFIGURATION_PATTERN
+            .replace("${hostname}", hostname[0])
+            .replace("${port}", port);
     }
 }

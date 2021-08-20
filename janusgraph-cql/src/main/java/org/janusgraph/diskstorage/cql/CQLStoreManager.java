@@ -16,15 +16,9 @@ package org.janusgraph.diskstorage.cql;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.datastax.oss.driver.internal.core.auth.PlainTextAuthProvider;
-import com.datastax.oss.driver.internal.core.ssl.DefaultSslEngineFactory;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import io.vavr.Tuple;
 import io.vavr.collection.Array;
@@ -41,6 +35,8 @@ import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.cql.builder.CQLMutateManyFunctionBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLMutateManyFunctionWrapper;
+import org.janusgraph.diskstorage.cql.builder.CQLProgrammaticConfigurationLoaderBuilder;
+import org.janusgraph.diskstorage.cql.builder.CQLSessionBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLStoreFeaturesBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLStoreFeaturesWrapper;
 import org.janusgraph.diskstorage.cql.function.mutate.CQLMutateManyFunction;
@@ -55,9 +51,6 @@ import org.janusgraph.util.stats.MetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
-import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,57 +63,10 @@ import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.dropKeyspac
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_INTERVAL;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_TIMEOUT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_CONNECTIONS_PER_HOST;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.MAX_REQUESTS_PER_CONNECTION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_SCHEMA_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_TOKEN_MAP_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_NODE_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_NODE_EXPIRE_AFTER;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_NODE_MESSAGES_HIGHEST_LATENCY;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_NODE_MESSAGES_REFRESH_INTERVAL;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_NODE_MESSAGES_SIGNIFICANT_DIGITS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_SESSION_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_SESSION_REQUESTS_HIGHEST_LATENCY;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_SESSION_REQUESTS_REFRESH_INTERVAL;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_SESSION_REQUESTS_SIGNIFICANT_DIGITS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_SESSION_THROTTLING_HIGHEST_LATENCY;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_SESSION_THROTTLING_REFRESH_INTERVAL;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_SESSION_THROTTLING_SIGNIFICANT_DIGITS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_ADMIN_SIZE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_IO_SIZE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_TIMER_TICKS_PER_WHEEL;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETTY_TIMER_TICK_DURATION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECTIONS_PER_HOST;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_STRATEGY;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_ERROR_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_MAX_QUERY_LENGTH;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_MAX_VALUES;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_MAX_VALUE_LENGTH;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SHOW_STACK_TRACES;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SHOW_VALUES;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLOW_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SLOW_THRESHOLD;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_LOGGER_SUCCESS_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_TIMEOUT;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REQUEST_TRACKER_CLASS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SESSION_LEAK_THRESHOLD;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SESSION_NAME;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_CLIENT_AUTHENTICATION_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_HOSTNAME_VALIDATION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_KEYSTORE_KEY_PASSWORD;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_KEYSTORE_LOCATION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_PASSWORD;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
@@ -138,8 +84,11 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     private static final int DEFAULT_PORT = 9042;
 
-    private static final CQLMutateManyFunctionBuilder DEFAULT_MUTATE_MANY_FUNCTION_BUILDER = new CQLMutateManyFunctionBuilder();
-    private static final CQLStoreFeaturesBuilder DEFAULT_STORE_FEATURES_BUILDER = new CQLStoreFeaturesBuilder();
+    protected static final CQLSessionBuilder DEFAULT_CQL_SESSION_BUILDER = new CQLSessionBuilder();
+    protected static final CQLProgrammaticConfigurationLoaderBuilder DEFAULT_PROGRAMMATIC_CONFIGURATION_LOADER_BUILDER = new CQLProgrammaticConfigurationLoaderBuilder();
+
+    protected static final CQLMutateManyFunctionBuilder DEFAULT_MUTATE_MANY_FUNCTION_BUILDER = new CQLMutateManyFunctionBuilder();
+    protected static final CQLStoreFeaturesBuilder DEFAULT_STORE_FEATURES_BUILDER = new CQLStoreFeaturesBuilder();
 
     private final String keyspace;
 
@@ -158,7 +107,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
      * CQLStoreManager cannot be initialized
      */
     public CQLStoreManager(final Configuration configuration) throws BackendException {
-        this(configuration, DEFAULT_MUTATE_MANY_FUNCTION_BUILDER, DEFAULT_STORE_FEATURES_BUILDER);
+        this(configuration, DEFAULT_MUTATE_MANY_FUNCTION_BUILDER, DEFAULT_STORE_FEATURES_BUILDER, DEFAULT_CQL_SESSION_BUILDER, DEFAULT_PROGRAMMATIC_CONFIGURATION_LOADER_BUILDER);
     }
 
     /**
@@ -166,15 +115,18 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
      * @param configuration Graph configuration
      * @param mutateManyFunctionBuilder Builder for mutate many function with or without executor service
      * @param storeFeaturesBuilder Builder for store features function with {@link DistributedStoreManager.Deployment}
+     * @param sessionBuilder Builder for {@link CqlSession}
+     * @param baseConfigurationLoaderBuilder Builder for {@link CqlSession} main configuration. It's not guaranteed to be used if it's disabled or if other configuration types are provided with higher priority.
      * @throws BackendException throws {@link PermanentBackendException} in case CQL connection cannot be initialized or
      * CQLStoreManager cannot be initialized
      */
     public CQLStoreManager(final Configuration configuration, final CQLMutateManyFunctionBuilder mutateManyFunctionBuilder,
-                           final CQLStoreFeaturesBuilder storeFeaturesBuilder) throws BackendException {
+                           final CQLStoreFeaturesBuilder storeFeaturesBuilder, CQLSessionBuilder sessionBuilder,
+                           CQLProgrammaticConfigurationLoaderBuilder baseConfigurationLoaderBuilder) throws BackendException {
         super(configuration, DEFAULT_PORT);
         this.keyspace = determineKeyspaceName(configuration);
         this.openStores = new ConcurrentHashMap<>();
-        this.session = initializeSession();
+        this.session = sessionBuilder.build(getStorageConfig(), hostnames, port, connectionTimeoutMS, baseConfigurationLoaderBuilder);
 
         try{
 
@@ -194,101 +146,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             close();
             throw new PermanentBackendException("Couldn't initialize CQLStoreManager", throwable);
         }
-    }
-
-    CqlSession initializeSession() throws PermanentBackendException {
-        final Configuration configuration = getStorageConfig();
-
-        final List<InetSocketAddress> contactPoints;
-        try {
-            contactPoints = Array.of(this.hostnames)
-                .map(hostName -> hostName.split(":"))
-                .map(array -> Tuple.of(array[0], array.length == 2 ? Integer.parseInt(array[1]) : this.port))
-                .map(tuple -> new InetSocketAddress(tuple._1, tuple._2))
-                .toJavaList();
-        } catch (SecurityException | ArrayIndexOutOfBoundsException | NumberFormatException e) {
-            throw new PermanentBackendException("Error initialising cluster contact points", e);
-        }
-
-        final CqlSessionBuilder builder = CqlSession.builder()
-            .addContactPoints(contactPoints)
-            .withLocalDatacenter(configuration.get(LOCAL_DATACENTER));
-
-        ProgrammaticDriverConfigLoaderBuilder configLoaderBuilder = DriverConfigLoader.programmaticBuilder();
-        configLoaderBuilder.withString(DefaultDriverOption.SESSION_NAME, configuration.get(SESSION_NAME));
-
-        if(configuration.has(REQUEST_TIMEOUT)){
-            configLoaderBuilder.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofMillis(configuration.get(REQUEST_TIMEOUT)));
-        }
-
-        configLoaderBuilder.withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, connectionTimeoutMS);
-
-        if (configuration.get(PROTOCOL_VERSION) != 0) {
-            configLoaderBuilder.withInt(DefaultDriverOption.PROTOCOL_VERSION, configuration.get(PROTOCOL_VERSION));
-        }
-
-        if (configuration.has(AUTH_USERNAME) && configuration.has(AUTH_PASSWORD)) {
-            configLoaderBuilder
-                .withClass(DefaultDriverOption.AUTH_PROVIDER_CLASS, PlainTextAuthProvider.class)
-                .withString(DefaultDriverOption.AUTH_PROVIDER_USER_NAME, configuration.get(AUTH_USERNAME))
-                .withString(DefaultDriverOption.AUTH_PROVIDER_PASSWORD, configuration.get(AUTH_PASSWORD));
-        }
-
-        if (configuration.get(SSL_ENABLED)) {
-            configLoaderBuilder
-                .withClass(DefaultDriverOption.SSL_ENGINE_FACTORY_CLASS, DefaultSslEngineFactory.class)
-                .withString(DefaultDriverOption.SSL_TRUSTSTORE_PATH, configuration.get(SSL_TRUSTSTORE_LOCATION))
-                .withString(DefaultDriverOption.SSL_TRUSTSTORE_PASSWORD, configuration.get(SSL_TRUSTSTORE_PASSWORD))
-                .withBoolean(DefaultDriverOption.SSL_HOSTNAME_VALIDATION, configuration.get(SSL_HOSTNAME_VALIDATION));
-
-            if(configuration.get(SSL_CLIENT_AUTHENTICATION_ENABLED)) {
-                configLoaderBuilder
-                    .withString(DefaultDriverOption.SSL_KEYSTORE_PATH, configuration.get(SSL_KEYSTORE_LOCATION))
-                    .withString(DefaultDriverOption.SSL_KEYSTORE_PASSWORD, configuration.get(SSL_KEYSTORE_KEY_PASSWORD));
-            }
-        }
-
-        configLoaderBuilder.withInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE, configuration.get(LOCAL_MAX_CONNECTIONS_PER_HOST));
-        configLoaderBuilder.withInt(DefaultDriverOption.CONNECTION_POOL_REMOTE_SIZE, configuration.get(REMOTE_MAX_CONNECTIONS_PER_HOST));
-        configLoaderBuilder.withInt(DefaultDriverOption.CONNECTION_MAX_REQUESTS, configuration.get(MAX_REQUESTS_PER_CONNECTION));
-
-        if(configuration.has(HEARTBEAT_INTERVAL)){
-            configLoaderBuilder.withDuration(DefaultDriverOption.HEARTBEAT_INTERVAL,
-                Duration.ofMillis(configuration.get(HEARTBEAT_INTERVAL)));
-        }
-
-        if(configuration.has(HEARTBEAT_TIMEOUT)){
-            configLoaderBuilder.withDuration(DefaultDriverOption.HEARTBEAT_TIMEOUT,
-                Duration.ofMillis(configuration.get(HEARTBEAT_TIMEOUT)));
-        }
-
-        if (configuration.has(METADATA_SCHEMA_ENABLED)) {
-            configLoaderBuilder.withBoolean(DefaultDriverOption.METADATA_SCHEMA_ENABLED, configuration.get(METADATA_SCHEMA_ENABLED));
-        }
-
-        if (configuration.has(METADATA_TOKEN_MAP_ENABLED)) {
-            configLoaderBuilder.withBoolean(DefaultDriverOption.METADATA_TOKEN_MAP_ENABLED, configuration.get(METADATA_TOKEN_MAP_ENABLED));
-        }
-
-        // Keep to 0 for the time being: https://groups.google.com/a/lists.datastax.com/forum/#!topic/java-driver-user/Bc0gQuOVVL0
-        // Ideally we want to batch all tables initialisations to happen together when opening a new keyspace
-        configLoaderBuilder.withInt(DefaultDriverOption.METADATA_SCHEMA_WINDOW, 0);
-
-        configureCqlNetty(configuration, configLoaderBuilder);
-
-        if (configuration.get(BASIC_METRICS)) {
-            configureMetrics(configuration, configLoaderBuilder);
-        }
-
-        configureRequestTracker(configuration, configLoaderBuilder);
-
-        if(configuration.has(SESSION_LEAK_THRESHOLD)){
-            configLoaderBuilder.withInt(DefaultDriverOption.SESSION_LEAK_THRESHOLD, configuration.get(SESSION_LEAK_THRESHOLD));
-        }
-
-        builder.withConfigLoader(configLoaderBuilder.build());
-
-        return builder.build();
     }
 
     private void initializeJmxMetrics() {
@@ -437,122 +294,9 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         executeManyFunction.mutateMany(mutations, txh);
     }
 
-    private String determineKeyspaceName(Configuration config) {
+    public static String determineKeyspaceName(Configuration config) {
         if ((!config.has(KEYSPACE) && (config.has(GRAPH_NAME)))) return config.get(GRAPH_NAME);
         return config.get(KEYSPACE);
-    }
-
-    private void configureCqlNetty(Configuration configuration, ProgrammaticDriverConfigLoaderBuilder configLoaderBuilder){
-        // The following sets the size of Netty ThreadPool executor used by Cassandra driver:
-        // https://docs.datastax.com/en/developer/java-driver/4.8/manual/core/async/#threading-model
-        configLoaderBuilder.withInt(DefaultDriverOption.NETTY_IO_SIZE, configuration.get(NETTY_IO_SIZE));
-        configLoaderBuilder.withInt(DefaultDriverOption.NETTY_ADMIN_SIZE, configuration.get(NETTY_ADMIN_SIZE));
-
-        if(configuration.has(NETTY_TIMER_TICK_DURATION)){
-            configLoaderBuilder.withDuration(DefaultDriverOption.NETTY_TIMER_TICK_DURATION,
-                Duration.ofMillis(configuration.get(NETTY_TIMER_TICK_DURATION)));
-        }
-        if(configuration.has(NETTY_TIMER_TICKS_PER_WHEEL)){
-            configLoaderBuilder.withInt(DefaultDriverOption.NETTY_TIMER_TICKS_PER_WHEEL, configuration.get(NETTY_TIMER_TICKS_PER_WHEEL));
-        }
-
-        // Keep the following values to 0 so that when we close the session we don't have to wait for the
-        // so called "quiet period", setting this to a different value will slow down Graph.close()
-        configLoaderBuilder.withInt(DefaultDriverOption.NETTY_IO_SHUTDOWN_QUIET_PERIOD, 0);
-        configLoaderBuilder.withInt(DefaultDriverOption.NETTY_ADMIN_SHUTDOWN_QUIET_PERIOD, 0);
-    }
-
-    private void configureMetrics(Configuration configuration, ProgrammaticDriverConfigLoaderBuilder configLoaderBuilder){
-        if(configuration.has(METRICS_SESSION_ENABLED)){
-            configLoaderBuilder.withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED,
-                Arrays.asList(configuration.get(METRICS_SESSION_ENABLED)));
-            if(configuration.has(METRICS_SESSION_REQUESTS_HIGHEST_LATENCY)){
-                configLoaderBuilder.withDuration(DefaultDriverOption.METRICS_SESSION_CQL_REQUESTS_HIGHEST,
-                    Duration.ofMillis(configuration.get(METRICS_SESSION_REQUESTS_HIGHEST_LATENCY)));
-            }
-            if(configuration.has(METRICS_SESSION_REQUESTS_SIGNIFICANT_DIGITS)){
-                configLoaderBuilder.withInt(DefaultDriverOption.METRICS_SESSION_CQL_REQUESTS_DIGITS,
-                    configuration.get(METRICS_SESSION_REQUESTS_SIGNIFICANT_DIGITS));
-            }
-            if(configuration.has(METRICS_SESSION_REQUESTS_REFRESH_INTERVAL)){
-                configLoaderBuilder.withDuration(DefaultDriverOption.METRICS_SESSION_CQL_REQUESTS_INTERVAL,
-                    Duration.ofMillis(configuration.get(METRICS_SESSION_REQUESTS_REFRESH_INTERVAL)));
-            }
-            if(configuration.has(METRICS_SESSION_THROTTLING_HIGHEST_LATENCY)){
-                configLoaderBuilder.withDuration(DefaultDriverOption.METRICS_SESSION_THROTTLING_HIGHEST,
-                    Duration.ofMillis(configuration.get(METRICS_SESSION_THROTTLING_HIGHEST_LATENCY)));
-            }
-            if(configuration.has(METRICS_SESSION_THROTTLING_SIGNIFICANT_DIGITS)){
-                configLoaderBuilder.withInt(DefaultDriverOption.METRICS_SESSION_THROTTLING_DIGITS,
-                    configuration.get(METRICS_SESSION_THROTTLING_SIGNIFICANT_DIGITS));
-            }
-            if(configuration.has(METRICS_SESSION_THROTTLING_REFRESH_INTERVAL)){
-                configLoaderBuilder.withDuration(DefaultDriverOption.METRICS_SESSION_THROTTLING_INTERVAL,
-                    Duration.ofMillis(configuration.get(METRICS_SESSION_THROTTLING_REFRESH_INTERVAL)));
-            }
-        }
-        if(configuration.has(METRICS_NODE_ENABLED)){
-            configLoaderBuilder.withStringList(DefaultDriverOption.METRICS_NODE_ENABLED,
-                Arrays.asList(configuration.get(METRICS_NODE_ENABLED)));
-            if(configuration.has(METRICS_NODE_MESSAGES_HIGHEST_LATENCY)){
-                configLoaderBuilder.withDuration(DefaultDriverOption.METRICS_NODE_CQL_MESSAGES_HIGHEST,
-                    Duration.ofMillis(configuration.get(METRICS_NODE_MESSAGES_HIGHEST_LATENCY)));
-            }
-            if(configuration.has(METRICS_NODE_MESSAGES_SIGNIFICANT_DIGITS)){
-                configLoaderBuilder.withInt(DefaultDriverOption.METRICS_NODE_CQL_MESSAGES_DIGITS,
-                    configuration.get(METRICS_NODE_MESSAGES_SIGNIFICANT_DIGITS));
-            }
-            if(configuration.has(METRICS_NODE_MESSAGES_REFRESH_INTERVAL)){
-                configLoaderBuilder.withDuration(DefaultDriverOption.METRICS_NODE_CQL_MESSAGES_INTERVAL,
-                    Duration.ofMillis(configuration.get(METRICS_NODE_MESSAGES_REFRESH_INTERVAL)));
-            }
-            if(configuration.has(METRICS_NODE_EXPIRE_AFTER)){
-                configLoaderBuilder.withDuration(DefaultDriverOption.METRICS_NODE_EXPIRE_AFTER,
-                    Duration.ofMillis(configuration.get(METRICS_NODE_EXPIRE_AFTER)));
-            }
-        }
-    }
-
-    private void configureRequestTracker(Configuration configuration, ProgrammaticDriverConfigLoaderBuilder configLoaderBuilder){
-        if (configuration.has(REQUEST_TRACKER_CLASS)) {
-            configLoaderBuilder.withString(DefaultDriverOption.REQUEST_TRACKER_CLASS, configuration.get(REQUEST_TRACKER_CLASS));
-        }
-        if (configuration.has(REQUEST_LOGGER_SUCCESS_ENABLED)) {
-            configLoaderBuilder.withBoolean(DefaultDriverOption.REQUEST_LOGGER_SUCCESS_ENABLED,
-                configuration.get(REQUEST_LOGGER_SUCCESS_ENABLED));
-        }
-        if (configuration.has(REQUEST_LOGGER_SLOW_THRESHOLD)) {
-            configLoaderBuilder.withDuration(DefaultDriverOption.REQUEST_LOGGER_SLOW_THRESHOLD,
-                Duration.ofMillis(configuration.get(REQUEST_LOGGER_SLOW_THRESHOLD)));
-        }
-        if (configuration.has(REQUEST_LOGGER_SLOW_ENABLED)) {
-            configLoaderBuilder.withBoolean(DefaultDriverOption.REQUEST_LOGGER_SLOW_ENABLED,
-                configuration.get(REQUEST_LOGGER_SLOW_ENABLED));
-        }
-        if (configuration.has(REQUEST_LOGGER_ERROR_ENABLED)) {
-            configLoaderBuilder.withBoolean(DefaultDriverOption.REQUEST_LOGGER_ERROR_ENABLED,
-                configuration.get(REQUEST_LOGGER_ERROR_ENABLED));
-        }
-        if (configuration.has(REQUEST_LOGGER_MAX_QUERY_LENGTH)) {
-            configLoaderBuilder.withInt(DefaultDriverOption.REQUEST_LOGGER_MAX_QUERY_LENGTH,
-                configuration.get(REQUEST_LOGGER_MAX_QUERY_LENGTH));
-        }
-        if (configuration.has(REQUEST_LOGGER_SHOW_VALUES)) {
-            configLoaderBuilder.withBoolean(DefaultDriverOption.REQUEST_LOGGER_VALUES,
-                configuration.get(REQUEST_LOGGER_SHOW_VALUES));
-        }
-        if (configuration.has(REQUEST_LOGGER_MAX_VALUE_LENGTH)) {
-            configLoaderBuilder.withInt(DefaultDriverOption.REQUEST_LOGGER_MAX_VALUE_LENGTH,
-                configuration.get(REQUEST_LOGGER_MAX_VALUE_LENGTH));
-        }
-        if (configuration.has(REQUEST_LOGGER_MAX_VALUES)) {
-            configLoaderBuilder.withInt(DefaultDriverOption.REQUEST_LOGGER_MAX_VALUES,
-                configuration.get(REQUEST_LOGGER_MAX_VALUES));
-        }
-        if (configuration.has(REQUEST_LOGGER_SHOW_STACK_TRACES)) {
-            configLoaderBuilder.withBoolean(DefaultDriverOption.REQUEST_LOGGER_STACK_TRACES,
-                configuration.get(REQUEST_LOGGER_SHOW_STACK_TRACES));
-        }
     }
 
     @Override
