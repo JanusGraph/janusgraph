@@ -648,5 +648,5 @@ public interface CQLConfigOptions {
         "request-timeout",
         "Timeout for CQL requests in milliseconds. See DataStax Java Driver option `" +
             DefaultDriverOption.REQUEST_TIMEOUT.getPath() + "` for more information.",
-        ConfigOption.Type.MASKABLE, Long.class);
+        ConfigOption.Type.MASKABLE, 10000L);
 }

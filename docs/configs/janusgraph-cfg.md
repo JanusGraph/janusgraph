@@ -400,7 +400,7 @@ CQL storage backend options
 | storage.cql.replication-factor | The number of data replicas (including the original copy) that should be kept | Integer | 1 | GLOBAL_OFFLINE |
 | storage.cql.replication-strategy-class | The replication strategy to use for JanusGraph keyspace | String | SimpleStrategy | FIXED |
 | storage.cql.replication-strategy-options | Replication strategy options, e.g. factor or replicas per datacenter.  This list is interpreted as a map.  It must have an even number of elements in [key,val,key,val,...] form.  A replication_factor set here takes precedence over one set with storage.cql.replication-factor | String[] | (no default value) | FIXED |
-| storage.cql.request-timeout | Timeout for CQL requests in milliseconds. See DataStax Java Driver option `basic.request.timeout` for more information. | Long | (no default value) | MASKABLE |
+| storage.cql.request-timeout | Timeout for CQL requests in milliseconds. See DataStax Java Driver option `basic.request.timeout` for more information. | Long | 10000 | MASKABLE |
 | storage.cql.session-leak-threshold | The maximum number of live sessions that are allowed to coexist in a given VM until the warning starts to log for every new session. If the value is less than or equal to 0, the feature is disabled: no warning will be issued. See DataStax Java Driver option `advanced.session-leak.threshold` for more information. | Integer | (no default value) | MASKABLE |
 | storage.cql.session-name | Default name for the Cassandra session | String | JanusGraph Session | MASKABLE |
 | storage.cql.speculative-retry | The speculative retry policy. One of: NONE, ALWAYS, <X>percentile, <N>ms. | String | (no default value) | FIXED |
