@@ -150,10 +150,9 @@ public class QueryUtil {
         return condition.getType() == Condition.Type.LITERAL && (!(condition instanceof PredicateCondition) || ((PredicateCondition) condition).getPredicate().isQNF());
     }
 
-    public static <E extends JanusGraphElement> Condition<E> simplifyQNF(Condition<E> condition) {
-        Preconditions.checkArgument(isQueryNormalForm(condition));
+    public static <E extends JanusGraphElement> Condition<E> simplifyAnd(And<E> condition) {
         if (condition.numChildren() == 1) {
-            final Condition<E> child = ((And<E>) condition).get(0);
+            final Condition<E> child = condition.get(0);
             if (child.getType() == Condition.Type.LITERAL) return child;
         }
         return condition;
@@ -224,6 +223,7 @@ public class QueryUtil {
                 }
             } else if (predicate instanceof OrJanusPredicate) {
                 final List<Object> values = (List<Object>) (value);
+                // FIXME: this might generate a non QNF-compliant form, e.g. nested = PredicateCondition OR (PredicateCondition AND PredicateCondition)
                 final Or<E> nested = addConstraint(type, (OrJanusPredicate) predicate, values, new Or<>(values.size()), tx);
                 if (nested == null) {
                     return null;

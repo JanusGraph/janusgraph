@@ -15,9 +15,13 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.collect.Iterators;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
@@ -43,6 +47,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.P.not;
 import static org.janusgraph.testutil.JanusGraphAssert.assertBackendHit;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.janusgraph.testutil.JanusGraphAssert.assertNoBackendHit;
@@ -423,5 +428,31 @@ public class QueryTest {
         assertEquals(2, graph.traversal().V().has("name", Text.textNotContainsPhrase("final value")).count().next());
     }
 
-}
+    @Test
+    public void testComplexConditions() {
+        GraphTraversalSource g = graph.traversal();
+        Vertex bob = g.addV("person").property("name", "Bob").next();
+        Vertex alice = g.addV("person").property("name", "Alice").next();
+        Vertex book = g.addV("book").property("name", "book1").next();
 
+        g.addE("knows").from(bob).to(alice).next();
+        Edge edge2 = g.addE("write").from(alice).to(book).next();
+        g.E(edge2).property("duration", new Double(0.2d)).iterate();
+
+        // vertex centric queries
+        assertFalse(g.E().inV().outE("write").has("duration", P.eq(0d).or(P.outside(0.1d, 0.3d))).hasNext());
+        assertTrue(g.E().inV().outE("write").has("duration", P.eq(0.2d).or(P.outside(0.1d, 0.3d))).hasNext());
+        assertTrue(g.E().inV().outE("write").or(__.has("duration", P.eq(0d)), __.has("duration", not(P.outside(0.1d, 0.3d)))).hasNext());
+        assertTrue(g.E().inV().outE("write").has("duration", P.eq(0d).or(not(P.outside(0.1d, 0.3d)))).hasNext());
+        assertTrue(g.E().inV().outE("write").has("duration", P.eq(0.2d).or(not(P.outside(0.3d, 0.4d)))).hasNext());
+        assertFalse(g.E().inV().outE("write").has("duration", P.eq(0d).or(not(P.outside(0.3d, 0.4d)))).hasNext());
+
+        // graph centric queries
+        assertFalse(g.E().has("duration", P.eq(0d).or(P.outside(0.1d, 0.3d))).hasNext());
+        assertTrue(g.E().has("duration", P.eq(0.2d).or(P.outside(0.1d, 0.3d))).hasNext());
+        assertTrue(g.E().or(__.has("duration", P.eq(0d)), __.has("duration", not(P.outside(0.1d, 0.3d)))).hasNext());
+        assertTrue(g.E().has("duration", P.eq(0d).or(not(P.outside(0.1d, 0.3d)))).hasNext());
+        assertTrue(g.E().has("duration", P.eq(0.2d).or(not(P.outside(0.3d, 0.4d)))).hasNext());
+        assertFalse(g.E().has("duration", P.eq(0d).or(not(P.outside(0.3d, 0.4d)))).hasNext());
+    }
+}

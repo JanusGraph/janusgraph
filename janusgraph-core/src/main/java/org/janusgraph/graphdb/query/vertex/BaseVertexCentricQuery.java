@@ -21,7 +21,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.BaseQuery;
-import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.FixedCondition;
 import org.janusgraph.graphdb.query.profile.ProfileObservable;
@@ -43,7 +42,7 @@ import java.util.List;
 public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservable {
 
     /**
-     * The condition of this query in QNF
+     * The condition of this query
      */
     protected final Condition<JanusGraphRelation> condition;
     /**
@@ -67,7 +66,6 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
                                   int limit) {
         super(limit);
         Preconditions.checkArgument(condition != null && queries != null && direction != null);
-        Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition) && limit>=0);
         this.condition = condition;
         this.queries = queries;
         this.orders = orders;
