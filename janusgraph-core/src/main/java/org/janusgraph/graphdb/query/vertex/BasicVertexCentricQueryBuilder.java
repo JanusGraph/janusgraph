@@ -624,7 +624,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
             conditions.add(getTypeCondition(ts));
         }
-        return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, orders, limit);
+        return new BaseVertexCentricQuery(QueryUtil.simplifyAnd(conditions), dir, queries, orders, limit);
     }
 
     private void constructSliceQueries(PropertyKey[] extendedSortKey, EdgeSerializer.TypedInterval[] sortKeyConstraints,
