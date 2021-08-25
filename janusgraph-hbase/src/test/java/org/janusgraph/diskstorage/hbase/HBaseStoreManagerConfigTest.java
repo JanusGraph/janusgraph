@@ -38,6 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.io.StringWriter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
@@ -138,14 +139,11 @@ public class HBaseStoreManagerConfigTest {
         log.setLevel(savedLevel);
         // Test when hbase table does not exist with skip-schema-check true.
         config.set(ConfigElement.getPath(HBaseStoreManager.HBASE_TABLE), "unknown_table");
-        manager = new HBaseStoreManager(new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,
+        HBaseStoreManager skipSchemaManager = new HBaseStoreManager(new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                                                                                  config, BasicConfiguration.Restriction.NONE));
-        String expectedException = "Table unknown_table doesn't exist in HBase!";
-        try {
-            manager.getLocalKeyPartition();
-        } catch (PermanentBackendException pbe) {
-            assertEquals(pbe.getMessage(), expectedException);
-        }
+        Exception ex = assertThrows(PermanentBackendException.class, () -> skipSchemaManager.getLocalKeyPartition());
+        assertEquals("Table unknown_table doesn't exist in HBase!", ex.getMessage());
+
         manager.close();
     }
 }
