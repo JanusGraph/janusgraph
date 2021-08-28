@@ -41,7 +41,7 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 
 ## Release Notes
 
-### Version 0.6.0 (Release Date: August 11, 2021)
+### Version 0.6.0 (Release Date: August 28, 2021)
 
 ```xml tab='Maven'
 <dependency>
