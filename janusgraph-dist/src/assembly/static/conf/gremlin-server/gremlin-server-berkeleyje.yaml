@@ -17,7 +17,8 @@ port: 8182
 evaluationTimeout: 30000
 channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer
 graphs: {
-  graph: conf/gremlin-server/janusgraph-berkeleyje-server.properties}
+  graph: conf/janusgraph-berkeleyje.properties
+}
 scriptEngines: {
   gremlin-groovy: {
     plugins: { org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin: {},
@@ -57,4 +58,3 @@ maxAccumulationBufferComponents: 1024
 resultIterationBatchSize: 64
 writeBufferLowWaterMark: 32768
 writeBufferHighWaterMark: 65536
-

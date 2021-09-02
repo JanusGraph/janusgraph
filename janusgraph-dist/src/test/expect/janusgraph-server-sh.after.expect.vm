@@ -22,7 +22,7 @@ expect_after {
         exit 1
     }
 }
-expect "Usage: ./bin/janusgraph-server.sh {start|stop|restart|status|console|usage <group> <artifact> <version>|<conf file>}"
+expect "Usage: ./bin/janusgraph-server.sh {start \[conf file\]|stop|restart \[conf file\]|status|console|usage <group> <artifact> <version>|<conf file>}"
 
 spawn bin/janusgraph-server.sh status
 expect -re "Server running with PID *"
