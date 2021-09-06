@@ -166,7 +166,7 @@ nav:
 
 extra:
   latest_version: 0.6.0
-  snapshot_version: 0.6.0-SNAPSHOT
+  snapshot_version: 0.6.1-SNAPSHOT
   tinkerpop_version: 3.5.1
   hadoop2_version: 2.8.5
   jamm_version: 0.3.0
