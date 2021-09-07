@@ -10,7 +10,6 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [![Javadoc][javadoc-shield]][javadoc-link]
 [![GitHub Workflow Status][actions-shield]][actions-link]
 [![Codecov][codecov-shield]][codecov-link]
-[![Coverity Scan][coverity-shield]][coverity-link]
 [![Mentioned in Awesome Bigtable][awesome-shield]][awesome-link]
 [![CII Best Practices][bestpractices-shield]][bestpractices-link]
 [![Codacy Badge][codacy-shield]][codacy-link]
@@ -31,8 +30,6 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [downloads-link]: https://github.com/JanusGraph/janusgraph/releases
 [codecov-shield]:https://codecov.io/gh/JanusGraph/janusgraph/branch/master/graph/badge.svg
 [codecov-link]:https://codecov.io/gh/JanusGraph/janusgraph
-[coverity-shield]: https://img.shields.io/coverity/scan/janusgraph-janusgraph.svg
-[coverity-link]: https://scan.coverity.com/projects/janusgraph-janusgraph
 
 ## Learn More
 
