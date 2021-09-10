@@ -76,7 +76,7 @@
         <junit.version>5.7.2</junit.version>
         <mockito.version>3.12.4</mockito.version>
         <jamm.version>0.3.0</jamm.version>
-        <metrics.version>4.1.18</metrics.version>
+        <metrics.version>4.2.3</metrics.version>
         <slf4j.version>1.7.32</slf4j.version>
         <httpcomponents.httpclient.version>4.5.13</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.14</httpcomponents.httpcore.version>
