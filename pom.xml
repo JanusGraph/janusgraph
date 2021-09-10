@@ -124,7 +124,7 @@
         <protobuf.version>3.15.6</protobuf.version>
         <grpc.version>1.38.1</grpc.version>
         <protoc.version>3.15.3</protoc.version>
-        <jmh.version>1.21</jmh.version>
+        <jmh.version>1.33</jmh.version>
     </properties>
     <modules>
         <module>janusgraph-grpc</module>
