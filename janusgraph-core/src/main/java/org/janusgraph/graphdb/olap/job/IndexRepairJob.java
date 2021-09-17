@@ -54,6 +54,7 @@ import org.janusgraph.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -182,23 +183,22 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 assert indexType!=null;
                 IndexSerializer indexSerializer = graph.getIndexSerializer();
                 //Gather elements to index
-                List<JanusGraphElement> elements;
+                Iterator<? extends JanusGraphElement> elements;
                 switch (indexType.getElement()) {
                     case VERTEX:
-                        elements = Collections.singletonList(vertex);
+                        elements = Collections.singletonList(vertex).iterator();
                         break;
                     case PROPERTY:
-                        elements = new ArrayList<>();
-                        addIndexSchemaConstraint(vertex.query(),indexType).properties().forEach(elements::add);
+                        elements = addIndexSchemaConstraint(vertex.query(),indexType).properties().iterator();
                         break;
                     case EDGE:
-                        elements = new ArrayList<>();
-                        addIndexSchemaConstraint(vertex.query().direction(Direction.OUT),indexType).edges().forEach(elements::add);
+                        elements = addIndexSchemaConstraint(vertex.query().direction(Direction.OUT),indexType).edges().iterator();
                         break;
                     default: throw new AssertionError("Unexpected category: " + indexType.getElement());
                 }
                 if (indexType.isCompositeIndex()) {
-                    for (JanusGraphElement element : elements) {
+                    while (elements.hasNext()) {
+                        JanusGraphElement element = elements.next();
                         Set<IndexUpdate<StaticBuffer,Entry>> updates =
                                 indexSerializer.reindexElement(element, (CompositeIndexType) indexType);
                         for (IndexUpdate<StaticBuffer,Entry> update : updates) {
@@ -209,7 +209,8 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                     }
                 } else {
                     assert indexType.isMixedIndex();
-                    for (JanusGraphElement element : elements) {
+                    while (elements.hasNext()) {
+                        JanusGraphElement element = elements.next();
                         if (indexSerializer.reindexElement(element, (MixedIndexType) indexType, documentsPerStore)) {
                             metrics.incrementCustom(DOCUMENT_UPDATES_COUNT);
                         }
