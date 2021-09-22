@@ -571,8 +571,8 @@ public class GraphDatabaseConfiguration {
         "The implementation of `ExecutorService` to use. " +
             "The full name of the class which extends `"+ ExecutorService.class.getSimpleName()+"` which has either " +
             "a public constructor with `"+ ExecutorServiceConfiguration.class.getSimpleName()+"` argument (preferred constructor) or " +
-            "a public parameterless constructor. Other accepted options are: `fixed` - fixed thread pool size of `"
-            +PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_POOL_SIZE.getName()+"` size; `cached` - cached thread pool size;",
+            "a public parameterless constructor. Other accepted options are: `fixed` - fixed thread pool of size `"
+            +PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE.getName()+"`; `cached` - cached thread pool;",
         ConfigOption.Type.LOCAL,
         String.class,
         "fixed");
