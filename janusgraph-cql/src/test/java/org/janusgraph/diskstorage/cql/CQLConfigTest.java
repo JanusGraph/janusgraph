@@ -13,6 +13,8 @@
 
 package org.janusgraph.diskstorage.cql;
 
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.internal.core.tracker.RequestLogger;
 import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -21,9 +23,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ExecutorServiceBuilder;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.cql.builder.CQLProgrammaticConfigurationLoaderBuilder;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -44,6 +50,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,6 +88,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_TIMEOUT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_PORT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -390,6 +399,18 @@ public class CQLConfigTest {
             graphTraversalSource.tx().rollback();
             graph.close();
         });
+    }
+
+    @Test
+    public void defaultProgrammaticConfigurationShouldUseJanusGraphDefaultRequestTimeout() {
+        // Create a CQLProgrammaticConfigurationLoaderBuilder from default values
+        Configuration config = new ModifiableConfiguration(ROOT_NS, getConfiguration(), BasicConfiguration.Restriction.NONE);
+        CQLProgrammaticConfigurationLoaderBuilder builder = new CQLProgrammaticConfigurationLoaderBuilder();
+
+        // DriverConfigLoader should use CQLConfigOptions.REQUEST_TIMEOUT default value and not DataStax default value of 2s
+        DriverConfigLoader loader = builder.build(config, Collections.emptyList(), Duration.of(1, ChronoUnit.SECONDS));
+        Duration requestTimeout = loader.getInitialConfig().getDefaultProfile().getDuration(DefaultDriverOption.REQUEST_TIMEOUT);
+        assertEquals(Duration.of(REQUEST_TIMEOUT.getDefaultValue(), ChronoUnit.MILLIS), requestTimeout);
     }
 
     @Test
