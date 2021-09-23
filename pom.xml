@@ -72,8 +72,8 @@
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.5.1</tinkerpop.version>
-        <junit-platform.version>1.7.2</junit-platform.version>
-        <junit.version>5.7.2</junit.version>
+        <junit-platform.version>1.8.1</junit-platform.version>
+        <junit.version>5.8.1</junit.version>
         <mockito.version>3.12.4</mockito.version>
         <jamm.version>0.3.0</jamm.version>
         <metrics.version>4.1.18</metrics.version>
