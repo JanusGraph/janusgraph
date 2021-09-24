@@ -15,8 +15,17 @@
 package org.janusgraph.pkgtest;
 
 import org.janusgraph.diskstorage.es.JanusGraphElasticsearchContainer;
+import org.junit.jupiter.api.AfterEach;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
 
 @Testcontainers
 public class BerkeleyESAssemblyIT extends AbstractJanusGraphAssemblyIT {
@@ -37,5 +46,21 @@ public class BerkeleyESAssemblyIT extends AbstractJanusGraphAssemblyIT {
     @Override
     protected String getGraphName() {
         return "berkeleyje";
+    }
+
+    @AfterEach
+    public void cleanupData() {
+        Path db = Paths.get(BUILD_DIR, "db");
+        if (Files.exists(db)){
+            try {
+                Files.walk(db, FileVisitOption.FOLLOW_LINKS)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .peek(System.out::println)
+                    .forEach(File::delete);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
