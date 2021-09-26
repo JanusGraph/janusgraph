@@ -121,7 +121,7 @@
         <scylladb.version>4.4.0</scylladb.version>
         <testcontainers.version>1.16.0</testcontainers.version>
         <easymock.version>4.3</easymock.version>
-        <protobuf.version>3.17.2</protobuf.version>
+        <protobuf.version>3.18.0</protobuf.version>
         <grpc.version>1.40.1</grpc.version>
         <protoc.version>3.15.3</protoc.version>
         <jmh.version>1.33</jmh.version>
