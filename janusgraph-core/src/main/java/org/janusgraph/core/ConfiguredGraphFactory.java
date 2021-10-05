@@ -16,6 +16,7 @@ package org.janusgraph.core;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
@@ -87,7 +88,7 @@ public class ConfiguredGraphFactory {
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
         final CommonsConfiguration config = new CommonsConfiguration(ConfigurationUtil.loadMapConfiguration(templateConfigMap));
         final JanusGraph g = (JanusGraph) jgm.openGraph(graphName, (String gName) -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(config)));
-        configManagementGraph.createConfiguration(ConfigurationUtil.loadMapConfiguration(templateConfigMap));
+        configManagementGraph.createConfiguration(new MapConfiguration(templateConfigMap));
         return g;
     }
 
