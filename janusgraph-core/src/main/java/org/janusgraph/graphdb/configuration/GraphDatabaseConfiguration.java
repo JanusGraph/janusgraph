@@ -376,7 +376,7 @@ public class GraphDatabaseConfiguration {
             "How long, in milliseconds, database-level cache will keep entries after flushing them.  " +
             "This option is only useful on distributed storage backends that are capable of acknowledging writes " +
             "without necessarily making them immediately visible.",
-            ConfigOption.Type.GLOBAL_OFFLINE, 50);
+            ConfigOption.Type.MASKABLE, 50);
 
     /**
      * The default expiration time for elements held in the database level cache. This is the time period before
@@ -389,7 +389,7 @@ public class GraphDatabaseConfiguration {
             "Entries are evicted when they reach this age even if the cache has room to spare. " +
             "Set to 0 to disable expiration (cache entries live forever or until memory pressure " +
             "triggers eviction when set to 0).",
-            ConfigOption.Type.GLOBAL_OFFLINE, 10000L);
+            ConfigOption.Type.MASKABLE, 10000L);
 
     /**
      * Configures the maximum number of recently-used vertices cached by a transaction. The smaller the cache size, the

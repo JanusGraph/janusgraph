@@ -185,9 +185,9 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CUSTOM_ATTRIBUTE_CLASS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CUSTOM_SERIALIZER_CLASS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HARD_MAX_LIMIT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMIT_BATCH_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
@@ -2740,7 +2740,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     @Test
     public void testGlobalOfflineGraphConfig() {
-        setAndCheckGraphOption(DB_CACHE_TIME, ConfigOption.Type.GLOBAL_OFFLINE, 500L, 777L);
+        setAndCheckGraphOption(IDS_STORE_NAME, ConfigOption.Type.GLOBAL_OFFLINE, "testIdsStoreName", "testIdsStoreName2");
     }
 
     @Test

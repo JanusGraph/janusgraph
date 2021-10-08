@@ -158,7 +158,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         mgmt.setConsistency(mgmt.getGraphIndex("uid"),ConsistencyModifier.LOCK);
         finishSchema();
 
-        if (cache) clopen(option(DB_CACHE),true,option(DB_CACHE_CLEAN_WAIT),0,option(DB_CACHE_TIME),0);
+        if (cache) clopen(option(DB_CACHE),true,option(DB_CACHE_CLEAN_WAIT),0,option(DB_CACHE_TIME),0L);
         else clopen();
 
         JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
@@ -483,7 +483,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
     public void testCacheConcurrency() throws InterruptedException {
         metricsPrefix = "tCC";
         Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
-                option(GraphDatabaseConfiguration.DB_CACHE_TIME),0,
+                option(GraphDatabaseConfiguration.DB_CACHE_TIME),0L,
                 option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),0,
                 option(GraphDatabaseConfiguration.DB_CACHE_SIZE),0.25,
                 option(GraphDatabaseConfiguration.BASIC_METRICS),true,
@@ -595,7 +595,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
     @Test
     public void testCacheSpeedup() {
         Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
-                option(GraphDatabaseConfiguration.DB_CACHE_TIME),0};
+                option(GraphDatabaseConfiguration.DB_CACHE_TIME),0L};
         clopen(newConfig);
 
         int numV = 1000;
