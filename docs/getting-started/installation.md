@@ -115,7 +115,7 @@ $ ./bin/janusgraph-server.sh start
 ```
 or
 ```bash
-$ ./bin/janusgraph-server.sh console ./conf/gremlin-server/gremlin-server-[...].yaml
+$ ./bin/janusgraph-server.sh ./conf/gremlin-server/gremlin-server-[...].yaml
 ```
 
 !!! info
