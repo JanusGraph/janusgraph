@@ -15,7 +15,7 @@
 FROM debian:buster as builder
 
 ARG HBASE_VERSION=2.2.7
-ARG HBASE_DIST="http://ftp.halifax.rwth-aachen.de/apache/hbase"
+ARG HBASE_DIST="http://archive.apache.org/dist/hbase"
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl=7.64.0-4+deb10u2

@@ -32,7 +32,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_PORT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -84,9 +83,11 @@ public class CQLConfiguredGraphFactoryTest extends AbstractConfiguredGraphFactor
         try {
             ConfiguredGraphFactory.createTemplateConfiguration(getTemplateConfigWithMultiHosts());
             final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.create("graph1");
-            final StandardJanusGraph graph1 = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
             assertNotNull(graph);
-            assertEquals(graph, graph1);
+            graph.close();
+
+            final StandardJanusGraph graph1 = (StandardJanusGraph) ConfiguredGraphFactory.open("graph1");
+            assertNotNull(graph1);
         } finally {
             ConfiguredGraphFactory.removeConfiguration("graph1");
             ConfiguredGraphFactory.close("graph1");
