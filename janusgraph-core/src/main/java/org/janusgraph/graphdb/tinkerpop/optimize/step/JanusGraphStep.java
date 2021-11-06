@@ -80,7 +80,8 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
                 return Collections.emptyIterator();
             } else if (this.ids.length > 0) {
                 final Graph graph = (Graph)traversal.asAdmin().getGraph().get();
-                return iteratorList((Iterator)graph.vertices(this.ids));
+                return iteratorList((Iterator<E>) (Vertex.class.isAssignableFrom(getReturnClass())
+                    ? graph.vertices(ids) : graph.edges(ids)));
             }
 
             buildGlobalGraphCentricQuery();

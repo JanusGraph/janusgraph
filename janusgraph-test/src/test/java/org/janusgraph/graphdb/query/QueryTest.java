@@ -125,6 +125,42 @@ public class QueryTest {
     }
 
     @Test
+    public void testIdLookUpQuery() {
+        Vertex v1 = tx.addVertex("pos", 0);
+        Vertex v2 = tx.addVertex();
+        Edge e = v1.addEdge("connects", v2, "prop", "val");
+        String vId = v1.id().toString();
+        String eId = e.id().toString();
+        tx.commit();
+
+        tx = graph.newTransaction();
+
+        // edges
+        assertTrue(tx.traversal().E(eId).hasNext());
+        assertFalse(tx.traversal().E(eId).hasId("wrong-id").hasNext());
+        assertFalse(tx.traversal().E("wrong-id").hasId(eId).hasNext());
+        assertFalse(tx.traversal().E(eId).has("prop", "non").hasNext());
+        assertTrue(tx.traversal().E(eId).has("prop", "val").hasNext());
+        assertTrue(tx.traversal().E().hasId(eId).hasNext());
+        assertFalse(tx.traversal().E().hasId(eId).has("prop", "non").hasNext());
+        assertTrue(tx.traversal().E().hasId(eId).has("prop", "val").hasNext());
+        assertEquals(tx.traversal().E(eId).next(), tx.traversal().E().hasId(eId).next());
+        assertEquals(tx.traversal().E(eId).next(), tx.traversal().E(eId).hasId(eId).next());
+
+        // vertices
+        assertTrue(tx.traversal().V(vId).hasNext());
+        assertFalse(tx.traversal().V(vId).hasId(123).hasNext());
+        assertFalse(tx.traversal().V(123).hasId(vId).hasNext());
+        assertFalse(tx.traversal().V(vId).has("pos", 1).hasNext());
+        assertTrue(tx.traversal().V(vId).has("pos", 0).hasNext());
+        assertTrue(tx.traversal().V().hasId(vId).hasNext());
+        assertFalse(tx.traversal().V().hasId(vId).has("pos", 1).hasNext());
+        assertTrue(tx.traversal().V().hasId(vId).has("pos", 0).hasNext());
+        assertEquals(tx.traversal().V(vId).next(), tx.traversal().V().hasId(vId).next());
+        assertEquals(tx.traversal().V(vId).next(), tx.traversal().V(vId).hasId(vId).next());
+    }
+
+    @Test
     public void testMultipleKeysQuery() {
         tx.makePropertyKey("name").dataType(String.class).make();
         tx.addVertex("name","vertex1");
