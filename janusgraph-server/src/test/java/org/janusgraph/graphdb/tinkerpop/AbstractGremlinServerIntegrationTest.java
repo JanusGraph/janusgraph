@@ -48,7 +48,7 @@ public abstract class AbstractGremlinServerIntegrationTest {
     private static final Logger logger = LoggerFactory.getLogger(AbstractGremlinServerIntegrationTest.class);
 
     public String getSettingsPath() {
-        return "src/test/resources/gremlin-server-integration.yaml";
+        return "src/test/resources/janusgraph-server-integration.yaml";
     }
 
     @BeforeEach
