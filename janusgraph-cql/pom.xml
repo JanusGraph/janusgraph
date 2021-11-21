@@ -139,6 +139,10 @@
                     <artifactId>json</artifactId>
                 </exclusion>
                 <exclusion>
+                    <groupId>com.esri.geometry</groupId>
+                    <artifactId>esri-geometry-api</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.apache.tinkerpop</groupId>
                     <artifactId>gremlin-core</artifactId>
                 </exclusion>
