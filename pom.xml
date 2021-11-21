@@ -90,7 +90,7 @@
         <jackson1.version>1.9.13</jackson1.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.13.0</jackson2.version>
-        <lucene-solr.version>8.9.0</lucene-solr.version>
+        <lucene-solr.version>8.11.0</lucene-solr.version>
         <elasticsearch.version>7.14.0</elasticsearch.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
@@ -1189,17 +1189,17 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-servlet</artifactId>
-                <version>9.4.41.v20210516</version>
+                <version>9.4.44.v20210927</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-server</artifactId>
-                <version>9.4.41.v20210516</version>
+                <version>9.4.44.v20210927</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-util</artifactId>
-                <version>9.4.41.v20210516</version>
+                <version>9.4.44.v20210927</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
