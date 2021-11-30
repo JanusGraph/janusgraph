@@ -80,7 +80,7 @@
         <slf4j.version>1.7.32</slf4j.version>
         <httpcomponents.httpclient.version>4.5.13</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.14</httpcomponents.httpcore.version>
-        <hadoop2.version>2.8.5</hadoop2.version>
+        <hadoop2.version>3.3.1</hadoop2.version>
         <hbase2.version>2.2.7</hbase2.version>
         <htrace.version>4.2.0-incubating</htrace.version>
         <bigtable.version>1.24.0</bigtable.version>
