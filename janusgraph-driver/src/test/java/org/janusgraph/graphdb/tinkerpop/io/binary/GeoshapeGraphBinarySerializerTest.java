@@ -29,6 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,17 +47,28 @@ public class GeoshapeGraphBinarySerializerTest {
         return Stream.of(
             Geoshape.point(37.97, 23.72),
             Geoshape.circle(37.97, 23.72, 10.0),
-            Geoshape.box(37.97, 23.72, 38.97, 24.72)
+            Geoshape.box(37.97, 23.72, 38.97, 24.72),
+            Geoshape.line(Arrays.asList(new double[] {37.97, 23.72}, new double[] {38.97, 24.72})),
+            Geoshape.polygon(Arrays.asList(new double[] {119.0, 59.0}, new double[] {121.0, 59.0}, new double[] {121.0, 61.0}, new double[] {119.0, 61.0}, new double[] {119.0, 59.0})),
+            //MultiPoint
+            Geoshape.geoshape(Geoshape.getShapeFactory().multiPoint().pointXY(60.0, 60.0).pointXY(120.0, 60.0).build()),
+            //MultiLine
+            Geoshape.geoshape(Geoshape.getShapeFactory().multiLineString()
+                .add(Geoshape.getShapeFactory().lineString().pointXY(59.0, 60.0).pointXY(61.0, 60.0))
+                .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0)).build()),
+            //MultiPolygon
+            Geoshape.geoshape(Geoshape.getShapeFactory().multiPolygon()
+                .add(Geoshape.getShapeFactory().polygon().pointXY(59.0, 59.0).pointXY(61.0, 59.0)
+                    .pointXY(61.0, 61.0).pointXY(59.0, 61.0).pointXY(59.0, 59.0))
+                .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0)
+                    .pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)).build()),
+            //GeometryCollection
+            Geoshape.geoshape(Geoshape.getGeometryCollectionBuilder()
+                .add(Geoshape.getShapeFactory().pointXY(60.0, 60.0))
+                .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0).build())
+                .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0)
+                    .pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0).build()).build())
         );
-    }
-
-    @ParameterizedTest
-    @MethodSource("geoshapeProvider")
-    public void shouldCustomSerialization(Geoshape geoshape) throws IOException {
-        final GraphBinaryMessageSerializerV1 serializer = new GraphBinaryMessageSerializerV1(
-            TypeSerializerRegistry.build().addCustomType(Geoshape.class, new GeoshapeGraphBinarySerializer()).create());
-
-        assertGeoshape(serializer, geoshape);
     }
 
     @ParameterizedTest
@@ -67,7 +79,7 @@ public class GeoshapeGraphBinarySerializerTest {
         config.put(TOKEN_IO_REGISTRIES, Collections.singletonList(JanusGraphIoRegistry.class.getName()));
         serializer.configure(config, Collections.emptyMap());
 
-        assertGeoshape(serializer, geoshape);
+        assertSymmetricGeoshapeSerializationInResponseMessage(serializer, geoshape);
     }
 
     @ParameterizedTest
@@ -88,7 +100,7 @@ public class GeoshapeGraphBinarySerializerTest {
         }
     }
 
-    private void assertGeoshape(final GraphBinaryMessageSerializerV1 serializer, final Geoshape geoshape) throws IOException {
+    private void assertSymmetricGeoshapeSerializationInResponseMessage(final GraphBinaryMessageSerializerV1 serializer, final Geoshape geoshape) throws IOException {
         final ByteBuf serialized = serializer.serializeResponseAsBinary(
             ResponseMessage.build(UUID.randomUUID()).result(geoshape).create(), allocator);
 
