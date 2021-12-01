@@ -86,6 +86,21 @@ For more information on features and bug fixes in 1.0.0, see the GitHub mileston
 
 We are dropping support for HBase 1.
 
+##### Breaking change for Geoshape GraphBinary serialization
+
+Support for the [GraphBinary](http://tinkerpop.apache.org/docs/3.5.1/dev/io/#graphbinary) serialization format was
+added in JanusGraph 0.6.0. This also included support to serialize Geoshapes via GraphBinary. The implementation of the
+Geoshape serializer was unfortunately closely tied to the Java library `Spatial4j` that we are using to implement
+Geoshapes in Java. This made it very complicated to add support for GraphBinary in other languages than Java. To make
+it easier to support GraphBinary in non-Java environments like .NET, we have completely reimplemented the GraphBinary
+serialization of Geoshapes in this version.
+
+This is a breaking change for users who have already adopted GraphBinary and who are using Geoshapes. It is necessary
+to update JanusGraph Server and all (Java) clients that use GraphBinary at the same time since JanusGraph Server with
+an older version will not be able to read a Geoshape created by a client that is already on version 1.0.0 and vice
+versa.
+Users who do not use GraphBinary yet or who are not using Geoshapes are not affected by this change.
+
 ##### Removal of deprecated classes/methods/functionalities
 
 ###### Classes/Interfaces
@@ -97,6 +112,7 @@ We are dropping support for HBase 1.
 * SchemaElementDefinition class
 * SchemaProvider interface
 * VertexLabelDefinition class
+
 ### Version 0.6.1 (Release Date: ???)
 
 ```xml tab='Maven'
@@ -214,7 +230,7 @@ for more details.
 ##### Breaking change for Configuration objects
 
 Prior to JanusGraph 0.6.0, `Configuration` objects were from the Apache `commons-configuration` library.
-To comply with the [TinkerPop change](http://tinkerpop.apache.org/docs/3.5.0-SNAPSHOT/upgrade/#_versions_and_dependencies),
+To comply with the [TinkerPop change](http://tinkerpop.apache.org/docs/3.5.0/upgrade/#_versions_and_dependencies),
 JanusGraph now uses the `commons-configuration2` library. A typical usage of configuration object is to
 create configuration using `ConfigurationGraphFactory`. Now you would need to use the new configuration2 library.
 Please refer to the
@@ -311,6 +327,10 @@ after the keyword `serializers`. This will add the support on the server site.
 !!! note 
     The java driver is the only driver that currently supports GraphBinary, 
     see [Connecting to JanusGraph using Java](interactions/connecting/java.md).
+
+!!! note
+    Version 1.0.0 adds a breaking change to GraphBinary for Geoshape serialization,
+    see [the 1.0.0 changelog for more information](#breaking-change-for-geoshape-graphbinary-serialization).
 
 ##### New index selection algorithm
 In version 0.6.0, the index selection algorithm has changed. If the number of possible

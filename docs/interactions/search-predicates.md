@@ -139,7 +139,7 @@ Geoshape.geoshape(Geoshape.getGeometryCollectionBuilder()
   .add(Geoshape.getShapeFactory().pointXY(60.0, 60.0))
   .add(Geoshape.getShapeFactory().lineString().pointXY(119.0, 60.0).pointXY(121.0, 60.0).build())
   .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0)
-    .pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)).build())
+    .pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0).build()).build())
 ```
 
 In addition, when importing a graph via GraphSON the geometry may be represented by GeoJSON:
