@@ -86,9 +86,7 @@ public class CQLProgrammaticConfigurationLoaderBuilder {
 
         configLoaderBuilder.withString(DefaultDriverOption.SESSION_NAME, configuration.get(SESSION_NAME));
 
-        if(configuration.has(REQUEST_TIMEOUT)) {
-            configLoaderBuilder.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofMillis(configuration.get(REQUEST_TIMEOUT)));
-        }
+        configLoaderBuilder.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofMillis(configuration.get(REQUEST_TIMEOUT)));
 
         configLoaderBuilder.withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, connectionTimeoutMS);
 
