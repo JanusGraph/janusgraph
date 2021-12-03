@@ -41,6 +41,72 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 
 ## Release Notes
 
+### Version 0.6.1 (Release Date: ???)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.6.1</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.6.1"
+```
+
+**Tested Compatibility:**
+
+* Apache Cassandra 3.0.14, 3.11.10
+* Apache HBase 1.6.0, 2.2.7
+* Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0, 1.14.0
+* Oracle BerkeleyJE 7.5.11
+* Elasticsearch 6.0.1, 6.6.0, 7.14.0
+* Apache Lucene 8.9.0
+* Apache Solr 7.7.2, 8.9.0
+* Apache TinkerPop 3.5.1
+* Java 1.8
+
+#### Changes
+
+For more information on features and bug fixes in 0.6.1, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/22?closed=1>
+
+#### Assets
+
+* [JavaDoc](https://javadoc.io/doc/org.janusgraph/janusgraph-core/0.6.1)
+* [GitHub Release](https://github.com/JanusGraph/janusgraph/releases/tag/v0.6.1)
+* [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.1/janusgraph-0.6.1.zip)
+* [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.1/janusgraph-full-0.6.1.zip)
+
+#### Upgrade Instructions
+
+##### GraphManager changed to JanusGraphManager
+
+A `GraphManager` is used to instantiate graph instances. JanusGraph Server has used the
+`DefaultGraphManager` from TinkerPop for this by default if no other `GraphManager` was specified
+in the JanusGraph Server YAML config file.
+The behavior of this `DefaultGraphManager` was changed in TinkerPop 3.5.0 which is included in
+JanusGraph 0.6.0 in how it parses config values, making it impossible to provide comma separated
+values, e.g., to specify multiple hostnames for the storage backend. The `JanusGraphManager` does
+not have this limitation which is why it is now configured as the `GraphManager` in the
+JanusGraph Server config files:
+
+```yaml
+[...]
+channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer
+graphManager: org.janusgraph.graphdb.management.JanusGraphManager
+graphs: {
+  graph: conf/janusgraph-berkeleyje-es.properties
+}
+[...]
+```
+
+If you however want to continue using the `DefaultGraphManager`, then you can simply remove the
+setting again or change it to the TinkerPop `GraphManager` that has been the default before:
+`org.apache.tinkerpop.gremlin.server.util.DefaultGraphManager`.
+
 ### Version 0.6.0 (Release Date: September 3, 2021)
 
 ```xml tab='Maven'
