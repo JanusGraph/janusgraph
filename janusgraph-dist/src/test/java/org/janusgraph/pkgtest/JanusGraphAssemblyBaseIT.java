@@ -128,6 +128,9 @@ public abstract class JanusGraphAssemblyBaseIT {
 
     protected static void command(File dir, String... command) throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder(command);
+
+        Map<String, String> env = pb.environment();
+        env.put("JAVA_OPTIONS", "-Xms1024m -Xmx1024m");
         pb.directory(dir);
 //        pb.redirectInput(Redirect.PIPE);
         /*
