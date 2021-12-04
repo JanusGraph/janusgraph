@@ -1,4 +1,4 @@
-# Copyright 2020 JanusGraph Authors
+# Copyright 2021 JanusGraph Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 # allows lowering thread priority without being root on linux - probably
 # not necessary on Windows but doesn't harm anything.
 # see http://tech.stolsvik.com/2010/01/linux-java-thread-priorities-workar
--XX:ThreadPriorityPolicy=42
+#-XX:ThreadPriorityPolicy=1
 
 # Enable heap-dump if there's an OOM
 -XX:+HeapDumpOnOutOfMemoryError
@@ -63,16 +63,6 @@
 #  GC SETTINGS  #
 #################
 
-### CMS Settings
-
--XX:+UseParNewGC
--XX:+UseConcMarkSweepGC
--XX:+CMSParallelRemarkEnabled
+-XX:+UseG1GC
 -XX:SurvivorRatio=8
 -XX:MaxTenuringThreshold=1
--XX:CMSInitiatingOccupancyFraction=75
--XX:+UseCMSInitiatingOccupancyOnly
--XX:CMSWaitDuration=10000
--XX:+CMSParallelInitialMarkEnabled
--XX:+CMSEdenChunksRecordAlways
--XX:+CMSClassUnloadingEnabled
