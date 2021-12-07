@@ -26,6 +26,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +99,8 @@ public class LocalStoreManagerTest {
         final Map<ConfigOption, String> map = getBaseConfigurationMap();
         map.put(STORAGE_DIRECTORY, "specific/absolute/directory");
         final LocalStoreManager mgr = getStoreManager(map);
-        assertEquals("specific/absolute/directory", mgr.directory.getPath());
+        File expectedDirectory = new File("specific/absolute/directory");
+        assertEquals(expectedDirectory.getPath(), mgr.directory.getPath());
     }
 
     @Test
@@ -107,7 +109,8 @@ public class LocalStoreManagerTest {
         map.put(STORAGE_ROOT, "temp/root");
         map.put(GRAPH_NAME, "randomGraphName");
         final LocalStoreManager mgr = getStoreManager(map);
-        assertEquals("temp/root/randomGraphName", mgr.directory.getPath());
+        File expectedFile = new File("temp/root/randomGraphName");
+        assertEquals(expectedFile.getPath(), mgr.directory.getPath());
     }
 
     @Test
