@@ -466,7 +466,7 @@ dse cassandra -s -Ddse.solr.data.dir="$DSE_HOME"/dse-data/solr
 
 The previous command will write some startup information to the console
 and to the logfile path `log4j.appender.R.File` configured in
-`$DSE_HOME/resources/cassandra/conf/log4j-server.properties`.
+`$DSE_HOME/resources/cassandra/conf/log4j2-server.xml`.
 
 Once DSE with Cassandra and Solr has started normally, check the cluster
 health with `nodetool status`. A single-instance ring should show one

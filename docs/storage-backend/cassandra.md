@@ -40,8 +40,7 @@ Cassandra communicate with one another via a `localhost` socket. Running
 JanusGraph over Cassandra requires the following setup steps:
 
 1.  [Download Cassandra](http://cassandra.apache.org/download/), unpack
-    it, and set filesystem paths in `conf/cassandra.yaml` and
-    `conf/log4j-server.properties`
+    it, and set filesystem paths in `conf/cassandra.yaml`.
 2.  Connecting Gremlin Server to Cassandra using the default
     configuration files provided in the pre-packaged distribution.
 3.  Start Cassandra by invoking `bin/cassandra -f` on the command line

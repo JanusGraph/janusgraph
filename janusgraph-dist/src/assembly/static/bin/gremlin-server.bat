@@ -84,10 +84,7 @@ IF NOT DEFINED JAVA_OPTIONS (
  SET JAVA_OPTIONS=-Xms32m -Xmx512m ^
  -Djanusgraph.logdir=%JANUSGRAPH_HOME%\logs ^
  -Dtinkerpop.ext=%JANUSGRAPH_EXT% ^
- -Dlogback.configurationFile=conf\logback.xml ^
- -Dlog4j.configuration=file:/%JANUSGRAPH_HOME%\conf\gremlin-server\log4j-server.properties ^
- -Dlog4j.debug=true ^
- -Dgremlin.log4j.level=%GREMLIN_LOG_LEVEL% ^
+ -Dlog4j.configurationFile=file:/%JANUSGRAPH_HOME%\conf\log4j2-server.xml ^
  -javaagent:%JAMM_JAR% ^
  -Dgremlin.io.kryoShimService=org.janusgraph.hadoop.serialize.JanusGraphKryoShimService
 )

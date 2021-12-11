@@ -95,7 +95,6 @@ public class JanusGraphIoRegistryTest {
 
     @Test
     public void testJanusGraphPredicatesAsGryo() throws SerializationException {
-
         Graph graph = EmptyGraph.instance();
         GraphTraversalSource g = graph.traversal();
 

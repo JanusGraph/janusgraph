@@ -49,12 +49,6 @@
                         <argument>${example.config}</argument>
                         <argument>${cmd}</argument>
                     </arguments>
-                    <systemProperties>
-                        <systemProperty>
-                            <key>logback.configurationFile</key>
-                            <value>${logback.config}</value>
-                        </systemProperty>
-                    </systemProperties>
                 </configuration>
             </plugin>
         </plugins>

@@ -125,6 +125,7 @@
         <jmh.version>1.33</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
         <jetty.version>9.4.44.v20210927</jetty.version>
+        <log4j2.version>2.17.1</log4j2.version>
     </properties>
     <modules>
         <module>janusgraph-grpc</module>
@@ -394,13 +395,6 @@
                         </excludes>
                         <excludedGroups>${test.excluded.groups}</excludedGroups>
                         <skip>${test.skip.default}</skip>
-                        <!-- Use log4j.properties from module test resources -->
-                        <systemProperties>
-                            <property>
-                                <name>log4j.configuration</name>
-                                <value>file:${project.build.directory}/test-classes/log4j.properties</value>
-                            </property>
-                        </systemProperties>
                     </configuration>
                     <executions>
                         <execution>
@@ -426,7 +420,6 @@
                                 <skipTests>${test.skip.tp}</skipTests>
                                 <systemPropertyVariables>
                                     <build.dir>${project.build.directory}</build.dir>
-                                    <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties</log4j.configuration>
                                     <is.testing>true</is.testing>
                                 </systemPropertyVariables>
                             </configuration>
@@ -436,15 +429,6 @@
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>2.22.2</version>
-                    <configuration>
-                        <!-- Use log4j.properties from module test resources -->
-                        <systemProperties>
-                            <property>
-                                <name>log4j.configuration</name>
-                                <value>file:${project.build.directory}/test-classes/log4j.properties</value>
-                            </property>
-                        </systemProperties>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
@@ -592,6 +576,10 @@
                 <artifactId>spark-gremlin</artifactId>
                 <version>${tinkerpop.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
                         <artifactId>javax.servlet</artifactId>
@@ -748,9 +736,14 @@
                 <version>${slf4j.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>${slf4j.version}</version>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
+                <version>${log4j2.version}</version>
             </dependency>
             <dependency>
                 <groupId>log4j</groupId>
@@ -1211,14 +1204,14 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
@@ -1322,6 +1315,10 @@
                         <artifactId>hadoop-client</artifactId>
                         <version>${hadoop2.version}</version>
                         <exclusions>
+                            <exclusion>
+                                <groupId>org.slf4j</groupId>
+                                <artifactId>slf4j-log4j12</artifactId>
+                            </exclusion>
                             <exclusion>
                                 <groupId>javax.servlet</groupId>
                                 <artifactId>servlet-api</artifactId>

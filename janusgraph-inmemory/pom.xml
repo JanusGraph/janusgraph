@@ -21,6 +21,7 @@
             <artifactId>janusgraph-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-backend-testutils</artifactId>

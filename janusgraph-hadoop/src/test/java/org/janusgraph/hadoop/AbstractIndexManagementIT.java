@@ -89,7 +89,7 @@ public abstract class AbstractIndexManagementIT extends JanusGraphBaseTest {
         assertThrows(FileNotFoundException.class, () -> ToolRunner.run(app, new String[] {"-files", "invalid-file.txt"}));
 
         // submit the MapReduce job together with a dummy file
-        ToolRunner.run(app, new String[] {"-files", getClass().getClassLoader().getResource("log4j.properties").getPath()});
+        ToolRunner.run(app, new String[] {"-files", getClass().getClassLoader().getResource("log4j2-test.xml").getPath()});
         assertEquals(12, app.getMetrics().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
     }
 
