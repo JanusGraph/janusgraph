@@ -88,11 +88,6 @@ else
     JAVA="$JAVA_HOME/bin/java -server"
 fi
 
-# Set default message threshold for Log4j Gremlin's console appender
-if [ -z "${GREMLIN_LOG_LEVEL:-}" ]; then
-    GREMLIN_LOG_LEVEL=WARN
-fi
-
 # Script debugging is disabled by default, but can be enabled with -l
 # TRACE or -l DEBUG or enabled by exporting
 # SCRIPT_DEBUG=nonemptystring to gremlin.sh's environment
@@ -119,7 +114,7 @@ if [ -z "${HADOOP_GREMLIN_LIBS:-}" ]; then
     export HADOOP_GREMLIN_LIBS="$LIB"
 fi
 
-JAVA_OPTIONS="${JAVA_OPTIONS} -Duser.working_dir=${USER_DIR} -Dtinkerpop.ext=${USER_EXT_DIR:-${SYSTEM_EXT_DIR}} -Dlog4j.configuration=conf/log4j-console.properties -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL -javaagent:$LIB/jamm-0.3.0.jar -Dgremlin.io.kryoShimService=org.janusgraph.hadoop.serialize.JanusGraphKryoShimService"
+JAVA_OPTIONS="${JAVA_OPTIONS} -Duser.working_dir=${USER_DIR} -Dtinkerpop.ext=${USER_EXT_DIR:-${SYSTEM_EXT_DIR}} -Dlog4j.configurationFile=file:conf/log4j2-console.xml -javaagent:$LIB/jamm-0.3.0.jar -Dgremlin.io.kryoShimService=org.janusgraph.hadoop.serialize.JanusGraphKryoShimService"
 JAVA_OPTIONS=$(awk -v RS=' ' '!/^$/ {if (!x[$0]++) print}' <<< "${JAVA_OPTIONS}" | grep -v '^$' | paste -sd ' ' -)
 
 if [ -n "$SCRIPT_DEBUG" ]; then

@@ -137,6 +137,14 @@ Users who do not use GraphBinary yet or who are not using Geoshapes are not affe
 We are dropping support for old serialization format of JanusGraph predicates. The old predicates serialization format is only used by client older than 0.6. 
 The change only affects Gryo and GraphSON.
 
+##### Upgrade of log4j to version 2
+
+This change requires a new log4j configuration. You can find an example configuration in `conf/log4j2-server.xml`. As a result of the changed configuration format, 
+we clean up all configurations. This could lead to unexpected new log lines. Please open an issue, if you see any unwanted log line.
+
+!!! note 
+    Log4j is only used for standalone server deployments and JanusGraph testing.
+
 ### Version 0.6.1 (Release Date: ???)
 
 ```xml tab='Maven'

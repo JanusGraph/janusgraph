@@ -177,13 +177,16 @@
              binding appears on the classpath before logback-classic.
              See comments in janusgraph-cassandra/pom.xml for more information. -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
         </dependency>
         <!-- End logging backends. -->
     </dependencies>

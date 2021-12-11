@@ -36,13 +36,15 @@
         <!-- Logging backends. -->
         <!-- Enforce a classpath ordering constraint to ensure log4j is used for logging. -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+            <optional>true</optional>
         </dependency>
         <!-- End logging backends. -->
         <!-- Compile Dependencies -->
@@ -258,6 +260,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -283,7 +291,6 @@
                     <perCoreThreadCount>false</perCoreThreadCount>
                     <threadCount>1</threadCount>
                     <systemPropertyVariables>
-                        <log4j.configuration>file:${project.build.testOutputDirectory}/log4j.properties</log4j.configuration>
                         <cassandra.docker.image>${cassandra.docker.image}</cassandra.docker.image>
                         <cassandra.docker.version>${cassandra.docker.version}</cassandra.docker.version>
                         <cassandra.docker.partitioner>${cassandra.docker.partitioner}</cassandra.docker.partitioner>

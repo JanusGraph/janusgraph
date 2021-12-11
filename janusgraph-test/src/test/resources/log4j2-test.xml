@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+    <Appenders>
+        <File name="TestFile" fileName="target/test.log">
+            <PatternLayout>
+                <Pattern>%d{HH:mm:ss} %-5level %class.%method{36} - %msg%n</Pattern>
+            </PatternLayout>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Logger name="org.apache.cassandra" level="info">
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        <Logger name="org.apache.hadoop" level="info">
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        <Logger name="org.apache.zookeeper" level="info">
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        <Logger name="org.testcontainers" level="info">
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        <Logger name="com.github.dockerjava" level="warn">
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        <Root level="info">
+            <AppenderRef ref="TestFile"/>
+        </Root>
+    </Loggers>
+</Configuration>

@@ -14,11 +14,8 @@
 
 package org.janusgraph.diskstorage.hbase;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.WriterAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.janusgraph.HBaseContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.PermanentBackendException;
@@ -31,6 +28,10 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.appender.WriterAppender;
+import org.apache.logging.log4j.core.filter.LevelMatchFilter;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -48,11 +49,10 @@ public class HBaseStoreManagerConfigTest {
 
     @Test
     public void testShortCfNames() throws Exception {
-        Logger log = Logger.getLogger(HBaseStoreManager.class);
-        Level savedLevel = log.getLevel();
-        log.setLevel(Level.WARN);
+        org.apache.logging.log4j.core.Logger log = (org.apache.logging.log4j.core.Logger)LogManager.getLogger(HBaseStoreManager.class);
         StringWriter writer = new StringWriter();
-        Appender appender = new WriterAppender(new PatternLayout("%p: %m%n"), writer);
+        Appender appender = WriterAppender.createAppender(PatternLayout.newBuilder().withPattern("%p: %m%n").build(), LevelMatchFilter.newBuilder().setLevel(Level.WARN).build(), writer, "test", false, false);
+        appender.start();
         log.addAppender(appender);
 
         // Open the HBaseStoreManager and store with default SHORT_CF_NAMES true.
@@ -74,7 +74,6 @@ public class HBaseStoreManagerConfigTest {
         // Verify we get WARN.
         assertTrue(writer.toString().startsWith("WARN: Configuration"), writer.toString());
         log.removeAppender(appender);
-        log.setLevel(savedLevel);
 
         store.close();
         manager.close();
@@ -109,11 +108,12 @@ public class HBaseStoreManagerConfigTest {
     @Test
     // Test HBase skip-schema-check config
     public void testHBaseSkipSchemaCheck() throws Exception {
-        Logger log = Logger.getLogger(HBaseStoreManager.class);
+        org.apache.logging.log4j.core.Logger log = (org.apache.logging.log4j.core.Logger)LogManager.getLogger(HBaseStoreManager.class);
         Level savedLevel = log.getLevel();
         log.setLevel(Level.DEBUG);
         StringWriter writer = new StringWriter();
-        Appender appender = new WriterAppender(new PatternLayout("%p: %m%n"), writer);
+        Appender appender = WriterAppender.createAppender(PatternLayout.newBuilder().withPattern("%p: %m%n").build(), LevelMatchFilter.newBuilder().setLevel(Level.DEBUG).build(), writer, "test", false, false);
+        appender.start();
         log.addAppender(appender);
 
         // Open the HBaseStoreManager with default skip-schema-check false.

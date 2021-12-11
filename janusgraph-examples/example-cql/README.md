@@ -23,12 +23,6 @@ graphs on the same Cassandra and Elasticsearch servers. Refer to the JanusGraph
 [configuration reference](https://docs.janusgraph.org/basics/configuration-reference/)
 for additional properties.
 
-* [`logback.xml`](conf/logback.xml) configures logging with [Logback](https://logback.qos.ch/),
-which is the logger used by Cassandra. The example configuration logs to the
-console and adjusts the logging level for some noisier packages. Refer to
-the Logback [manual](https://logback.qos.ch/manual/index.html) for additional
-details.
-
 ### Cassandra configuration
 
 The JanusGraph properties file assumes that Cassandra is installed on localhost
