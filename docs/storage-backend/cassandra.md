@@ -186,6 +186,46 @@ However, note that all these vertices and/or edges will be loaded into
 memory which can cause `OutOfMemoryException`. Use [JanusGraph with TinkerPop’s Hadoop-Gremlin](../advanced-topics/hadoop.md) to
 iterate over all vertices or edges in large graphs effectively.
 
+## Deploying on DataStax Astra
+
+> Astra DB simplifies cloud-native Cassandra application development. It reduces deployment time from weeks to minutes,
+> and delivers an unprecedented combination of serverless, pay-as-you-go pricing with the freedom and agility of
+> multi-cloud and open source.
+>
+> —  [DataStax Astra](https://www.datastax.com/products/datastax-astra)
+
+[Download](https://docs.datastax.com/en/astra/aws/doc/dscloud/astra/dscloudObtainingCredentials.html) the secure-connect zipped bundle for your Astra database.
+
+Unzip your copy of `secure-connect-your_astra_db.zip` which will contain the following files:
+
+- `ca.crt`
+- `cert`
+- `cert.pfx`
+- `config.json`
+- `cqlshrc`
+- `identity.jks`
+- `key`
+- `trustStore.jks`
+
+The `config.json` file contains the following:
+
+- `host` - the contact point for the CQL driver
+- `port` - the CQL client port
+- `keyspace` - the name of the keyspace you created
+- `trustStoreLocation` - trustStore.jks is the truststore
+- `trustStorePassword` - your truststore password
+- `keyStoreLocation` - identity.jks is the keystore
+- `keyStorePassword` - your keystore password
+
+Using the information above, you will need to configure the following:
+
+- `storage.hostname`
+- `storage.port`
+- `storage.username`
+- `storage.password`
+- `storage.cql.keyspace`
+- `storage.cql.ssl.*`
+
 ## Deploying on Amazon Keyspaces (Experimental)
 
 > Amazon Keyspaces (for Apache Cassandra) is a scalable, highly available, and managed
