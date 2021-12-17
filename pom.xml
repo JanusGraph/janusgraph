@@ -90,6 +90,7 @@
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.13.0</jackson2.version>
         <lucene-solr.version>8.11.0</lucene-solr.version>
+        
         <elasticsearch.version>7.16.1</elasticsearch.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
