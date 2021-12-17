@@ -89,3 +89,6 @@
 
 # JDK 9+ GC logging
 9-:-Xlog:gc*,gc+age=trace,safepoint:file=../logs/gc.log:utctime,pid,tags:filecount=32,filesize=64m
+
+# CVE-2021-44228 (aka “log4shell”) mitigation 
+-Dlog4j2.formatMsgNoLookups=true
