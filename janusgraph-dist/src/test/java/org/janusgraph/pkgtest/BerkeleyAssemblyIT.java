@@ -67,4 +67,10 @@ public class BerkeleyAssemblyIT extends AbstractJanusGraphAssemblyIT {
     @Disabled
     @Override
     public void testGettingStartedAgainstGremlinShFull() {}
+
+    @Test
+    @Disabled
+    @Override
+    public void testSparkGraphComputerTraversalLocal() {
+    }
 }

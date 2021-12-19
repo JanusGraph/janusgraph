@@ -45,6 +45,14 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
 
     protected abstract String getConfigPath();
 
+    /**
+     * Get the path to the configuration for local Spark
+     * @return path
+     */
+    protected String getLocalSparkGraphConfigPath() {
+        return null;
+    }
+
     protected abstract String getServerConfigPath();
 
     protected abstract String getGraphName();
@@ -74,6 +82,11 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
     @Test
     public void testJanusGraphServerGremlin() throws Exception {
         testJanusGraphServer(false);
+    }
+
+    @Test
+    public void testSparkGraphComputerTraversalLocal() throws Exception {
+        unzipAndRunExpect("spark-graph-computer.expect.vm", getConfigPath(), getLocalSparkGraphConfigPath(), getGraphName(), false, false);
     }
 
     @Test

@@ -39,6 +39,11 @@ public class CqlESAssemblyIT extends AbstractJanusGraphAssemblyIT {
     }
 
     @Override
+    protected String getLocalSparkGraphConfigPath() {
+        return "conf/hadoop-graph/read-cql.properties";
+    }
+
+    @Override
     protected String getGraphName() {
         return "cql";
     }

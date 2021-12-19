@@ -43,4 +43,10 @@ public class InMemoryAssemblyIT extends AbstractJanusGraphAssemblyIT {
     @Disabled
     @Override
     public void testGettingStartedAgainstGremlinShFull() {}
+
+    @Test
+    @Disabled
+    @Override
+    public void testSparkGraphComputerTraversalLocal() {
+    }
 }
