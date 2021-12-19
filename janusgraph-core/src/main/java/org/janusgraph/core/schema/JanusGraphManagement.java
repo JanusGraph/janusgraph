@@ -283,6 +283,21 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     void setTTL(JanusGraphSchemaType type, Duration duration);
 
     /*
+    ##################### CONSISTENCY MANAGEMENT #################
+     */
+
+    /**
+     * Remove all ghost vertices (a.k.a. phantom vertices) from the graph
+     */
+    ScanJobFuture removeGhostVertices();
+
+    /**
+     * Remove all ghost vertices (a.k.a. phantom vertices) from the graph,
+     * with the given concurrency level
+     */
+    ScanJobFuture removeGhostVertices(int numOfThreads);
+
+    /*
     ##################### SCHEMA UPDATE ##########################
      */
 
