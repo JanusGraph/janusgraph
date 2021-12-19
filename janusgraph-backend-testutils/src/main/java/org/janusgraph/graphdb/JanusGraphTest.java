@@ -105,6 +105,7 @@ import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
+import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
@@ -7372,4 +7373,50 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertFalse(tx.traversal().V().has("a", timestamp).has("b", true).has("c", true).bothE().hasNext());
     }
 
+    /**
+     * In this test, we deliberately create ghost vertices and use ManagementSystem to purge them
+     * We use two concurrent transactions and let one transaction removes a vertex and another transaction
+     * updates the same vertex. When the storage backend does not have locking support, both transactions
+     * will succeed, and then the vertex becomes a ghost vertex.
+     *
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
+    @Test
+    public void testMgmtRemoveGhostVertices() throws ExecutionException, InterruptedException {
+        if (features.hasLocking()) return;
+
+        final int numOfVertices = 100;
+        final int numOfGhostVertices = 80;
+        final int numOfRestVertices = numOfVertices - numOfGhostVertices;
+        List<Vertex> vertices = new ArrayList<>(numOfVertices);
+        for (int i = 0; i < numOfVertices; i++) {
+            vertices.add(tx.traversal().addV("test").next());
+        }
+        tx.commit();
+
+        JanusGraphTransaction tx1 = graph.newTransaction();
+        for (int i = 0; i < numOfVertices; i++) {
+            tx1.traversal().V(vertices.get(i)).property("prop", "val").next();
+        }
+
+        JanusGraphTransaction tx2 = graph.newTransaction();
+        for (int i = 0; i < numOfGhostVertices; i++) {
+            tx2.traversal().V(vertices.get(i)).next().remove();
+        }
+        tx2.commit();
+
+        tx1.commit();
+
+        JanusGraphManagement mgmt = graph.openManagement();
+        ScanJobFuture future = mgmt.removeGhostVertices();
+        assertEquals(numOfGhostVertices, future.get().getCustom(GhostVertexRemover.REMOVED_VERTEX_COUNT));
+        assertEquals(numOfRestVertices, graph.traversal().V().count().next());
+        assertEquals(numOfRestVertices, graph.traversal().V().hasLabel("test").count().next());
+        assertEquals(numOfRestVertices, graph.traversal().V().has("prop", "val").count().next());
+        assertEquals(numOfRestVertices, graph.traversal().V().hasLabel("test").has("prop", "val").count().next());
+
+        // running it again, no vertex is removed
+        assertEquals(0, mgmt.removeGhostVertices().get().getCustom(GhostVertexRemover.REMOVED_VERTEX_COUNT));
+    }
 }

@@ -72,6 +72,7 @@ import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.Token;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
+import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
 import org.janusgraph.graphdb.query.QueryUtil;
@@ -1348,6 +1349,25 @@ public class ManagementSystem implements JanusGraphManagement {
                 (int) duration.getSeconds();
 
         setTypeModifier(type, ModifierType.TTL, ttlSeconds);
+    }
+
+    @Override
+    public ScanJobFuture removeGhostVertices(int numOfThreads) {
+        StandardScanner.Builder builder = graph.getBackend().buildEdgeScanJob();
+        builder.setJob(new GhostVertexRemover(graph));
+        builder.setNumProcessingThreads(numOfThreads);
+        ScanJobFuture future;
+        try {
+            future = builder.execute();
+        } catch (BackendException e) {
+            throw new JanusGraphException(e);
+        }
+        return future;
+    }
+
+    @Override
+    public ScanJobFuture removeGhostVertices() {
+        return removeGhostVertices(Runtime.getRuntime().availableProcessors());
     }
 
     private void setTypeModifier(final JanusGraphSchemaElement element,
