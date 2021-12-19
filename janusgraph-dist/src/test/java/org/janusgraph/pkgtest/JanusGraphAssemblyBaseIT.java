@@ -111,7 +111,11 @@ public abstract class JanusGraphAssemblyBaseIT {
     }
 
     protected void unzipAndRunExpect(String expectTemplateName, String graphConfig, String graphToString, boolean full, boolean debug) throws Exception {
-        unzipAndRunExpect(expectTemplateName, ImmutableMap.of("graphConfig", graphConfig, "graphToString", graphToString), full, debug);
+        unzipAndRunExpect(expectTemplateName, graphConfig, "", graphToString, full, debug);
+    }
+
+    protected void unzipAndRunExpect(String expectTemplateName, String graphConfig, String sparkGraphConfig, String graphToString, boolean full, boolean debug) throws Exception {
+        unzipAndRunExpect(expectTemplateName, ImmutableMap.of("graphConfig", graphConfig, "sparkGraphConfig", sparkGraphConfig, "graphToString", graphToString), full, debug);
     }
 
     private static void expect(String dir, String expectScript, boolean debug) throws IOException, InterruptedException {
