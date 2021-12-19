@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
-import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -41,7 +40,7 @@ import java.util.function.Consumer;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements JanusGraphManagement.IndexJobFuture, Runnable {
+class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements ScanJobFuture, Runnable {
 
     private static final Logger log =
             LoggerFactory.getLogger(StandardScannerExecutor.class);

@@ -22,12 +22,10 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.VertexLabel;
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJobFuture;
 
 import java.time.Duration;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * The JanusGraphManagement interface provides methods to define, update, and inspect the schema of a JanusGraph graph.
@@ -242,32 +240,6 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
 
     }
 
-    interface IndexJobFuture extends Future<ScanMetrics> {
-
-        /**
-         * Returns a set of potentially incomplete and still-changing metrics
-         * for this job.  This is not guaranteed to be the same object as the
-         * one returned by {@link #get()}, nor will the metrics visible through
-         * the object returned by this method necessarily eventually converge
-         * on the same values in the object returned by {@link #get()}, though
-         * the implementation should attempt to provide both properties when
-         * practical.
-         * <p>
-         * The metrics visible through the object returned by this method may
-         * also change their values between reads.  In other words, this is not
-         * necessarily an immutable snapshot.
-         * <p>
-         * If the index job has failed and the implementation is capable of
-         * quickly detecting that, then the implementation should throw an
-         * {@code ExecutionException}.  Returning metrics in case of failure is
-         * acceptable, but throwing an exception is preferred.
-         *
-         * @return metrics for a potentially still-running job
-         * @throws ExecutionException if the index job threw an exception
-         */
-        ScanMetrics getIntermediateResult() throws ExecutionException;
-    }
-
     /*
     ##################### CONSISTENCY SETTING ##########################
      */
@@ -330,7 +302,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      * @param updateAction
      * @return a future that completes when the index action is done
      */
-    IndexJobFuture updateIndex(Index index, SchemaAction updateAction);
+    ScanJobFuture updateIndex(Index index, SchemaAction updateAction);
 
     /**
      * If an index update job was triggered through {@link #updateIndex(Index, SchemaAction)} with schema actions
@@ -340,7 +312,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      * @param index
      * @return A message that reflects the status of the index job
      */
-    IndexJobFuture getIndexJobStatus(Index index);
+    ScanJobFuture getIndexJobStatus(Index index);
 
     /*
     ##################### CLUSTER MANAGEMENT ##########################

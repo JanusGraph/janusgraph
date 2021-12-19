@@ -80,6 +80,7 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJobFuture;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.log.Log;
@@ -1679,7 +1680,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // Remove name index
         graphIndex = mgmt.getGraphIndex(name);
         mgmt.updateIndex(graphIndex, SchemaAction.REMOVE_INDEX);
-        JanusGraphManagement.IndexJobFuture graphMetrics = mgmt.getIndexJobStatus(graphIndex);
+        ScanJobFuture graphMetrics = mgmt.getIndexJobStatus(graphIndex);
         finishSchema();
 
         // Should have deleted at least one record
