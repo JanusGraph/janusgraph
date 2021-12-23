@@ -32,11 +32,7 @@ public class ElementUtils {
             return (Long) id;
         if (id instanceof Number)
             return ((Number) id).longValue();
-        try {
-            return Long.parseLong(id.toString());
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return id;
     }
 
     public static RelationIdentifier getEdgeId(Object id) {

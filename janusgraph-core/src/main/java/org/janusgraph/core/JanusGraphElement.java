@@ -63,19 +63,6 @@ public interface JanusGraphElement extends Element, Idfiable, Removable {
     Object id();
 
     /**
-     * Unique identifier for this entity. This id can be temporarily assigned and might change.
-     * Use {@link #id()} for the permanent id.
-     *
-     * @deprecated Deprecated since 1.0.0. Use id() instead unless for JanusGraphRelation.
-     * @return Unique long id
-     */
-    @Override
-    @Deprecated
-    default long longId() {
-        return (long) id();
-    }
-
-    /**
      * Checks whether this entity has a unique identifier.
      * <p>
      * Note that some entities may never be assigned an identifier and others will only be

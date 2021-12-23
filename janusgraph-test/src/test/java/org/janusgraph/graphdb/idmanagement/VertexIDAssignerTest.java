@@ -38,7 +38,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +58,9 @@ public class VertexIDAssignerTest {
         for (int maxPerPartition : new int[]{Integer.MAX_VALUE, 100, 300}) {
             for (int numPartitions : new int[]{2, 4, 10}) {
                 for (int[] local : new int[][]{null, {0,2, numPartitions}, {235,234,8}, {1,1,2}, {0,1<<(numPartitions-1),numPartitions}}) {
-                    configurations.add(generateConfigurationArguments(numPartitions, maxPerPartition, local));
+                    for (boolean allowStringVertexId : new boolean[] {true, false}) {
+                        configurations.add(generateConfigurationArguments(numPartitions, maxPerPartition, local, allowStringVertexId));
+                    }
                 }
             }
         }
@@ -70,8 +74,10 @@ public class VertexIDAssignerTest {
      * @param partitionMax The maximum number of ids that can be allocated per partition. This is artificially constrained by the MockIDAuthority
      * @param localPartitionDef This array contains three integers: 1+2) lower and upper bounds for the local partition range, and
      *                          3) the bit width of the local bounds. The bounds will be bit-shifted forward to consume the bit width
+     * @param allowStringVertexId Whether usage of string-type vertex id is allowed
      */
-    private static Arguments generateConfigurationArguments(int numPartitionsBits, int partitionMax, int[] localPartitionDef){
+    private static Arguments generateConfigurationArguments(int numPartitionsBits, int partitionMax,
+                                                            int[] localPartitionDef, boolean allowStringVertexId){
         MockIDAuthority idAuthority = new MockIDAuthority(11, partitionMax);
 
         StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
@@ -84,7 +90,7 @@ public class VertexIDAssignerTest {
 
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS,1<<numPartitionsBits);
-        VertexIDAssigner idAssigner = new VertexIDAssigner(config, idAuthority, features);
+        VertexIDAssigner idAssigner = new VertexIDAssigner(config, idAuthority, features, allowStringVertexId);
         System.out.println(String.format("Configuration [%s|%s|%s]",numPartitionsBits,partitionMax,Arrays.toString(localPartitionDef)));
 
         long maxIDAssignments;
@@ -94,7 +100,7 @@ public class VertexIDAssignerTest {
             maxIDAssignments = (1<<numPartitionsBits)*((long)partitionMax);
         }
 
-        return Arguments.arguments(idAssigner, maxIDAssignments, numPartitionsBits);
+        return Arguments.arguments(idAssigner, maxIDAssignments, numPartitionsBits, allowStringVertexId);
     }
 
 
@@ -103,19 +109,20 @@ public class VertexIDAssignerTest {
         HIGH
     }
 
-    private JanusGraph getInMemoryGraph(boolean allowSettingVertexId, boolean idsFlush, int numPartitionsBits) {
+    private JanusGraph getInMemoryGraph(boolean allowSettingVertexId, boolean allowStringVertexId, boolean idsFlush, int numPartitionsBits) {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, InMemoryStoreManager.class.getCanonicalName());
         config.set(GraphDatabaseConfiguration.IDS_FLUSH, idsFlush);
         config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ofMillis(1L));
         config.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS, 1<<numPartitionsBits);
         config.set(GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID, allowSettingVertexId);
+        config.set(GraphDatabaseConfiguration.ALLOW_STRING_VERTEX_ID, allowStringVertexId);
         return JanusGraphFactory.open(config);
     }
 
     @Test
     public void testDisableIdsFlush() {
-        final JanusGraph graph = getInMemoryGraph(false, false, 2);
+        final JanusGraph graph = getInMemoryGraph(false, false, false, 2);
         JanusGraphVertex v1 = graph.addVertex();
         JanusGraphVertex v2 = graph.addVertex();
         Edge e = v1.addEdge("knows", v2);
@@ -143,7 +150,7 @@ public class VertexIDAssignerTest {
         int totalVertices = 0;
         for (int trial = 0; trial < 10; trial++) {
             for (boolean flush : new boolean[]{true, false}) {
-                final JanusGraph graph = getInMemoryGraph(false, false, numPartitionsBits);
+                final JanusGraph graph = getInMemoryGraph(false, false, false, numPartitionsBits);
                 int numVertices = 1000;
                 final List<JanusGraphVertex> vertices = new ArrayList<>(numVertices);
                 final List<InternalRelation> relations = new ArrayList<>();
@@ -230,7 +237,7 @@ public class VertexIDAssignerTest {
         final long maxCount = idAssigner.getIDManager().getVertexCountBound();
         long count = 1;
         for (int trial = 0; trial < 10; trial++) {
-            final JanusGraph graph = getInMemoryGraph(true, true, numPartitionsBits);
+            final JanusGraph graph = getInMemoryGraph(true, false, true, numPartitionsBits);
             int numVertices = 1000;
             final List<JanusGraphVertex> vertices = new ArrayList<>(numVertices);
             try {
@@ -263,6 +270,53 @@ public class VertexIDAssignerTest {
                 graph.tx().rollback();
                 graph.close();
             }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("configs")
+    public void testCustomStringIdAssignment(VertexIDAssigner idAssigner, long maxIDAssignments,
+                                             int numPartitionsBits, boolean allowStringVertexId) {
+        if (!allowStringVertexId) return;
+        testCustomStringIdAssignment(idAssigner, CustomIdStrategy.LOW, numPartitionsBits);
+        testCustomStringIdAssignment(idAssigner, CustomIdStrategy.HIGH, numPartitionsBits);
+    }
+
+    private void testCustomStringIdAssignment(VertexIDAssigner idAssigner, CustomIdStrategy idStrategy, int numPartitionsBits) {
+        Set<String> vertexIds = new HashSet<>();
+        final long maxCount = idAssigner.getIDManager().getVertexCountBound();
+        long count = 1;
+        final JanusGraph graph = getInMemoryGraph(true, true, true, numPartitionsBits);
+        int numVertices = 100;
+        final List<JanusGraphVertex> vertices = new ArrayList<>(numVertices);
+        try {
+            for (int i = 0; i < numVertices; i++, count++) {
+                final long userVertexId;
+                switch (idStrategy) {
+                    case LOW:
+                        userVertexId = count;
+                        break;
+                    case HIGH:
+                        userVertexId = maxCount-count;
+                        break;
+                    default:
+                        throw new RuntimeException("Unsupported custom id strategy: " + idStrategy);
+                }
+                final String vid = "janusgraph_vid" + userVertexId;
+                JanusGraphVertex next = graph.addVertex(T.id, vid, "user_id", userVertexId);
+                graph.tx().commit();
+                vertices.add((JanusGraphVertex) graph.traversal().V().has("user_id", userVertexId).next());
+            }
+
+            //Verify that ids are set, unique and consistent with user id basis
+            for (JanusGraphVertex v : vertices) {
+                assertTrue(v.hasId());
+                assertTrue(vertexIds.add((String) v.id()));
+                assertEquals(v.id(), "janusgraph_vid" + v.value("user_id"));
+            }
+        } finally {
+            graph.tx().rollback();
+            graph.close();
         }
     }
 

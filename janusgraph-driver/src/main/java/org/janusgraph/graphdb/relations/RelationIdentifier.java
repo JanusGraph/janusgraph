@@ -19,6 +19,8 @@ import org.janusgraph.util.encoding.LongEncoding;
 import java.io.Serializable;
 import java.util.Arrays;
 
+import static org.janusgraph.util.encoding.LongEncoding.STRING_MARKER;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -98,10 +100,22 @@ public final class RelationIdentifier implements Serializable {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(LongEncoding.encode(relationId)).append(TOSTRING_DELIMITER).append(LongEncoding.encode(((Number) outVertexId).longValue()))
-            .append(TOSTRING_DELIMITER).append(LongEncoding.encode(typeId));
-        if (inVertexId != null && ((Number) inVertexId).longValue() > 0) {
-            s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(((Number) inVertexId).longValue()));
+        s.append(LongEncoding.encode(relationId)).append(TOSTRING_DELIMITER);
+        if (outVertexId instanceof Number) {
+            s.append(LongEncoding.encode(((Number) outVertexId).longValue()));
+        } else {
+            assert outVertexId instanceof String;
+            s.append(STRING_MARKER).append(outVertexId);
+        }
+        s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(typeId));
+        if (inVertexId != null) {
+            if (inVertexId instanceof Number) {
+                assert ((Number) inVertexId).longValue() > 0;
+                s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(((Number) inVertexId).longValue()));
+            } else {
+                assert inVertexId instanceof String;
+                s.append(TOSTRING_DELIMITER).append(STRING_MARKER).append(inVertexId);
+            }
         }
         return s.toString();
     }
@@ -111,10 +125,23 @@ public final class RelationIdentifier implements Serializable {
         if (elements.length != 3 && elements.length != 4)
             throw new IllegalArgumentException("Not a valid relation identifier: " + id);
         try {
-            return new RelationIdentifier(LongEncoding.decode(elements[1]),
-                LongEncoding.decode(elements[2]),
-                LongEncoding.decode(elements[0]),
-                elements.length == 4 ? LongEncoding.decode(elements[3]) : 0);
+            Object outVertexId;
+            if (elements[1].charAt(0) == STRING_MARKER) {
+                outVertexId = elements[1].substring(1);
+            } else {
+                outVertexId = LongEncoding.decode(elements[1]);
+            }
+            final long typeId = LongEncoding.decode(elements[2]);
+            final long relationId = LongEncoding.decode(elements[0]);
+            Object inVertexId = null;
+            if (elements.length == 4) {
+                if (elements[3].charAt(0) == STRING_MARKER) {
+                    inVertexId = elements[3].substring(1);
+                } else {
+                    inVertexId = LongEncoding.decode(elements[3]);
+                }
+            }
+            return new RelationIdentifier(outVertexId, typeId, relationId, inVertexId);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid id - each token expected to be a number", e);
         }

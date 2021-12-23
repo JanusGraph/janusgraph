@@ -39,15 +39,6 @@ import org.janusgraph.core.schema.JanusGraphSchemaType;
 public interface RelationType extends JanusGraphVertex, JanusGraphSchemaType {
 
     /**
-     * Returns the long representation of the id.
-     *
-     * @return
-     */
-    default long longId() {
-        return ((Number) id()).longValue();
-    }
-
-    /**
      * Checks if this relation type is a property key
      *
      * @return true, if this relation type is a property key, else false.

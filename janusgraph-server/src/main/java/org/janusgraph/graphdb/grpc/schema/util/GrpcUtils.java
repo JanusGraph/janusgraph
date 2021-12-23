@@ -17,7 +17,6 @@ package org.janusgraph.graphdb.grpc.schema.util;
 import com.google.protobuf.Any;
 import com.google.protobuf.Int64Value;
 import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Geoshape;
@@ -36,7 +35,7 @@ import java.util.UUID;
 
 public class GrpcUtils {
 
-    public static Any getIdProtoForElement(JanusGraphElement element) {
+    public static Any getIdProtoForElement(JanusGraphSchemaType element) {
         return Any.pack(Int64Value.of(element.longId()));
     }
 

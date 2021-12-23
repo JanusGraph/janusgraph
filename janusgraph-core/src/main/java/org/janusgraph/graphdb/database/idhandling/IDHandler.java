@@ -21,9 +21,11 @@ import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
+import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.RelationCategory;
 
+import static org.janusgraph.graphdb.database.idhandling.VariableLong.STOP_MASK;
 import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.SystemEdgeLabel;
 import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.SystemPropertyKey;
 import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.UserEdgeLabel;
@@ -193,6 +195,40 @@ public class IDHandler {
         end++;
         assert end > start;
         return new StaticBuffer[]{getPrefixed(start), getPrefixed(end)};
+    }
+
+    public static void writeVertexId(DataOutput out, Object id, boolean forward) {
+        if (forward) {
+            if (id instanceof String) {
+                VariableString.write(out, id.toString());
+            } else {
+                VariableLong.writePositive(out, ((Number) id).longValue());
+            }
+        } else {
+            if (id instanceof String) {
+                VariableString.writeBackward(out, id.toString());
+            } else {
+                VariableLong.writePositiveBackward(out, ((Number) id).longValue());
+            }
+        }
+    }
+
+    public static Object readVertexId(ReadBuffer in, boolean forward) {
+        int position = forward ? in.getPosition() : in.getPosition() - 1;
+        boolean isStringId = in.getByte(position) == STOP_MASK;
+        if (forward) {
+            if (isStringId) {
+                return VariableString.read(in, true);
+            } else {
+                return VariableLong.readPositive(in);
+            }
+        } else {
+            if (isStringId) {
+                return VariableString.readBackward(in);
+            } else {
+                return VariableLong.readPositiveBackward(in);
+            }
+        }
     }
 
 }

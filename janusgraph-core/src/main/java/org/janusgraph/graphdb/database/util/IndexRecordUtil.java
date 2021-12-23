@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.database.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang.StringUtils;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphRelation;
@@ -32,6 +33,7 @@ import org.janusgraph.diskstorage.util.HashingUtil;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.graphdb.database.IndexRecordEntry;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.database.idhandling.IDHandler;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.index.IndexMutationType;
 import org.janusgraph.graphdb.database.index.IndexRecords;
@@ -53,11 +55,14 @@ import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
 import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.util.IDUtils;
 import org.janusgraph.util.encoding.LongEncoding;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.janusgraph.util.encoding.LongEncoding.STRING_MARKER;
 
 public class IndexRecordUtil {
 
@@ -86,15 +91,30 @@ public class IndexRecordUtil {
         return element2String(element.id());
     }
 
+    /**
+     * Convert an element's (including vertex and relation) id into a String
+     *
+     * @param elementId
+     * @return
+     */
     public static String element2String(Object elementId) {
-        Preconditions.checkArgument(elementId instanceof Long || elementId instanceof RelationIdentifier);
-        if (elementId instanceof Long) return longID2Name((Long)elementId);
-        else return ((RelationIdentifier) elementId).toString();
+        Preconditions.checkArgument(elementId instanceof Long || elementId instanceof RelationIdentifier || elementId instanceof String);
+        if (elementId instanceof RelationIdentifier) {
+            return ((RelationIdentifier) elementId).toString();
+        } else {
+            return id2Name(elementId);
+        }
     }
 
     public static Object string2ElementId(String str) {
-        if (str.contains(RelationIdentifier.TOSTRING_DELIMITER)) return RelationIdentifier.parse(str);
-        else return name2LongID(str);
+        if (StringUtils.isEmpty(str)) {
+            throw new IllegalArgumentException("Empty string cannot be converted to a valid id");
+        }
+        if (str.contains(RelationIdentifier.TOSTRING_DELIMITER)) {
+            return RelationIdentifier.parse(str);
+        } else {
+            return name2Id(str);
+        }
     }
 
     public static String key2Field(MixedIndexType index, PropertyKey key) {
@@ -107,23 +127,36 @@ public class IndexRecordUtil {
     }
 
     public static String keyID2Name(PropertyKey key) {
-        return longID2Name(key.longId());
+        return id2Name(key.longId());
     }
 
-    public static String longID2Name(long id) {
-        Preconditions.checkArgument(id > 0);
-        return LongEncoding.encode(id);
+    public static String id2Name(Object id) {
+        IDUtils.checkId(id);
+        if (id instanceof Number) {
+            return LongEncoding.encode(((Number) id).longValue());
+        } else {
+            return STRING_MARKER + id.toString();
+        }
     }
 
-    public static long name2LongID(String name) {
-        return LongEncoding.decode(name);
+    public static Object name2Id(String name) {
+        if (name.charAt(0) == STRING_MARKER) {
+            return name.substring(1);
+        } else {
+            return LongEncoding.decode(name);
+        }
     }
 
     public static RelationIdentifier bytebuffer2RelationId(ReadBuffer b) {
         Object[] relationId = new Object[4];
-        for (int i = 0; i < 3; i++) relationId[i] = VariableLong.readPositive(b);
-        if (b.hasRemaining()) relationId[3] = VariableLong.readPositive(b);
-        else relationId = Arrays.copyOfRange(relationId, 0, 3);
+        relationId[0] = VariableLong.readPositive(b);
+        relationId[1] = IDHandler.readVertexId(b, true);
+        relationId[2] = VariableLong.readPositive(b);
+        if (b.hasRemaining()) {
+            relationId[3] = IDHandler.readVertexId(b, true);
+        } else {
+            relationId = Arrays.copyOfRange(relationId,0,3);
+        }
         return RelationIdentifier.get(relationId);
     }
 
@@ -238,33 +271,35 @@ public class IndexRecordUtil {
         }
     }
 
-    public static Entry getIndexEntry(CompositeIndexType index, IndexRecordEntry[] record, JanusGraphElement element, Serializer serializer) {
+
+    private static Entry getIndexEntry(CompositeIndexType index, IndexRecordEntry[] record, JanusGraphElement element, Serializer serializer) {
         final DataOutput out = serializer.getDataOutput(1+8+8*record.length+4*8);
         out.putByte(FIRST_INDEX_COLUMN_BYTE);
-        if (index.getCardinality()!= Cardinality.SINGLE) {
+        if (index.getCardinality()!=Cardinality.SINGLE) {
             if (element instanceof JanusGraphVertex) {
-                VariableLong.writePositive(out, ((Number) element.id()).longValue());
+                IDHandler.writeVertexId(out, element.id(), true);
             } else {
                 assert element instanceof JanusGraphRelation;
+                assert ((JanusGraphRelation) element).longId() == ((RelationIdentifier) element.id()).getRelationId();
                 VariableLong.writePositive(out, ((JanusGraphRelation) element).longId());
             }
             if (index.getCardinality()!=Cardinality.SET) {
                 for (final IndexRecordEntry re : record) {
-                    VariableLong.writePositive(out,re.getRelationId());
+                    VariableLong.writePositive(out, re.getRelationId());
                 }
             }
         }
         final int valuePosition=out.getPosition();
         if (element instanceof JanusGraphVertex) {
-            VariableLong.writePositive(out,((Number) element.id()).longValue());
+            IDHandler.writeVertexId(out, element.id(), true);
         } else {
             assert element instanceof JanusGraphRelation;
             final RelationIdentifier rid = (RelationIdentifier)element.id();
             VariableLong.writePositive(out, rid.getRelationId());
-            VariableLong.writePositive(out, ((Number) rid.getOutVertexId()).longValue());
+            IDHandler.writeVertexId(out, rid.getOutVertexId(), true);
             VariableLong.writePositive(out, rid.getTypeId());
             if (rid.getInVertexId() != null) {
-                VariableLong.writePositive(out, ((Number) rid.getInVertexId()).longValue());
+                IDHandler.writeVertexId(out, rid.getInVertexId(), true);
             }
         }
         return new StaticArrayEntry(out.getStaticBuffer(),valuePosition);

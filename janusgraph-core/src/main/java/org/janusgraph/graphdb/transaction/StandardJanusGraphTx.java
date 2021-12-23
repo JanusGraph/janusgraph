@@ -142,6 +142,7 @@ import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.janusgraph.graphdb.vertices.StandardVertex;
 import org.janusgraph.util.datastructures.Retriever;
+import org.janusgraph.util.encoding.StringEncoding;
 import org.janusgraph.util.stats.MetricManager;
 import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
@@ -270,6 +271,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Preconditions.checkNotNull(config);
         this.graph = graph;
         this.times = graph.getConfiguration().getTimestampProvider();
+        this.allowStringVertexId = graph.getConfiguration().allowStringVertexId();
         this.config = config;
         this.idManager = graph.getIDManager();
         this.idInspector = idManager;
@@ -445,7 +447,23 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     }
 
     private boolean isValidVertexId(Object id) {
-        return (!(id instanceof Number) || ((Number) id).longValue() > 0) && (idInspector.isSchemaVertexId(id) || idInspector.isUserVertexId(id));
+        if (!idInspector.isSchemaVertexId(id) && !idInspector.isUserVertexId(id)) {
+            return false;
+        }
+        if (id instanceof Number) {
+            return ((Number) id).longValue() > 0;
+        } else {
+            assert id instanceof String;
+            if (!StringEncoding.isAsciiString((String) id)) {
+                log.warn("ID contains non-ascii character, ignored: " + id);
+                return false;
+            }
+            if (((String) id).contains(RelationIdentifier.TOSTRING_DELIMITER)) {
+                log.warn("ID contains illegal " + RelationIdentifier.TOSTRING_DELIMITER + " character, ignored: " + id);
+                return false;
+            }
+            return true;
+        }
     }
 
     @Override
@@ -473,6 +491,16 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         final List<JanusGraphVertex> result = new ArrayList<>(ids.length);
         final List<Object> vertexIds = new ArrayList<>(ids.length);
         for (Object id : ids) {
+            assert id instanceof String || id instanceof Number;
+            if (!allowStringVertexId && id instanceof String) {
+                // Convert string to long to keep backward compatibility prior to 1.0.0
+                // prior to JanusGraph 1.0.0, vertices always have ids of long types. However, even if
+                // a vertex has id 100L, both g.V(100L) and g.V("100") will return this vertex.
+                // Since JanusGraph 1.0.0, vertex id can be of either long type or string type. To
+                // keep backward compatibility, we hereby explicitly cast string id to long ids, if
+                // string custom vertex id functionality is disabled.
+                id = Long.valueOf((String) id);
+            }
             if (isValidVertexId(id)) {
                 if (idInspector.isPartitionedVertex(id)) id=idManager.getCanonicalVertexId(((Number) id).longValue());
                 if (vertexCache.contains(id))
@@ -581,6 +609,13 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Preconditions.checkArgument(vertexId == null || IDManager.VertexIDType.NormalVertex.is(vertexId), "Not a valid vertex id: %s", vertexId);
         Preconditions.checkArgument(vertexId == null || ((InternalVertexLabel)label).hasDefaultConfiguration(), "Cannot only use default vertex labels: %s",label);
         Preconditions.checkArgument(vertexId == null || !config.hasVerifyExternalVertexExistence() || !containsVertex(vertexId), "Vertex with given id already exists: %s", vertexId);
+        if (vertexId != null && vertexId instanceof String && !StringEncoding.isAsciiString((String) vertexId)) {
+            throw new IllegalArgumentException("Custom string id contains non-ascii character: " + vertexId);
+        }
+        if (vertexId != null && vertexId instanceof String && ((String) vertexId).contains(RelationIdentifier.TOSTRING_DELIMITER)) {
+            throw new IllegalArgumentException("Custom string id contains reserved character ("
+                + RelationIdentifier.TOSTRING_DELIMITER + "): " + vertexId);
+        }
         StandardVertex vertex = new StandardVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.NormalVertex, temporaryIds.nextID()), ElementLifeCycle.New);
         if (vertexId != null) {
             vertex.setId(vertexId);

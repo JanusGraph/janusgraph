@@ -54,6 +54,11 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
      */
     protected abstract JanusGraphBlueprintsGraph getGraph();
 
+    /**
+     * Whether this graph allows usage of custom vertex id of string type
+     */
+    protected boolean allowStringVertexId;
+
     @Override
     public Features features() {
         return getGraph().features();
@@ -122,7 +127,7 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
         if (labelValue!=null) {
             label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getOrCreateVertexLabel((String) labelValue);
         }
-        Object id = idValue.map(Number.class::cast).map(Number::longValue).orElse(null);
+        Object id = idValue.map(v -> v instanceof Number ? ((Number) v).longValue() : v).orElse(null);
         final JanusGraphVertex vertex = addVertex(id, label);
         org.janusgraph.graphdb.util.ElementHelper.attachProperties(vertex, keyValues);
         return vertex;

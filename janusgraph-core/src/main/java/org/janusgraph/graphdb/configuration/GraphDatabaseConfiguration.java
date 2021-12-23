@@ -21,6 +21,7 @@ import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.tinkerpop.gremlin.jsr223.GremlinLangScriptEngine;
 import org.apache.tinkerpop.gremlin.jsr223.GremlinScriptEngine;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.janusgraph.core.JanusGraphConfigurationException;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
 import org.janusgraph.core.schema.DisableDefaultSchemaMaker;
@@ -102,10 +103,19 @@ public class GraphDatabaseConfiguration {
             "General configuration options");
 
     public static final ConfigOption<Boolean> ALLOW_SETTING_VERTEX_ID = new ConfigOption<>(GRAPH_NS,"set-vertex-id",
-            "Whether user provided vertex ids should be enabled and JanusGraph's automatic id allocation be disabled. " +
+            "Whether user provided vertex ids should be enabled and JanusGraph's automatic vertex id allocation be disabled. " +
             "Useful when operating JanusGraph in concert with another storage system that assigns long ids but disables some " +
-            "of JanusGraph's advanced features which can lead to inconsistent data. EXPERT FEATURE - USE WITH GREAT CARE.",
-            ConfigOption.Type.FIXED, false);
+            "of JanusGraph's advanced features which can lead to inconsistent data. For example, users must ensure the vertex ids " +
+            "are unique to avoid duplication. Must use `graph.getIDManager().toVertexId(long)` to convert your id first. Once " +
+            "this is enabled, you have to provide vertex id when creating new vertices. EXPERT FEATURE - USE WITH GREAT CARE.",
+            ConfigOption.Type.GLOBAL_OFFLINE, false);
+
+    public static final ConfigOption<Boolean> ALLOW_STRING_VERTEX_ID = new ConfigOption<>(GRAPH_NS, "allow-string-vid",
+            "Whether string-type vertex ids are allowed. " + ALLOW_SETTING_VERTEX_ID.getName() +
+            " must be enabled in order to use this functionality. This does not prevent users from using custom ids with " +
+            "long type - both string ids and long ids are supported. If your storage backend does not support unordered " +
+            "scan, then some operations will be disabled. You cannot use this feature with Berkeley DB. EXPERT FEATURE - USE WITH GREAT CARE.",
+            ConfigOption.Type.GLOBAL_OFFLINE, false);
 
     public static final ConfigOption<String> GRAPH_NAME = new ConfigOption<>(GRAPH_NS, "graphname",
             "This config option is an optional configuration setting that you may supply when opening a graph. " +
@@ -1260,6 +1270,7 @@ public class GraphDatabaseConfiguration {
     private IndexSelectionStrategy indexSelectionStrategy;
     private Boolean batchPropertyPrefetching;
     private boolean allowVertexIdSetting;
+    private boolean allowStringVertexId;
     private boolean logTransactions;
     private String metricsPrefix;
     private String unknownIndexKeyName;
@@ -1333,6 +1344,10 @@ public class GraphDatabaseConfiguration {
         return allowVertexIdSetting;
     }
 
+    public boolean allowStringVertexId() {
+        return allowStringVertexId;
+    }
+
     public Duration getMaxCommitTime() {
         return configuration.get(MAX_COMMIT_TIME);
     }
@@ -1394,7 +1409,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public VertexIDAssigner getIDAssigner(Backend backend) {
-        return new VertexIDAssigner(configuration, backend.getIDAuthority(), backend.getStoreFeatures());
+        return new VertexIDAssigner(configuration, backend.getIDAuthority(), backend.getStoreFeatures(), allowStringVertexId);
     }
 
     public String getBackendDescription() {
@@ -1500,7 +1515,14 @@ public class GraphDatabaseConfiguration {
         batchPropertyPrefetching = configuration.get(BATCH_PROPERTY_PREFETCHING);
         adjustQueryLimit = configuration.get(ADJUST_LIMIT);
         hardMaxLimit = configuration.get(HARD_MAX_LIMIT);
+
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
+        allowStringVertexId = configuration.get(ALLOW_STRING_VERTEX_ID);
+        if (allowStringVertexId && !allowVertexIdSetting) {
+            throw new JanusGraphConfigurationException(String.format("%s is enabled but %s is disabled",
+                ALLOW_STRING_VERTEX_ID.getName(), ALLOW_SETTING_VERTEX_ID.getName()));
+        }
+
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
         unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;

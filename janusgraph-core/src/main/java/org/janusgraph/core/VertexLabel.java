@@ -29,15 +29,6 @@ import java.util.Collection;
 public interface VertexLabel extends JanusGraphVertex, JanusGraphSchemaType {
 
     /**
-     * Returns the long representation of id.
-     *
-     * @return
-     */
-    default long longId() {
-        return ((Number) id()).longValue();
-    }
-
-    /**
      * Whether vertices with this label are partitioned.
      *
      * @return

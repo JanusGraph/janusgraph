@@ -83,6 +83,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STRING_VERTEX_ID;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BUFFER_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
@@ -222,6 +223,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     private final int bufferSize;
     private final Duration maxWriteTime;
     private final Duration maxReadTime;
+    private final boolean allowStringVertexId;
     private final boolean cacheEnabled;
     private final ExecutorService threadPool;
     private final long threadPoolShutdownMaxWaitTime;
@@ -247,6 +249,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         txLogManager = getKCVSLogManager(TRANSACTION_LOG);
         userLogManager = getLogManager(USER_LOG);
 
+        allowStringVertexId = configuration.get(ALLOW_STRING_VERTEX_ID);
 
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
 
@@ -495,6 +498,9 @@ public class Backend implements LockerProvider, AutoCloseable {
         StoreManager manager = getImplementationClass(storageConfig, storageConfig.get(STORAGE_BACKEND),
                 StandardStoreManager.getAllManagerClasses());
         if (manager instanceof OrderedKeyValueStoreManager) {
+            if (storageConfig.get(ALLOW_STRING_VERTEX_ID).booleanValue()) {
+                throw new IllegalArgumentException(ALLOW_STRING_VERTEX_ID.getName() + " does not guarantee fixed key length");
+            }
             Map<String, Integer> keyLength = new HashMap<>(3);
             keyLength.put(EDGESTORE_NAME, 8);
             keyLength.put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, 8);
@@ -586,7 +592,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
         return new BackendTransaction(cacheTx, configuration, storeFeatures,
                 edgeStore, indexStore, txLogStore,
-                maxReadTime, indexTx, threadPool, !configuration.isSkipDBCacheRead());
+                maxReadTime, indexTx, threadPool, !configuration.isSkipDBCacheRead(), allowStringVertexId);
     }
 
     public synchronized void close() throws BackendException {

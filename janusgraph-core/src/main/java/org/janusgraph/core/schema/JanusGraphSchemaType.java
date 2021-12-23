@@ -14,6 +14,8 @@
 
 package org.janusgraph.core.schema;
 
+import org.janusgraph.core.Idfiable;
+
 /**
  * A JanusGraphSchemaType is a {@link JanusGraphSchemaElement} that represents a label or key
  * used in the graph. As such, a schema type is either a {@link org.janusgraph.core.RelationType}
@@ -24,7 +26,7 @@ package org.janusgraph.core.schema;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface JanusGraphSchemaType extends JanusGraphSchemaElement {
+public interface JanusGraphSchemaType extends Idfiable, JanusGraphSchemaElement {
 
     /**
      * Checks whether this schema type has been newly created in the current transaction.
@@ -32,4 +34,15 @@ public interface JanusGraphSchemaType extends JanusGraphSchemaElement {
      * @return True, if the schema type has been newly created, else false.
      */
     boolean isNew();
+
+    /**
+     * Returns the long representation of the id.
+     * Since the id of a schema type is always auto-generated, its
+     * id must be of long type
+     *
+     * @return
+     */
+    default long longId() {
+        return ((Number) id()).longValue();
+    }
 }

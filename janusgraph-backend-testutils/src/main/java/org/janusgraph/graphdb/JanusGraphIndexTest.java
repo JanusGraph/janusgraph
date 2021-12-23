@@ -125,7 +125,6 @@ import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
-import static org.janusgraph.graphdb.JanusGraphTest.evaluateQuery;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
@@ -3381,7 +3380,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         getV(namePropKeyStr, nameValue, vertexLabelName).drop().iterate();
         newTx();
 
-        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) testVertex).longId(), ElementLifeCycle.New);
+        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, testVertex.id(), ElementLifeCycle.New);
 
         IndexUpdate<String, IndexEntry> update = IndexRecordUtil.getMixedIndexUpdate(
             element,
@@ -3453,7 +3452,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().iterate();
         newTx();
 
-        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) vertex2).longId(), ElementLifeCycle.New);
+        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, vertex2.id(), ElementLifeCycle.New);
 
         IndexUpdate<String, IndexEntry> nameUpdate = IndexRecordUtil.getMixedIndexUpdate(
             element,
@@ -3633,7 +3632,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().iterate();
         newTx();
 
-        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) vertex2).longId(), ElementLifeCycle.New);
+        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, vertex2.id(), ElementLifeCycle.New);
 
         IndexUpdate<String, IndexEntry> nameUpdate = IndexRecordUtil.getMixedIndexUpdate(
             element,

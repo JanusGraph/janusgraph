@@ -87,7 +87,7 @@ public class VertexIDAssigner implements AutoCloseable {
     private final int partitionIdBound;
     private final boolean hasLocalPartitions;
 
-    public VertexIDAssigner(Configuration config, IDAuthority idAuthority, StoreFeatures idAuthFeatures) {
+    public VertexIDAssigner(Configuration config, IDAuthority idAuthority, StoreFeatures idAuthFeatures, boolean allowStringVertexId) {
         Preconditions.checkNotNull(idAuthority);
         this.idAuthority = idAuthority;
 
@@ -176,13 +176,20 @@ public class VertexIDAssigner implements AutoCloseable {
                     partitionID = placementStrategy.getPartition(element);
             } else if (element instanceof InternalRelation) {
                 InternalRelation relation = (InternalRelation)element;
-                if (attempt < relation.getLen()) { //On the first attempts, try to use partition of incident vertices
+                // On the first attempts, try to use partition of incident vertices
+                if (attempt < relation.getLen()) {
                     InternalVertex incident = relation.getVertex(attempt);
                     Preconditions.checkArgument(incident.hasId());
-                    if (!IDManager.VertexIDType.PartitionedVertex.is(incident.id()) || relation.isProperty()) {
-                        partitionID = getPartitionID(incident);
+                    if (incident.id() instanceof Number) {
+                        if (!IDManager.VertexIDType.PartitionedVertex.is(incident.id()) || relation.isProperty()) {
+                            partitionID = getPartitionID(incident);
+                        } else {
+                            continue;
+                        }
                     } else {
-                        continue;
+                        // for custom string vertex ids, we find a consistent partitionId
+                        assert incident.id() instanceof String;
+                        partitionID = Math.abs(incident.id().hashCode() % partitionIdBound);
                     }
                 } else {
                     partitionID = placementStrategy.getPartition(element);
