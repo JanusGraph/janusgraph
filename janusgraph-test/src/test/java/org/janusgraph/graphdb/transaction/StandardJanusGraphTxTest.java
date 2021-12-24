@@ -13,11 +13,14 @@
 // limitations under the License.
 package org.janusgraph.graphdb.transaction;
 
+import org.easymock.EasyMock;
 import org.easymock.EasyMockSupport;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
 import org.janusgraph.core.schema.PropertyKeyMaker;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.EdgeSerializer;
@@ -34,11 +37,12 @@ import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.notNull;
 import static org.easymock.EasyMock.replay;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class StandardJanusGraphTxTest extends EasyMockSupport {
 
     @Test
-    public void testGetOrCreatePropertyKey() {
+    public void testGetOrCreatePropertyKey() throws BackendException {
         StandardJanusGraphTx tx = createTxWithMockedInternals();
         tx.getOrCreatePropertyKey("Foo", "Bar");
         Exception e = null;
@@ -52,11 +56,24 @@ public class StandardJanusGraphTxTest extends EasyMockSupport {
         verifyAll();
     }
 
+    @Test
+    public void testAccessVertexCacheAfterTxClosed() throws BackendException {
+        StandardJanusGraphTx tx = createTxWithMockedInternals();
+        tx.rollback();
+        // ensure getInternalVertex call does not throw NPE
+        // see https://lists.lfaidata.foundation/g/janusgraph-users/topic/potential_transaction_issue/85970858
+        assertNull(tx.getInternalVertex(1L));
+        // ensure expireSchemaElement call does not throw NPE
+        // see https://github.com/JanusGraph/janusgraph/issues/2898
+        tx.expireSchemaElement(1L);
+    }
 
-    private StandardJanusGraphTx createTxWithMockedInternals() {
+
+    private StandardJanusGraphTx createTxWithMockedInternals() throws BackendException {
         StandardJanusGraph mockGraph = createMock(StandardJanusGraph.class);
         TransactionConfiguration txConfig = createMock(TransactionConfiguration.class);
         GraphDatabaseConfiguration gdbConfig = createMock(GraphDatabaseConfiguration.class);
+        BackendTransaction txHandle = createMock(BackendTransaction.class);
         TimestampProvider tsProvider = createMock(TimestampProvider.class);
         Serializer mockSerializer = createMock(Serializer.class);
         EdgeSerializer mockEdgeSerializer = createMock(EdgeSerializer.class);
@@ -74,6 +91,8 @@ public class StandardJanusGraphTxTest extends EasyMockSupport {
         expect(mockGraph.getIndexSerializer()).andReturn(mockIndexSerializer);
         expect(mockGraph.getIDManager()).andReturn(idManager);
         expect(mockGraph.getIndexSelector()).andReturn(indexSelectionStrategy);
+        mockGraph.closeTransaction(isA(StandardJanusGraphTx.class));
+        EasyMock.expectLastCall().anyTimes();
 
         expect(gdbConfig.getTimestampProvider()).andReturn(tsProvider);
 
@@ -85,7 +104,7 @@ public class StandardJanusGraphTxTest extends EasyMockSupport {
         expect(txConfig.isReadOnly()).andReturn(true);
         expect(txConfig.getDirtyVertexSize()).andReturn(2);
         expect(txConfig.getIndexCacheWeight()).andReturn(2L);
-        expect(txConfig.getGroupName()).andReturn(null);
+        expect(txConfig.getGroupName()).andReturn(null).anyTimes();
         expect(txConfig.getAutoSchemaMaker()).andReturn(defaultSchemaMaker);
 
         expect(defaultSchemaMaker.makePropertyKey(isA(PropertyKeyMaker.class), notNull())).andReturn(propertyKey);
@@ -94,6 +113,9 @@ public class StandardJanusGraphTxTest extends EasyMockSupport {
 
         expect(propertyKey.isPropertyKey()).andReturn(true);
 
+        txHandle.rollback();
+        EasyMock.expectLastCall().anyTimes();
+
         replayAll();
 
         StandardJanusGraphTx partialMock = createMockBuilder(StandardJanusGraphTx.class)
@@ -101,6 +123,7 @@ public class StandardJanusGraphTxTest extends EasyMockSupport {
            .addMockedMethod("getRelationType")
            .createMock();
 
+        partialMock.setBackendTransaction(txHandle);
         expect(partialMock.getRelationType("Foo")).andReturn(null);
         expect(partialMock.getRelationType("Qux")).andReturn(propertyKey);
         expect(partialMock.getRelationType("Baz")).andReturn(relationType);
