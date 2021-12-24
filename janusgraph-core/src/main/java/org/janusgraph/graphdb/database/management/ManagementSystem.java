@@ -838,9 +838,13 @@ public class ManagementSystem implements JanusGraphManagement {
     /* --------------
     Schema Update
      --------------- */
-
     @Override
     public ScanJobFuture updateIndex(Index index, SchemaAction updateAction) {
+        return updateIndex(index, updateAction, Runtime.getRuntime().availableProcessors());
+    }
+
+    @Override
+    public ScanJobFuture updateIndex(Index index, SchemaAction updateAction, int numOfThreads) {
         Preconditions.checkArgument(index != null, "Need to provide an index");
         Preconditions.checkArgument(updateAction != null, "Need to provide update action");
 
@@ -890,6 +894,7 @@ public class ManagementSystem implements JanusGraphManagement {
                 builder = graph.getBackend().buildEdgeScanJob();
                 builder.setFinishJob(indexId.getIndexJobFinisher(graph, SchemaAction.ENABLE_INDEX));
                 builder.setJobId(indexId);
+                builder.setNumProcessingThreads(numOfThreads);
                 builder.setJob(VertexJobConverter.convert(graph, new IndexRepairJob(indexId.indexName, indexId.relationTypeName)));
                 try {
                     future = builder.execute();
@@ -921,6 +926,7 @@ public class ManagementSystem implements JanusGraphManagement {
                 }
                 builder.setFinishJob(indexId.getIndexJobFinisher());
                 builder.setJobId(indexId);
+                builder.setNumProcessingThreads(numOfThreads);
                 builder.setJob(new IndexRemoveJob(graph, indexId.indexName, indexId.relationTypeName));
                 try {
                     future = builder.execute();

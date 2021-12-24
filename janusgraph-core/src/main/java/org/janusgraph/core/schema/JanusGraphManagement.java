@@ -296,13 +296,26 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     void changeName(JanusGraphSchemaElement element, String newName);
 
     /**
-     * Updates the provided index according to the given {@link SchemaAction}
+     * Updates the provided index according to the given {@link SchemaAction}.
+     * If action is REINDEX or REMOVE_INDEX, then number of threads running the
+     * action will be the number of available processors running on current JVM.
      *
      * @param index
      * @param updateAction
      * @return a future that completes when the index action is done
      */
     ScanJobFuture updateIndex(Index index, SchemaAction updateAction);
+
+    /**
+     * Updates the provided index according to the given {@link SchemaAction}, using
+     * given number of threads if applicable (REINDEX and REMOVE_INDEX).
+     *
+     * @param index
+     * @param updateAction
+     * @param numOfThreads
+     * @return
+     */
+    ScanJobFuture updateIndex(Index index, SchemaAction updateAction, int numOfThreads);
 
     /**
      * If an index update job was triggered through {@link #updateIndex(Index, SchemaAction)} with schema actions
