@@ -50,10 +50,10 @@ After a composite index is `DISABLED`, there is a choice between two
 execution frameworks for its removal:
 
 -   MapReduce
--   JanusGraphManagement
+-   ManagementSystem
 
 Index removal on MapReduce supports large, horizontally-distributed
-databases. Index removal on JanusGraphManagement spawns a single-machine
+databases. Index removal on ManagementSystem spawns a single-machine
 OLAP job. This is intended for convenience and speed on those databases
 small enough to be handled by one machine.
 
@@ -124,10 +124,10 @@ m.rollback()
 g.V().has('name', 'jupiter')
 ```
 
-## Executing an Index Removal job on JanusGraphManagement
+## Executing an Index Removal job on ManagementSystem
 
-To run an index removal job on JanusGraphManagement, invoke
-`JanusGraphManagement.updateIndex` with the `SchemaAction.REMOVE_INDEX`
+To run an index removal job on ManagementSystem, invoke
+`ManagementSystem.updateIndex` with the `SchemaAction.REMOVE_INDEX`
 argument. For example:
 ```groovy
 m = graph.openManagement()
@@ -136,11 +136,20 @@ m.updateIndex(i, SchemaAction.REMOVE_INDEX).get()
 m.commit()
 ```
 
-### Example for JanusGraphManagement
+Similar to reindex, ManagementSystem uses a local thread pool to
+execute index removal job concurrently. The concurrency level is
+equal to the number of available processors. If you want to change the
+default concurrency level, you can add a parameter as follows:
+```groovy
+// Use only one thread to execute index removal job
+m.updateIndex(i, SchemaAction.REMOVE_INDEX, 1).get()
+```
+
+### Example for ManagementSystem
 
 The following loads some indexed sample data into a BerkeleyDB-backed
 JanusGraph database, then disables and removes the index through
-JanusGraphManagement:
+ManagementSystem:
 ```groovy
 import org.janusgraph.graphdb.database.management.ManagementSystem
 

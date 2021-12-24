@@ -7183,7 +7183,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         }
 
         //Reindexing
-        mgmt.updateIndex(relationIndex, SchemaAction.REINDEX).get();
+        mgmt.updateIndex(relationIndex, SchemaAction.REINDEX, 1).get();
         finishSchema();
 
         relationIndex = mgmt.getRelationIndex(t,indexName);

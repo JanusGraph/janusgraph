@@ -149,10 +149,10 @@ graph = JanusGraphFactory.open("conf/janusgraph-cql-es.properties")
 g.V().has("desc", containsText("baz"))
 ```
 
-## Executing a Reindex job on JanusGraphManagement
+## Executing a Reindex job on ManagementSystem
 
-To run a reindex job on JanusGraphManagement, invoke
-`JanusGraphManagement.updateIndex` with the `SchemaAction.REINDEX`
+To run a reindex job on ManagementSystem, invoke
+`ManagementSystem.updateIndex` with the `SchemaAction.REINDEX`
 argument. For example:
 ```groovy
 m = graph.openManagement()
@@ -161,11 +161,21 @@ m.updateIndex(i, SchemaAction.REINDEX).get()
 m.commit()
 ```
 
-### Example for JanusGraphManagement
+ManagementSystem uses a local thread pool to run reindexing
+jobs concurrently. By default, the concurrency level equals
+the number of available processors. If you want to change the
+concurrency level, you can add a parameter like this:
+```groovy
+// only use one thread to run reindexing
+m.updateIndex(i, SchemaAction.REINDEX, 1).get()
+```
+
+
+### Example for ManagementSystem
 
 The following loads some sample data into a BerkeleyDB-backed JanusGraph
 database, defines an index after the fact, reindexes using
-JanusGraphManagement, and finally enables and uses the index:
+ManagementSystem, and finally enables and uses the index:
 ```groovy
 import org.janusgraph.graphdb.database.management.ManagementSystem
 
