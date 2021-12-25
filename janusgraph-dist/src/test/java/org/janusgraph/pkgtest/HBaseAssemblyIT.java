@@ -39,6 +39,11 @@ public class HBaseAssemblyIT extends AbstractJanusGraphAssemblyIT {
     }
 
     @Override
+    protected String getLocalSparkGraphConfigPath() {
+        return "conf/hadoop-graph/read-hbase.properties";
+    }
+
+    @Override
     protected String getGraphName() {
         return "hbase";
     }

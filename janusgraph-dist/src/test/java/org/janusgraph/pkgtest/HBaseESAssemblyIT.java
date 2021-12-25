@@ -16,6 +16,8 @@ package org.janusgraph.pkgtest;
 
 import org.janusgraph.HBaseContainer;
 import org.janusgraph.diskstorage.es.JanusGraphElasticsearchContainer;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -50,4 +52,9 @@ public class HBaseESAssemblyIT extends AbstractJanusGraphAssemblyIT {
         return Duration.ofSeconds(60);
     }
 
+    @Test
+    @Disabled
+    @Override
+    public void testSparkGraphComputerTraversalLocal() {
+    }
 }
