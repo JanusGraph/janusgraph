@@ -17,7 +17,7 @@
 
 package org.janusgraph.graphdb.util;
 
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
+import org.jctools.maps.NonBlockingHashMapLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

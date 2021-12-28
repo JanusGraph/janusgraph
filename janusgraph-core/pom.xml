@@ -77,8 +77,8 @@
             <artifactId>hppc</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.boundary</groupId>
-            <artifactId>high-scale-lib</artifactId>
+            <groupId>org.jctools</groupId>
+            <artifactId>jctools-core</artifactId>
         </dependency>
        <dependency>
            <groupId>com.google.code.findbugs</groupId>

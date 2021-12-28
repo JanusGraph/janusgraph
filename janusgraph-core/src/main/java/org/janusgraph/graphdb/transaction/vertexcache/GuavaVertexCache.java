@@ -19,7 +19,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
+import org.jctools.maps.NonBlockingHashMapLong;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.vertices.AbstractVertex;
 import org.janusgraph.util.datastructures.Retriever;

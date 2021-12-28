@@ -21,7 +21,7 @@ import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
+import org.jctools.maps.NonBlockingHashMapLong;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 

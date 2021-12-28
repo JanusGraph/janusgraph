@@ -18,7 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
+import org.jctools.maps.NonBlockingHashMapLong;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.relations.EdgeDirection;
