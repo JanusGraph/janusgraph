@@ -461,7 +461,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public KeyIterator getKeys(final SliceQuery query, final StoreTransaction txh) throws BackendException {
         if (!this.storeManager.getFeatures().hasUnorderedScan()) {
-            throw new PermanentBackendException("This operation is only allowed when a random partitioner (md5 or murmur3) is used.");
+            throw new PermanentBackendException("This operation is only allowed when partitioner supports unordered scan");
         }
 
         return Try.of(() -> new CQLResultSetKeyIterator(

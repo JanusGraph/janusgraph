@@ -88,7 +88,7 @@ public class CQLStoreFeaturesBuilder {
                 break;
             }
             case "ByteOrderedPartitioner": {
-                fb.keyOrdered(true).orderedScan(true).unorderedScan(false);
+                fb.keyOrdered(true).orderedScan(true).unorderedScan(true);
                 deployment = (hostnames.length == 1)// mark deployment as local only in case we have byte ordered partitioner and local
                     // connection
                     ? (NetworkUtil.isLocalConnection(hostnames[0])) ? DistributedStoreManager.Deployment.LOCAL : DistributedStoreManager.Deployment.REMOTE
