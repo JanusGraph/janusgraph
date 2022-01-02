@@ -22,9 +22,14 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
+import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.JanusGraphFeature;
@@ -42,6 +47,8 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,8 +66,10 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METRICS_SESSION_EN
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SPECULATIVE_RETRY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.any;
@@ -109,7 +118,6 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     @FeatureFlag(feature = JanusGraphFeature.UnorderedScan)
     public void testUnorderedConfiguration(TestInfo testInfo) {
         final StoreFeatures features = this.manager.getFeatures();
-        assertFalse(features.isKeyOrdered());
         assertFalse(features.hasLocalKeyPartition());
     }
 
@@ -301,6 +309,44 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
 
         //assert
         verify(session, times(1)).execute(any(Statement.class));
+    }
+
+    @Test
+    @FeatureFlag(feature = JanusGraphFeature.UnorderedScan)
+    public void testGetKeysWithoutOrderedScan() throws BackendException, NoSuchFieldException, IllegalAccessException {
+        // support unordered scan but not ordered scan
+        Field field = StandardStoreFeatures.class.getDeclaredField("orderedScan");
+        field.setAccessible(true);
+        Field modifiersField = Field.class
+            .getDeclaredField("modifiers");
+        modifiersField.setAccessible(true);
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+        field.set(manager.getFeatures(), false);
+        Exception ex = assertThrows(PermanentBackendException.class, () -> store.getKeys(
+            new KeyRangeQuery(BufferUtil.getLongBuffer(1), BufferUtil.getLongBuffer(1000), BufferUtil.getLongBuffer(1),
+                BufferUtil.getLongBuffer(1000)), tx));
+        assertEquals("This operation is only allowed when the byteorderedpartitioner is used.", ex.getMessage());
+        assertDoesNotThrow(() -> store.getKeys(
+            new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(4)), tx));
+    }
+
+    @Test
+    @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
+    public void testGetKeysWithoutUnorderedScan() throws BackendException, NoSuchFieldException, IllegalAccessException {
+        // support ordered scan but not unordered scan
+        Field field = StandardStoreFeatures.class.getDeclaredField("unorderedScan");
+        field.setAccessible(true);
+        Field modifiersField = Field.class
+            .getDeclaredField("modifiers");
+        modifiersField.setAccessible(true);
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+        field.set(manager.getFeatures(), false);
+        Exception ex = assertThrows(PermanentBackendException.class, () -> store.getKeys(
+            new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(4)), tx));
+        assertEquals("This operation is only allowed when partitioner supports unordered scan", ex.getMessage());
+        assertDoesNotThrow(() -> store.getKeys(
+            new KeyRangeQuery(BufferUtil.getLongBuffer(1), BufferUtil.getLongBuffer(1000), BufferUtil.getLongBuffer(1),
+                BufferUtil.getLongBuffer(1000)), tx));
     }
 
     @Override
