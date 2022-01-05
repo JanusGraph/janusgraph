@@ -31,34 +31,6 @@ The documentation output appears in:
 
 * site/
 
-## Building deb/rpm packages
-
-Requires:
-
-* a platform that can run shell scripts (e.g. Linux, Mac OS X, or
-  Windows with Cygwin)
-
-* the Aurelius public package GPG signing key
-
-Run `mvn -N -Ppkg-tools install` in the janusgraph-dist module.  This writes
-three folders to the root of the janusgraph repository:
-
-* debian
-* pkgcommon
-* redhat
-
-The debian and redhat folders contain platform-specific packaging
-control and payload files.  The pkgcommon folder contains shared
-payload and helper scripts.
-
-To build the .deb and .rpm packages:
-
-* (cd to the repository root)
-* `pkgcommon/bin/build-all.sh`
-
-To delete the packaging scripts from the root of the repository, run
-`mvn -N -Ppkg-tools clean` from the janusgraph-dist module.
-
 ## Upgrade cassandra-server version 
 
 Following files have to be updated, if you update Cassandra server version 

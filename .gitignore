@@ -6,7 +6,6 @@ target/
 .vscode/
 /_bsp/
 /output/
-/docker/*.zip
 # When executing tests in alphabetical order, Maven generates temporary
 # files with names like this:
 #
@@ -36,10 +35,6 @@ target/
 # Backup files created by `mvn versions:update-child-modules`
 # http://mojo.codehaus.org/versions-maven-plugin/update-child-modules-mojo.html
 janusgraph-*/pom.xml.versionsBackup
-# .deb/.rpm packaging folders
-/debian/
-/redhat/
-/pkgcommon/
 
 # Emacs file backups
 *~
