@@ -21,7 +21,6 @@ import org.janusgraph.core.JanusGraphContainer;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.testcontainers.junit.jupiter.Container;
@@ -92,7 +91,6 @@ public abstract class JanusGraphSerializerBaseIT {
     }
 
     @Test
-    @Disabled("JanusGraphPredicate serialization won't work any older version than 0.6.0.")
     public void testJanusGraphTextPredicates() {
         GraphTraversalSource g = traversal();
         g.addV("predicateTestLabel").property("name", "neptune").iterate();
