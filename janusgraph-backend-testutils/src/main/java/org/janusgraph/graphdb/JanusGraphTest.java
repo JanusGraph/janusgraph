@@ -118,10 +118,6 @@ import org.janusgraph.graphdb.query.profile.SimpleQueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.relations.AbstractEdge;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
-import org.janusgraph.graphdb.schema.EdgeLabelDefinition;
-import org.janusgraph.graphdb.schema.PropertyKeyDefinition;
-import org.janusgraph.graphdb.schema.SchemaContainer;
-import org.janusgraph.graphdb.schema.VertexLabelDefinition;
 import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphEdgeVertexStep;
@@ -1206,23 +1202,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         //Ensure that unidirected edges keep pointing to deleted vertices
         getV(tx, v13).remove();
         assertCount(1, v.query().direction(Direction.BOTH).labels("link").edges());
-
-        //Finally, test the schema container
-        SchemaContainer schemaContainer = new SchemaContainer(graph);
-        assertTrue(schemaContainer.containsRelationType("weight"));
-        assertTrue(schemaContainer.containsRelationType("friend"));
-        assertTrue(schemaContainer.containsVertexLabel("person"));
-        VertexLabelDefinition vld = schemaContainer.getVertexLabel("tag");
-        assertFalse(vld.isPartitioned());
-        assertFalse(vld.isStatic());
-        PropertyKeyDefinition pkd = schemaContainer.getPropertyKey("name");
-        assertEquals(Cardinality.SET, pkd.getCardinality());
-        assertEquals(String.class, pkd.getDataType());
-        EdgeLabelDefinition eld = schemaContainer.getEdgeLabel("child");
-        assertEquals("child", eld.getName());
-        assertEquals(child.longId(), eld.getLongId());
-        assertEquals(Multiplicity.ONE2MANY, eld.getMultiplicity());
-        assertFalse(eld.isUnidirected());
     }
 
     /**
