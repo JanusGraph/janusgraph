@@ -82,6 +82,7 @@ For more information on features and bug fixes in 1.0.0, see the GitHub mileston
 * [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v1.0.0/janusgraph-full-1.0.0.zip)
 
 #### Upgrade Instructions
+
 ##### Drop support for HBase 1
 
 We are dropping support for HBase 1.
@@ -112,6 +113,11 @@ Users who do not use GraphBinary yet or who are not using Geoshapes are not affe
 * SchemaElementDefinition class
 * SchemaProvider interface
 * VertexLabelDefinition class
+
+##### Remove support for old serialization format of JanusGraph predicates
+
+We are dropping support for old serialization format of JanusGraph predicates. The old predicates serialization format is only used by client older than 0.6. 
+The change only affects Gryo and GraphSON.
 
 ### Version 0.6.1 (Release Date: ???)
 

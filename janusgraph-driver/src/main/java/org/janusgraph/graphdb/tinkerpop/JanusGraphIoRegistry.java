@@ -14,12 +14,10 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.io.AbstractIoRegistry;
 import org.apache.tinkerpop.gremlin.structure.io.binary.GraphBinaryIo;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoSerializersV3d0;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
@@ -44,16 +42,9 @@ public class JanusGraphIoRegistry extends AbstractIoRegistry {
         register(GryoIo.class, RelationIdentifier.class, null);
         register(GryoIo.class, Geoshape.class, new Geoshape.GeoShapeGryoSerializer());
         register(GryoIo.class, JanusGraphP.class, new JanusGraphPSerializer());
-        //fallback for older janusgraph drivers
-        register(GryoIo.class, P.class, new DeprecatedJanusGraphPSerializer(new GryoSerializersV3d0.PSerializer()));
     }
 
     public static JanusGraphIoRegistry instance() {
         return INSTANCE;
-    }
-
-    @Deprecated()
-    public static JanusGraphIoRegistry getInstance() {
-        return instance();
     }
 }

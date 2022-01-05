@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.io.graphson;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
@@ -30,7 +29,6 @@ import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
-import org.janusgraph.graphdb.tinkerpop.DeprecatedJanusGraphPSerializer;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphPSerializer;
 import org.janusgraph.graphdb.tinkerpop.io.JanusGraphP;
 
@@ -195,38 +193,4 @@ public abstract class JanusGraphSONModule extends TinkerPopJacksonModule {
         }
     }
 
-    @Deprecated
-    public static class DeprecatedJanusGraphPDeserializerV2d0 extends StdDeserializer<P> {
-
-        public DeprecatedJanusGraphPDeserializerV2d0() {
-            super(P.class);
-        }
-
-        @Override
-        public P deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException {
-            String predicate = null;
-            Object value = null;
-
-            while (jsonParser.nextToken() != JsonToken.END_OBJECT) {
-                if (jsonParser.getCurrentName().equals(GraphSONTokens.PREDICATE)) {
-                    jsonParser.nextToken();
-                    predicate = jsonParser.getText();
-                } else if (jsonParser.getCurrentName().equals(GraphSONTokens.VALUE)) {
-                    jsonParser.nextToken();
-                    value = deserializationContext.readValue(jsonParser, Object.class);
-                }
-            }
-
-            try {
-                return DeprecatedJanusGraphPSerializer.createPredicateWithValue(predicate, value);
-            } catch (final Exception e) {
-                throw new IllegalStateException(e.getMessage(), e);
-            }
-        }
-
-        @Override
-        public boolean isCachable() {
-            return true;
-        }
-    }
 }
