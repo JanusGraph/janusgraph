@@ -86,6 +86,17 @@ For more information on features and bug fixes in 1.0.0, see the GitHub mileston
 
 We are dropping support for HBase 1.
 
+##### Removal of deprecated classes/methods/functionalities
+
+###### Classes/Interfaces
+
+* EdgeLabelDefinition class
+* PropertyKeyDefinition class
+* RelationTypeDefinition class
+* SchemaContainer class
+* SchemaElementDefinition class
+* SchemaProvider interface
+* VertexLabelDefinition class
 ### Version 0.6.1 (Release Date: ???)
 
 ```xml tab='Maven'
@@ -151,6 +162,7 @@ graphs: {
 If you however want to continue using the `DefaultGraphManager`, then you can simply remove the
 setting again or change it to the TinkerPop `GraphManager` that has been the default before:
 `org.apache.tinkerpop.gremlin.server.util.DefaultGraphManager`.
+
 
 ### Version 0.6.0 (Release Date: September 3, 2021)
 
