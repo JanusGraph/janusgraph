@@ -281,7 +281,6 @@
                         <exclude>**/src/test/resources/excludes</exclude>
                         <exclude>**/src/test/resources/longTests1</exclude>
                         <exclude>**/src/test/resources/longTests2</exclude>
-                        <exclude>**/src/pkg/static/debian/**</exclude>
                         <exclude>**/src/test/resources/mockito-extensions/**</exclude>
                         <exclude>**/src/test/resources/org/janusgraph/hadoop/formats/edgelist/rdf/**</exclude>
                     </excludes>
