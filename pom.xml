@@ -93,7 +93,7 @@
         <elasticsearch.version>7.14.0</elasticsearch.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
-        <zookeeper.version>3.6.2</zookeeper.version>
+        <zookeeper.version>3.7.0</zookeeper.version>
         <!-- align with org.apache.tinkerpop:tinkerpop -->
         <netty4.version>4.1.70.Final</netty4.version>
         <jna.version>5.9.0</jna.version>
