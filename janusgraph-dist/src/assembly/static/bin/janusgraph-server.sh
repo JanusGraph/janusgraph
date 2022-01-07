@@ -119,7 +119,7 @@ if [[ -f "$JAVA_OPTIONS_FILE" ]]; then
   for opt in "$(grep '^-' $JAVA_OPTIONS_FILE)"
   do
     opt=$(echo "$opt" | xargs)
-    COLLECTED_JAVA_OPTIONS_FILE="$JAVA_OPTIONS_FILE_CURATED $opt"
+    COLLECTED_JAVA_OPTIONS_FILE="$COLLECTED_JAVA_OPTIONS_FILE $opt"
   done
 fi
 

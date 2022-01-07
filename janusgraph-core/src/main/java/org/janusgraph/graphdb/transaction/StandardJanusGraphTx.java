@@ -95,8 +95,10 @@ import org.janusgraph.graphdb.relations.StandardVertexProperty;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsTransaction;
 import org.janusgraph.graphdb.transaction.addedrelations.AddedRelationsContainer;
 import org.janusgraph.graphdb.transaction.addedrelations.ConcurrentAddedRelations;
+import org.janusgraph.graphdb.transaction.addedrelations.EmptyAddedRelations;
 import org.janusgraph.graphdb.transaction.addedrelations.SimpleAddedRelations;
 import org.janusgraph.graphdb.transaction.indexcache.ConcurrentIndexCache;
+import org.janusgraph.graphdb.transaction.indexcache.EmptyIndexCache;
 import org.janusgraph.graphdb.transaction.indexcache.IndexCache;
 import org.janusgraph.graphdb.transaction.indexcache.SimpleIndexCache;
 import org.janusgraph.graphdb.transaction.lock.CombinerLock;
@@ -105,8 +107,10 @@ import org.janusgraph.graphdb.transaction.lock.IndexLockTuple;
 import org.janusgraph.graphdb.transaction.lock.LockTuple;
 import org.janusgraph.graphdb.transaction.lock.ReentrantTransactionLock;
 import org.janusgraph.graphdb.transaction.lock.TransactionLock;
+import org.janusgraph.graphdb.transaction.subquerycache.EmptySubqueryCache;
 import org.janusgraph.graphdb.transaction.subquerycache.GuavaSubqueryCache;
 import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
+import org.janusgraph.graphdb.transaction.vertexcache.EmptyVertexCache;
 import org.janusgraph.graphdb.transaction.vertexcache.GuavaVertexCache;
 import org.janusgraph.graphdb.transaction.vertexcache.VertexCache;
 import org.janusgraph.graphdb.types.CompositeIndexType;
@@ -229,7 +233,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      * Transaction-local data structure for unique lock applications so that conflicting applications can be discovered
      * at the transactional level.
      */
-    private volatile ConcurrentMap<LockTuple, TransactionLock> uniqueLocks;
+    private volatile Map<LockTuple, TransactionLock> uniqueLocks;
 
     //####### Other Data structures
     /**
@@ -699,7 +703,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     private TransactionLock getLock(final LockTuple la) {
         if (config.isSingleThreaded()) return FakeLock.INSTANCE;
-        ConcurrentMap<LockTuple, TransactionLock> result = uniqueLocks;
+        Map<LockTuple, TransactionLock> result = uniqueLocks;
         if (result == UNINITIALIZED_LOCKS) {
             Preconditions.checkArgument(!config.isSingleThreaded());
             synchronized (this) {
@@ -1561,13 +1565,13 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     private void releaseTransaction() {
         isOpen = false;
         graph.closeTransaction(this);
-        vertexCache = null;
-        indexCache = null;
-        addedRelations = null;
-        deletedRelations = null;
-        uniqueLocks = null;
-        newVertexIndexEntries = null;
-        newTypeCache = null;
+        vertexCache = EmptyVertexCache.getInstance();
+        indexCache = EmptySubqueryCache.getInstance();
+        addedRelations = EmptyAddedRelations.getInstance();
+        deletedRelations = Collections.emptyMap();
+        uniqueLocks = Collections.emptyMap();
+        newVertexIndexEntries = EmptyIndexCache.getInstance();
+        newTypeCache = Collections.emptyMap();
     }
 
     @Override
