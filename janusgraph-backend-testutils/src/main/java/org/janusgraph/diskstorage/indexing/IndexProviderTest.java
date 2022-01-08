@@ -1097,21 +1097,21 @@ public abstract class IndexProviderTest {
             query = new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Text.CONTAINS_REGEX, "jer.*"));
             assertEquals(1, tx.queryStream(query).count(), query.toString());
 
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN, "a"))).size());
-            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN, "z"))).size());
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN, "Tom and Jerry"))).size());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN, "a"))).count());
+            assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN, "z"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN, "Tom and Jerry"))).count());
 
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN_EQUAL, "a"))).size());
-            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN_EQUAL, "z"))).size());
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN_EQUAL, "Tom and Jerry"))).size());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN_EQUAL, "a"))).count());
+            assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN_EQUAL, "z"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.GREATER_THAN_EQUAL, "Tom and Jerry"))).count());
 
-            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN, "a"))).size());
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN, "z"))).size());
-            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN, "Tom and Jerry"))).size());
+            assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN, "a"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN, "z"))).count());
+            assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN, "Tom and Jerry"))).count());
 
-            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN_EQUAL, "a"))).size());
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN_EQUAL, "z"))).size());
-            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN_EQUAL, "Tom and Jerry"))).size());
+            assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN_EQUAL, "a"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN_EQUAL, "z"))).count());
+            assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(FULL_TEXT, Cmp.LESS_THAN_EQUAL, "Tom and Jerry"))).count());
         }
         query = new IndexQuery(store, PredicateCondition.of(KEYWORD, Text.CONTAINS_PREFIX, "Tom"));
         assertEquals(1, tx.queryStream(query).count(), query.toString());

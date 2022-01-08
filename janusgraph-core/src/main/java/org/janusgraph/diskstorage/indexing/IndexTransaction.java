@@ -22,14 +22,12 @@ import org.janusgraph.diskstorage.LoggableTransaction;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
-import org.janusgraph.graphdb.util.StreamIterable;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -98,28 +96,12 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         index.register(store,key,information,indexTx);
     }
 
-    /**
-     * @deprecated use {@link #queryStream(IndexQuery query)} instead.
-     */
-    @Deprecated
-    public List<String> query(IndexQuery query) throws BackendException {
-        return queryStream(query).collect(Collectors.toList());
-    }
-
     public Stream<String> queryStream(IndexQuery query) throws BackendException {
         return index.query(query, keyInformation, indexTx);
     }
 
     public Long queryCount(IndexQuery query) throws BackendException {
         return index.queryCount(query, keyInformation, indexTx);
-    }
-
-    /**
-     * @deprecated use {@link #queryStream(RawQuery query)} instead.
-     */
-    @Deprecated
-    public Iterable<RawQuery.Result<String>> query(RawQuery query) throws BackendException {
-        return new StreamIterable<>(index.query(query, keyInformation,indexTx));
     }
 
     public Stream<RawQuery.Result<String>> queryStream(RawQuery query) throws BackendException {

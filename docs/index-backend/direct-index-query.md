@@ -30,9 +30,9 @@ The builder allows configuration of the maximum number of elements to be
 returned via its `limit(int)` method. The builder’s `offset(int)`
 controls number of initial matches in the result set to skip. To
 retrieve all vertex or edges matching the given query in the specified
-indexing backend, invoke `vertices()` or `edges()`, respectively. It is
+indexing backend, invoke `vertexStream()` or `edgeStream()`, respectively. It is
 not possible to query for both vertices and edges at the same time.
-These methods return an `Iterable` over `Result` objects. A result
+These methods return a `Stream` over `Result` objects. A result
 object contains the matched handle, retrievable via `getElement()`, and
 the associated score - `getScore()`.
 
@@ -43,7 +43,7 @@ PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
 mgmt.buildIndex("vertexByText", Vertex.class).addKey(text).buildMixedIndex("search");
 mgmt.commit();
 // ... Load vertices ...
-for (Result<Vertex> result : graph.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertices()) {
+for (Result<Vertex> result : graph.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertexStream()) {
    System.out.println(result.getElement() + ": " + result.getScore());
 }
 ```
@@ -66,8 +66,9 @@ Refer to the [Lucene documentation](http://lucene.apache.org/core/4_1_0/querypar
 or the [Elasticsearch documentation](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html)
 for more information. The query used in the example above follows the
 Lucene query syntax.
-
-    graph.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertices()
+```groovy
+graph.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertexStream()
+```
 
 This query matches all vertices where the text contains any of the three
 words (grouped by parentheses) and score matches higher the more words
@@ -98,7 +99,7 @@ graph.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertexTotals()
 Names of property keys that contain non-alphanumeric characters must be
 placed in quotation marks to ensure that the query is parsed correctly.
 ```groovy
-graph.indexQuery("vertexByText", "v.\"first_name\":john").vertices()
+graph.indexQuery("vertexByText", "v.\"first_name\":john").vertexStream()
 ```
 
 Some property key names may be transformed by the JanusGraph indexing
@@ -125,14 +126,14 @@ value contains the same sequence of characters, this can cause a
 collision in the query string and parsing errors as in the following
 example:
 ```groovy
-graph.indexQuery("vertexByText", "v.name:v.john").vertices() //DOES NOT WORK!
+graph.indexQuery("vertexByText", "v.name:v.john").vertexStream() //DOES NOT WORK!
 ```
 
 To avoid such identifier collisions, use the `setElementIdentifier`
 method to define a unique element identifier string that does not occur
 in any other parts of the query:
 ```groovy
-graph.indexQuery("vertexByText", "$v$name:v.john").setElementIdentifier("$v$").vertices()
+graph.indexQuery("vertexByText", "$v$name:v.john").setElementIdentifier("$v$").vertexStream()
 ```
 
 ### Mixed Index Availability Delay

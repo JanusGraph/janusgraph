@@ -104,6 +104,16 @@ Users who do not use GraphBinary yet or who are not using Geoshapes are not affe
 
 ##### Removal of deprecated classes/methods/functionalities
 
+###### Methods
+
+* JanusGraphIndexQuery.vertices replaced by JanusGraphIndexQuery.vertexStream
+* JanusGraphIndexQuery.edges replaced by JanusGraphIndexQuery.edgeStream
+* JanusGraphIndexQuery.properties replaced by JanusGraphIndexQuery.propertyStream
+* IndexQueryBuilder.vertices replaced by IndexQueryBuilder.vertexStream
+* IndexQueryBuilder.edges replaced by IndexQueryBuilder.edgeStream
+* IndexQueryBuilder.properties replaced by IndexQueryBuilder.propertyStream
+* IndexTransaction.query replaced by IndexTransaction.queryStream
+
 ###### Classes/Interfaces
 
 * EdgeLabelDefinition class
@@ -184,7 +194,6 @@ graphs: {
 If you however want to continue using the `DefaultGraphManager`, then you can simply remove the
 setting again or change it to the TinkerPop `GraphManager` that has been the default before:
 `org.apache.tinkerpop.gremlin.server.util.DefaultGraphManager`.
-
 
 ### Version 0.6.0 (Release Date: September 3, 2021)
 
