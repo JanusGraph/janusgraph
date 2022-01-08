@@ -123,6 +123,14 @@ Users who do not use GraphBinary yet or who are not using Geoshapes are not affe
 * SchemaElementDefinition class
 * SchemaProvider interface
 * VertexLabelDefinition class
+* JanusGraphId class
+* AllEdgesIterable class
+* AllEdgesIterator class
+* ConcurrentLRUCache class
+* PriorityQueue class
+* RemovableRelationIterable class
+* RemovableRelationIterator class
+* ImmutableConfiguration class
 
 ##### Remove support for old serialization format of JanusGraph predicates
 
