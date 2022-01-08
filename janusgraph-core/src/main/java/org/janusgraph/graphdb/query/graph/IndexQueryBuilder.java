@@ -29,7 +29,6 @@ import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.util.StreamIterable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -223,34 +222,16 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
         return serializer.executeTotals(this,resultType,tx.getTxHandle(),tx);
     }
 
-    @Deprecated
-    @Override
-    public Iterable<Result<JanusGraphVertex>> vertices() {
-        return new StreamIterable<>(vertexStream());
-    }
-
     @Override
     public Stream<Result<JanusGraphVertex>> vertexStream() {
         setPrefixInternal(VERTEX_PREFIX);
         return execute(ElementCategory.VERTEX, JanusGraphVertex.class);
     }
 
-    @Deprecated
-    @Override
-    public Iterable<Result<JanusGraphEdge>> edges() {
-        return new StreamIterable<>(edgeStream());
-    }
-
     @Override
     public Stream<Result<JanusGraphEdge>> edgeStream() {
         setPrefixInternal(EDGE_PREFIX);
         return execute(ElementCategory.EDGE, JanusGraphEdge.class);
-    }
-
-    @Deprecated
-    @Override
-    public Iterable<Result<JanusGraphVertexProperty>> properties() {
-        return new StreamIterable<>(propertyStream());
     }
 
     @Override

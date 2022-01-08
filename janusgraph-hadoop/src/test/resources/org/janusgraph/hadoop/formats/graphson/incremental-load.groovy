@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+import org.apache.tinkerpop.gremlin.structure.Vertex
+import org.janusgraph.core.JanusGraph
+import org.janusgraph.core.JanusGraphVertex
+
 JanusGraphVertex getOrCreateVertex(FaunusVertex faunusVertex, JanusGraph graph, TaskInputOutputContext context, Logger log) {
     String uniqueKey = "name"
     Object uniqueValue = faunusVertex.value(uniqueKey)
@@ -19,7 +24,7 @@ JanusGraphVertex getOrCreateVertex(FaunusVertex faunusVertex, JanusGraph graph, 
     if (null == uniqueValue) {
         throw new RuntimeException("The provided Faunus vertex does not have a property for the unique key: " + faunusVertex)
     }
-    Iterator<Vertex> itty = graph.query().has(uniqueKey, uniqueValue).vertices().iterator()
+    Iterator<Vertex> itty = graph.query().has(uniqueKey, uniqueValue).vertexStream().iterator()
     if (itty.hasNext()) {
       janusgraphVertex = itty.next()
       if (itty.hasNext()) {
