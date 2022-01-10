@@ -306,8 +306,8 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             ImmutableMap.of("sstable_compression", compressionType, "chunk_length_kb", chunkLengthInKb));
     }
 
-    private static CreateTableWithOptions compactionOptions(final CreateTableWithOptions createTable,
-                                                            final Configuration configuration) {
+    static CreateTableWithOptions compactionOptions(final CreateTableWithOptions createTable,
+                                                    final Configuration configuration) {
         if (!configuration.has(COMPACTION_STRATEGY)) {
             return createTable;
         }
@@ -317,13 +317,14 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 Case($("SizeTieredCompactionStrategy"), sizeTieredCompactionStrategy()),
                 Case($("TimeWindowCompactionStrategy"), timeWindowCompactionStrategy()),
                 Case($("LeveledCompactionStrategy"), leveledCompactionStrategy()));
-        Iterator<Array<String>> groupedOptions = Array.of(configuration.get(COMPACTION_OPTIONS))
-            .grouped(2);
 
-        for(Array<String> keyValue: groupedOptions){
-            compactionStrategy = compactionStrategy.withOption(keyValue.get(0), keyValue.get(1));
+        if (configuration.has(COMPACTION_OPTIONS)) {
+            Iterator<Array<String>> groupedOptions = Array.of(configuration.get(COMPACTION_OPTIONS))
+                                                          .grouped(2);
+            for (Array<String> keyValue : groupedOptions) {
+                compactionStrategy = compactionStrategy.withOption(keyValue.get(0), keyValue.get(1));
+            }
         }
-
         return createTable.withCompaction(compactionStrategy);
     }
 
