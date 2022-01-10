@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+@Deprecated
 public class ImmutableConfiguration extends Configuration {
 
     private final Configuration encapsulated;
