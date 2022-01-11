@@ -148,6 +148,11 @@
                     <groupId>org.ow2.asm</groupId>
                     <artifactId>asm-commons</artifactId>
                 </exclusion>
+                <!-- Use apiguardian-api from junit-platform-engine -->
+                <exclusion>
+                    <groupId>org.apiguardian</groupId>
+                    <artifactId>apiguardian-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
