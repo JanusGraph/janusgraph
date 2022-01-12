@@ -123,6 +123,8 @@
         <grpc.version>1.42.1</grpc.version>
         <protoc.version>3.15.3</protoc.version>
         <jmh.version>1.33</jmh.version>
+        <!-- align with org.apache.solr:solr-solrj -->
+        <jetty.version>9.4.44.v20210927</jetty.version>
     </properties>
     <modules>
         <module>janusgraph-grpc</module>
@@ -1187,17 +1189,17 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-servlet</artifactId>
-                <version>9.4.44.v20210927</version>
+                <version>${jetty.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-server</artifactId>
-                <version>9.4.44.v20210927</version>
+                <version>${jetty.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-util</artifactId>
-                <version>9.4.44.v20210927</version>
+                <version>${jetty.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
