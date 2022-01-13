@@ -117,7 +117,7 @@
         <cassandra.version>3.11.10</cassandra.version>
         <cassandra-driver.version>4.13.0</cassandra-driver.version>
         <scylladb.version>4.4.0</scylladb.version>
-        <testcontainers.version>1.16.0</testcontainers.version>
+        <testcontainers.version>1.16.2</testcontainers.version>
         <easymock.version>4.3</easymock.version>
         <protobuf.version>3.19.2</protobuf.version>
         <grpc.version>1.42.1</grpc.version>
