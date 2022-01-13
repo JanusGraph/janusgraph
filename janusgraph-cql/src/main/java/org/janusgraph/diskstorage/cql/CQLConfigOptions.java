@@ -337,8 +337,7 @@ public interface CQLConfigOptions {
             "(reading and writing to Cassandra nodes). " +
             "If this is set to 0, the driver will use `Runtime.getRuntime().availableProcessors() * 2`.",
         ConfigOption.Type.LOCAL,
-        Integer.class,
-        0);
+        Integer.class);
 
     ConfigOption<Integer> NETTY_ADMIN_SIZE = new ConfigOption<>(
         NETTY,
@@ -347,8 +346,7 @@ public interface CQLConfigOptions {
             "(handle cluster events, refresh metadata, schedule reconnections, etc.). " +
             "If this is set to 0, the driver will use `Runtime.getRuntime().availableProcessors() * 2`.",
         ConfigOption.Type.LOCAL,
-        Integer.class,
-        0);
+        Integer.class);
 
     ConfigOption<Long> NETTY_TIMER_TICK_DURATION = new ConfigOption<>(
         NETTY,
