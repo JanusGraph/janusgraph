@@ -124,7 +124,7 @@
         <protoc.version>3.15.3</protoc.version>
         <jmh.version>1.33</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
-        <jetty.version>9.4.44.v20210927</jetty.version>
+        <jetty.version>10.0.7</jetty.version>
     </properties>
     <modules>
         <module>janusgraph-grpc</module>
