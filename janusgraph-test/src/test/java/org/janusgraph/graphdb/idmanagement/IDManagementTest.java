@@ -208,7 +208,7 @@ public class IDManagementTest {
         int numTries = 100;
         WriteBuffer out = new WriteByteBuffer(8*numTries);
         for (SystemRelationType t : SYSTEM_TYPES) {
-            IDHandler.writeInlineRelationType(out, t.longId());
+            IDHandler.writeInlineRelationType(out, (long) t.id());
         }
         for (long i=1;i<=numTries;i++) {
             IDHandler.writeInlineRelationType(out, IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, i * 1000));
@@ -239,7 +239,7 @@ public class IDManagementTest {
     @Test
     public void testEdgeTypeWriting() {
         for (SystemRelationType t : SYSTEM_TYPES) {
-            testEdgeTypeWriting(t.longId());
+            testEdgeTypeWriting((long) t.id());
         }
         for (int i=0;i<1000;i++) {
             IDManager.VertexIDType type = random.nextDouble()<0.5? IDManager.VertexIDType.UserPropertyKey: IDManager.VertexIDType.UserEdgeLabel;

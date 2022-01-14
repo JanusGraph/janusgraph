@@ -272,7 +272,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
 
 
         JanusGraphTransaction tx = graph.buildTransaction().checkExternalVertexExistence(false).groupName(metricsPrefix).start();
-        v = tx.getVertex(v.longId());
+        v = tx.getVertex(v.id());
         v.property("foo", "bus");
         long numLookupPropertyConstraints = 1;
         //printAllMetrics(metricsPrefix);
@@ -282,7 +282,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME, ImmutableMap.of(M_MUTATE, 1L));
 
         tx = graph.buildTransaction().checkExternalVertexExistence(false).groupName(metricsPrefix).start();
-        v = tx.getVertex(v.longId());
+        v = tx.getVertex(v.id());
         v.property("foo", "band");
         numLookupPropertyConstraints +=1;
         assertEquals("band", v.property("foo").value());
@@ -496,7 +496,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         finishSchema();
 
         final int numV = 100;
-        final long[] vertexIds = new long[numV];
+        final Object[] vertexIds = new Object[numV];
         for (int i=0;i<numV;i++) {
             JanusGraphVertex v = graph.addVertex(prop,0);
             graph.tx().commit();
@@ -521,7 +521,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
             int reads = 0;
             while (reads<numReads) {
                 final int pos = random.nextInt(vertexIds.length);
-                final long vid = vertexIds[pos];
+                final Object vid = vertexIds[pos];
                 JanusGraphVertex v = getV(graph,vid);
                 assertNotNull(v);
                 boolean postCommit = postcommit[pos].get();
@@ -608,7 +608,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
             previous = v;
         }
         graph.tx().commit();
-        long vertexId = getId(previous);
+        Object vertexId = getId(previous);
         assertCount(numV, graph.query().vertices());
 
         clopen(newConfig);
@@ -652,7 +652,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         //assertTrue(timeWarmGlobal + " vs " + timeHotGlobal, timeWarmGlobal>timeHotGlobal); Sometimes, this is not true
     }
 
-    private double testAllVertices(long vid, int numV) {
+    private double testAllVertices(Object vid, int numV) {
         long start = System.nanoTime();
         JanusGraphVertex v = getV(graph,vid);
         for (int i=1; i<numV; i++) {

@@ -26,7 +26,6 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 
@@ -46,14 +45,14 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
 
     protected final FulgoraVertexMemory<M> vertexMemory;
     private final PreloadedVertex vertex;
-    protected final long vertexId;
+    protected final Object vertexId;
     private boolean inExecute;
 
     VertexMemoryHandler(FulgoraVertexMemory<M> vertexMemory, PreloadedVertex vertex) {
         assert vertex!=null && vertexMemory!=null;
         this.vertexMemory = vertexMemory;
         this.vertex = vertex;
-        this.vertexId = vertexMemory.getCanonicalId(vertex.longId());
+        this.vertexId = vertexMemory.getCanonicalId(vertex.id());
         this.inExecute = false;
     }
 
@@ -131,7 +130,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
 
             return edges.stream()
                         .flatMap(e -> {
-                            long canonicalId = vertexMemory.getCanonicalId(((JanusGraphEdge) e).otherVertex(vertex).longId());
+                            Object canonicalId = vertexMemory.getCanonicalId(((JanusGraphEdge) e).otherVertex(vertex).id());
                             return vertexMemory.getMessage(canonicalId, localMessageScope)
                                                .map(msg -> msg == null ? null : edgeFct.apply(msg, e));
                         })
@@ -154,9 +153,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
             vertexMemory.sendMessage(vertexId, m, messageScope);
         } else {
             ((MessageScope.Global) messageScope).vertices().forEach(v -> {
-                long vertexId;
-                if (v instanceof JanusGraphVertex) vertexId=((JanusGraphVertex)v).longId();
-                else vertexId = (Long)v.id();
+                long vertexId = ((Number) v.id()).longValue();
                 vertexMemory.sendMessage(vertexMemory.getCanonicalId(vertexId), m, messageScope);
             });
         }
@@ -174,7 +171,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
                 return super.receiveMessages(messageScope);
             } else {
                 final MessageScope.Local<M> localMessageScope = (MessageScope.Local) messageScope;
-                return vertexMemory.getAggregateMessage(vertexId,localMessageScope);
+                return vertexMemory.getAggregateMessage(((Number) vertexId).longValue(), localMessageScope);
             }
         }
     }

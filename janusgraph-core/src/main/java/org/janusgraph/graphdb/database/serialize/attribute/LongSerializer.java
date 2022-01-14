@@ -59,7 +59,7 @@ public class LongSerializer implements OrderPreservingSerializer<Long> {
         } else if (value instanceof String) {
             return Long.parseLong((String)value);
         } else if (value instanceof Idfiable) {
-            return ((Idfiable)value).longId();
+            return convert(((Idfiable)value).id());
         } else return null;
     }
 

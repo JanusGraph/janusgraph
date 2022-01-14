@@ -39,7 +39,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
     }
 
     @Override
-    public long longId() {
+    public Object id() {
         return id;
     }
 
@@ -49,7 +49,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
     }
 
     @Override
-    public void setId(long id) {
+    public void setId(Object id) {
         throw new IllegalStateException("SystemType has already been assigned an id");
     }
 

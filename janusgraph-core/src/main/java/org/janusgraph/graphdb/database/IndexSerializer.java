@@ -92,8 +92,8 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IN
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.FULL_INDEX_APPLIES_TO_FILTER;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.INDEX_APPLIES_TO_NO_CONSTRAINTS_FILTER;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.bytebuffer2RelationId;
-import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getCompositeIndexUpdate;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.element2String;
+import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getCompositeIndexUpdate;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getIndexTTL;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getKeyInformation;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getKeysOfRecords;

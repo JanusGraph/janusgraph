@@ -36,7 +36,7 @@ send "g.tx().commit()\r"
 sleep 10
 # expect null
 expect gremlin>
-send "g.traversal().V(v.longId()).values('test')\r"
+send "g.traversal().V(v.id()).values('test')\r"
 expect "42"
 expect gremlin>
 send "g.close()\r"

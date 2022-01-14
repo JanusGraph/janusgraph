@@ -68,7 +68,7 @@ public interface CacheInvalidationService {
      * stale data. See {@link #markKeyAsExpiredInIndexStore(StaticBuffer)} JavaDoc to learn how to invalidate data for
      * `indexStore`.
      * <p>
-     * {@link org.janusgraph.graphdb.idmanagement.IDManager#getKey(long)} can be used to form a `key` from vertex id.
+     * {@link org.janusgraph.graphdb.idmanagement.IDManager#getKey(Object)} can be used to form a `key` from vertex id.
      * Alternatively, a method {@link #markVertexAsExpiredInEdgeStore(Long)} can be used which converts vertex id into
      * the `key` before passing the key to this method.
      * <p>

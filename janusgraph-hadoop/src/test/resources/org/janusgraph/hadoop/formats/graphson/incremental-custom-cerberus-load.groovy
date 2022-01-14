@@ -31,7 +31,7 @@ JanusGraphVertex getOrCreateVertex(faunusVertex, graph, context, log) {
           log.info("The unique key is not unique as more than one vertex with the value {}", uniqueValue)
       }
     } else {
-      janusgraphVertex = graph.addVertex(faunusVertex.longId(),faunusVertex.label())
+      janusgraphVertex = graph.addVertex(faunusVertex.id(),faunusVertex.label())
     }
     return janusgraphVertex
 }

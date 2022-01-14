@@ -39,7 +39,7 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
     private Integer ttl = null;
     private List<IndexType> indexes = null;
 
-    public RelationTypeVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
+    public RelationTypeVertex(StandardJanusGraphTx tx, Object id, byte lifecycle) {
         super(tx, id, lifecycle);
     }
 

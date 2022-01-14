@@ -21,6 +21,9 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.util.datastructures.AbstractIdListUtil;
+
+import java.util.Objects;
 
 /**
  * AbstractElement is the base class for all elements in JanusGraph.
@@ -35,19 +38,19 @@ import org.janusgraph.graphdb.relations.RelationIdentifier;
  */
 public abstract class AbstractElement implements InternalElement, Comparable<JanusGraphElement> {
 
-    private long id;
+    private Object id;
 
-    public AbstractElement(long id) {
+    public AbstractElement(Object id) {
         this.id = id;
     }
 
-    public static boolean isTemporaryId(long elementId) {
-        return elementId < 0;
+    public static boolean isTemporaryId(Object elementId) {
+        return elementId instanceof Number && ((Number) elementId).longValue() < 0;
     }
 
     @Override
     public int hashCode() {
-        return Long.hashCode(getCompareId());
+        return Objects.hashCode(getCompareId());
     }
 
     @Override
@@ -63,12 +66,12 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
             return false;
         //Same type => they are the same if they have identical ids.
         if (other instanceof AbstractElement) {
-            return getCompareId()==((AbstractElement)other).getCompareId();
+            return Objects.equals(getCompareId(), ((AbstractElement)other).getCompareId());
         } else if (other instanceof JanusGraphElement) {
-            return ((JanusGraphElement) other).hasId() && getCompareId()==((JanusGraphElement)other).longId();
+            return ((JanusGraphElement) other).hasId() && Objects.equals(getCompareId(), ((JanusGraphElement)other).id());
         } else {
             Object otherId = ((Element)other).id();
-            if (otherId instanceof RelationIdentifier) return ((RelationIdentifier) otherId).getRelationId()==getCompareId();
+            if (otherId instanceof RelationIdentifier) return Objects.equals(((RelationIdentifier) otherId).getRelationId(), getCompareId());
             else return otherId.equals(getCompareId());
         }
     }
@@ -80,9 +83,9 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
     }
 
     public static int compare(JanusGraphElement e1, JanusGraphElement e2) {
-        long e1id = (e1 instanceof AbstractElement)?((AbstractElement)e1).getCompareId():e1.longId();
-        long e2id = (e2 instanceof AbstractElement)?((AbstractElement)e2).getCompareId():e2.longId();
-        return Long.compare(e1id,e2id);
+        Object e1id = (e1 instanceof AbstractElement) ? ((AbstractElement) e1).getCompareId() : e1.id();
+        Object e2id = (e2 instanceof AbstractElement) ? ((AbstractElement) e2).getCompareId() : e2.id();
+        return AbstractIdListUtil.compare(e1id, e2id);
     }
 
     @Override
@@ -96,27 +99,27 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
 	 */
 
     /**
-     * Long identifier used to compare elements. Often, this is the same as {@link #longId()}
+     * Long identifier used to compare elements. Often, this is the same as {@link #id()}
      * but some instances of elements may be considered the same even if their ids differ. In that case,
      * this method should be overwritten to return an id that can be used for comparison.
      * @return
      */
-    protected long getCompareId() {
-        return longId();
+    protected Object getCompareId() {
+        return id();
     }
 
     @Override
-    public long longId() {
+    public Object id() {
         return id;
     }
 
     public boolean hasId() {
-        return !isTemporaryId(longId());
+        return !isTemporaryId(id);
     }
 
     @Override
-    public void setId(long id) {
-        assert id > 0;
+    public void setId(Object id) {
+        assert !isTemporaryId(id);
         this.id=id;
     }
 

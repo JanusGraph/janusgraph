@@ -44,7 +44,7 @@ import java.util.List;
 
 public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource {
 
-    public JanusGraphSchemaVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
+    public JanusGraphSchemaVertex(StandardJanusGraphTx tx, Object id, byte lifecycle) {
         super(tx, id, lifecycle);
     }
 
@@ -52,6 +52,11 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
     private TypeDefinitionMap definition = null;
     private ListMultimap<TypeDefinitionCategory,Entry> outRelations = null;
     private ListMultimap<TypeDefinitionCategory,Entry> inRelations = null;
+
+    @Override
+    public long longId() {
+        return ((Number) id()).longValue();
+    }
 
     @Override
     public String name() {

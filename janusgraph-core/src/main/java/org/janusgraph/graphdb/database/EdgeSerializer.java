@@ -108,7 +108,7 @@ public class EdgeSerializer implements RelationReader {
         int startKeyPos = in.getPosition();
         int endKeyPos = 0;
         if (relationType.isEdgeLabel()) {
-            long otherVertexId;
+            Object otherVertexId;
             if (multiplicity.isConstrained()) {
                 if (multiplicity.isUnique(dir)) {
                     otherVertexId = VariableLong.readPositive(in);
@@ -177,7 +177,7 @@ public class EdgeSerializer implements RelationReader {
                     ImplicitKey key = ImplicitKey.MetaData2ImplicitKey.get(metas.getKey());
                     if (key != null) {
                         assert metas.getValue() != null;
-                        properties.put(key.longId(),metas.getValue());
+                        properties.put(key.longId(), metas.getValue());
                     }
                 }
             }
@@ -253,7 +253,6 @@ public class EdgeSerializer implements RelationReader {
         DirectionID dirID = getDirID(dir, relation.isProperty() ? RelationCategory.PROPERTY : RelationCategory.EDGE);
 
         DataOutput out = serializer.getDataOutput(DEFAULT_CAPACITY);
-        int valuePosition;
         IDHandler.writeRelationType(out, typeId, dirID, type.isInvisibleType());
         Multiplicity multiplicity = type.multiplicity();
 
@@ -268,8 +267,9 @@ public class EdgeSerializer implements RelationReader {
         long relationId = relation.longId();
 
         //How multiplicity is handled for edges and properties is slightly different
+        int valuePosition;
         if (relation.isEdge()) {
-            long otherVertexId = relation.getVertex((position + 1) % 2).longId();
+            long otherVertexId = ((Number) relation.getVertex((position + 1) % 2).id()).longValue();
             if (multiplicity.isConstrained()) {
                 if (multiplicity.isUnique(dir)) {
                     valuePosition = out.getPosition();
@@ -434,7 +434,7 @@ public class EdgeSerializer implements RelationReader {
 
                 } else {
                     assert !type.multiplicity().isConstrained();
-                    assert propertyKey.longId() == sortKeyIDs[i];
+                    assert propertyKey.id().equals(sortKeyIDs[i]);
                 }
 
                 if (interval == null || interval.isEmpty()) {

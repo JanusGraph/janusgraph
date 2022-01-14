@@ -175,7 +175,7 @@ public class VertexIDAssignerTest {
                     //Verify that ids are set and unique
                     for (JanusGraphVertex v : vertices) {
                         assertTrue(v.hasId());
-                        long id = v.longId();
+                        long id = (long) v.id();
                         assertTrue(id>0 && id<Long.MAX_VALUE);
                         assertTrue(vertexIds.add(id));
                     }
@@ -254,7 +254,7 @@ public class VertexIDAssignerTest {
                 //Verify that ids are set, unique and consistent with user id basis
                 for (JanusGraphVertex v : vertices) {
                     assertTrue(v.hasId());
-                    long id = v.longId();
+                    long id = (long) v.id();
                     assertTrue(id>0 && id<Long.MAX_VALUE);
                     assertTrue(vertexIds.add(id));
                     assertEquals((long) v.value("user_id"), idAssigner.getIDManager().fromVertexId(id));

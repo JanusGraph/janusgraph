@@ -17,7 +17,6 @@ package org.janusgraph.graphdb;
 
 import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntSet;
-import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -48,13 +47,14 @@ import org.janusgraph.graphdb.database.idassigner.placement.SimpleBulkPlacementS
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.olap.OLAPTest;
-import org.janusgraph.util.datastructures.AbstractLongListUtil;
+import org.janusgraph.util.datastructures.AbstractIdListUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -125,7 +125,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
         finishSchema();
         final Set<String> names = ImmutableSet.of("Marko", "Dan", "Stephen", "Daniel", "Josh", "Thad", "Pavel", "Matthias");
         final int numG = 10;
-        final long[] gids = new long[numG];
+        final Object[] gids = new Object[numG];
 
         for (int i = 0; i < numG; i++) {
             JanusGraphVertex g = tx.addVertex("group");
@@ -138,7 +138,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
             assertEquals(0, g.<Integer>value("sig").intValue());
             assertEquals("group", g.label());
             assertCount(names.size(), g.properties("name"));
-            assertTrue(getId(g) > 0);
+            assertTrue((long) getId(g) > 0);
             gids[i] = getId(g);
             if (i > 0) {
                 g.addEdge("base", getV(tx, gids[0]));
@@ -164,9 +164,9 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
         newTx();
 
         for (int i = 0; i < numG; i++) {
-            long gId = gids[i];
+            Object gId = gids[i];
             assertTrue(idManager.isPartitionedVertex(gId));
-            assertEquals(idManager.getCanonicalVertexId(gId), gId);
+            assertEquals(idManager.getCanonicalVertexId((long) gId), gId);
             JanusGraphVertex g = getV(tx, gId);
             final int canonicalPartition = getPartitionID(g);
             assertEquals(g, getOnlyElement(tx.query().has("gid", i).vertices()));
@@ -226,7 +226,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
                 if (partition < 0) partition = pid;
                 else assertEquals(partition, pid);
                 int numRelations = 0;
-                JanusGraphVertex v = getV(txx, vs[vi].longId());
+                JanusGraphVertex v = getV(txx, vs[vi].id());
                 for (JanusGraphRelation r : v.query().relations()) {
                     numRelations++;
                     assertEquals(partition, getPartitionID(r));
@@ -286,11 +286,11 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
             assertEquals(numV / 2, v2.size());
             v1.sort();
             v2.sort();
-            LongArrayList al1 = v1.getIDs();
-            LongArrayList al2 = v2.getIDs();
-            assertTrue(AbstractLongListUtil.isSorted(al1));
-            assertTrue(AbstractLongListUtil.isSorted(al2));
-            LongArrayList alr = AbstractLongListUtil.mergeJoin(al1, al2, false);
+            List<Object> al1 = v1.getIDs();
+            List<Object> al2 = v2.getIDs();
+            assertTrue(AbstractIdListUtil.isSorted(al1));
+            assertTrue(AbstractIdListUtil.isSorted(al2));
+            List<Object> alr = AbstractIdListUtil.mergeJoin(al1, al2, false);
             assertEquals(numV / 2, alr.size());
 
             tx2.commit();
@@ -333,7 +333,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
 
     private static JanusGraphVertex vInTx(JanusGraphVertex v, JanusGraphTransaction tx) {
         if (!v.hasId()) return v;
-        else return tx.getVertex(v.longId());
+        else return tx.getVertex(v.id());
     }
 
     @Test
@@ -377,7 +377,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
                 assertEquals(g, getOnlyElement(o.query().direction(Direction.OUT).labels("member").vertices()));
                 VertexList vertexList = o.query().direction(Direction.IN).labels("contain").vertexIds();
                 assertEquals(1,vertexList.size());
-                assertEquals(pid,idManager.getPartitionId(vertexList.getID(0)));
+                assertEquals(pid,idManager.getPartitionId((long) vertexList.getID(0)));
                 assertEquals(g,vertexList.get(0));
             }
         }
@@ -412,9 +412,9 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
 
         int numVertices = setupGroupClusters(groupDegrees,commitMode);
 
-        Map<Long,Integer> degreeMap = new HashMap<>(groupDegrees.length);
+        Map<Object,Integer> degreeMap = new HashMap<>(groupDegrees.length);
         for (int i = 0; i < groupDegrees.length; i++) {
-            degreeMap.put(getOnlyVertex(tx.query().has("groupid","group"+i)).longId(),groupDegrees[i]);
+            degreeMap.put(getOnlyVertex(tx.query().has("groupid","group"+i)).id(),groupDegrees[i]);
         }
 
         clopen(options);
@@ -484,7 +484,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
 
 
     public int getPartitionID(JanusGraphVertex vertex) {
-        long p = idManager.getPartitionId(vertex.longId());
+        long p = idManager.getPartitionId((long) vertex.id());
         assertTrue(p>=0 && p<idManager.getPartitionBound() && p<Integer.MAX_VALUE);
         return (int)p;
     }

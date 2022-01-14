@@ -100,5 +100,9 @@ public interface JanusGraphRelation extends JanusGraphElement {
      */
     boolean isEdge();
 
-
+    /**
+     * Returns the long-type representation of ID
+     * @return
+     */
+    long longId();
 }
