@@ -40,19 +40,19 @@ public class EmptyVertexCache implements VertexCache {
     }
 
     @Override
-    public boolean contains(long id) {
+    public boolean contains(Object id) {
         logWarning();
         return false;
     }
 
     @Override
-    public InternalVertex get(final long id, final Retriever<Long, InternalVertex> retriever) {
+    public InternalVertex get(final Object id, final Retriever<Object, InternalVertex> retriever) {
         logWarning();
         return null;
     }
 
     @Override
-    public void add(InternalVertex vertex, long id) {
+    public void add(InternalVertex vertex, Object id) {
         logWarning();
     }
 

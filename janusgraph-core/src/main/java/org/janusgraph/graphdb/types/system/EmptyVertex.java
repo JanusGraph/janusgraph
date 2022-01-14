@@ -147,13 +147,8 @@ public class EmptyVertex implements InternalVertex {
 	 */
 
     @Override
-    public long longId() {
-        throw new UnsupportedOperationException(errorName + " don't have an ID");
-    }
-
-    @Override
     public Object id() {
-        return hasId() ? longId() : null;
+        return null;
     }
 
     @Override
@@ -172,7 +167,7 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public void setId(long id) {
+    public void setId(Object id) {
         throw new UnsupportedOperationException(errorName + " don't have an id");
     }
 

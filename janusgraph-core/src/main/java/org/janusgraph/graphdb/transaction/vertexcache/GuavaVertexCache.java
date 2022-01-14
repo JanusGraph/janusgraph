@@ -19,10 +19,10 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
+import org.jctools.maps.NonBlockingHashMap;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.vertices.AbstractVertex;
 import org.janusgraph.util.datastructures.Retriever;
-import org.jctools.maps.NonBlockingHashMapLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,15 +36,15 @@ public class GuavaVertexCache implements VertexCache {
     private static final Logger log =
             LoggerFactory.getLogger(GuavaVertexCache.class);
 
-    private final ConcurrentMap<Long, InternalVertex> volatileVertices;
-    private final Cache<Long, InternalVertex> cache;
+    private final ConcurrentMap<Object, InternalVertex> volatileVertices;
+    private final Cache<Object, InternalVertex> cache;
 
     public GuavaVertexCache(final long maxCacheSize, final int concurrencyLevel, final int initialDirtySize) {
-        volatileVertices = new NonBlockingHashMapLong<>(initialDirtySize);
+        volatileVertices = new NonBlockingHashMap<>(initialDirtySize);
         log.debug("Created dirty vertex map with initial size {}", initialDirtySize);
 
         cache = CacheBuilder.newBuilder().maximumSize(maxCacheSize).concurrencyLevel(concurrencyLevel)
-                .removalListener((RemovalListener<Long, InternalVertex>) notification -> {
+                .removalListener((RemovalListener<Object, InternalVertex>) notification -> {
                     if (notification.getCause() == RemovalCause.EXPLICIT) { //Due to invalidation at the end
                         assert volatileVertices.isEmpty();
                         return;
@@ -61,26 +61,23 @@ public class GuavaVertexCache implements VertexCache {
     }
 
     @Override
-    public boolean contains(long id) {
-        Long vertexId = id;
-        return cache.getIfPresent(vertexId) != null || volatileVertices.containsKey(vertexId);
+    public boolean contains(Object id) {
+        return cache.getIfPresent(id) != null || volatileVertices.containsKey(id);
     }
 
     @Override
-    public InternalVertex get(final long id, final Retriever<Long, InternalVertex> retriever) {
-        final Long vertexId = id;
-
-        InternalVertex vertex = cache.getIfPresent(vertexId);
+    public InternalVertex get(final Object id, final Retriever<Object, InternalVertex> retriever) {
+        InternalVertex vertex = cache.getIfPresent(id);
 
         if (vertex == null) {
-            InternalVertex newVertex = volatileVertices.get(vertexId);
+            InternalVertex newVertex = volatileVertices.get(id);
 
             if (newVertex == null) {
-                newVertex = retriever.get(vertexId);
+                newVertex = retriever.get(id);
             }
             assert newVertex!=null;
             try {
-                vertex = cache.get(vertexId, new NewVertexCallable(newVertex));
+                vertex = cache.get(id, new NewVertexCallable(newVertex));
             } catch (Exception e) { throw new AssertionError("Should not happen: "+e.getMessage()); }
             assert vertex!=null;
         }
@@ -89,14 +86,13 @@ public class GuavaVertexCache implements VertexCache {
     }
 
     @Override
-    public void add(InternalVertex vertex, long id) {
+    public void add(InternalVertex vertex, Object id) {
         Preconditions.checkNotNull(vertex);
-        Preconditions.checkArgument(id != 0);
-        Long vertexId = id;
+        Preconditions.checkArgument(!(id instanceof Number) || (long) id != 0);
 
-        cache.put(vertexId, vertex);
+        cache.put(id, vertex);
         if (vertex.isNew() || vertex.hasAddedRelations())
-            volatileVertices.put(vertexId, vertex);
+            volatileVertices.put(id, vertex);
     }
 
     @Override

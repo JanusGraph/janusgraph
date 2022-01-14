@@ -436,8 +436,8 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         else return obj.toString();
     }
 
-    public static long getId(Element e) {
-        return ((JanusGraphElement)e).longId();
+    public static Object getId(Element e) {
+        return ((JanusGraphElement)e).id();
     }
 
     public static void verifyElementOrder(Iterable<? extends Element> elements, String key, Order order, int expectedCount) {

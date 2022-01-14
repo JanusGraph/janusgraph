@@ -67,8 +67,8 @@ public class RelationCache implements Iterable<LongObjectCursor<Object>> {
         return other;
     }
 
-    public Long getOtherVertexId() {
-        return (Long) other;
+    public Object getOtherVertexId() {
+        return other;
     }
 
     public Iterator<LongObjectCursor<Object>> propertyIterator() {

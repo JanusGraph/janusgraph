@@ -31,6 +31,7 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.internal.Token;
+import org.janusgraph.graphdb.relations.AbstractTypedRelation;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -87,7 +88,8 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
         if (this==ID) {
             return (O)e.id();
         } else if (this==JANUSGRAPHID) {
-            return (O)Long.valueOf(e.longId());
+            assert e instanceof AbstractTypedRelation;
+            return (O)Long.valueOf(((AbstractTypedRelation) e).longId());
         } else if (this==LABEL) {
             return (O)e.label();
         } else if (this==KEY) {
@@ -169,7 +171,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
     }
 
     @Override
-    public long longId() {
+    public Object id() {
         return id;
     }
 
@@ -179,7 +181,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
     }
 
     @Override
-    public void setId(long id) {
+    public void setId(Object id) {
         throw new IllegalStateException("SystemType has already been assigned an id");
     }
 

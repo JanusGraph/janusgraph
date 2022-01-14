@@ -21,6 +21,6 @@ import org.janusgraph.graphdb.internal.InternalVertex;
  */
 public interface VertexFactory {
 
-    InternalVertex getInternalVertex(long id);
+    InternalVertex getInternalVertex(Object id);
 
 }

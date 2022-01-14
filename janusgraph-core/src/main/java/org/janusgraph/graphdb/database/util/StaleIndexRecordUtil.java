@@ -154,7 +154,7 @@ public class StaleIndexRecordUtil {
      * @param graphIndexName name of the index for which to remove a record
      * @throws BackendException is thrown in case backend transaction cannot be mutated for any reason.
      */
-    public static void forceRemoveVertexFromGraphIndex(long vertexId,
+    public static void forceRemoveVertexFromGraphIndex(Object vertexId,
                                                        Map<String, Object> indexRecordPropertyValues,
                                                        JanusGraph graph,
                                                        String graphIndexName) throws BackendException {

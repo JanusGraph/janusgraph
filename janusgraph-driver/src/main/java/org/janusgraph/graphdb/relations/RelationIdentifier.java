@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.relations;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.util.encoding.LongEncoding;
 
 import java.io.Serializable;
@@ -28,19 +27,19 @@ public final class RelationIdentifier implements Serializable {
 
     public static final String TOSTRING_DELIMITER = "-";
 
-    private final long outVertexId;
+    private final Object outVertexId;
     private final long typeId;
     private final long relationId;
-    private final long inVertexId;
+    private final Object inVertexId;
 
     private RelationIdentifier() {
-        outVertexId = 0;
+        outVertexId = null;
         typeId = 0;
         relationId = 0;
-        inVertexId = 0;
+        inVertexId = null;
     }
 
-    public RelationIdentifier(final long outVertexId, final long typeId, final long relationId, final long inVertexId) {
+    public RelationIdentifier(final Object outVertexId, final long typeId, final long relationId, final Object inVertexId) {
         this.outVertexId = outVertexId;
         this.typeId = typeId;
         this.relationId = relationId;
@@ -55,23 +54,22 @@ public final class RelationIdentifier implements Serializable {
         return typeId;
     }
 
-    public long getOutVertexId() {
+    public Object getOutVertexId() {
         return outVertexId;
     }
 
-    public long getInVertexId() {
-        Preconditions.checkState(inVertexId != 0);
+    public Object getInVertexId() {
         return inVertexId;
     }
 
-    public static RelationIdentifier get(long[] ids) {
+    public static RelationIdentifier get(Object[] ids) {
         if (ids.length != 3 && ids.length != 4)
             throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         for (int i = 0; i < 3; i++) {
-            if (ids[i] < 0)
+            if (ids[i] instanceof Number && ((Number) ids[i]).longValue() < 0)
                 throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         }
-        return new RelationIdentifier(ids[1], ids[2], ids[0], ids.length == 4 ? ids[3] : 0);
+        return new RelationIdentifier(ids[1], ((Number) ids[2]).longValue(), ((Number) ids[0]).longValue(), ids.length == 4 ? ids[3] : 0);
     }
 
     public static RelationIdentifier get(int[] ids) {
@@ -82,15 +80,6 @@ public final class RelationIdentifier implements Serializable {
                 throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         }
         return new RelationIdentifier(ids[1], ids[2], ids[0], ids.length == 4 ? ids[3] : 0);
-    }
-
-    public long[] getLongRepresentation() {
-        long[] r = new long[3 + (inVertexId != 0 ? 1 : 0)];
-        r[0] = relationId;
-        r[1] = outVertexId;
-        r[2] = typeId;
-        if (inVertexId != 0) r[3] = inVertexId;
-        return r;
     }
 
     @Override
@@ -109,9 +98,11 @@ public final class RelationIdentifier implements Serializable {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(LongEncoding.encode(relationId)).append(TOSTRING_DELIMITER).append(LongEncoding.encode(outVertexId))
-                .append(TOSTRING_DELIMITER).append(LongEncoding.encode(typeId));
-        if (inVertexId != 0) s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(inVertexId));
+        s.append(LongEncoding.encode(relationId)).append(TOSTRING_DELIMITER).append(LongEncoding.encode(((Number) outVertexId).longValue()))
+            .append(TOSTRING_DELIMITER).append(LongEncoding.encode(typeId));
+        if (inVertexId != null && ((Number) inVertexId).longValue() > 0) {
+            s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(((Number) inVertexId).longValue()));
+        }
         return s.toString();
     }
 
@@ -121,9 +112,9 @@ public final class RelationIdentifier implements Serializable {
             throw new IllegalArgumentException("Not a valid relation identifier: " + id);
         try {
             return new RelationIdentifier(LongEncoding.decode(elements[1]),
-                    LongEncoding.decode(elements[2]),
-                    LongEncoding.decode(elements[0]),
-                    elements.length == 4 ? LongEncoding.decode(elements[3]) : 0);
+                LongEncoding.decode(elements[2]),
+                LongEncoding.decode(elements[0]),
+                elements.length == 4 ? LongEncoding.decode(elements[3]) : 0);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid id - each token expected to be a number", e);
         }

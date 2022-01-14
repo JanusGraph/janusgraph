@@ -46,7 +46,7 @@ expect -re "hadoopgraph"
 expect gremlin>
 send "g = graph.traversal().withComputer(SparkGraphComputer)\r"
 expect gremlin>
-send "g.V(v.longId()).values('test')\r"
+send "g.V(v.id()).values('test')\r"
 expect "42"
 expect gremlin>
 send "g.V().count()\r"

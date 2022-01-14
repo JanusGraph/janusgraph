@@ -122,8 +122,7 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
         if (labelValue!=null) {
             label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getOrCreateVertexLabel((String) labelValue);
         }
-
-        final Long id = idValue.map(Number.class::cast).map(Number::longValue).orElse(null);
+        Object id = idValue.map(Number.class::cast).map(Number::longValue).orElse(null);
         final JanusGraphVertex vertex = addVertex(id, label);
         org.janusgraph.graphdb.util.ElementHelper.attachProperties(vertex, keyValues);
         return vertex;
@@ -133,11 +132,11 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     public Iterator<Vertex> vertices(Object... vertexIds) {
         if (vertexIds==null || vertexIds.length==0) return (Iterator)getVertices().iterator();
         ElementUtils.verifyArgsMustBeEitherIdOrElement(vertexIds);
-        long[] ids = new long[vertexIds.length];
+        Object[] ids = new Object[vertexIds.length];
         int pos = 0;
         for (Object vertexId : vertexIds) {
-            long id = ElementUtils.getVertexId(vertexId);
-            if (id > 0) ids[pos++] = id;
+            Object id = ElementUtils.getVertexId(vertexId);
+            if (!(id instanceof Number) || ((Number) id).longValue() > 0) ids[pos++] = id;
         }
         if (pos==0) return Collections.emptyIterator();
         if (pos<ids.length) ids = Arrays.copyOf(ids,pos);

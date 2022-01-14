@@ -111,7 +111,7 @@ public class VertexMapJob implements VertexScanJob {
             v.setPropertyMixing(vh);
         }
         v.setAccessCheck(MAPREDUCE_CHECK);
-        if (idManager.isPartitionedVertex(v.longId()) && !idManager.isCanonicalVertexId(v.longId())) {
+        if (idManager.isPartitionedVertex(v.id()) && !idManager.isCanonicalVertexId(((Number) v.id()).longValue())) {
             return; //Only consider the canonical partition vertex representative
         }
         for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {

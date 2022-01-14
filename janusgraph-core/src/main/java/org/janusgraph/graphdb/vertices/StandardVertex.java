@@ -36,7 +36,7 @@ public class StandardVertex extends AbstractVertex {
     private volatile byte lifecycle;
     private volatile AddedRelationsContainer addedRelations=AddedRelationsContainer.EMPTY;
 
-    public StandardVertex(final StandardJanusGraphTx tx, final long id, byte lifecycle) {
+    public StandardVertex(final StandardJanusGraphTx tx, final Object id, byte lifecycle) {
         super(tx, id);
         this.lifecycle=lifecycle;
     }

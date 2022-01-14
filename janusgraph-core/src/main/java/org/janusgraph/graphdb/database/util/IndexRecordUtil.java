@@ -117,10 +117,10 @@ public class IndexRecordUtil {
     }
 
     public static RelationIdentifier bytebuffer2RelationId(ReadBuffer b) {
-        long[] relationId = new long[4];
+        Object[] relationId = new Object[4];
         for (int i = 0; i < 3; i++) relationId[i] = VariableLong.readPositive(b);
         if (b.hasRemaining()) relationId[3] = VariableLong.readPositive(b);
-        else relationId = Arrays.copyOfRange(relationId,0,3);
+        else relationId = Arrays.copyOfRange(relationId, 0, 3);
         return RelationIdentifier.get(relationId);
     }
 
@@ -207,7 +207,7 @@ public class IndexRecordUtil {
             values = new ArrayList<>();
             Iterable<JanusGraphVertexProperty> props;
             if (onlyLoaded ||
-                (!vertex.isNew() && IDManager.VertexIDType.PartitionedVertex.is(vertex.longId()))) {
+                (!vertex.isNew() && IDManager.VertexIDType.PartitionedVertex.is(vertex.id()))) {
                 //going through transaction so we can query deleted vertices
                 final VertexCentricQueryBuilder qb = ((InternalVertex)vertex).tx().query(vertex);
                 qb.noPartitionRestriction().type(key);
@@ -232,7 +232,12 @@ public class IndexRecordUtil {
         final DataOutput out = serializer.getDataOutput(1+8+8*record.length+4*8);
         out.putByte(FIRST_INDEX_COLUMN_BYTE);
         if (index.getCardinality()!= Cardinality.SINGLE) {
-            VariableLong.writePositive(out,element.longId());
+            if (element instanceof JanusGraphVertex) {
+                VariableLong.writePositive(out, ((Number) element.id()).longValue());
+            } else {
+                assert element instanceof JanusGraphRelation;
+                VariableLong.writePositive(out, ((JanusGraphRelation) element).longId());
+            }
             if (index.getCardinality()!=Cardinality.SET) {
                 for (final IndexRecordEntry re : record) {
                     VariableLong.writePositive(out,re.getRelationId());
@@ -241,13 +246,16 @@ public class IndexRecordUtil {
         }
         final int valuePosition=out.getPosition();
         if (element instanceof JanusGraphVertex) {
-            VariableLong.writePositive(out,element.longId());
+            VariableLong.writePositive(out,((Number) element.id()).longValue());
         } else {
             assert element instanceof JanusGraphRelation;
             final RelationIdentifier rid = (RelationIdentifier)element.id();
-            final long[] longs = rid.getLongRepresentation();
-            Preconditions.checkArgument(longs.length == 3 || longs.length == 4);
-            for (final long aLong : longs) VariableLong.writePositive(out, aLong);
+            VariableLong.writePositive(out, rid.getRelationId());
+            VariableLong.writePositive(out, ((Number) rid.getOutVertexId()).longValue());
+            VariableLong.writePositive(out, rid.getTypeId());
+            if (rid.getInVertexId() != null) {
+                VariableLong.writePositive(out, ((Number) rid.getInVertexId()).longValue());
+            }
         }
         return new StaticArrayEntry(out.getStaticBuffer(),valuePosition);
     }

@@ -234,9 +234,9 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         v2.addEdge("knows",v3);
         v1.addEdge("knows",v2);
         newTx();
-        long v3id = getId(v3);
-        long v1id = getId(v1);
-        assertTrue(v3id>0);
+        Object v3id = getId(v3);
+        Object v1id = getId(v1);
+        assertTrue(!(v3id instanceof Number) || (long) v3id > 0);
 
         v3 = getV(tx, v3id);
         assertNotNull(v3);
@@ -256,7 +256,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         assertNull(getV(tx,v3id));
         v1 = getV(tx, v1id);
         assertNotNull(v1);
-        assertEquals(v3id, v1.query().direction(Direction.IN).labels("knows").vertices().iterator().next().longId());
+        assertEquals(v3id, v1.query().direction(Direction.IN).labels("knows").vertices().iterator().next().id());
         tx.commit();
         mgmt.commit();
 

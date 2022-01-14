@@ -2592,7 +2592,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         }
         StandardJanusGraphTx queryTx = (StandardJanusGraphTx) graph.newTransaction();
         for (JanusGraphVertex v : vertices) {
-            if (!graph.edgeQuery(v.longId(), graph.vertexExistenceQuery, queryTx.getTxHandle()).isEmpty()) {
+            if (!graph.edgeQuery(v.id(), graph.vertexExistenceQuery, queryTx.getTxHandle()).isEmpty()) {
                 queryTx.rollback();
                 return false;
             }

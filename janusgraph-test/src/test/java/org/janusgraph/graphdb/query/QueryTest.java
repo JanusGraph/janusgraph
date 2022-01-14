@@ -129,8 +129,8 @@ public class QueryTest {
         Vertex v1 = tx.addVertex("pos", 0);
         Vertex v2 = tx.addVertex();
         Edge e = v1.addEdge("connects", v2, "prop", "val");
-        String vId = v1.id().toString();
-        String eId = e.id().toString();
+        Object vId = v1.id();
+        Object eId = e.id();
         tx.commit();
 
         tx = graph.newTransaction();

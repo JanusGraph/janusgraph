@@ -50,6 +50,11 @@ public final class EmptyJanusGraphVertexProperty<V> implements JanusGraphVertexP
     }
 
     @Override
+    public Object id() {
+        return null;
+    }
+
+    @Override
     public long longId() {
         return 0;
     }

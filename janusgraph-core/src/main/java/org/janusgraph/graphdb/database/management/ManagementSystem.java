@@ -381,7 +381,7 @@ public class ManagementSystem implements JanusGraphManagement {
     }
 
     private static String composeRelationTypeIndexName(RelationType type, String name) {
-        return String.valueOf(type.longId()) + RELATION_INDEX_SEPARATOR + name;
+        return String.valueOf(type.id()) + RELATION_INDEX_SEPARATOR + name;
     }
 
     @Override

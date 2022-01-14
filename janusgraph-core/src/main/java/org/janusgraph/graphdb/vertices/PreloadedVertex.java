@@ -46,7 +46,7 @@ public class PreloadedVertex extends CacheVertex {
     private PropertyMixing mixin = NO_MIXIN;
     private AccessCheck accessCheck = DEFAULT_CHECK;
 
-    public PreloadedVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
+    public PreloadedVertex(StandardJanusGraphTx tx, Object id, byte lifecycle) {
         super(tx, id, lifecycle);
         assert lifecycle == ElementLifeCycle.Loaded : "Invalid lifecycle encountered: " + lifecycle;
     }

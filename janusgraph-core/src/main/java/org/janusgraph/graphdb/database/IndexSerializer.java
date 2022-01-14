@@ -88,8 +88,8 @@ import javax.annotation.Nullable;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.bytebuffer2RelationId;
-import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getCompositeIndexUpdate;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.element2String;
+import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getCompositeIndexUpdate;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getIndexTTL;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getKeyInformation;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getKeysOfRecords;

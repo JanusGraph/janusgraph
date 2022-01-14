@@ -122,7 +122,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     }
 
     @Override
-    public JanusGraphVertex getVertex(long vertexId) {
+    public JanusGraphVertex getVertex(Object vertexId) {
         return tx.getVertex(vertexId);
     }
 
@@ -732,7 +732,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         }
         if (adjacentVertex!=null) {
             if (adjacentVertex.hasId()) {
-                constraintMap.put(ImplicitKey.ADJACENT_ID,new PointInterval(adjacentVertex.longId()));
+                constraintMap.put(ImplicitKey.ADJACENT_ID,new PointInterval(adjacentVertex.id()));
             }
             else isFitted=false;
         }
