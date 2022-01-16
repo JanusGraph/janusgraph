@@ -194,37 +194,41 @@ iterate over all vertices or edges in large graphs effectively.
 >
 > —  [DataStax Astra](https://www.datastax.com/products/datastax-astra)
 
-[Download](https://docs.datastax.com/en/astra/aws/doc/dscloud/astra/dscloudObtainingCredentials.html) the secure-connect zipped bundle for your Astra database.
+[Download](https://docs.datastax.com/en/astra/docs/obtaining-database-credentials.html) the secure-connect zipped bundle for your Astra database.
 
-Unzip your copy of `secure-connect-your_astra_db.zip` which will contain the following files:
+While connecting to Astra DB from JanusGraph, it is preferred to make use of the setting 
+`storage.cql.internal.file-configuration` and externalize the astra connection related properties to a file,
+since the datastax driver used internally knows how to work with the secure connection bundle and connect
+to the Astra DB
 
-- `ca.crt`
-- `cert`
-- `cert.pfx`
-- `config.json`
-- `cqlshrc`
-- `identity.jks`
-- `key`
-- `trustStore.jks`
+Here's a minimal setting required to connect to Astra DB:
 
-The `config.json` file contains the following:
+janus.properties
+```properties
+gremlin.graph=org.janusgraph.core.JanusGraphFactory
+storage.backend=cql
+storage.cql.keyspace=<keyspace-name>
 
-- `host` - the contact point for the CQL driver
-- `port` - the CQL client port
-- `keyspace` - the name of the keyspace you created
-- `trustStoreLocation` - trustStore.jks is the truststore
-- `trustStorePassword` - your truststore password
-- `keyStoreLocation` - identity.jks is the keystore
-- `keyStorePassword` - your keystore password
+# Link to the external file that DataStax driver understands
+storage.cql.internal.file-configuration=<path-to-astra.conf>
+```
 
-Using the information above, you will need to configure the following:
+astra.conf
+```
+datastax-java-driver {
+  basic.cloud {
+    secure-connect-bundle = "<path-to-secure-bundle-zip-file"
+  }
+  advanced.auth-provider {
+    class = PlainTextAuthProvider
+    username = "<clientID>"
+    password = "<clientSecret>"
+  }
+}
+```
 
-- `storage.hostname`
-- `storage.port`
-- `storage.username`
-- `storage.password`
-- `storage.cql.keyspace`
-- `storage.cql.ssl.*`
+_Client id and Client secret need to be generated and copied from your Astra Account
+as per this [doc](https://docs.datastax.com/en/astra/docs/manage-application-tokens.html)_
 
 ## Deploying on Amazon Keyspaces (Experimental)
 
