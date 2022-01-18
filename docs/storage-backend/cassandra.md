@@ -217,7 +217,7 @@ astra.conf
 ```
 datastax-java-driver {
   basic.cloud {
-    secure-connect-bundle = "<path-to-secure-bundle-zip-file"
+    secure-connect-bundle = "<path-to-secure-bundle-zip-file>"
   }
   advanced.auth-provider {
     class = PlainTextAuthProvider
