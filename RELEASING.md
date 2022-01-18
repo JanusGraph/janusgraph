@@ -1,19 +1,47 @@
 # Releasing JanusGraph
 
-## Prerequisites
+There are two possible ways of making a JanusGraph release:
+- **Automatic** - Partially automated release via GitHub actions. This is a preferred way of making a release.
+- **Manual** - Fully manual release. This is a deprecated way of making a release. This way should only be used if 
+there is a problem of using GitHub actions, or you need to compile `jar` artifacts via a custom version of Java which
+isn't available in `setup-java` GitHub action.
+
+## General prerequisites: Sonatype account
+
+The release artifacts will be deployed into Sonatype OSS with the Maven deploy plugin.
+You must have an account with Sonatype, and it must be associated with the JanusGraph org.
+See the relevant issue [here.](https://issues.sonatype.org/browse/OSSRH-28274)
+
+# Release Checklist
+
+* [ ] Start up new `[DISCUSS]` thread on janusgraph-dev with suggestions on what should be included in the release and target date
+* [ ] Make sure all PRs and issues added since last release are associated to the milestone
+* [ ] Complete all items associated with milestone or move outstanding items to a new milestone if necessary
+* [ ] Create Pull Requests with version updates
+* [ ] Validate all changes have been merged upstream
+* [ ] Push a release tag
+* [ ] **For Manual release flow only** Run Deploy to create [Sonatype](https://oss.sonatype.org/#welcome) staging repository and Generate artifacts for release page
+* [ ] **For Manual release flow only** Create a draft release and upload artifacts to it
+* [ ] Update release description of draft release
+* [ ] Close the staging repository in [Sonatype](https://oss.sonatype.org/#stagingRepositories)
+* [ ] Convert draft release to a public pre-release
+* [ ] Create `[VOTE]` [janusgraph-dev](https://lists.lfaidata.foundation/g/janusgraph-dev) vote thread and [get required votes of 3 TSC members](https://www.apache.org/foundation/voting.html)
+* [ ] Release the staging repository in Sonatype
+* [ ] Remove pre-release label on the [releases page](https://github.com/JanusGraph/janusgraph/releases/)
+* [ ] Announce the new release
+* [ ] Prepare the next SNAPSHOT release
+* [ ] Document lessons learned
+
+## Prerequisites [for Manual release flow only]
+
+**Skip this entire section if you are using **Automatic** release flow.**
 
 The release process has only been tested on Linux and macOS.
 The following tools must be installed.
 
 *   [gpg](https://www.gnupg.org/) - Requires a running agent.
 
-### Sonatype account
-
-The release artifacts will be deployed into Sonatype OSS with the Maven deploy plugin.
-You must have an account with Sonatype, and it must be associated with the JanusGraph org.
-See the relevant issue [here.](https://issues.sonatype.org/browse/OSSRH-28274)
-
-#### GPG Signing Key
+### GPG Signing Key
 
 The JanusGraph artifacts are signed with a GPG signature.  
 If you don't already have a GPG signing key included with the `KEYS` file, you will need to create one and update the `KEYS` file.  
@@ -82,7 +110,7 @@ Steps below were taken from [this guide.](https://maven.apache.org/guides/mini/g
 You can pass it as a command line parameter to Maven with `-Dgpg.passphrase=$GPG_PASS`.
 You can also encrypt the gpg key with `mvn --encrypt-password` and add it to `$HOME/.m2/settings.xml` as shown below.
 You may still have to enter your GPG passphrase once.
-Otherwise you will have to type in your gpg passphrase many times when prompted during the build.
+Otherwise, you will have to type in your gpg passphrase many times when prompted during the build.
 
 ```xml
 <settings>
@@ -108,27 +136,7 @@ Otherwise you will have to type in your gpg passphrase many times when prompted 
 </settings>
 ```
 
-# Release Checklist
-
-*   [ ] Start up new `[DISCUSS]` thread on janusgraph-dev with suggestions on what should be included in the release and target date
-*   [ ] Make sure all PRs and issues added since last release are associated to the milestone
-*   [ ] Complete all items associated with milestone or move outstanding items to a new milestone if necessary
-*   [ ] Create Pull Requests with release tag and version updates
-*   [ ] validate all changes have been merged upstream
-*   [ ] Generate updated docs and create pull request
-*   [ ] Run Deploy to create [Sonatype](https://oss.sonatype.org/#welcome) staging repository and Generate artifacts for release page
-*   [ ] Upload artifacts to a draft release
-*   [ ] Close the staging repository in [Sonatype](https://oss.sonatype.org/#stagingRepositories)
-*   [ ] Convert release draft to a public pre-release
-*   [ ] Create `[VOTE]` [janusgraph-dev](https://lists.lfaidata.foundation/g/janusgraph-dev) vote thread and [get required votes of 3 TSC members](https://www.apache.org/foundation/voting.html)
-*   [ ] Release the staging repository in Sonatype
-*   [ ] Remove pre-release label on the [releases page](https://github.com/JanusGraph/janusgraph/releases/)
-*   [ ] Announce the new release
-*   [ ] Prepare the next SNAPSHOT release
-*   [ ] Document lessons learned
-
 # Release Steps
-
 
 ### Create discussion thread
 
@@ -146,7 +154,7 @@ Any issues closed as a result of those commits should be tagged as part of the r
 Before submitting a pull request with updated version numbers ensure that everything in the [release milestone](https://github.com/JanusGraph/janusgraph/milestones) is closed out.
 Any outstanding pull requests that will need to be re-targeted at future milestone.
 
-### Create Pull Requests with release tag and version updates
+### Create Pull Requests with version updates
 
 Before any artifacts can be generated and vote can be made the version number will need to be updated in the pom.xml files.
 
@@ -178,20 +186,11 @@ You may also need to update the following files in the main repo for any new or 
 
 *   `NOTICE.txt`
 
-#### Create a release commit and a release tag
+#### Create a release commit
 
 Create a release commit:
 ```Shell
 git commit -m "JanusGraph release <version> [cql-tests] [tp-tests]" -s
-```
-
-After that create a release tag with the next command:
-```Shell
-git tag -a <release tag> -m ""
-```
-Example:
-```Shell
-git tag -a v0.3.2 -m ""
 ```
 
 #### Create the Pull Request
@@ -200,7 +199,34 @@ Open up pull requests for the version updates.
 It is recommended to add `[tp-tests]` to the commit message so the TinkerPop test suite will run.
 After the updates are approved and merged, continue on with the release process.
 
-# Build Release Artifacts
+### Push version related tag
+
+Create a release tag with the next command:
+```Shell
+git tag -a <release tag> -m ""
+```
+The release tag should follow the next pattern: **v.\<major\>.\<minor\>.\<patch\>**.
+Example:
+```Shell
+git tag -a v0.3.2 -m ""
+```
+Push tag to JanusGraph remote repository (usually `upstream`):
+```Shell
+git push upstream <release tag>
+```
+
+In case of any changes into the release happens after the tag is pushed you will need to remove the tag, associate it 
+with a new commit and push it again. After that proceed from the following step again:
+```Shell
+git tag --delete <release tag>
+git push upstream :<release tag>
+git tag -a <release tag> -m ""
+git push upstream <release tag>
+```
+
+### Build Release Artifacts [for Manual release flow only]
+
+**If you are using Automatic release flow skip this section.**
 
 * Pull down the latest, merged code from GitHub.
 * Stash any uncommitted changes.
@@ -220,7 +246,7 @@ mvn deploy -Pjanusgraph-release -DskipTests=true
 ```
 
 * Install MkDocs if not installed. It is needed to build documentation.
-1. Install `python3` and `pip3` (newest version of pip) 
+1. Install `python3` and `pip3` (the newest version of pip) 
     * You can also checkout the installation guide of [material-mkdocs](https://squidfunk.github.io/mkdocs-material/getting-started/)
 2. Install requirements using `pip3 install -r requirements.txt`
 
@@ -253,13 +279,29 @@ gpg --verify ${JG_VER}-doc.zip.asc ${JG_VER}-doc.zip
 
 ### Create a Draft Release on GitHub
 
+#### For Automatic release flow
+
+If you are using Automatic release flow your draft release will be created automatically, 
+and it will be populated with all necessary release artifacts. Notice, you will need to wait for the `ci-publish.yml` 
+action to be finished after your tag is submitted (Usually it takes about 10-15 minutes for this CI to be finished) for 
+the draft release to be created.  
+You will need to change the body of the draft release and replace `*MILESTONE_NUMBER*` with the correct milestone number 
+associated to the release. You will also need to add `Tested Compatibility`, `Contributors`, and `Notable new features` to the release body.
+Use the previous releases as a template.  
+It is recommended to keep the release in draft status until you're ready to start a vote.
+
+Notice, if your release is already created due to re-submitting the tag again the body of your release will not be changed.  
+Only the associated artifacts will be replaced with the new artifacts. You will also need to drop previous Sonatype staging release.  
+
+#### For Manual release flow
+
 While logged into GitHub go to the [JanusGraph releases page](https://github.com/JanusGraph/janusgraph/releases/) and click the `Draft a new release` button.
-Supply the tag number, target branch, and title.
-For the description use the previous releases as a template and update the tested versions accordingly.
-All of the artifacts that were created and moved to `~/jg-staging/` in the previous step need to be added to the draft release.
-Be sure to mark it as `pre-release`.
-It is recommended and keep the release in draft until you're ready to start a vote.
-In addition to the artifacts in `~/jg-staging/` a `KEYS` file must also be added to the release.
+Supply the tag number, target branch, and title.  
+For the description use the previous releases as a template and update the tested versions accordingly.  
+All the artifacts that were created and moved to `~/jg-staging/` in the previous step need to be added to the draft release.  
+Be sure to mark it as `pre-release`.  
+It is recommended and keep the release in draft until you're ready to start a vote.  
+In addition to the artifacts in `~/jg-staging/` a `KEYS` file must also be added to the release.  
 
 ### Close the staging repository
 
@@ -268,14 +310,14 @@ If you recently uploaded you can easily find your staged release by doing a desc
 Verify that the contents look complete and then check the release before clicking close.
 
 This step will run verification on all the artifacts.
-In particular, this will verify that all of the artifacts have a valid GPG signature.
+In particular, this will verify that all the artifacts have a valid GPG signature.
 If this step fails, there are changes that must be made before starting the vote.
 
 ### Create a `[VOTE]` Thread
-Once all the artifacts have been upload to the GItHub releases page and the staging repository has been populated and closed it's time to create a `[VOTE]` thread.
-Here is an example [vote thread from JanusGraph 0.3.1](https://groups.google.com/d/msg/janusgraph-dev/iV8IsUqhcnw/74p3Y7lNAAAJ) that can be used as a template.
-Similar to the [Apache release voting policy](https://www.apache.org/foundation/voting.html#ReleaseVotes) a release vote requires 3 TSC members to pass.
-See the documentation on the [JanusGraph release policy](https://docs.janusgraph.org/development/#release-policy) for more information.
+Once all the artifacts have been upload to the GItHub releases page and the staging repository has been populated and closed it's time to create a `[VOTE]` thread.  
+Here is an example [vote thread from JanusGraph 0.3.1](https://groups.google.com/d/msg/janusgraph-dev/iV8IsUqhcnw/74p3Y7lNAAAJ) that can be used as a template.  
+Similar to the [Apache release voting policy](https://www.apache.org/foundation/voting.html#ReleaseVotes) a release vote requires 3 TSC members to pass.  
+See the documentation on the [JanusGraph release policy](https://docs.janusgraph.org/development/#release-policy) for more information.  
 
 ### Finalize the Release
 
@@ -283,29 +325,18 @@ See the documentation on the [JanusGraph release policy](https://docs.janusgraph
 Central and pushing history to the public GitHub repo, the release
 can't be canceled. 
 
-Update the `STRUCTOR_LATEST_TAG` variable in the settings of the JanusGraph project 
-in the Travis CI web interface and ensure that 
-the newest version is the actually latest version in our documentation, 
-for example, you release `v0.3.3` but `v0.4.0` is already released,
-`STRUCTOR_LATEST_TAG` variable should be `v0.4.0`.
-
 ### Release the staging repository
 
-When the vote is complete and successful, it is time to finalize the release.
-Log into Sonatype and select the [staging repository](https://oss.sonatype.org/#stagingRepositories) that was closed previously.
-Once the release is selected click `Release`.
-The staging directory should be automatically deleted after the release is completed.
-The release artifacts will be synched over to Maven Central in about 2 hours.
+When the vote is complete and successful, it is time to finalize the release.  
+Log into Sonatype and select the [staging repository](https://oss.sonatype.org/#stagingRepositories) that was closed previously.  
+Once the release is selected click `Release`.  
+The staging directory should be automatically deleted after the release is completed.  
+The release artifacts will be synched over to Maven Central in about 2 hours.  
 
 ### Update from pre-release to release
 
-Edit the release on GitHub and uncheck the box for pre-release.
+Edit the release on GitHub and uncheck the box for pre-release.  
 Verify that on the release page that the release is now labeled "Latest Release".
-
-### Publish the documentation
-
-Merge the pull request for the release documentation on docs.janusgraph.org.
-It takes about a minute for the documentation site to get published.
 
 ### Prepare the next snapshot release
 
@@ -322,8 +353,8 @@ update `snapshot_version` in the `mkdocs.yml`.
 
 ### Announce the new release
 
-Once it has been verified that the artifacts have populated in Nexus the release manager should announce the release in [janusgraph-user](https://lists.lfaidata.foundation/g/janusgraph-users), [janusgraph-dev](https://lists.lfaidata.foundation/g/janusgraph-dev) and [janusgraph-announce](https://lists.lfaidata.foundation/g/janusgraph-announce).
-Here is an [example announcement thread](https://groups.google.com/forum/#!searchin/janusgraph-users/ANNOUNCE%7Csort:date/janusgraph-users/nAgHta8mw-A/pOsd8qpqBgAJ).
+Once it has been verified that the artifacts have populated in Nexus the release manager should announce the release in [janusgraph-user](https://lists.lfaidata.foundation/g/janusgraph-users), [janusgraph-dev](https://lists.lfaidata.foundation/g/janusgraph-dev) and [janusgraph-announce](https://lists.lfaidata.foundation/g/janusgraph-announce).  
+Here is an [example announcement thread](https://lists.lfaidata.foundation/g/janusgraph-dev/topic/announce_janusgraph_0_6_0/85417137).
 
 ### Document lessons learned
 
