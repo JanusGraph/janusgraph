@@ -196,24 +196,41 @@ iterate over all vertices or edges in large graphs effectively.
 
 [Download](https://docs.datastax.com/en/astra/docs/obtaining-database-credentials.html) the secure-connect zipped bundle for your Astra database.
 
-While connecting to Astra DB from JanusGraph, it is preferred to make use of the setting 
-`storage.cql.internal.file-configuration` and externalize the astra connection related properties to a file,
-since the datastax driver used internally knows how to work with the secure connection bundle and connect
-to the Astra DB
+While connecting to Astra DB from JanusGraph, it is preferred to make use of the secure bundle connection file 
+as-is without extracting it. There are multiple ways in which a secure bundle connection file can be passed on to
+the JanusGraph configuration to connect to Astra DB using the DataStax driver.
 
-Here's a minimal setting required to connect to Astra DB:
+### Internal string configuration
+Set the following property `storage.cql.internal.string-configuration` to `datastax-java-driver { basic.cloud.secure-connect-bundle=<path-to-secure-bundle-zip-file> }`
+and set the username, password and keyspace details
 
-janus.properties
+For eg.
+```properties
+gremlin.graph=org.janusgraph.core.JanusGraphFactory
+storage.backend=cql
+storage.cql.keyspace=<keyspace name which was created in AstraDB>
+storage.username=<clientID>
+storage.password=<clientSecret>
+storage.cql.internal.string-configuration=datastax-java-driver { basic.cloud.secure-connect-bundle=<path-to-secure-bundle-zip-file> 
+```
+
+Also, you can set a jvm argument to pass the secure bundle file as shown below and remove that property 
+`(storage.cql.internal.string-configuration)` from the list above.
+`-Ddatastax-java-driver.basic.cloud.secure-connect-bundle=<path-to-secure-bundle-zip-file>`
+
+### Internal file configuration
+Set the following property `storage.cql.internal.file-configuration` to an external configuration file if you would like to 
+externalize the astra connection related properties to a separate file and specify the secure bundle and credentials information on that file. 
+
+For eg.
 ```properties
 gremlin.graph=org.janusgraph.core.JanusGraphFactory
 storage.backend=cql
 storage.cql.keyspace=<keyspace-name>
-
 # Link to the external file that DataStax driver understands
 storage.cql.internal.file-configuration=<path-to-astra.conf>
 ```
-
-astra.conf
+astra.conf (external file)
 ```
 datastax-java-driver {
   basic.cloud {
@@ -229,6 +246,9 @@ datastax-java-driver {
 
 _Client id and Client secret need to be generated and copied from your Astra Account
 as per this [doc](https://docs.datastax.com/en/astra/docs/manage-application-tokens.html)_
+
+Note: To learn more about different configuration options of DataStax driver, please refer to the DataStax driver configuration
+[documentation](https://docs.datastax.com/en/developer/java-driver/latest/manual/core/configuration/)
 
 ## Deploying on Amazon Keyspaces (Experimental)
 
