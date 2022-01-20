@@ -11,8 +11,7 @@
     <url>https://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <solr7.docker.version>7.7.2</solr7.docker.version>
-        <solr8.docker.version>8.11.0</solr8.docker.version>
+        <solr8.docker.version>8.11.1</solr8.docker.version>
         <solr.docker.version>${solr8.docker.version}</solr.docker.version>
         <solr.docker.image>solr</solr.docker.image>
         <skip.solr.test>${skipTests}</skip.solr.test>
@@ -278,12 +277,6 @@
         </plugins>
     </build>
     <profiles>
-        <profile>
-            <id>solr7</id>
-            <properties>
-                <solr.docker.version>${solr7.docker.version}</solr.docker.version>
-            </properties>
-        </profile>
         <profile>
             <id>solr8</id>
             <properties>

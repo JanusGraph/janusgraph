@@ -62,9 +62,6 @@ jobs:
       matrix:
         include:
           - module: solr
-            args: "-Psolr7"
-            name: solr7
-          - module: solr
             args: "-Psolr8"
             name: solr8
     steps:
