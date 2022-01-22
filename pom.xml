@@ -20,30 +20,15 @@
     </description>
     <developers>
         <developer>
-            <name>Matthias Broecheler</name>
-            <email>me@matthiasb.com</email>
-            <url>http://matthiasb.com</url>
-        </developer>
-        <developer>
-            <name>Daniel LaRocque</name>
-            <email>dalaro@hopcount.org</email>
-        </developer>
-        <developer>
-            <name>Pavel Yaskevich</name>
-            <email>povel.y@gmail.com</email>
-            <url>https://github.com/xedin</url>
+            <name>JanusGraph members</name>
+            <email>janusgraph-dev@lists.lfaidata.foundation</email>
+            <url>https://github.com/orgs/JanusGraph/people</url>
         </developer>
     </developers>
     <contributors>
         <contributor>
-            <name>Marko A. Rodriguez</name>
-            <email>marko@markorodriguez.com</email>
-            <url>https://markorodriguez.com</url>
-        </contributor>
-        <contributor>
-            <name>Stephen Mallette</name>
-            <email>spmva@genoprime.com</email>
-            <url>https://stephen.genoprime.com</url>
+            <name>JanusGraph Contributors</name>
+            <url>https://github.com/JanusGraph/janusgraph/graphs/contributors</url>
         </contributor>
     </contributors>
     <inceptionYear>2012</inceptionYear>
