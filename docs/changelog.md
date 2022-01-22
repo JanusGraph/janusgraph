@@ -145,7 +145,7 @@ we clean up all configurations. This could lead to unexpected new log lines. Ple
 !!! note 
     Log4j is only used for standalone server deployments and JanusGraph testing.
 
-### Version 0.6.1 (Release Date: ???)
+### Version 0.6.1 (Release Date: January 18, 2022)
 
 ```xml tab='Maven'
 <dependency>
