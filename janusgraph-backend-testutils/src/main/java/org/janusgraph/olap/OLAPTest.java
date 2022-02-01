@@ -274,8 +274,19 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
 
     @Test
     public void testBasicComputeJob() {
-        GraphTraversalSource g = graph.traversal().withComputer(FulgoraGraphComputer.class);
-        System.out.println(g.V().count().next());
+        int numV = 1000;
+        for (int i = 0; i < numV; i++) {
+            Vertex v = graph.addVertex();
+            v.addEdge("loop", v, "val", i % 2);
+        }
+        graph.tx().commit();
+        long startTime = System.currentTimeMillis();
+        // in JanusGraph, withComputer() is equivalent to withComputer(FulgoraGraphComputer.class)
+        GraphTraversalSource g = graph.traversal().withComputer();
+        long result = g.V().outE().has("val", 0).count().next();
+        long elapsedTime = System.currentTimeMillis() - startTime;
+        log.info("elapsed time = {}", elapsedTime);
+        assertEquals(numV / 2, result);
     }
 
     @Test

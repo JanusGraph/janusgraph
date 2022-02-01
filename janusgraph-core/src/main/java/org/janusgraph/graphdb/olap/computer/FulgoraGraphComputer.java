@@ -83,7 +83,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
     private FulgoraVertexMemory vertexMemory;
     private boolean executed = false;
 
-    private int numThreads = 1;//Math.max(1,Runtime.getRuntime().availableProcessors());
+    private int numThreads = Runtime.getRuntime().availableProcessors();
     private final int readBatchSize;
     private final int writeBatchSize;
 
