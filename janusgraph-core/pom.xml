@@ -16,6 +16,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.github.levyfan</groupId>
+            <artifactId>guava-cache-redis</artifactId>
+            <version>0.0.5-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-driver</artifactId>
             <version>${project.version}</version>

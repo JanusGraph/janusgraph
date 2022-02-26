@@ -355,6 +355,13 @@ public class GraphDatabaseConfiguration {
             "transaction to independently fetch graph elements from storage before reading/writing them.",
             ConfigOption.Type.MASKABLE, false);
 
+    public static final ConfigOption<String> REDIS_CACHE_HOST = new ConfigOption<>(CACHE_NS,"redis-cache-host",
+        "Whether to enable JanusGraph's database-level cache, which is shared across all transactions. " +
+            "Enabling this option speeds up traversals by holding hot graph elements in memory, " +
+            "but also increases the likelihood of reading stale data.  Disabling it forces each " +
+            "transaction to independently fetch graph elements from storage before reading/writing them.",
+        ConfigOption.Type.MASKABLE, "localhost");
+
     /**
      * The size of the database level cache.
      * If this value is between 0.0 (strictly bigger) and 1.0 (strictly smaller), then it is interpreted as a

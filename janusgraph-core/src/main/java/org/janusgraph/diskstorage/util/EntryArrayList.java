@@ -17,11 +17,12 @@ package org.janusgraph.diskstorage.util;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-public class EntryArrayList extends ArrayList<Entry> implements EntryList {
+public class EntryArrayList extends ArrayList<Entry> implements EntryList, Serializable {
 
     public static final int ENTRY_SIZE_ESTIMATE = 256;
 

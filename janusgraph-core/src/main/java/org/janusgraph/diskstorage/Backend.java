@@ -43,7 +43,8 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
+//import org.janusgraph.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.ExpirationKCVSRedisCache;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.NoKCVSCache;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
@@ -105,6 +106,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_POOL_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REDIS_CACHE_HOST;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
@@ -222,6 +224,8 @@ public class Backend implements LockerProvider, AutoCloseable {
     private final ExecutorService threadPool;
     private final long threadPoolShutdownMaxWaitTime;
 
+    private final String redisCacheHost;
+
     private final Function<String, Locker> lockerCreator;
     private final ConcurrentHashMap<String, Locker> lockers = new ConcurrentHashMap<>();
 
@@ -245,6 +249,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
 
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
+        redisCacheHost = configuration.get(REDIS_CACHE_HOST);
 
         int bufferSizeTmp = configuration.get(BUFFER_SIZE);
         Preconditions.checkArgument(bufferSizeTmp > 0, "Buffer size must be positive");
@@ -344,8 +349,12 @@ public class Backend implements LockerProvider, AutoCloseable {
                 long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
                 long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
 
-                edgeStore = new ExpirationKCVSCache(edgeStoreRaw,getMetricsCacheName(EDGESTORE_NAME),expirationTime,cleanWaitTime,edgeStoreCacheSize);
-                indexStore = new ExpirationKCVSCache(indexStoreRaw,getMetricsCacheName(INDEXSTORE_NAME),expirationTime,cleanWaitTime,indexStoreCacheSize);
+//                edgeStore = new ExpirationKCVSCache(edgeStoreRaw,getMetricsCacheName(EDGESTORE_NAME),expirationTime,cleanWaitTime,edgeStoreCacheSize);
+//                indexStore = new ExpirationKCVSCache(indexStoreRaw,getMetricsCacheName(INDEXSTORE_NAME),expirationTime,cleanWaitTime,indexStoreCacheSize);
+                edgeStore = new ExpirationKCVSRedisCache(edgeStoreRaw,getMetricsCacheName(EDGESTORE_NAME),expirationTime,cleanWaitTime,
+                    edgeStoreCacheSize, redisCacheHost);
+                indexStore = new ExpirationKCVSRedisCache(indexStoreRaw,getMetricsCacheName(INDEXSTORE_NAME),expirationTime,cleanWaitTime,
+                    indexStoreCacheSize, redisCacheHost);
             } else {
                 edgeStore = new NoKCVSCache(edgeStoreRaw);
                 indexStore = new NoKCVSCache(indexStoreRaw);
