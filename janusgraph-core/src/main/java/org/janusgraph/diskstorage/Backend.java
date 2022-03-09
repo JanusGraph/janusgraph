@@ -43,7 +43,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
-//import org.janusgraph.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.ExpirationKCVSRedisCache;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.NoKCVSCache;
@@ -85,6 +85,7 @@ import java.util.stream.Collectors;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BUFFER_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CACHE_TYPE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_SIZE;
@@ -106,7 +107,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_POOL_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REDIS_CACHE_HOST;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
@@ -156,6 +156,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     public static final String SYSTEM_TX_LOG_NAME = "txlog";
     public static final String SYSTEM_MGMT_LOG_NAME = "systemlog";
+    public static final String REDIS_TAG = "redis";
 
     public static final double EDGESTORE_CACHE_PERCENT = 0.8;
     public static final double INDEXSTORE_CACHE_PERCENT = 0.2;
@@ -224,8 +225,6 @@ public class Backend implements LockerProvider, AutoCloseable {
     private final ExecutorService threadPool;
     private final long threadPoolShutdownMaxWaitTime;
 
-    private final String redisCacheHost;
-
     private final Function<String, Locker> lockerCreator;
     private final ConcurrentHashMap<String, Locker> lockers = new ConcurrentHashMap<>();
 
@@ -249,7 +248,6 @@ public class Backend implements LockerProvider, AutoCloseable {
 
 
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
-        redisCacheHost = configuration.get(REDIS_CACHE_HOST);
 
         int bufferSizeTmp = configuration.get(BUFFER_SIZE);
         Preconditions.checkArgument(bufferSizeTmp > 0, "Buffer size must be positive");
@@ -349,12 +347,22 @@ public class Backend implements LockerProvider, AutoCloseable {
                 long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
                 long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
 
-//                edgeStore = new ExpirationKCVSCache(edgeStoreRaw,getMetricsCacheName(EDGESTORE_NAME),expirationTime,cleanWaitTime,edgeStoreCacheSize);
-//                indexStore = new ExpirationKCVSCache(indexStoreRaw,getMetricsCacheName(INDEXSTORE_NAME),expirationTime,cleanWaitTime,indexStoreCacheSize);
-                edgeStore = new ExpirationKCVSRedisCache(edgeStoreRaw,getMetricsCacheName(EDGESTORE_NAME),expirationTime,cleanWaitTime,
-                    edgeStoreCacheSize, redisCacheHost);
-                indexStore = new ExpirationKCVSRedisCache(indexStoreRaw,getMetricsCacheName(INDEXSTORE_NAME),expirationTime,cleanWaitTime,
-                    indexStoreCacheSize, redisCacheHost);
+                String cacheType = configuration.get(CACHE_TYPE);
+
+                if(REDIS_TAG.equals(cacheType)){
+                    log.info("======== Configuring redis cache ========");
+                    edgeStore = new ExpirationKCVSRedisCache(edgeStoreRaw,getMetricsCacheName(EDGESTORE_NAME)!=null?getMetricsCacheName(EDGESTORE_NAME)
+                        :"edgeStore",expirationTime,cleanWaitTime,
+                        edgeStoreCacheSize, configuration);
+                    indexStore = new ExpirationKCVSRedisCache(indexStoreRaw,getMetricsCacheName(INDEXSTORE_NAME)!=null?
+                        getMetricsCacheName(INDEXSTORE_NAME):"indexStore",expirationTime,cleanWaitTime,
+                        indexStoreCacheSize, configuration);
+                }else{
+                    log.info("======== Configuring inmemory cache ========");
+                    edgeStore = new ExpirationKCVSCache(edgeStoreRaw,getMetricsCacheName(EDGESTORE_NAME),expirationTime,cleanWaitTime,edgeStoreCacheSize);
+                    indexStore = new ExpirationKCVSCache(indexStoreRaw,getMetricsCacheName(INDEXSTORE_NAME),expirationTime,cleanWaitTime,indexStoreCacheSize);
+                }
+
             } else {
                 edgeStore = new NoKCVSCache(edgeStoreRaw);
                 indexStore = new NoKCVSCache(indexStoreRaw);
