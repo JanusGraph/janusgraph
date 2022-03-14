@@ -51,9 +51,10 @@ tools:
 * [Graphexp](https://github.com/bricaud/graphexp)
 * [Graph Explorer](https://github.com/invanalabs/graph-explorer)
 * [Gremlin-Visualizer](https://github.com/prabushitha/gremlin-visualizer)
-* [G.V() - Gremlin IDE](https://gdotv.com) 
-* [KeyLines by Cambridge Intelligence](https://cambridge-intelligence.com/visualizing-janusgraph-new-titandb-fork/)
+* [G.V() - Gremlin IDE](https://gdotv.com)
+* [KeyLines by Cambridge Intelligence](https://cambridge-intelligence.com/keylines/janusgraph/)
 * [Linkurious](https://doc.linkurio.us/ogma/latest/tutorials/janusgraph/)
+* [ReGraph by Cambridge Intelligence](https://cambridge-intelligence.com/regraph/)
 * [Tom Sawyer Perspectives](https://www.tomsawyer.com/perspectives/)
 
 ## Community
