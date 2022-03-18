@@ -15,7 +15,16 @@
 package org.janusgraph.graphdb.cql;
 
 import io.github.artsok.RepeatedIfExceptionsTest;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.JanusGraphCassandraContainer;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
 import org.junit.jupiter.api.Disabled;
@@ -27,12 +36,16 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Arrays;
+import java.util.Random;
 import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_ENABLED;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ASSIGN_TIMESTAMP;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
@@ -100,5 +113,25 @@ public class CQLGraphTest extends JanusGraphTest {
     public void testConcurrentConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize, boolean executorServiceEnabled) throws Exception {
         clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize, option(EXECUTOR_SERVICE_ENABLED), executorServiceEnabled);
         super.testConcurrentConsistencyEnforcement();
+    }
+
+    @Test
+    public void testQueryLongForPropertyKey() {
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("nameIndex", Vertex.class).addKey(name).buildCompositeIndex();
+        finishSchema();
+
+        /* We need to generate a string that is not simple to force the CQL
+         * query to throw a ServerError because the key exceeds 64k, which is a
+         * compressed form of the string.  This key ends up being 75224 bytes. */
+        String testName = RandomStringUtils.random(100000, 0, 0, true, true, null, new Random(0));
+
+        GraphTraversalSource g = graph.traversal();
+        JanusGraphException ex = assertThrows(JanusGraphException.class,
+                () -> g.V().has("name", testName).hasNext());
+        assertEquals(-1, ExceptionUtils.indexOfType(ex, TemporaryBackendException.class),
+                "Query should not produce a TemporaryBackendException");
+        assertNotEquals(-1, ExceptionUtils.indexOfType(ex, PermanentBackendException.class),
+                "Query should produce a PermanentBackendException");
     }
 }
