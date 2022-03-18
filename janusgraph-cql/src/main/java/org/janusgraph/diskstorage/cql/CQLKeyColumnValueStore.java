@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.cql;
 
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
@@ -24,6 +25,7 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
+import com.datastax.oss.driver.api.core.servererrors.ServerError;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.delete.DeleteSelection;
 import com.datastax.oss.driver.api.querybuilder.insert.Insert;
@@ -37,6 +39,7 @@ import io.vavr.Tuple3;
 import io.vavr.collection.Array;
 import io.vavr.collection.Iterator;
 import io.vavr.control.Try;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -65,6 +68,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
@@ -117,9 +121,37 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     public static final String KEY_END_BINDING = "keyEnd";
     public static final String LIMIT_BINDING = "maxRows";
 
-    public static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> Match(cause).of(
+    public static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> {
+        // Unwrap any ExecutionExceptions to get to the real cause:
+        while (cause instanceof ExecutionException) {
+            Throwable t = ((ExecutionException) cause).getCause();
+            if (t == null) {
+                break;
+            } else {
+                cause = t;
+            }
+        }
+        return Match(cause).of(
             Case($(instanceOf(QueryValidationException.class)), PermanentBackendException::new),
+            Case($(CQLKeyColumnValueStore::isKeySizeTooLarge), PermanentBackendException::new),
             Case($(), TemporaryBackendException::new));
+    };
+
+    /**
+     * CQL keys are limited to 64k, and a query that attempts to filter on such
+     * a key with a value that exceeds that length will produce a ServerError
+     * on ScyllaDB, perhaps due to a bug, rather than an InvalidQueryException.
+     * This type of ServerError is a permanent failure, since the same query with
+     * the same value will always produce this error. Properly treating this as a
+     * permanent failure avoids excessive retrying of bad CQL queries and allows
+     * upstream code to properly report the exception.
+     */
+    private static boolean isKeySizeTooLarge(Throwable cause) {
+        AllNodesFailedException failed = ExceptionUtils.throwableOfType(cause, AllNodesFailedException.class);
+        return failed != null && failed.getAllErrors().values().stream().anyMatch(errors ->
+            errors.stream().anyMatch(error -> (error instanceof ServerError)
+                && error.getMessage().startsWith("Key size too large:")));
+    }
 
     private final CQLStoreManager storeManager;
     private final CqlSession session;
