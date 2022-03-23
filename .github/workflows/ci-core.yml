@@ -52,6 +52,23 @@ jobs:
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
 
+  build-java11:
+    needs: build-all
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - run: mvn clean install --projects janusgraph-all -Pjava-11 -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
+      - run: mvn verify --projects janusgraph-all -Pjava-11 -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
+
   tests:
     runs-on: ubuntu-20.04
     needs: build-all
@@ -60,12 +77,37 @@ jobs:
       matrix:
         include:
           - module: driver
+            java: 8
           - module: server
+            java: 8
           - module: test
+            java: 8
           - module: inmemory
             args: "-Dtest.skip.tp=false"
+            java: 8
           - module: berkeleyje
+            java: 8
           - module: lucene
+            java: 8
+          - module: driver
+            install-args: "-Pjava-11"
+            java: 11
+          - module: server
+            install-args: "-Pjava-11"
+            java: 11
+          - module: test
+            install-args: "-Pjava-11"
+            java: 11
+          - module: inmemory
+            install-args: "-Pjava-11"
+            args: "-Dtest.skip.tp=false"
+            java: 11
+          - module: berkeleyje
+            install-args: "-Pjava-11"
+            java: 11
+          - module: lucene
+            install-args: "-Pjava-11"
+            java: 11
     steps:
       - uses: actions/checkout@v2
         with:
@@ -78,13 +120,13 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: ${{ matrix.java }}
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
-      - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
+      - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.install-args }} ${{ matrix.args }}
       - uses: actions/upload-artifact@v2
         with:
           name: jacoco-reports
           path: target/jacoco-combined.exec
       - uses: codecov/codecov-action@v1
         with:
-          name: codecov-core-${{ matrix.module }}
+          name: codecov-core-${{ matrix.module }}-java-${{ matrix.java }}

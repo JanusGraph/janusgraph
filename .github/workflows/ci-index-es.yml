@@ -64,12 +64,30 @@ jobs:
           - module: es
             args: "-Pelasticsearch7"
             name: es7
+            java: 8
           - module: es
             args: "-Pelasticsearch6"
             name: es6
+            java: 8
           - module: es
             args: "-Pelasticsearch60"
             name: es60
+            java: 8
+          - module: es
+            install-args: "-Pjava-11"
+            args: "-Pelasticsearch7"
+            name: es7
+            java: 11
+          - module: es
+            install-args: "-Pjava-11"
+            args: "-Pelasticsearch6"
+            name: es6
+            java: 11
+          - module: es
+            install-args: "-Pjava-11"
+            args: "-Pelasticsearch60"
+            name: es60
+            java: 11
     steps:
       - uses: actions/checkout@v2
         with:
@@ -82,13 +100,13 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: ${{ matrix.java }}
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
-      - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
+      - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.install-args }} ${{ matrix.args }}
       - uses: actions/upload-artifact@v2
         with:
           name: jacoco-reports
           path: target/jacoco-combined.exec
       - uses: codecov/codecov-action@v1
         with:
-          name: codecov-index-${{ matrix.name }}
+          name: codecov-index-${{ matrix.name }}-java-${{ matrix.java }}

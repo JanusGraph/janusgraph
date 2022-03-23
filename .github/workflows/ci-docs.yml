@@ -53,8 +53,8 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v1
         with:
-          java-version: 1.8
-      - run: mvn clean install -pl janusgraph-doc ${{ env.BUILD_MAVEN_OPTS }}
+          java-version: 11
+      - run: mvn clean install -Pjava-11 -pl janusgraph-doc ${{ env.BUILD_MAVEN_OPTS }}
       - run: git diff  --exit-code docs/configs/janusgraph-cfg.md
       - run: docker build -t doc-site:mkdocs -f docs.Dockerfile .
       - run: docker run --rm -v $PWD:/mkdocs doc-site:mkdocs mkdocs build

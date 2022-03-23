@@ -383,7 +383,7 @@
             <id>java-11</id>
             <properties>
                 <packname.standard>janusgraph-java-11-${project.version}</packname.standard>
-                <test.zipfile.path>${project.build.directory}/${packname.standard}.zip</test.zipfile.path>
+                <packname.full>janusgraph-java-11-full-${project.version}</packname.full>
                 <test.excluded.groups>FULL_TESTS</test.excluded.groups>
                 <build.full>none</build.full>
             </properties>

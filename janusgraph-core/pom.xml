@@ -32,11 +32,6 @@
         </dependency>
         <!-- Utility -->
         <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
-            <version>1.1.4</version>
-        </dependency>
-        <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
         </dependency>
@@ -76,14 +71,17 @@
             <groupId>com.carrotsearch</groupId>
             <artifactId>hppc</artifactId>
         </dependency>
-        <dependency>
+       <dependency>
             <groupId>org.jctools</groupId>
             <artifactId>jctools-core</artifactId>
+            <version>3.3.0</version>
         </dependency>
-       <dependency>
-           <groupId>com.google.code.findbugs</groupId>
-           <artifactId>jsr305</artifactId>
-       </dependency>
+
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
     <build>
         <directory>${basedir}/target</directory>
