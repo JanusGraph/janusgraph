@@ -66,7 +66,7 @@ compile "org.janusgraph:janusgraph-core:1.0.0"
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
 * Apache TinkerPop 3.5.1
-* Java 1.8
+* Java 8, 11
 
 #### Changes
 
@@ -148,6 +148,13 @@ we clean up all configurations. This could lead to unexpected new log lines. Ple
 
 !!! note 
     Log4j is only used for standalone server deployments and JanusGraph testing.
+
+##### Add support for Java 11
+
+JanusGraph now officially supports Java 11 in addition to Java 8. We encourage everyone to update to Java 11.
+
+!!! note
+    The distribution zip archives are however still built with Java 8 since the full distribution includes Cassandra which will only support Java 11 in version 4.
 
 ### Version 0.6.1 (Release Date: January 18, 2022)
 

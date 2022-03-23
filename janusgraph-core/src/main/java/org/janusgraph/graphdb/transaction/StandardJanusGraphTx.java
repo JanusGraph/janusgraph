@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.jctools.maps.NonBlockingHashMap;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.Connection;
 import org.janusgraph.core.EdgeLabel;
@@ -142,6 +141,7 @@ import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.janusgraph.graphdb.vertices.StandardVertex;
 import org.janusgraph.util.datastructures.Retriever;
 import org.janusgraph.util.stats.MetricManager;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
