@@ -84,6 +84,15 @@ message VertexLabel {
     repeated VertexProperty properties = 5;
 }
 
+message EdgeProperty {
+    // The Internal id.
+    google.protobuf.Int64Value id = 1;
+    // The EdgeProperty Name.
+    string name = 2;
+    // The Data type.
+    PropertyDataType data_type = 3;
+}
+
 message EdgeLabel {
     // The Internal id.
     google.protobuf.Int64Value id = 1;
@@ -116,4 +125,6 @@ message EdgeLabel {
     }
     // Defines Multiplicity of a edge.
     Multiplicity multiplicity = 4;
+    // All properties constrained to this edge label.
+    repeated EdgeProperty properties = 5;
 }

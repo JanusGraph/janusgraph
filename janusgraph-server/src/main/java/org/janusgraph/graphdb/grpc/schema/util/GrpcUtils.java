@@ -20,6 +20,7 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
+import org.janusgraph.graphdb.grpc.types.EdgeProperty;
 import org.janusgraph.graphdb.grpc.types.PropertyDataType;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
 import org.janusgraph.graphdb.grpc.types.VertexProperty;
@@ -141,6 +142,7 @@ public class GrpcUtils {
 
     private static VertexProperty createVertexPropertyProto(PropertyKey propertyKey) {
         return VertexProperty.newBuilder()
+            .setId(Int64Value.of(propertyKey.longId()))// TODO: we have to check that id is permanent
             .setDataType(convertToGrpcPropertyDataType(propertyKey.dataType()))
             .setCardinality(convertToGrpcCardinality(propertyKey.cardinality()))
             .setName(propertyKey.name())
@@ -180,11 +182,23 @@ public class GrpcUtils {
     }
 
     public static EdgeLabel createEdgeLabelProto(org.janusgraph.core.EdgeLabel edgeLabel) {
-        return EdgeLabel.newBuilder()
+        EdgeLabel.Builder builder = EdgeLabel.newBuilder()
             .setId(Int64Value.of(edgeLabel.longId()))// TODO: we have to check that id is permanent
             .setName(edgeLabel.name())
             .setMultiplicity(convertToGrpcMultiplicity(edgeLabel.multiplicity()))
-            .setDirection(edgeLabel.isDirected() ? EdgeLabel.Direction.DIRECTION_BOTH : EdgeLabel.Direction.DIRECTION_OUT)
+            .setDirection(edgeLabel.isDirected() ? EdgeLabel.Direction.DIRECTION_BOTH : EdgeLabel.Direction.DIRECTION_OUT);
+        Collection<PropertyKey> propertyKeys = edgeLabel.mappedProperties();
+        for (PropertyKey propertyKey : propertyKeys) {
+            builder.addProperties(createEdgePropertyProto(propertyKey));
+        }
+        return builder.build();
+    }
+
+    private static EdgeProperty createEdgePropertyProto(PropertyKey propertyKey) {
+        return EdgeProperty.newBuilder()
+            .setId(Int64Value.of(propertyKey.longId()))// TODO: we have to check that id is permanent
+            .setDataType(convertToGrpcPropertyDataType(propertyKey.dataType()))
+            .setName(propertyKey.name())
             .build();
     }
 }
