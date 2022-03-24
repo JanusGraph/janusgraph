@@ -32,6 +32,7 @@ import org.janusgraph.graphdb.grpc.schema.SchemaManagerImpl;
 import org.janusgraph.graphdb.grpc.schema.util.GrpcUtils;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.EdgeLabelOrBuilder;
+import org.janusgraph.graphdb.grpc.types.EdgeProperty;
 import org.janusgraph.graphdb.grpc.types.VertexLabelOrBuilder;
 import org.janusgraph.graphdb.grpc.types.VertexProperty;
 import org.janusgraph.graphdb.server.TestingServerClosable;
@@ -82,19 +83,26 @@ public abstract class JanusGraphGrpcServerBaseTest {
         return vertexLabel.longId();
     }
 
-    public long createEdgeLabel(String graph, EdgeLabelOrBuilder edgeLabel) {
+    public long createEdgeLabel(String graph, EdgeLabelOrBuilder builder) {
         JanusGraphManagement management = ((JanusGraph) graphManager.getGraph(graph)).openManagement();
-        EdgeLabelMaker edgeLabelMaker = management.makeEdgeLabel(edgeLabel.getName());
-        if (edgeLabel.getDirection() == EdgeLabel.Direction.DIRECTION_OUT) {
+        EdgeLabelMaker edgeLabelMaker = management.makeEdgeLabel(builder.getName());
+        if (builder.getDirection() == EdgeLabel.Direction.DIRECTION_OUT) {
             edgeLabelMaker.unidirected();
         } else {
             edgeLabelMaker.directed();
         }
-        edgeLabelMaker.multiplicity(GrpcUtils.convertGrpcEdgeMultiplicity(edgeLabel.getMultiplicity()));
-        org.janusgraph.core.EdgeLabel createdEdgeLabel = edgeLabelMaker.make();
+        edgeLabelMaker.multiplicity(GrpcUtils.convertGrpcEdgeMultiplicity(builder.getMultiplicity()));
+        org.janusgraph.core.EdgeLabel edgeLabel = edgeLabelMaker.make();
+        for (EdgeProperty edgeProperty : builder.getPropertiesList()) {
+            PropertyKeyMaker propertyKeyMaker = management.makePropertyKey(edgeProperty.getName());
+            PropertyKey propertyKey = propertyKeyMaker
+                .dataType(GrpcUtils.convertGrpcPropertyDataType(edgeProperty.getDataType()))
+                .make();
+            management.addProperties(edgeLabel, propertyKey);
+        }
 
         management.commit();
-        return createdEdgeLabel.longId();
+        return edgeLabel.longId();
     }
 
     private static Pair<Server, String> createServer(JanusGraphContextHandler contextHandler) throws IOException {
