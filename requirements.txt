@@ -6,3 +6,4 @@ markdown==3.2.2
 mkdocs-markdownextradata-plugin==0.1.7
 markdown-include==0.5.1
 mkdocs-redirects==1.0.1
+jinja2==3.0.3
