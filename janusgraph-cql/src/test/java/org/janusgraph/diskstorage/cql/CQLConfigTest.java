@@ -13,8 +13,10 @@
 
 package org.janusgraph.diskstorage.cql;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.config.DriverExecutionProfile;
 import com.datastax.oss.driver.internal.core.tracker.RequestLogger;
 import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -23,6 +25,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -30,6 +33,7 @@ import org.janusgraph.diskstorage.configuration.ExecutorServiceBuilder;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.cql.builder.CQLProgrammaticConfigurationLoaderBuilder;
+import org.janusgraph.diskstorage.cql.builder.CQLSessionBuilder;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -124,6 +128,11 @@ public class CQLConfigTest {
     private static final String DATASTAX_JAVA_DRIVER_STRING_CONTACT_POINTS_ONLY_CONFIGURATION_PATTERN =
         "datastax-java-driver {\n" +
             "basic.contact-points = [ \"${hostname}:${port}\" ]\n" +
+            "}\n";
+
+    private static final String DATASTAX_JAVA_DRIVER_STRING_CONNECTION_TIMEOUT_ONLY_CONFIGURATION_PATTERN =
+        "datastax-java-driver {\n" +
+            "advanced.connection.connect-timeout = 54321 milliseconds\n" +
             "}\n";
 
     private StandardJanusGraph graph;
@@ -565,6 +574,33 @@ public class CQLConfigTest {
         WriteConfiguration wc = getConfiguration();
         wc.set(ConfigElement.getPath(BASE_PROGRAMMATIC_CONFIGURATION_ENABLED), false);
         assertThrows(RuntimeException.class, () -> JanusGraphFactory.open(wc));
+    }
+
+    @Test
+    public void fallbackConfigurationsShouldNotBeOverwrittenWithDefaultValues() throws PermanentBackendException {
+        Duration expectedCqlRequestTimeout = Duration.ofMillis(1234L);
+
+        WriteConfiguration writeConfiguration = getConfiguration();
+        writeConfiguration.set(ConfigElement.getPath(REQUEST_TIMEOUT), expectedCqlRequestTimeout.toMillis());
+        writeConfiguration.set(ConfigElement.getPath(STRING_CONFIGURATION),
+            DATASTAX_JAVA_DRIVER_STRING_CONNECTION_TIMEOUT_ONLY_CONFIGURATION_PATTERN);
+        String[] hostname = writeConfiguration.get(ConfigElement.getPath(STORAGE_HOSTS), String[].class);
+        Integer port = writeConfiguration.get(ConfigElement.getPath(STORAGE_PORT), Integer.class);
+        Duration timeout = writeConfiguration.get(ConfigElement.getPath(CONNECTION_TIMEOUT), Duration.class);
+        if(timeout == null){
+            timeout = CONNECTION_TIMEOUT.getDefaultValue();
+        }
+
+        Configuration config = new ModifiableConfiguration(ROOT_NS, writeConfiguration, BasicConfiguration.Restriction.NONE);
+        CQLProgrammaticConfigurationLoaderBuilder cqlProgrammaticConfigurationLoaderBuilder =
+            new CQLProgrammaticConfigurationLoaderBuilder();
+        CQLSessionBuilder builder = new CQLSessionBuilder();
+
+        CqlSession cqlSession = builder.build(config, hostname, port, timeout, cqlProgrammaticConfigurationLoaderBuilder);
+
+        DriverExecutionProfile defaultDriverExecutionProfile = cqlSession.getContext().getConfig().getDefaultProfile();
+        Duration requestTimeout = defaultDriverExecutionProfile.getDuration(DefaultDriverOption.REQUEST_TIMEOUT);
+        assertEquals(expectedCqlRequestTimeout, requestTimeout);
     }
 
     private static String prepareDataStaxConfiguration(WriteConfiguration wc){

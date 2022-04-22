@@ -17,6 +17,10 @@ package org.janusgraph.diskstorage.cql.builder;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigParseOptions;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.cql.CQLConfigOptions;
@@ -27,7 +31,8 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 public class CQLSessionBuilder {
 
@@ -49,50 +54,91 @@ public class CQLSessionBuilder {
             contactPoints.add(contactPoint);
         }
 
-
-        final CqlSessionBuilder builder = CqlSession.builder();
-
-        Stack<DriverConfigLoader> driverConfigLoadersToUse = new Stack<>();
-
+        DriverConfigLoader driverConfigLoader;
         if(configuration.get(CQLConfigOptions.BASE_PROGRAMMATIC_CONFIGURATION_ENABLED)){
-            driverConfigLoadersToUse.push(baseConfigurationLoaderBuilder.build(configuration, contactPoints, baseConnectionTimeoutMS));
+            driverConfigLoader = baseConfigurationLoaderBuilder.build(configuration, contactPoints, baseConnectionTimeoutMS);
+        } else {
+            driverConfigLoader = null;
         }
 
-        if(configuration.has(CQLConfigOptions.URL_CONFIGURATION)){
+        Optional<Supplier<Config>> internalConfigurationSupplier = getInternalConfigSupplier(configuration, driverConfigLoader == null);
+        final CqlSessionBuilder builder = CqlSession.builder();
+
+        if(internalConfigurationSupplier.isPresent()){
+            DriverConfigLoader internalDriverConfigLoader = new DefaultDriverConfigLoader(
+                internalConfigurationSupplier.get(), false);
+            if(driverConfigLoader == null){
+                driverConfigLoader = internalDriverConfigLoader;
+            } else {
+                driverConfigLoader = DriverConfigLoader.compose(internalDriverConfigLoader, driverConfigLoader);
+            }
+        }
+
+        if(driverConfigLoader != null){
+            builder.withConfigLoader(driverConfigLoader);
+        }
+
+        return builder.build();
+    }
+
+    private Optional<Supplier<Config>> getInternalConfigSupplier(Configuration configuration, boolean withFallbackDefaultConfiguration) throws PermanentBackendException {
+        boolean hasFileConfiguration = configuration.has(CQLConfigOptions.FILE_CONFIGURATION);
+        boolean hasResourceConfiguration = configuration.has(CQLConfigOptions.RESOURCE_CONFIGURATION);
+        boolean hasStringConfiguration = configuration.has(CQLConfigOptions.STRING_CONFIGURATION);
+        boolean hasUrlConfiguration = configuration.has(CQLConfigOptions.URL_CONFIGURATION);
+
+        boolean hasAnyInternalConfiguration = hasFileConfiguration
+            || hasResourceConfiguration
+            || hasStringConfiguration
+            || hasUrlConfiguration;
+
+        if(!hasAnyInternalConfiguration){
+            return Optional.empty();
+        }
+
+        final URL url;
+        if(hasUrlConfiguration){
             String stringUrlRepresentation = configuration.get(CQLConfigOptions.URL_CONFIGURATION);
-            URL url;
             try {
                 url = new URL(stringUrlRepresentation);
             } catch (MalformedURLException e) {
                 throw new PermanentBackendException("Malformed URL: "+stringUrlRepresentation, e);
             }
-            driverConfigLoadersToUse.push(DriverConfigLoader.fromUrl(url));
+        } else {
+            url = null;
         }
 
-        if(configuration.has(CQLConfigOptions.STRING_CONFIGURATION)){
-            String stringConfiguration = configuration.get(CQLConfigOptions.STRING_CONFIGURATION);
-            driverConfigLoadersToUse.push(DriverConfigLoader.fromString(stringConfiguration));
-        }
-
-        if(configuration.has(CQLConfigOptions.RESOURCE_CONFIGURATION)){
-            String resourceConfigurationPath = configuration.get(CQLConfigOptions.RESOURCE_CONFIGURATION);
-            driverConfigLoadersToUse.push(DriverConfigLoader.fromClasspath(resourceConfigurationPath));
-        }
-
-        if(configuration.has(CQLConfigOptions.FILE_CONFIGURATION)){
-            String fileConfigurationPath = configuration.get(CQLConfigOptions.FILE_CONFIGURATION);
-            driverConfigLoadersToUse.push(DriverConfigLoader.fromFile(new File(fileConfigurationPath)));
-        }
-
-        if(!driverConfigLoadersToUse.empty()){
-            DriverConfigLoader composedDriverConfigLoader = driverConfigLoadersToUse.pop();
-            while (!driverConfigLoadersToUse.empty()){
-                composedDriverConfigLoader = DriverConfigLoader.compose(composedDriverConfigLoader, driverConfigLoadersToUse.pop());
+        return Optional.of(() -> {
+            ConfigFactory.invalidateCaches();
+            Config config = ConfigFactory.defaultOverrides();
+            if(hasFileConfiguration){
+                String fileConfigurationPath = configuration.get(CQLConfigOptions.FILE_CONFIGURATION);
+                config = config.withFallback(ConfigFactory.parseFileAnySyntax(new File(fileConfigurationPath)));
             }
-            builder.withConfigLoader(composedDriverConfigLoader);
-        }
 
-        return builder.build();
+            if(hasResourceConfiguration){
+                String resourceConfigurationPath = configuration.get(CQLConfigOptions.RESOURCE_CONFIGURATION);
+                config = config.withFallback(ConfigFactory.parseResourcesAnySyntax(resourceConfigurationPath,
+                    ConfigParseOptions.defaults().setClassLoader(Thread.currentThread().getContextClassLoader())));
+            }
+
+            if(hasStringConfiguration){
+                String stringConfiguration = configuration.get(CQLConfigOptions.STRING_CONFIGURATION);
+                config = config.withFallback(ConfigFactory.parseString(stringConfiguration));
+            }
+
+            if(hasUrlConfiguration){
+                config = config.withFallback(ConfigFactory.parseURL(url));
+            }
+
+            if(withFallbackDefaultConfiguration){
+                config = config.withFallback(ConfigFactory.defaultReference(CqlSession.class.getClassLoader()));
+            }
+
+            config = config.resolve();
+
+            return config.getConfig(DefaultDriverConfigLoader.DEFAULT_ROOT_PATH);
+        });
     }
 
 }
