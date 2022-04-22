@@ -75,9 +75,7 @@
         <jackson2.version>2.14.1</jackson2.version>
         <lucene-solr.version>8.11.2</lucene-solr.version>
         <!-- When this version updated please also update sha512 -->
-        <elasticsearch.version>7.17.5</elasticsearch.version>
-        <!-- https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.5-linux-x86_64.tar.gz.sha512 -->
-        <elasticsearch.version.sha512>98791c40f7ce1ba2a463fddb0986bb6ab9f94ab6479d79f96cd9b772e5208a04c7552c56e9fea484248d2ff1dd46fa25ed7066a41160fb22eb1b8dc837448ccf</elasticsearch.version.sha512>
+        <elasticsearch.version>8.6.0</elasticsearch.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <zookeeper.version>3.8.0</zookeeper.version>
@@ -143,6 +141,7 @@
         <module>janusgraph-doc</module>
         <module>janusgraph-solr</module>
         <module>janusgraph-examples</module>
+        <module>janusgraph-mixed-index-utils</module>
     </modules>
     <repositories>
         <repository>

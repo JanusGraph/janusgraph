@@ -139,6 +139,14 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         return "keyword";
     }
 
+    @Override
+    public Mapping preferredGeoShapeMapping() {
+        if(JanusGraphElasticsearchContainer.getEsMajorVersion().value <= 6){
+            return Mapping.PREFIX_TREE;
+        }
+        return Mapping.BKD;
+    }
+
     public Configuration getESTestConfig() {
         final String index = "es";
         final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
@@ -199,6 +207,10 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, Mapping.PREFIX_TREE.asParameter()), Geo.INTERSECT));
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, Mapping.PREFIX_TREE.asParameter()), Geo.CONTAINS));
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, Mapping.PREFIX_TREE.asParameter()), Geo.DISJOINT));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, Mapping.BKD.asParameter()), Geo.WITHIN));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, Mapping.BKD.asParameter()), Geo.INTERSECT));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, Mapping.BKD.asParameter()), Geo.CONTAINS));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, Mapping.BKD.asParameter()), Geo.DISJOINT));
     }
 
     @Test
@@ -217,6 +229,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         String message = Throwables.getRootCause(janusGraphException).getMessage();
 
         switch (JanusGraphElasticsearchContainer.getEsMajorVersion().value){
+            case 8:
             case 7:
             case 6:
                 assertTrue(message.contains("mapper_parsing_exception"));
@@ -331,8 +344,8 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
 
         String mappingTypeName = "vertex";
         String indexPrefix = "janusgraph";
-        String parameterName = "boost";
-        Double parameterValue = 5.5;
+        String parameterName = "store";
+        Boolean parameterValue = true;
 
         String field = "field_with_custom_prop";
 

@@ -30,6 +30,7 @@ import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.attribute.Text;
+import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.PermanentBackendException;
@@ -37,6 +38,7 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
 import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
 import org.janusgraph.diskstorage.es.rest.RestElasticSearchClient;
@@ -66,6 +68,7 @@ import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -192,11 +195,11 @@ public class ElasticsearchConfigTest {
 
         // Test that the "date" property throws an exception.
         final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
-            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
+            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()));
         final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
         final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
         try {
-            idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+            idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()).get("date"), itx);
             fail("should fail");
         } catch (final PermanentBackendException e) {
             log.debug(e.getMessage(), e);
@@ -209,10 +212,10 @@ public class ElasticsearchConfigTest {
         }
 
         // Test that the "date" property works well.
-        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()).get("date"), itx);
         // Test that the "weight" property throws an exception.
         try {
-            idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
+            idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()).get("weight"), itx);
             fail("should fail");
         } catch (final BackendException e) {
             log.debug(e.getMessage(), e);
@@ -229,7 +232,16 @@ public class ElasticsearchConfigTest {
 
     private TypelessIndexMappings readTypelessMapping(final String mappingFilePath) throws IOException {
         try (final InputStream inputStream = getClass().getResourceAsStream(mappingFilePath)) {
-            return objectMapper.readValue(inputStream, new TypeReference<TypelessIndexMappings>() {});
+            TypelessIndexMappings typelessIndexMappings = objectMapper.readValue(inputStream, new TypeReference<TypelessIndexMappings>() {});
+            if(JanusGraphElasticsearchContainer.getEsMajorVersion().value >= 8){
+                // Prefix tree is not supported for geo_shape indexing starting from ElasticSearch 8.
+                // Thus, below text replaces geo_shape mapping of the `boundary` index.
+                IndexMapping indexMappings = typelessIndexMappings.getMappings();
+                if(indexMappings.getProperties().containsKey("boundary")){
+                    indexMappings.getProperties().put("boundary", Collections.singletonMap("type", "geo_shape"));
+                }
+            }
+            return typelessIndexMappings;
         }
     }
 
@@ -265,7 +277,7 @@ public class ElasticsearchConfigTest {
         final IndexProvider idx = open(indexConfig);
 
         final Map<String, Object> content = new HashMap<>(2);
-        content.put("template", "janusgraph_test_mapping*");
+        content.put("index_patterns", Collections.singletonList("janusgraph_test_mapping*"));
 
         if(isMappingUsed(idx)){
             content.put("mappings", readTypesMapping("/strict_mapping.json").getMappings());
@@ -279,15 +291,15 @@ public class ElasticsearchConfigTest {
         executeRequest(newMapping);
 
         final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
-            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
+            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()));
         final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
         final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
 
         // Test that the "date" property works well.
-        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()).get("date"), itx);
         // Test that the "weight" property throws an exception.
         try {
-            idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
+            idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()).get("weight"), itx);
             fail("should fail");
         } catch (final BackendException e) {
             log.debug(e.getMessage(), e);
@@ -299,11 +311,11 @@ public class ElasticsearchConfigTest {
     private void simpleWriteAndQuery(IndexProvider idx) throws BackendException, InterruptedException {
         final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "jvmlocal_test_store";
-        final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest.getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_STANDARD, ANALYZER_KEYWORD));
+        final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest.getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_STANDARD, ANALYZER_KEYWORD, preferredGeoShapeMapping()));
 
         final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
         IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
-        for (final Entry<String, KeyInformation> entry : IndexProviderTest.getMapping(idx.getFeatures(), "english", "keyword").entrySet()) {
+        for (final Entry<String, KeyInformation> entry : IndexProviderTest.getMapping(idx.getFeatures(), "english", "keyword", preferredGeoShapeMapping()).entrySet()) {
            idx.register(storeName, entry.getKey(), entry.getValue(), itx);
         }
         assertEquals(0, itx.queryStream(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).count());
@@ -344,11 +356,11 @@ public class ElasticsearchConfigTest {
 
         // Test that the "date" property throws an exception.
         final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest
-            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD));
+            .getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()));
         final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
         final IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
         try {
-            idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+            idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()).get("date"), itx);
             fail("should fail");
         } catch (final PermanentBackendException e) {
             log.debug(e.getMessage(), e);
@@ -361,9 +373,9 @@ public class ElasticsearchConfigTest {
         }
 
         // Test that the "date" property works well.
-        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("date"), itx);
+        idx.register(storeName, "date", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()).get("date"), itx);
         // Test that the "weight" property works well due to dynamic mapping.
-        idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD).get("weight"), itx);
+        idx.register(storeName, "weight", IndexProviderTest.getMapping(idx.getFeatures(), ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()).get("weight"), itx);
         itx.rollback();
         idx.close();
         final ElasticSearchClient client = ElasticSearchSetup.REST_CLIENT.connect(indexConfig).getClient();
@@ -404,5 +416,12 @@ public class ElasticsearchConfigTest {
 
         return elasticSearchIndex.getVersion().getValue() < 7 ||
             (ElasticMajorVersion.SEVEN.equals(elasticSearchIndex.getVersion()) && elasticSearchIndex.isUseMappingForES7());
+    }
+
+    private Mapping preferredGeoShapeMapping() {
+        if(JanusGraphElasticsearchContainer.getEsMajorVersion().value <= 6){
+            return Mapping.PREFIX_TREE;
+        }
+        return Mapping.BKD;
     }
 }

@@ -117,7 +117,8 @@ public abstract class IndexProviderTest {
         };
     }
 
-    public static Map<String,KeyInformation> getMapping(final IndexFeatures indexFeatures, final String englishAnalyzerName, final String keywordAnalyzerName) {
+    public static Map<String,KeyInformation> getMapping(final IndexFeatures indexFeatures, final String englishAnalyzerName, final String keywordAnalyzerName,
+                                                        Mapping fullGeoShapeMapping) {
         Preconditions.checkArgument(indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ||
                 (indexFeatures.supportsStringMapping(Mapping.TEXT) && indexFeatures.supportsStringMapping(Mapping.STRING)),
                 "Index must support string and text mapping");
@@ -129,7 +130,7 @@ public abstract class IndexProviderTest {
             put(TIME, new StandardKeyInformation(Long.class, Cardinality.SINGLE));
             put(WEIGHT, new StandardKeyInformation(Double.class, Cardinality.SINGLE, Mapping.DEFAULT.asParameter()));
             put(LOCATION, new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE));
-            put(BOUNDARY, new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE, Mapping.PREFIX_TREE.asParameter()));
+            put(BOUNDARY, new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE, fullGeoShapeMapping.asParameter()));
             put(NAME, new StandardKeyInformation(String.class, Cardinality.SINGLE, stringParameter));
             if (indexFeatures.supportsCardinality(Cardinality.LIST)) {
                 put(PHONE_LIST, new StandardKeyInformation(String.class, Cardinality.LIST, stringParameter));
@@ -167,10 +168,12 @@ public abstract class IndexProviderTest {
         open();
     }
 
+    public abstract Mapping preferredGeoShapeMapping();
+
     public void open() throws BackendException {
         index = openIndex();
         indexFeatures = index.getFeatures();
-        allKeys = getMapping(indexFeatures, getEnglishAnalyzerName(), getKeywordAnalyzerName());
+        allKeys = getMapping(indexFeatures, getEnglishAnalyzerName(), getKeywordAnalyzerName(), preferredGeoShapeMapping());
         indexRetriever = getIndexRetriever(allKeys);
 
         newTx();
@@ -458,7 +461,7 @@ public abstract class IndexProviderTest {
             assertEquals(2, result.size());
             assertEquals(ImmutableSet.of("doc1","doc2"), ImmutableSet.copyOf(result));
 
-            if (index.supports(new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE, Mapping.PREFIX_TREE.asParameter()), Geo.DISJOINT)) {
+            if (index.supports(new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE, preferredGeoShapeMapping().asParameter()), Geo.DISJOINT)) {
                 result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.DISJOINT, Geoshape.box(46.5, -0.5, 50.5, 10.5)))).collect(Collectors.toList());
                 assertEquals(0,result.size());
 
@@ -714,9 +717,9 @@ public abstract class IndexProviderTest {
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE)));
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.WITHIN));
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.INTERSECT));
-        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter<>("mapping",Mapping.PREFIX_TREE)), Geo.WITHIN));
-        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter<>("mapping",Mapping.PREFIX_TREE)), Geo.CONTAINS));
-        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter<>("mapping",Mapping.PREFIX_TREE)), Geo.INTERSECT));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter<>("mapping",preferredGeoShapeMapping())), Geo.WITHIN));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter<>("mapping",preferredGeoShapeMapping())), Geo.CONTAINS));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter<>("mapping",preferredGeoShapeMapping())), Geo.INTERSECT));
     }
 
     @Test

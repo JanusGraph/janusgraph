@@ -58,6 +58,11 @@ public class BerkeleyLuceneTest extends JanusGraphIndexTest {
     }
 
     @Override
+    public boolean supportsGeoShapePrefixTreeMapping() {
+        return true;
+    }
+
+    @Override
     public boolean supportsWildcardQuery() {
         return false;
     }

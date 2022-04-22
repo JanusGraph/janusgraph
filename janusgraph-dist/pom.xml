@@ -21,7 +21,7 @@
         <assembly.descriptor.dir>${project.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
         <assembly.static.dir>${project.basedir}/src/assembly/static</assembly.static.dir>
         <assembly.resources.dir>${project.basedir}/src/assembly/resources</assembly.resources.dir>
-        <assembly.es.dir>${project.build.directory}/elasticsearch-${elasticsearch.version}</assembly.es.dir>
+        <assembly.es.dir>${project.build.directory}/elasticsearch-7.17.8</assembly.es.dir>
         <assembly.cassandra.dir>${project.build.directory}/apache-cassandra-${cassandra-dist.version}</assembly.cassandra.dir>
 
         <packname.standard>janusgraph-${project.version}</packname.standard>
@@ -171,11 +171,17 @@
                             <goal>wget</goal>
                         </goals>
                         <configuration>
-                            <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.version}-linux-x86_64.tar.gz</url>
-                            <outputFileName>elasticsearch-${elasticsearch.version}-linux-x86_64.tar.gz</outputFileName>
+                            <!-- ElasticSearch Server 8 doesn't support Java 8 and Java 11.
+                            Thus, we use here the latest ElasticSearch Server which supports both Java 8 and Java 11 (which is 7.17.8 as for now).
+                            We should probably re-think dist tests and re-develop them using docker containers instead of
+                            relying on the JanusGraph running environment.
+                            -->
+                            <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.8-linux-x86_64.tar.gz</url>
+                            <outputFileName>elasticsearch-7.17.8-linux-x86_64.tar.gz</outputFileName>
                             <outputDirectory>${project.build.directory}/</outputDirectory>
                             <unpack>true</unpack>
-                            <sha512>${elasticsearch.version.sha512}</sha512>
+                            <!-- https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.8-linux-x86_64.tar.gz.sha512 -->
+                            <sha512>cd02b40e8b32e78f17bac12245326e10482214ab452b2e5d1745ddc7944e60a5b07c01c949c68625d78640bdd46806aeece4e8d620788133993055732d388443</sha512>
                         </configuration>
                     </execution>
                     <execution>

@@ -215,6 +215,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     public abstract boolean supportsGeoPointExistsQuery();
 
+    public abstract boolean supportsGeoShapePrefixTreeMapping();
+
     public String getStringField(String propertyKey) {
         return propertyKey;
     }
@@ -630,8 +632,13 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         createExternalEdgeIndex(location, INDEX);
 
         final PropertyKey boundary = makeKey("boundary", Geoshape.class);
-        mgmt.addIndexKey(getExternalIndex(Vertex.class,INDEX),boundary, Parameter.of("mapping", Mapping.PREFIX_TREE), Parameter.of("index-geo-dist-error-pct", 0.0025));
-        mgmt.addIndexKey(getExternalIndex(Edge.class,INDEX),boundary, Parameter.of("mapping", Mapping.PREFIX_TREE), Parameter.of("index-geo-dist-error-pct", 0.0025));
+        if(supportsGeoShapePrefixTreeMapping()){
+            mgmt.addIndexKey(getExternalIndex(Vertex.class,INDEX),boundary, Parameter.of("mapping", Mapping.PREFIX_TREE), Parameter.of("index-geo-dist-error-pct", 0.0025));
+            mgmt.addIndexKey(getExternalIndex(Edge.class,INDEX),boundary, Parameter.of("mapping", Mapping.PREFIX_TREE), Parameter.of("index-geo-dist-error-pct", 0.0025));
+        } else {
+            mgmt.addIndexKey(getExternalIndex(Vertex.class,INDEX),boundary, Parameter.of("mapping", Mapping.BKD));
+            mgmt.addIndexKey(getExternalIndex(Edge.class,INDEX),boundary, Parameter.of("mapping", Mapping.BKD));
+        }
 
         final PropertyKey time = makeKey("time", Long.class);
         createExternalVertexIndex(time, INDEX);

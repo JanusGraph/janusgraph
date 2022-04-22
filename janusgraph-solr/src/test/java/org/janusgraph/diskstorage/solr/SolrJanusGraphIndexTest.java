@@ -87,4 +87,8 @@ public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
         super.testIndexReplay();
     }
 
+    @Override
+    public boolean supportsGeoShapePrefixTreeMapping() {
+        return true;
+    }
 }

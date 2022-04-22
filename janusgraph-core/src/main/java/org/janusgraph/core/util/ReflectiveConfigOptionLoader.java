@@ -133,7 +133,8 @@ public enum ReflectiveConfigOptionLoader {
             "org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy",
             //"org.janusgraph.graphdb.TestMockIndexProvider",
             //"org.janusgraph.graphdb.TestMockLog",
-            "org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager"));
+            "org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager",
+            "org.janusgraph.diskstorage.mixed.utils.MixedIndexUtilsConfigOptions"));
 
         Timer t = new Timer(TimestampProviders.MILLI);
         t.start();

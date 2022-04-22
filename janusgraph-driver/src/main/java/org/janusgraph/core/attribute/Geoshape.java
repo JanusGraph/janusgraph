@@ -215,6 +215,14 @@ public class Geoshape {
         return DistanceUtils.degrees2Dist(radiusInDeg, DistanceUtils.EARTH_MEAN_RADIUS_KM);
     }
 
+    /**
+     * Returns the radius in meters of this circle. Only applicable to circle shapes.
+     * @return
+     */
+    public double getRadiusMeters() {
+        return getRadius() * 1000;
+    }
+
     private SpatialRelation getSpatialRelation(Geoshape other) {
         Preconditions.checkNotNull(other);
         return shape.relate(other.shape);

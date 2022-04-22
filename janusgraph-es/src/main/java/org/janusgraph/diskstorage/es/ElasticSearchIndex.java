@@ -51,6 +51,8 @@ import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.RawQuery;
+import org.janusgraph.diskstorage.mixed.utils.MixedIndexUtilsConfigOptions;
+import org.janusgraph.diskstorage.mixed.utils.processor.CircleProcessor;
 import org.janusgraph.diskstorage.util.DefaultTransaction;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.database.serialize.AttributeUtils;
@@ -363,9 +365,10 @@ public class ElasticSearchIndex implements IndexProvider {
     private final boolean useMappingForES7;
     private final String parameterizedAdditionScriptId;
     private final String parameterizedDeletionScriptId;
+    private final boolean supportsGeoShapePrefixTree;
+    private final CircleProcessor bdbCircleProcessor;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
-
         indexName = determineIndexName(config);
         parameterizedAdditionScriptId = generateScriptId("add");
         parameterizedDeletionScriptId = generateScriptId("del");
@@ -378,8 +381,10 @@ public class ElasticSearchIndex implements IndexProvider {
         indexStoreNameCacheEnabled = config.get(ENABLE_INDEX_STORE_NAMES_CACHE);
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query nb result by query to {}", batchSize);
+        bdbCircleProcessor = MixedIndexUtilsConfigOptions.buildBKDCircleProcessor(config);
 
         client = interfaceConfiguration(config).getClient();
+        supportsGeoShapePrefixTree = client.getMajorVersion().getValue() <= 7;
 
         checkClusterHealth(config.get(HEALTH_REQUEST_TIMEOUT));
 
@@ -539,8 +544,14 @@ public class ElasticSearchIndex implements IndexProvider {
         final Class<?> dataType = information.getDataType();
         final Mapping map = Mapping.getMapping(information);
         Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtils.isString(dataType) ||
-                (map==Mapping.PREFIX_TREE && AttributeUtils.isGeo(dataType)),
+            AttributeUtils.isGeo(dataType) && (map==Mapping.BKD || map==Mapping.PREFIX_TREE),
                 "Specified illegal mapping [%s] for data type [%s]",map,dataType);
+        if(map==Mapping.PREFIX_TREE && !supportsGeoShapePrefixTree){
+            String error = "PREFIX_TREE geo_shape indexing strategy was removed in ElasticSearch 8. " +
+                "Please, select BKD strategy for geo_shape index. Key ["+key+"].";
+            log.error(error);
+            throw new IllegalArgumentException(error);
+        }
         final String indexStoreName = getIndexStoreName(store);
         if (useExternalMappings) {
             try {
@@ -622,6 +633,9 @@ public class ElasticSearchIndex implements IndexProvider {
             properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "boolean"));
         } else if (dataType == Geoshape.class) {
             switch (map) {
+                case BKD:
+                    properties.put(key, ImmutableMap.of(ES_TYPE_KEY, "geo_shape"));
+                    break;
                 case PREFIX_TREE:
                     final int maxLevels = ParameterType.INDEX_GEO_MAX_LEVELS.findParameter(information.getParameters(),
                             DEFAULT_GEO_MAX_LEVELS);
@@ -733,7 +747,7 @@ public class ElasticSearchIndex implements IndexProvider {
         return doc;
     }
 
-    private static Object convertToEsType(Object value, Mapping mapping) {
+    private Object convertToEsType(Object value, Mapping mapping) {
         if (value instanceof Number) {
             if (AttributeUtils.isWholeNumber((Number) value)) {
                 return ((Number) value).longValue();
@@ -756,8 +770,8 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @SuppressWarnings("unchecked")
-    private static Object convertGeoshape(Geoshape geoshape, Mapping mapping) {
-        if (geoshape.getType() == Geoshape.Type.POINT && Mapping.PREFIX_TREE != mapping) {
+    private Object convertGeoshape(Geoshape geoshape, Mapping mapping) {
+        if (geoshape.getType() == Geoshape.Type.POINT && Mapping.BKD != mapping && Mapping.PREFIX_TREE != mapping) {
             final Geoshape.Point p = geoshape.getPoint();
             return new double[]{p.getLongitude(), p.getLatitude()};
         } else if (geoshape.getType() == Geoshape.Type.BOX) {
@@ -768,7 +782,13 @@ public class ElasticSearchIndex implements IndexProvider {
             return map;
         } else if (geoshape.getType() == Geoshape.Type.CIRCLE) {
             try {
-                final Map<String,Object> map = geoshape.toMap();
+                if(Mapping.BKD.equals(mapping)){
+                    geoshape = bdbCircleProcessor.process(geoshape);
+                    if (geoshape.getType() != Geoshape.Type.CIRCLE){
+                        return convertGeoshape(geoshape, mapping);
+                    }
+                }
+                Map<String,Object> map = geoshape.toMap();
                 map.put("radius", map.get("radius") + ((Map<String, String>) map.remove("properties")).get("radius_units"));
                 return map;
             } catch (final IOException e) {
@@ -1335,7 +1355,7 @@ public class ElasticSearchIndex implements IndexProvider {
         final Class<?> dataType = information.getDataType();
         final Mapping mapping = Mapping.getMapping(information);
         if (mapping!=Mapping.DEFAULT && !AttributeUtils.isString(dataType) &&
-                !(mapping==Mapping.PREFIX_TREE && AttributeUtils.isGeo(dataType))) return false;
+                !(AttributeUtils.isGeo(dataType) && (mapping==Mapping.BKD || mapping==Mapping.PREFIX_TREE))) return false;
 
         if (Number.class.isAssignableFrom(dataType)) {
             return janusgraphPredicate instanceof Cmp;
@@ -1343,6 +1363,7 @@ public class ElasticSearchIndex implements IndexProvider {
             switch(mapping) {
                 case DEFAULT:
                     return janusgraphPredicate instanceof Geo && janusgraphPredicate != Geo.CONTAINS;
+                case BKD:
                 case PREFIX_TREE:
                     return janusgraphPredicate instanceof Geo;
             }
@@ -1385,7 +1406,7 @@ public class ElasticSearchIndex implements IndexProvider {
             return mapping == Mapping.DEFAULT || mapping == Mapping.STRING
                 || mapping == Mapping.TEXT || mapping == Mapping.TEXTSTRING;
         } else if (AttributeUtils.isGeo(dataType)) {
-            return mapping == Mapping.DEFAULT || mapping == Mapping.PREFIX_TREE;
+            return mapping == Mapping.DEFAULT || mapping == Mapping.BKD || mapping == Mapping.PREFIX_TREE && supportsGeoShapePrefixTree;
         }
         return false;
     }
