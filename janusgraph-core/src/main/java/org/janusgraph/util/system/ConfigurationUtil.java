@@ -80,6 +80,28 @@ public class ConfigurationUtil {
         }
     }
 
+    public static boolean hasConstructor(String className, Class[] constructorArgumentClasses) {
+        Preconditions.checkArgument(constructorArgumentClasses!=null);
+        try {
+            Class<?> clazz = Class.forName(className);
+            for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
+                if (constructor.getParameterCount() == constructorArgumentClasses.length){
+
+                    for(int i=0; i<constructorArgumentClasses.length; i++){
+                        if(!constructor.getParameterTypes()[i].isAssignableFrom(constructorArgumentClasses[i])){
+                            break;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+            return false;
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Could not find implementation class: " + className, e);
+        }
+    }
+
     /**
      * Create a new BaseConfiguration object and set a comma delimiter handler, which interprets
      * comma-delimited values as a list of values.

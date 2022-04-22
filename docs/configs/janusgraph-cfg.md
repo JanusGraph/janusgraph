@@ -117,6 +117,32 @@ Configuration options for the individual indexing backends
 | index.[X].max-result-set-size | Maximum number of results to return if no limit is specified. For index backends that support scrolling, it represents the number of results in each batch | Integer | 50 | MASKABLE |
 | index.[X].port | The port on which to connect to index backend servers | Integer | (no default value) | MASKABLE |
 
+### index.[X].bkd-circle-processor
+Configuration for BKD circle processors which is used for BKD Geoshape mapping.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| index.[X].bkd-circle-processor.class | Full class name of circle processor that implements `CircleProcessor` interface. The class is used for transformation of a Circle shape to another shape when BKD mapping is used. The provided implementation class should have either a public constructor which accepts configuration as a parameter (`org.janusgraph.diskstorage.configuration.Configuration`) or a public constructor with no parameters. Usually the transforming shape is a Polygon. <br>Following shorthands can be used: <br> - `noTransformation` Circle processor which is not transforming a circle, but instead keep the circle shape unchanged. This implementation may be useful in situations when the user wants to control circle transformation logic on ElasticSearch side instead of application side. For example, using <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-circle-processor.html">ElasticSearch Circle Processor</a> or any custom plugin. <br> - `fixedErrorDistance` Circle processor which transforms the provided Circle into Polygon, Box, or Point depending on the configuration provided in `index.bkd-circle-processor.fixed`. The processing logic is similar to <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-circle-processor.html">ElasticSearch Circle Processor</a> except for some edge cases when the Circle is transformed into Box or Point. <br> - `dynamicErrorDistance` Circle processor which calculates error distance dynamically depending on the circle radius and the specified multiplier value. The error distance calculation formula is `log(radius) * multiplier`. Configuration for this class can be provided via `index.bkd-circle-processor.dynamic`. The processing logic is similar to <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-circle-processor.html">ElasticSearch Circle Processor</a> except for some edge cases when the Circle is transformed into Box or Point. | String | dynamicErrorDistance | MASKABLE |
+
+### index.[X].bkd-circle-processor.dynamic
+Configuration for Elasticsearch dynamic circle processor which is used for BKD Geoshape mapping.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| index.[X].bkd-circle-processor.dynamic.bounding-box-fallback | Allows to return bounding box for the circle which cannot be converted to proper shape with the specified error distance. In case `false` is set for this configuration an exception will be thrown whenever circle cannot be converted to another shape following error distance. | Boolean | true | MASKABLE |
+| index.[X].bkd-circle-processor.dynamic.error-distance-multiplier | Multiplier variable for dynamic error distance calculation in the formula `log(radius) * multiplier`. Radius and error distance specified in meters. | Double | 2.0 | MASKABLE |
+
+### index.[X].bkd-circle-processor.fixed
+Configuration for Elasticsearch fixed circle processor which is used for BKD Geoshape mapping.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| index.[X].bkd-circle-processor.fixed.bounding-box-fallback | Allows to return bounding box for the circle which cannot be converted to proper shape with the specified error distance. In case `false` is set for this configuration an exception will be thrown whenever circle cannot be converted to another shape following error distance. | Boolean | true | MASKABLE |
+| index.[X].bkd-circle-processor.fixed.error-distance | The difference between the resulting inscribed distance from center to side and the circle’s radius. Specified in meters. | Double | 10.0 | MASKABLE |
+
 ### index.[X].elasticsearch
 Elasticsearch index configuration
 

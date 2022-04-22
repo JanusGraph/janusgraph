@@ -89,7 +89,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         mapWriter = mapper.writerWithView(Map.class);
     }
 
-    private static final ElasticMajorVersion DEFAULT_VERSION = ElasticMajorVersion.SEVEN;
+    private static final ElasticMajorVersion DEFAULT_VERSION = ElasticMajorVersion.EIGHT;
 
     private static final Function<StringBuilder, StringBuilder> APPEND_OP = sb -> sb.append(sb.length() == 0 ? REQUEST_PARAM_BEGINNING : REQUEST_PARAM_SEPARATOR);
 

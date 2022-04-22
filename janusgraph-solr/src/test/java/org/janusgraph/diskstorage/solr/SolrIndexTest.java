@@ -208,4 +208,9 @@ public abstract class SolrIndexTest extends IndexProviderTest {
         assertEquals("test1", result[0]);
         assertEquals("test2", result[1]);
     }
+
+    @Override
+    public Mapping preferredGeoShapeMapping() {
+        return Mapping.PREFIX_TREE;
+    }
 }

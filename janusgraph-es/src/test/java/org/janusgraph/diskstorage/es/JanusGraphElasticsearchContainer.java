@@ -37,14 +37,14 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IN
 public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
 
     private static final Integer ELASTIC_PORT = 9200;
-    private static final String DEFAULT_VERSION = "7.17.5";
+    private static final String DEFAULT_VERSION = "8.6.0";
     private static final String DEFAULT_IMAGE = "docker.elastic.co/elasticsearch/elasticsearch";
 
     public static ElasticMajorVersion getEsMajorVersion() {
         return ElasticMajorVersion.parse(getVersion());
     }
 
-    private static String getVersion() {
+    public static String getVersion() {
         String property = System.getProperty("elasticsearch.docker.version");
         if (property != null)
             return property;
@@ -66,6 +66,10 @@ public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
         super(getElasticImage() + ":" + getVersion());
         withEnv("transport.host", "0.0.0.0");
         withEnv("xpack.security.enabled", "false");
+        withEnv("action.destructive_requires_name", "false");
+        if (getEsMajorVersion().value > 6) {
+            withEnv("ingest.geoip.downloader.enabled", "false");
+        }
         withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
         if (getEsMajorVersion().value == 5) {
             withEnv("script.max_compilations_per_minute", "30");

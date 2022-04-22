@@ -72,6 +72,11 @@ public class LuceneIndexTest extends IndexProviderTest {
         return org.apache.lucene.analysis.core.KeywordAnalyzer.class.getName();
     }
 
+    @Override
+    public Mapping preferredGeoShapeMapping() {
+        return Mapping.PREFIX_TREE;
+    }
+
     public static Configuration getLocalLuceneTestConfig() {
         final String index = "lucene";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
