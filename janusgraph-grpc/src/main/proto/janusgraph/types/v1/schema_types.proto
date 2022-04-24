@@ -16,6 +16,7 @@ syntax = "proto3";
 
 package janusgraph.types.v1;
 
+import "google/protobuf/any.proto";
 import "google/protobuf/wrappers.proto";
 
 option java_multiple_files = true;
@@ -53,7 +54,7 @@ enum PropertyDataType {
 
 message VertexProperty {
     // The Internal id.
-    google.protobuf.Int64Value id = 1;
+    google.protobuf.Any id = 1;
     // The VertexProperty Name.
     string name = 2;
     // The Data type.
@@ -73,7 +74,7 @@ message VertexProperty {
 
 message VertexLabel {
     // The Internal id.
-    google.protobuf.Int64Value id = 1;
+    google.protobuf.Any id = 1;
     // The VertexLabel Name.
     string name = 2;
     // Marking as readOnly, default not readOnly.
@@ -86,7 +87,7 @@ message VertexLabel {
 
 message EdgeProperty {
     // The Internal id.
-    google.protobuf.Int64Value id = 1;
+    google.protobuf.Any id = 1;
     // The EdgeProperty Name.
     string name = 2;
     // The Data type.
@@ -95,7 +96,7 @@ message EdgeProperty {
 
 message EdgeLabel {
     // The Internal id.
-    google.protobuf.Int64Value id = 1;
+    google.protobuf.Any id = 1;
     // The EdgeLabel Name.
     string name = 2;
     enum Direction {

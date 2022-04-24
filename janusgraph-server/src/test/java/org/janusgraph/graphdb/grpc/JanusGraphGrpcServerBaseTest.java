@@ -60,7 +60,7 @@ public abstract class JanusGraphGrpcServerBaseTest {
         return new DefaultGraphManager(settings);
     }
 
-    public long createVertexLabel(String graph, VertexLabelOrBuilder builder) {
+    public Object createVertexLabel(String graph, VertexLabelOrBuilder builder) {
         JanusGraphManagement management = ((JanusGraph) graphManager.getGraph(graph)).openManagement();
         VertexLabelMaker vertexLabelMaker = management.makeVertexLabel(builder.getName());
         if (builder.getReadOnly()) {
@@ -80,10 +80,10 @@ public abstract class JanusGraphGrpcServerBaseTest {
         }
 
         management.commit();
-        return vertexLabel.longId();
+        return vertexLabel.id();
     }
 
-    public long createEdgeLabel(String graph, EdgeLabelOrBuilder builder) {
+    public Object createEdgeLabel(String graph, EdgeLabelOrBuilder builder) {
         JanusGraphManagement management = ((JanusGraph) graphManager.getGraph(graph)).openManagement();
         EdgeLabelMaker edgeLabelMaker = management.makeEdgeLabel(builder.getName());
         if (builder.getDirection() == EdgeLabel.Direction.DIRECTION_OUT) {
@@ -102,7 +102,7 @@ public abstract class JanusGraphGrpcServerBaseTest {
         }
 
         management.commit();
-        return edgeLabel.longId();
+        return edgeLabel.id();
     }
 
     private static Pair<Server, String> createServer(JanusGraphContextHandler contextHandler) throws IOException {

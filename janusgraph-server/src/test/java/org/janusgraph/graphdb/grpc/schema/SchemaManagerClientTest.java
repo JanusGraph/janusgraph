@@ -14,6 +14,9 @@
 
 package org.janusgraph.graphdb.grpc.schema;
 
+import com.google.protobuf.Any;
+import com.google.protobuf.Int64Value;
+import com.google.protobuf.InvalidProtocolBufferException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.janusgraph.graphdb.grpc.JanusGraphGrpcServerBaseTest;
@@ -47,6 +50,14 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         return janusGraphManagerClient.getContextByGraphName(defaultGraphName);
     }
 
+    private boolean isIdEqualCreated(Any id, Object createdId) {
+        try {
+            return id.unpack(Int64Value.class).getValue() == (long)createdId;
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Test
     public void testGetVertexLabelByNameNotFound() {
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
@@ -74,11 +85,11 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"test", "test2"})
-    public void testGetVertexLabelByNameVertexLabelExists(String name) {
+    public void testGetVertexLabelByNameVertexLabelExists(String name) throws InvalidProtocolBufferException {
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
 
         //create vertex
-        long id = createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
+        Object id = createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
             .setName(name));
 
         VertexLabel vertexLabel = schemaManagerClient.getVertexLabelByName(name);
@@ -86,7 +97,23 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         assertEquals(name, vertexLabel.getName());
         assertFalse(vertexLabel.getPartitioned());
         assertFalse(vertexLabel.getReadOnly());
-        assertEquals(id, vertexLabel.getId().getValue());
+        assertEquals(id, vertexLabel.getId().unpack(Int64Value.class).getValue());
+    }
+
+    @Test
+    public void testVertexLabelDoubleCheckId() throws InvalidProtocolBufferException {
+        final String name = "testDoubleCheckId";
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        //create vertex
+        Object id = createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
+            .setName(name));
+
+        VertexLabel firstCheck = schemaManagerClient.getVertexLabelByName(name);
+        assertEquals(id, firstCheck.getId().unpack(Int64Value.class).getValue());
+
+        VertexLabel secondCheck = schemaManagerClient.getVertexLabelByName(name);
+        assertEquals(id, secondCheck.getId().unpack(Int64Value.class).getValue());
     }
 
     @ParameterizedTest
@@ -132,10 +159,10 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
     @ValueSource(ints = {1, 4, 8, 16})
     public void testGetVertexLabels(int numberOfVertices) {
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
-        List<Long> createdIds = new ArrayList<>();
+        List<Object> createdIds = new ArrayList<>();
 
         for (int i = 0; i < numberOfVertices; i++) {
-            long id = createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
+            Object id = createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
                 .setName("testMultipleVertices"+i));
             createdIds.add(id);
         }
@@ -143,15 +170,15 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         List<VertexLabel> vertexLabels = schemaManagerClient.getVertexLabels();
 
         assertEquals(numberOfVertices, vertexLabels.size());
-        for (Long createdId : createdIds) {
-            long count = vertexLabels.stream().filter(v -> v.getId().getValue() == createdId).count();
+        for (Object createdId : createdIds) {
+            long count = vertexLabels.stream().filter(v -> isIdEqualCreated(v.getId(), createdId)).count();
             assertEquals(1, count);
         }
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"test", "test2"})
-    public void testGetVertexLabelByNameVertexLabelWithVertexProperty(String propertyName) {
+    public void testGetVertexLabelByNameVertexLabelWithVertexProperty(String propertyName) throws InvalidProtocolBufferException {
         final String name = "testVertexProperty";
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
 
@@ -172,7 +199,30 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         assertEquals(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN, property.getDataType());
         assertEquals(VertexProperty.Cardinality.CARDINALITY_SINGLE, property.getCardinality());
         assertEquals(propertyName, property.getName());
-        assertNotEquals(0L, property.getId().getValue());
+        assertNotEquals(0L, property.getId().unpack(Int64Value.class).getValue());
+    }
+
+    @Test
+    public void testVertexPropertyDoubleCheckId() {
+        final String name = "testDoubleCheckId";
+        final String propertyName = "testDoubleCheckIdProperty";
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        //create property
+        VertexProperty test = VertexProperty.newBuilder()
+            .setName(propertyName)
+            .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN)
+            .setCardinality(VertexProperty.Cardinality.CARDINALITY_SINGLE)
+            .build();
+        //create vertex
+        createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
+            .setName(name)
+            .addProperties(test));
+
+        Any firstId = schemaManagerClient.getVertexLabelByName(name).getProperties(0).getId();
+        Any secondId = schemaManagerClient.getVertexLabelByName(name).getProperties(0).getId();
+
+        assertEquals(firstId, secondId);
     }
 
     @ParameterizedTest
@@ -273,11 +323,11 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"test", "test2"})
-    public void testGetEdgeLabelByNameEdgeLabelExists(String name) {
+    public void testGetEdgeLabelByNameEdgeLabelExists(String name) throws InvalidProtocolBufferException {
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
 
         //create edge
-        long id = createEdgeLabel(defaultGraphName, EdgeLabel.newBuilder()
+        Object id = createEdgeLabel(defaultGraphName, EdgeLabel.newBuilder()
             .setName(name));
 
         EdgeLabel edgeLabel = schemaManagerClient.getEdgeLabelByName(name);
@@ -285,7 +335,23 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         assertEquals(name, edgeLabel.getName());
         assertEquals(EdgeLabel.Direction.DIRECTION_BOTH, edgeLabel.getDirection());
         assertEquals(EdgeLabel.Multiplicity.MULTIPLICITY_MULTI, edgeLabel.getMultiplicity());
-        assertEquals(id, edgeLabel.getId().getValue());
+        assertEquals(id, edgeLabel.getId().unpack(Int64Value.class).getValue());
+    }
+
+    @Test
+    public void testEdgeLabelDoubleCheckId() throws InvalidProtocolBufferException {
+        final String name = "testDoubleCheckId";
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        //create vertex
+        Object id = createEdgeLabel(defaultGraphName, EdgeLabel.newBuilder()
+            .setName(name));
+
+        EdgeLabel firstCheck = schemaManagerClient.getEdgeLabelByName(name);
+        assertEquals(id, firstCheck.getId().unpack(Int64Value.class).getValue());
+
+        EdgeLabel secondCheck = schemaManagerClient.getEdgeLabelByName(name);
+        assertEquals(id, secondCheck.getId().unpack(Int64Value.class).getValue());
     }
 
     @ParameterizedTest
@@ -332,10 +398,10 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
     @ValueSource(ints = {1, 4, 8, 16})
     public void testGetEdgeLabels(int numberOfEdges) {
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
-        List<Long> createdIds = new ArrayList<>();
+        List<Object> createdIds = new ArrayList<>();
 
         for (int i = 0; i < numberOfEdges; i++) {
-            long id = createEdgeLabel(defaultGraphName, EdgeLabel.newBuilder()
+            Object id = createEdgeLabel(defaultGraphName, EdgeLabel.newBuilder()
                 .setName("testMultipleEdges"+i));
             createdIds.add(id);
         }
@@ -343,15 +409,15 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         List<EdgeLabel> edgeLabels = schemaManagerClient.getEdgeLabels();
 
         assertEquals(numberOfEdges, edgeLabels.size());
-        for (Long createdId : createdIds) {
-            long count = edgeLabels.stream().filter(e -> e.getId().getValue() == createdId).count();
+        for (Object createdId : createdIds) {
+            long count = edgeLabels.stream().filter(e -> isIdEqualCreated(e.getId(), createdId)).count();
             assertEquals(1, count);
         }
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"test", "test2"})
-    public void testGetEdgeLabelByNameEdgeLabelWithEdgeProperty(String propertyName) {
+    public void testGetEdgeLabelByNameEdgeLabelWithEdgeProperty(String propertyName) throws InvalidProtocolBufferException {
         final String name = "testEdgeProperty";
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
 
@@ -370,7 +436,29 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         EdgeProperty property = label.getProperties(0);
         assertEquals(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN, property.getDataType());
         assertEquals(propertyName, property.getName());
-        assertNotEquals(0, property.getId().getValue());
+        assertNotEquals(0, property.getId().unpack(Int64Value.class).getValue());
+    }
+
+    @Test
+    public void testEdgePropertyDoubleCheckId() {
+        final String name = "testDoubleCheckId";
+        final String propertyName = "testDoubleCheckIdProperty";
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        //create property
+        EdgeProperty test = EdgeProperty.newBuilder()
+            .setName(propertyName)
+            .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN)
+            .build();
+        //create vertex
+        createEdgeLabel(defaultGraphName, EdgeLabel.newBuilder()
+            .setName(name)
+            .addProperties(test));
+
+        Any firstId = schemaManagerClient.getEdgeLabelByName(name).getProperties(0).getId();
+        Any secondId = schemaManagerClient.getEdgeLabelByName(name).getProperties(0).getId();
+
+        assertEquals(firstId, secondId);
     }
 
     @ParameterizedTest
