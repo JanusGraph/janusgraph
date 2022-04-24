@@ -14,8 +14,10 @@
 
 package org.janusgraph.graphdb.grpc.schema.util;
 
+import com.google.protobuf.Any;
 import com.google.protobuf.Int64Value;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Geoshape;
@@ -31,41 +33,8 @@ import java.util.UUID;
 
 public class GrpcUtils {
 
-    public static VertexLabel createVertexLabelProto(org.janusgraph.core.VertexLabel vertexLabel) {
-        VertexLabel.Builder builder = VertexLabel.newBuilder()
-            .setId(Int64Value.of(vertexLabel.longId()))// TODO: we have to check that id is permanent
-            .setName(vertexLabel.name())
-            .setPartitioned(vertexLabel.isPartitioned())
-            .setReadOnly(vertexLabel.isStatic());
-        Collection<PropertyKey> propertyKeys = vertexLabel.mappedProperties();
-        for (PropertyKey propertyKey : propertyKeys) {
-            builder.addProperties(createVertexPropertyProto(propertyKey));
-        }
-        return builder.build();
-    }
-
-    public static Cardinality convertGrpcCardinality(VertexProperty.Cardinality cardinality) {
-        switch (cardinality) {
-            case CARDINALITY_LIST:
-                return Cardinality.LIST;
-            case CARDINALITY_SET:
-                return Cardinality.SET;
-            case CARDINALITY_SINGLE:
-            default:
-                return Cardinality.SINGLE;
-        }
-    }
-
-    public static VertexProperty.Cardinality convertToGrpcCardinality(Cardinality cardinality) {
-        switch (cardinality) {
-            case LIST:
-                return VertexProperty.Cardinality.CARDINALITY_LIST;
-            case SET:
-                return VertexProperty.Cardinality.CARDINALITY_SET;
-            case SINGLE:
-            default:
-                return VertexProperty.Cardinality.CARDINALITY_SINGLE;
-        }
+    public static Any getIdProtoForElement(JanusGraphElement element) {
+        return Any.pack(Int64Value.of(element.longId()));
     }
 
     public static Class<?> convertGrpcPropertyDataType(PropertyDataType propertyDataType) {
@@ -140,9 +109,46 @@ public class GrpcUtils {
         return PropertyDataType.PROPERTY_DATA_TYPE_JAVA_OBJECT;
     }
 
+    public static Cardinality convertGrpcCardinality(VertexProperty.Cardinality cardinality) {
+        switch (cardinality) {
+            case CARDINALITY_LIST:
+                return Cardinality.LIST;
+            case CARDINALITY_SET:
+                return Cardinality.SET;
+            case CARDINALITY_SINGLE:
+            default:
+                return Cardinality.SINGLE;
+        }
+    }
+
+    public static VertexProperty.Cardinality convertToGrpcCardinality(Cardinality cardinality) {
+        switch (cardinality) {
+            case LIST:
+                return VertexProperty.Cardinality.CARDINALITY_LIST;
+            case SET:
+                return VertexProperty.Cardinality.CARDINALITY_SET;
+            case SINGLE:
+            default:
+                return VertexProperty.Cardinality.CARDINALITY_SINGLE;
+        }
+    }
+
+    public static VertexLabel createVertexLabelProto(org.janusgraph.core.VertexLabel vertexLabel) {
+        VertexLabel.Builder builder = VertexLabel.newBuilder()
+            .setId(getIdProtoForElement(vertexLabel))
+            .setName(vertexLabel.name())
+            .setPartitioned(vertexLabel.isPartitioned())
+            .setReadOnly(vertexLabel.isStatic());
+        Collection<PropertyKey> propertyKeys = vertexLabel.mappedProperties();
+        for (PropertyKey propertyKey : propertyKeys) {
+            builder.addProperties(createVertexPropertyProto(propertyKey));
+        }
+        return builder.build();
+    }
+
     private static VertexProperty createVertexPropertyProto(PropertyKey propertyKey) {
         return VertexProperty.newBuilder()
-            .setId(Int64Value.of(propertyKey.longId()))// TODO: we have to check that id is permanent
+            .setId(getIdProtoForElement(propertyKey))
             .setDataType(convertToGrpcPropertyDataType(propertyKey.dataType()))
             .setCardinality(convertToGrpcCardinality(propertyKey.cardinality()))
             .setName(propertyKey.name())
@@ -183,7 +189,7 @@ public class GrpcUtils {
 
     public static EdgeLabel createEdgeLabelProto(org.janusgraph.core.EdgeLabel edgeLabel) {
         EdgeLabel.Builder builder = EdgeLabel.newBuilder()
-            .setId(Int64Value.of(edgeLabel.longId()))// TODO: we have to check that id is permanent
+            .setId(getIdProtoForElement(edgeLabel))
             .setName(edgeLabel.name())
             .setMultiplicity(convertToGrpcMultiplicity(edgeLabel.multiplicity()))
             .setDirection(edgeLabel.isDirected() ? EdgeLabel.Direction.DIRECTION_BOTH : EdgeLabel.Direction.DIRECTION_OUT);
@@ -196,7 +202,7 @@ public class GrpcUtils {
 
     private static EdgeProperty createEdgePropertyProto(PropertyKey propertyKey) {
         return EdgeProperty.newBuilder()
-            .setId(Int64Value.of(propertyKey.longId()))// TODO: we have to check that id is permanent
+            .setId(getIdProtoForElement(propertyKey))
             .setDataType(convertToGrpcPropertyDataType(propertyKey.dataType()))
             .setName(propertyKey.name())
             .build();
