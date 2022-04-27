@@ -76,6 +76,8 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BackendTransaction;
+import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -88,19 +90,26 @@ import org.janusgraph.diskstorage.log.Message;
 import org.janusgraph.diskstorage.log.MessageReader;
 import org.janusgraph.diskstorage.log.ReadMarker;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
+import org.janusgraph.diskstorage.util.HashingUtil;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.EdgeSerializer;
+import org.janusgraph.graphdb.database.IndexRecordEntry;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.database.index.IndexMutationType;
+import org.janusgraph.graphdb.database.index.IndexUpdate;
 import org.janusgraph.graphdb.database.log.LogTxMeta;
 import org.janusgraph.graphdb.database.log.LogTxStatus;
 import org.janusgraph.graphdb.database.log.TransactionLogHeader;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.database.serialize.Serializer;
+import org.janusgraph.graphdb.database.util.IndexRecordUtil;
+import org.janusgraph.graphdb.database.util.StaleIndexRecordUtil;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.internal.RelationCategory;
@@ -119,19 +128,23 @@ import org.janusgraph.graphdb.query.profile.SimpleQueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.relations.AbstractEdge;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.relations.StandardEdge;
 import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphEdgeVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.JanusGraphFeature;
 import org.janusgraph.testutil.TestGraphConfigs;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -7397,5 +7410,460 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         // running it again, no vertex is removed
         assertEquals(0, mgmt.removeGhostVertices().get().getCustom(GhostVertexRemover.REMOVED_VERTEX_COUNT));
+    }
+
+    @Test
+    public void testDirectCompositeIndexEntryModification() throws BackendException {
+        clopenForStaleIndex();
+        String namePropKeyStr = "name";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("nameIndex", Vertex.class).addKey(nameProp).buildCompositeIndex();
+        finishSchema();
+
+        tx.addVertex().property("name", "vertex1");
+        tx.addVertex().property("name", "vertex2");
+
+        tx.commit();
+        newTx();
+
+        Vertex vertex1 = tx.traversal().V().has("name", "vertex1").next();
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex("nameIndex");
+        JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
+        CompositeIndexType index = (CompositeIndexType) indexChangeVertex.asIndexType();
+        JanusGraphVertexProperty indexedProperty = (JanusGraphVertexProperty) vertex1.property("name");
+        IndexRecordEntry[] record = new IndexRecordEntry[]{new IndexRecordEntry(indexedProperty)};
+        JanusGraphElement element = (JanusGraphElement) vertex1;
+        Serializer serializer = graph.getDataSerializer();
+        boolean hashKeys = graph.getIndexSerializer().isHashKeys();
+        HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
+
+        IndexUpdate<StaticBuffer, Entry> update = IndexRecordUtil.getCompositeIndexUpdate(
+            index,
+            IndexMutationType.DELETE,
+            record,
+            element,
+            serializer,
+            hashKeys,
+            hashLength
+        );
+
+        BackendTransaction transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+
+        // Removes index entry even so, vertex exists. I.e. this line corrupts the index.
+        transaction.mutateIndex(update.getKey(), Collections.emptyList(), Collections.singletonList(update.getEntry()));
+
+        transaction.commit();
+        newTx();
+
+        assertTrue(tx.traversal().V(vertex1.id()).hasNext());
+        assertFalse(tx.traversal().V().has("name", "vertex1").hasNext());
+        assertTrue(tx.traversal().V().has("name", "vertex2").hasNext());
+
+        newTx();
+
+        update = IndexRecordUtil.getCompositeIndexUpdate(
+            index,
+            IndexMutationType.ADD,
+            record,
+            element,
+            serializer,
+            hashKeys,
+            hashLength
+        );
+
+        transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+
+        // Adds missing index entry of the non-indexed vertex. I.e. this line fixes the corrupted index.
+        transaction.mutateIndex(update.getKey(), Collections.singletonList(update.getEntry()), Collections.emptyList());
+
+        transaction.commit();
+        newTx();
+
+        assertTrue(tx.traversal().V(vertex1.id()).hasNext());
+        assertTrue(tx.traversal().V().has("name", "vertex1").hasNext());
+        assertTrue(tx.traversal().V().has("name", "vertex2").hasNext());
+
+        Vertex vertex2 = tx.traversal().V().has("name", "vertex2").next();
+        indexedProperty = (JanusGraphVertexProperty) vertex2.property("name");
+        long propertyId = indexedProperty.longId();
+        PropertyKey propertyKey = indexedProperty.propertyKey();
+        record = new IndexRecordEntry[]{new IndexRecordEntry(propertyId, "vertex2", propertyKey)};
+
+        tx.traversal().V().has("name", "vertex2").drop().iterate();
+        tx.commit();
+        newTx();
+
+        element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) vertex2).longId(), ElementLifeCycle.New);
+
+        update = IndexRecordUtil.getCompositeIndexUpdate(
+            index,
+            IndexMutationType.ADD,
+            record,
+            element,
+            serializer,
+            hashKeys,
+            hashLength
+        );
+
+        transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+
+        // Adds index entry of the non-indexed vertex to the index. I.e. this line corrupts index.
+        // This is a possible situation of a stale index being introduced.
+        transaction.mutateIndex(update.getKey(), Collections.singletonList(update.getEntry()), Collections.emptyList());
+
+        transaction.commit();
+        newTx();
+
+        assertTrue(tx.traversal().V(vertex1.id()).hasNext());
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertTrue(tx.traversal().V().has("name", "vertex1").hasNext());
+        assertTrue(tx.traversal().V().has("name", "vertex2").hasNext());
+
+        record = new IndexRecordEntry[]{new IndexRecordEntry(propertyKey.longId(), "vertex2", propertyKey)};
+
+        update = IndexRecordUtil.getCompositeIndexUpdate(
+            index,
+            IndexMutationType.DELETE,
+            record,
+            element,
+            serializer,
+            hashKeys,
+            hashLength
+        );
+
+        transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+
+        // Removes index entry of the non-indexed vertex. I.e. this line fixes corrupted index.
+        // This is a possible solution to deal with stale index separate entries.
+        transaction.mutateIndex(update.getKey(), Collections.emptyList(), Collections.singletonList(update.getEntry()));
+
+        transaction.commit();
+        newTx();
+
+        assertTrue(tx.traversal().V(vertex1.id()).hasNext());
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertTrue(tx.traversal().V().has("name", "vertex1").hasNext());
+        assertFalse(tx.traversal().V().has("name", "vertex2").hasNext());
+
+        managementSystem.rollback();
+    }
+
+    @Test
+    public void testStaleIndexForceRemoveVertexFromGraphIndex() throws BackendException {
+        clopenForStaleIndex();
+        String namePropKeyStr = "name";
+        String indexName = "nameIndex";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(nameProp).buildCompositeIndex();
+        finishSchema();
+
+        tx.addVertex().property("name", "vertex2");
+
+        tx.commit();
+        newTx();
+
+        Vertex vertex2 = tx.traversal().V().has("name", "vertex2").next();
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex(indexName);
+        JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
+        CompositeIndexType index = (CompositeIndexType) indexChangeVertex.asIndexType();
+        Serializer serializer = graph.getDataSerializer();
+        boolean hashKeys = graph.getIndexSerializer().isHashKeys();
+        HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
+
+        JanusGraphVertexProperty indexedProperty = (JanusGraphVertexProperty) vertex2.property("name");
+        long propertyId = indexedProperty.longId();
+        PropertyKey propertyKey = indexedProperty.propertyKey();
+        IndexRecordEntry[] record = new IndexRecordEntry[]{new IndexRecordEntry(propertyId, "vertex2", propertyKey)};
+
+        tx.traversal().V().has("name", "vertex2").drop().iterate();
+        tx.commit();
+        newTx();
+
+        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) vertex2).longId(), ElementLifeCycle.New);
+
+        IndexUpdate<StaticBuffer, Entry> update = IndexRecordUtil.getCompositeIndexUpdate(
+            index,
+            IndexMutationType.ADD,
+            record,
+            element,
+            serializer,
+            hashKeys,
+            hashLength
+        );
+
+        BackendTransaction transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+
+        // Adds index entry of the non-indexed vertex to the index. I.e. this line corrupts index.
+        // This is a possible situation of a stale index being introduced.
+        transaction.mutateIndex(update.getKey(), Collections.singletonList(update.getEntry()), Collections.emptyList());
+
+        transaction.commit();
+        newTx();
+
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertTrue(tx.traversal().V().has("name", "vertex2").hasNext());
+
+        // Check that if we try to remove non-existent vertex we receive an exception
+        assertThrows(Exception.class, () -> tx.traversal().V().has("name", "vertex2").drop().next());
+
+        newTx();
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        // Check that even when we tried to remove vertex - it wasn't removed.
+        // Thus, we got a stale index which won't be fixed by itself.
+        assertTrue(tx.traversal().V().has("name", "vertex2").hasNext());
+
+        // Force-remove index record. I.e. fix stale index.
+        StaleIndexRecordUtil.forceRemoveElementFromGraphIndex(
+            element,
+            record,
+            graph,
+            indexName
+        );
+
+        newTx();
+
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertFalse(tx.traversal().V().has("name", "vertex2").hasNext());
+    }
+
+    @Test
+    public void testEdgeEntryIndexForceRemoveFromGraphIndex() throws BackendException {
+        clopenForStaleIndex();
+        String namePropKeyStr = "name";
+        String indexName = "nameIndex";
+        String edgeName = "follow";
+        mgmt.makeEdgeLabel(edgeName).make();
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(indexName, Edge.class).addKey(nameProp).buildCompositeIndex();
+        finishSchema();
+
+        Vertex vertex1 = tx.addVertex();
+        Vertex vertex2 = tx.addVertex();
+
+        Edge edge = tx.traversal().addE(edgeName).from(vertex1).to(vertex2).property(namePropKeyStr, "edge1").next();
+
+        tx.commit();
+        newTx();
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex(indexName);
+        JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
+        CompositeIndexType index = (CompositeIndexType) indexChangeVertex.asIndexType();
+        Serializer serializer = graph.getDataSerializer();
+        boolean hashKeys = graph.getIndexSerializer().isHashKeys();
+        HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
+        PropertyKey propertyKey = managementSystem.getPropertyKey(namePropKeyStr);
+
+        RelationIdentifier relationIdentifier = (RelationIdentifier) edge.id();
+        long relationId = relationIdentifier.getRelationId();
+        EdgeLabel edgeLabel = managementSystem.getEdgeLabel(edgeName);
+
+        IndexRecordEntry[] record = new IndexRecordEntry[]{new IndexRecordEntry(relationId, "edge1", propertyKey)};
+
+        InternalVertex internalVertex1 = (InternalVertex) edge.outVertex();
+        InternalVertex internalVertex2 = (InternalVertex) edge.inVertex();
+        JanusGraphElement element = new StandardEdge(relationId, edgeLabel, internalVertex1, internalVertex2, ElementLifeCycle.New);
+
+        StaleIndexRecordUtil.forceRemoveElementFromGraphIndex(
+            element,
+            record,
+            graph,
+            indexName
+        );
+
+        tx.commit();
+        newTx();
+
+        assertFalse(tx.traversal().E().has(namePropKeyStr, "edge1").hasNext());
+        assertTrue(tx.traversal().E(edge.id()).hasNext());
+
+        IndexUpdate<StaticBuffer, Entry> update = IndexRecordUtil.getCompositeIndexUpdate(
+            index,
+            IndexMutationType.ADD,
+            record,
+            element,
+            serializer,
+            hashKeys,
+            hashLength
+        );
+
+        BackendTransaction transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+
+        // Adds index entry of the non-indexed edge to the index. I.e. this line corrupts index.
+        // This is a possible situation of a stale index being introduced.
+        transaction.mutateIndex(update.getKey(), Collections.singletonList(update.getEntry()), Collections.emptyList());
+
+        transaction.commit();
+        tx.commit();
+        managementSystem.rollback();
+        newTx();
+
+        assertTrue(tx.traversal().E().has(namePropKeyStr, "edge1").hasNext());
+        assertTrue(tx.traversal().E(edge.id()).hasNext());
+        assertTrue(tx.traversal().V(vertex1).out(edgeName).is(vertex2).hasNext());
+    }
+
+    @Test
+    public void testStaleIndexForceRemoveVertexFromGraphIndexByHelperMethod() throws BackendException {
+        clopenForStaleIndex();
+        String namePropKeyStr = "name";
+        String agePropKeyStr = "age";
+        String indexName = "nameAgeIndex";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey ageProp = mgmt.makePropertyKey(agePropKeyStr).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(nameProp).addKey(ageProp).buildCompositeIndex();
+        finishSchema();
+
+        JanusGraphVertex addedVertex = tx.addVertex();
+        addedVertex.property(namePropKeyStr, "vertex2");
+        addedVertex.property(agePropKeyStr, 123);
+
+        tx.commit();
+        newTx();
+
+        Vertex vertex2 = tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).next();
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex(indexName);
+        JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
+        CompositeIndexType index = (CompositeIndexType) indexChangeVertex.asIndexType();
+        Serializer serializer = graph.getDataSerializer();
+        boolean hashKeys = graph.getIndexSerializer().isHashKeys();
+        HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
+
+        JanusGraphVertexProperty indexedNameProperty = (JanusGraphVertexProperty) vertex2.property("name");
+        long namePropertyId = indexedNameProperty.longId();
+        PropertyKey namePropertyKey = indexedNameProperty.propertyKey();
+
+        JanusGraphVertexProperty indexedAgeProperty = (JanusGraphVertexProperty) vertex2.property("name");
+        long agePropertyId = indexedAgeProperty.longId();
+        PropertyKey agePropertyKey = indexedAgeProperty.propertyKey();
+        IndexRecordEntry[] record = new IndexRecordEntry[]{
+            new IndexRecordEntry(namePropertyId, "vertex2", namePropertyKey),
+            new IndexRecordEntry(agePropertyId, 123, agePropertyKey)
+        };
+
+        tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().iterate();
+        tx.commit();
+        newTx();
+
+        long vertexId = ((JanusGraphElement) vertex2).longId();
+        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) vertex2).longId(), ElementLifeCycle.New);
+
+        IndexUpdate<StaticBuffer, Entry> update = IndexRecordUtil.getCompositeIndexUpdate(
+            index,
+            IndexMutationType.ADD,
+            record,
+            element,
+            serializer,
+            hashKeys,
+            hashLength
+        );
+
+        BackendTransaction transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+
+        // Adds index entry of the non-indexed vertex to the index. I.e. this line corrupts index.
+        // This is a possible situation of a stale index being introduced.
+        transaction.mutateIndex(update.getKey(), Collections.singletonList(update.getEntry()), Collections.emptyList());
+
+        transaction.commit();
+        newTx();
+
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+
+        // Check that if we try to remove non-existent vertex we receive an exception
+        assertThrows(Exception.class, () -> tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().next());
+
+        newTx();
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        // Check that even when we tried to remove vertex - it wasn't removed.
+        // Thus, we got a stale index which won't be fixed by itself.
+        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+
+        Map<String, Object> indexRecordPropertyValues = new HashMap<>();
+        indexRecordPropertyValues.put(namePropKeyStr, "vertex2");
+        indexRecordPropertyValues.put(agePropKeyStr, 123);
+
+        // Force-remove index record. I.e. fix stale index.
+        StaleIndexRecordUtil.forceRemoveVertexFromGraphIndex(
+            vertexId,
+            indexRecordPropertyValues,
+            graph,
+            indexName
+        );
+
+        newTx();
+
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertFalse(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenIncorrectAmountOfPropertiesIsUsedDuringForceIndexRecordRemoval() {
+        clopenForStaleIndex();
+        String namePropKeyStr = "name";
+        String agePropKeyStr = "age";
+        String indexName = "nameAgeIndex";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey ageProp = mgmt.makePropertyKey(agePropKeyStr).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(nameProp).addKey(ageProp).buildCompositeIndex();
+        finishSchema();
+
+        JanusGraphVertex addedVertex = tx.addVertex();
+        addedVertex.property(namePropKeyStr, "vertex2");
+        addedVertex.property(agePropKeyStr, 123);
+
+        tx.commit();
+        newTx();
+
+        Vertex vertex2 = tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).next();
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> StaleIndexRecordUtil.forceRemoveVertexFromGraphIndex(
+            (Long) vertex2.id(),
+            Collections.singletonMap(namePropKeyStr, "vertex2"),
+            graph,
+            indexName
+        ));
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenIncorrectPropertiesAreUsedDuringForceIndexRecordRemoval() {
+        clopenForStaleIndex();
+        String namePropKeyStr = "name";
+        String agePropKeyStr = "age";
+        String indexName = "nameAgeIndex";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey ageProp = mgmt.makePropertyKey(agePropKeyStr).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(nameProp).addKey(ageProp).buildCompositeIndex();
+        finishSchema();
+
+        JanusGraphVertex addedVertex = tx.addVertex();
+        addedVertex.property(namePropKeyStr, "vertex2");
+        addedVertex.property(agePropKeyStr, 123);
+
+        tx.commit();
+        newTx();
+
+        Vertex vertex2 = tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).next();
+
+        Map<String, Object> indexRecordPropertyValues = new HashMap<>();
+        indexRecordPropertyValues.put(namePropKeyStr, "vertex2");
+        indexRecordPropertyValues.put("unknownProperty", 123);
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> StaleIndexRecordUtil.forceRemoveVertexFromGraphIndex(
+            (Long) vertex2.id(),
+            indexRecordPropertyValues,
+            graph,
+            indexName
+        ));
+    }
+
+    protected void clopenForStaleIndex(){
+        clopen();
     }
 }
