@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.berkeleyje;
 
 import com.google.common.base.Preconditions;
+import com.sleepycat.je.LockMode;
 import org.janusgraph.BerkeleyStorageSetup;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
@@ -134,5 +135,12 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         open(config);
 
         assertEquals(0L, (long)graph.traversal().V().count().next());
+    }
+
+    @Override
+    public void clopenForStaleIndex(){
+        // We set LOCK_MODE to READ_UNCOMMITTED here to mitigate an issue with deadlock problem described in
+        // https://github.com/JanusGraph/janusgraph/issues/1623
+        clopen(option(BerkeleyJEStoreManager.LOCK_MODE), LockMode.READ_UNCOMMITTED.toString());
     }
 }
