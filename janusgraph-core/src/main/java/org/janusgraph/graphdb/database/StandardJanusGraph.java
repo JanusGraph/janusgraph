@@ -66,6 +66,8 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
 import org.janusgraph.graphdb.database.idhandling.IDHandler;
+import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
+import org.janusgraph.graphdb.database.index.IndexUpdate;
 import org.janusgraph.graphdb.database.log.LogTxStatus;
 import org.janusgraph.graphdb.database.log.TransactionLogHeader;
 import org.janusgraph.graphdb.database.management.ManagementLogger;
@@ -402,7 +404,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     }
 
     private BackendTransaction openBackendTransaction(StandardJanusGraphTx tx) throws BackendException {
-        IndexSerializer.IndexInfoRetriever retriever = indexSerializer.getIndexInfoRetriever(tx);
+        IndexInfoRetriever retriever = indexSerializer.getIndexInfoRetriever(tx);
         return backend.beginTransaction(tx.getConfiguration(), retriever);
     }
 
@@ -579,7 +581,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
         ListMultimap<Long, InternalRelation> mutations = ArrayListMultimap.create();
         ListMultimap<InternalVertex, InternalRelation> mutatedProperties = ArrayListMultimap.create();
-        List<IndexSerializer.IndexUpdate> indexUpdates = Lists.newArrayList();
+        List<IndexUpdate> indexUpdates = Lists.newArrayList();
         //1) Collect deleted edges and their index updates and acquire edge locks
         for (InternalRelation del : Iterables.filter(deletedRelations,filter)) {
             Preconditions.checkArgument(del.isRemoved());
@@ -620,14 +622,14 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             indexUpdates.addAll(indexSerializer.getIndexUpdates(v,mutatedProperties.get(v)));
         }
         //4) Acquire index locks (deletions first)
-        for (IndexSerializer.IndexUpdate update : indexUpdates) {
+        for (IndexUpdate update : indexUpdates) {
             if (!update.isCompositeIndex() || !update.isDeletion()) continue;
             CompositeIndexType iIndex = (CompositeIndexType) update.getIndex();
             if (acquireLock(iIndex,acquireLocks)) {
                 mutator.acquireIndexLock((StaticBuffer)update.getKey(), (Entry)update.getEntry());
             }
         }
-        for (IndexSerializer.IndexUpdate update : indexUpdates) {
+        for (IndexUpdate update : indexUpdates) {
             if (!update.isCompositeIndex() || !update.isAddition()) continue;
             CompositeIndexType iIndex = (CompositeIndexType) update.getIndex();
             if (acquireLock(iIndex,acquireLocks)) {
@@ -673,16 +675,16 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
         //6) Add index updates
         boolean has2iMods = false;
-        for (IndexSerializer.IndexUpdate indexUpdate : indexUpdates) {
+        for (IndexUpdate indexUpdate : indexUpdates) {
             assert indexUpdate.isAddition() || indexUpdate.isDeletion();
             if (indexUpdate.isCompositeIndex()) {
-                final IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
+                final IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
                 if (update.isAddition())
                     mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()), KCVSCache.NO_DELETIONS);
                 else
                     mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry()));
             } else {
-                final IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
+                final IndexUpdate<String,IndexEntry> update = indexUpdate;
                 has2iMods = true;
                 IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
                 String indexStore = ((MixedIndexType)update.getIndex()).getStoreName();

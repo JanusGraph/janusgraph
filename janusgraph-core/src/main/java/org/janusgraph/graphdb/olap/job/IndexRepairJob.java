@@ -36,6 +36,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.database.index.IndexUpdate;
 import org.janusgraph.graphdb.database.management.RelationTypeIndexWrapper;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
@@ -198,9 +199,9 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 }
                 if (indexType.isCompositeIndex()) {
                     for (JanusGraphElement element : elements) {
-                        Set<IndexSerializer.IndexUpdate<StaticBuffer,Entry>> updates =
+                        Set<IndexUpdate<StaticBuffer,Entry>> updates =
                                 indexSerializer.reindexElement(element, (CompositeIndexType) indexType);
-                        for (IndexSerializer.IndexUpdate<StaticBuffer,Entry> update : updates) {
+                        for (IndexUpdate<StaticBuffer,Entry> update : updates) {
                             log.debug("Mutating index {}: {}", indexType, update.getEntry());
                             mutator.mutateIndex(update.getKey(), new ArrayList<Entry>(1){{add(update.getEntry());}}, KCVSCache.NO_DELETIONS);
                             metrics.incrementCustom(ADDED_RECORDS_COUNT);
