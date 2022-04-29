@@ -19,6 +19,8 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import java.util.List;
 import java.util.Objects;
 
+import static java.util.Collections.unmodifiableList;
+
 /**
  * Queries for a list of slices of data, each identified by a start points (inclusive) and end points (exclusive).
  * Returns all {@link StaticBuffer}s that lie in this ranges up to the given limit.
@@ -33,7 +35,7 @@ public class MultiSlicesQuery {
     private final List<SliceQuery> queries;
 
     public MultiSlicesQuery(List<SliceQuery> queries) {
-        this.queries = queries;
+        this.queries = unmodifiableList(queries);
     }
 
     @Override
@@ -47,5 +49,9 @@ public class MultiSlicesQuery {
     @Override
     public int hashCode() {
         return Objects.hash(queries);
+    }
+
+    public List<SliceQuery> getQueries() {
+        return queries;
     }
 }
