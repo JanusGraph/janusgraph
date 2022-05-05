@@ -148,6 +148,11 @@
                     <groupId>org.ow2.asm</groupId>
                     <artifactId>asm-commons</artifactId>
                 </exclusion>
+                <!-- Use newer antlr4 version from gremlin-language -->
+                <exclusion>
+                    <groupId>org.antlr</groupId>
+                    <artifactId>antlr4-runtime</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

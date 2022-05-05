@@ -179,7 +179,10 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     @Override
     public Q types(String... types) {
         if (types == null) types = NO_TYPES;
-        for (String type : types) Preconditions.checkArgument(StringUtils.isNotBlank(type), "Invalid type: %s", type);
+        for (String type : types)
+            if (type != null) {
+                Preconditions.checkArgument(StringUtils.isNotBlank(type), "Invalid type: %s", type);
+            }
         this.types = types;
         return getThis();
     }
@@ -241,7 +244,9 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
      * @return
      */
     protected final boolean isImplicitKeyQuery(RelationCategory returnType) {
-        return returnType != RelationCategory.EDGE && types.length == 1 && constraints.isEmpty() && schemaInspector.getRelationType(types[0]) instanceof ImplicitKey;
+        if (types.length != 1) return false;
+        if (types[0] == null) return false;
+        return returnType != RelationCategory.EDGE && constraints.isEmpty() && schemaInspector.getRelationType(types[0]) instanceof ImplicitKey;
     }
 
 

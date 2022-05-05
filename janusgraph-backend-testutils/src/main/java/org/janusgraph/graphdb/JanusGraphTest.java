@@ -7098,6 +7098,33 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testHasQueryWithNullKey() {
+        makeKey("time", Long.class);
+        finishSchema();
+        tx.addVertex("time", 0);
+
+        assertCount(0, tx.query().has(null, 0).vertices());
+    }
+
+    @Test
+    public void testQueryWithNullPropertyKey() {
+        makeKey("time", Long.class);
+        finishSchema();
+        tx.addVertex("time", 0);
+
+        assertCount(0, QueryUtil.getVertices((StandardJanusGraphTx) tx, (PropertyKey) null, 0));
+    }
+
+    @Test
+    public void testMultipleHasQueriesWhereOneUsesNullKey() {
+        makeKey("time", Long.class);
+        finishSchema();
+        tx.addVertex("time", 0);
+
+        assertCount(0, tx.query().has("time", 0).has(null, 0).vertices());
+    }
+
+    @Test
     public void testReindexingForEdgeIndex() throws InterruptedException, ExecutionException {
         //Schema creation
         String edgeLabelName = "egLabel";

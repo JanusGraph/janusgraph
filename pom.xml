@@ -56,7 +56,7 @@
     </distributionManagement>
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
-        <tinkerpop.version>3.5.1</tinkerpop.version>
+        <tinkerpop.version>3.5.3</tinkerpop.version>
         <junit-platform.version>1.7.2</junit-platform.version>
         <junit.version>5.7.2</junit.version>
         <mockito.version>3.8.0</mockito.version>
@@ -81,7 +81,7 @@
         <commons.collections.version>3.2.2</commons.collections.version>
         <zookeeper.version>3.6.2</zookeeper.version>
         <!-- align with org.apache.tinkerpop:tinkerpop -->
-        <netty4.version>4.1.61.Final</netty4.version>
+        <netty4.version>4.1.72.Final</netty4.version>
         <jna.version>5.7.0</jna.version>
         <gmavenplus.version>1.12.1</gmavenplus.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -175,7 +175,12 @@ public class QueryUtil {
     public static <E extends JanusGraphElement> And<E> constraints2QNF(StandardJanusGraphTx tx, List<PredicateCondition<String, E>> constraints) {
         final And<E> conditions = new And<>(constraints.size() + 4);
         for (final PredicateCondition<String, E> atom : constraints) {
-            final RelationType type = getType(tx, atom.getKey());
+            final String atomKey = atom.getKey();
+            if (atomKey == null) {
+                return null; // cannot be satisfied
+            }
+
+            final RelationType type = getType(tx, atomKey);
 
             if (type == null) {
                 if (atom.getPredicate() == Cmp.EQUAL && atom.getValue() == null)

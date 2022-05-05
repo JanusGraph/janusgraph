@@ -511,6 +511,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             }
 
             for (String typeName : types) {
+                if (typeName == null) continue;
                 InternalRelationType type = QueryUtil.getType(tx, typeName);
                 if (type==null) continue;
                 Preconditions.checkArgument(!querySystem || (type instanceof SystemRelationType),
