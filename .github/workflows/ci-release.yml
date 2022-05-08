@@ -125,6 +125,14 @@ jobs:
             install-args: "-Pjava-11"
             args: "-Pcassandra3-murmur -Dtest.skip.tp=false -DskipTests=true"
             java: 11
+          - module: cql
+            install-args: "-Pjava-11"
+            args: "-Pcassandra4-byteordered -Dtest.skip.tp=false -DskipTests=true"
+            java: 11
+          - module: cql
+            install-args: "-Pjava-11"
+            args: "-Pcassandra4-murmur -Dtest.skip.tp=false -DskipTests=true"
+            java: 11
           - module: hbase
             install-args: "-Pjava-11"
             args: "-Dtest.skip.tp=false -DskipTests=true"

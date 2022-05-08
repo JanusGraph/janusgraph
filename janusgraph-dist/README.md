@@ -38,7 +38,7 @@ in the default JanusGraph distribution:
 
   * src/assembly/static/cassandra/bin/cassandra
   * src/assembly/static/cassandra/conf/cassandra.yaml
-  * src/assembly/static/cassandra/conf/jvm.options
+  * src/assembly/static/cassandra/conf/jvm-server.options
   * src/assembly/static/cassandra/conf/logback.xml
 
 These files contains just small changes which allows us to include Cassandra 

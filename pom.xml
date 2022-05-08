@@ -102,10 +102,11 @@
         <compiler.target>1.8</compiler.target>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
-        <!-- When this version updated please also update sha256 -->
         <cassandra.version>3.11.10</cassandra.version>
-        <!-- https://downloads.apache.org/cassandra/4.0.3/apache-cassandra-3.11.10-bin.tar.gz.sha256 -->
-        <cassandra.version.sha256>bbe772956c841158e3228c3b6c8fc38cece6bceeface695473c59c0573039bf1</cassandra.version.sha256>
+        <!-- When this version updated please also update sha256 -->
+        <!-- https://downloads.apache.org/cassandra/4.0.6/apache-cassandra-4.0.6-bin.tar.gz.sha256 -->
+        <cassandra-dist.version>4.0.6</cassandra-dist.version>
+        <cassandra-dist.version.sha256>86d14a8e158e4e8554388b1aab598efcb879ddb09c480edecabb3c350b58fe6b</cassandra-dist.version.sha256>
         <cassandra-driver.version>4.14.1</cassandra-driver.version>
         <scylladb.version>4.4.0</scylladb.version>
         <testcontainers.version>1.17.3</testcontainers.version>
@@ -1058,6 +1059,11 @@
                 <groupId>com.google.code.gson</groupId>
                 <artifactId>gson</artifactId>
                 <version>${gson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hdrhistogram</groupId>
+                <artifactId>HdrHistogram</artifactId>
+                <version>2.1.12</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.ant</groupId>

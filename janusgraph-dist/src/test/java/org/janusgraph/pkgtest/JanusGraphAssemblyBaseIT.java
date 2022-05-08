@@ -140,6 +140,7 @@ public abstract class JanusGraphAssemblyBaseIT {
         env.put("JAVA_OPTIONS", "-Xms1024m -Xmx1024m");
         pb.directory(dir);
         pb.environment().put("LOG_DIR", Paths.get(BUILD_DIR, "logs-" + getGraphName()).toString());
+        pb.environment().put("CASSANDRA_LOG_DIR", Paths.get(BUILD_DIR, "logs-" + getGraphName()).toString());
 //        pb.redirectInput(Redirect.PIPE);
         /*
          * Using Redirect.INHERIT with expect breaks maven-failsafe-plugin when
