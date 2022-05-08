@@ -29,7 +29,7 @@
                 <exclude>**/bin/*.bat</exclude>
                 <exclude>**/bin/*.ps1</exclude>
                 <exclude>**/conf/cassandra.yaml</exclude>
-                <exclude>**/conf/jvm.options</exclude>
+                <exclude>**/conf/jvm-server.options</exclude>
                 <exclude>**/conf/logback.xml</exclude>
                 <exclude>**/data/**</exclude>
                 <exclude>**/logs/**</exclude>

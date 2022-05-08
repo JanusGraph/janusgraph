@@ -21,6 +21,7 @@
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <test.docker.version.cassandra3>${cassandra.version}</test.docker.version.cassandra3>
+        <test.docker.version.cassandra4>${cassandra-dist.version}</test.docker.version.cassandra4>
     </properties>
 
     <dependencies>
@@ -418,6 +419,31 @@
                 <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                 <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
                 <cassandra.docker.enableClientAuth>true</cassandra.docker.enableClientAuth>
+                <test.skip.serial>false</test.skip.serial>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>cassandra4-byteordered</id>
+	        <activation>
+	            <activeByDefault>false</activeByDefault>
+	        </activation>
+            <properties>
+                <cassandra.docker.version>${test.docker.version.cassandra4}</cassandra.docker.version>
+                <cassandra.docker.partitioner>${test.byteordered}</cassandra.docker.partitioner>
+                <test.skip.serial>true</test.skip.serial>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+        <profile>
+            <id>cassandra4-murmur</id>
+	        <activation>
+	            <activeByDefault>false</activeByDefault>
+	        </activation>
+            <properties>
+                <cassandra.docker.version>${test.docker.version.cassandra4}</cassandra.docker.version>
+                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                 <test.skip.serial>false</test.skip.serial>
                 <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>

@@ -22,7 +22,7 @@
         <assembly.static.dir>${project.basedir}/src/assembly/static</assembly.static.dir>
         <assembly.resources.dir>${project.basedir}/src/assembly/resources</assembly.resources.dir>
         <assembly.es.dir>${project.build.directory}/elasticsearch-${elasticsearch.version}</assembly.es.dir>
-        <assembly.cassandra.dir>${project.build.directory}/apache-cassandra-${cassandra.version}</assembly.cassandra.dir>
+        <assembly.cassandra.dir>${project.build.directory}/apache-cassandra-${cassandra-dist.version}</assembly.cassandra.dir>
 
         <packname.standard>janusgraph-${project.version}</packname.standard>
         <packname.full>janusgraph-full-${project.version}</packname.full>
@@ -223,11 +223,11 @@
                             <goal>wget</goal>
                         </goals>
                         <configuration>
-                            <url>https://archive.apache.org/dist/cassandra/${cassandra.version}/apache-cassandra-${cassandra.version}-bin.tar.gz</url>
-                            <outputFileName>apache-cassandra-${cassandra.version}-bin.tar.gz</outputFileName>
+                            <url>https://archive.apache.org/dist/cassandra/${cassandra-dist.version}/apache-cassandra-${cassandra-dist.version}-bin.tar.gz</url>
+                            <outputFileName>apache-cassandra-${cassandra-dist.version}-bin.tar.gz</outputFileName>
                             <outputDirectory>${project.build.directory}/</outputDirectory>
                             <unpack>true</unpack>
-                            <sha256>${cassandra.version.sha256}</sha256>
+                            <sha256>${cassandra-dist.version.sha256}</sha256>
                         </configuration>
                     </execution>
                 </executions>
@@ -352,8 +352,6 @@
             <properties>
                 <packname.standard>janusgraph-java-11-${project.version}</packname.standard>
                 <packname.full>janusgraph-java-11-full-${project.version}</packname.full>
-                <test.excluded.groups>FULL_TESTS</test.excluded.groups>
-                <build.full>none</build.full>
             </properties>
         </profile>
         <profile>

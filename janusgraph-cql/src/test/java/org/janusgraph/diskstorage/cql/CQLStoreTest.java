@@ -71,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
@@ -132,7 +133,7 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     public void testExternalLocking() throws BackendException {
         assertFalse(this.manager.getFeatures().hasLocking());
         assertTrue(openStorageManager(getBaseStorageConfiguration()
-                .set(USE_EXTERNAL_LOCKING, true)).getFeatures().hasLocking());
+            .set(USE_EXTERNAL_LOCKING, true)).getFeatures().hasLocking());
     }
 
     @Test
@@ -228,19 +229,22 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
         final CQLStoreManager cqlStoreManager = openStorageManager(config);
         cqlStoreManager.openDatabase(cf);
 
-        assertTrue(Pattern.matches(pattern, cqlStoreManager.getSpeculativeRetry(cf)));
+        String value = cqlStoreManager.getSpeculativeRetry(cf);
+        if (!Pattern.matches(pattern, value)) {
+            fail("Pattern " + pattern + " doesn´t match " + value);
+        }
     }
 
     public static Stream<Arguments> validSpeculativeRetryProvider() {
         return Stream.of(
-            arguments(0, "NONE", "NONE"),
+            arguments(0, "NONE", "(NONE|NEVER)"),
             arguments(1, "ALWAYS", "ALWAYS"),
-            arguments(2, "95percentile", "95(?:\\.0+)?PERCENTILE"),
-            arguments(3, "99PERCENTILE", "99(?:\\.0+)?PERCENTILE"),
-            arguments(4, "99.9PERCENTILE", "99\\.90*PERCENTILE"),
+            arguments(2, "95percentile", "95(?:\\.0+)?(PERCENTILE|p)"),
+            arguments(3, "99PERCENTILE", "99(?:\\.0+)?(PERCENTILE|p)"),
+            arguments(4, "99.9PERCENTILE", "99\\.90*(PERCENTILE|p)"),
             arguments(5, "100ms", "100(?:\\.0+)?ms"),
             arguments(6, "100MS", "100(?:\\.0+)?ms"),
-            arguments(7, "100.9ms", "100\\.90*ms")
+            arguments(7, "100.9ms", "100(\\.90*)*ms")
         );
     }
 

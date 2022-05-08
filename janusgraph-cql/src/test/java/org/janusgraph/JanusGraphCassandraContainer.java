@@ -95,7 +95,10 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
     }
 
     private String getConfigPrefix() {
-        return "cassandra3";
+        if (getVersion().startsWith("3.")) {
+            return "cassandra3";
+        }
+        return "cassandra4";
     }
 
     public JanusGraphCassandraContainer() {
@@ -156,7 +159,7 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         config.set(CONNECTION_TIMEOUT, Duration.ofSeconds(60L));
         config.set(STORAGE_BACKEND, "cql");
         config.set(STORAGE_PORT, getMappedPort(CQL_PORT));
-        config.set(STORAGE_HOSTS, new String[]{getContainerIpAddress()});
+        config.set(STORAGE_HOSTS, new String[]{getHost()});
         config.set(DROP_ON_CLEAR, false);
         config.set(MAX_REQUESTS_PER_CONNECTION, 1024);
         if (useDynamicConfig()) {

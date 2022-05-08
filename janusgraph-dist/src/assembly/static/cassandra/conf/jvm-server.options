@@ -1,4 +1,4 @@
-# Copyright 2020 JanusGraph Authors
+# Copyright 2022 JanusGraph Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +13,16 @@
 # limitations under the License.
 
 ###########################################################################
-#                             jvm.options                                 #
+#                         jvm-server.options                              #
 #                                                                         #
 # - all flags defined here will be used by cassandra to startup the JVM   #
 # - one flag should be specified per line                                 #
 # - lines that do not start with '-' will be ignored                      #
 # - only static flags are accepted (no variables or parameters)           #
 # - dynamic flags will be appended to these on cassandra-env              #
+#                                                                         #
+# See jvm8-server.options and jvm11-server.options for Java version       #
+# specific options.                                                       #
 ###########################################################################
 
 ######################
@@ -67,17 +70,8 @@
 # before joining the ring.
 #-Dcassandra.ring_delay_ms=ms
 
-# Set the port for the Thrift RPC service, which is used for client connections. (Default: 9160)
-#-Dcassandra.rpc_port=port
-
 # Set the SSL port for encrypted communication. (Default: 7001)
 #-Dcassandra.ssl_storage_port=port
-
-# Enable or disable the native transport server. See start_native_transport in cassandra.yaml.
-# cassandra.start_native_transport=true|false
-
-# Enable or disable the Thrift RPC server. (Default: true)
-#-Dcassandra.start_rpc=true/false
 
 # Set the port for inter-node communication. (Default: 7000)
 #-Dcassandra.storage_port=port
@@ -99,6 +93,9 @@
 # 10000 rows per page.
 #-Dcassandra.force_default_indexing_page_size=true
 
+# Imposes an upper bound on hint lifetime below the normal min gc_grace_seconds
+#-Dcassandra.maxHintTTL=max_hint_ttl_in_seconds
+
 ########################
 # GENERAL JVM SETTINGS #
 ########################
@@ -106,23 +103,19 @@
 # enable assertions. highly suggested for correct application functionality.
 -ea
 
+# disable assertions for net.openhft.** because it runs out of memory by design
+# if enabled and run for more than just brief testing
+-da:net.openhft...
+
 # enable thread priorities, primarily so we can give periodic tasks
 # a lower priority to avoid interfering with client workload
 -XX:+UseThreadPriorities
-
-# allows lowering thread priority without being root on linux - probably
-# not necessary on Windows but doesn't harm anything.
-# see http://tech.stolsvik.com/2010/01/linux-java-thread-priorities-workar
--XX:ThreadPriorityPolicy=42
 
 # Enable heap-dump if there's an OOM
 -XX:+HeapDumpOnOutOfMemoryError
 
 # Per-thread stack size.
 -Xss256k
-
-# Larger interned string table, for gossip's benefit (CASSANDRA-6410)
--XX:StringTableSize=1000003
 
 # Make sure all memory is faulted and zeroed on startup.
 # This helps prevent soft faults in containers and makes
@@ -138,8 +131,6 @@
 -XX:+ResizeTLAB
 -XX:+UseNUMA
 
-
-# JanusGraph change: This allows janusgraph.sh to able to check the state of cassandra instance using jps.
 # http://www.evanjones.ca/jvm-mmap-pause.html
 #-XX:+PerfDisableSharedMem
 
@@ -209,64 +200,3 @@
 # * CAP_NOWARN: same as previous, except that the client warning will not be emitted.
 #
 #-Dcassandra.expiration_date_overflow_policy=REJECT
-
-#################
-#  GC SETTINGS  #
-#################
-
-### CMS Settings
-
--XX:+UseParNewGC
--XX:+UseConcMarkSweepGC
--XX:+CMSParallelRemarkEnabled
--XX:SurvivorRatio=8
--XX:MaxTenuringThreshold=1
--XX:CMSInitiatingOccupancyFraction=75
--XX:+UseCMSInitiatingOccupancyOnly
--XX:CMSWaitDuration=10000
--XX:+CMSParallelInitialMarkEnabled
--XX:+CMSEdenChunksRecordAlways
-# some JVMs will fill up their heap when accessed via JMX, see CASSANDRA-6541
--XX:+CMSClassUnloadingEnabled
-
-### G1 Settings (experimental, comment previous section and uncomment section below to enable)
-
-## Use the Hotspot garbage-first collector.
-#-XX:+UseG1GC
-#
-## Have the JVM do less remembered set work during STW, instead
-## preferring concurrent GC. Reduces p99.9 latency.
-#-XX:G1RSetUpdatingPauseTimePercent=5
-#
-## Main G1GC tunable: lowering the pause target will lower throughput and vise versa.
-## 200ms is the JVM default and lowest viable setting
-## 1000ms increases throughput. Keep it smaller than the timeouts in cassandra.yaml.
-#-XX:MaxGCPauseMillis=500
-
-## Optional G1 Settings
-
-# Save CPU time on large (>= 16GB) heaps by delaying region scanning
-# until the heap is 70% full. The default in Hotspot 8u40 is 40%.
-#-XX:InitiatingHeapOccupancyPercent=70
-
-# For systems with > 8 cores, the default ParallelGCThreads is 5/8 the number of logical cores.
-# Otherwise equal to the number of cores when 8 or less.
-# Machines with > 10 cores should try setting these to <= full cores.
-#-XX:ParallelGCThreads=16
-# By default, ConcGCThreads is 1/4 of ParallelGCThreads.
-# Setting both to the same value can reduce STW durations.
-#-XX:ConcGCThreads=16
-
-### GC logging options -- uncomment to enable
-
--XX:+PrintGCDetails
--XX:+PrintGCDateStamps
--XX:+PrintHeapAtGC
--XX:+PrintTenuringDistribution
--XX:+PrintGCApplicationStoppedTime
--XX:+PrintPromotionFailure
-#-XX:PrintFLSStatistics=1
-#-Xloggc:/var/log/cassandra/gc.log
--XX:+UseGCLogFileRotation
--XX:NumberOfGCLogFiles=10
--XX:GCLogFileSize=10M
