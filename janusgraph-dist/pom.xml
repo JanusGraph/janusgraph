@@ -208,8 +208,10 @@
                         </goals>
                         <configuration>
                             <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.version}-linux-x86_64.tar.gz</url>
-                            <outputFileName>elasticsearch.tar.gz</outputFileName>
-                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <outputFileName>elasticsearch-${elasticsearch.version}-linux-x86_64.tar.gz</outputFileName>
+                            <outputDirectory>${project.build.directory}/</outputDirectory>
+                            <unpack>true</unpack>
+                            <sha512>${elasticsearch.version.sha512}</sha512>
                         </configuration>
                     </execution>
                     <execution>
@@ -220,48 +222,10 @@
                         </goals>
                         <configuration>
                             <url>https://archive.apache.org/dist/cassandra/${cassandra.version}/apache-cassandra-${cassandra.version}-bin.tar.gz</url>
-                            <outputFileName>apache-cassandra.tar.gz</outputFileName>
-                            <outputDirectory>${project.build.directory}</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>extract-elasticsearch</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <exec executable="tar">
-                                    <arg value="-xzf"/>
-                                    <arg value="${project.build.directory}/elasticsearch.tar.gz"/>
-                                    <arg value="-C"/>
-                                    <arg value="${project.build.directory}"/>
-                                </exec>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>extract-cassandra</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <exec executable="tar">
-                                    <arg value="-xzf"/>
-                                    <arg value="${project.build.directory}/apache-cassandra.tar.gz"/>
-                                    <arg value="-C"/>
-                                    <arg value="${project.build.directory}"/>
-                                </exec>
-                            </target>
+                            <outputFileName>apache-cassandra-${cassandra.version}-bin.tar.gz</outputFileName>
+                            <outputDirectory>${project.build.directory}/</outputDirectory>
+                            <unpack>true</unpack>
+                            <sha256>${cassandra.version.sha256}</sha256>
                         </configuration>
                     </execution>
                 </executions>

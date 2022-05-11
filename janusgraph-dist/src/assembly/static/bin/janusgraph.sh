@@ -83,7 +83,7 @@ wait_for_cassandra() {
     while [ $now_s -le $stop_s ]; do
         echo -n .
         # The \r\n deletion bit is necessary for Cygwin compatibility
-        statusbinary="`$BIN/../cassandra/bin/nodetool statusbinary 2>/dev/null | tr -d '\n\r'`"
+        statusbinary="`$BIN/../cassandra/bin/nodetool -Dcom.sun.jndi.rmiURLParsing=legacy statusbinary 2>/dev/null | tr -d '\n\r'`"
         if [ $? -eq 0 -a 'running' = "$statusbinary" ]; then
             echo ' OK (returned exit status 0 and printed string "running").'
             return 0
