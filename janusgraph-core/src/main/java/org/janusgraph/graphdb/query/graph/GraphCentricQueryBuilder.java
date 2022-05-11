@@ -143,7 +143,6 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     @Override
     public GraphCentricQueryBuilder has(String key, JanusGraphPredicate predicate, Object condition) {
-        Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
         Preconditions.checkArgument(predicate.isValidCondition(condition),
                 "Invalid condition: %s", condition);
@@ -156,8 +155,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     }
 
     public GraphCentricQueryBuilder has(PropertyKey key, JanusGraphPredicate predicate, Object condition) {
-        Preconditions.checkNotNull(key);
-        return has(key.name(),predicate,condition);
+        if (key == null) {
+            return has((String) null, predicate, condition);
+        }
+        return has(key.name(), predicate, condition);
     }
 
     @Override
