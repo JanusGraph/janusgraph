@@ -100,7 +100,7 @@
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra.version>3.11.10</cassandra.version>
-        <cassandra-driver.version>4.13.0</cassandra-driver.version>
+        <cassandra-driver.version>4.14.1</cassandra-driver.version>
         <scylladb.version>4.4.0</scylladb.version>
         <testcontainers.version>1.16.2</testcontainers.version>
         <easymock.version>4.3</easymock.version>
@@ -111,6 +111,7 @@
         <!-- align with org.apache.solr:solr-solrj -->
         <jetty.version>9.4.44.v20210927</jetty.version>
         <log4j2.version>2.17.1</log4j2.version>
+        <graalvm-nativeimage.version>22.0.0.2</graalvm-nativeimage.version>
     </properties>
     <modules>
         <module>janusgraph-grpc</module>
@@ -1152,7 +1153,7 @@
             <dependency>
                 <groupId>org.graalvm.nativeimage</groupId>
                 <artifactId>svm</artifactId>
-                <version>21.0.0.2</version>
+                <version>${graalvm-nativeimage.version}</version>
             </dependency>
             <dependency>
                 <groupId>javax.servlet</groupId>

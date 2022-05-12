@@ -136,6 +136,10 @@
         </dependency>
 
         <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
+            <artifactId>svm</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.datastax.oss</groupId>
             <artifactId>java-driver-core</artifactId>
             <version>${cassandra-driver.version}</version>
@@ -159,6 +163,10 @@
                 <exclusion>
                     <groupId>io.netty</groupId>
                     <artifactId>netty-handler</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.graalvm.nativeimage</groupId>
+                    <artifactId>svm</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -189,7 +197,7 @@
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
-            <version>3.11.0</version>
+            <version>3.11.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.github.jnr</groupId>
