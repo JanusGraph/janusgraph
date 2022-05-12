@@ -99,7 +99,7 @@
         <compiler.target>1.8</compiler.target>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
-        <cassandra.version>3.11.10</cassandra.version>
+        <cassandra.version>4.0.3</cassandra.version>
         <cassandra-driver.version>4.14.1</cassandra-driver.version>
         <scylladb.version>4.4.0</scylladb.version>
         <testcontainers.version>1.16.2</testcontainers.version>
