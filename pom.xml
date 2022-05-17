@@ -103,7 +103,7 @@
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <!-- When this version updated please also update sha256 -->
-        <cassandra.version>3.11.10</cassandra.version>
+        <cassandra.version>4.0.4</cassandra.version>
         <!-- https://downloads.apache.org/cassandra/4.0.3/apache-cassandra-3.11.10-bin.tar.gz.sha256 -->
         <cassandra.version.sha256>bbe772956c841158e3228c3b6c8fc38cece6bceeface695473c59c0573039bf1</cassandra.version.sha256>
         <cassandra-driver.version>4.14.1</cassandra-driver.version>
