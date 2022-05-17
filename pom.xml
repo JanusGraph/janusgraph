@@ -75,7 +75,10 @@
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.13.1</jackson2.version>
         <lucene-solr.version>8.11.1</lucene-solr.version>
+        <!-- When this version updated please also update sha512 -->
         <elasticsearch.version>7.14.0</elasticsearch.version>
+        <!-- https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.14.0-linux-x86_64.tar.gz.sha512 -->
+        <elasticsearch.version.sha512>30764d5838009dc36d8f5c6c7249e65f323b5bd843027b47b37b91566d28cac95c4b5e6db1decce748f9ccd404a7ca4ba4fa9632bcd8b43fb27b0d93cc7b8f27</elasticsearch.version.sha512>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <zookeeper.version>3.6.2</zookeeper.version>
@@ -99,7 +102,10 @@
         <compiler.target>1.8</compiler.target>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
+        <!-- When this version updated please also update sha256 -->
         <cassandra.version>3.11.10</cassandra.version>
+        <!-- https://downloads.apache.org/cassandra/4.0.3/apache-cassandra-3.11.10-bin.tar.gz.sha256 -->
+        <cassandra.version.sha256>bbe772956c841158e3228c3b6c8fc38cece6bceeface695473c59c0573039bf1</cassandra.version.sha256>
         <cassandra-driver.version>4.14.1</cassandra-driver.version>
         <scylladb.version>4.4.0</scylladb.version>
         <testcontainers.version>1.16.2</testcontainers.version>
