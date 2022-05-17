@@ -73,7 +73,7 @@ import java.util.Map;
  * Serializer serializer = graph.getDataSerializer();
  * boolean hashKeys = graph.getIndexSerializer().isHashKeys();
  * HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
- * IndexUpdate<StaticBuffer, Entry> update = IndexRecordUtil.getCompositeIndexUpdate(
+ * IndexUpdate&lt;StaticBuffer, Entry&gt; update = IndexRecordUtil.getCompositeIndexUpdate(
  *     compositeIndexTypeToBeUpdated,
  *     IndexMutationType.DELETE,
  *     fullIndexRecord,
@@ -126,7 +126,7 @@ import java.util.Map;
  * Serializer serializer = graph.getDataSerializer();
  * boolean hashKeys = graph.getIndexSerializer().isHashKeys();
  * HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
- * IndexUpdate<StaticBuffer, Entry> update = IndexRecordUtil.getCompositeIndexUpdate(
+ * IndexUpdate&lt;StaticBuffer, Entry&gt; update = IndexRecordUtil.getCompositeIndexUpdate(
  *     compositeIndexTypeToBeUpdated,
  *     IndexMutationType.DELETE,
  *     fullIndexRecord,
