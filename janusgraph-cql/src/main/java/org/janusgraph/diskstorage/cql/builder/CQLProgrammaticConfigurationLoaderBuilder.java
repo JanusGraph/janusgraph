@@ -158,7 +158,7 @@ public class CQLProgrammaticConfigurationLoaderBuilder {
 
     private void configureCqlNetty(Configuration configuration, ProgrammaticDriverConfigLoaderBuilder configLoaderBuilder){
         // The following sets the size of Netty ThreadPool executor used by Cassandra driver:
-        // https://docs.datastax.com/en/developer/java-driver/4.8/manual/core/async/#threading-model
+        // https://docs.datastax.com/en/developer/java-driver/4.13/manual/core/performance/#thread-pooling
         if(configuration.has(NETTY_IO_SIZE)) {
             configLoaderBuilder.withInt(DefaultDriverOption.NETTY_IO_SIZE, configuration.get(NETTY_IO_SIZE));
         }

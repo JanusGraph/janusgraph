@@ -335,7 +335,7 @@ public interface CQLConfigOptions {
         "io-size",
         "The number of threads for the event loop group used for I/O operations " +
             "(reading and writing to Cassandra nodes). " +
-            "If this is set to 0, the driver will use `Runtime.getRuntime().availableProcessors() * 2`.",
+            "If this is not set, the driver will use `Runtime.getRuntime().availableProcessors() * 2`.",
         ConfigOption.Type.LOCAL,
         Integer.class);
 
@@ -344,7 +344,7 @@ public interface CQLConfigOptions {
         "admin-size",
         "The number of threads for the event loop group used for admin tasks not related to request I/O " +
             "(handle cluster events, refresh metadata, schedule reconnections, etc.). " +
-            "If this is set to 0, the driver will use `Runtime.getRuntime().availableProcessors() * 2`.",
+            "If this is not set, the driver will use 2.",
         ConfigOption.Type.LOCAL,
         Integer.class);
 
