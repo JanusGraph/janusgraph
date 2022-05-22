@@ -457,8 +457,8 @@ Configuration options related to the Netty event loop groups used internally by 
 
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
-| storage.cql.netty.admin-size | The number of threads for the event loop group used for admin tasks not related to request I/O (handle cluster events, refresh metadata, schedule reconnections, etc.). If this is set to 0, the driver will use `Runtime.getRuntime().availableProcessors() * 2`. | Integer | (no default value) | LOCAL |
-| storage.cql.netty.io-size | The number of threads for the event loop group used for I/O operations (reading and writing to Cassandra nodes). If this is set to 0, the driver will use `Runtime.getRuntime().availableProcessors() * 2`. | Integer | (no default value) | LOCAL |
+| storage.cql.netty.admin-size | The number of threads for the event loop group used for admin tasks not related to request I/O (handle cluster events, refresh metadata, schedule reconnections, etc.). If this is not set, the driver will use 2. | Integer | (no default value) | LOCAL |
+| storage.cql.netty.io-size | The number of threads for the event loop group used for I/O operations (reading and writing to Cassandra nodes). If this is not set, the driver will use `Runtime.getRuntime().availableProcessors() * 2`. | Integer | (no default value) | LOCAL |
 | storage.cql.netty.timer-tick-duration | The timer tick duration in milliseconds. This is how frequent the timer should wake up to check for timed-out tasks or speculative executions. See DataStax Java Driver option `advanced.netty.timer.tick-duration` for more information. | Long | (no default value) | LOCAL |
 | storage.cql.netty.timer-ticks-per-wheel | Number of ticks in a Timer wheel. See DataStax Java Driver option `advanced.netty.timer.ticks-per-wheel` for more information. | Integer | (no default value) | LOCAL |
 
