@@ -376,7 +376,9 @@ public class Backend implements LockerProvider, AutoCloseable {
             userConfig = kcvsConfigurationBuilder.buildConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
                 public StoreTransaction openTx() throws BackendException {
-                    return storeManagerLocking.beginTransaction(StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER)));
+                    return storeManagerLocking.beginTransaction(StandardBaseTransactionConfig.of(
+                        configuration.get(TIMESTAMP_PROVIDER),
+                        storeFeatures.getKeyConsistentTxConfig()));
                 }
 
                 @Override
