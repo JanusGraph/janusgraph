@@ -67,6 +67,19 @@ compile "org.janusgraph:janusgraph-core:0.6.2"
 * Apache TinkerPop 3.5.3
 * Java 1.8
 
+#### Changes
+
+For more information on features and bug fixes in 0.6.2, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/23?closed=1>
+
+#### Assets
+
+* [JavaDoc](https://javadoc.io/doc/org.janusgraph/janusgraph-core/0.6.2)
+* [GitHub Release](https://github.com/JanusGraph/janusgraph/releases/tag/v0.6.2)
+* [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.2/janusgraph-0.6.2.zip)
+* [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.2/janusgraph-full-0.6.2.zip)
+
 ### Version 0.6.1 (Release Date: January 18, 2022)
 
 ```xml tab='Maven'
