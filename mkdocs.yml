@@ -140,6 +140,7 @@ nav:
     - Apache Cassandra: storage-backend/cassandra.md
     - Apache HBase: storage-backend/hbase.md
     - Google Cloud Bigtable: storage-backend/bigtable.md
+    - ScyllaDB: storage-backend/scylladb.md
     - Oracle Berkeley DB Java Edition: storage-backend/bdb.md
     - InMemory Storage Backend: storage-backend/inmemorybackend.md
   - Mixed Index Backends:
