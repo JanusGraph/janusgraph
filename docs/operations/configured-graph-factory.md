@@ -251,6 +251,10 @@ map.put("storage.hostname", "10.0.0.1");
 ConfiguredGraphFactory.updateConfiguration("graph1",
 map);
 
+// We can verify the configuration was updated by
+// retrieving the configuration for this graph
+ConfiguredGraphFactory.getConfiguration("graph1");
+
 // We are now guaranteed to use the updated configuration
 g1 = ConfiguredGraphFactory.open("graph1");
 ```
@@ -273,6 +277,10 @@ map.put("index.search.hostname", "127.0.0.1");
 map.put("index.search.elasticsearch.transport-scheme", "http");
 ConfiguredGraphFactory.updateConfiguration("graph1",
 map);
+
+// We can verify the configuration was updated by
+// retrieving the configuration for this graph
+ConfiguredGraphFactory.getConfiguration("graph1");
 
 // We are now guaranteed to use the updated configuration
 g1 = ConfiguredGraphFactory.open("graph1");
@@ -302,7 +310,10 @@ ConfiguredGraphFactory.removeConfiguration("graph1");
 
 // Recreate
 ConfiguredGraphFactory.create("graph1");
-// Now this graph's configuration is guaranteed to be updated
+
+// Now this graph's configuration is guaranteed to be updated.
+// We can verify it by retrieving the configuration for this graph
+ConfiguredGraphFactory.getConfiguration("graph1");
 ```
 
 ## JanusGraphManager
