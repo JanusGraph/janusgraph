@@ -1377,6 +1377,28 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testCompositeVsMixedIndexing() {
+        clopen(option(FORCE_INDEX_USAGE), true);
+        final PropertyKey intId = makeKey("intId", Integer.class);
+        final PropertyKey intId2 = makeKey("intId2", Integer.class);
+        final PropertyKey verboseId = makeKey("verboseId", Integer.class);
+
+        mgmt.buildIndex("composite", Vertex.class).addKey(intId).addKey(verboseId).buildCompositeIndex();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(intId2).addKey(verboseId).buildMixedIndex(INDEX);
+        finishSchema();
+
+        tx.addVertex("intId", 123, "intId2", 234);
+        newTx();
+
+        // composite index requires all fields to be present
+        Exception ex = assertThrows(JanusGraphException.class, () -> tx.traversal().V().has("intId", 123).hasNext());
+        assertEquals("Could not find a suitable index to answer graph query and graph scans are disabled: [(intId = 123)]:VERTEX", ex.getMessage());
+
+        // mixed index only needs some field(s) to be present
+        assertTrue(tx.traversal().V().has("intId2", 234).hasNext());
+    }
+
+    @Test
     public void testCompositeAndMixedIndexing() {
         final PropertyKey name = makeKey("name", String.class);
         final PropertyKey weight = makeKey("weight", Double.class);
