@@ -156,6 +156,45 @@ JanusGraph now officially supports Java 11 in addition to Java 8. We encourage e
 !!! note
     The distribution zip archives are however still built with Java 8 since the full distribution includes Cassandra which will only support Java 11 in version 4.
 
+### Version 0.6.2 (Release Date: May 31, 2022)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.6.2</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.6.2"
+```
+
+**Tested Compatibility:**
+
+* Apache Cassandra 3.0.14, 3.11.10
+* Apache HBase 1.6.0, 2.2.7
+* Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0, 1.14.0
+* Oracle BerkeleyJE 7.5.11
+* Elasticsearch 6.0.1, 6.6.0, 7.14.0
+* Apache Lucene 8.9.0
+* Apache Solr 7.7.2, 8.9.0
+* Apache TinkerPop 3.5.3
+* Java 1.8
+
+#### Changes
+
+For more information on features and bug fixes in 0.6.2, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/23?closed=1>
+
+#### Assets
+
+* [JavaDoc](https://javadoc.io/doc/org.janusgraph/janusgraph-core/0.6.2)
+* [GitHub Release](https://github.com/JanusGraph/janusgraph/releases/tag/v0.6.2)
+* [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.2/janusgraph-0.6.2.zip)
+* [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.2/janusgraph-full-0.6.2.zip)
+
 ### Version 0.6.1 (Release Date: January 18, 2022)
 
 ```xml tab='Maven'
@@ -179,7 +218,7 @@ compile "org.janusgraph:janusgraph-core:0.6.1"
 * Elasticsearch 6.0.1, 6.6.0, 7.14.0
 * Apache Lucene 8.9.0
 * Apache Solr 7.7.2, 8.9.0
-* Apache TinkerPop 3.5.3
+* Apache TinkerPop 3.5.1
 * Java 1.8
 
 #### Changes

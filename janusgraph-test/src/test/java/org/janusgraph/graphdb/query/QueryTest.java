@@ -22,6 +22,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
@@ -126,10 +127,11 @@ public class QueryTest {
 
     @Test
     public void testIdLookUpQuery() {
-        Vertex v1 = tx.addVertex("pos", 0);
-        Vertex v2 = tx.addVertex();
+        Vertex v1 = tx.addVertex("pos", 0, "age", 30);
+        Vertex v2 = tx.addVertex("age", 20);
         Edge e = v1.addEdge("connects", v2, "prop", "val");
         String vId = v1.id().toString();
+        String v2Id = v2.id().toString();
         String eId = e.id().toString();
         tx.commit();
 
@@ -158,6 +160,30 @@ public class QueryTest {
         assertTrue(tx.traversal().V().hasId(vId).has("pos", 0).hasNext());
         assertEquals(tx.traversal().V(vId).next(), tx.traversal().V().hasId(vId).next());
         assertEquals(tx.traversal().V(vId).next(), tx.traversal().V(vId).hasId(vId).next());
+
+        // vertices lookup followed by limit step
+        assertEquals(1, tx.traversal().V(vId, v2Id).limit(1).count().next());
+        assertEquals(1, tx.traversal().V(vId, v2Id).limit(1).toList().size());
+        assertEquals(1, tx.traversal().V().hasId(vId, v2Id).limit(1).count().next());
+        assertEquals(0, tx.traversal().V().hasId(vId, v2Id).limit(0).count().next());
+        assertEquals(1, tx.traversal().V().has(T.id, P.within(vId, v2Id)).limit(1).count().next());
+        assertEquals(0, tx.traversal().V().has(T.id, P.within(vId, v2Id)).limit(0).count().next());
+
+        // vertices lookup followed by order step
+        assertEquals(Arrays.asList(20, 30), tx.traversal().V().order().by("age").values("age").toList());
+        assertEquals(Arrays.asList(20, 30), tx.traversal().V().has(T.id, P.within(vId, v2Id)).order().by("age").values("age").toList());
+        assertEquals(Arrays.asList(20, 30), tx.traversal().V().has(T.id, P.within(vId, v2Id)).order().by("age").values("age").toList());
+        assertEquals(Arrays.asList(20, 30), tx.traversal().V().hasId(vId, v2Id).order().by("age").values("age").toList());
+        assertEquals(Arrays.asList(20, 30), tx.traversal().V().hasId(vId, v2Id).order().by("age").values("age").toList());
+
+        // FIXME: vertices lookup in Or query
+        // assertEquals(1, tx.traversal().V().or(__.hasId(vId), __.has("pos", 100)).count().next());
+        // assertEquals(2, tx.traversal().V().or(__.has(T.id, vId), __.has(T.id, v2Id)).count().next());
+        // assertEquals(2, tx.traversal().V().or(__.hasId(vId, v2Id), __.has("pos", 100)).count().next());
+        // assertEquals(1, tx.traversal().V().or(__.hasId(vId, v2Id).limit(1), __.has("pos", 100)).count().next());
+        // assertEquals(1, tx.traversal().V().or(__.hasId(vId, v2Id).limit(0), __.has("pos")).count().next());
+        // assertEquals(1, tx.traversal().V().or(__.hasId(vId, v2Id).limit(1), __.has("pos")).count().next());
+        // assertEquals(2, tx.traversal().V().or(__.hasId(vId, v2Id).limit(1), __.has("age")).count().next());
     }
 
     @Test

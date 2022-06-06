@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.strategy;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
@@ -42,14 +43,23 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
             return;
 
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(originalGraphStep -> {
-            if (originalGraphStep.getIds() == null || originalGraphStep.getIds().length == 0) {
+            if (ArrayUtils.isEmpty(originalGraphStep.getIds())) {
                 //Try to optimize for index calls
                 final JanusGraphStep<?, ?> janusGraphStep = new JanusGraphStep<>(originalGraphStep);
                 TraversalHelper.replaceStep(originalGraphStep, janusGraphStep, traversal);
+                //Fold in steps containing ids like hasId(ids) and has(T.id, P.within(ids))
                 HasStepFolder.foldInIds(janusGraphStep, traversal);
+                //Fold in other "has" steps like has(key) and has(key, value)
                 HasStepFolder.foldInHasContainer(janusGraphStep, traversal, traversal);
-                HasStepFolder.foldInOrder(janusGraphStep, janusGraphStep.getNextStep(), traversal, traversal, janusGraphStep.returnsVertex(), null);
-                HasStepFolder.foldInRange(janusGraphStep, JanusGraphTraversalUtil.getNextNonIdentityStep(janusGraphStep), traversal, null);
+                //Now that has(T.id, ids) and hasId(ids) steps are folded, we check again
+                //if there are any ids folded. If yes, then we shouldn't fold in order and
+                //range steps so that they can be handled by TinkerPop.
+                if (ArrayUtils.isEmpty(janusGraphStep.getIds())) {
+                    //Fold in ordering steps like order().by(key) step
+                    HasStepFolder.foldInOrder(janusGraphStep, janusGraphStep.getNextStep(), traversal, traversal, janusGraphStep.returnsVertex(), null);
+                    //Fold in range steps like limit(number) and range(lowLimit, highLimit)
+                    HasStepFolder.foldInRange(janusGraphStep, JanusGraphTraversalUtil.getNextNonIdentityStep(janusGraphStep), traversal, null);
+                }
             } else {
                 //Make sure that any provided "start" elements are instantiated in the current transaction
                 final Object[] ids = originalGraphStep.getIds();

@@ -516,6 +516,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEmpty(tx.query().vertices());
     }
 
+    @Test
+    public void testVariables() {
+        assertTrue(graph.variables().asMap().isEmpty());
+        graph.variables().set("systemAdmins", "stephen, peter, pavel");
+        graph.variables().set("systemUsers", "matthias, marko, josh");
+        assertEquals(new HashSet<>(Arrays.asList("systemAdmins", "systemUsers")), graph.variables().keys());
+        assertEquals("matthias, marko, josh", graph.variables().get("systemUsers").get());
+        graph.variables().remove("systemAdmins");
+        assertEquals(new HashSet<>(Arrays.asList("systemUsers")), graph.variables().keys());
+    }
+
     /**
      * Adding a removing a vertex with index
      */
