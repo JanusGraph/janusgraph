@@ -16,9 +16,19 @@ name: CI Benchmark
 
 on:
   push:
+    branches:
+    - master
     paths-ignore:
     - 'docs/**'
     - '.github/workflows/ci-docs.yml'
+    - 'requirements.txt'
+    - 'docs.Dockerfile'
+    - '*.md'
+  pull_request_target:
+    paths-ignore:
+    - 'docs/**'
+    - '.github/workflows/ci-docs.yml'
+    - '.github/ISSUE_TEMPLATE/**'
     - 'requirements.txt'
     - 'docs.Dockerfile'
     - '*.md'
@@ -26,36 +36,13 @@ on:
 env:
   BUILD_MAVEN_OPTS: "-DskipTests=true --batch-mode --also-make"
 
-permissions:
-  contents: write
-
 jobs:
-  build-all:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-      - uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-      - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
-
-  benchmark:
+  push-benchmark:
     name: Performance regression check
+    if: "github.event_name == 'push'"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
       - uses: actions/setup-java@v1
         with:
           java-version: 1.8
@@ -79,4 +66,40 @@ jobs:
           fail-on-alert: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
           comment-on-alert: true
+          comment-always: true
+
+  pr-benchmark:
+    name: Performance regression check
+    if: "github.event_name != 'push'"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - run: mvn clean install -Pjanusgraph-benchmark ${{ env.BUILD_MAVEN_OPTS }} -Dgpg.skip=true
+      - run: mvn verify --projects janusgraph-benchmark
+
+      # Download previous benchmark result from cache (if exists)
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+
+      # Run `github-action-benchmark` action
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'customSmallerIsBetter'
+          output-file-path: janusgraph-benchmark/benchmark.json
+          external-data-json-path: ./cache/benchmark-data.json
+          fail-on-alert: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-on-alert: true
+          # don't store benchmark result for PR
+          save-data-file: false
           comment-always: true
