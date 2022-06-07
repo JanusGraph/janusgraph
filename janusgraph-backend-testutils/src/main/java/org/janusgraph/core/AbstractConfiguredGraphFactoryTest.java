@@ -292,6 +292,24 @@ public abstract class AbstractConfiguredGraphFactoryTest {
     }
 
     @Test
+    public void shouldBeAbleToDropBogusGraph() throws Exception {
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
+
+        try {
+            ConfiguredGraphFactory.createConfiguration(graphConfig);
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open(graphName);
+            assertNotNull(graph);
+
+            ConfiguredGraphFactory.drop(graphName);
+            RuntimeException exception = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.open(graphName));
+            assertEquals("Please create configuration for this graph using the ConfigurationManagementGraph#createConfiguration API.", exception.getMessage());
+        } finally {
+            ConfiguredGraphFactory.drop(graphName);
+        }
+    }
+
+    @Test
     public void shouldCreateTwoGraphsUsingSameTemplateConfiguration() throws Exception {
         try {
             ConfiguredGraphFactory.createTemplateConfiguration(getTemplateConfig());
