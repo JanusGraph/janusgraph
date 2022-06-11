@@ -156,11 +156,16 @@ public class ConfiguredGraphFactory {
         Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
 
         final StandardJanusGraph graph = (StandardJanusGraph) jgm.getGraph(graphName);
-        // Evict the graph from the cache in all nodes in the cluster
-        DropGraphOnEvictionTrigger dropTrigger = new DropGraphOnEvictionTrigger(graphName, graph, getConfigGraphManagementInstance());
-        removeGraphFromCache(graph, dropTrigger);
-        // Block the current thread until the drop operation finish
-        dropTrigger.waitUntilDropFinish();
+        if (graph != null) {
+            // Evict the graph from the cache in all nodes in the cluster
+            DropGraphOnEvictionTrigger dropTrigger = new DropGraphOnEvictionTrigger(graphName, graph, getConfigGraphManagementInstance());
+            removeGraphFromCache(graph, dropTrigger);
+            // Block the current thread until the drop operation finish
+            dropTrigger.waitUntilDropFinish();
+        } else {
+            // cannot open graph, do nothing
+            log.error(String.format("Failed to open graph %s. Thus, it and its traversal will not be bound on this server.", graphName));
+        }
     }
 
     /**

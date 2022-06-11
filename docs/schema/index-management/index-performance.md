@@ -338,6 +338,13 @@ specified label.
     indexing. Also, using a mixed index can speed up the order().by()
     queries.
 
+3.  A composite index requires all fields to be present, while a mixed
+    index only needs at least one field to be present. For example, say
+    you have a composite index with `key1` and `key2`, a mixed index with
+    `key1` and `key3`. If you add a vertex with only property `key1`, then
+    JanusGraph will create a new mixed index entry but not a composite index
+    entry.
+
 ## Vertex-centric Indexes
 
 Vertex-centric indexes, also known as Relation indexes, are local index
