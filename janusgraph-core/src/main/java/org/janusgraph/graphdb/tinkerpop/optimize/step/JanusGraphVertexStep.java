@@ -110,7 +110,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
      */
     private void prefetchNextBatch(final Traverser.Admin<Vertex> traverser) {
         final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(getTraversal()).multiQuery();
-        if(verticesToPrefetch.isEmpty()){
+        if (verticesToPrefetch.isEmpty()) {
             multiQuery.addVertex(JanusGraphTraversalUtil.getJanusGraphVertex(traverser));
         } else {
             multiQuery.addAllVertices(verticesToPrefetch);

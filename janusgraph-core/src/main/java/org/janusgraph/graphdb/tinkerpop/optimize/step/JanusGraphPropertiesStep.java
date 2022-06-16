@@ -110,10 +110,15 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
      * This initialisation method is called when an attempt to retrieve a vertex from the cached multiQuery results
      * doesn't find an entry.
      */
-    private void prefetchNextBatch() {
+    private void prefetchNextBatch(final Traverser.Admin<Element> traverser) {
         final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(getTraversal()).multiQuery();
-        multiQuery.addAllVertices(verticesToPrefetch);
-        verticesToPrefetch.clear();
+        if (verticesToPrefetch.isEmpty()) {
+            multiQuery.addVertex(JanusGraphTraversalUtil.getJanusGraphVertex(traverser));
+        } else {
+            multiQuery.addAllVertices(verticesToPrefetch);
+            verticesToPrefetch.clear();
+        }
+
         makeQuery(multiQuery);
 
         try {
@@ -129,7 +134,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     protected Iterator<E> flatMap(final Traverser.Admin<Element> traverser) {
         if (useMultiQuery && traverser.get() instanceof Vertex) {
             if (multiQueryResults == null || !multiQueryResults.containsKey(traverser.get())) {
-                prefetchNextBatch();
+                prefetchNextBatch(traverser);
             }
             return convertIterator(multiQueryResults.get(traverser.get()));
         } else if (traverser.get() instanceof JanusGraphVertex || traverser.get() instanceof WrappedVertex) {

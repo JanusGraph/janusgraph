@@ -7409,4 +7409,20 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertFalse(tx.traversal().V().has("a", timestamp).has("b", true).has("c", true).bothE().hasNext());
     }
 
+    @Test
+    public void testPropertiesAfterProjectWithByThenChooseWithBatchQueryEnabled() {
+        clopen(option(USE_MULTIQUERY),true,
+            option(BATCH_PROPERTY_PREFETCHING),false,
+            option(STORAGE_BATCH),false
+        );
+
+        long timestamp = System.currentTimeMillis();
+
+        tx.traversal().addV("test").property("a", timestamp).next();
+
+        newTx();
+
+        assertTrue(tx.traversal().V().has("a", timestamp).project("a").by(__.choose(__.has("a"), __.values("a"))).hasNext());
+    }
+
 }
