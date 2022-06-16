@@ -1566,4 +1566,10 @@ public class ManagementSystem implements JanusGraphManagement {
         ensureOpen();
         return userConfig.set(path, value);
     }
+
+    @Override
+    public JanusGraphConfiguration remove(String path) {
+        ensureOpen();
+        return userConfig.remove(path);
+    }
 }

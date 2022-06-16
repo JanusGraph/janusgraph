@@ -117,6 +117,16 @@ public class UserModifiableConfiguration implements JanusGraphConfiguration {
         return this;
     }
 
+    @Override
+    public JanusGraphConfiguration remove(String path) {
+        ConfigElement.PathIdentifier pp = ConfigElement.parse(config.getRootNamespace(),path);
+        Preconditions.checkArgument(pp.element.isOption(),"Need to provide configuration option - not namespace: %s",path);
+        ConfigOption option = (ConfigOption)pp.element;
+        verifier.verifyModification(option);
+        config.remove(option, pp.umbrellaElements);
+        return this;
+    }
+
     /**
      * Closes this configuration handler
      */

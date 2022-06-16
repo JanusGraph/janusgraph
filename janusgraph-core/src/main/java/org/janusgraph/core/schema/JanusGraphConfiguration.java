@@ -40,4 +40,11 @@ public interface JanusGraphConfiguration {
      */
     JanusGraphConfiguration set(String path, Object value);
 
+    /**
+     * Remove the configuration option identified by the provided path.
+     *
+     * @param path
+     */
+    JanusGraphConfiguration remove(String path);
+
 }
