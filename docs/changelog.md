@@ -162,6 +162,23 @@ GraphBinary is now used as the default MessageSerializer.
 We are dropping support for old serialization format of JanusGraph predicates. The old predicates serialization format is only used by client older than 0.6.
 The change only affects GraphSON.
 
+##### Allow removal of configuration keys
+
+Users can now remove configuration keys in the ConfiguredGraphFactory's configuration:
+
+```groovy
+ConfiguredGraphFactory.removeConfiguration("<graph_name>", Collections.singleton("<config_key>"))
+```
+
+Or the global configuration:
+```groovy
+mgmt = graph.openManagement()
+mgmt.remove("<config_key>")
+mgmt.commit()
+```
+
+Note that the above commands should be used with care. They cannot be used to drop an external index backend if it has mixed indexes for instance.
+
 ##### New index management
 
 The index management has received an overhaul which enables proper index removal.

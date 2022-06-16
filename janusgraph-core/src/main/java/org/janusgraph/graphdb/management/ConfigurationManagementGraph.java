@@ -206,6 +206,22 @@ public class ConfigurationManagementGraph {
     }
 
     /**
+     * Remove configuration corresponding to supplied graphName; we remove supplied existing
+     * properties.
+     * NOTE: The updated configuration is only guaranteed to take effect if the {@link Graph} corresponding to
+     * graphName has been closed and reopened on every JanusGraph Node.
+     */
+    public void removeConfiguration(final String graphName, final Set<String> configKeys) {
+        Preconditions.checkArgument(!configKeys.contains(PROPERTY_GRAPH_NAME),
+            "The list of configuration keys to remove cannot contain the property \"%s\".", PROPERTY_GRAPH_NAME);
+        log.warn("Configuration {} is only guaranteed to take effect when graph {} has been closed and reopened on all Janus Graph Nodes.",
+            graphName,
+            graphName
+        );
+        removeVertexProperties(PROPERTY_GRAPH_NAME, graphName, configKeys);
+    }
+
+    /**
      * Remove template configuration
      */
     public void removeTemplateConfiguration() {
@@ -331,6 +347,14 @@ public class ConfigurationManagementGraph {
         if (g.V().has(propertyKey, propertyValue).hasNext()) {
             final Vertex v = g.V().has(propertyKey, propertyValue).next();
             map.forEach((key, value) -> v.property((String) key, value));
+            graph.tx().commit();
+        }
+    }
+
+    private void removeVertexProperties(String propertyKey, Object propertyValue, Set<String> set) {
+        final GraphTraversalSource g = getTraversal();
+        if (g.V().has(propertyKey, propertyValue).hasNext()) {
+            g.V().has(propertyKey, propertyValue).properties(set.toArray(new String[0])).drop().iterate();
             graph.tx().commit();
         }
     }

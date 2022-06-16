@@ -277,6 +277,18 @@ public class ConfiguredGraphFactory {
         configManagementGraph.removeConfiguration(graphName);
     }
 
+    /**
+     * Remove configuration corresponding to supplied graphName; we remove supplied existing
+     * properties.
+     * NOTE: The updated configuration is only guaranteed to take effect if the {@link Graph} corresponding to
+     * graphName has been closed and reopened on every JanusGraph Node.
+     */
+    public static void removeConfiguration(final String graphName, final Set<String> configKeys) {
+        final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
+        removeGraphFromCache(graphName);
+        configManagementGraph.removeConfiguration(graphName, configKeys);
+    }
+
     private static void removeGraphFromCache(final String graphName) {
 
         try {
@@ -314,9 +326,9 @@ public class ConfiguredGraphFactory {
      *
      * @return Map&lt;String, Object&gt;
      */
-    public static Map<String, Object> getConfiguration(final String configName) {
+    public static Map<String, Object> getConfiguration(final String graphName) {
         final ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();
-        return configManagementGraph.getConfiguration(configName);
+        return configManagementGraph.getConfiguration(graphName);
     }
 
     /**
