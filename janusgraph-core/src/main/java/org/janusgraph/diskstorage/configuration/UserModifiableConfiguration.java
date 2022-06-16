@@ -96,24 +96,28 @@ public class UserModifiableConfiguration implements JanusGraphConfiguration {
         Preconditions.checkArgument(pp.element.isOption(),"Need to provide configuration option - not namespace: %s",path);
         ConfigOption option = (ConfigOption)pp.element;
         verifier.verifyModification(option);
-        if (option.getDatatype().isArray()) {
-            Class arrayType = option.getDatatype().getComponentType();
-            Object arr;
-            if (value.getClass().isArray()) {
-                int size = Array.getLength(value);
-                arr = Array.newInstance(arrayType,size);
-                for (int i=0;i<size;i++) {
-                    Array.set(arr,i,convertBasic(Array.get(value,i),arrayType));
-                }
-            } else {
-                arr = Array.newInstance(arrayType,1);
-                Array.set(arr,0,convertBasic(value,arrayType));
-            }
-            value = arr;
+        if (value == null) {
+            config.remove(option, pp.umbrellaElements);
         } else {
-            value = convertBasic(value,option.getDatatype());
+            if (option.getDatatype().isArray()) {
+                Class arrayType = option.getDatatype().getComponentType();
+                Object arr;
+                if (value.getClass().isArray()) {
+                    int size = Array.getLength(value);
+                    arr = Array.newInstance(arrayType, size);
+                    for (int i = 0; i < size; i++) {
+                        Array.set(arr, i, convertBasic(Array.get(value, i), arrayType));
+                    }
+                } else {
+                    arr = Array.newInstance(arrayType, 1);
+                    Array.set(arr, 0, convertBasic(value, arrayType));
+                }
+                value = arr;
+            } else {
+                value = convertBasic(value, option.getDatatype());
+            }
+            config.set(option, value, pp.umbrellaElements);
         }
-        config.set(option,value,pp.umbrellaElements);
         return this;
     }
 
