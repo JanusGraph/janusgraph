@@ -97,7 +97,7 @@ gremlin>
 ```
 
 The Gremlin Console interprets commands using [Apache Groovy](https://www.groovy-lang.org/), which is a superset of Java.
-Gremlin-Groovy extends Groovy by providing a set of methods for basic and advanced graph traversal funcionality.
+Gremlin-Groovy extends Groovy by providing a set of methods for basic and advanced graph traversal functionality.
 For a deeper dive into Gremlin language's features, please refer to our [introduction to Gremlin](./gremlin.md).
 
 ### Running the JanusGraph Server

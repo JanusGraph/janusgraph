@@ -143,7 +143,7 @@ threadedGraph = graph.tx().createThreadedTx();
 threads = new Thread[10];
 for (int i=0; i<threads.length; i++) {
     threads[i]=new Thread({
-        println("Do something with 'threadedGraph''");
+        println("Do something with 'threadedGraph'");
     });
     threads[i].start();
 }

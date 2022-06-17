@@ -79,7 +79,7 @@ and its underlying, supported persistence solutions.
 > —  [Coda Hale](https://codahale.com/you-cant-sacrifice-partition-tolerance)
 
 When using a database, the [CAP theorem](https://en.wikipedia.org/wiki/CAP_theorem) should be thoroughly
-considered (C=Consistency, A=Availability, P=Partitionability).
+considered (C=Consistency, A=Availability, P=Partition tolerance).
 JanusGraph is distributed with 3 supporting backends: [Apache Cassandra](https://cassandra.apache.org/),
  [Apache HBase](https://hbase.apache.org/), and [Oracle Berkeley DB Java Edition](https://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html).
 Note that BerkeleyDB JE is a non-distributed database and is typically
