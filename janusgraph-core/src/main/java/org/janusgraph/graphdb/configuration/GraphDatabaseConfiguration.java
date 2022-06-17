@@ -154,7 +154,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Boolean> REPLACE_INSTANCE_IF_EXISTS = new ConfigOption<>(GRAPH_NS, "replace-instance-if-exists",
             "If a JanusGraph instance with the same instance identifier already exists, the usage of this " +
-            "configuration option results in the opening of this graph anwyay.",
+            "configuration option results in the opening of this graph anyway.",
             ConfigOption.Type.LOCAL, Boolean.class, false);
 
     public static final ConfigOption<String> TITAN_COMPATIBLE_VERSIONS = new ConfigOption<>(GRAPH_NS,"titan-version",
@@ -236,7 +236,7 @@ public class GraphDatabaseConfiguration {
 
 
     public static final ConfigOption<Boolean> FORCE_INDEX_USAGE = new ConfigOption<>(QUERY_NS,"force-index",
-            "Whether JanusGraph should throw an exception if a graph query cannot be answered using an index. Doing so" +
+            "Whether JanusGraph should throw an exception if a graph query cannot be answered using an index. Doing so " +
                     "limits the functionality of JanusGraph's graph queries but ensures that slow graph queries are avoided " +
                     "on large graphs. Recommended for production use of JanusGraph.",
             ConfigOption.Type.MASKABLE, false);
@@ -511,12 +511,12 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, 1024, ConfigOption.positiveInt());
 
     public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<>(STORAGE_NS,"write-time",
-            "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
+            "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation " +
             "fails temporarily, JanusGraph will backoff exponentially and retry the operation until the wait time has been exhausted. ",
             ConfigOption.Type.MASKABLE, Duration.ofSeconds(100L));
 
     public static final ConfigOption<Duration> STORAGE_READ_WAITTIME = new ConfigOption<>(STORAGE_NS,"read-time",
-            "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation" +
+            "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation " +
                     "fails temporarily, JanusGraph will backoff exponentially and retry the operation until the wait time has been exhausted. ",
             ConfigOption.Type.MASKABLE, Duration.ofSeconds(10L));
 
@@ -967,8 +967,8 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, 1, ConfigOption.positiveInt());
 
     public static final ConfigOption<Duration> LOG_STORE_TTL = new ConfigOption<Duration>(LOG_NS,"ttl",
-            "Sets a TTL on all log entries, meaning" +
-                    "that all entries added to this log expire after the configured amount of time. Requires" +
+            "Sets a TTL on all log entries, meaning " +
+                    "that all entries added to this log expire after the configured amount of time. Requires " +
                     "that the log implementation supports TTL.",
             ConfigOption.Type.GLOBAL, Duration.class, sd -> null != sd && !sd.isZero());
 

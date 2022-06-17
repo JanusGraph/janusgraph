@@ -127,7 +127,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             ConfigOption.Type.MASKABLE, Duration.ofMillis(4000L));
 
     public static final ConfigOption<Duration> LOG_READ_LAG_TIME = new ConfigOption<>(LOG_NS,"read-lag-time",
-            "Maximum time in ms that it may take for reads to appear in the backend. If a write does not become" +
+            "Maximum time in ms that it may take for reads to appear in the backend. If a write does not become " +
                     "visible in the storage backend in this amount of time, a log reader might miss the message.",
             ConfigOption.Type.MASKABLE, Duration.ofMillis(500L));
 

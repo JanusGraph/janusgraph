@@ -1,7 +1,7 @@
 # Management System
 
 !!! warning
-    This site is massivly under development.
+    This site is massively under development.
 
 This section will describe how to interact with the ManagementSystem. 
 Therefore, if you want interact with the ManagementSystem checkout the 
