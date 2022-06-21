@@ -7904,4 +7904,21 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     protected void clopenForStaleIndex(){
         clopen();
     }
+
+    @Test
+    public void testPropertiesAfterProjectWithByThenChooseWithBatchQueryEnabled() {
+        clopen(option(USE_MULTIQUERY),true,
+            option(BATCH_PROPERTY_PREFETCHING),false,
+            option(STORAGE_BATCH),false
+        );
+
+        long timestamp = System.currentTimeMillis();
+
+        tx.traversal().addV("test").property("a", timestamp).next();
+
+        newTx();
+
+        assertTrue(tx.traversal().V().has("a", timestamp).project("a").by(__.choose(__.has("a"), __.values("a"))).hasNext());
+    }
+
 }
