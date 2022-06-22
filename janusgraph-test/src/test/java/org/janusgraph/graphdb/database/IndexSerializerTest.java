@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.database;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedProperty;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.Parameter;
@@ -126,7 +127,7 @@ public class IndexSerializerTest {
     private JanusGraphElement mockIndexableElement(String key, String value, boolean indexable) {
         StandardJanusGraphTx tx = mock(StandardJanusGraphTx.class);
         JanusGraphElement indexableElement = spy(new StandardVertex(tx, 1L, ElementLifeCycle.New));
-        Property pk2 = indexableElement.property(key, value);
+        Property pk2 = new DetachedProperty(key, value);
         Iterator it = Arrays.asList(pk2).iterator();
         doReturn(it).when(indexableElement).properties(key);
         if (indexable)
