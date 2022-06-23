@@ -110,8 +110,8 @@
         <scylladb.version>4.4.0</scylladb.version>
         <testcontainers.version>1.16.2</testcontainers.version>
         <easymock.version>4.3</easymock.version>
-        <protobuf.version>3.19.2</protobuf.version>
-        <grpc.version>1.42.1</grpc.version>
+        <protobuf.version>3.21.1</protobuf.version>
+        <grpc.version>1.47.0</grpc.version>
         <protoc.version>3.15.3</protoc.version>
         <jmh.version>1.33</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
@@ -233,7 +233,7 @@
             <plugin>
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
-                <version>0.13</version>
+                <version>0.14</version>
                 <executions>
                     <execution>
                         <id>rat-checks</id>
@@ -1003,6 +1003,12 @@
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java-util</artifactId>
                 <version>${protobuf.version}</version>
+                 <exclusions>
+                    <exclusion>
+                        <groupId>com.google.code.gson</groupId>
+                        <artifactId>gson</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.grpc</groupId>
