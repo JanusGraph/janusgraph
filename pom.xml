@@ -83,7 +83,7 @@
         <commons.collections.version>3.2.2</commons.collections.version>
         <zookeeper.version>3.6.2</zookeeper.version>
         <!-- align with org.apache.tinkerpop:tinkerpop -->
-        <netty4.version>4.1.73.Final</netty4.version>
+        <netty4.version>4.1.78.Final</netty4.version>
         <jna.version>5.10.0</jna.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -110,8 +110,8 @@
         <scylladb.version>4.4.0</scylladb.version>
         <testcontainers.version>1.16.2</testcontainers.version>
         <easymock.version>4.3</easymock.version>
-        <protobuf.version>3.19.2</protobuf.version>
-        <grpc.version>1.42.1</grpc.version>
+        <protobuf.version>3.21.1</protobuf.version>
+        <grpc.version>1.47.0</grpc.version>
         <protoc.version>3.15.3</protoc.version>
         <jmh.version>1.33</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
@@ -1003,6 +1003,12 @@
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java-util</artifactId>
                 <version>${protobuf.version}</version>
+                 <exclusions>
+                    <exclusion>
+                        <groupId>com.google.code.gson</groupId>
+                        <artifactId>gson</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.grpc</groupId>
