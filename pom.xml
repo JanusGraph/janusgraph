@@ -74,7 +74,7 @@
         <jackson1.version>1.9.13</jackson1.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.13.3</jackson2.version>
-        <lucene-solr.version>8.11.1</lucene-solr.version>
+        <lucene-solr.version>8.11.2</lucene-solr.version>
         <!-- When this version updated please also update sha512 -->
         <elasticsearch.version>7.14.0</elasticsearch.version>
         <!-- https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.14.0-linux-x86_64.tar.gz.sha512 -->
