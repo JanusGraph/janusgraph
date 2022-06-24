@@ -44,11 +44,18 @@ jobs:
         with:
           java-version: 1.8
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
-
+      - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
   benchmark:
     name: Performance regression check
     runs-on: ubuntu-latest
+    needs: build-all
     steps:
+      # install CCM for CQL benchmarks
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - run: pip install git+https://github.com/li-boxuan/ccm.git
+
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
         with:
@@ -61,6 +68,9 @@ jobs:
           java-version: 1.8
       - run: mvn clean install -Pjanusgraph-benchmark ${{ env.BUILD_MAVEN_OPTS }} -Dgpg.skip=true
       - run: mvn verify --projects janusgraph-benchmark
+        env:
+          CCM_CLUSTER_START_DEFAULT_TIMEOUT: 300
+          CCM_UPDATE_PID_DEFAULT_TIMEOUT: 300
 
       # Download previous benchmark result from cache (if exists)
       - name: Download previous benchmark data
