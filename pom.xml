@@ -434,6 +434,8 @@
                             <manifestEntries>
                                 <janusgraphVersion>${project.version}</janusgraphVersion>
                                 <tinkerpopVersion>${tinkerpop.version}</tinkerpopVersion>
+                                <!-- Gremlin console loads 'version' as gremlin version -->
+                                <version>${tinkerpop.version}</version>
                             </manifestEntries>
                         </archive>
                     </configuration>
