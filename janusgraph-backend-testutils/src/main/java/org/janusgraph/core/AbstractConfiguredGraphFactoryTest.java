@@ -24,7 +24,6 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
 import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
-import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -224,9 +223,17 @@ public abstract class AbstractConfiguredGraphFactoryTest {
             final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open(graphName);
             assertNotNull(graph);
 
+            // string-delimited hosts are recognized
             final Map<String, Object> map = graphConfig.getMap();
-            map.put(STORAGE_BACKEND.toStringWithoutRoot(), "bogusBackend");
-            ConfiguredGraphFactory.updateConfiguration(graphName, ConfigurationUtil.loadMapConfiguration(map));
+            map.put("storage.hostname", "localhost,localhost");
+            ConfiguredGraphFactory.updateConfiguration(graphName, new MapConfiguration(map));
+            assertNull(gm.getGraph(graphName));
+            assertNotNull(ConfiguredGraphFactory.open(graphName));
+
+            // bogus backend will prevent the graph from being opened
+            final Map<String, Object> map2 = graphConfig.getMap();
+            map2.put("storage.backend", "bogusBackend");
+            ConfiguredGraphFactory.updateConfiguration(graphName, new MapConfiguration(map2));
             assertNull(gm.getGraph(graphName));
             // we should throw an error since the config has been updated and we are attempting
             // to open a bogus backend

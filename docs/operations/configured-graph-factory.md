@@ -249,7 +249,7 @@ g1 = ConfiguredGraphFactory.open("graph1");
 map = new HashMap();
 map.put("storage.hostname", "10.0.0.1");
 ConfiguredGraphFactory.updateConfiguration("graph1",
-map);
+new MapConfiguration(map));
 
 // We are now guaranteed to use the updated configuration
 g1 = ConfiguredGraphFactory.open("graph1");
@@ -272,7 +272,7 @@ map.put("index.search.backend", "elasticsearch");
 map.put("index.search.hostname", "127.0.0.1");
 map.put("index.search.elasticsearch.transport-scheme", "http");
 ConfiguredGraphFactory.updateConfiguration("graph1",
-map);
+new MapConfiguration(map));
 
 // We are now guaranteed to use the updated configuration
 g1 = ConfiguredGraphFactory.open("graph1");
