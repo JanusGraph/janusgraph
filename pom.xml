@@ -62,7 +62,7 @@
         <mockito.version>4.6.1</mockito.version>
         <jamm.version>0.3.0</jamm.version>
         <metrics.version>4.1.18</metrics.version>
-        <slf4j.version>1.7.35</slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <httpcomponents.httpclient.version>4.5.13</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.15</httpcomponents.httpcore.version>
         <hadoop2.version>2.8.5</hadoop2.version>
