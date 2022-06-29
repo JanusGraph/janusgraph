@@ -466,7 +466,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.1.2</version>
+                    <version>3.3.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-gpg-plugin</artifactId>
@@ -492,7 +492,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-antrun-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.1.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
