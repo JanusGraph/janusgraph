@@ -81,7 +81,7 @@
         <elasticsearch.version.sha512>30764d5838009dc36d8f5c6c7249e65f323b5bd843027b47b37b91566d28cac95c4b5e6db1decce748f9ccd404a7ca4ba4fa9632bcd8b43fb27b0d93cc7b8f27</elasticsearch.version.sha512>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
-        <zookeeper.version>3.6.2</zookeeper.version>
+        <zookeeper.version>3.8.0</zookeeper.version>
         <!-- align with org.apache.tinkerpop:tinkerpop -->
         <netty4.version>4.1.78.Final</netty4.version>
         <jna.version>5.10.0</jna.version>
