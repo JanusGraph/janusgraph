@@ -33,7 +33,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IN
 public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
 
     private static final Integer ELASTIC_PORT = 9200;
-    private static final String DEFAULT_VERSION = "7.14.0";
+    private static final String DEFAULT_VERSION = "7.16.3";
     private static final String DEFAULT_IMAGE = "docker.elastic.co/elasticsearch/elasticsearch";
 
     public static ElasticMajorVersion getEsMajorVersion() {
