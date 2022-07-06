@@ -62,7 +62,7 @@ compile "org.janusgraph:janusgraph-core:1.0.0"
 * Apache HBase 1.6.0, 2.2.7
 * Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0, 1.14.0
 * Oracle BerkeleyJE 7.5.11
-* Elasticsearch 6.0.1, 6.6.0, 7.14.0
+* Elasticsearch 6.0.1, 6.6.0, 7.17.5
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
 * Apache TinkerPop 3.5.3

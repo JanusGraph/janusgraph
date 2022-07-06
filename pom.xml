@@ -76,9 +76,9 @@
         <jackson2.version>2.13.3</jackson2.version>
         <lucene-solr.version>8.11.2</lucene-solr.version>
         <!-- When this version updated please also update sha512 -->
-        <elasticsearch.version>7.14.0</elasticsearch.version>
-        <!-- https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.14.0-linux-x86_64.tar.gz.sha512 -->
-        <elasticsearch.version.sha512>30764d5838009dc36d8f5c6c7249e65f323b5bd843027b47b37b91566d28cac95c4b5e6db1decce748f9ccd404a7ca4ba4fa9632bcd8b43fb27b0d93cc7b8f27</elasticsearch.version.sha512>
+        <elasticsearch.version>7.17.5</elasticsearch.version>
+        <!-- https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.5-linux-x86_64.tar.gz.sha512 -->
+        <elasticsearch.version.sha512>98791c40f7ce1ba2a463fddb0986bb6ab9f94ab6479d79f96cd9b772e5208a04c7552c56e9fea484248d2ff1dd46fa25ed7066a41160fb22eb1b8dc837448ccf</elasticsearch.version.sha512>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <zookeeper.version>3.6.2</zookeeper.version>
