@@ -61,7 +61,7 @@
         <junit.version>5.8.2</junit.version>
         <mockito.version>4.6.1</mockito.version>
         <jamm.version>0.3.0</jamm.version>
-        <metrics.version>4.1.18</metrics.version>
+        <metrics.version>4.1.32</metrics.version>
         <slf4j.version>1.7.36</slf4j.version>
         <httpcomponents.httpclient.version>4.5.13</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.15</httpcomponents.httpcore.version>
@@ -108,7 +108,7 @@
         <cassandra.version.sha256>bbe772956c841158e3228c3b6c8fc38cece6bceeface695473c59c0573039bf1</cassandra.version.sha256>
         <cassandra-driver.version>4.14.1</cassandra-driver.version>
         <scylladb.version>4.4.0</scylladb.version>
-        <testcontainers.version>1.17.2</testcontainers.version>
+        <testcontainers.version>1.17.3</testcontainers.version>
         <easymock.version>4.3</easymock.version>
         <protobuf.version>3.21.1</protobuf.version>
         <grpc.version>1.47.0</grpc.version>
