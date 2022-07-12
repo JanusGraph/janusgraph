@@ -116,7 +116,7 @@
         <jmh.version>1.33</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
         <jetty.version>9.4.44.v20210927</jetty.version>
-        <log4j2.version>2.17.1</log4j2.version>
+        <log4j2.version>2.18.0</log4j2.version>
         <graalvm-nativeimage.version>22.0.0.2</graalvm-nativeimage.version>
     </properties>
     <modules>
