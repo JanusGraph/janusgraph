@@ -207,6 +207,8 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENGINE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_READONLY;
@@ -7921,4 +7923,87 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(tx.traversal().V().has("a", timestamp).project("a").by(__.choose(__.has("a"), __.values("a"))).hasNext());
     }
 
+    @Test
+    public void testGremlinScriptEvaluationWithGremlinLangScriptEngine() {
+        Exception npe = assertThrows(NullPointerException.class, () -> graph.eval("g.V()", false));
+        assertEquals("graph.script-eval.enabled is not enabled", npe.getMessage());
+
+        clopen(option(SCRIPT_EVAL_ENABLED), true);
+        initializeGraphWithVerticesAndEdges();
+        long vertexCount = graph.traversal().V().count().next();
+
+        // basic queries
+        assertEquals(vertexCount, graph.eval("g.V().count().next()", false));
+        assertEquals(
+            graph.traversal().V().has("_v", 1).values("_v").hasNext(),
+            graph.eval("g.V().has('_v', 1).values('_v').hasNext()", false));
+        assertEquals(
+            graph.traversal().E().has("_e", 1).next(),
+            graph.eval("g.E().has(\"_e\", 1).next()", false));
+
+        // scripts with multiple lines are allowed
+        assertEquals(++vertexCount, graph.eval("g.addV().next();g.V().count().next()", true));
+
+        // non-gremlin query is not allowed
+        JanusGraphException ex = assertThrows(JanusGraphException.class, () -> graph.eval("g.V().map{t -> t.get()}.hasNext()", false));
+        assertEquals("Could not evaluate given gremlin script: g.V().map{t -> t.get()}.hasNext()", ex.getMessage());
+        assertThrows(JanusGraphException.class, () -> graph.eval("1 + 1", false));
+        assertThrows(JanusGraphException.class, () -> graph.eval("while(true) {}", false));
+
+        // cannot circumvent readonly limitation
+        assertThrows(JanusGraphException.class, () -> graph.eval("g2 = g.getGraph().traversal(); g2.V().drop().iterate(); g2.tx().commit();", false));
+
+        // cannot mutate the graph in readonly mode
+        ex = assertThrows(JanusGraphException.class, () -> graph.eval("g.addV().next()", false));
+        assertEquals("Could not evaluate given gremlin script: g.addV().next()", ex.getMessage());
+        assertEquals("org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException: " +
+            "The provided traversal has a mutating step and thus is not read only: AddVertexStartStep({label=[vertex]})", ex.getCause().getMessage());
+
+        // can mutate the graph in non-readonly mode
+        graph.eval("g.addV().next()", true);
+        assertEquals(vertexCount + 1, graph.traversal().V().count().next());
+        graph.tx().rollback();
+        assertEquals(vertexCount + 1, graph.traversal().V().count().next());
+
+        // commit in script does not affect other transactions
+        graph.traversal().addV("dummyLabel").next();
+        graph.eval("g.tx().commit()", true);
+        graph.tx().rollback();
+        assertFalse(graph.traversal().V().hasLabel("dummyLabel").hasNext());
+
+        // rollback in script does not affect other transactions
+        graph.traversal().addV("dummyLabel").next();
+        graph.eval("g.tx().rollback()", true);
+        graph.tx().commit();
+        assertTrue(graph.traversal().V().hasLabel("dummyLabel").hasNext());
+    }
+
+    @Test
+    public void testGremlinScriptEvaluationWithGremlinGroovyScriptEngine() {
+        clopen(option(SCRIPT_EVAL_ENABLED), true, option(SCRIPT_EVAL_ENGINE), "GremlinGroovyScriptEngine");
+        initializeGraphWithVerticesAndEdges();
+        final long vertexCount = graph.traversal().V().count().next();
+
+        // basic queries
+        assertEquals(vertexCount, graph.eval("g.V().count().next()", false));
+        assertEquals(
+            graph.traversal().V().has("_v", 1).values("_v").hasNext(),
+            graph.eval("g.V().has('_v', 1).values('_v').hasNext()", false));
+        assertEquals(
+            graph.traversal().E().has("_e", 1).next(),
+            graph.eval("g.E().has(\"_e\", 1).next()", false));
+
+        // basic non standard gremlin scripts
+        assertEquals(2, graph.eval("1 + 1", false));
+        assertEquals(true, graph.eval("g.V().map{t -> t.get()}.hasNext()", false));
+
+        // scripts with multiple lines are allowed
+        assertEquals(vertexCount + 1, graph.eval("g.addV().next();g.V().count().next()", true));
+
+        // can circumvent readonly limitation
+        if (!features.hasLocking()) {
+            graph.eval("g2 = g.getGraph().traversal(); g2.V().drop().iterate(); g2.tx().commit();", false);
+            assertFalse(graph.traversal().V().hasNext());
+        }
+    }
 }

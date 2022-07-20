@@ -79,6 +79,18 @@ import org.janusgraph.graphdb.configuration.JanusGraphConstants;
             "transaction ends (commit/rollback/close). TinkerPop, however, asserts transactionListeners are active across transactions.")
 public interface JanusGraph extends Transaction {
 
+    /**
+     * Evaluate a gremlin query in plain string format and return the result.
+     * With this API, those who use JanusGraph as an embedded library rather
+     * than JanusGraph server could execute gremlin queries in plain string
+     * format.
+     *
+     * @param gremlinScript A gremlin query in string format
+     * @param commit Whether the script shall be committed or rolled back
+     * @return Evaluation result
+     */
+    Object eval(String gremlinScript, boolean commit);
+
    /* ---------------------------------------------------------------
     * Transactions and general admin
     * ---------------------------------------------------------------

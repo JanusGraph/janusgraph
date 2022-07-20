@@ -17,6 +17,9 @@ package org.janusgraph.graphdb.configuration;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import org.apache.commons.lang3.ClassUtils;
+import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
+import org.apache.tinkerpop.gremlin.jsr223.GremlinLangScriptEngine;
+import org.apache.tinkerpop.gremlin.jsr223.GremlinScriptEngine;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
@@ -1168,6 +1171,48 @@ public class GraphDatabaseConfiguration {
             "A Graphite-specific prefix for reported metrics",
             ConfigOption.Type.MASKABLE, String.class);
 
+    // ################### SCRIPT EVALUATION #######################
+    // #############################################################
+
+    public static final ConfigNamespace SCRIPT_ENGINE_NS = new ConfigNamespace(GRAPH_NS, "script-eval",
+        "Configuration options for gremlin script engine.");
+
+    public static final ConfigOption<Boolean> SCRIPT_EVAL_ENABLED = new ConfigOption<>(SCRIPT_ENGINE_NS, "enabled",
+        "Whether to enable Gremlin script evaluation. If it is enabled, a gremlin script engine will be " +
+            "instantiated together with the JanusGraph instance, with which one can use `eval` method to evaluate a gremlin " +
+            "script in plain string format. This is usually only useful when JanusGraph is used as an embedded Java library.",
+        ConfigOption.Type.MASKABLE, false);
+
+    public static final ConfigOption<String> SCRIPT_EVAL_ENGINE = new ConfigOption<>(SCRIPT_ENGINE_NS, "engine",
+        "Full class name of script engine that implements `GremlinScriptEngine` interface. Following shorthands " +
+            "can be used: <br> " +
+            "- `GremlinLangScriptEngine` (A script engine that only accepts standard gremlin queries. Anything else " +
+            "including lambda function is not accepted. We recommend using this because it's generally safer, but it is " +
+            "not guaranteed that it has no security problem.)" +
+            "- `GremlinGroovyScriptEngine` (A script engine that accepts arbitrary groovy code. This can be dangerous " +
+            "and you should use it at your own risk. See https://tinkerpop.apache.org/docs/current/reference/#script-execution " +
+            "for potential security problems.)",
+        ConfigOption.Type.MASKABLE, "GremlinLangScriptEngine", new Predicate<String>() {
+        @Override
+        public boolean apply(@Nullable String s) {
+            if (s == null) return false;
+            if (PREREGISTERED_SCRIPT_ENGINE.containsKey(s)) return true;
+            try {
+                Class<?> clazz = ClassUtils.getClass(s);
+                return GremlinScriptEngine.class.isAssignableFrom(clazz);
+            } catch (ClassNotFoundException e) {
+                return false;
+            }
+        }
+    });
+
+    private static final Map<String, String> PREREGISTERED_SCRIPT_ENGINE = Collections.unmodifiableMap(
+        new HashMap<String, String>(2) {{
+            put("GremlinLangScriptEngine", GremlinLangScriptEngine.class.getName());
+            put("GremlinGroovyScriptEngine", GremlinGroovyScriptEngine.class.getName());
+        }}
+    );
+
     public static final ConfigNamespace GREMLIN_NS = new ConfigNamespace(ROOT_NS,"gremlin",
             "Gremlin configuration options");
 
@@ -1193,6 +1238,8 @@ public class GraphDatabaseConfiguration {
     private final ModifiableConfiguration localConfiguration;
 
     private boolean readOnly;
+    private boolean evalScript;
+    private GremlinScriptEngine scriptEngine;
     private boolean flushIDs;
     private boolean forceIndexUsage;
     private boolean batchLoading;
@@ -1232,6 +1279,14 @@ public class GraphDatabaseConfiguration {
 
     public boolean isReadOnly() {
         return readOnly;
+    }
+
+    public boolean hasScriptEval() {
+        return evalScript;
+    }
+
+    public GremlinScriptEngine getScriptEngine() {
+        return scriptEngine;
     }
 
     public boolean hasFlushIDs() {
@@ -1400,6 +1455,14 @@ public class GraphDatabaseConfiguration {
 
     private void preLoadConfiguration() {
         readOnly = configuration.get(STORAGE_READONLY);
+        evalScript = configuration.get(SCRIPT_EVAL_ENABLED);
+        if (evalScript) {
+            String scriptEngineName = configuration.get(SCRIPT_EVAL_ENGINE);
+            if (PREREGISTERED_SCRIPT_ENGINE.containsKey(scriptEngineName)) {
+                scriptEngineName = PREREGISTERED_SCRIPT_ENGINE.get(scriptEngineName);
+            }
+            scriptEngine = ConfigurationUtil.instantiate(scriptEngineName);
+        }
         flushIDs = configuration.get(IDS_FLUSH);
         forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
         batchLoading = configuration.get(STORAGE_BATCH);
