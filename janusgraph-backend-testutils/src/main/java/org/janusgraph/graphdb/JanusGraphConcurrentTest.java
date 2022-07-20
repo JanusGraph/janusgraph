@@ -33,6 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -136,9 +138,10 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
         finishSchema();
         clopen();
 
-        Thread[] threads = new Thread[numThreads];
+        ExecutorService pool = Executors.newFixedThreadPool(numThreads);
+        Future[] futures = new Future[numThreads];
         for (int t = 0; t < numThreads; t++) {
-            threads[t] = new Thread(() -> {
+            futures[t] = pool.submit(() -> {
                 JanusGraphTransaction tx = graph.newTransaction();
                 for (int i = 0; i < numTypes; i++) {
                     RelationType type = tx.getRelationType("test" + i);
@@ -147,11 +150,11 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
                 }
                 tx.commit();
             });
-            threads[t].start();
         }
         for (int t = 0; t < numThreads; t++) {
-            threads[t].join();
+            futures[t].get();
         }
+        pool.shutdown();
     }
 
 
@@ -178,6 +181,39 @@ public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
             startLatch.countDown();
         }
         stopLatch.await();
+    }
+
+    /**
+     * Different threads should not be able to read uncommitted changes made by other threads
+     * when using a script engine
+     * @throws Exception
+     */
+    @Test
+    public void concurrentReadCommittedOnlyWithScriptEngine() throws Exception {
+        clopen(option(SCRIPT_EVAL_ENABLED), true);
+        makeVertexIndexedKey("uid", Integer.class);
+        finishSchema();
+        int verticesPerThread = 10;
+        int numThreads = 100;
+
+        Future[] futures = new Future[numThreads];
+        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+        for (int t = 0; t < numThreads; t++) {
+            futures[t] = executorService.submit(() -> {
+                for (int i = 0; i < verticesPerThread; i++) {
+                    assertEquals(0L, graph.eval(String.format("g.V().has('uid', %d).count().next()", i), false));
+                    assertEquals(0L, graph.traversal().V().has("uid", i).count().next());
+                    graph.traversal().addV().property("uid", i).next();
+                    assertEquals(0L, graph.eval(String.format("g.V().has('uid', %d).count().next()", i), false));
+                    assertEquals(1L, graph.traversal().V().has("uid", i).count().next());
+                }
+                assertEquals(0L, graph.eval("g.V().count().next()", false));
+                assertEquals(10L, graph.traversal().V().count().next());
+            });
+        }
+        for (int t = 0; t < numThreads; t++) {
+            futures[t].get();
+        }
     }
 
     /**

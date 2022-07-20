@@ -24,7 +24,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.tinkerpop.gremlin.jsr223.GremlinScriptEngine;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.Cardinality;
@@ -85,11 +88,11 @@ import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.AdjacentVertexFilterOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.AdjacentVertexHasIdOptimizerStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.AdjacentVertexHasUniquePropertyOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.AdjacentVertexIsOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphIoRegistrationStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMultiQueryStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphStepStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -114,14 +117,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.script.Bindings;
+import javax.script.ScriptException;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
 
 public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
@@ -173,6 +180,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     //Index selection
     private final IndexSelectionStrategy indexSelector;
 
+    //Gremlin Script Engine
+    private final GremlinScriptEngine scriptEngine;
+
     private volatile boolean isOpen;
     private final AtomicLong txCounter;
 
@@ -201,6 +211,14 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         this.times = configuration.getTimestampProvider();
         this.indexSelector = getConfiguration().getIndexSelectionStrategy();
 
+        if (configuration.hasScriptEval()) {
+            log.info("Gremlin script evaluation is enabled");
+            this.scriptEngine = config.getScriptEngine();
+        } else {
+            log.info("Gremlin script evaluation is disabled");
+            this.scriptEngine = null;
+        }
+
         isOpen = true;
         txCounter = new AtomicLong(0);
         openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<>(100, 0.75f, 1));
@@ -228,6 +246,37 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     public String getGraphName() {
         return this.name;
+    }
+
+    @Override
+    public Object eval(String gremlinScript, boolean commit) {
+        Objects.requireNonNull(scriptEngine, String.format("%s is not enabled", SCRIPT_EVAL_ENABLED.toStringWithoutRoot()));
+        JanusGraphTransaction tx = newTransaction();
+        try {
+            Bindings bindings = scriptEngine.createBindings();
+            GraphTraversalSource traversalSource = tx.traversal();
+            if (!commit) {
+                // this is usually not necessary as we will rollback at the end anyway, but when
+                // batch-loading is true, writes might be persisted even before rollback happens,
+                // so we should always use ReadOnlyStrategy as a safe guard
+                traversalSource = traversalSource.withStrategies(ReadOnlyStrategy.instance());
+            }
+            bindings.put("g", traversalSource);
+            return scriptEngine.eval(gremlinScript, bindings);
+        } catch (ScriptException e) {
+            throw new JanusGraphException("Could not evaluate given gremlin script: " + gremlinScript, e);
+        } finally {
+            if (tx.isOpen()) {
+                if (commit) {
+                    tx.commit();
+                } else {
+                    tx.rollback();
+                }
+            } else {
+                log.error("Transaction associated with script engine is wrongly closed. This might indicate the script " +
+                    "is malicious: {}", gremlinScript);
+            }
+        }
     }
 
     @Override
