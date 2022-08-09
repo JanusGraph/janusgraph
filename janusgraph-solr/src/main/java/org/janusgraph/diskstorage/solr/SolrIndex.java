@@ -764,7 +764,7 @@ public class SolrIndex implements IndexProvider {
                     case EQUAL:
                         return (key + ":" + queryValue);
                     case NOT_EQUAL:
-                        return ("-" + key + ":" + queryValue);
+                        return (key + ":* -" + key + ":" + queryValue);
                     case LESS_THAN:
                         //use right curly to mean up to but not including value
                         return (key + ":[* TO " + queryValue + "}");
@@ -802,7 +802,7 @@ public class SolrIndex implements IndexProvider {
                     } else if (predicate == Cmp.EQUAL) {
                         return (key + ":\"" + escapeValue(value) + "\"");
                     } else { // Cmp.NOT_EQUAL case
-                        return ("-" + key + ":\"" + escapeValue(value) + "\"");
+                        return (key + ":* -" + key + ":\"" + escapeValue(value) + "\"");
                     }
                 } else if (predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
                     return (key + ":"+escapeValue(value)+"~"+Text.getMaxEditDistance(value.toString()));
@@ -849,7 +849,7 @@ public class SolrIndex implements IndexProvider {
                     case EQUAL:
                         return (key + ":" + queryValue);
                     case NOT_EQUAL:
-                        return ("-" + key + ":" + queryValue);
+                        return (key + ":* -" + key + ":" + queryValue);
                     case LESS_THAN:
                         //use right curly to mean up to but not including value
                         return (key + ":[* TO " + queryValue + "}");
@@ -869,7 +869,7 @@ public class SolrIndex implements IndexProvider {
                     case EQUAL:
                         return (key + ":" + queryValue);
                     case NOT_EQUAL:
-                        return ("-" + key + ":" + queryValue);
+                        return (key + ":* -" + key + ":" + queryValue);
                     default:
                         throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
                 }
@@ -877,7 +877,7 @@ public class SolrIndex implements IndexProvider {
                 if (predicate == Cmp.EQUAL) {
                     return (key + ":\"" + escapeValue(value) + "\"");
                 } else if (predicate == Cmp.NOT_EQUAL) {
-                    return ("-" + key + ":\"" + escapeValue(value) + "\"");
+                    return (key + ":* -" + key + ":\"" + escapeValue(value) + "\"");
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for uuid value: " + predicate);
                 }
@@ -934,7 +934,7 @@ public class SolrIndex implements IndexProvider {
             return "";
         } else if (terms.size() == 1) {
             if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                return ("-" + key + ":(" + escapeValue(terms.get(0)) + ")");
+                return (key + ":* -" + key + ":(" + escapeValue(terms.get(0)) + ")");
             } else {
                 return (key + ":(" + escapeValue(terms.get(0)) + ")");
             }

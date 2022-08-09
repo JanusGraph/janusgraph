@@ -941,7 +941,7 @@ public class ElasticSearchIndex implements IndexProvider {
             case EQUAL:
                 return compat.term(key, value);
             case NOT_EQUAL:
-                return compat.boolMustNot(compat.term(key, value));
+                return compat.boolMust(ImmutableList.of(compat.exists(key), compat.boolMustNot(compat.term(key, value))));
             case LESS_THAN:
                 return compat.lt(key, value);
             case LESS_THAN_EQUAL:
@@ -1020,7 +1020,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
                         compat.boolMustNot(compat.regexp(fieldName, value))));
                 } else if (predicate == Cmp.NOT_EQUAL) {
-                    return compat.boolMustNot(compat.match(fieldName, value));
+                    return compat.boolMust(ImmutableList.of(compat.exists(fieldName), compat.boolMustNot(compat.match(fieldName, value))));
                 } else if (predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
                     return compat.fuzzyMatch(fieldName, value);
                 } else if (predicate == Text.NOT_FUZZY || predicate == Text.NOT_CONTAINS_FUZZY) {
@@ -1128,7 +1128,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     case EQUAL:
                         return compat.term(key, value);
                     case NOT_EQUAL:
-                        return compat.boolMustNot(compat.term(key, value));
+                        return compat.boolMust(ImmutableList.of(compat.exists(key), compat.boolMustNot(compat.term(key, value))));
                     default:
                         throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
                 }
@@ -1136,7 +1136,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 if (predicate == Cmp.EQUAL) {
                     return compat.term(key, value);
                 } else if (predicate == Cmp.NOT_EQUAL) {
-                    return compat.boolMustNot(compat.term(key, value));
+                    return compat.boolMust(ImmutableList.of(compat.exists(key), compat.boolMustNot(compat.term(key, value))));
                 } else {
                     throw new IllegalArgumentException("Only equal or not equal is supported for UUIDs: "
                             + predicate);
