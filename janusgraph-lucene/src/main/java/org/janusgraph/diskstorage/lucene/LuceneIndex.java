@@ -703,6 +703,9 @@ public class LuceneIndex implements IndexProvider {
                 q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
                 q.add(combineTerms(key, terms.get(0), TermQuery::new), BooleanClause.Occur.MUST_NOT);
                 params.addQuery(q.build(), BooleanClause.Occur.MUST);
+                final SearchParams existParams = new SearchParams();
+                addExistsQuery(existParams, key);
+                params.addParams(existParams, BooleanClause.Occur.MUST);
             } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
                 List<String> preparedTerms = new ArrayList<>(terms.get(0));
                 if (mapping != Mapping.STRING) {
@@ -725,6 +728,13 @@ public class LuceneIndex implements IndexProvider {
             }
             params.addQuery(q.build());
         }
+    }
+
+    private void addExistsQuery(final SearchParams params, final String key) {
+        // some fields like Integer omit norms but have docValues
+        params.addQuery(new DocValuesFieldExistsQuery(key), BooleanClause.Occur.SHOULD);
+        // some fields like Text have no docValue but have norms
+        params.addQuery(new NormsFieldExistsQuery(key), BooleanClause.Occur.SHOULD);
     }
 
     private Query combineTerms(String key, List<String> terms, Function<Term, Query> queryCreator) {
@@ -757,10 +767,7 @@ public class LuceneIndex implements IndexProvider {
             KeyInformation ki = information.get(key);
             final JanusGraphPredicate janusgraphPredicate = atom.getPredicate();
             if (value == null && janusgraphPredicate == Cmp.NOT_EQUAL) {
-                // some fields like Integer omit norms but have docValues
-                params.addQuery(new DocValuesFieldExistsQuery(key), BooleanClause.Occur.SHOULD);
-                // some fields like Text have no docValue but have norms
-                params.addQuery(new NormsFieldExistsQuery(key), BooleanClause.Occur.SHOULD);
+                addExistsQuery(params, key);
             } else if (value instanceof Number) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: %s", janusgraphPredicate);
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, (Number) value));
@@ -845,6 +852,9 @@ public class LuceneIndex implements IndexProvider {
                 if (janusgraphPredicate == Cmp.EQUAL) {
                     params.addQuery(new TermQuery(new Term(key, value.toString())));
                 } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
+                    final SearchParams existParams = new SearchParams();
+                    addExistsQuery(existParams, key);
+                    params.addParams(existParams, BooleanClause.Occur.MUST);
                     final BooleanQuery.Builder q = new BooleanQuery.Builder();
                     q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
                     q.add(new TermQuery(new Term(key, value.toString())), BooleanClause.Occur.MUST_NOT);
