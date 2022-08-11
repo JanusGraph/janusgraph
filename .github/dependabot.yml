@@ -2,6 +2,7 @@ version: 2
 updates:
 - package-ecosystem: maven
   directory: "/"
+  target-branch: "v0.6"
   schedule:
     interval: daily
     time: "11:00"
