@@ -34,7 +34,6 @@ import org.janusgraph.diskstorage.StoreMetaData.Container;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.cql.builder.CQLMutateManyFunctionBuilder;
-import org.janusgraph.diskstorage.cql.builder.CQLMutateManyFunctionWrapper;
 import org.janusgraph.diskstorage.cql.builder.CQLProgrammaticConfigurationLoaderBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLSessionBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLStoreFeaturesBuilder;
@@ -54,9 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.truncate;
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createKeyspace;
@@ -64,7 +61,6 @@ import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.dropKeyspac
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
@@ -74,7 +70,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_JMX_ENABLED;
 import static org.janusgraph.util.system.ExecuteUtil.executeWithCatching;
-import static org.janusgraph.util.system.ExecuteUtil.gracefulExecutorServiceShutdown;
 import static org.janusgraph.util.system.ExecuteUtil.throwIfException;
 
 /**
@@ -96,9 +91,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     protected static final CQLStoreFeaturesBuilder DEFAULT_STORE_FEATURES_BUILDER = new CQLStoreFeaturesBuilder();
 
     private final String keyspace;
-
-    final ExecutorService executorService;
-    private final long threadPoolShutdownMaxWaitTime;
     private final CQLMutateManyFunction executeManyFunction;
 
     private CqlSession session;
@@ -136,15 +128,11 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
         try{
 
-            this.threadPoolShutdownMaxWaitTime = configuration.get(EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME);
-
             initializeJmxMetrics();
             initializeKeyspace();
 
-            CQLMutateManyFunctionWrapper mutateManyFunctionWrapper = mutateManyFunctionBuilder
+            this.executeManyFunction = mutateManyFunctionBuilder
                 .build(session, configuration, times, assignTimestamp, openStores, this::sleepAfterWrite);
-            this.executorService = mutateManyFunctionWrapper.getExecutorService();
-            this.executeManyFunction = mutateManyFunctionWrapper.getMutateManyFunction();
 
             CQLStoreFeaturesWrapper storeFeaturesWrapper = storeFeaturesBuilder.build(session, configuration, hostnames);
             deployment = storeFeaturesWrapper.getDeployment();
@@ -194,10 +182,6 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             .build());
     }
 
-    Optional<ExecutorService> getExecutorService() {
-        return Optional.ofNullable(executorService);
-    }
-
     CqlSession getSession() {
         return this.session;
     }
@@ -237,14 +221,10 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public void close() throws BackendException {
-        try {
-            ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
-            executeWithCatching(this::clearJmxMetrics, exceptionWrapper);
-            executeWithCatching(session::close, exceptionWrapper);
-            throwIfException(exceptionWrapper);
-        } finally {
-            gracefulExecutorServiceShutdown(executorService, threadPoolShutdownMaxWaitTime);
-        }
+        ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
+        executeWithCatching(this::clearJmxMetrics, exceptionWrapper);
+        executeWithCatching(session::close, exceptionWrapper);
+        throwIfException(exceptionWrapper);
     }
 
     @Override

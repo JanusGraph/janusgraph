@@ -45,7 +45,6 @@ import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.cql.function.slice.CQLExecutorServiceSliceFunction;
 import org.janusgraph.diskstorage.cql.function.slice.CQLSimpleSliceFunction;
 import org.janusgraph.diskstorage.cql.function.slice.CQLSliceFunction;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
@@ -64,8 +63,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
@@ -215,13 +212,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             this.insertColumnWithTTL = null;
         }
 
-        Optional<ExecutorService> executorService = this.storeManager.getExecutorService();
-
-        if(executorService.isPresent()){
-            cqlSliceFunction = new CQLExecutorServiceSliceFunction(session, getSlice, getter, executorService.get());
-        } else {
-            cqlSliceFunction = new CQLSimpleSliceFunction(session, getSlice, getter);
-        }
+        cqlSliceFunction = new CQLSimpleSliceFunction(session, getSlice, getter);
 
         // @formatter:on
     }

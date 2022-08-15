@@ -582,63 +582,6 @@ public interface CQLConfigOptions {
         ConfigOption.Type.LOCAL,
         Boolean.class);
 
-    ConfigNamespace EXECUTOR_SERVICE = new ConfigNamespace(
-        CQL_NS,
-        "executor-service",
-        "Configuration options for CQL executor service which is used to process CQL queries.");
-
-    ConfigOption<Boolean> EXECUTOR_SERVICE_ENABLED = new ConfigOption<>(
-        EXECUTOR_SERVICE,
-        "enabled",
-        "Whether to use CQL executor service to process queries or not. If not used, the parallelism will be " +
-            "controlled internally by the CQL driver via `"+MAX_REQUESTS_PER_CONNECTION.toStringWithoutRoot()+"` parameter " +
-            "which may be preferable in production environments. " +
-            "Disabling executor service reduces overhead of thread pool but might be more difficult to tune.",
-        ConfigOption.Type.LOCAL,
-        Boolean.class,
-        true);
-
-    ConfigOption<Integer> EXECUTOR_SERVICE_CORE_POOL_SIZE = new ConfigOption<>(
-        EXECUTOR_SERVICE,
-        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE.getName(),
-        "Core pool size for executor service. May be ignored if custom executor service is used " +
-            "(depending on the implementation of the executor service).",
-        ConfigOption.Type.LOCAL,
-        Integer.class,
-        10);
-
-    ConfigOption<Integer> EXECUTOR_SERVICE_MAX_POOL_SIZE = new ConfigOption<>(
-        EXECUTOR_SERVICE,
-        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_POOL_SIZE.getName(),
-        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_POOL_SIZE.getDescription(),
-        ConfigOption.Type.LOCAL,
-        Integer.class,
-        Integer.MAX_VALUE);
-
-    ConfigOption<Long> EXECUTOR_SERVICE_KEEP_ALIVE_TIME = new ConfigOption<>(
-        EXECUTOR_SERVICE,
-        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_KEEP_ALIVE_TIME.getName(),
-        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_KEEP_ALIVE_TIME.getDescription(),
-        ConfigOption.Type.LOCAL,
-        Long.class,
-        60000L);
-
-    ConfigOption<String> EXECUTOR_SERVICE_CLASS = new ConfigOption<>(
-        EXECUTOR_SERVICE,
-        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CLASS.getName(),
-        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CLASS.getDescription(),
-        ConfigOption.Type.LOCAL,
-        String.class,
-        "fixed");
-
-    ConfigOption<Long> EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME = new ConfigOption<>(
-        EXECUTOR_SERVICE,
-        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME.getName(),
-        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME.getDescription(),
-        ConfigOption.Type.LOCAL,
-        Long.class,
-        60000L);
-
     ConfigOption<Integer> SESSION_LEAK_THRESHOLD = new ConfigOption<>(
         CQL_NS,
         "session-leak-threshold",

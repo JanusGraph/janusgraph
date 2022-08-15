@@ -156,6 +156,17 @@ JanusGraph now officially supports Java 11 in addition to Java 8. We encourage e
 !!! note
     The distribution zip archives are however still built with Java 8 since the full distribution includes Cassandra which will only support Java 11 in version 4.
 
+##### Breaking change for CQL ExecutorService
+
+CQL storage backend won't use any ExecutorService to process queries in parallel by default. 
+Instead of that CQL is now relaying on DataStax Java Driver's internal thread pool.
+All configuration options under `storage.cql.executor-service` were now removed.  
+The parallelism will be controlled internally by the CQL driver via the next properties:
+`storage.cql.max-requests-per-connection`, `storage.cql.local-max-connections-per-host`, `storage.cql.remote-max-connections-per-host`.  
+
+!!! warning
+    Improper tuning of maximum throughput might result in failures under heavy workloads.
+
 ### Version 0.6.2 (Release Date: May 31, 2022)
 
 ```xml tab='Maven'

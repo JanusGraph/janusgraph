@@ -29,7 +29,6 @@ import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.ExecutorServiceBuilder;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.cql.builder.CQLProgrammaticConfigurationLoaderBuilder;
@@ -61,8 +60,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BASE_PROGRAMMATIC_CONFIGURATION_ENABLED;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CLASS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.FILE_CONFIGURATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_TIMEOUT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
@@ -323,20 +320,8 @@ public class CQLConfigTest {
     }
 
     @Test
-    public void shouldCreateCachedThreadPool() {
-        WriteConfiguration wc = getConfiguration();
-        wc.set(ConfigElement.getPath(EXECUTOR_SERVICE_CLASS), ExecutorServiceBuilder.CACHED_THREAD_POOL_CLASS);
-        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
-        assertDoesNotThrow(() -> {
-            graph.traversal().V().hasNext();
-            graph.tx().rollback();
-        });
-    }
-
-    @Test
     public void shouldGracefullyCloseGraphWhichLostAConnection(){
         WriteConfiguration wc = getConfiguration();
-        wc.set(ConfigElement.getPath(EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME), 60000);
         wc.set(ConfigElement.getPath(PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME), 60000);
         wc.set(ConfigElement.getPath(IDS_RENEW_TIMEOUT), 10000);
         wc.set(ConfigElement.getPath(CONNECTION_TIMEOUT), 10000);
