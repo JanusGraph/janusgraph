@@ -31,7 +31,7 @@ from gremlin_python.driver.driver_remote_connection import DriverRemoteConnectio
 2.  Create a `GraphTraversalSource` which is the basis for all Gremlin
     traversals:
 ```python
-from gremlin_python.process.anonymous_traversal_source import traversal
+from gremlin_python.process.anonymous_traversal import traversal
 
 connection = DriverRemoteConnection('ws://localhost:8182/gremlin', 'g')
 # The connection should be closed on shut down to close open connections with connection.close()
@@ -41,8 +41,8 @@ g = traversal().withRemote(connection)
 
 3.  Execute a simple traversal:
 ```python
-herculesAge = g.V().has('name', 'hercules').values('age').next()
-print('Hercules is {} years old.'.format(herculesAge))
+hercules_age = g.V().has('name', 'hercules').values('age').next()
+print(f'Hercules is {hercules_age} years old.')
 ```
     `next()` is a terminal step that submits the traversal to the
     Gremlin Server and returns a single result.
