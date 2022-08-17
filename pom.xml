@@ -68,7 +68,7 @@
         <hadoop2.version>2.8.5</hadoop2.version>
         <hbase2.version>2.2.7</hbase2.version>
         <htrace.version>4.2.0-incubating</htrace.version>
-        <bigtable.version>1.24.0</bigtable.version>
+        <bigtable.version>2.6.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.hbase:hbase -->
         <jackson1.version>1.9.13</jackson1.version>
