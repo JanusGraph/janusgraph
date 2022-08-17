@@ -41,8 +41,8 @@ To get started with JanusGraph in Java:
 
     === "Gradle"
         ```groovy
-        compile "org.janusgraph:janusgraph-driver:{{ latest_version }}"
-        compile "org.apache.tinkerpop:gremlin-driver:{{ tinkerpop_version }}"
+        implementation "org.janusgraph:janusgraph-driver:{{ latest_version }}"
+        implementation "org.apache.tinkerpop:gremlin-driver:{{ tinkerpop_version }}"
         ```
 
 3.  Add two configuration files, `conf/remote-graph.properties` and
@@ -60,7 +60,7 @@ To get started with JanusGraph in Java:
         hosts: [localhost]
         port: 8182
         serializer: { 
-            className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0,
+            className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1,
             config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
         ```
 
