@@ -14,8 +14,11 @@
 
 package org.janusgraph.diskstorage.solr;
 
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
@@ -27,8 +30,11 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -57,12 +63,12 @@ public abstract class SolrIndexTest extends IndexProviderTest {
 
     @Override
     public String getEnglishAnalyzerName() {
-        return WhitespaceTokenizer.class.getName();
+        return EnglishAnalyzer.class.getName();
     }
 
     @Override
     public String getKeywordAnalyzerName() {
-        return KeywordTokenizer.class.getName();
+        return KeywordAnalyzer.class.getName();
     }
 
     protected abstract Configuration getSolrTestConfig();
@@ -72,7 +78,7 @@ public abstract class SolrIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE)));
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXT))));
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.STRING))));
-        assertFalse(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXTSTRING))));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXTSTRING))));
 
         assertTrue(index.supports(of(Double.class, Cardinality.SINGLE)));
         assertFalse(index.supports(of(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXT))));
@@ -90,7 +96,7 @@ public abstract class SolrIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.DEFAULT)), Text.CONTAINS_PREFIX));
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_REGEX));
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_FUZZY));
-        assertFalse(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXTSTRING)), Text.REGEX));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXTSTRING)), Text.REGEX));
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXT)), Text.CONTAINS));
         assertFalse(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.DEFAULT)), Text.PREFIX));
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.STRING)), Text.PREFIX));
@@ -98,7 +104,7 @@ public abstract class SolrIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.STRING)), Text.FUZZY));
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.STRING)), Cmp.EQUAL));
         assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
-        assertFalse(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXTSTRING)), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXTSTRING)), Cmp.NOT_EQUAL));
 
         assertTrue(index.supports(of(Double.class, Cardinality.SINGLE), Cmp.EQUAL));
         assertTrue(index.supports(of(Double.class, Cardinality.SINGLE), Cmp.GREATER_THAN_EQUAL));
@@ -155,5 +161,51 @@ public abstract class SolrIndexTest extends IndexProviderTest {
     public void testMapKey2Field_MappingSpaces() {
         KeyInformation keyInfo = new StandardKeyInformation(Boolean.class, Cardinality.SINGLE);
         assertEquals("field•name•with•spaces_b", index.mapKey2Field("field name with spaces", keyInfo));
+    }
+
+    @Test
+    public void testTextStringMapping() throws Exception {
+        initialize("vertex");
+
+        Multimap<String, Object> firstDoc = HashMultimap.create();
+        firstDoc.put(TEXT_STRING, "John Doe");
+
+        Multimap<String, Object> secondDoc = HashMultimap.create();
+        secondDoc.put(TEXT_STRING, "John");
+
+        add("vertex", "test1", firstDoc, true);
+        add("vertex", "test2", secondDoc, true);
+
+        clopen();
+
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John"))).count());
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Cmp.EQUAL, "John Doe"))).count());
+        assertEquals(2, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "John"))).count());
+    }
+
+    @Test
+    public void testTextStringSort() throws Exception {
+        initialize("vertex");
+
+        Multimap<String, Object> firstDoc = HashMultimap.create();
+        firstDoc.put(TEXT_STRING, "John Doe");
+
+        Multimap<String, Object> secondDoc = HashMultimap.create();
+        secondDoc.put(TEXT_STRING, "Jane Doe");
+
+        add("vertex", "test1", firstDoc, true);
+        add("vertex", "test2", secondDoc, true);
+
+        clopen();
+
+        Object[] result = tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "Doe"),
+            ImmutableList.of(new IndexQuery.OrderEntry(TEXT_STRING, Order.ASC, String.class)))).toArray();
+        assertEquals("test2", result[0]);
+        assertEquals("test1", result[1]);
+
+        result = tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TEXT_STRING, Text.CONTAINS, "Doe"),
+            ImmutableList.of(new IndexQuery.OrderEntry(TEXT_STRING, Order.DESC, String.class)))).toArray();
+        assertEquals("test1", result[0]);
+        assertEquals("test2", result[1]);
     }
 }

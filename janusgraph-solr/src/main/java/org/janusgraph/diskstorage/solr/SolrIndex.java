@@ -16,7 +16,6 @@ package org.janusgraph.diskstorage.solr;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -24,8 +23,10 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.client.HttpClient;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.auth.KerberosScheme;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -92,7 +93,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.text.DateFormat;
@@ -132,6 +132,10 @@ public class SolrIndex implements IndexProvider {
 
 
     private static final String DEFAULT_ID_FIELD = "id";
+    private static final String TEXT_SUFFIX = "_t";
+    private static final String TEXT_SUFFIX_MULTI = "_txt";
+    private static final String STRING_SUFFIX = "_s";
+    private static final String STRING_SUFFIX_MULTI = "_ss";
 
     private enum Mode {
         HTTP, CLOUD;
@@ -227,7 +231,7 @@ public class SolrIndex implements IndexProvider {
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder()
         .supportsDocumentTTL()
         .setDefaultStringMapping(Mapping.TEXT)
-        .supportedStringMappings(Mapping.TEXT, Mapping.STRING)
+        .supportedStringMappings(Mapping.TEXT, Mapping.STRING, Mapping.TEXTSTRING)
         .supportsCardinality(Cardinality.SINGLE)
         .supportsCardinality(Cardinality.LIST)
         .supportsCardinality(Cardinality.SET)
@@ -456,12 +460,12 @@ public class SolrIndex implements IndexProvider {
                                 information);
                         // If cardinality is not single then we should use the "add" operation to update
                         // the index so we don't overwrite existing values.
-                        adds.keySet().forEach(v-> {
-                            final KeyInformation keyInformation = information.get(collectionName, v);
+                        adds.forEach((k, v) -> {
+                            final KeyInformation keyInformation = information.get(collectionName, k);
                             final String solrOp = keyInformation.getCardinality() == Cardinality.SINGLE ? "set" : "add";
-                            doc.setField(v, isNewDoc ? adds.get(v) :
-                                new HashMap<String, Object>(1) {{put(solrOp, adds.get(v));}}
-                            );
+                            doc.setField(k, isNewDoc ? v : Collections.singletonMap(solrOp, v));
+                            getDualFieldName(k, keyInformation)
+                                .ifPresent(dk -> doc.setField(dk, isNewDoc ? v : Collections.singletonMap(solrOp, v)));
                         });
                         if (ttl>0) {
                             Preconditions.checkArgument(isNewDoc,
@@ -483,27 +487,26 @@ public class SolrIndex implements IndexProvider {
     }
 
     private void handleRemovalsFromIndex(String collectionName, String keyIdField, String docId,
-                                         List<IndexEntry> fieldDeletions, KeyInformation.IndexRetriever information)
-                                             throws SolrServerException, IOException, BackendException {
-        final Map<String, String> fieldDeletes = new HashMap<>(1);
-        fieldDeletes.put("set", null);
+                                         List<IndexEntry> fieldDeletions,
+                                         KeyInformation.IndexRetriever information) throws SolrServerException, IOException, BackendException {
         final SolrInputDocument doc = new SolrInputDocument();
         doc.addField(keyIdField, docId);
-        for(final IndexEntry v: fieldDeletions) {
-            final KeyInformation keyInformation = information.get(collectionName, v.field);
+        for (final IndexEntry indexEntry : fieldDeletions) {
+            final KeyInformation keyInformation = information.get(collectionName, indexEntry.field);
             // If the cardinality is a Set or List, we just need to remove the individual value
             // received in the mutation and not set the field to null, but we still consolidate the values
             // in the event of multiple removals in one mutation.
             final Map<String, Object> deletes = collectFieldValues(fieldDeletions, collectionName, information);
-            deletes.keySet().forEach(vertex -> {
-                final Map<String, Object> remove;
+            deletes.forEach((k, v) -> {
                 if (keyInformation.getCardinality() == Cardinality.SINGLE) {
-                    remove = (Map) fieldDeletes;
+                    doc.setField(k, Collections.singletonMap("set", null));
+                    getDualFieldName(k, keyInformation)
+                        .ifPresent(dk -> doc.setField(dk, Collections.singletonMap("set", null)));
                 } else {
-                    remove = new HashMap<>(1);
-                    remove.put("remove", deletes.get(vertex));
+                    doc.setField(k, Collections.singletonMap("remove", v));
+                    getDualFieldName(k, keyInformation)
+                        .ifPresent(dk -> doc.setField(dk, Collections.singletonMap("remove", v)));
                 }
-                doc.setField(vertex, remove);
             });
         }
 
@@ -553,7 +556,11 @@ public class SolrIndex implements IndexProvider {
                     final SolrInputDocument doc = new SolrInputDocument();
                     doc.setField(getKeyFieldId(collectionName), docID);
                     final Map<String, Object> adds = collectFieldValues(content, collectionName, information);
-                    adds.forEach(doc::setField);
+                    adds.forEach((k, v) -> {
+                        doc.setField(k, v);
+                        getDualFieldName(k, information.get(collectionName, k))
+                            .ifPresent(dk -> doc.setField(dk, v));
+                    });
                     newDocuments.add(doc);
                 }
                 commitDeletes(collectionName, deleteIds);
@@ -627,7 +634,7 @@ public class SolrIndex implements IndexProvider {
         final String queryFilter = buildQueryFilter(query.getCondition(), information.get(collection));
         solrQuery.addFilterQuery(queryFilter);
         if (!query.getOrder().isEmpty()) {
-            addOrderToQuery(solrQuery, query.getOrder());
+            addOrderToQuery(solrQuery, query.getOrder(), information.get(collection));
         }
         solrQuery.setStart(0);
         if (query.hasLimit()) {
@@ -639,9 +646,13 @@ public class SolrIndex implements IndexProvider {
             doc -> doc.getFieldValue(keyIdField).toString());
     }
 
-    private void addOrderToQuery(SolrQuery solrQuery, List<IndexQuery.OrderEntry> orders) {
+    private void addOrderToQuery(SolrQuery solrQuery, List<IndexQuery.OrderEntry> orders, KeyInformation.StoreRetriever information) {
         for (final IndexQuery.OrderEntry order1 : orders) {
-            final String item = order1.getKey();
+            String item = order1.getKey();
+            final KeyInformation ki = information.get(item);
+            if (Mapping.getMapping(ki) == Mapping.TEXTSTRING) {
+                item = getDualFieldName(item, ki).orElse(item);
+            }
             final SolrQuery.ORDER order = order1.getOrder() == Order.ASC ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc;
             solrQuery.addSort(new SolrQuery.SortClause(item, order));
         }
@@ -676,7 +687,7 @@ public class SolrIndex implements IndexProvider {
             solrQuery.setRows(batchSize);
         }
         if (!query.getOrders().isEmpty()) {
-            addOrderToQuery(solrQuery, query.getOrders());
+            addOrderToQuery(solrQuery, query.getOrders(), information.get(collection));
         }
 
         for(final Parameter parameter: query.getParameters()) {
@@ -778,42 +789,26 @@ public class SolrIndex implements IndexProvider {
                     default: throw new IllegalArgumentException("Unexpected relation: " + numRel);
                 }
             } else if (value instanceof String) {
-                final Mapping map = getStringMapping(information.get(key));
-                assert map==Mapping.TEXT || map==Mapping.STRING;
+                KeyInformation keyInformation = information.get(key);
+                final Mapping map = getStringMapping(keyInformation);
+                assert map==Mapping.TEXT || map==Mapping.STRING || map == Mapping.TEXTSTRING;
 
                 if (map==Mapping.TEXT && !(Text.HAS_CONTAINS.contains(predicate) || predicate instanceof Cmp))
                     throw new IllegalArgumentException("Text mapped string values only support CONTAINS and Compare queries and not: " + predicate);
                 if (map==Mapping.STRING && Text.HAS_CONTAINS.contains(predicate))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + predicate);
-
                 //Special case
                 if (predicate == Text.CONTAINS) {
-                    return tokenize(information, value, key, predicate,
-                            ParameterType.TEXT_ANALYZER.findParameter(information.get(key).getParameters(), null));
-                } else if (predicate == Text.PREFIX || predicate == Text.CONTAINS_PREFIX) {
-                    return (key + ":" + escapeValue(value) + "*");
-                } else if (predicate == Text.REGEX || predicate == Text.CONTAINS_REGEX) {
-                    return (key + ":/" + value + "/");
+                    return tokenize(ParameterType.TEXT_ANALYZER, information, value, key, predicate);
+                } else if (predicate == Text.PREFIX || predicate == Text.CONTAINS_PREFIX
+                           || predicate == Text.REGEX || predicate == Text.CONTAINS_REGEX
+                           || predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
+                    return buildQueryFilterStringValue(key, (String) value, predicate, information);
+                } else if (predicate == Cmp.LESS_THAN || predicate == Cmp.LESS_THAN_EQUAL
+                           || predicate == Cmp.GREATER_THAN || predicate == Cmp.GREATER_THAN_EQUAL) {
+                    return buildQueryFilterStringValue(key, (String) value, predicate, information);
                 } else if (predicate == Cmp.EQUAL || predicate == Cmp.NOT_EQUAL) {
-                    final String tokenizer =
-                            ParameterType.STRING_ANALYZER.findParameter(information.get(key).getParameters(), null);
-                    if (tokenizer != null) {
-                        return tokenize(information, value, key, predicate, tokenizer);
-                    } else if (predicate == Cmp.EQUAL) {
-                        return (key + ":\"" + escapeValue(value) + "\"");
-                    } else { // Cmp.NOT_EQUAL case
-                        return (key + ":* -" + key + ":\"" + escapeValue(value) + "\"");
-                    }
-                } else if (predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
-                    return (key + ":"+escapeValue(value)+"~"+Text.getMaxEditDistance(value.toString()));
-                } else if (predicate == Cmp.LESS_THAN) {
-                    return (key + ":[* TO \"" + escapeValue(value) + "\"}");
-                } else if (predicate == Cmp.LESS_THAN_EQUAL) {
-                     return (key + ":[* TO \"" + escapeValue(value) + "\"]");
-                } else if (predicate == Cmp.GREATER_THAN) {
-                    return (key + ":{\"" + escapeValue(value) + "\" TO *]");
-                } else if (predicate == Cmp.GREATER_THAN_EQUAL) {
-                     return (key + ":[\"" + escapeValue(value) + "\" TO *]");
+                    return tokenize(ParameterType.STRING_ANALYZER, information, value, key, predicate);
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for string value: " + predicate);
                 }
@@ -840,7 +835,6 @@ public class SolrIndex implements IndexProvider {
                     throw new IllegalArgumentException("Unsupported or invalid search shape type: " + geo.getType());
                 }
             } else if (value instanceof Date || value instanceof Instant) {
-                final String s = value.toString();
                 final String queryValue = escapeValue(value instanceof Date ? toIsoDate((Date) value) : value.toString());
                 Preconditions.checkArgument(predicate instanceof Cmp, "Relation not supported on date types: %s", predicate);
                 final Cmp numRel = (Cmp) predicate;
@@ -922,22 +916,65 @@ public class SolrIndex implements IndexProvider {
         }
     }
 
-    private String tokenize(KeyInformation.StoreRetriever information, Object value, String key,
-            JanusGraphPredicate janusgraphPredicate, String tokenizer) {
-        List<String> terms;
-        if(tokenizer != null){
-            terms = customTokenize(tokenizer, (String) value);
+    public String buildQueryFilterStringValue(String key, String value, JanusGraphPredicate predicate, KeyInformation.StoreRetriever information) {
+        KeyInformation keyInformation = information.get(key);
+        final Mapping map = getStringMapping(keyInformation);
+        final String stringKey;
+        if (map == Mapping.TEXTSTRING && !Text.HAS_CONTAINS.contains(predicate)) {
+            stringKey = getDualFieldName(key, keyInformation).orElse(key);
         } else {
+            stringKey = key;
+        }
+        if (predicate == Text.CONTAINS) {
+            return (key + ":(" + escapeValue(value) + ")");
+        } else if (predicate == Text.PREFIX) {
+            return (stringKey + ":" + escapeValue(value) + "*");
+        } else if (predicate == Text.CONTAINS_PREFIX) {
+            return (key + ":" + escapeValue(value) + "*");
+        } else if (predicate == Text.REGEX) {
+            return (stringKey + ":/" + value + "/");
+        } else if (predicate == Text.CONTAINS_REGEX) {
+            return (key + ":/" + value + "/");
+        } else if (predicate == Cmp.EQUAL) {
+            return (stringKey + ":\"" + escapeValue(value) + "\"");
+        } else if (predicate == Cmp.NOT_EQUAL) {
+            return (key + ":* -" + key + ":\"" + escapeValue(value) + "\"");
+        } else if (predicate == Text.FUZZY) {
+            return (stringKey + ":" + escapeValue(value) + "~" + Text.getMaxEditDistance(value.toString()));
+        } else if (predicate == Text.CONTAINS_FUZZY) {
+            return (key + ":" + escapeValue(value) + "~" + Text.getMaxEditDistance(value.toString()));
+        } else if (predicate == Cmp.LESS_THAN) {
+            return (stringKey + ":[* TO \"" + escapeValue(value) + "\"}");
+        } else if (predicate == Cmp.LESS_THAN_EQUAL) {
+            return (stringKey + ":[* TO \"" + escapeValue(value) + "\"]");
+        } else if (predicate == Cmp.GREATER_THAN) {
+            return (stringKey + ":{\"" + escapeValue(value) + "\" TO *}");
+        } else if (predicate == Cmp.GREATER_THAN_EQUAL) {
+            return (stringKey + ":[\"" + escapeValue(value) + "\" TO *]");
+        } else {
+            throw new IllegalArgumentException("Relation is not supported for string value: " + predicate);
+        }
+    }
+
+    private String tokenize(ParameterType parameterType, KeyInformation.StoreRetriever information, Object value, String key,
+                            JanusGraphPredicate janusgraphPredicate) {
+        if (parameterType != ParameterType.TEXT_ANALYZER
+            && parameterType != ParameterType.STRING_ANALYZER) {
+            throw new IllegalArgumentException("Invalid parameterType " + parameterType);
+        }
+        String analyzer = parameterType.findParameter(information.get(key).getParameters(), null);
+        List<String> terms;
+        if (analyzer != null) {
+            terms = customTokenize(analyzer, key, (String) value);
+        } else if (parameterType == ParameterType.TEXT_ANALYZER) {
             terms = Text.tokenize((String) value);
+        } else {
+            return buildQueryFilterStringValue(key, (String) value, janusgraphPredicate, information);
         }
         if (terms.isEmpty()) {
             return "";
         } else if (terms.size() == 1) {
-            if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                return (key + ":* -" + key + ":(" + escapeValue(terms.get(0)) + ")");
-            } else {
-                return (key + ":(" + escapeValue(terms.get(0)) + ")");
-            }
+            return buildQueryFilterStringValue(key, terms.get(0), janusgraphPredicate, information);
         } else {
             final And<JanusGraphElement> andTerms = new And<>();
             for (final String term : terms) {
@@ -948,25 +985,33 @@ public class SolrIndex implements IndexProvider {
     }
 
     @SuppressWarnings("unchecked")
-    private List<String> customTokenize(String tokenizerClass, String value){
-        CachingTokenFilter stream = null;
+    private List<String> customTokenize(String analyzerClass, String fieldName, String value) {
+        Map<Integer, List<String>> stemsByOffset = new HashMap<>();
+        final Analyzer analyzer;
         try {
-            final List<String> terms = new ArrayList<>();
-            final Tokenizer tokenizer
-                    = ((Constructor<Tokenizer>) ClassLoader.getSystemClassLoader().loadClass(tokenizerClass)
-                            .getConstructor()).newInstance();
-            tokenizer.setReader(new StringReader(value));
-            stream = new CachingTokenFilter(tokenizer);
+            analyzer = ((Constructor<Analyzer>) ClassLoader.getSystemClassLoader().loadClass(analyzerClass)
+                                                           .getConstructor()).newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+        try (CachingTokenFilter stream = new CachingTokenFilter(analyzer.tokenStream(fieldName, value))) {
+            final OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
             final TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
             stream.reset();
             while (stream.incrementToken()) {
-                terms.add(termAtt.getBytesRef().utf8ToString());
+                int offset = offsetAtt.startOffset();
+                String stem = termAtt.getBytesRef().utf8ToString();
+                List<String> stemList = stemsByOffset.get(offset);
+                if (stemList == null) {
+                    stemList = new ArrayList<>();
+                    stemsByOffset.put(offset, stemList);
+                }
+                stemList.add(stem);
             }
-            return terms;
-        } catch ( ReflectiveOperationException | IOException e) {
-                throw new IllegalArgumentException(e.getMessage(),e);
-        } finally {
-            IOUtils.closeQuietly(stream);
+            List<String> terms = stemsByOffset.values().stream().map(l -> l.get(0)).collect(Collectors.toList());
+            return terms.isEmpty() ? Collections.singletonList(value) : terms;
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
 
@@ -1055,8 +1100,10 @@ public class SolrIndex implements IndexProvider {
                             || predicate == Text.CONTAINS_REGEX || predicate == Text.CONTAINS_FUZZY;
                 case STRING:
                     return predicate instanceof Cmp || predicate==Text.REGEX || predicate==Text.PREFIX  || predicate == Text.FUZZY;
-//                case TEXTSTRING:
-//                    return (janusgraphPredicate instanceof Text) || janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL;
+                case TEXTSTRING:
+                    return predicate instanceof Cmp || predicate == Text.REGEX || predicate == Text.PREFIX || predicate == Text.FUZZY
+                           || predicate == Text.CONTAINS || predicate == Text.CONTAINS_PREFIX
+                           || predicate == Text.CONTAINS_REGEX || predicate == Text.CONTAINS_FUZZY;
             }
         } else if (dataType == Date.class || dataType == Instant.class) {
             return predicate instanceof Cmp;
@@ -1076,7 +1123,7 @@ public class SolrIndex implements IndexProvider {
                 || dataType == Boolean.class || dataType == UUID.class) {
             return mapping == Mapping.DEFAULT;
         } else if (AttributeUtils.isString(dataType)) {
-            return mapping == Mapping.DEFAULT || mapping == Mapping.TEXT || mapping == Mapping.STRING;
+            return mapping == Mapping.DEFAULT || mapping == Mapping.TEXT || mapping == Mapping.STRING || mapping == Mapping.TEXTSTRING;
         } else if (AttributeUtils.isGeo(dataType)) {
             return mapping == Mapping.DEFAULT || mapping == Mapping.PREFIX_TREE;
         }
@@ -1094,12 +1141,23 @@ public class SolrIndex implements IndexProvider {
         final Class dataType = keyInfo.getDataType();
         if (AttributeUtils.isString(dataType)) {
             final Mapping map = getStringMapping(keyInfo);
-            switch (map) {
-                case TEXT: postfix = "_t"; break;
-                case STRING: postfix = "_s"; break;
-                default: throw new IllegalArgumentException("Unsupported string mapping: " + map);
+            if (keyInfo.getCardinality() == Cardinality.SINGLE) {
+                switch (map) {
+                    case TEXTSTRING:
+                    case TEXT: return key + TEXT_SUFFIX;
+                    case STRING: return key + STRING_SUFFIX;
+                    default: throw new IllegalArgumentException("Unsupported string mapping: " + map);
+                }
+            } else {
+                switch (map) {
+                    case TEXTSTRING:
+                    case TEXT: return key + TEXT_SUFFIX_MULTI;
+                    case STRING: return key + STRING_SUFFIX_MULTI;
+                    default: throw new IllegalArgumentException("Unsupported string mapping: " + map);
+                }
             }
-        } else if (AttributeUtils.isWholeNumber(dataType)) {
+        }
+        if (AttributeUtils.isWholeNumber(dataType)) {
             if (dataType.equals(Long.class)) postfix = "_l";
             else postfix = "_i";
         } else if (AttributeUtils.isDecimal(dataType)) {
@@ -1114,10 +1172,11 @@ public class SolrIndex implements IndexProvider {
         } else if (dataType.equals(UUID.class)) {
             postfix = "_uuid";
         } else throw new IllegalArgumentException("Unsupported data type ["+dataType+"] for field: " + key);
-        if (keyInfo.getCardinality() == Cardinality.SET || keyInfo.getCardinality() == Cardinality.LIST) {
-                postfix += "s";
+        if (keyInfo.getCardinality() == Cardinality.SINGLE) {
+            return key + postfix;
+        } else {
+            return key + postfix + "s";
         }
-        return key+postfix;
     }
 
     @Override
@@ -1143,6 +1202,22 @@ public class SolrIndex implements IndexProvider {
     /*
     ################# UTILITY METHODS #######################
      */
+
+    static Optional<String> getDualFieldName(String fieldKey, KeyInformation ki) {
+        if (AttributeUtils.isString(ki.getDataType()) && Mapping.getMapping(ki) == Mapping.TEXTSTRING) {
+            String dualFieldName;
+            if (fieldKey.endsWith(TEXT_SUFFIX)) {
+                dualFieldName = fieldKey.substring(0, fieldKey.length() - TEXT_SUFFIX.length());
+                return Optional.of(dualFieldName + STRING_SUFFIX);
+            } else if (fieldKey.endsWith(TEXT_SUFFIX_MULTI)) {
+                dualFieldName = fieldKey.substring(0, fieldKey.length() - TEXT_SUFFIX_MULTI.length());
+                return Optional.of(dualFieldName + STRING_SUFFIX_MULTI);
+            } else {
+                return Optional.of(fieldKey + STRING_SUFFIX);
+            }
+        }
+        return Optional.empty();
+    }
 
     private static Mapping getStringMapping(KeyInformation information) {
         assert AttributeUtils.isString(information.getDataType());
