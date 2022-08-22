@@ -363,6 +363,31 @@
       </analyzer>
     </fieldType>
 
+    <fieldType name="text_en_s" class="solr.TextField" positionIncrementGap="100">
+        <analyzer type="index">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <!-- in this example, we will only use synonyms at query time
+            <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+            -->
+            <!-- Case insensitive stop word removal.
+            -->
+            <filter class="solr.StopFilterFactory"
+                    ignoreCase="true"
+                    words="lang/stopwords_en.txt"
+            />
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.EnglishPossessiveFilterFactory"/>
+            <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+            <!-- Optionally you may want to use this less aggressive stemmer instead of PorterStemFilterFactory:
+                <filter class="solr.EnglishMinimalStemFilterFactory"/>
+            -->
+            <filter class="solr.PorterStemFilterFactory"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.KeywordTokenizerFactory"/>
+        </analyzer>
+    </fieldType>
+
     <!-- A text field with defaults appropriate for English, plus
 	 aggressive word-splitting and autophrase features enabled.
 	 This field is just like text_en, except it adds
@@ -571,6 +596,9 @@
     <field name="analyzed" type="text_en" indexed="true" stored="true" multiValued="false" />
     <field name="string" type="text_en" indexed="true" stored="true" multiValued="false" />
     <field name="full_text" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <field name="full_text_s" type="text_en_s" indexed="true" stored="true" multiValued="false" />
+    <field name="text_string" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <field name="text_string_s" type="string" indexed="true" stored="true" multiValued="false" />
     <field name="keyword" type="text_en" indexed="true" stored="true" multiValued="false" />
     <field name="boolean"  type="boolean" indexed="true" stored="true"/>
     <field name="time_tick" type="date" indexed="true" stored="true" multiValued="true" />
