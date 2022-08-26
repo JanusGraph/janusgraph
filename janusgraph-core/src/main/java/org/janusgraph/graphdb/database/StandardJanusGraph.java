@@ -66,6 +66,8 @@ import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.cache.CacheInvalidationService;
+import org.janusgraph.graphdb.database.cache.KCVSCacheInvalidationService;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
 import org.janusgraph.graphdb.database.idhandling.IDHandler;
@@ -160,6 +162,8 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     private final IDManager idManager;
     private final VertexIDAssigner idAssigner;
     private final TimestampProvider times;
+    private final CacheInvalidationService cacheInvalidationService;
+
 
     //Serializers
     protected final IndexSerializer indexSerializer;
@@ -199,6 +203,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
         this.idAssigner = config.getIDAssigner(backend);
         this.idManager = idAssigner.getIDManager();
+
+        this.cacheInvalidationService = new KCVSCacheInvalidationService(
+            backend.getEdgeStoreCache(), backend.getIndexStoreCache(), idManager);
 
         this.serializer = config.getSerializer();
         StoreFeatures storeFeatures = backend.getStoreFeatures();
@@ -296,6 +303,11 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         } finally {
             removeHook();
         }
+    }
+
+    @Override
+    public CacheInvalidationService getDBCacheInvalidationService() {
+        return cacheInvalidationService;
     }
 
     private synchronized void closeInternal() {

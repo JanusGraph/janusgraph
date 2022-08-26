@@ -34,7 +34,11 @@ public class NoKCVSCache extends KCVSCache {
     }
 
     @Override
-    protected void invalidate(StaticBuffer key, List<CachableStaticBuffer> entries) {
+    public void invalidate(StaticBuffer key, List<CachableStaticBuffer> entries) {
+    }
+
+    @Override
+    public void forceClearExpiredCache() {
     }
 
 }

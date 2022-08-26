@@ -711,4 +711,12 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
         return executorService;
     }
+
+    public KCVSCache getEdgeStoreCache(){
+        return edgeStore;
+    }
+
+    public KCVSCache getIndexStoreCache(){
+        return indexStore;
+    }
 }
