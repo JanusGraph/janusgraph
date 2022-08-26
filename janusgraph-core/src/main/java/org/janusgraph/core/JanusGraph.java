@@ -18,6 +18,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.util.Gremlin;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.configuration.JanusGraphConstants;
+import org.janusgraph.graphdb.database.cache.CacheInvalidationService;
 
 /**
  * JanusGraph graph database implementation of the Blueprint's interface.
@@ -156,6 +157,8 @@ public interface JanusGraph extends Transaction {
      */
     @Override
     void close() throws JanusGraphException;
+
+    CacheInvalidationService getDBCacheInvalidationService();
 
     /**
      * The version of this JanusGraph graph database

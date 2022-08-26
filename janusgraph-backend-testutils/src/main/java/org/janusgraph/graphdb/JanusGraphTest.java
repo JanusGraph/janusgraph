@@ -97,7 +97,9 @@ import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.database.IndexRecordEntry;
+import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.database.cache.CacheInvalidationService;
 import org.janusgraph.graphdb.database.index.IndexMutationType;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
 import org.janusgraph.graphdb.database.log.LogTxMeta;
@@ -130,6 +132,7 @@ import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.relations.AbstractEdge;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.relations.StandardEdge;
+import org.janusgraph.graphdb.relations.StandardVertexProperty;
 import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphEdgeVertexStep;
@@ -212,6 +215,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENGINE;
@@ -221,6 +225,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ST
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_LOG_TRANSACTIONS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TX_CACHE_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.VERBOSE_TX_RECOVERY;
@@ -8047,5 +8052,338 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             .getCounter(groupName, edgeStoreMetricsName, CacheMetricsAction.RETRIEVAL.getName()).getCount();
         tx.rollback();
         Assertions.assertEquals(cacheRetrievalCountAfterReadWithCacheEnabled, cacheRetrievalCountAfterReadWithCacheDisabled);
+    }
+
+    @Test
+    public void testVertexPropertiesForceInvalidationFromDBCache() {
+        if (features.hasLocking() || !features.isDistributed()) {
+            return;
+        }
+
+        JanusGraph graph1 = openInstanceWithDBCacheEnabled("testVertexPropertiesForceInvalidationFromDBCache1");
+        JanusGraph graph2 = openInstanceWithDBCacheEnabled("testVertexPropertiesForceInvalidationFromDBCache2");
+
+        JanusGraphVertex v1 = graph1.addVertex();
+        v1.property("name", "vertex1");
+        JanusGraphVertex v2 = graph1.addVertex();
+        v2.property("name", "vertex2");
+        JanusGraphVertex v3 = graph1.addVertex();
+        v3.property("name", "vertex3");
+
+        graph1.tx().commit();
+
+        // Cache vertices for graph1
+        JanusGraphTransaction tx1 = graph1.newTransaction();
+        tx1.traversal().V().valueMap().toList();
+        tx1.commit();
+
+        // Cache vertices for graph2
+        JanusGraphTransaction tx2 = graph2.newTransaction();
+        tx2.traversal().V().valueMap().toList();
+        tx2.commit();
+
+        tx1 = graph1.newTransaction();
+
+        // Update properties using graph1
+        tx1.traversal().V(v1.id()).property("name", "vertex1_updated").iterate();
+        tx1.traversal().V(v2.id()).property("name", "vertex2_updated").iterate();
+        tx1.traversal().V(v3.id()).property("name", "vertex3_updated").iterate();
+
+        tx1.commit();
+
+        tx2 = graph2.newTransaction();
+
+        // Check that cached properties in graph2 were not refreshed
+        assertEquals(Arrays.asList("vertex1"), tx2.traversal().V(v1.id()).valueMap().next().get("name"));
+        assertEquals(Arrays.asList("vertex2"), tx2.traversal().V(v2.id()).valueMap().next().get("name"));
+        assertEquals(Arrays.asList("vertex3"), tx2.traversal().V(v3.id()).valueMap().next().get("name"));
+
+        tx2.rollback();
+
+        // Invalidate cache for v1 only
+        graph2.getDBCacheInvalidationService().forceInvalidateVertexInEdgeStoreCache(v1.longId());
+
+        tx2 = graph2.newTransaction();
+
+        // Check that v1 cache was refreshed but cache for v2 and v3 was not refreshed
+        assertEquals(Arrays.asList("vertex1_updated"), tx2.traversal().V(v1.id()).valueMap().next().get("name"));
+        assertEquals(Arrays.asList("vertex2"), tx2.traversal().V(v2.id()).valueMap().next().get("name"));
+        assertEquals(Arrays.asList("vertex3"), tx2.traversal().V(v3.id()).valueMap().next().get("name"));
+
+        tx2.rollback();
+
+        // Invalidate cache for v2 and v3
+        graph2.getDBCacheInvalidationService().forceInvalidateVerticesInEdgeStoreCache(Arrays.asList(v2.longId(), v3.longId()));
+
+        tx2 = graph2.newTransaction();
+
+        // Check that cache was refreshed for all three vertices
+        assertEquals(Arrays.asList("vertex1_updated"), tx2.traversal().V(v1.id()).valueMap().next().get("name"));
+        assertEquals(Arrays.asList("vertex2_updated"), tx2.traversal().V(v2.id()).valueMap().next().get("name"));
+        assertEquals(Arrays.asList("vertex3_updated"), tx2.traversal().V(v3.id()).valueMap().next().get("name"));
+
+        tx2.rollback();
+
+        graph1.close();
+        graph2.close();
+    }
+
+    @Test
+    public void testIndexStoreForceInvalidationFromDBCache() throws InterruptedException, ExecutionException {
+        if (features.hasLocking() || !features.isDistributed()) {
+            return;
+        }
+
+        // Define schema with 2 properties and 2 indices which include the same property
+        String indexProp1Name = "indexedProp1";
+        String indexProp2Name = "indexedProp2";
+        String index1Name = "index1";
+        String index2Name = "index2";
+        PropertyKey indexedProp1 = mgmt.makePropertyKey(indexProp1Name).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey indexedProp2 = mgmt.makePropertyKey(indexProp2Name).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(index1Name, Vertex.class).addKey(indexedProp1).buildCompositeIndex();
+        mgmt.buildIndex(index2Name, Vertex.class).addKey(indexedProp1).addKey(indexedProp2).buildCompositeIndex();
+        finishSchema();
+        ManagementSystem.awaitGraphIndexStatus(graph, index1Name).call();
+        ManagementSystem.awaitGraphIndexStatus(graph, index2Name).call();
+        mgmt.updateIndex(mgmt.getGraphIndex(index1Name), SchemaAction.REINDEX).get();
+        mgmt.updateIndex(mgmt.getGraphIndex(index2Name), SchemaAction.REINDEX).get();
+        finishSchema();
+
+        StandardJanusGraph graph1 = openInstanceWithDBCacheEnabled("testIndexStoreForceInvalidationFromDBCache1");
+        StandardJanusGraph graph2 = openInstanceWithDBCacheEnabled("testIndexStoreForceInvalidationFromDBCache2");
+
+        // Add 3 vertices which are indexed by 2 indexes
+        JanusGraphVertex v1 = graph1.addVertex();
+        v1.property(indexProp1Name, 1);
+        v1.property(indexProp2Name, 1);
+
+        JanusGraphVertex v2 = graph1.addVertex();
+        v2.property(indexProp1Name, 2);
+        v2.property(indexProp2Name, 2);
+
+        JanusGraphVertex v3 = graph1.addVertex();
+        v3.property(indexProp1Name, 3);
+        v3.property(indexProp2Name, 3);
+
+        graph1.tx().commit();
+
+        // Cache data
+        JanusGraphTransaction tx2 = graph2.newTransaction();
+        // Cache index 1 for graph 2
+        queryVertices(tx2, indexProp1Name, 1, 2, 3, -1, -2, -3);
+        // Cache index 2 and index 3 for graph 2
+        queryVertices(tx2, indexProp1Name, Arrays.asList(1, 2, 3, -1, -2, -3), indexProp2Name, Arrays.asList(1, 2, 3));
+        tx2.commit();
+
+        // Update indexProp1Name for all vertices using graph1
+        JanusGraphTransaction tx1 = graph1.newTransaction();
+        tx1.traversal().V(v1.id()).property(indexProp1Name, -1).iterate();
+        tx1.traversal().V(v2.id()).property(indexProp1Name, -2).iterate();
+        tx1.traversal().V(v3.id()).property(indexProp1Name, -3).iterate();
+        tx1.commit();
+
+        // Check that cached indexed vertices in graph2 were not refreshed
+        tx2 = graph2.newTransaction();
+        // Check that old (outdated) data is retrieved because of the cache
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 1).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 2).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 3).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 1).has(indexProp2Name, 1).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 2).has(indexProp2Name, 2).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 3).has(indexProp2Name, 3).hasNext());
+        // Check that new (updated) data is not retrieved because of the cache
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -1).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -2).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -3).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -1).has(indexProp2Name, 1).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -2).has(indexProp2Name, 2).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -3).has(indexProp2Name, 3).hasNext());
+        tx2.rollback();
+
+        invalidateUpdatedVertexProperty(graph2, v1.longId(), indexProp1Name, 1, -1);
+
+        tx2 = graph2.newTransaction();
+        // Check that cache for index1 and values `1`, `-1` was refreshed but cache for 2,3,-2,-3 was not refreshed
+        assertFalse(tx2.traversal().V().has(indexProp1Name, 1).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 2).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 3).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, -1).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -2).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -3).hasNext());
+        // Check that cache for index2 and values `1`, `-1` was refreshed but cache for 2,3,-2,-3 was not refreshed
+        assertFalse(tx2.traversal().V().has(indexProp1Name, 1).has(indexProp2Name, 1).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, -1).has(indexProp2Name, 1).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 2).has(indexProp2Name, 2).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -2).has(indexProp2Name, 2).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 3).has(indexProp2Name, 3).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -3).has(indexProp2Name, 3).hasNext());
+        tx2.rollback();
+
+        invalidateUpdatedVertexProperty(graph2, v2.longId(), indexProp1Name, 2, -2);
+        invalidateUpdatedVertexProperty(graph2, v3.longId(), indexProp1Name, 3, -3);
+
+        tx2 = graph2.newTransaction();
+        // Check that cache was refreshed for all 3 vertices
+        assertFalse(tx2.traversal().V().has(indexProp1Name, 1).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, 2).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, 3).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, -1).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, -2).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, -3).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, 1).has(indexProp2Name, 1).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, -1).has(indexProp2Name, 1).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, 2).has(indexProp2Name, 2).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, -2).has(indexProp2Name, 2).hasNext());
+        assertFalse(tx2.traversal().V().has(indexProp1Name, 3).has(indexProp2Name, 3).hasNext());
+        assertTrue(tx2.traversal().V().has(indexProp1Name, -3).has(indexProp2Name, 3).hasNext());
+
+        graph1.close();
+        graph2.close();
+    }
+
+    @Test
+    public void testFullDBCacheInvalidation() throws InterruptedException, ExecutionException {
+        if (features.hasLocking() || !features.isDistributed()) {
+            return;
+        }
+
+        // Define schema with 2 properties and 2 indices which include the same property
+        String indexProp1Name = "someProp1";
+        String index1Name = "someIndex1";
+        PropertyKey indexedProp1 = mgmt.makePropertyKey(indexProp1Name).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(index1Name, Vertex.class).addKey(indexedProp1).buildCompositeIndex();
+        finishSchema();
+        ManagementSystem.awaitGraphIndexStatus(graph, index1Name).call();
+        mgmt.updateIndex(mgmt.getGraphIndex(index1Name), SchemaAction.REINDEX).get();
+        finishSchema();
+
+        StandardJanusGraph graph1 = openInstanceWithDBCacheEnabled("testIndexStoreForceInvalidationFromDBCache1");
+        StandardJanusGraph graph2 = openInstanceWithDBCacheEnabled("testIndexStoreForceInvalidationFromDBCache2");
+
+        // Add 3 vertices which are indexed by 2 indexes
+        JanusGraphVertex v1 = graph1.addVertex();
+        v1.property(indexProp1Name, 1);
+
+        graph1.tx().commit();
+
+        // Cache data
+        JanusGraphTransaction tx2 = graph2.newTransaction();
+        tx2.traversal().V(v1.id()).valueMap().next();
+        tx2.traversal().V().has(indexProp1Name, 1).toList();
+        tx2.traversal().V().has(indexProp1Name, -1).toList();
+        tx2.commit();
+
+        // Update indexProp1Name using graph1
+        JanusGraphTransaction tx1 = graph1.newTransaction();
+        tx1.traversal().V(v1.id()).property(indexProp1Name, -1).iterate();
+        tx1.commit();
+
+        // Check that cached indexed vertices in graph2 were not refreshed
+        tx2 = graph2.newTransaction();
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 1).hasNext());
+        assertEquals(Arrays.asList(1), tx2.traversal().V(v1.id()).valueMap().next().get(indexProp1Name));
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -1).hasNext());
+        tx2.rollback();
+
+        graph2.getDBCacheInvalidationService().clearEdgeStoreCache();
+
+        // Check only edgeStore was invalidated
+        tx2 = graph2.newTransaction();
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 1).hasNext());
+        assertEquals(Arrays.asList(-1), tx2.traversal().V(v1.id()).valueMap().next().get(indexProp1Name));
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -1).hasNext());
+        tx2.rollback();
+
+        graph2.getDBCacheInvalidationService().clearIndexStoreCache();
+
+        // Check both edgeStore and indexStore were invalidated
+        tx2 = graph2.newTransaction();
+        assertFalse(tx2.traversal().V().has(indexProp1Name, 1).hasNext());
+        assertEquals(Arrays.asList(-1), tx2.traversal().V(v1.id()).valueMap().next().get(indexProp1Name));
+        assertTrue(tx2.traversal().V().has(indexProp1Name, -1).hasNext());
+        tx2.rollback();
+
+        //// Check full cache clear method
+
+        // Cache data
+        tx2 = graph2.newTransaction();
+        tx2.traversal().V(v1.id()).valueMap().next();
+        tx2.traversal().V().has(indexProp1Name, -1).toList();
+        tx2.traversal().V().has(indexProp1Name, 2).toList();
+        tx2.commit();
+
+        // Update indexProp1Name using graph1 again
+        tx1 = graph1.newTransaction();
+        tx1.traversal().V(v1.id()).property(indexProp1Name, 2).iterate();
+        tx1.commit();
+
+        // Check cached data is now outdated in graph2
+        tx2 = graph2.newTransaction();
+        assertFalse(tx2.traversal().V().has(indexProp1Name, 2).hasNext());
+        assertEquals(Arrays.asList(-1), tx2.traversal().V(v1.id()).valueMap().next().get(indexProp1Name));
+        assertTrue(tx2.traversal().V().has(indexProp1Name, -1).hasNext());
+        tx2.rollback();
+
+        graph2.getDBCacheInvalidationService().clearDBCache();
+
+        // Check both edgeStore and indexStore caches were invalidated
+        tx2 = graph2.newTransaction();
+        assertTrue(tx2.traversal().V().has(indexProp1Name, 2).hasNext());
+        assertEquals(Arrays.asList(2), tx2.traversal().V(v1.id()).valueMap().next().get(indexProp1Name));
+        assertFalse(tx2.traversal().V().has(indexProp1Name, -1).hasNext());
+        tx2.rollback();
+
+        graph1.close();
+        graph2.close();
+    }
+
+    private void invalidateUpdatedVertexProperty(StandardJanusGraph graph, long vertexIdUpdated, String propertyNameUpdated, Object previousPropertyValue, Object newPropertyValue){
+        JanusGraphTransaction tx = graph.newTransaction();
+        JanusGraphManagement graphMgmt = graph.openManagement();
+        PropertyKey propertyKey = graphMgmt.getPropertyKey(propertyNameUpdated);
+        CacheVertex cacheVertex = new CacheVertex((StandardJanusGraphTx) tx, vertexIdUpdated, ElementLifeCycle.Loaded);
+        StandardVertexProperty propertyPreviousVal = new StandardVertexProperty(propertyKey.longId(), propertyKey, cacheVertex, previousPropertyValue, ElementLifeCycle.Removed);
+        StandardVertexProperty propertyNewVal = new StandardVertexProperty(propertyKey.longId(), propertyKey, cacheVertex, newPropertyValue, ElementLifeCycle.New);
+        IndexSerializer indexSerializer = graph.getIndexSerializer();
+
+        Collection<IndexUpdate> indexUpdates = indexSerializer.getIndexUpdates(cacheVertex, Arrays.asList(propertyPreviousVal, propertyNewVal));
+        CacheInvalidationService invalidationService = graph.getDBCacheInvalidationService();
+
+        for(IndexUpdate indexUpdate : indexUpdates){
+            StaticBuffer keyToInvalidate = (StaticBuffer) indexUpdate.getKey();
+            invalidationService.markKeyAsExpiredInIndexStore(keyToInvalidate);
+        }
+
+        invalidationService.forceClearExpiredKeysInIndexStoreCache();
+        invalidationService.forceInvalidateVertexInEdgeStoreCache(vertexIdUpdated);
+
+        graphMgmt.rollback();
+        tx.rollback();
+    }
+
+    private void queryVertices(JanusGraphTransaction tx, String propName, Object ... values){
+        for(Object value : values){
+            tx.traversal().V().has(propName, value).toList();
+        }
+    }
+
+    private void queryVertices(JanusGraphTransaction tx, String prop1Name, Iterable<Object> prop1Values, String prop2Name, Iterable<Object> prop2Values){
+        for(Object prop1Value : prop1Values){
+            for(Object prop2Value : prop2Values){
+                tx.traversal().V().has(prop1Name, prop1Value).has(prop2Name, prop2Value).toList();
+                tx.traversal().V().has(prop2Name, prop2Value).has(prop1Name, prop1Value).toList();
+            }
+        }
+    }
+
+    private StandardJanusGraph openInstanceWithDBCacheEnabled(String uniqueInstanceId){
+        WriteConfiguration configCopy = config.copy();
+        configCopy.set(ConfigElement.getPath(UNIQUE_INSTANCE_ID), uniqueInstanceId);
+        configCopy.set(ConfigElement.getPath(REPLACE_INSTANCE_IF_EXISTS), true);
+        configCopy.set(ConfigElement.getPath(DB_CACHE), true);
+        configCopy.set(ConfigElement.getPath(DB_CACHE_TIME), 0);
+        configCopy.set(ConfigElement.getPath(STORAGE_BATCH), false);
+        return (StandardJanusGraph) JanusGraphFactory.open(configCopy);
     }
 }

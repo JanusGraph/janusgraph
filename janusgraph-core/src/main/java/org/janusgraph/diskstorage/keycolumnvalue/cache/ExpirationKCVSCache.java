@@ -137,9 +137,16 @@ public class ExpirationKCVSCache extends KCVSCache {
 
     @Override
     public void clearCache() {
+        // We should not call `expiredKeys.clear();` directly because there could be a race condition
+        // where already invalidated cache but then added new entries into it and made some mutation before `expiredKeys.clear();`
+        // is finished which may result in getSlice to return previously cached result and not a new mutated result.
+        // Thus, we are clearing expired entries first, and then we are safe to invalidate the rest of non-expired entries.
+        // Moreover, we shouldn't create `penaltyCountdown = new CountDownLatch(PENALTY_THRESHOLD);` because the cleaning thread
+        // may await on the previous `penaltyCountdown` which may result in that thread never wake up to proceed with
+        // probabilistic cleaning. Thus, only that cleaning thread have to have a right to reinitialize `penaltyCountdown`.
+        forceClearExpiredCache();
+        // It's always safe to invalidate full cache
         cache.invalidateAll();
-        expiredKeys.clear();
-        penaltyCountdown = new CountDownLatch(PENALTY_THRESHOLD);
     }
 
     @Override
@@ -147,6 +154,31 @@ public class ExpirationKCVSCache extends KCVSCache {
         Preconditions.checkArgument(!hasValidateKeysOnly() || entries.isEmpty());
         expiredKeys.put(key,getExpirationTime());
         if (Math.random()<1.0/INVALIDATE_KEY_FRACTION_PENALTY) penaltyCountdown.countDown();
+    }
+
+    @Override
+    public void forceClearExpiredCache() {
+        clearExpiredCache(false);
+    }
+
+    private synchronized void clearExpiredCache(boolean withNewPenaltyCountdown) {
+        //Do clean up work by invalidating all entries for expired keys
+        final Map<StaticBuffer,Long> expiredKeysCopy = new HashMap<>(expiredKeys.size());
+        for (Map.Entry<StaticBuffer,Long> expKey : expiredKeys.entrySet()) {
+            if (isBeyondExpirationTime(expKey.getValue()))
+                expiredKeys.remove(expKey.getKey(), expKey.getValue());
+            else if (getAge(expKey.getValue())>= invalidationGracePeriodMS)
+                expiredKeysCopy.put(expKey.getKey(),expKey.getValue());
+        }
+        for (KeySliceQuery ksq : cache.asMap().keySet()) {
+            if (expiredKeysCopy.containsKey(ksq.getKey())) cache.invalidate(ksq);
+        }
+        if(withNewPenaltyCountdown){
+            penaltyCountdown = new CountDownLatch(PENALTY_THRESHOLD);
+        }
+        for (Map.Entry<StaticBuffer,Long> expKey : expiredKeysCopy.entrySet()) {
+            expiredKeys.remove(expKey.getKey(),expKey.getValue());
+        }
     }
 
     @Override
@@ -201,21 +233,7 @@ public class ExpirationKCVSCache extends KCVSCache {
                     if (stop) return;
                     else throw new RuntimeException("Cleanup thread got interrupted",e);
                 }
-                //Do clean up work by invalidating all entries for expired keys
-                final Map<StaticBuffer,Long> expiredKeysCopy = new HashMap<>(expiredKeys.size());
-                for (Map.Entry<StaticBuffer,Long> expKey : expiredKeys.entrySet()) {
-                    if (isBeyondExpirationTime(expKey.getValue()))
-                        expiredKeys.remove(expKey.getKey(), expKey.getValue());
-                    else if (getAge(expKey.getValue())>= invalidationGracePeriodMS)
-                        expiredKeysCopy.put(expKey.getKey(),expKey.getValue());
-                }
-                for (KeySliceQuery ksq : cache.asMap().keySet()) {
-                    if (expiredKeysCopy.containsKey(ksq.getKey())) cache.invalidate(ksq);
-                }
-                penaltyCountdown = new CountDownLatch(PENALTY_THRESHOLD);
-                for (Map.Entry<StaticBuffer,Long> expKey : expiredKeysCopy.entrySet()) {
-                    expiredKeys.remove(expKey.getKey(),expKey.getValue());
-                }
+                clearExpiredCache(true);
             }
         }
 
