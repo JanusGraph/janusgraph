@@ -111,8 +111,8 @@ import org.janusgraph.graphdb.transaction.lock.TransactionLock;
 import org.janusgraph.graphdb.transaction.subquerycache.EmptySubqueryCache;
 import org.janusgraph.graphdb.transaction.subquerycache.GuavaSubqueryCache;
 import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
+import org.janusgraph.graphdb.transaction.vertexcache.CaffeineVertexCache;
 import org.janusgraph.graphdb.transaction.vertexcache.EmptyVertexCache;
-import org.janusgraph.graphdb.transaction.vertexcache.GuavaVertexCache;
 import org.janusgraph.graphdb.transaction.vertexcache.VertexCache;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
@@ -319,7 +319,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     config.getVertexCacheSize(), effectiveVertexCacheSize, MIN_VERTEX_CACHE_SIZE);
         }
 
-        vertexCache = new GuavaVertexCache(effectiveVertexCacheSize,concurrencyLevel,config.getDirtyVertexSize());
+        vertexCache = new CaffeineVertexCache(effectiveVertexCacheSize,config.getDirtyVertexSize());
 
         indexCache = new GuavaSubqueryCache(concurrencyLevel, config.getIndexCacheWeight());
 

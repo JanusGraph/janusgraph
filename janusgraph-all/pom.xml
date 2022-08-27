@@ -30,6 +30,12 @@
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-grpc</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.checkerframework</groupId>
+                    <artifactId>checker-qual</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
