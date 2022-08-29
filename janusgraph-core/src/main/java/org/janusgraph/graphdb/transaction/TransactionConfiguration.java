@@ -190,4 +190,10 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
      */
     boolean hasRestrictedPartitions();
 
+    /**
+     * Returns true if read queries should skip accessing JanusGraph database level cache (db-cache).
+     * Doesn't have any effect if database level cache was disabled via config `cache.db-cache`.
+     */
+    boolean isSkipDBCacheRead();
+
 }

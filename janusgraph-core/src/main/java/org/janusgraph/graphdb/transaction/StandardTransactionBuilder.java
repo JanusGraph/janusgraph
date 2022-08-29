@@ -83,6 +83,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private String groupName;
 
+    private boolean skipDBCacheRead;
+
     private final boolean forceIndexUsage;
 
     private final ModifiableConfiguration writableCustomOptions;
@@ -224,6 +226,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public TransactionBuilder skipDBCacheRead() {
+        this.skipDBCacheRead = true;
+        return this;
+    }
+
+    @Override
     public void setCommitTime(Instant time) {
         throw new UnsupportedOperationException("Use setCommitTime(long,TimeUnit)");
     }
@@ -269,7 +277,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 propertyPrefetching, multiQuery, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, restrictedPartitions, groupName,
-                defaultSchemaMaker, hasDisabledSchemaConstraints, customOptions);
+                defaultSchemaMaker, hasDisabledSchemaConstraints, skipDBCacheRead, customOptions);
         return graph.newTransaction(immutable);
     }
 
@@ -382,6 +390,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public boolean isSkipDBCacheRead() {
+        return skipDBCacheRead;
+    }
+
+    @Override
     public String getGroupName() {
         return groupName;
     }
@@ -434,6 +447,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final long indexCacheWeight;
         private final int vertexCacheSize;
         private final int dirtyVertexSize;
+
+        private final boolean skipDBCacheRead;
         private final String logIdentifier;
         private final int[] restrictedPartitions;
         private final DefaultSchemaMaker defaultSchemaMaker;
@@ -456,6 +471,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 String groupName,
                 DefaultSchemaMaker defaultSchemaMaker,
                 boolean hasDisabledSchemaConstraints,
+                boolean skipDBCacheRead,
                 Configuration customOptions) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
@@ -477,6 +493,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.restrictedPartitions=restrictedPartitions;
             this.defaultSchemaMaker = defaultSchemaMaker;
             this.hasDisabledSchemaConstraints = hasDisabledSchemaConstraints;
+            this.skipDBCacheRead = skipDBCacheRead;
             this.handleConfig = new StandardBaseTransactionConfig.Builder()
                     .commitTime(commitTime)
                     .timestampProvider(times)
@@ -587,6 +604,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public boolean hasRestrictedPartitions() {
             return restrictedPartitions.length>0;
+        }
+
+        @Override
+        public boolean isSkipDBCacheRead() {
+            return skipDBCacheRead;
         }
 
         @Override

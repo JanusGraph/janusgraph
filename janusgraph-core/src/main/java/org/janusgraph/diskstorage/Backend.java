@@ -582,7 +582,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
         return new BackendTransaction(cacheTx, configuration, storeFeatures,
                 edgeStore, indexStore, txLogStore,
-                maxReadTime, indexTx, threadPool);
+                maxReadTime, indexTx, threadPool, !configuration.isSkipDBCacheRead());
     }
 
     public synchronized void close() throws BackendException {

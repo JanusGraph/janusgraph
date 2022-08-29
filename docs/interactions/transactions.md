@@ -322,6 +322,10 @@ following aspects of a transaction to be configured:
     confirmation at the application level to avoid inconsistencies. USE
     WITH GREAT CARE!
 
+-   `skipDBCacheRead()` - Disables JanusGraph database level 
+    cache access during read operations. Doesn't have any effect if database 
+    level cache was disabled via config `cache.db-cache`.
+
 Once, the desired configuration options have been specified, the new
 transaction is started via `start()` which returns a
 `JanusGraphTransaction`.
