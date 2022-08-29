@@ -138,6 +138,14 @@ public interface TransactionBuilder {
      */
     TransactionBuilder commitTime(Instant instant);
 
+    /**
+     * Skips usage of JanusGraph database level cache during read operations.
+     * <p>
+     * Doesn't have any effect if database level cache was disabled via config `cache.db-cache`.
+     *
+     * @return Object with the skip db-cache reads check settings
+     */
+    TransactionBuilder skipDBCacheRead();
 
     /**
      * Sets the group name for this transaction which provides a way for gathering

@@ -90,6 +90,7 @@ import org.janusgraph.diskstorage.log.Message;
 import org.janusgraph.diskstorage.log.MessageReader;
 import org.janusgraph.diskstorage.log.ReadMarker;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
+import org.janusgraph.diskstorage.util.CacheMetricsAction;
 import org.janusgraph.diskstorage.util.HashingUtil;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.example.GraphOfTheGodsFactory;
@@ -144,6 +145,7 @@ import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.JanusGraphFeature;
 import org.janusgraph.testutil.TestGraphConfigs;
+import org.janusgraph.util.stats.MetricManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -192,10 +194,13 @@ import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ADJUST_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STALE_CONFIG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTO_TYPE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BATCH_PROPERTY_PREFETCHING;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CUSTOM_ATTRIBUTE_CLASS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CUSTOM_SERIALIZER_CLASS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HARD_MAX_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
@@ -206,6 +211,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENGINE;
@@ -8005,5 +8011,41 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             graph.eval("g2 = g.getGraph().traversal(); g2.V().drop().iterate(); g2.tx().commit();", false);
             assertFalse(graph.traversal().V().hasNext());
         }
+    }
+
+    @Test
+    public void shouldSkipDBCacheAccess(){
+        if(!features.isDistributed()){
+            return;
+        }
+
+        clopen(option(DB_CACHE),true,option(DB_CACHE_CLEAN_WAIT),0,option(DB_CACHE_TIME),0L,
+            option(BASIC_METRICS),true,option(METRICS_MERGE_STORES),false);
+
+        String groupName = "shouldSkipDBCacheAccess";
+        String edgeStoreMetricsName = Backend.EDGESTORE_NAME + Backend.METRICS_CACHE_SUFFIX;
+
+        // Create test vertex
+        JanusGraphTransaction tx = graph.buildTransaction().start();
+        Object vertexId = tx.traversal().addV().property("name", "testProp").next().id();
+        tx.commit();
+        long cacheRetrievalCountAfterCreation = MetricManager.INSTANCE
+            .getCounter(groupName, edgeStoreMetricsName, CacheMetricsAction.RETRIEVAL.getName()).getCount();
+
+        // Check db-cache access works
+        tx = graph.buildTransaction().groupName(groupName).start();
+        tx.traversal().V(vertexId).valueMap().next();
+        long cacheRetrievalCountAfterReadWithCacheEnabled = MetricManager.INSTANCE
+            .getCounter(groupName, edgeStoreMetricsName, CacheMetricsAction.RETRIEVAL.getName()).getCount();
+        tx.rollback();
+        Assertions.assertTrue(cacheRetrievalCountAfterCreation < cacheRetrievalCountAfterReadWithCacheEnabled);
+
+        // Check db-cache read access is skipped when cache is disabled in transaction
+        tx = graph.buildTransaction().skipDBCacheRead().groupName(groupName).start();
+        tx.traversal().V(vertexId).valueMap().next();
+        long cacheRetrievalCountAfterReadWithCacheDisabled = MetricManager.INSTANCE
+            .getCounter(groupName, edgeStoreMetricsName, CacheMetricsAction.RETRIEVAL.getName()).getCount();
+        tx.rollback();
+        Assertions.assertEquals(cacheRetrievalCountAfterReadWithCacheEnabled, cacheRetrievalCountAfterReadWithCacheDisabled);
     }
 }

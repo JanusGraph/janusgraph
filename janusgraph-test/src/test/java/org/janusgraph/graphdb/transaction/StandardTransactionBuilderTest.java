@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.transaction;
 
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.ReadOnlyTransactionException;
+import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,4 +88,20 @@ public class StandardTransactionBuilderTest {
         tx = (StandardJanusGraphTx) graph.buildTransaction().consistencyChecks(false).start();
         assertFalse(tx.getConfiguration().hasVerifyUniqueness());
     }
+
+    @Test
+    public void testSkipDBCacheRead() {
+        StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
+        BackendTransaction backendTransaction = tx.getTxHandle();
+        assertFalse(tx.getConfiguration().isSkipDBCacheRead());
+        assertTrue(backendTransaction.isCacheEnabled());
+        tx.rollback();
+
+        tx = (StandardJanusGraphTx) graph.buildTransaction().skipDBCacheRead().start();
+        backendTransaction = tx.getTxHandle();
+        assertTrue(tx.getConfiguration().isSkipDBCacheRead());
+        assertFalse(backendTransaction.isCacheEnabled());
+        tx.rollback();
+    }
+
 }

@@ -80,12 +80,13 @@ public class BackendTransaction implements LoggableTransaction {
     private final Map<String, IndexTransaction> indexTx;
 
     private boolean acquiredLock = false;
-    private boolean cacheEnabled = true;
+    private boolean cacheEnabled;
 
     public BackendTransaction(CacheTransaction storeTx, BaseTransactionConfig txConfig,
                               StoreFeatures features, KCVSCache edgeStore, KCVSCache indexStore,
                               KCVSCache txLogStore, Duration maxReadTime,
-                              Map<String, IndexTransaction> indexTx, Executor threadPool) {
+                              Map<String, IndexTransaction> indexTx, Executor threadPool,
+                              boolean cacheEnabled) {
         this.storeTx = storeTx;
         this.txConfig = txConfig;
         this.storeFeatures = features;
@@ -95,6 +96,7 @@ public class BackendTransaction implements LoggableTransaction {
         this.maxReadTime = maxReadTime;
         this.indexTx = indexTx;
         this.threadPool = threadPool;
+        this.cacheEnabled = cacheEnabled;
     }
 
     public boolean hasAcquiredLock() {
@@ -130,6 +132,10 @@ public class BackendTransaction implements LoggableTransaction {
 
     public void enableCache() {
         this.cacheEnabled = true;
+    }
+
+    public boolean isCacheEnabled(){
+        return cacheEnabled;
     }
 
     public void commitStorage() throws BackendException {
