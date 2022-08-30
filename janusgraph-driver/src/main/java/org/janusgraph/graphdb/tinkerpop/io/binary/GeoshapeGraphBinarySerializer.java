@@ -40,6 +40,28 @@ public class GeoshapeGraphBinarySerializer extends JanusGraphTypeSerializer<Geos
         public int read() {
             return buffer.readInt();
         }
+
+        @Override
+        public int read(byte[] b, int off, int len) {
+            if (b == null) {
+                throw new NullPointerException();
+            } else if (off < 0 || len < 0 || len > b.length - off) {
+                throw new IndexOutOfBoundsException();
+            } else if (len == 0) {
+                return 0;
+            }
+
+            int c = read();
+            b[off] = (byte) c;
+
+            int i = 1;
+
+            for (; i < len; i++) {
+                c = read();
+                b[off + i] = (byte) c;
+            }
+            return i;
+        }
     }
 
     @Override
