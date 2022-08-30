@@ -44,9 +44,9 @@ public class GeoshapeGraphBinarySerializerTest {
 
     private static Stream<Geoshape> geoshapeProvider() {
         return Stream.of(
-            Geoshape.point(37.97, 23.72),
-            Geoshape.circle(37.97, 23.72, 10.0),
-            Geoshape.box(37.97, 23.72, 38.97, 24.72)
+            Geoshape.point(29.7154388159, 23.72),
+            Geoshape.circle(29.7154388159, 23.72, 10.0),
+            Geoshape.box(29.7154388159, 23.72, 38.97, 24.72)
         );
     }
 
