@@ -67,7 +67,7 @@ public abstract class LimitAdjustingIterator<R> implements CloseableIterator<R> 
     @Override
     public boolean hasNext() {
         if (iterator ==null) iterator = getNewIterator(currentLimit);
-        if (count < currentLimit)
+        if (currentLimit == Query.NO_LIMIT || count < currentLimit)
             return iterator.hasNext();
         if (currentLimit>=maxLimit) return false;
 

@@ -52,7 +52,7 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Closeable
 
     private R nextInternal() {
         R r = null;
-        if (count < limit && iterator.hasNext()) {
+        if ((limit == Query.NO_LIMIT || count < limit) && iterator.hasNext()) {
             r = iterator.next();
         } else {
             close();

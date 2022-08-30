@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.util;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
+import org.janusgraph.graphdb.query.Query;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -44,7 +45,7 @@ public class MultiDistinctUnorderedIterator<E extends Element> extends Closeable
 
     @Override
     protected E computeNext() {
-        if (count < limit) {
+        if (limit == Query.NO_LIMIT || count < limit) {
             while (iterator.hasNext()) {
                 E elem = iterator.next();
                 if (allElements.add(elem.id())) {
