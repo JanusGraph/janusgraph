@@ -383,12 +383,12 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 VertexListInternal merge = null;
 
                 for (InternalVertex rep : representatives) {
-                    if (merge!=null && merge.size()>=baseQuery.getLimit()) break;
+                    if (merge!=null && merge.size()>=baseQuery.getLimit() && baseQuery.hasLimit()) break;
                     VertexList vertexList = executeIndividualVertexIds(rep,baseQuery);
                     if (merge==null) merge = (VertexListInternal)vertexList;
                     else merge.addAll(vertexList);
                 }
-                if (merge != null && merge.size()>baseQuery.getLimit()) {
+                if (merge != null && merge.size()>baseQuery.getLimit() && baseQuery.hasLimit()) {
                     merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
                 }
                 return merge;

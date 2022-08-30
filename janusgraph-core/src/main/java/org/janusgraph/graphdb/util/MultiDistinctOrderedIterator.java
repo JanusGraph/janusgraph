@@ -18,6 +18,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComp
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.apache.tinkerpop.gremlin.util.function.MultiComparator;
+import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder.OrderEntry;
 
 import java.util.ArrayList;
@@ -58,7 +59,7 @@ public class MultiDistinctOrderedIterator<E extends Element> implements Closeabl
 
     @Override
     public boolean hasNext() {
-        if (limit != null && count >= limit) {
+        if (limit != null && limit != Query.NO_LIMIT && count >= limit) {
             return false;
         }
         for (int i = 0; i < iterators.size(); i++) {

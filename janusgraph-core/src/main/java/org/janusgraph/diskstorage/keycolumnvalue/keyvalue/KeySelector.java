@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.graphdb.query.Query;
 
 /**
  * A {@link KeySelector} utility that can be generated out of a given {@link KVQuery}
@@ -50,7 +51,7 @@ public class KeySelector {
     }
 
     public boolean reachedLimit() {
-        return count >= limit;
+        return Query.NO_LIMIT != limit && count >= limit;
     }
 
 }
