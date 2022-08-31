@@ -14,7 +14,7 @@
 
 package org.janusgraph.diskstorage.locking.consistentkey;
 
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Encapsulates an ExecutorService that creates and runs
- * {@link StandardLockCleanerRunnable} instances. Updates a timed-expiration Guava
+ * {@link StandardLockCleanerRunnable} instances. Updates a timed-expiration Caffeine
  * strong cache keyed by rows to prevent the user from spamming
  * tens/hundreds/... of cleaner instances in a short time.
  */
@@ -47,8 +47,6 @@ public class StandardLockCleanerService implements LockCleanerService {
     private static final TimeUnit KEEPALIVE_UNIT = TimeUnit.SECONDS;
 
     private static final Duration COOLDOWN_TIME = Duration.ofSeconds(30);
-
-    private static final int COOLDOWN_CONCURRENCY_LEVEL = 4;
 
     private static final ThreadFactory THREAD_FACTORY =
             new ThreadFactoryBuilder()
@@ -72,9 +70,8 @@ public class StandardLockCleanerService implements LockCleanerService {
         this.serializer = serializer;
         this.exec = exec;
         this.times = times;
-        blocked = CacheBuilder.newBuilder()
+        blocked = Caffeine.newBuilder()
                 .expireAfterWrite(cooldown.toNanos(), TimeUnit.NANOSECONDS)
-                .concurrencyLevel(COOLDOWN_CONCURRENCY_LEVEL)
                 .<KeyColumn, Instant>build()
                 .asMap();
     }

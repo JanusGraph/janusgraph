@@ -23,9 +23,9 @@ public class ByteSize {
 
     public static final int OBJECT_REFERENCE = 8;
 
-    public static final int GUAVA_CACHE_ENTRY_SIZE = 104;
+    public static final int CAFFEINE_CACHE_ENTRY_SIZE = 104;
 
-    public static final int GUAVA_CACHE_SOFT_ENTRY_SIZE = 136;
+    public static final int CAFFEINE_CACHE_SOFT_ENTRY_SIZE = 136;
 
 
     //Does not include array contents of byte[]

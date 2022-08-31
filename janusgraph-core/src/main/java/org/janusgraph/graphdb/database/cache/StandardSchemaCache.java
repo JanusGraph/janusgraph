@@ -14,9 +14,9 @@
 
 package org.janusgraph.graphdb.database.cache;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.base.Preconditions;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.jctools.maps.NonBlockingHashMapLong;
 import org.janusgraph.diskstorage.EntryList;
@@ -72,13 +72,13 @@ public class StandardSchemaCache implements SchemaCache {
         maxCachedRelations = maxCachedTypes *CACHE_RELATION_MULTIPLIER;
         this.retriever=retriever;
 
-        typeNamesBackup = CacheBuilder.newBuilder()
-                .concurrencyLevel(CONCURRENCY_LEVEL).initialCapacity(INITIAL_CACHE_SIZE)
+        typeNamesBackup = Caffeine.newBuilder()
+                .initialCapacity(INITIAL_CACHE_SIZE)
                 .maximumSize(maxCachedTypes).build();
         typeNames = new ConcurrentHashMap<>(INITIAL_CAPACITY, 0.75f, CONCURRENCY_LEVEL);
 
-        schemaRelationsBackup = CacheBuilder.newBuilder()
-                .concurrencyLevel(CONCURRENCY_LEVEL).initialCapacity(INITIAL_CACHE_SIZE *CACHE_RELATION_MULTIPLIER)
+        schemaRelationsBackup = Caffeine.newBuilder()
+                .initialCapacity(INITIAL_CACHE_SIZE *CACHE_RELATION_MULTIPLIER)
                 .maximumSize(maxCachedRelations).build();
 //        typeRelations = new ConcurrentHashMap<Long, EntryList>(INITIAL_CAPACITY*CACHE_RELATION_MULTIPLIER,0.75f,CONCURRENCY_LEVEL);
         schemaRelations = new NonBlockingHashMapLong<>(INITIAL_CAPACITY * CACHE_RELATION_MULTIPLIER); //TODO: Is this data structure safe or should we go with ConcurrentHashMap (line above)?
