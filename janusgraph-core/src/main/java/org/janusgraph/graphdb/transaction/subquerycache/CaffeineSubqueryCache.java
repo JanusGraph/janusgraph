@@ -14,36 +14,36 @@
 
 package org.janusgraph.graphdb.transaction.subquerycache;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.Weigher;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Weigher;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 
 /**
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */
-public class GuavaSubqueryCache extends SubsetSubqueryCache {
-    private Cache<JointIndexQuery.Subquery, SubqueryResult> guavaCache;
+public class CaffeineSubqueryCache extends SubsetSubqueryCache {
+    private final Cache<JointIndexQuery.Subquery, SubqueryResult> caffeineCache;
 
-    public GuavaSubqueryCache(int concurrencyLevel, long maximumWeight) {
-        guavaCache = CacheBuilder.newBuilder()
+    public CaffeineSubqueryCache(long maximumWeight) {
+        caffeineCache = Caffeine.newBuilder()
             .weigher((Weigher<JointIndexQuery.Subquery, SubqueryResult>) (q, r) -> 2 + r.size())
-            .concurrencyLevel(concurrencyLevel).maximumWeight(maximumWeight).build();
+            .maximumWeight(maximumWeight).build();
     }
 
     @Override
     protected SubqueryResult get(JointIndexQuery.Subquery key) {
-        return guavaCache.getIfPresent(key);
+        return caffeineCache.getIfPresent(key);
     }
 
     @Override
     protected void put(JointIndexQuery.Subquery key, SubqueryResult result) {
-        guavaCache.put(key, result);
+        caffeineCache.put(key, result);
     }
 
     @Override
     public synchronized void close() {
-        guavaCache.invalidateAll();
-        guavaCache.cleanUp();
+        caffeineCache.invalidateAll();
+        caffeineCache.cleanUp();
     }
 }

@@ -13,21 +13,20 @@
 // limitations under the License.
 
 package org.janusgraph.graphdb.transaction.vertexcache;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import com.google.common.base.Preconditions;
-import org.jctools.maps.NonBlockingHashMapLong;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.vertices.AbstractVertex;
 import org.janusgraph.util.datastructures.Retriever;
+import org.jctools.maps.NonBlockingHashMapLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
@@ -39,14 +38,23 @@ public class CaffeineVertexCache implements VertexCache {
     private final ConcurrentMap<Long, InternalVertex> volatileVertices;
     private final Cache<Long, InternalVertex> cache;
 
-    private long createdTime;
+    private final long createdTime;
 
     public CaffeineVertexCache(final long maxCacheSize, final int initialDirtySize) {
         volatileVertices = new NonBlockingHashMapLong<>(initialDirtySize);
         log.debug("Created dirty vertex map with initial size {}", initialDirtySize);
 
         Caffeine<Long, InternalVertex> cacheBuilder = Caffeine.newBuilder().maximumSize(maxCacheSize)
-            .removalListener(new CaffeineRemovalListener())
+            .removalListener((RemovalListener<Long, InternalVertex>) (key, v, removalCause) -> {
+                if (removalCause == RemovalCause.EXPLICIT) {
+                    assert volatileVertices.isEmpty();
+                    return;
+                }
+                assert (removalCause == RemovalCause.SIZE || removalCause == RemovalCause.REPLACED) : "Cause: " + removalCause;
+                if (((AbstractVertex) v).isTxOpen() && (v.isModified() || v.isRemoved())) {
+                    volatileVertices.putIfAbsent(key, v);
+                }
+            })
             .executor(Runnable::run); // according to the https://github.com/ben-manes/caffeine/discussions/757
         if (log.isDebugEnabled()) {
             cacheBuilder = cacheBuilder.recordStats();
@@ -115,23 +123,5 @@ public class CaffeineVertexCache implements VertexCache {
         volatileVertices.clear();
         cache.invalidateAll();
         cache.cleanUp();
-    }
-
-    class CaffeineRemovalListener implements RemovalListener<Long, InternalVertex> {
-
-        @Override
-        public void onRemoval(@Nullable Long key,
-                              @Nullable InternalVertex internalVertex,
-                              @Nonnull RemovalCause removalCause) {
-            if (removalCause == RemovalCause.EXPLICIT) {
-                assert volatileVertices.isEmpty();
-                return;
-            }
-            assert (removalCause == RemovalCause.SIZE || removalCause == RemovalCause.REPLACED) : "Cause: " + removalCause;
-            InternalVertex v = internalVertex;
-            if (((AbstractVertex) v).isTxOpen() && (v.isModified() || v.isRemoved())) {
-                volatileVertices.putIfAbsent(key, v);
-            }
-        }
     }
 }
