@@ -14,13 +14,14 @@
 
 package org.janusgraph.graphdb.log;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalCause;
-import com.google.common.cache.RemovalListener;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -67,7 +68,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -98,7 +98,6 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
     private final Cache<StandardTransactionId,TxEntry> txCache;
 
-
     public StandardTransactionLogProcessor(StandardJanusGraph graph,
                                            Instant startTime) {
         Preconditions.checkArgument(graph != null && graph.isOpen());
@@ -116,18 +115,15 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         this.persistenceTime = graph.getConfiguration().getMaxWriteTime();
         this.verboseLogging = graph.getConfiguration().getConfiguration()
                 .get(GraphDatabaseConfiguration.VERBOSE_TX_RECOVERY);
-        this.txCache = CacheBuilder.newBuilder()
-                .concurrencyLevel(2)
+        this.txCache = Caffeine.newBuilder()
                 .initialCapacity(100)
                 .expireAfterWrite(maxTxLength.toNanos(), TimeUnit.NANOSECONDS)
-                .removalListener((RemovalListener<StandardTransactionId, TxEntry>) notification -> {
-                    final RemovalCause cause = notification.getCause();
+                .removalListener((RemovalListener<StandardTransactionId, TxEntry>) (key,entry, cause) -> {
                     Preconditions.checkArgument(cause == RemovalCause.EXPIRED,
-                            "Unexpected removal cause [%s] for transaction [%s]", cause, notification.getKey());
-                    final TxEntry entry = notification.getValue();
+                        "Unexpected removal cause [%s] for transaction [%s]", cause, key);
                     if (entry.status == LogTxStatus.SECONDARY_FAILURE || entry.status == LogTxStatus.PRIMARY_SUCCESS) {
                         failureTxCounter.incrementAndGet();
-                        fixSecondaryFailure(notification.getKey(), entry);
+                        fixSecondaryFailure(key, entry);
                     } else {
                         successTxCounter.incrementAndGet();
                     }
@@ -322,7 +318,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
     private class TxLogMessageReader implements MessageReader {
 
-        private final Callable<TxEntry> entryFactory = TxEntry::new;
+        private final Function<StandardTransactionId, TxEntry> entryFactory = key -> new TxEntry();
 
         @Override
         public void read(Message message) {
@@ -333,12 +329,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             StandardTransactionId transactionId = new StandardTransactionId(senderId,txheader.getId(),
                     txheader.getTimestamp());
 
-            TxEntry entry;
-            try {
-                entry = txCache.get(transactionId,entryFactory);
-            } catch (ExecutionException e) {
-                throw new AssertionError("Unexpected exception",e);
-            }
+            TxEntry entry = txCache.get(transactionId,entryFactory);
 
             entry.update(txentry);
         }

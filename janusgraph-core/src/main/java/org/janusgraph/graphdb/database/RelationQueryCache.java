@@ -14,15 +14,14 @@
 
 package org.janusgraph.graphdb.database;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.RelationCategory;
 
 import java.util.EnumMap;
-import java.util.concurrent.ExecutionException;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -40,8 +39,8 @@ public class RelationQueryCache implements AutoCloseable {
 
     public RelationQueryCache(EdgeSerializer edgeSerializer, int capacity) {
         this.edgeSerializer = edgeSerializer;
-        this.cache = CacheBuilder.newBuilder().maximumSize(capacity*3/2).initialCapacity(capacity)
-                .concurrencyLevel(2).build();
+        this.cache = Caffeine.newBuilder().maximumSize(capacity*3/2).initialCapacity(capacity)
+                .build();
         relationTypes = new EnumMap<>(RelationCategory.class);
         for (RelationCategory rt : RelationCategory.values()) {
             relationTypes.put(rt,edgeSerializer.getQuery(rt,false));
@@ -53,12 +52,7 @@ public class RelationQueryCache implements AutoCloseable {
     }
 
     public SliceQuery getQuery(final InternalRelationType type, Direction dir) {
-        CacheEntry ce;
-        try {
-            ce = cache.get(type.longId(), () -> new CacheEntry(edgeSerializer,type));
-        } catch (ExecutionException e) {
-            throw new AssertionError("Should not happen: " + e.getMessage());
-        }
+        CacheEntry ce = cache.get(type.longId(), key -> new CacheEntry(edgeSerializer,type));
         assert ce!=null;
         return ce.get(dir);
     }

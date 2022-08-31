@@ -109,7 +109,7 @@ import org.janusgraph.graphdb.transaction.lock.LockTuple;
 import org.janusgraph.graphdb.transaction.lock.ReentrantTransactionLock;
 import org.janusgraph.graphdb.transaction.lock.TransactionLock;
 import org.janusgraph.graphdb.transaction.subquerycache.EmptySubqueryCache;
-import org.janusgraph.graphdb.transaction.subquerycache.GuavaSubqueryCache;
+import org.janusgraph.graphdb.transaction.subquerycache.CaffeineSubqueryCache;
 import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
 import org.janusgraph.graphdb.transaction.vertexcache.CaffeineVertexCache;
 import org.janusgraph.graphdb.transaction.vertexcache.EmptyVertexCache;
@@ -294,15 +294,12 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             }
         };
 
-        int concurrencyLevel;
         if (config.isSingleThreaded()) {
             addedRelations = new SimpleAddedRelations();
-            concurrencyLevel = 1;
             newTypeCache = new HashMap<>();
             newVertexIndexEntries = new SimpleIndexCache();
         } else {
             addedRelations = new ConcurrentAddedRelations();
-            concurrencyLevel = 1; //TODO: should we increase this?
             newTypeCache = new NonBlockingHashMap<>();
             newVertexIndexEntries = new ConcurrentIndexCache();
         }
@@ -315,13 +312,13 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         long effectiveVertexCacheSize = config.getVertexCacheSize();
         if (!config.isReadOnly()) {
             effectiveVertexCacheSize = Math.max(MIN_VERTEX_CACHE_SIZE, effectiveVertexCacheSize);
-            log.debug("Guava vertex cache size: requested={} effective={} (min={})",
+            log.debug("Caffeine vertex cache size: requested={} effective={} (min={})",
                     config.getVertexCacheSize(), effectiveVertexCacheSize, MIN_VERTEX_CACHE_SIZE);
         }
 
         vertexCache = new CaffeineVertexCache(effectiveVertexCacheSize,config.getDirtyVertexSize());
 
-        indexCache = new GuavaSubqueryCache(concurrencyLevel, config.getIndexCacheWeight());
+        indexCache = new CaffeineSubqueryCache(config.getIndexCacheWeight());
 
         uniqueLocks = UNINITIALIZED_LOCKS;
         deletedRelations = EMPTY_DELETED_RELATIONS;
