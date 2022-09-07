@@ -48,6 +48,9 @@ public class GeoshapeGraphBinarySerializerTest {
             Geoshape.point(37.97, 23.72),
             Geoshape.circle(37.97, 23.72, 10.0),
             Geoshape.box(37.97, 23.72, 38.97, 24.72),
+            Geoshape.point(29.7154388159, 23.72),
+            Geoshape.circle(29.7154388159, 23.72, 10.0),
+            Geoshape.box(29.7154388159, 23.72, 38.97, 24.72),
             Geoshape.line(Arrays.asList(new double[] {37.97, 23.72}, new double[] {38.97, 24.72})),
             Geoshape.polygon(Arrays.asList(new double[] {119.0, 59.0}, new double[] {121.0, 59.0}, new double[] {121.0, 61.0}, new double[] {119.0, 61.0}, new double[] {119.0, 59.0})),
             //MultiPoint
