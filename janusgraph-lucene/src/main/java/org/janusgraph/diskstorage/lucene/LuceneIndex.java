@@ -60,6 +60,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
@@ -100,6 +101,7 @@ import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.util.system.IOUtils;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -930,7 +932,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
+    public Number queryAggregation(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx, Aggregation aggregation) throws BackendException {
         //Construct query
         final String store = query.getStore();
         final LuceneCustomAnalyzer delegatingAnalyzer = delegatingAnalyzerFor(store, information);
@@ -943,14 +945,72 @@ public class LuceneIndex implements IndexProvider {
             }
             Query q = searchParams.getQuery();
 
-            final long time = System.currentTimeMillis();
-            // We ignore offset and limit for totals
-            final TopDocs docs = searcher.search(q, 1);
-            log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
-            return docs.totalHits.value;
+            switch (aggregation.getType()) {
+                case COUNT: return executeCount(searcher, q);
+                case MIN: return executeMin(searcher, q, aggregation.getFieldName(), aggregation.getDataType());
+                case MAX: return executeMax(searcher, q, aggregation.getFieldName(), aggregation.getDataType());
+                case AVG: return executeAvg(searcher, q, aggregation.getFieldName());
+                case SUM: return executeSum(searcher, q, aggregation.getFieldName(), aggregation.getDataType());
+                default: throw new UnsupportedOperationException();
+            }
         } catch (final IOException e) {
             throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
+    }
+
+    private long executeCount(IndexSearcher searcher, Query query) throws IOException {
+        final long time = System.currentTimeMillis();
+        // We ignore offset and limit for totals
+        final TopDocs docs = searcher.search(query, 1);
+        log.debug("Executed query [{}] in {} ms", query, System.currentTimeMillis() - time);
+        return docs.totalHits.value;
+    }
+
+    private SortField.Type sortFieldType(Class fieldType) {
+        if (fieldType != null) {
+            if (Long.class.isAssignableFrom(fieldType)) return SortField.Type.LONG;
+            else if (Float.class.isAssignableFrom(fieldType)) return SortField.Type.FLOAT;
+            else if (Double.class.isAssignableFrom(fieldType)) return SortField.Type.DOUBLE;
+        }
+        return SortField.Type.INT;
+    }
+
+    private Number adaptNumberType(Number value, Class<? extends Number> expectedType) {
+        if (expectedType == null) return value;
+        else if (Byte.class.isAssignableFrom(expectedType)) return value.byteValue();
+        else if (Short.class.isAssignableFrom(expectedType)) return value.shortValue();
+        else if (Integer.class.isAssignableFrom(expectedType)) return value.intValue();
+        else if (Long.class.isAssignableFrom(expectedType)) return value.longValue();
+        else if (Float.class.isAssignableFrom(expectedType)) return value.floatValue();
+        else if (Double.class.isAssignableFrom(expectedType)) return value.doubleValue();
+        else return value.doubleValue();
+    }
+
+    private Number executeMin(IndexSearcher searcher, Query query, String fieldName, Class fieldType) throws IOException {
+        final TopFieldDocs docs = searcher.search(query, 1, new Sort(new SortField(fieldName, sortFieldType(fieldType))));
+        final IndexableField field = searcher.doc(docs.scoreDocs[0].doc, Sets.newHashSet(fieldName)).getField(fieldName);
+        return adaptNumberType(field.numericValue(), fieldType);
+    }
+
+    private Number executeMax(IndexSearcher searcher, Query query, String fieldName, Class fieldType) throws IOException {
+        final TopFieldDocs docs = searcher.search(query, 1, new Sort(new SortField(fieldName, sortFieldType(fieldType), true)));
+        final IndexableField field = searcher.doc(docs.scoreDocs[0].doc, Sets.newHashSet(fieldName)).getField(fieldName);
+        return adaptNumberType(field.numericValue(), fieldType);
+    }
+
+
+    private Number executeSum(IndexSearcher searcher, Query query, String fieldName, Class fieldType) throws IOException {
+        SumCollector collector = new SumCollector(fieldName, searcher);
+        searcher.search(query, collector);
+
+        if (Float.class.isAssignableFrom(fieldType) || Double.class.isAssignableFrom(fieldType))
+            return collector.getValue();
+        else
+            return (long)collector.getValue();
+    }
+
+    private double executeAvg(IndexSearcher searcher, Query query, String fieldName) throws IOException {
+        return ((double)executeSum(searcher, query, fieldName, Double.class)) / executeCount(searcher, query);
     }
 
     @Override

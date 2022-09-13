@@ -66,10 +66,10 @@ public interface Transaction extends Graph, SchemaManager {
     JanusGraphQuery<? extends JanusGraphQuery> query();
 
     /**
-     * @return a mixed index count query which leverages mixed index for counts
-     * @see StandardJanusGraphTx#mixedIndexCountQuery()
+     * @return a mixed index aggregation query which leverages mixed index for aggregation
+     * @see StandardJanusGraphTx#mixedIndexAggQuery()
      */
-    MixedIndexCountQuery mixedIndexCountQuery();
+    MixedIndexAggQuery mixedIndexAggQuery();
 
     /**
      * Returns a {@link org.janusgraph.core.JanusGraphIndexQuery} to query for vertices or edges against the specified indexing backend using

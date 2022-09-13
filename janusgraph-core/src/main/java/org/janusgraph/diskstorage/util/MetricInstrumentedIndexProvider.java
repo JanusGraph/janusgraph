@@ -27,6 +27,7 @@ import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.util.stats.MetricManager;
 
 import java.util.Arrays;
@@ -42,14 +43,14 @@ public class MetricInstrumentedIndexProvider implements IndexProvider {
     public static final String M_MUTATE = "mutate";
     public static final String M_RESTORE = "restore";
     public static final String M_QUERY = "query";
-    public static final String M_MIXED_COUNT_QUERY = "mixedIndexCountQuery";
+    public static final String M_MIXED_AGG_QUERY = "mixedIndexAggregationQuery";
     public static final String M_RAW_QUERY = "rawQuery";
     public static final String M_TOTALS = "totals";
     public static final String M_CALLS = "calls";
     public static final String M_TIME = "time";
     public static final String M_EXCEPTIONS = "exceptions";
     public static final List<String> OPERATION_NAMES = Collections.unmodifiableList(
-        Arrays.asList(M_MUTATE, M_RESTORE, M_QUERY, M_MIXED_COUNT_QUERY, M_RAW_QUERY, M_TOTALS));
+        Arrays.asList(M_MUTATE, M_RESTORE, M_QUERY, M_MIXED_AGG_QUERY, M_RAW_QUERY, M_TOTALS));
 
     public MetricInstrumentedIndexProvider(final IndexProvider indexProvider, String prefix) {
         this.indexProvider = indexProvider;
@@ -75,8 +76,8 @@ public class MetricInstrumentedIndexProvider implements IndexProvider {
     }
 
     @Override
-    public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
-        return runWithMetrics((BaseTransactionConfigurable) tx, M_MIXED_COUNT_QUERY, () -> indexProvider.queryCount(query, information, tx));
+    public Number queryAggregation(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx, Aggregation aggregation) throws BackendException {
+        return runWithMetrics((BaseTransactionConfigurable) tx, M_MIXED_AGG_QUERY, () -> indexProvider.queryAggregation(query, information, tx, aggregation));
     }
 
     @Override

@@ -34,7 +34,7 @@ import org.janusgraph.core.JanusGraphMultiVertexQuery;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.MixedIndexCountQuery;
+import org.janusgraph.core.MixedIndexAggQuery;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.ReadOnlyTransactionException;
@@ -55,7 +55,7 @@ import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.database.index.IndexRecords;
 import org.janusgraph.graphdb.database.util.IndexRecordUtil;
-import org.janusgraph.graphdb.query.graph.MixedIndexCountQueryBuilder;
+import org.janusgraph.graphdb.query.graph.MixedIndexAggQueryBuilder;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.database.IndexSerializer;
@@ -1499,8 +1499,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     }
 
     @Override
-    public MixedIndexCountQuery mixedIndexCountQuery() {
-       return new MixedIndexCountQueryBuilder(indexSerializer, txHandle);
+    public MixedIndexAggQuery mixedIndexAggQuery() {
+        return new MixedIndexAggQueryBuilder(indexSerializer, txHandle);
     }
 
     @Override

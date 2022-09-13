@@ -15,19 +15,20 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.MixedIndexCountQuery;
+import org.janusgraph.core.MixedIndexAggQuery;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 
 /**
- * Builds a {@link MixedIndexCountQuery}, which contains a single query against a mixed index. It is used to retrieve
- * total number of elements satisfying given conditions.
+ * Builds a {@link MixedIndexAggQuery}, which contains a single query against a mixed index. It is used to retrieve
+ * aggregated result of elements satisfying given conditions.It is used to retrieve.
  *
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */
-public class MixedIndexCountQueryBuilder implements MixedIndexCountQuery {
+public class MixedIndexAggQueryBuilder implements MixedIndexAggQuery {
     private final BackendTransaction txHandle;
     private final IndexSerializer serializer;
     /**
@@ -39,13 +40,13 @@ public class MixedIndexCountQueryBuilder implements MixedIndexCountQuery {
      */
     private QueryProfiler profiler = QueryProfiler.NO_OP;
 
-    public MixedIndexCountQueryBuilder(IndexSerializer serializer, BackendTransaction txHandle) {
+    public MixedIndexAggQueryBuilder(IndexSerializer serializer, BackendTransaction txHandle) {
         Preconditions.checkNotNull(serializer);
         this.serializer = serializer;
         this.txHandle = txHandle;
     }
 
-    public MixedIndexCountQueryBuilder constructIndex(JointIndexQuery indexQuery, ElementCategory resultType) {
+    public MixedIndexAggQueryBuilder constructIndex(JointIndexQuery indexQuery, ElementCategory resultType) {
         if (indexQuery.size() != 1 || !indexQuery.getQuery(0).getIndex().isMixedIndex()) {
             return null;
         }
@@ -55,10 +56,10 @@ public class MixedIndexCountQueryBuilder implements MixedIndexCountQuery {
     }
 
     @Override
-    public Long executeTotals() {
+    public Number execute(Aggregation aggregation) {
         profiler.startTimer();
         profiler.setAnnotation(QueryProfiler.QUERY_ANNOTATION, query.getMixedQuery());
-        Long result = serializer.queryCount(query, txHandle);
+        Number result = serializer.queryAggregation(query, txHandle, aggregation);
         profiler.stopTimer();
         return result;
     }

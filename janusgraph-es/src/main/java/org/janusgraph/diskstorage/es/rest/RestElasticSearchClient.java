@@ -410,6 +410,7 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     public void setRetryOnConflict(Integer retryOnConflict) {
             this.retryOnConflict = retryOnConflict;
     }
+
     @Override
     public long countTotal(String indexName, Map<String, Object> requestData) throws IOException {
 
@@ -424,6 +425,70 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         try (final InputStream inputStream = response.getEntity().getContent()) {
             return mapper.readValue(inputStream, RestCountResponse.class).getCount();
         }
+    }
+
+    /**
+     * Execute the aggregation request using Elasticsearch index.
+     * Elasticsearch uses double values to hold and represent numeric data. As a result, aggregations on long numbers
+     * greater than 2^53 are approximate.
+     * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.17/search-aggregations.html#limits-for-long-values">Elasticsearch, limits for long values</a>
+     *
+     * @param indexName the name of the ElasticSearch index on which the aggregation is executed
+     * @param requestData the filter query
+     * @param agg the name of the aggregation operation (min, max, avg, sum)
+     * @param fieldName the name of the field on which the aggregation is computed
+     * @return the result of the aggregation
+     * @throws IOException
+     */
+    private double executeAggs(String indexName, Map<String, Object> requestData, String agg, String fieldName) throws IOException {
+
+        final Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_search");
+
+        requestData.put("aggs", ImmutableMap.of("agg_result", ImmutableMap.of(agg, ImmutableMap.of("field", fieldName))));
+        final byte[] requestDataBytes = mapper.writeValueAsBytes(requestData);
+        if (log.isDebugEnabled()) {
+            log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestData));
+        }
+
+        final Response response = performRequest(request, requestDataBytes);
+        try (final InputStream inputStream = response.getEntity().getContent()) {
+            return mapper.readValue(inputStream, RestAggResponse.class).getAggregations().getAggResult().getValue();
+        }
+    }
+
+    private Number adaptNumberType(double value, Class<? extends Number> expectedType) {
+        if (expectedType == null) return value;
+        else if (Byte.class.isAssignableFrom(expectedType)) return (byte)value;
+        else if (Short.class.isAssignableFrom(expectedType)) return (short)value;
+        else if (Integer.class.isAssignableFrom(expectedType)) return (int)value;
+        else if (Long.class.isAssignableFrom(expectedType)) return (long)value;
+        else if (Float.class.isAssignableFrom(expectedType)) return (float)value;
+        else return value;
+    }
+
+    @Override
+    public Number min(String indexName, Map<String, Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException {
+        return adaptNumberType(executeAggs(indexName, requestData, "min", fieldName), expectedType);
+    }
+
+    @Override
+    public Number max(String indexName, Map<String, Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException {
+        return adaptNumberType(executeAggs(indexName, requestData, "max", fieldName), expectedType);
+    }
+
+    @Override
+    public double avg(String indexName, Map<String, Object> requestData, String fieldName) throws IOException {
+        return executeAggs(indexName, requestData, "avg", fieldName);
+    }
+
+    @Override
+    public Number sum(String indexName, Map<String, Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException {
+        Class<? extends Number> returnType;
+        double sum = executeAggs(indexName, requestData, "sum", fieldName);
+        if (Float.class.isAssignableFrom(expectedType) || Double.class.isAssignableFrom(expectedType))
+            return sum;
+        else
+            return (long)sum;
     }
 
     @Override

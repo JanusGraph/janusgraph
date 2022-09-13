@@ -33,6 +33,7 @@ import org.janusgraph.diskstorage.log.kcvs.ExternalCachePersistor;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -432,17 +433,17 @@ public class BackendTransaction implements LoggableTransaction {
         });
     }
 
-    public Long indexQueryCount(final String index, final IndexQuery query) {
+    public Number indexQueryAggregation(final String index, final IndexQuery query, final Aggregation aggregation) {
         final IndexTransaction indexTx = getIndexTransaction(index);
-        return executeRead(new Callable<Long>() {
+        return executeRead(new Callable<Number>() {
             @Override
-            public Long call() throws Exception {
-                return indexTx.queryCount(query);
+            public Number call() throws Exception {
+                return indexTx.queryAggregation(query, aggregation);
             }
 
             @Override
             public String toString() {
-                return "indexQueryCount";
+                return "indexQueryAggregation";
             }
         });
 
