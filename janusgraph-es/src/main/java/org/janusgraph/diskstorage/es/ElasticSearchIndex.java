@@ -60,6 +60,7 @@ import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.slf4j.Logger;
@@ -1291,14 +1292,21 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
+    public Number queryAggregation(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx, Aggregation aggregation) throws BackendException {
         final ElasticSearchRequest sr = new ElasticSearchRequest();
-        final Map<String,Object> esQuery = getFilter(query.getCondition(), information.get(query.getStore()));
+        final Map<String, Object> esQuery = getFilter(query.getCondition(), information.get(query.getStore()));
         sr.setQuery(compat.prepareQuery(esQuery));
         try {
-            return client.countTotal(
-                getIndexStoreName(query.getStore()),
-                compat.createRequestBody(sr, null));
+            final String indexName = getIndexStoreName(query.getStore());
+            final Map<String,Object> requestData = compat.createRequestBody(sr, null);
+            switch (aggregation.getType()) {
+                case COUNT: return client.countTotal(indexName, requestData);
+                case MIN: return client.min(indexName, requestData, aggregation.getFieldName(), aggregation.getDataType());
+                case MAX: return client.max(indexName, requestData, aggregation.getFieldName(), aggregation.getDataType());
+                case AVG: return client.avg(indexName, requestData, aggregation.getFieldName());
+                case SUM: return client.sum(indexName, requestData, aggregation.getFieldName(), aggregation.getDataType());
+                default: throw new UnsupportedOperationException();
+            }
         } catch (final IOException | UncheckedIOException e) {
             throw new PermanentBackendException(e);
         }

@@ -31,6 +31,7 @@ import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 
 import java.util.List;
 import java.util.Map;
@@ -84,8 +85,8 @@ public class TestMockIndexProvider implements IndexProvider {
     }
 
     @Override
-    public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
-        return index.queryCount(query, information, tx);
+    public Number queryAggregation(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx, Aggregation aggregation) throws BackendException {
+        return index.queryAggregation(query, information, tx, aggregation);
     }
 
     @Override

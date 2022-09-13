@@ -22,6 +22,7 @@ import org.janusgraph.diskstorage.LoggableTransaction;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -100,8 +101,8 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         return index.query(query, keyInformation, indexTx);
     }
 
-    public Long queryCount(IndexQuery query) throws BackendException {
-        return index.queryCount(query, keyInformation, indexTx);
+    public Number queryAggregation(IndexQuery query, Aggregation aggregation) throws BackendException {
+        return index.queryAggregation(query, keyInformation, indexTx, aggregation);
     }
 
     public Stream<RawQuery.Result<String>> queryStream(RawQuery query) throws BackendException {

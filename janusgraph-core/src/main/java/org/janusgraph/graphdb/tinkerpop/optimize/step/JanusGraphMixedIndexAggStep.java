@@ -25,54 +25,84 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.MixedIndexCountQuery;
+import org.janusgraph.core.MixedIndexAggQuery;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.query.graph.GraphCentricQuery;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
-import org.janusgraph.graphdb.query.graph.MixedIndexCountQueryBuilder;
+import org.janusgraph.graphdb.query.graph.MixedIndexAggQueryBuilder;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
+import org.janusgraph.graphdb.types.MixedIndexType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Optional;
+
+import static org.janusgraph.graphdb.database.util.IndexRecordUtil.key2Field;
 
 /**
- * A custom count step similar to {@link org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep} but
+ * A custom step similar to {@link org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep} but
  * uses mixed index query to directly fetch number of satisfying elements without actually fetching the elements.
  *
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */
-public class JanusGraphMixedIndexCountStep<S> extends ReducingBarrierStep<S, Long> implements Profiling {
+public class JanusGraphMixedIndexAggStep<S> extends ReducingBarrierStep<S, Number> implements Profiling {
 
     private final ArrayList<HasContainer> hasContainers = new ArrayList<>();
-    private MixedIndexCountQuery mixedIndexCountQuery = null;
+    private MixedIndexAggQuery mixedIndexAggQuery = null;
     private boolean done;
+    private final Aggregation aggregation;
 
-    public JanusGraphMixedIndexCountStep(JanusGraphStep janusGraphStep, Traversal.Admin<?, ?> traversal) {
+    public JanusGraphMixedIndexAggStep(JanusGraphStep janusGraphStep, Traversal.Admin<?, ?> traversal, Aggregation agg) {
         super(traversal);
         JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(traversal);
-
-        final MixedIndexCountQueryBuilder countQueryBuilder = (MixedIndexCountQueryBuilder) tx.mixedIndexCountQuery();
+        aggregation = agg;
+        final MixedIndexAggQueryBuilder aggregationQueryBuilder = (MixedIndexAggQueryBuilder) tx.mixedIndexAggQuery();
 
         final GraphCentricQuery query = janusGraphStep.buildGlobalGraphCentricQuery();
 
         if (query != null && query.getIndexQuery().isFitted()) {
-            final JointIndexQuery indexQuery = query.getIndexQuery().getBackendQuery();
-            mixedIndexCountQuery = countQueryBuilder.constructIndex(indexQuery,
-                Vertex.class.isAssignableFrom(janusGraphStep.getReturnClass()) ? ElementCategory.VERTEX : ElementCategory.EDGE);
+            final String fieldName = agg.getFieldName();
+            boolean isIndexed = false;
+            if (fieldName == null) {
+                isIndexed = true;
+            } else {
+                MixedIndexType indexType = (MixedIndexType)query.getIndexQuery().getBackendQuery().getQuery(0).getIndex();
+                Optional<? extends Class<?>> dataType = Arrays.stream(indexType.getFieldKeys())
+                    .filter(f -> f.getFieldKey().name().equals(fieldName))
+                    .map(f -> f.getFieldKey().dataType())
+                    .filter(Number.class::isAssignableFrom)
+                    .findFirst();
+                if (dataType.isPresent()) {
+                    isIndexed = true;
+                    aggregation.setDataType(dataType.get());
+                    RelationType rt = tx.getRelationType(fieldName);
+                    if (rt instanceof PropertyKey)
+                        aggregation.setFieldName(key2Field(indexType, (PropertyKey) rt));
+                }
+            }
+            if (isIndexed) {
+                final JointIndexQuery indexQuery = query.getIndexQuery().getBackendQuery();
+                mixedIndexAggQuery = aggregationQueryBuilder.constructIndex(indexQuery,
+                    Vertex.class.isAssignableFrom(janusGraphStep.getReturnClass()) ? ElementCategory.VERTEX : ElementCategory.EDGE);
+
+            }
         }
     }
 
     @Override
-    public Long projectTraverser(Traverser.Admin<S> traverser) {
+    public Number projectTraverser(Traverser.Admin<S> traverser) {
         return traverser.bulk();
     }
 
     @Override
-    public Traverser.Admin<Long> processNextStart() {
+    public Traverser.Admin<Number> processNextStart() {
         if (!this.done) {
             this.done = true;
-            return getTraversal().getTraverserGenerator().generate(this.mixedIndexCountQuery.executeTotals(), (Step) this, 1L);
+            return getTraversal().getTraverserGenerator().generate(this.mixedIndexAggQuery.execute(aggregation), (Step) this, 1L);
         } else {
             return getTraversal().getTraverserGenerator().generate(EmptyIterator.INSTANCE.next(), (Step) this, 1L);
         }
@@ -89,10 +119,10 @@ public class JanusGraphMixedIndexCountStep<S> extends ReducingBarrierStep<S, Lon
     @Override
     public void setMetrics(final MutableMetrics metrics) {
         QueryProfiler queryProfiler = new TP3ProfileWrapper(metrics);
-        mixedIndexCountQuery.observeWith(queryProfiler);
+        mixedIndexAggQuery.observeWith(queryProfiler);
     }
 
-    public MixedIndexCountQuery getMixedIndexCountQuery() {
-        return mixedIndexCountQuery;
+    public MixedIndexAggQuery getMixedIndexAggQuery() {
+        return mixedIndexAggQuery;
     }
 }

@@ -20,6 +20,7 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransaction;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.BaseTransactionConfigurable;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 
 import java.util.List;
 import java.util.Map;
@@ -84,7 +85,7 @@ public interface IndexProvider extends IndexInformation {
      */
     void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
-    Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
+    Number queryAggregation(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx, Aggregation aggregation) throws BackendException;
 
     /**
      * Executes the given query against the index.

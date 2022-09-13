@@ -156,6 +156,12 @@ JanusGraph now officially supports Java 11 in addition to Java 8. We encourage e
 !!! note
     The distribution zip archives are however still built with Java 8 since the full distribution includes Cassandra which will only support Java 11 in version 4.
 
+##### Mixed index aggregation optimization
+
+A new optimization has been added to compute aggregations (min, max, sum and avg) using mixed index engine (if the aggregation function follows an indexed query).
+If the index backend is Elasticsearch, a `double` value is used to hold the result. As a result, aggregations on long numbers greater than 2^53 are approximate.
+In this case, if the accurate result is essential, the optimization can be disabled by removing the strategy `JanusGraphMixedIndexAggStrategy`: `g.traversal().withoutStrategies(JanusGraphMixedIndexAggStrategy.class)`.
+
 ### Version 0.6.3 (Release Date: ???)
 
 ```xml tab='Maven'

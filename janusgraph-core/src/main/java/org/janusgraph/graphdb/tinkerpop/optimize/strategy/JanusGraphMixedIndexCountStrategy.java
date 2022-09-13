@@ -15,29 +15,22 @@
 package org.janusgraph.graphdb.tinkerpop.optimize.strategy;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexCountStep;
-import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggStep;
 
 import java.util.Collections;
 import java.util.Set;
 
 /**
  * If the query can be satisfied by a single mixed index query, and the query is followed by a count step, then
- * this strategy replaces original step with {@link JanusGraphMixedIndexCountStep}, which fires a count query against
- * mixed index backend without retrieving all elements
+ * this strategy replaces original step with {@link JanusGraphMixedIndexAggStep}, which fires a count aggregation query
+ * against mixed index backend without retrieving all elements
  *
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */
-public class JanusGraphMixedIndexCountStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy>
-    implements TraversalStrategy.ProviderOptimizationStrategy {
+public class JanusGraphMixedIndexCountStrategy extends AbstractJanusGraphMixedIndexAggStrategy {
     private static final JanusGraphMixedIndexCountStrategy INSTANCE = new JanusGraphMixedIndexCountStrategy();
     private static final Set<Class<? extends ProviderOptimizationStrategy>> PRIORS = Collections.singleton(JanusGraphStepStrategy.class);
 
@@ -45,62 +38,17 @@ public class JanusGraphMixedIndexCountStrategy extends AbstractTraversalStrategy
     }
 
     @Override
-    public void apply(final Traversal.Admin<?, ?> traversal) {
-        if (TraversalHelper.onGraphComputer(traversal))
-            return;
-
-        TraversalHelper.getStepsOfClass(JanusGraphStep.class, traversal).forEach(originalGraphStep -> {
-            buildMixedIndexCountStep(originalGraphStep, traversal);
-        });
-    }
-
-    /**
-     * Check if a mixed index count step can be built, and if so, apply it.
-     *
-     * @param originalGraphStep
-     * @param traversal
-     */
-    private void buildMixedIndexCountStep(final JanusGraphStep originalGraphStep, final Traversal.Admin<?, ?> traversal) {
-        if (!originalGraphStep.isStartStep() || !hasCountGlobalStep(originalGraphStep)) {
-            return;
-        }
-        // try to find a suitable mixed index and build a mixed index count query
-        final JanusGraphMixedIndexCountStep<?> directQueryCountStep = new JanusGraphMixedIndexCountStep<>(originalGraphStep, traversal);
-        if (directQueryCountStep.getMixedIndexCountQuery() != null) {
-            applyMixedIndexCountStep(originalGraphStep, directQueryCountStep, traversal);
-        }
-    }
-
-    private boolean isEligibleToSkip(final Step currentStep) {
-        return currentStep instanceof IdentityStep || currentStep instanceof NoOpBarrierStep;
-    }
-
-    private boolean hasCountGlobalStep(final GraphStep originalGraphStep) {
+    protected Aggregation getAggregation(final GraphStep originalGraphStep) {
         Step<?, ?> currentStep = originalGraphStep.getNextStep();
         while (isEligibleToSkip(currentStep)) {
             currentStep = currentStep.getNextStep();
         }
-        return currentStep instanceof CountGlobalStep;
-    }
-
-    /**
-     * Apply mixed index count step in the traversal and remove "has" steps that already folded in the mixedIndexCountStep
-     *
-     * @param originalGraphStep
-     * @param mixedIndexCountStep
-     * @param traversal
-     */
-    private void applyMixedIndexCountStep(final GraphStep originalGraphStep, final JanusGraphMixedIndexCountStep mixedIndexCountStep,
-                                          final Traversal.Admin<?, ?> traversal) {
-        Step<?, ?> currentStep = originalGraphStep.getNextStep();
-        while (isEligibleToSkip(currentStep)) {
-            currentStep = currentStep.getNextStep();
+        if (currentStep instanceof CountGlobalStep) {
+            return Aggregation.COUNT;
         }
-        assert currentStep instanceof CountGlobalStep;
-        traversal.removeStep(currentStep);
-        TraversalHelper.replaceStep(originalGraphStep, mixedIndexCountStep, traversal);
+        return null;
     }
-
+    
     public static JanusGraphMixedIndexCountStrategy instance() {
         return INSTANCE;
     }

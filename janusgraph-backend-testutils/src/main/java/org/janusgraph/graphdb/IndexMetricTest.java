@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.janusgraph.diskstorage.Backend.METRICS_INDEX_PROVIDER_NAME;
-import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_MIXED_COUNT_QUERY;
+import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_MIXED_AGG_QUERY;
 import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_MUTATE;
 import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_QUERY;
 import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_RAW_QUERY;
@@ -54,21 +54,28 @@ public abstract class IndexMetricTest extends JanusGraphBaseTest {
     public void testIndexMetrics() {
         PropertyKey p1 = mgmt.makePropertyKey("p1").dataType(String.class).make();
         mgmt.makePropertyKey("p2").dataType(String.class).make();
-        mgmt.buildIndex("idx", Vertex.class).addKey(p1, Mapping.STRING.asParameter()).buildMixedIndex("search");
+        PropertyKey p3 = mgmt.makePropertyKey("p3").dataType(Long.class).make();
+        mgmt.makePropertyKey("p4").dataType(Integer.class).make();
+        mgmt.buildIndex("idx", Vertex.class).addKey(p1, Mapping.STRING.asParameter()).addKey(p3).buildMixedIndex("search");
         finishSchema();
 
-        graph.traversal().addV().property("p1", "value").iterate();
+        graph.traversal().addV().property("p1", "value").property("p3", 42).property("p4", 12).iterate();
         graph.tx().commit();
         graph.traversal().V().has("p1", "value").iterate();
         graph.traversal().V().has("p2", "value").iterate();
         graph.traversal().V().has("p1", "value").count().next();
+        graph.traversal().V().has("p1", "value").values("p3").max().next();
+        graph.traversal().V().has("p1", "value").values("p3").min().next();
+        graph.traversal().V().has("p1", "value").values("p3").sum().next();
+        graph.traversal().V().has("p1", "value").values("p3").mean().next();
+        graph.traversal().V().has("p1", "value").values("p4").max().next();
         graph.indexQuery("idx", "p1:*").vertexTotals();
         graph.indexQuery("idx", "p1:*").vertexStream();
 
         Assertions.assertThrows(JanusGraphException.class,  () ->
             graph.indexQuery("idx", "!@#$%^").vertexTotals());
 
-        verifyIndexMetrics("search", METRICS_INDEX_PREFIX, ImmutableMap.of(M_MUTATE, 1L, M_QUERY, 1L, M_MIXED_COUNT_QUERY, 1L, M_TOTALS, 2L, M_RAW_QUERY, 1L));
+        verifyIndexMetrics("search", METRICS_INDEX_PREFIX, ImmutableMap.of(M_MUTATE, 1L, M_QUERY, 1L, M_MIXED_AGG_QUERY, 5L, M_TOTALS, 2L, M_RAW_QUERY, 1L));
         assertEquals(1, metric.getCounter(METRICS_INDEX_PREFIX, "search", M_TOTALS, MetricInstrumentedStore.M_EXCEPTIONS).getCount());
     }
 

@@ -77,7 +77,7 @@ import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexCountStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -1115,14 +1115,20 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         final PropertyKey prop = makeKey("prop", String.class);
         final PropertyKey description = makeKey("desc", String.class);
         final PropertyKey pet = makeKey("pet", String.class);
-        mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.STRING.asParameter())
-            .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+        final PropertyKey height = makeKey("height", Integer.class);
+        final PropertyKey weight = makeKey("weight", Float.class);
+        mgmt.buildIndex("mixed", Vertex.class)
+            .addKey(name, Mapping.STRING.asParameter())
+            .addKey(prop, Mapping.STRING.asParameter())
+            .addKey(height)
+            .addKey(weight)
+            .buildMixedIndex(INDEX);
         mgmt.buildIndex("mi", Vertex.class).addKey(description).addKey(pet).buildMixedIndex(INDEX2);
         finishSchema();
 
-        tx.addVertex("name", "bob", "prop", "val", "desc", "he likes coding", "pet", "he likes dogs", "age", 20);
-        tx.addVertex("name", "bob", "prop", "val2", "desc", "he likes coding", "pet", "he likes cats", "age", 25);
-        tx.addVertex("name", "alex", "prop", "val", "desc", "he likes debugging", "pet", "he likes cats", "age", 20);
+        tx.addVertex("name", "bob", "prop", "val", "desc", "he likes coding", "pet", "he likes dogs", "age", 20, "height", 170, "weight", 72.3);
+        tx.addVertex("name", "bob", "prop", "val2", "desc", "he likes coding", "pet", "he likes cats", "age", 25, "height", 175, "weight", 102.5);
+        tx.addVertex("name", "alex", "prop", "val", "desc", "he likes debugging", "pet", "he likes cats", "age", 20, "height", 190, "weight", 55.3);
         tx.commit();
 
         // satisfied by a single graph-centric query which is satisfied by a single mixed index query
@@ -1130,6 +1136,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             newTx();
             assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).count().next());
             assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).toList().size());
+            assertEquals(190, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").max().next());
+            assertEquals(25, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("age").max().next());
+            assertEquals(170, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").min().next());
+            assertEquals(535L, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").sum().next());
+            assertEquals(535.0/3, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").mean().next());
             Metrics mMixedOr = tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val"))
                 .profile().next().getMetrics(0);
             assertEquals("Or(JanusGraphStep([],[name.eq(bob)]),JanusGraphStep([],[prop.eq(val)]))", mMixedOr.getName());
@@ -1223,6 +1234,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         newTx();
         assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).count().next());
         assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).toList().size());
+        assertEquals(190, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).values("height").max().next());
+        assertEquals(170, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).values("height").min().next());
+        assertEquals(535L, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).values("height").sum().next());
+        assertEquals(535.0/3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).values("height").mean().next());
         Metrics mMixedOr = tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20))
             .profile().next().getMetrics(0);
         assertEquals("Or(JanusGraphStep([],[name.eq(bob)]),JanusGraphStep([],[age.eq(20)]))", mMixedOr.getName());
@@ -1276,6 +1291,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         newTx();
         assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").count().next());
         assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").toList().size());
+        assertEquals(170, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").max().next());
+        assertEquals(170, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").min().next());
+        assertEquals(170L, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").sum().next());
+        assertEquals(170.0, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").mean().next());
+        assertEquals(174.8, (double)tx.traversal().V().has("name", "bob").values("weight").sum().next(), 0.001);
         Metrics mMixedAnd = tx.traversal().V().has("name", "bob").has("prop", "val")
             .profile().next().getMetrics(0);
         assertEquals("JanusGraphStep([],[name.eq(bob), prop.eq(val)])", mMixedAnd.getName());
@@ -1303,6 +1323,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         newTx();
         assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").count().next());
         assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").toList().size());
+        assertEquals(170, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").max().next());
+        assertEquals(170, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").min().next());
+        assertEquals(170L, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").sum().next());
+        assertEquals(170.0, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").mean().next());
         final Metrics mMixedAnd2 = tx.traversal().V().has("name", "bob").has("prop", "val")
             .has("desc", Text.textContains("coding")).profile().next().getMetrics(0);
         assertEquals("JanusGraphStep([],[name.eq(bob), prop.eq(val), desc.textContains(coding)])", mMixedAnd2.getName());
@@ -1633,7 +1657,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     private void checkMixedIndexCountProfiling(TraversalMetrics profile, Map<String, String> annotations) {
         Metrics metrics = profile.getMetrics(0);
         assertTrue(metrics.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertTrue(metrics.getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertTrue(metrics.getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName()));
         Metrics nested = (Metrics) metrics.getNested().toArray()[0];
         assertEquals(QueryProfiler.MIXED_INEX_COUNT_QUERY, nested.getName());
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
@@ -1723,7 +1747,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(total, graph.indexQuery(EINDEX, "e.name:(\"Uncle Berry has a farm\", \"ducks are beautiful animals\")").edgeTotals());
         profile = graph.traversal().E().has("name", P.within("Uncle Berry has a farm", "ducks are beautiful animals"))
             .count().profile().next();
-        assertTrue(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertTrue(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName()));
         assertEquals(total, graph.traversal().E().has("name", P.within("Uncle Berry has a farm", "ducks are beautiful animals")).count().next());
 
 
@@ -1747,7 +1771,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(total, graph.indexQuery(EINDEX, "e.name:(\"Uncle Berry has a farm\", \"and on his farm he has five ducks\")").edgeTotals());
         profile = graph.traversal().E().or(__.has("name", "Uncle Berry has a farm"), __.has("name", "and on his farm he has five ducks"))
             .count().profile().next();
-        assertTrue(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertTrue(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName()));
         assertEquals(total, graph.traversal().E().or(__.has("name", "Uncle Berry has a farm"), __.has("name", "and on his farm he has five ducks"))
             .count().next());
 
@@ -1813,7 +1837,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         total = numV / strings.length;
         profile = graph.traversal().V().has("name", "Uncle Berry has a farm").out().count().profile().next();
-        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName()));
         assertTrue(profile.getMetrics(0).getName().contains(JanusGraphStep.class.getSimpleName()));
         assertEquals(total, graph.traversal().V().has("name", "Uncle Berry has a farm").out().count().next());
 
@@ -1830,11 +1854,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         newTx();
 
         profile = graph.traversal().V().has("age", 0).count().profile().next();
-        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName()));
         assertTrue(profile.getMetrics(0).getName().contains(JanusGraphStep.class.getSimpleName()));
         assertEquals(5, graph.traversal().V().has("age", 0).count().next());
         profile = graph.traversal().V().has("age").count().profile().next();
-        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName()));
         assertTrue(profile.getMetrics(0).getName().contains(JanusGraphStep.class.getSimpleName()));
         assertEquals(10, graph.traversal().V().has("age").count().next());
 
@@ -1843,17 +1867,17 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         assertEquals(10, graph.traversal().V().has("name").has("age").count().next());
         profile = graph.traversal().V().has("name").has("age").count().profile().next();
-        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName()));
         assertEquals(5, graph.traversal().V().has("name").has("age", 0).count().next());
         profile = graph.traversal().V().has("name").has("age", 0).count().profile().next();
-        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName()));
         profile = graph.traversal().V().has("age").has("name").count().profile().next();
-        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexCountStep.class.getSimpleName()));
+        assertFalse(profile.getMetrics(0).getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName()));
 
         /* ==========================
         verify other special cases */
 
-        // cannot convert to JanusGraphMixedIndexCountStep if the first JanusGraphStep is not the start step
+        // cannot convert to JanusGraphMixedIndexAggStep if the first JanusGraphStep is not the start step
         assertEquals((numV + 10) * numV, graph.traversal().V().V().has("text").count().next());
         assertEquals(graph.traversal().withoutStrategies(JanusGraphMixedIndexCountStrategy.class).V().V().has("text").count().next(),
             graph.traversal().V().V().has("text").count().next());

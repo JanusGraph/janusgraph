@@ -56,6 +56,14 @@ public interface ElasticSearchClient extends Closeable {
 
     long countTotal(String indexName, Map<String,Object> requestData) throws IOException;
 
+    Number min(String indexName, Map<String,Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException;
+
+    Number max(String indexName, Map<String,Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException;
+
+    double avg(String indexName, Map<String,Object> requestData, String fieldName) throws IOException;
+
+    Number sum(String indexName, Map<String,Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException;
+
     ElasticSearchResponse search(String indexName, Map<String,Object> request, boolean useScroll) throws IOException;
 
     ElasticSearchResponse search(String scrollId) throws IOException;

@@ -66,6 +66,7 @@ import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.graph.MultiKeySliceQuery;
 import org.janusgraph.graphdb.query.index.IndexSelectionUtil;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
@@ -317,10 +318,10 @@ public class IndexSerializer {
         }
     }
 
-    public Long queryCount(final JointIndexQuery.Subquery query, final BackendTransaction tx) {
+    public Number queryAggregation(final JointIndexQuery.Subquery query, final BackendTransaction tx, final Aggregation aggregation) {
         final IndexType index = query.getIndex();
         assert index.isMixedIndex();
-        return tx.indexQueryCount(index.getBackingIndexName(), query.getMixedQuery());
+        return tx.indexQueryAggregation(index.getBackingIndexName(), query.getMixedQuery(), aggregation);
     }
 
     public MultiKeySliceQuery getQuery(final CompositeIndexType index, List<Object[]> values) {

@@ -88,6 +88,7 @@ import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -713,17 +714,22 @@ public class SolrIndex implements IndexProvider {
     }
 
     @Override
-    public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
+    public Number queryAggregation(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx, Aggregation aggregation) throws BackendException {
         try {
             final String collection = query.getStore();
-            final String keyIdField = getKeyFieldId(collection);
             final SolrQuery solrQuery = new SolrQuery("*:*");
-            solrQuery.set(CommonParams.FL, keyIdField);
             final String queryFilter = buildQueryFilter(query.getCondition(), information.get(collection));
             solrQuery.addFilterQuery(queryFilter);
-            final QueryResponse response = solrClient.query(collection, solrQuery);
-            logger.debug("Executed query [{}] in {} ms", query.toString(), response.getElapsedTime());
-            return response.getResults().getNumFound();
+
+
+            switch (aggregation.getType()) {
+                case COUNT: return executeCount(query, collection, solrQuery);
+                case MIN: return executeMin(query, collection, solrQuery, information, aggregation.getFieldName(), aggregation.getDataType());
+                case MAX: return executeMax(query, collection, solrQuery, information, aggregation.getFieldName(), aggregation.getDataType());
+                case AVG: return executeAvg(query, collection, solrQuery, information, aggregation.getFieldName());
+                case SUM: return executeSum(query, collection, solrQuery, information, aggregation.getFieldName(), aggregation.getDataType());
+                default: throw new IOException();
+            }
         } catch (final IOException e) {
             logger.error("Query did not complete : ", e);
             throw new PermanentBackendException(e);
@@ -731,6 +737,59 @@ public class SolrIndex implements IndexProvider {
             logger.error("Unable to query Solr index.", e);
             throw new PermanentBackendException(e);
         }
+    }
+    private long executeCount(IndexQuery query, String collection, SolrQuery solrQuery) throws IOException, SolrServerException {
+        final QueryResponse response = solrClient.query(collection, solrQuery);
+        logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
+        return response.getResults().getNumFound();
+    }
+
+    private Number adaptNumberType(Number value, Class<? extends Number> expectedType) {
+        if (expectedType == null) return value;
+        else if (Byte.class.isAssignableFrom(expectedType)) return value.byteValue();
+        else if (Short.class.isAssignableFrom(expectedType)) return value.shortValue();
+        else if (Integer.class.isAssignableFrom(expectedType)) return value.intValue();
+        else if (Long.class.isAssignableFrom(expectedType)) return value.longValue();
+        else if (Float.class.isAssignableFrom(expectedType)) return value.floatValue();
+        else if (Double.class.isAssignableFrom(expectedType)) return value.doubleValue();
+        else return value.doubleValue();
+    }
+
+    private Number executeMax(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName, Class fieldType) throws SolrServerException, IOException {
+        final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
+        solrQuery.setGetFieldStatistics("{!max=true}" + key);
+        final QueryResponse response = solrClient.query(collection, solrQuery);
+        logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
+        return adaptNumberType((Number)response.getFieldStatsInfo().get(key).getMax(), fieldType);
+    }
+
+    private Number executeMin(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName, Class fieldType) throws SolrServerException, IOException {
+        final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
+        solrQuery.setGetFieldStatistics("{!min=true}" + key);
+        final QueryResponse response = solrClient.query(collection, solrQuery);
+        logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
+        return adaptNumberType((Number)response.getFieldStatsInfo().get(key).getMin(), fieldType);
+    }
+
+    private Number executeSum(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName, Class fieldType) throws SolrServerException, IOException {
+        final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
+        solrQuery.setGetFieldStatistics("{!sum=true}" + key);
+        final QueryResponse response = solrClient.query(collection, solrQuery);
+        logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
+        Number sum = ((Number)response.getFieldStatsInfo().get(key).getSum());
+        if (Float.class.isAssignableFrom(fieldType) || Double.class.isAssignableFrom(fieldType))
+            return sum.doubleValue();
+        else
+            return sum.longValue();
+    }
+
+    private Number executeAvg(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName) throws SolrServerException, IOException {
+        final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
+        solrQuery.setGetFieldStatistics(key);
+        solrQuery.setGetFieldStatistics("{!mean=true}" + key);
+        final QueryResponse response = solrClient.query(collection, solrQuery);
+        logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
+        return ((Number)response.getFieldStatsInfo().get(key).getMean()).doubleValue();
     }
 
     @Override

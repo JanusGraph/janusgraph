@@ -1,4 +1,4 @@
-// Copyright 2020 JanusGraph Authors
+// Copyright 2017 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,20 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+package org.janusgraph.diskstorage.es.rest;
 
-package org.janusgraph.core;
+import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
+import org.apache.tinkerpop.shaded.jackson.annotation.JsonProperty;
 
-import org.janusgraph.graphdb.query.profile.ProfileObservable;
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class RestAggResult {
+    @JsonProperty("agg_result")
+    private RestAggValue aggResult;
 
-/**
- * @author Boxuan Li (liboxuan@connect.hku.hk)
- */
-public interface MixedIndexCountQuery extends ProfileObservable {
+    public RestAggValue getAggResult() {
+        return aggResult;
+    }
 
-    /**
-     * Fire a count query against index backend to retrieve total number of satisfying elements
-     *
-     * @return total elements that match the query
-     */
-    Long executeTotals();
+    public void setAggResult(RestAggValue aggResult) {
+        this.aggResult = aggResult;
+    }
 }
+
