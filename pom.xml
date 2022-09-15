@@ -71,8 +71,6 @@
         <htrace.version>4.2.0-incubating</htrace.version>
         <bigtable.version>1.24.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
-        <!-- align with org.apache.hbase:hbase -->
-        <jackson1.version>1.9.13</jackson1.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.13.3</jackson2.version>
         <lucene-solr.version>8.11.2</lucene-solr.version>
@@ -635,27 +633,6 @@
                 <version>2.0.1.Final</version>
             </dependency>
 
-            <!-- Jackson 1.x -->
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-mapper-asl</artifactId>
-                <version>${jackson1.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-core-asl</artifactId>
-                <version>${jackson1.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-xc</artifactId>
-                <version>${jackson1.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-jaxrs</artifactId>
-                <version>${jackson1.version}</version>
-            </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
