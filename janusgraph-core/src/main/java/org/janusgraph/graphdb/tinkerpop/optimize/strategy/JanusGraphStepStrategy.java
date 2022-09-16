@@ -22,7 +22,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.janusgraph.graphdb.tinkerpop.ElementUtils;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
@@ -63,17 +62,19 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
             } else {
                 //Make sure that any provided "start" elements are instantiated in the current transaction
                 final Object[] ids = originalGraphStep.getIds();
-                ElementUtils.verifyArgsMustBeEitherIdOrElement(ids);
-                if (ids[0] instanceof Element) {
-                    //GraphStep constructor ensures that the entire array is elements
-                    final Object[] elementIds = new Object[ids.length];
-                    for (int i = 0; i < ids.length; i++) {
+                final Object[] elementIds = new Object[ids.length];
+                for (int i = 0; i < ids.length; i++) {
+                    if (ids[i] instanceof Element) {
                         elementIds[i] = ((Element) ids[i]).id();
                     }
-                    originalGraphStep.setIteratorSupplier(() -> originalGraphStep.returnsVertex() ?
-                            ((Graph) originalGraphStep.getTraversal().getGraph().get()).vertices(elementIds) :
-                            ((Graph) originalGraphStep.getTraversal().getGraph().get()).edges(elementIds));
+                    else
+                    {
+                        elementIds[i] = ids[i];
+                    }
                 }
+                originalGraphStep.setIteratorSupplier(() -> originalGraphStep.returnsVertex() ?
+                    ((Graph) originalGraphStep.getTraversal().getGraph().get()).vertices(elementIds) :
+                    ((Graph) originalGraphStep.getTraversal().getGraph().get()).edges(elementIds));
             }
 
         });

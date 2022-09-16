@@ -132,7 +132,6 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
         if (vertexIds==null || vertexIds.length==0) return (Iterator)getVertices().iterator();
-        ElementUtils.verifyArgsMustBeEitherIdOrElement(vertexIds);
         long[] ids = new long[vertexIds.length];
         int pos = 0;
         for (Object vertexId : vertexIds) {
@@ -147,7 +146,6 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     @Override
     public Iterator<Edge> edges(Object... edgeIds) {
         if (edgeIds==null || edgeIds.length==0) return (Iterator)getEdges().iterator();
-        ElementUtils.verifyArgsMustBeEitherIdOrElement(edgeIds);
         RelationIdentifier[] ids = new RelationIdentifier[edgeIds.length];
         int pos = 0;
         for (Object edgeId : edgeIds) {

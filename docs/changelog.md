@@ -27,7 +27,7 @@ All currently supported verions of JanusGraph are listed below.
 | JanusGraph | Storage Version | Cassandra | HBase | Bigtable | Elasticsearch | Solr | TinkerPop | Spark | Scala |
 | ----- | ---- | ---- | ---- | ---- | ---- | ---- | --- | ---- | ---- |
 | 0.6.z | 2 | 3.0.z, 3.11.z | 1.6.z, 2.2.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 7.y, 8.y | 3.5.z | 3.0.z | 2.12.z |
-| 1.0.z | 2 | 3.11.z, 4.0.z | 2.5.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 8.y | 3.5.z | 3.0.z | 2.12.z |
+| 1.0.z | 2 | 3.11.z, 4.0.z | 2.5.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 8.y | 3.6.z | 3.2.z | 2.12.z |
 
 #### End-of-Life
 The versions of JanusGraph listed below are outdated and will no longer receive bugfixes.
@@ -65,7 +65,7 @@ compile "org.janusgraph:janusgraph-core:1.0.0"
 * Elasticsearch 6.0.1, 6.6.0, 7.17.5
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
-* Apache TinkerPop 3.5.3
+* Apache TinkerPop 3.6.1
 * Java 8, 11
 
 **Installed versions in the Pre-Packaged Distribution**

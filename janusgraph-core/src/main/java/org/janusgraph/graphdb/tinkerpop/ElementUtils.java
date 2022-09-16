@@ -14,8 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphVertex;
@@ -60,14 +58,5 @@ public class ElementUtils {
             //swallow since null will be returned below
         }
         return null;
-    }
-
-    public static void verifyArgsMustBeEitherIdOrElement(Object... ids) {
-        assert ids.length>0;
-        int numElements = 0;
-        for (Object id : ids) {
-            if (id instanceof Element) numElements++;
-        }
-        if (numElements>0 && numElements<ids.length) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
     }
 }
