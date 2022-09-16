@@ -25,7 +25,7 @@ import java.util.function.Predicate;
 
 public class CloseableIteratorUtils {
 
-    public static final CloseableIterator<Object> EMPTY_CLOSABLE_ITERATOR = CloseableIterator.asCloseable(Collections.emptyIterator());
+    public static final CloseableIterator<Object> EMPTY_CLOSABLE_ITERATOR = CloseableIterator.of(Collections.emptyIterator());
 
     public static <T> CloseableIterator<T> emptyIterator() {
         return (CloseableIterator<T>) EMPTY_CLOSABLE_ITERATOR;

@@ -77,6 +77,14 @@ import org.janusgraph.graphdb.configuration.JanusGraphConstants;
         method = "shouldResetAfterRollback",
         reason = "JanusGraph assumes lifecycle of transactionListeners in AbstractThreadLocalTransaction ends when the " +
             "transaction ends (commit/rollback/close). TinkerPop, however, asserts transactionListeners are active across transactions.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.MergeVertexTest",
+        method = "g_mergeVXlabel_person_name_markoX_optionXonMatch_age_19X_option",
+        reason = "JanusGraph doesn't support MergeVertex yet.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.MergeVertexTest",
+        method = "g_withSideEffectXc_label_person_name_markoX_withSideEffectXm_age_19X_mergeVXselectXcXX_optionXonMatch_selectXmXX_option",
+        reason = "JanusGraph doesn't support MergeVertex yet.")
 public interface JanusGraph extends Transaction {
 
     /**

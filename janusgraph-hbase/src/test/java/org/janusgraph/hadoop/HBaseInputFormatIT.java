@@ -32,19 +32,24 @@ import java.nio.file.Paths;
 @Testcontainers
 public class HBaseInputFormatIT extends AbstractInputFormatIT {
     @Container
-    public static final HBaseContainer hBaseContainer = new HBaseContainer();
+    private static final HBaseContainer hbase = new HBaseContainer();
 
-    protected Graph getGraph() throws IOException, ConfigurationException {
-        final PropertiesConfiguration config = ConfigurationUtil.loadPropertiesConfig("target/test-classes/hbase-read.properties", false);
+    private PropertiesConfiguration getGraphConfiguration(final String filename) throws ConfigurationException, IOException {
+        final PropertiesConfiguration config = ConfigurationUtil.loadPropertiesConfig(filename, false);
         Path baseOutDir = Paths.get((String) config.getProperty("gremlin.hadoop.outputLocation"));
         baseOutDir.toFile().mkdirs();
         String outDir = Files.createTempDirectory(baseOutDir, null).toAbsolutePath().toString();
         config.setProperty("gremlin.hadoop.outputLocation", outDir);
-        return GraphFactory.open(config);
+        return config;
     }
 
     @Override
     public WriteConfiguration getConfiguration() {
-        return hBaseContainer.getWriteConfiguration();
+        return hbase.getWriteConfiguration();
+    }
+
+    @Override
+    protected Graph getGraph() throws ConfigurationException, IOException {
+        return GraphFactory.open(getGraphConfiguration("target/test-classes/hbase-read.properties"));
     }
 }

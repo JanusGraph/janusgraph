@@ -56,7 +56,7 @@
     </distributionManagement>
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
-        <tinkerpop.version>3.5.4</tinkerpop.version>
+        <tinkerpop.version>3.6.1</tinkerpop.version>
         <junit-platform.version>1.9.0</junit-platform.version>
         <junit.version>5.9.0</junit.version>
         <mockito.version>4.8.0</mockito.version>
@@ -66,13 +66,11 @@
         <logback.version>1.2.11</logback.version>
         <httpcomponents.httpclient.version>4.5.13</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.15</httpcomponents.httpcore.version>
-        <hadoop2.version>2.10.2</hadoop2.version>
+        <hadoop.version>3.3.4</hadoop.version>
         <hbase2.version>2.5.0</hbase2.version>
         <htrace.version>4.2.0-incubating</htrace.version>
         <bigtable.version>1.24.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
-        <!-- align with org.apache.hbase:hbase -->
-        <jackson1.version>1.9.13</jackson1.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.13.4</jackson2.version>
         <lucene-solr.version>8.11.2</lucene-solr.version>
@@ -352,7 +350,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
         <pluginManagement>
             <plugins>
@@ -561,6 +558,16 @@
                 <version>${tinkerpop.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.google.inject</groupId>
+                <artifactId>guice</artifactId>
+                <version>5.0.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.inject.extensions</groupId>
+                <artifactId>guice-servlet</artifactId>
+                <version>4.0</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>hadoop-gremlin</artifactId>
                 <version>${tinkerpop.version}</version>
@@ -573,6 +580,10 @@
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>log4j</groupId>
+                        <artifactId>log4j</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -641,28 +652,6 @@
                 <groupId>javax.validation</groupId>
                 <artifactId>validation-api</artifactId>
                 <version>2.0.1.Final</version>
-            </dependency>
-
-            <!-- Jackson 1.x -->
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-mapper-asl</artifactId>
-                <version>${jackson1.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-core-asl</artifactId>
-                <version>${jackson1.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-xc</artifactId>
-                <version>${jackson1.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.jackson</groupId>
-                <artifactId>jackson-jaxrs</artifactId>
-                <version>${jackson1.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -758,11 +747,6 @@
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-slf4j-impl</artifactId>
                 <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
-                <version>1.2.17</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
@@ -1010,6 +994,12 @@
                 <groupId>org.apache.cassandra</groupId>
                 <artifactId>cassandra-all</artifactId>
                 <version>${cassandra.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>log4j</groupId>
+                        <artifactId>log4j</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.javassist</groupId>
@@ -1080,7 +1070,7 @@
             <dependency>
                 <groupId>org.apache.ant</groupId>
                 <artifactId>ant</artifactId>
-                <version>1.10.12</version>
+                <version>1.9.11</version>
             </dependency>
             <dependency>
                 <groupId>javax.servlet</groupId>
@@ -1161,7 +1151,7 @@
             <dependency>
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>8.2.1</version>
+                <version>9.8.1</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -1253,76 +1243,86 @@
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-annotations</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-auth</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-client</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-common</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-hdfs</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-hdfs</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
                 <classifier>tests</classifier>
                 <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-mapreduce-client-common</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-mapreduce-client-core</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
                 <classifier>tests</classifier>
                 <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-mapreduce-client-shuffle</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-yarn-api</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-distcp</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-hdfs-client</artifactId>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-yarn-common</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-yarn-server-common</artifactId>
-                <version>${hadoop2.version}</version>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.reload4j</groupId>
@@ -1332,12 +1332,12 @@
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-framework</artifactId>
-                <version>2.13.0</version>
+                <version>4.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-recipes</artifactId>
-                <version>2.13.0</version>
+                <version>4.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.woodstox</groupId>
