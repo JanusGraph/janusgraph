@@ -33,6 +33,7 @@ import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
@@ -46,10 +47,12 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ME
 
 public class CQLMutateManyFunctionBuilder {
 
+    private static final AtomicLong NAME_COUNTER = new AtomicLong();
+
     public CQLMutateManyFunctionWrapper build(final CqlSession session, final Configuration configuration,
-                                               final TimestampProvider times, final boolean assignTimestamp,
-                                               final Map<String, CQLKeyColumnValueStore> openStores,
-                                               ConsumerWithBackendException<DistributedStoreManager.MaskedTimestamp> sleepAfterWriteFunction){
+                                              final TimestampProvider times, final boolean assignTimestamp,
+                                              final Map<String, CQLKeyColumnValueStore> openStores,
+                                              ConsumerWithBackendException<DistributedStoreManager.MaskedTimestamp> sleepAfterWriteFunction) {
 
         ExecutorService executorService;
         CQLMutateManyFunction mutateManyFunction;
@@ -57,23 +60,23 @@ public class CQLMutateManyFunctionBuilder {
         int batchSize = configuration.get(BATCH_STATEMENT_SIZE);
         boolean atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
 
-        if(configuration.get(EXECUTOR_SERVICE_ENABLED)){
+        if (configuration.get(EXECUTOR_SERVICE_ENABLED)) {
             executorService = buildExecutorService(configuration);
-            try{
-                if(atomicBatch){
+            try {
+                if (atomicBatch) {
                     mutateManyFunction = new CQLExecutorServiceMutateManyLoggedFunction(times,
                         assignTimestamp, openStores, session, executorService, sleepAfterWriteFunction);
                 } else {
                     mutateManyFunction = new CQLExecutorServiceMutateManyUnloggedFunction(batchSize,
                         session, openStores, times, executorService, assignTimestamp, sleepAfterWriteFunction);
                 }
-            } catch (RuntimeException e){
+            } catch (RuntimeException e) {
                 executorService.shutdown();
                 throw e;
             }
         } else {
             executorService = null;
-            if(atomicBatch){
+            if (atomicBatch) {
                 mutateManyFunction = new CQLSimpleMutateManyLoggedFunction(times,
                     assignTimestamp, openStores, session, sleepAfterWriteFunction);
             } else {
@@ -95,14 +98,20 @@ public class CQLMutateManyFunctionBuilder {
             .setNameFormat("CQLStoreManager[%02d]")
             .build();
         if (configuration.get(BASIC_METRICS)) {
-            threadFactory = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "CqlStoreManager", threadFactory);
+            threadFactory = ExecutorServiceInstrumentation.instrument(
+                configuration.get(METRICS_PREFIX),
+                "CqlStoreManager-" + NAME_COUNTER.incrementAndGet(),
+                threadFactory);
         }
 
         ExecutorServiceConfiguration executorServiceConfiguration =
             new ExecutorServiceConfiguration(executorServiceClass, corePoolSize, maxPoolSize, keepAliveTime, threadFactory);
         ExecutorService executorService = ExecutorServiceBuilder.build(executorServiceConfiguration);
         if (configuration.get(BASIC_METRICS)) {
-            executorService = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "CqlStoreManager", executorService);
+            executorService = ExecutorServiceInstrumentation.instrument(
+                configuration.get(METRICS_PREFIX),
+                "CqlStoreManager-" + NAME_COUNTER.incrementAndGet(),
+                executorService);
         }
         return executorService;
     }

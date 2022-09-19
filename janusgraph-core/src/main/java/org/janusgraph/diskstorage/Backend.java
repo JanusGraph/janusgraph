@@ -79,6 +79,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -159,6 +160,8 @@ public class Backend implements LockerProvider, AutoCloseable {
     public static final double INDEXSTORE_CACHE_PERCENT = 0.2;
 
     private static final long ETERNAL_CACHE_EXPIRATION = 1000L *3600*24*365*200; //200 years
+
+    private static final AtomicLong NAME_COUNTER = new AtomicLong();
 
     //############ Registered Storage Managers ##############
 
@@ -697,14 +700,14 @@ public class Backend implements LockerProvider, AutoCloseable {
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("Backend[%02d]").build();
         if (configuration.get(BASIC_METRICS)) {
-            threadFactory = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "backend", threadFactory);
+            threadFactory = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "backend-" + NAME_COUNTER.incrementAndGet(), threadFactory);
         }
 
         ExecutorServiceConfiguration executorServiceConfiguration =
             new ExecutorServiceConfiguration(executorServiceClass, corePoolSize, maxPoolSize, keepAliveTime, threadFactory);
         ExecutorService executorService = ExecutorServiceBuilder.build(executorServiceConfiguration);
         if (configuration.get(BASIC_METRICS)) {
-            executorService = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "backend", executorService);
+            executorService = ExecutorServiceInstrumentation.instrument(configuration.get(METRICS_PREFIX), "backend-" + NAME_COUNTER.incrementAndGet(), executorService);
         }
         return executorService;
     }
