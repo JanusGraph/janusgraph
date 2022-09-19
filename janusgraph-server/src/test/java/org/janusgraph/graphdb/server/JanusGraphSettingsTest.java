@@ -44,6 +44,6 @@ public class JanusGraphSettingsTest {
 
         assertEquals("0.0.0.0", janusGraphSettings.host);
         assertEquals(1, janusGraphSettings.graphs.size());
-        assertEquals(11, janusGraphSettings.serializers.size());
+        assertEquals(6, janusGraphSettings.serializers.size());
     }
 }

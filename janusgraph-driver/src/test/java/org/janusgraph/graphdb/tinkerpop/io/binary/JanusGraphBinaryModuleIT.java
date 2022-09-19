@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.tinkerpop;
+package org.janusgraph.graphdb.tinkerpop.io.binary;
 
 import org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphSerializerBaseIT;
 
-@Testcontainers
-public class JanusGraphGryoIT extends JanusGraphSerializerBaseIT  {
+public class JanusGraphBinaryModuleIT extends JanusGraphSerializerBaseIT {
     @Override
     protected GraphTraversalSource traversal() {
-        return AnonymousTraversalSource.traversal().withRemote(janusGraphContainer.remoteConnectionWithGryo());
+        return AnonymousTraversalSource.traversal().withRemote(janusGraphContainer.remoteConnectionWithGraphBinary());
     }
 }

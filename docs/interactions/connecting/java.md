@@ -91,7 +91,7 @@ used directly from a Java application through the dependency `janusgraph-driver`
 
 ## Consideration for Accessing the Management API
 
-The described connection uses [GraphBinary](http://tinkerpop.apache.org/docs/current/dev/io/#graphbinary) and the `janusgraph-driver` which doesn't allow accessing the internal JanusGraph components such as `ManagementSystem`. To access the `ManagementSystem`, you have to update the package and the serialization. 
+!!! note
+    We are working to replace the Management API with a language acoustic solution, see [Management System](../../operations/management.md)
 
-* The maven package `janusgraph-driver` needed to be replaced with the maven package `janusgraph-core`. 
-* Serialization class in the file `conf/remote-objects.yaml` have to be updated by replacing `className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1` with `className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0,`.
+The described connection uses [GraphBinary](http://tinkerpop.apache.org/docs/current/dev/io/#graphbinary) and the `janusgraph-driver` which doesn't allow accessing the internal JanusGraph components such as `ManagementSystem`. To access the `ManagementSystem`, you have to submit java-based scripts, see [Submitting Scripts](https://tinkerpop.apache.org/docs/current/reference/#gremlin-java-scripts), or directly accessing JanusGraph by local opening a JanusGraph instance.
