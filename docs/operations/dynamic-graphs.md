@@ -127,5 +127,8 @@ port: 8182
 username: admin
 password: password
 connectionPool: { enableSsl: true }
-serializer: { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
+serializer: 
+    className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1
+    config: 
+        ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry]
 ```

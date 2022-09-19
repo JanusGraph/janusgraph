@@ -156,6 +156,10 @@ JanusGraph now officially supports Java 11 in addition to Java 8. We encourage e
 !!! note
     The distribution zip archives are however still built with Java 8 since the full distribution includes Cassandra which will only support Java 11 in version 4.
 
+##### Drop support for 
+
+Preparation for TinkerPop 3.6.
+
 ### Version 0.6.3 (Release Date: ???)
 
 ```xml tab='Maven'

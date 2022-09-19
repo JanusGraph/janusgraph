@@ -16,11 +16,11 @@ package org.janusgraph.core;
 
 import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
+import org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1;
 import org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0;
-import org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0;
 import org.apache.tinkerpop.gremlin.process.remote.RemoteConnection;
+import org.apache.tinkerpop.gremlin.structure.io.binary.TypeSerializerRegistry;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -36,17 +36,17 @@ public class JanusGraphContainer extends GenericContainer<JanusGraphContainer> {
     }
 
     public RemoteConnection remoteConnectionWithGraphSONV3d0() {
-        Cluster cluster = Cluster.build(getContainerIpAddress())
+        Cluster cluster = Cluster.build(getHost())
             .port(getMappedPort(GREMLIN_PORT))
             .serializer(new GraphSONMessageSerializerV3d0(GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.instance())))
             .create();
         return DriverRemoteConnection.using(cluster, "g");
     }
 
-    public RemoteConnection remoteConnectionWithGryo() {
-        Cluster cluster = Cluster.build(getContainerIpAddress())
+    public RemoteConnection remoteConnectionWithGraphBinary() {
+        Cluster cluster = Cluster.build(getHost())
             .port(getMappedPort(GREMLIN_PORT))
-            .serializer(new GryoMessageSerializerV3d0(GryoMapper.build().addRegistry(JanusGraphIoRegistry.instance())))
+            .serializer(new GraphBinaryMessageSerializerV1(TypeSerializerRegistry.build().addRegistry(JanusGraphIoRegistry.instance())))
             .create();
         return DriverRemoteConnection.using(cluster, "g");
     }

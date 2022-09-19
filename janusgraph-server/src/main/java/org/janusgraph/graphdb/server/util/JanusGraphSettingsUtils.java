@@ -64,15 +64,6 @@ public class JanusGraphSettingsUtils {
 
         addSerializerWithRegistry(
             serializers,
-            org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0.class.getCanonicalName()
-        );
-        addSerializerWithResultToString(
-            serializers,
-            org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0.class.getCanonicalName()
-        );
-
-        addSerializerWithRegistry(
-            serializers,
             org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0.class.getCanonicalName()
         );
 

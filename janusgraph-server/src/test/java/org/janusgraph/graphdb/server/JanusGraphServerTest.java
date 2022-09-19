@@ -52,7 +52,7 @@ public class JanusGraphServerTest {
         assertFalse(start.isCompletedExceptionally());
 
         Settings settings = server.getJanusGraphSettings();
-        assertEquals(5, settings.serializers.size());
+        assertEquals(3, settings.serializers.size());
 
         CompletableFuture<Void> stop = server.stop();
         CompletableFuture.allOf(start, stop).join();

@@ -17,7 +17,6 @@ package org.janusgraph.graphdb;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.GraphWriter;
-import org.apache.tinkerpop.gremlin.structure.io.IoCore;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONReader;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
@@ -74,10 +73,7 @@ public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
                 (Function<Graph, GraphWriter>) g -> GraphSONWriter.build().mapper(v2mapper).create()),
             arguments("graphson-v3",
                 (Function<Graph, GraphReader>) g -> GraphSONReader.build().mapper(v3mapper).create(),
-                (Function<Graph, GraphWriter>) g -> GraphSONWriter.build().mapper(v3mapper).create()),
-            arguments("gryo",
-                (Function<Graph, GraphReader>) g -> g.io(IoCore.gryo()).reader().mapper(g.io(IoCore.gryo()).mapper().create()).create(),
-                (Function<Graph, GraphWriter>) g -> g.io(IoCore.gryo()).writer().mapper(g.io(IoCore.gryo()).mapper().create()).create())
+                (Function<Graph, GraphWriter>) g -> GraphSONWriter.build().mapper(v3mapper).create())
         );
     }
 

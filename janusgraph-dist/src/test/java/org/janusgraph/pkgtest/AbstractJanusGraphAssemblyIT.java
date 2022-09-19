@@ -20,12 +20,10 @@ import org.apache.tinkerpop.gremlin.driver.MessageSerializer;
 import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
 import org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1;
 import org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0;
-import org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0;
 import org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -97,10 +95,6 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
         testJanusGraphServer(true);
     }
 
-    protected MessageSerializer createGryoMessageSerializer() {
-        return new GryoMessageSerializerV3d0(GryoMapper.build().addRegistry(JanusGraphIoRegistry.instance()));
-    }
-
     protected MessageSerializer createGraphSONMessageSerializer() {
         return new GraphSONMessageSerializerV3d0(GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.instance()));
     }
@@ -159,7 +153,6 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
 
         runTraversalAgainstServer(createGraphSONMessageSerializer());
         runTraversalAgainstServer(createGraphBinaryMessageSerializerV1());
-        runTraversalAgainstServer(createGryoMessageSerializer());
 
         parseTemplateAndRunExpect("janusgraph-server-sh.after.expect.vm", contextVars, full, debug);
     }
