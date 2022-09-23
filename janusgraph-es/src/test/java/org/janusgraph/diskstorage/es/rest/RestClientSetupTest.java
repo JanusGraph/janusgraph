@@ -63,7 +63,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -306,7 +305,7 @@ public class RestClientSetupTest {
                 );
 
         final HttpAsyncClientBuilder hacb = mock(HttpAsyncClientBuilder.class);
-        doReturn(hacb).when(hacb).setDefaultCredentialsProvider(anyObject());
+        doReturn(hacb).when(hacb).setDefaultCredentialsProvider(any());
         hccc.customizeHttpClient(hacb);
 
         final ArgumentCaptor<BasicCredentialsProvider> cpCaptor = ArgumentCaptor.forClass(BasicCredentialsProvider.class);
