@@ -118,7 +118,7 @@
         <!-- align with org.apache.solr:solr-solrj -->
         <jetty.version>9.4.44.v20210927</jetty.version>
         <log4j2.version>2.18.0</log4j2.version>
-        <graalvm-nativeimage.version>22.0.0.2</graalvm-nativeimage.version>
+        <graalvm-nativeimage.version>22.2.0</graalvm-nativeimage.version>
         <caffeine.version>2.9.3</caffeine.version>
         <checker-qual.version>3.19.0</checker-qual.version>
     </properties>
@@ -357,7 +357,7 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.10.0</version>
+                    <version>3.10.1</version>
                     <configuration>
                         <source>${compiler.source}</source>
                         <target>${compiler.target}</target>
