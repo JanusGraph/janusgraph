@@ -155,20 +155,6 @@ mvn clean install -pl janusgraph-cql -Dcassandra.docker.image=cassandra
 mvn clean install -pl janusgraph-cql -Dcassandra.docker.image=cassandra -Dcassandra.docker.version=3.11.2
 ```
 
-### Running hbase tests
-
-**Note** Running HBase tests require Docker.
-
-### Special versions of HBase
-
-System properties to configure HBase test executions:
-
-| Property | Description | Default value |
-| -------- | ----------- | ------------- |
-| `hbase.docker.version` | HBase version to be used in the docker image. | `2.2.7` |
-| `hbase.docker.uid` | Uid used to run inside HBase of the container | 1000 |
-| `hbase.docker.gid` | Gid used to run inside HBase of the container | 1000 |
-
 ### TinkerPop tests
 
 The CQL backend is tested with TinkerPop tests using following command. 
@@ -187,3 +173,17 @@ mvn clean install -Dtest.skip.tp=false -DskipTests=true -pl janusgraph-cql \
 The file `janusgraph-cql/src/test/resources/docker/docker-compose.yml` can be used to generate new configuration files. 
 Therefore, you have to start a Cassandra instance using `docker-compose up`. 
 Afterward, you can extract the configuration which is located in the following file `/etc/cassandra/cassandra.yaml`.
+
+## Running hbase tests
+
+**Note** Running HBase tests require Docker.
+
+### Special versions of HBase
+
+System properties to configure HBase test executions:
+
+| Property | Description | Default value |
+| -------- | ----------- | ------------- |
+| `hbase.docker.version` | HBase version to be used in the docker image. | `2.5.0` |
+| `hbase.docker.uid` | Uid used to run inside HBase of the container | 1000 |
+| `hbase.docker.gid` | Gid used to run inside HBase of the container | 1000 |

@@ -14,7 +14,7 @@
 
 FROM debian:buster-20220822 as builder
 
-ARG HBASE_VERSION=2.2.7
+ARG HBASE_VERSION=2.5.0
 ARG HBASE_DIST="http://archive.apache.org/dist/hbase"
 
 RUN apt-get update && \
@@ -26,7 +26,6 @@ RUN rm -rf ./docs ./LEGAL ./*.txt ./*/*.cmd
 
 COPY ./hbase-site.xml /opt/hbase/conf/hbase-site.xml
 COPY ./hbase-policy.xml /opt/hbase/conf/hbase-policy.xml
-COPY ./zoo.cfg /opt/hbase/conf/zoo.cfg
 
 FROM openjdk:8-jre-buster
 
@@ -38,9 +37,11 @@ ENV LOGS_DIR=/data/logs
 COPY --from=builder /opt/hbase/ /opt/hbase/
 
 RUN ln -sf /opt/hbase/bin/* /usr/bin/
-RUN mkdir -p $LOGS_DIR /data/hbase /data/run
-
+RUN mkdir -p $LOGS_DIR /data/hbase /data/wal /data/run /opt/hbase/logs
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y socat
 WORKDIR /opt/hbase
+COPY ./entrypoint.sh /entrypoint.sh
 
 EXPOSE 2181
 EXPOSE 16000
@@ -48,9 +49,11 @@ EXPOSE 16010
 EXPOSE 16020
 EXPOSE 16030
 
-CMD ["/usr/bin/hbase", "master", "start"]
+ENTRYPOINT ["/entrypoint.sh"]
 
 RUN groupadd -g ${HBASE_GID} hbase && \
     useradd -s /bin/bash hbase -u ${HBASE_UID} -g ${HBASE_GID} && \
-    chown -R ${HBASE_UID}:${HBASE_GID} /data
+    chmod +x /entrypoint.sh && \
+    chown -R ${HBASE_UID}:${HBASE_GID} /data && \
+    chown -R ${HBASE_UID}:${HBASE_GID} /opt/hbase/logs
 USER hbase
