@@ -1,4 +1,6 @@
-# Copyright 2021 JanusGraph Authors
+#!/usr/bin/env bash
+#
+# Copyright 2022 JanusGraph Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,4 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-server.1=localhost:2181
+# re export zookeeper
+socat tcp-listen:2182,fork,reuseaddr tcp-connect:localhost:2181 &
+
+/usr/bin/hbase master start

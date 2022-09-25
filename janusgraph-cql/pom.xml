@@ -110,10 +110,6 @@
                     <artifactId>caffeine</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>org.ow2.asm</groupId>
-                    <artifactId>asm</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>com.thinkaurelius.thrift</groupId>
                     <artifactId>thrift-server</artifactId>
                 </exclusion>

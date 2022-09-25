@@ -9,6 +9,18 @@
     <name>hbase.rootdir</name>
     <value>file:////data/hbase</value>
   </property>
+  <property>
+    <name>hbase.cluster.distributed</name>
+    <value>false</value>
+  </property>
+  <property>
+    <name>hbase.wal.dir</name>
+    <value>file:////data/wal</value>
+  </property>
+  <property>
+    <name>hbase.unsafe.stream.capability.enforce</name>
+    <value>false</value>
+  </property>
 
   <property>
     <name>hbase.master.info.bindAddress</name>

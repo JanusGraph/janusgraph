@@ -46,7 +46,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
 
     public static final String HBASE_TARGET_DIR = "test.hbase.targetdir";
     public static final String HBASE_DOCKER_PATH = "janusgraph-hbase/docker";
-    private static final String DEFAULT_VERSION = "2.2.7";
+    private static final String DEFAULT_VERSION = "2.5.0";
     private static final String DEFAULT_UID = "1000";
     private static final String DEFAULT_GID = "1000";
 
@@ -107,7 +107,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
             .withBuildArg("HBASE_VERSION", getVersion())
             .withBuildArg("HBASE_UID", getUid())
             .withBuildArg("HBASE_GID", getGid()));
-        addFixedExposedPort(2181, 2181);
+        addFixedExposedPort(2181, 2182);
         addFixedExposedPort(16000, 16000);
         addFixedExposedPort(16010, 16010);
         addFixedExposedPort(16020, 16020);
