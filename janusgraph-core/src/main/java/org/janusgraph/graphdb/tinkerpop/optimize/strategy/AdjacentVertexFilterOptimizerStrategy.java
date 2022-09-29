@@ -71,7 +71,7 @@ public class AdjacentVertexFilterOptimizerStrategy
 
                 OptimizableQueryType type = analyzeSubSteps(subSteps);
 
-                if (type != OptimizableQueryType.NONE) {
+                if (originalStep.getLabels().isEmpty() && type != OptimizableQueryType.NONE) {
                     replaceStep(traversal, type, originalStep, subSteps);
                 }
             });
