@@ -125,6 +125,7 @@ public class IndexSerializerTest {
 
     private JanusGraphElement mockIndexableElement(String key, String value, boolean indexable) {
         StandardJanusGraphTx tx = mock(StandardJanusGraphTx.class);
+        doReturn(tx).when(tx).getNextTx();
         JanusGraphElement indexableElement = spy(new StandardVertex(tx, 1L, ElementLifeCycle.New));
         Property pk2 = indexableElement.property(key, value);
         Iterator it = Arrays.asList(pk2).iterator();
