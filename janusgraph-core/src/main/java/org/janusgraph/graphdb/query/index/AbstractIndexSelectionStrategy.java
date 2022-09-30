@@ -40,9 +40,9 @@ import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.util.datastructures.Pair;
 import org.janusgraph.util.datastructures.IterablesUtil;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -190,7 +190,7 @@ public abstract class AbstractIndexSelectionStrategy implements IndexSelectionSt
             indexCovers.add(indexValues);
         } else {
             final IndexField field = fields[position];
-            final Map.Entry<Condition,Collection<Object>> equalCon = getEqualityConditionValues(condition,field.getFieldKey());
+            final Pair<Condition,Collection<Object>> equalCon = getEqualityConditionValues(condition,field.getFieldKey());
             if (equalCon!=null) {
                 coveredClauses.add(equalCon.getKey());
                 assert equalCon.getValue().size()>0;
@@ -266,18 +266,18 @@ public abstract class AbstractIndexSelectionStrategy implements IndexSelectionSt
         return existsQuery || indexInfo.supports(index, match, atom.getPredicate());
     }
 
-    private Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(
+    private Pair<Condition,Collection<Object>> getEqualityConditionValues(
         Condition<JanusGraphElement> condition, RelationType type) {
         for (final Condition c : condition.getChildren()) {
             if (c instanceof Or) {
-                final Map.Entry<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)c);
+                final Pair<RelationType,Collection<Object>> orEqual = QueryUtil.extractOrCondition((Or)c);
                 if (orEqual!=null && orEqual.getKey().equals(type) && !orEqual.getValue().isEmpty()) {
-                    return new AbstractMap.SimpleImmutableEntry(c,orEqual.getValue());
+                    return new Pair<>(c,orEqual.getValue());
                 }
             } else if (c instanceof PredicateCondition) {
                 final PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)c;
                 if (atom.getKey().equals(type) && atom.getPredicate()== Cmp.EQUAL && atom.getValue()!=null) {
-                    return new AbstractMap.SimpleImmutableEntry(c,Collections.singletonList(atom.getValue()));
+                    return new Pair<>(c,Collections.singletonList(atom.getValue()));
                 }
             }
 

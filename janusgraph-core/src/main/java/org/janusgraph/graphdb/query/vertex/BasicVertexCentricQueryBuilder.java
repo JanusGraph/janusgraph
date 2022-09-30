@@ -54,6 +54,7 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.graphdb.types.system.SystemRelationType;
 import org.janusgraph.util.datastructures.Interval;
+import org.janusgraph.util.datastructures.Pair;
 import org.janusgraph.util.datastructures.PointInterval;
 import org.janusgraph.util.datastructures.RangeInterval;
 import org.slf4j.Logger;
@@ -708,7 +709,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             RelationType type=null;
             Interval newInterval=null;
             if (condition instanceof Or) {
-                Map.Entry<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)condition);
+                Pair<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)condition);
                 if (orEqual!=null) {
                     type = orEqual.getKey();
                     newInterval = new PointInterval(orEqual.getValue());

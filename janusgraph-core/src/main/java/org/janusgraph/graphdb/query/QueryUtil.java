@@ -35,13 +35,12 @@ import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.util.datastructures.Pair;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -340,7 +339,7 @@ public class QueryUtil {
     }
 
 
-    public static Map.Entry<RelationType,Collection> extractOrCondition(Or<JanusGraphRelation> condition) {
+    public static Pair<RelationType,Collection<Object>> extractOrCondition(Or<JanusGraphRelation> condition) {
         RelationType masterType = null;
         final List<Object> values = new ArrayList<>();
         for (final Condition c : condition.getChildren()) {
@@ -356,7 +355,7 @@ public class QueryUtil {
         }
         if (masterType==null) return null;
         assert !values.isEmpty();
-        return new AbstractMap.SimpleImmutableEntry(masterType,values);
+        return new Pair<>(masterType,values);
     }
 
 

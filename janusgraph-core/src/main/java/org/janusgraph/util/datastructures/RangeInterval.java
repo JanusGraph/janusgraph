@@ -118,8 +118,8 @@ public class RangeInterval<T> implements Interval<T> {
             return other.intersect(this);
         } else if (other instanceof RangeInterval) {
             final RangeInterval<T> rint = (RangeInterval)other;
-            final Map.Entry<T,Boolean> newStart = comparePoints(start,startInclusive,rint.start,rint.startInclusive,true);
-            final Map.Entry<T,Boolean> newEnd = comparePoints(end,endInclusive,rint.end,rint.endInclusive,false);
+            final Pair<T,Boolean> newStart = comparePoints(start,startInclusive,rint.start,rint.startInclusive,true);
+            final Pair<T,Boolean> newEnd = comparePoints(end,endInclusive,rint.end,rint.endInclusive,false);
             final RangeInterval<T> result = new RangeInterval<>();
             if (newStart.getKey() != null) {
                 result.setStart(newStart.getKey(), newStart.getValue());
@@ -131,16 +131,16 @@ public class RangeInterval<T> implements Interval<T> {
         } else throw new AssertionError("Unexpected interval: " + other);
     }
 
-    private Map.Entry<T,Boolean> comparePoints(T one, boolean oneIncl, T two, boolean twoIncl, boolean chooseBigger) {
-        if (one==null) return new AbstractMap.SimpleImmutableEntry<>(two, twoIncl);
-        if (two==null) return new AbstractMap.SimpleImmutableEntry<>(one, oneIncl);
+    private Pair<T,Boolean> comparePoints(T one, boolean oneIncl, T two, boolean twoIncl, boolean chooseBigger) {
+        if (one==null) return new Pair<>(two, twoIncl);
+        if (two==null) return new Pair<>(one, oneIncl);
         int c = ((Comparable)one).compareTo(two);
         if (c==0) {
-            return new AbstractMap.SimpleImmutableEntry<>(one, oneIncl & twoIncl);
+            return new Pair<>(one, oneIncl & twoIncl);
         } else if ((c>0 && chooseBigger) || (c<0  && !chooseBigger)) {
-            return new AbstractMap.SimpleImmutableEntry<>(one, oneIncl);
+            return new Pair<>(one, oneIncl);
         } else {
-            return new AbstractMap.SimpleImmutableEntry<>(two, twoIncl);
+            return new Pair<>(two, twoIncl);
         }
     }
 
