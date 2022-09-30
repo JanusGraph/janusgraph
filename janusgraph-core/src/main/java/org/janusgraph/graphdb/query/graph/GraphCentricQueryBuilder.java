@@ -268,20 +268,20 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         }
         //Prepare constraints
         final MultiCondition<JanusGraphElement> conditions;
-        if (this.globalConstraints.size() == 1 && this.globalConstraints.get(0).size() == 1) {
-            conditions = QueryUtil.constraints2QNF(tx, globalConstraints.get(0).get(0));
+        if (globalConstraints.size() == 1) {
+            List<List<PredicateCondition<String, JanusGraphElement>>> singleGlobalConstraint = globalConstraints.get(0);
+            if (singleGlobalConstraint.size() == 1) {
+                conditions = QueryUtil.constraints2QNF(tx, singleGlobalConstraint.get(0));
+            } else {
+                conditions = constructOrCondition(singleGlobalConstraint);
+            }
             if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
         } else {
-            if (this.globalConstraints.size() == 1) {
-                conditions = constructOrCondition(this.globalConstraints.get(0));
-                if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
-            } else {
-                conditions = new And<>();
-                for (List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraint : this.globalConstraints) {
-                    Or<JanusGraphElement> or = constructOrCondition(globalConstraint);
-                    if (or == null) return GraphCentricQuery.emptyQuery(resultType);
-                    conditions.add(or);
-                }
+            conditions = new And<>();
+            for (List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraint : globalConstraints) {
+                Or<JanusGraphElement> or = constructOrCondition(globalConstraint);
+                if (or == null) return GraphCentricQuery.emptyQuery(resultType);
+                conditions.add(or);
             }
         }
 
