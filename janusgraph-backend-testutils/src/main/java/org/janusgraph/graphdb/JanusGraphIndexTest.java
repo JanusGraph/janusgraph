@@ -1411,6 +1411,25 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             option(INDEX_SELECT_STRATEGY), ApproximateIndexSelectionStrategy.NAME));
     }
 
+    @Test
+    public void testIndexSelectStrategyWithIndexes_UniqueCompositeA_MixedB() {
+        final PropertyKey name = makeKey("name", String.class);
+        final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("composite", Vertex.class)
+            .addKey(name).unique().buildCompositeIndex();
+        compositeNameIndex.name();
+
+        final PropertyKey prop = makeKey("prop", String.class);
+        final JanusGraphIndex mixedIndex = mgmt.buildIndex("mixed", Vertex.class)
+            .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+        mixedIndex.name();
+        finishSchema();
+        Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph -> graph.traversal().V().has("name", "value").has("prop");
+        // best combination is to pick up only 1 index (unique composite index) and check the second condition without an index lookup
+
+        // use default config
+        assertEquals(1, getIndexSelectResultNum(traversal));
+    }
+
     private <S,E> long getIndexSelectResultNum(Function<Graph, GraphTraversal<S,E>> traversal, Object... settings) {
         clopen(settings);
         Metrics metrics = traversal.apply(graph).profile().next().getMetrics(0);
