@@ -120,6 +120,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -1372,9 +1373,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     @Test
-    public void testIndexSelectStrategy() {
+    public void testIndexSelectStrategyWithIndexes_CompositeA_MixedAB() {
         final PropertyKey name = makeKey("name", String.class);
-        final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("composite", Vertex.class).addKey(name).buildCompositeIndex();
+        final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("composite", Vertex.class)
+            .addKey(name).buildCompositeIndex();
         compositeNameIndex.name();
 
         final PropertyKey prop = makeKey("prop", String.class);
@@ -1383,33 +1385,35 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
         mixedIndex.name();
         finishSchema();
-
+        Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph -> graph.traversal().V().has("name", "value").has("prop", "value");
         // best combination is to pick up only 1 index (mixed index), however, greedy based approximate algorithm
         // picks up 2 indexes (composite index + mixed index)
 
         // use default config
-        assertEquals(1, getIndexSelectResultNum());
+        assertEquals(1, getIndexSelectResultNum(traversal));
 
         // use full class name
-        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY),
-            ThresholdBasedIndexSelectionStrategy.class.getName()));
+        assertEquals(1, getIndexSelectResultNum(traversal,
+            option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.class.getName()));
 
-        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 10,
+        assertEquals(1, getIndexSelectResultNum(traversal,
+            option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 10,
             option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.NAME));
 
-        assertEquals(2, getIndexSelectResultNum(option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 0,
+        assertEquals(2, getIndexSelectResultNum(traversal,
+            option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 0,
             option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.NAME));
 
-        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY), BruteForceIndexSelectionStrategy.NAME));
+        assertEquals(1, getIndexSelectResultNum(traversal,
+            option(INDEX_SELECT_STRATEGY), BruteForceIndexSelectionStrategy.NAME));
 
-        assertEquals(2, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY), ApproximateIndexSelectionStrategy.NAME));
+        assertEquals(2, getIndexSelectResultNum(traversal,
+            option(INDEX_SELECT_STRATEGY), ApproximateIndexSelectionStrategy.NAME));
     }
 
-    private long getIndexSelectResultNum(Object... settings) {
+    private <S,E> long getIndexSelectResultNum(Function<Graph, GraphTraversal<S,E>> traversal, Object... settings) {
         clopen(settings);
-        GraphTraversalSource g = graph.traversal();
-        Metrics metrics = g.V().has("name", "value")
-            .has("prop", "value").profile().next().getMetrics(0);
+        Metrics metrics = traversal.apply(graph).profile().next().getMetrics(0);
         return getBackendQueriesNum(metrics);
     }
 
