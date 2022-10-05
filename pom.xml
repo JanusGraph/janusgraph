@@ -115,7 +115,7 @@
         <protobuf.version>3.21.6</protobuf.version>
         <grpc.version>1.47.0</grpc.version>
         <protoc.version>3.15.3</protoc.version>
-        <gson.version>2.9.0</gson.version>
+        <gson.version>2.9.1</gson.version>
         <jmh.version>1.21</jmh.version>
         <graalvm-nativeimage.version>22.2.0</graalvm-nativeimage.version>
     </properties>
@@ -443,7 +443,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>3.3.0</version>
                     <configuration>
                         <archive>
                             <manifestEntries>
@@ -1014,7 +1014,7 @@
             <dependency>
                 <groupId>it.unimi.dsi</groupId>
                 <artifactId>fastutil</artifactId>
-                <version>8.5.2</version>
+                <version>8.5.9</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.cassandra</groupId>
