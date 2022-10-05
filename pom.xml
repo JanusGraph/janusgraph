@@ -60,7 +60,7 @@
         <junit-platform.version>1.9.0</junit-platform.version>
         <junit.version>5.9.0</junit.version>
         <mockito.version>4.8.0</mockito.version>
-        <jamm.version>0.3.0</jamm.version>
+        <jamm.version>0.3.3</jamm.version>
         <metrics.version>4.1.33</metrics.version>
         <slf4j.version>1.7.36</slf4j.version>
         <logback.version>1.2.11</logback.version>
