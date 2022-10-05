@@ -108,14 +108,14 @@
         <cassandra.version>3.11.10</cassandra.version>
         <!-- https://downloads.apache.org/cassandra/4.0.3/apache-cassandra-3.11.10-bin.tar.gz.sha256 -->
         <cassandra.version.sha256>bbe772956c841158e3228c3b6c8fc38cece6bceeface695473c59c0573039bf1</cassandra.version.sha256>
-        <cassandra-driver.version>4.14.1</cassandra-driver.version>
+        <cassandra-driver.version>4.15.0</cassandra-driver.version>
         <scylladb.version>4.4.0</scylladb.version>
         <testcontainers.version>1.17.3</testcontainers.version>
         <easymock.version>4.2</easymock.version>
         <protobuf.version>3.21.6</protobuf.version>
         <grpc.version>1.47.0</grpc.version>
         <protoc.version>3.15.3</protoc.version>
-        <gson.version>2.9.0</gson.version>
+        <gson.version>2.9.1</gson.version>
         <jmh.version>1.21</jmh.version>
         <graalvm-nativeimage.version>22.2.0</graalvm-nativeimage.version>
     </properties>
@@ -1014,7 +1014,7 @@
             <dependency>
                 <groupId>it.unimi.dsi</groupId>
                 <artifactId>fastutil</artifactId>
-                <version>8.5.2</version>
+                <version>8.5.9</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.cassandra</groupId>
