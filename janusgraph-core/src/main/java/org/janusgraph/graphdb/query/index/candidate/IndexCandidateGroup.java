@@ -14,9 +14,13 @@
 
 package org.janusgraph.graphdb.query.index.candidate;
 
+import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
+import org.janusgraph.graphdb.types.IndexType;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -26,15 +30,25 @@ public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
 
     private Set<IndexCandidate> indexCandidates;
     private Set<Condition> coveredClauses;
+    private final OrderList orders;
 
     // initialize with the worst possible score
     private double score = Double.NEGATIVE_INFINITY;
 
-    public IndexCandidateGroup(Set<IndexCandidate> indexCandidates) {
-        this.indexCandidates = indexCandidates;
-        this.coveredClauses = new HashSet<>(indexCandidates.size());
+    public IndexCandidateGroup(Set<IndexCandidate> indexCandidates, OrderList orders) {
+        this.indexCandidates = new HashSet<>();
+        this.coveredClauses = new HashSet<>();
+        this.orders = orders;
 
-        indexCandidates.forEach(c -> coveredClauses.addAll(c.getSubCover()));
+        indexCandidates.forEach(this::addCandidate);
+    }
+
+    public void addCandidate(IndexCandidate newCandidate) {
+        Set<Condition> newClauses = newCandidate.getSubCover();
+        newClauses.removeAll(coveredClauses);
+
+        indexCandidates.add(newCandidate);
+        coveredClauses.addAll(newClauses);
     }
 
     public Set<IndexCandidate> getIndexCandidates() {

@@ -74,7 +74,7 @@ public class BruteForceIndexSelectionStrategy
         for (Set<IndexCandidate> subset : new PowerSet<>(indexCandidates)) {
             if (subset.isEmpty())
                 continue;
-            final IndexCandidateGroup group = new IndexCandidateGroup(subset);
+            final IndexCandidateGroup group = new IndexCandidateGroup(subset, orders);
             if (group.compareTo(bestGroup) > 0) {
                 bestGroup = group;
             }
