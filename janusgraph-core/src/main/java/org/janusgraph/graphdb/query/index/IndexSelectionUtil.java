@@ -119,4 +119,9 @@ public class IndexSelectionUtil {
         }
         return true;
     }
+
+    public static double costFactor(IndexType index) {
+        // prefer composite indexes over mixed indexes
+        return index.isCompositeIndex() ? 0.5 : 1;
+    }
 }

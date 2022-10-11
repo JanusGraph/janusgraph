@@ -33,6 +33,9 @@ import java.util.List;
 import java.util.Set;
 
 public class CostBasedIndexSelector {
+    public static final double MANUAL_FILTER_PENALTY = 4;
+    public static final double MANUAL_ORDER_PENALTY = 4;
+
     public static <E extends JanusGraphElement> SelectedIndexQuery<E> selectIndices(ElementCategory resultType,
                                                                                     MultiCondition<E> conditions,
                                                                                     OrderList orders,
@@ -61,14 +64,14 @@ public class CostBasedIndexSelector {
                 List<AbstractIndexCandidate<?,E>> extendedCandidates = new ArrayList<>(bestGroup.getIndexCandidates());
                 extendedCandidates.add(newCandidate);
                 // build new group of index candidates and compare it to the best group found so far
-                double newCost = 0; // TODO: estimate cost of new group
+                double newCost = new IndexCandidateGroup<>(extendedCandidates, orders).estimateTotalCost(allCoverableClauses);
                 if (newCost < lowestNewCost) {
                     lowestNewCost = newCost;
                     bestNewCandidate = newCandidate;
                 }
             }
 
-            if (bestNewCandidate != null && lowestNewCost < 0) { // TODO: compare to new cost
+            if (bestNewCandidate != null && lowestNewCost < bestGroup.estimateTotalCost(allCoverableClauses)) {
                 bestGroup.addCandidate(bestNewCandidate);
                 remainingCandidates.remove(bestNewCandidate);
             } else {

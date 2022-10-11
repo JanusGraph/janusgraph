@@ -19,6 +19,9 @@ import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
+import org.janusgraph.graphdb.query.index.CostBasedIndexSelector;
+import org.janusgraph.graphdb.query.index.IndexSelectionUtil;
+import org.janusgraph.graphdb.query.index.IndexSelectivityEstimator;
 import org.janusgraph.graphdb.types.IndexType;
 
 import java.util.Set;
@@ -31,9 +34,6 @@ public abstract class AbstractIndexCandidate<I extends IndexType, E extends Janu
     private final Set<Condition<E>> subCover;
     protected OrderList orders;
 
-    // initialize with the worst possible score
-    private double score = Double.NEGATIVE_INFINITY;
-
     public AbstractIndexCandidate(final I index, final Set<Condition<E>> subCover, OrderList orders) {
         this.index = index;
         this.subCover = subCover;
@@ -43,12 +43,19 @@ public abstract class AbstractIndexCandidate<I extends IndexType, E extends Janu
     public I getIndex() {
         return index;
     }
+
     public Set<Condition<E>> getSubCover() {
         return subCover;
     }
-    public void setScore(double newScore) { this.score = newScore; }
-    public double getScore() {
-        return score;
+
+    public double estimateSelectivity() {
+        return IndexSelectivityEstimator.independentIntersection(subCover,
+            c -> IndexSelectivityEstimator.estimateSelectivity(c, index));
+    }
+
+    public double estimateCost(boolean ignoreOrder) {
+        double cost = estimateSelectivity() * IndexSelectionUtil.costFactor(index);
+        return ignoreOrder ? cost : cost * CostBasedIndexSelector.MANUAL_ORDER_PENALTY;
     }
 
     public abstract void addToJointQuery(final JointIndexQuery query, final IndexSerializer serializer);

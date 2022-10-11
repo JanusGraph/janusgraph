@@ -17,28 +17,32 @@ package org.janusgraph.graphdb.query.index.candidate;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
+import org.janusgraph.graphdb.query.index.CostBasedIndexSelector;
+import org.janusgraph.graphdb.query.index.IndexSelectivityEstimator;
+import org.janusgraph.graphdb.types.IndexType;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */
-public class IndexCandidateGroup<E extends JanusGraphElement> implements Comparable<IndexCandidateGroup<E>> {
+public class IndexCandidateGroup<E extends JanusGraphElement> {
 
     private final List<AbstractIndexCandidate<?,E>> indexCandidates;
+    private final Map<Condition<E>, IndexType> indexByClause;
     private final Set<Condition<E>> coveredClauses;
     private final OrderList orders;
 
-    // initialize with the worst possible score
-    private double score = Double.NEGATIVE_INFINITY;
-
     public IndexCandidateGroup(Collection<AbstractIndexCandidate<?,E>> indexCandidates, OrderList orders) {
         this.indexCandidates = new ArrayList<>();
+        this.indexByClause = new HashMap<>();
         this.coveredClauses = new HashSet<>();
         this.orders = orders;
 
@@ -50,6 +54,7 @@ public class IndexCandidateGroup<E extends JanusGraphElement> implements Compara
         newClauses.removeAll(coveredClauses);
 
         indexCandidates.add(newCandidate);
+        newClauses.forEach(cl -> indexByClause.put(cl, newCandidate.getIndex()));
         coveredClauses.addAll(newClauses);
     }
 
@@ -61,32 +66,31 @@ public class IndexCandidateGroup<E extends JanusGraphElement> implements Compara
         return coveredClauses;
     }
 
-    public double getTotalScore() {
-        if (score == Double.NEGATIVE_INFINITY) {
-            score = indexCandidates.stream().mapToDouble(AbstractIndexCandidate::getScore).sum();
+    public double estimateTotalCost(Set<Condition<E>> allClauses) {
+        double indexQueryCost = 0;
+
+        for (AbstractIndexCandidate<?,E> c : indexCandidates) {
+            indexQueryCost += c.estimateCost(true);
         }
 
-        return score;
+        double estimatedIndexSelectivity = IndexSelectivityEstimator.independentIntersection(coveredClauses,
+            c -> IndexSelectivityEstimator.estimateSelectivity(c, indexByClause.get(c)));
+
+        Set<Condition<E>> uncoveredClauses = new HashSet<>(allClauses);
+        uncoveredClauses.removeAll(coveredClauses);
+        double manualFilterPenalty = estimatedIndexSelectivity * uncoveredClauses.size() * CostBasedIndexSelector.MANUAL_FILTER_PENALTY;
+
+        double estimatedTotalSelectivity = IndexSelectivityEstimator.independentIntersection(coveredClauses,
+            c -> IndexSelectivityEstimator.estimateSelectivity(c, indexByClause.get(c)));
+
+        boolean supportsOrders = orders.isEmpty() || (!indexCandidates.isEmpty() && indexCandidates.get(0).supportsOrders());
+        double orderPenalty = supportsOrders ? 0 : estimatedTotalSelectivity * CostBasedIndexSelector.MANUAL_ORDER_PENALTY;
+
+        return indexQueryCost + manualFilterPenalty + orderPenalty;
     }
 
     public boolean supportsOrders() {
         if (indexCandidates.isEmpty()) return orders.isEmpty();
         return indexCandidates.get(0).supportsOrders();
-    }
-
-    /**
-     * Covering more clauses, using fewer indices, and getting higher score is better
-     *
-     * @param that
-     * @return
-     */
-    @Override
-    public int compareTo(IndexCandidateGroup<E> that) {
-        if (that == null) return 1;
-        if (coveredClauses.size() > that.getCoveredClauses().size()) return 1;
-        if (coveredClauses.size() < that.getCoveredClauses().size()) return -1;
-        if (indexCandidates.size() < that.getIndexCandidates().size()) return 1;
-        if (indexCandidates.size() > that.getIndexCandidates().size()) return -1;
-        return Double.compare(getTotalScore(), that.getTotalScore());
     }
 }
