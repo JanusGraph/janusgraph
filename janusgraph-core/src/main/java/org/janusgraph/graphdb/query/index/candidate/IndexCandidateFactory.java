@@ -62,7 +62,7 @@ public class IndexCandidateFactory {
             final JanusGraphSchemaType type = index.getSchemaTypeConstraint();
 
             // Only equality conditions are supported
-            final Pair<Condition, Collection<Object>> labelCondition = getEqualityConditionValues(conditions, ImplicitKey.LABEL);
+            final Pair<Condition<JanusGraphElement>, Collection<Object>> labelCondition = QueryUtil.getEqualityConditionValues(conditions, ImplicitKey.LABEL);
             if (labelCondition == null) return null;
 
             final Collection<Object> labels = labelCondition.getValue();
@@ -111,7 +111,7 @@ public class IndexCandidateFactory {
             indexCovers.add(indexValues);
         } else {
             final IndexField field = fields[position];
-            final Pair<Condition, Collection<Object>> equalCon = getEqualityConditionValues(condition,field.getFieldKey());
+            final Pair<Condition<JanusGraphElement>, Collection<Object>> equalCon = QueryUtil.getEqualityConditionValues(condition,field.getFieldKey());
             if (equalCon!=null) {
                 coveredClauses.add(equalCon.getKey());
                 assert equalCon.getValue().size()>0;
@@ -158,24 +158,5 @@ public class IndexCandidateFactory {
             }
         }
         return subCondition.isEmpty() ? null : new MixedIndexCandidate(index, covered, subCondition, orders);
-    }
-
-    private static Pair<Condition,Collection<Object>> getEqualityConditionValues(
-        Condition<JanusGraphElement> condition, RelationType type) {
-        for (final Condition c : condition.getChildren()) {
-            if (c instanceof Or) {
-                final Pair<RelationType,Collection<Object>> orEqual = QueryUtil.extractOrCondition((Or)c);
-                if (orEqual!=null && orEqual.getKey().equals(type) && !orEqual.getValue().isEmpty()) {
-                    return new Pair<>(c,orEqual.getValue());
-                }
-            } else if (c instanceof PredicateCondition) {
-                final PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)c;
-                if (atom.getKey().equals(type) && atom.getPredicate()== Cmp.EQUAL && atom.getValue()!=null) {
-                    return new Pair<>(c, Collections.singletonList(atom.getValue()));
-                }
-            }
-
-        }
-        return null;
     }
 }
