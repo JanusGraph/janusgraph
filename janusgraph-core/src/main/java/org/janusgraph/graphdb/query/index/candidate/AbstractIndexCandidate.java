@@ -14,7 +14,10 @@
 
 package org.janusgraph.graphdb.query.index.candidate;
 
+import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
+import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.types.IndexType;
 
 import java.util.Set;
@@ -22,33 +25,32 @@ import java.util.Set;
 /**
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */
-public class IndexCandidate {
-    private final IndexType index;
+public abstract class AbstractIndexCandidate<I extends IndexType> {
+    protected final I index;
     private final Set<Condition> subCover;
-    private final Object subCondition;
+    protected OrderList orders;
 
     // initialize with the worst possible score
     private double score = Double.NEGATIVE_INFINITY;
 
-    public IndexCandidate(final IndexType index,
-                          final Set<Condition> subCover,
-                          final Object subCondition) {
+    public AbstractIndexCandidate(final I index, final Set<Condition> subCover, OrderList orders) {
         this.index = index;
         this.subCover = subCover;
-        this.subCondition = subCondition;
+        this.orders = orders;
     }
 
-    public IndexType getIndex() {
+    public I getIndex() {
         return index;
     }
     public Set<Condition> getSubCover() {
         return subCover;
     }
-    public Object getSubCondition() {
-        return subCondition;
-    }
     public void setScore(double newScore) { this.score = newScore; }
     public double getScore() {
         return score;
     }
+
+    public abstract void addToJointQuery(final JointIndexQuery query, final IndexSerializer serializer);
+
+    public abstract boolean supportsOrders();
 }

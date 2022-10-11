@@ -21,7 +21,7 @@ import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
-import org.janusgraph.graphdb.query.index.candidate.IndexCandidate;
+import org.janusgraph.graphdb.query.index.candidate.AbstractIndexCandidate;
 import org.janusgraph.graphdb.query.index.candidate.IndexCandidateGroup;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
@@ -56,13 +56,13 @@ public class BruteForceIndexSelectionStrategy
                                             OrderList orders,
                                             IndexSerializer serializer) {
         final JointIndexQuery jointQuery = new JointIndexQuery();
-        final Set<IndexCandidate> indexCandidates = new HashSet<>();
+        final Set<AbstractIndexCandidate> indexCandidates = new HashSet<>();
         final Set<Condition> coveredClauses = new HashSet<>();
         boolean isSorted = orders.isEmpty();
 
         // validate, enrich index candidates and calculate scores
         for (final IndexType index : rawCandidates) {
-            IndexCandidate ic = createIndexCandidate(index, conditions, serializer);
+            AbstractIndexCandidate ic = createIndexCandidate(index, conditions, serializer, orders);
             if (ic == null) {
                 continue;
             }
@@ -71,7 +71,7 @@ public class BruteForceIndexSelectionStrategy
         }
 
         IndexCandidateGroup bestGroup = null;
-        for (Set<IndexCandidate> subset : new PowerSet<>(indexCandidates)) {
+        for (Set<AbstractIndexCandidate> subset : new PowerSet<>(indexCandidates)) {
             if (subset.isEmpty())
                 continue;
             final IndexCandidateGroup group = new IndexCandidateGroup(subset, orders);
@@ -82,7 +82,7 @@ public class BruteForceIndexSelectionStrategy
 
         if (bestGroup != null) {
             coveredClauses.addAll(bestGroup.getCoveredClauses());
-            List<IndexCandidate> bestIndexes = new ArrayList<>(bestGroup.getIndexCandidates());
+            List<AbstractIndexCandidate> bestIndexes = new ArrayList<>(bestGroup.getIndexCandidates());
             // sort indexes by score descending order
             bestIndexes.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
             // isSorted depends on the first index subquery
@@ -90,15 +90,15 @@ public class BruteForceIndexSelectionStrategy
                 orders.isEmpty() || bestIndexes.get(0).getIndex().isMixedIndex() &&
                                         IndexSelectionUtil.indexCoversOrder(
                                             (MixedIndexType) bestIndexes.get(0).getIndex(), orders);
-            for (IndexCandidate c : bestIndexes) {
-                addToJointQuery(c, jointQuery, serializer, orders);
+            for (AbstractIndexCandidate c : bestIndexes) {
+                c.addToJointQuery(jointQuery, serializer);
             }
         }
 
         return new SelectedIndexQuery(jointQuery, coveredClauses, isSorted);
     }
 
-    private double calculateIndexCandidateScore(final IndexCandidate ic) {
+    private double calculateIndexCandidateScore(final AbstractIndexCandidate ic) {
         double score = 0.0;
         for (final Condition c : ic.getSubCover()) {
             score += getConditionBasicScore(c) + getIndexTypeScore(ic.getIndex());

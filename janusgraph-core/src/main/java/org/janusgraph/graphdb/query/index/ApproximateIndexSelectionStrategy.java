@@ -21,7 +21,7 @@ import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
-import org.janusgraph.graphdb.query.index.candidate.IndexCandidate;
+import org.janusgraph.graphdb.query.index.candidate.AbstractIndexCandidate;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 
@@ -57,12 +57,12 @@ public class ApproximateIndexSelectionStrategy
         final Set<Condition> coveredClauses = new HashSet<>();
         boolean isSorted = orders.isEmpty();
         while (true) {
-            IndexCandidate bestCandidate = null;
+            AbstractIndexCandidate bestCandidate = null;
             boolean candidateSupportsSort = false;
 
             for (final IndexType index : rawCandidates) {
-                final IndexCandidate indexCandidate =
-                    createIndexCandidate(index, conditions, serializer);
+                final AbstractIndexCandidate indexCandidate =
+                    createIndexCandidate(index, conditions, serializer, orders);
                 if (indexCandidate == null) {
                     continue;
                 }
@@ -86,7 +86,7 @@ public class ApproximateIndexSelectionStrategy
                     isSorted = candidateSupportsSort;
                 }
                 coveredClauses.addAll(bestCandidate.getSubCover());
-                addToJointQuery(bestCandidate, jointQuery, serializer, orders);
+                bestCandidate.addToJointQuery(jointQuery, serializer);
             } else {
                 break;
             }
@@ -94,7 +94,7 @@ public class ApproximateIndexSelectionStrategy
         return new SelectedIndexQuery(jointQuery, coveredClauses, isSorted);
     }
 
-    private double calculateIndexCandidateScore(final IndexCandidate indexCandidate,
+    private double calculateIndexCandidateScore(final AbstractIndexCandidate indexCandidate,
                                                 final Set<Condition> coveredClauses,
                                                 boolean supportsSort) {
         double score = 0.0;

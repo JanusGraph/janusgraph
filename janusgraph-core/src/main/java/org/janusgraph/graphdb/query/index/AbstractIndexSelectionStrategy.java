@@ -34,7 +34,8 @@ import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
-import org.janusgraph.graphdb.query.index.candidate.IndexCandidate;
+import org.janusgraph.graphdb.query.index.candidate.AbstractIndexCandidate;
+import org.janusgraph.graphdb.query.index.candidate.IndexCandidateFactory;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.IndexType;
@@ -94,7 +95,7 @@ public abstract class AbstractIndexSelectionStrategy implements IndexSelectionSt
      * @return An instance of <code>IndexCandidate</code> if the parameter <code>conditions</code> is valid, <code>null</code> else.
      */
     @Nullable
-    protected IndexCandidate createIndexCandidate(final IndexType index, final MultiCondition<JanusGraphElement> conditions, IndexSerializer serializer) {
+    protected AbstractIndexCandidate createIndexCandidate(final IndexType index, final MultiCondition<JanusGraphElement> conditions, IndexSerializer serializer, OrderList orders) {
         final Set<Condition> subCover = new HashSet<>(1);
 
         // Check that this index actually applies in case of a schema constraint
@@ -132,17 +133,7 @@ public abstract class AbstractIndexSelectionStrategy implements IndexSelectionSt
             return null;
         }
 
-        return new IndexCandidate(index, subCover, subCondition);
-    }
-
-    protected void addToJointQuery(final IndexCandidate indexCandidate, final JointIndexQuery jointQuery, final IndexSerializer serializer, final OrderList orders) {
-        if (indexCandidate.getIndex().isCompositeIndex()) {
-            jointQuery.add((CompositeIndexType) indexCandidate.getIndex(), serializer.getQuery(
-                (CompositeIndexType) indexCandidate.getIndex(), (List<Object[]>) indexCandidate.getSubCondition()));
-        } else {
-            jointQuery.add((MixedIndexType) indexCandidate.getIndex(), serializer.getQuery(
-                (MixedIndexType) indexCandidate.getIndex(), (Condition) indexCandidate.getSubCondition(), orders));
-        }
+        return IndexCandidateFactory.build(index, subCover, subCondition, orders);
     }
 
     protected double getConditionBasicScore(final Condition c) {

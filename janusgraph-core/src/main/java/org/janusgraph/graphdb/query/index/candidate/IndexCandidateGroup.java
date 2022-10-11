@@ -16,11 +16,8 @@ package org.janusgraph.graphdb.query.index.candidate;
 
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.types.IndexType;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -28,14 +25,14 @@ import java.util.Set;
  */
 public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
 
-    private Set<IndexCandidate> indexCandidates;
+    private Set<AbstractIndexCandidate> indexCandidates;
     private Set<Condition> coveredClauses;
     private final OrderList orders;
 
     // initialize with the worst possible score
     private double score = Double.NEGATIVE_INFINITY;
 
-    public IndexCandidateGroup(Set<IndexCandidate> indexCandidates, OrderList orders) {
+    public IndexCandidateGroup(Set<AbstractIndexCandidate> indexCandidates, OrderList orders) {
         this.indexCandidates = new HashSet<>();
         this.coveredClauses = new HashSet<>();
         this.orders = orders;
@@ -43,7 +40,7 @@ public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
         indexCandidates.forEach(this::addCandidate);
     }
 
-    public void addCandidate(IndexCandidate newCandidate) {
+    public void addCandidate(AbstractIndexCandidate newCandidate) {
         Set<Condition> newClauses = newCandidate.getSubCover();
         newClauses.removeAll(coveredClauses);
 
@@ -51,7 +48,7 @@ public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
         coveredClauses.addAll(newClauses);
     }
 
-    public Set<IndexCandidate> getIndexCandidates() {
+    public Set<AbstractIndexCandidate> getIndexCandidates() {
         return indexCandidates;
     }
 
@@ -61,7 +58,7 @@ public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
 
     public double getTotalScore() {
         if (score == Double.NEGATIVE_INFINITY) {
-            score = indexCandidates.stream().mapToDouble(IndexCandidate::getScore).sum();
+            score = indexCandidates.stream().mapToDouble(AbstractIndexCandidate::getScore).sum();
         }
 
         return score;
