@@ -1360,9 +1360,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         annotations = new HashMap() {{
             put("condition", "(name = bob AND prop = val AND desc textContains coding)");
             put("orders", "[]");
-            put("isFitted", "true");
+            put("isFitted", "false");
             put("isOrdered", "true");
-            put("query", String.format("[mixed:[(%s = bob AND %s = val)]:mixed, mi:[(%s textContains coding)]:mi]", nameKey, propKey, descKey));
+            put("query", String.format("[(%s = bob AND %s = val)]:mixed", nameKey, propKey));
+            put("index", "mixed");
+            put("index_impl", "search");
         }};
         assertEquals(annotations, nested.getAnnotations());
     }
@@ -1485,9 +1487,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[2]).has("weight", Cmp.EQUAL, 2.5).has("flag"), ElementCategory.VERTEX,
                 numV / divisor, new boolean[]{false, true}, mixed.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[3]).has("name", Cmp.EQUAL, strings[3]).has("weight", Cmp.EQUAL, 3.5), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{true, true}, mixed.name(), composite.name());
+                numV / divisor, new boolean[]{false, true}, composite.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[3]).has("name", Cmp.EQUAL, strings[3]).has("weight", Cmp.EQUAL, 3.5).has("flag"), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{false, true}, mixed.name(), composite.name());
+                numV / divisor, new boolean[]{false, true}, composite.name());
 
         clopen();
 
@@ -1507,9 +1509,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[2]).has("weight", Cmp.EQUAL, 2.5).has("flag"), ElementCategory.VERTEX,
                 numV / divisor, new boolean[]{false, true}, mixed.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[3]).has("name", Cmp.EQUAL, strings[3]).has("weight", Cmp.EQUAL, 3.5), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{true, true}, mixed.name(), composite.name());
+                numV / divisor, new boolean[]{false, true}, composite.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[3]).has("name", Cmp.EQUAL, strings[3]).has("weight", Cmp.EQUAL, 3.5).has("flag"), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{false, true}, mixed.name(), composite.name());
+                numV / divisor, new boolean[]{false, true}, composite.name());
 
     }
 
