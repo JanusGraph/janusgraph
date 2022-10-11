@@ -22,6 +22,7 @@ import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.index.candidate.AbstractIndexCandidate;
+import org.janusgraph.graphdb.query.index.candidate.IndexCandidateFactory;
 import org.janusgraph.graphdb.query.index.candidate.IndexCandidateGroup;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
@@ -62,7 +63,7 @@ public class BruteForceIndexSelectionStrategy
 
         // validate, enrich index candidates and calculate scores
         for (final IndexType index : rawCandidates) {
-            AbstractIndexCandidate ic = createIndexCandidate(index, conditions, serializer, orders);
+            AbstractIndexCandidate ic = IndexCandidateFactory.build(index, conditions, serializer, orders);
             if (ic == null) {
                 continue;
             }

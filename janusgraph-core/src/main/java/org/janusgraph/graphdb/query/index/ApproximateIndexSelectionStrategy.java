@@ -22,6 +22,7 @@ import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.index.candidate.AbstractIndexCandidate;
+import org.janusgraph.graphdb.query.index.candidate.IndexCandidateFactory;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 
@@ -61,8 +62,7 @@ public class ApproximateIndexSelectionStrategy
             boolean candidateSupportsSort = false;
 
             for (final IndexType index : rawCandidates) {
-                final AbstractIndexCandidate indexCandidate =
-                    createIndexCandidate(index, conditions, serializer, orders);
+                final AbstractIndexCandidate indexCandidate = IndexCandidateFactory.build(index, conditions, serializer, orders);
                 if (indexCandidate == null) {
                     continue;
                 }
