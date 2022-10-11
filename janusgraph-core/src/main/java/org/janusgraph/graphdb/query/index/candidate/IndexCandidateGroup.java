@@ -18,7 +18,11 @@ import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -26,15 +30,15 @@ import java.util.Set;
  */
 public class IndexCandidateGroup<E extends JanusGraphElement> implements Comparable<IndexCandidateGroup<E>> {
 
-    private final Set<AbstractIndexCandidate<?,E>> indexCandidates;
+    private final List<AbstractIndexCandidate<?,E>> indexCandidates;
     private final Set<Condition<E>> coveredClauses;
     private final OrderList orders;
 
     // initialize with the worst possible score
     private double score = Double.NEGATIVE_INFINITY;
 
-    public IndexCandidateGroup(Set<AbstractIndexCandidate<?,E>> indexCandidates, OrderList orders) {
-        this.indexCandidates = new HashSet<>();
+    public IndexCandidateGroup(Collection<AbstractIndexCandidate<?,E>> indexCandidates, OrderList orders) {
+        this.indexCandidates = new ArrayList<>();
         this.coveredClauses = new HashSet<>();
         this.orders = orders;
 
@@ -49,8 +53,8 @@ public class IndexCandidateGroup<E extends JanusGraphElement> implements Compara
         coveredClauses.addAll(newClauses);
     }
 
-    public Set<AbstractIndexCandidate<?,E>> getIndexCandidates() {
-        return indexCandidates;
+    public List<AbstractIndexCandidate<?,E>> getIndexCandidates() {
+        return Collections.unmodifiableList(indexCandidates);
     }
 
     public Set<Condition<E>> getCoveredClauses() {
@@ -63,6 +67,11 @@ public class IndexCandidateGroup<E extends JanusGraphElement> implements Compara
         }
 
         return score;
+    }
+
+    public boolean supportsOrders() {
+        if (indexCandidates.isEmpty()) return orders.isEmpty();
+        return indexCandidates.get(0).supportsOrders();
     }
 
     /**
