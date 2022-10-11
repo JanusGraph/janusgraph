@@ -14,15 +14,25 @@
 
 package org.janusgraph.graphdb.types.indextype;
 
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
+import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.query.condition.Condition;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
 import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -81,4 +91,31 @@ public class MixedIndexTypeWrapper extends IndexTypeWrapper implements MixedInde
         return base.getDefinition().getValue(TypeDefinitionCategory.INDEXSTORE_NAME,String.class);
     }
 
+    @Override
+    public boolean coversAll(Condition<JanusGraphElement> condition, IndexSerializer indexInfo) {
+        if (condition.getType()!=Condition.Type.LITERAL) {
+            return StreamSupport.stream(condition.getChildren().spliterator(), false)
+                .allMatch(child -> coversAll(child, indexInfo));
+        }
+        if (!(condition instanceof PredicateCondition)) {
+            return false;
+        }
+        final PredicateCondition<RelationType, JanusGraphElement> atom = (PredicateCondition) condition;
+        if (atom.getValue() == null && atom.getPredicate() != Cmp.NOT_EQUAL) {
+            return false;
+        }
+
+        Preconditions.checkArgument(atom.getKey().isPropertyKey());
+        final PropertyKey key = (PropertyKey) atom.getKey();
+        final ParameterIndexField[] fields = getFieldKeys();
+        final ParameterIndexField match = Arrays.stream(fields)
+            .filter(field -> field.getStatus() == SchemaStatus.ENABLED)
+            .filter(field -> field.getFieldKey().equals(key))
+            .findAny().orElse(null);
+        if (match == null) {
+            return false;
+        }
+        boolean existsQuery = atom.getValue() == null && atom.getPredicate() == Cmp.NOT_EQUAL && indexInfo.supportsExistsQuery(this, match);
+        return existsQuery || indexInfo.supports(this, match, atom.getPredicate());
+    }
 }

@@ -136,12 +136,12 @@ public class IndexCandidateFactory {
             for (final Condition<JanusGraphElement> subClause : condition.getChildren()) {
                 if (subClause instanceof And) {
                     for (final Condition<JanusGraphElement> subsubClause : subClause.getChildren()) {
-                        if (!coversAll(index, subsubClause,indexInfo)) {
+                        if (index.coversAll(subsubClause,indexInfo)) {
                             return null;
                         }
                     }
                 } else {
-                    if (!coversAll(index, subClause, indexInfo)) {
+                    if (index.coversAll(subClause, indexInfo)) {
                         return null;
                     }
                 }
@@ -152,41 +152,12 @@ public class IndexCandidateFactory {
         assert condition instanceof And;
         final And<JanusGraphElement> subCondition = new And<>(condition.numChildren());
         for (final Condition<JanusGraphElement> subClause : condition.getChildren()) {
-            if (coversAll(index,subClause,indexInfo)) {
+            if (index.coversAll(subClause,indexInfo)) {
                 subCondition.add(subClause);
                 covered.add(subClause);
             }
         }
         return subCondition.isEmpty() ? null : new MixedIndexCandidate(index, covered, subCondition, orders);
-    }
-
-
-    private static boolean coversAll(final MixedIndexType index, Condition<JanusGraphElement> condition,
-                              IndexSerializer indexInfo) {
-        if (condition.getType()!=Condition.Type.LITERAL) {
-            return StreamSupport.stream(condition.getChildren().spliterator(), false)
-                .allMatch(child -> coversAll(index, child, indexInfo));
-        }
-        if (!(condition instanceof PredicateCondition)) {
-            return false;
-        }
-        final PredicateCondition<RelationType, JanusGraphElement> atom = (PredicateCondition) condition;
-        if (atom.getValue() == null && atom.getPredicate() != Cmp.NOT_EQUAL) {
-            return false;
-        }
-
-        Preconditions.checkArgument(atom.getKey().isPropertyKey());
-        final PropertyKey key = (PropertyKey) atom.getKey();
-        final ParameterIndexField[] fields = index.getFieldKeys();
-        final ParameterIndexField match = Arrays.stream(fields)
-            .filter(field -> field.getStatus() == SchemaStatus.ENABLED)
-            .filter(field -> field.getFieldKey().equals(key))
-            .findAny().orElse(null);
-        if (match == null) {
-            return false;
-        }
-        boolean existsQuery = atom.getValue() == null && atom.getPredicate() == Cmp.NOT_EQUAL && indexInfo.supportsExistsQuery(index, match);
-        return existsQuery || indexInfo.supports(index, match, atom.getPredicate());
     }
 
     private static Pair<Condition,Collection<Object>> getEqualityConditionValues(
