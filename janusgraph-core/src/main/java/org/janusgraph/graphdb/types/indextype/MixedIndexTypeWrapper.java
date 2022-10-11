@@ -97,13 +97,9 @@ public class MixedIndexTypeWrapper extends IndexTypeWrapper implements MixedInde
             return StreamSupport.stream(condition.getChildren().spliterator(), false)
                 .allMatch(child -> coversAll(child, indexInfo));
         }
-        if (!(condition instanceof PredicateCondition)) {
-            return false;
-        }
+        if (!(condition instanceof PredicateCondition)) return false;
         final PredicateCondition<RelationType, E> atom = (PredicateCondition<RelationType, E>) condition;
-        if (atom.getValue() == null && atom.getPredicate() != Cmp.NOT_EQUAL) {
-            return false;
-        }
+        if (atom.getValue() == null && atom.getPredicate() != Cmp.NOT_EQUAL) return false;
 
         Preconditions.checkArgument(atom.getKey().isPropertyKey());
         final PropertyKey key = (PropertyKey) atom.getKey();
@@ -112,9 +108,8 @@ public class MixedIndexTypeWrapper extends IndexTypeWrapper implements MixedInde
             .filter(field -> field.getStatus() == SchemaStatus.ENABLED)
             .filter(field -> field.getFieldKey().equals(key))
             .findAny().orElse(null);
-        if (match == null) {
-            return false;
-        }
+
+        if (match == null) return false;
         boolean existsQuery = atom.getValue() == null && atom.getPredicate() == Cmp.NOT_EQUAL && indexInfo.supportsExistsQuery(this, match);
         return existsQuery || indexInfo.supports(this, match, atom.getPredicate());
     }
