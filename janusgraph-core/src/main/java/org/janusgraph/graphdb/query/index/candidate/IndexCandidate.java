@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.query.index;
+package org.janusgraph.graphdb.query.index.candidate;
 
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.types.IndexType;
