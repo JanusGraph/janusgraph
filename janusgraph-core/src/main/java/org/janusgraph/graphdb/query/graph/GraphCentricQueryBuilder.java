@@ -36,11 +36,10 @@ import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.query.QueryProcessor;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
-import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
-import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.CostBasedIndexSelector;
 import org.janusgraph.graphdb.query.index.SelectedIndexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -51,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -106,12 +104,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
      * The hard max limit of each query
      */
     private int hardMaxLimit;
-    /**
-     * Selection service for the best combination of indexes to be queried
-     */
-    private IndexSelectionStrategy indexSelector;
 
-    public GraphCentricQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer, IndexSelectionStrategy indexSelector) {
+    public GraphCentricQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(serializer);
         Configuration customOptions = tx.getConfiguration().getCustomOptions();
@@ -120,7 +114,6 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         hardMaxLimit = customOptions.has(HARD_MAX_LIMIT) ? customOptions.get(HARD_MAX_LIMIT) : graphConfigs.getHardMaxLimit();
         this.tx = tx;
         this.serializer = serializer;
-        this.indexSelector = indexSelector;
     }
 
     public void disableSmartLimit() {
@@ -290,9 +283,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         orders.makeImmutable();
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
-        final SelectedIndexQuery selectedIndex = indexSelector.selectIndices(
+        final SelectedIndexQuery<?> selectedIndex = CostBasedIndexSelector.selectIndices(
             resultType, conditions, orders, serializer);
-        final Set<Condition> coveredClauses = selectedIndex.getCoveredClauses();
+        final Set<?> coveredClauses = selectedIndex.getCoveredClauses();
 
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {

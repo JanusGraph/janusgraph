@@ -84,9 +84,6 @@ import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
-import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
-import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
-import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
@@ -129,7 +126,6 @@ import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_SELECT_STRATEGY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
@@ -137,7 +133,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_WRITE_WAITTIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_LOG_TRANSACTIONS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
-import static org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy.INDEX_SELECT_BRUTE_FORCE_THRESHOLD;
 import static org.janusgraph.testutil.JanusGraphAssert.assertBackendHit;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.janusgraph.testutil.JanusGraphAssert.assertEmpty;
@@ -1386,29 +1381,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         mixedIndex.name();
         finishSchema();
         Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph -> graph.traversal().V().has("name", "value").has("prop", "value");
-        // best combination is to pick up only 1 index (mixed index), however, greedy based approximate algorithm
-        // picks up 2 indexes (composite index + mixed index)
 
-        // use default config
+        // best combination is to pick up only 1 index (mixed index)
         assertEquals(1, getIndexSelectResultNum(traversal));
-
-        // use full class name
-        assertEquals(1, getIndexSelectResultNum(traversal,
-            option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.class.getName()));
-
-        assertEquals(1, getIndexSelectResultNum(traversal,
-            option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 10,
-            option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.NAME));
-
-        assertEquals(2, getIndexSelectResultNum(traversal,
-            option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 0,
-            option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.NAME));
-
-        assertEquals(1, getIndexSelectResultNum(traversal,
-            option(INDEX_SELECT_STRATEGY), BruteForceIndexSelectionStrategy.NAME));
-
-        assertEquals(2, getIndexSelectResultNum(traversal,
-            option(INDEX_SELECT_STRATEGY), ApproximateIndexSelectionStrategy.NAME));
     }
 
     @Test
@@ -1424,9 +1399,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         mixedIndex.name();
         finishSchema();
         Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph -> graph.traversal().V().has("name", "value").has("prop");
-        // best combination is to pick up only 1 index (unique composite index) and check the second condition without an index lookup
 
-        // use default config
+        // best combination is to pick up only 1 index (unique composite index) and check the second condition without an index lookup
         assertEquals(1, getIndexSelectResultNum(traversal));
     }
 

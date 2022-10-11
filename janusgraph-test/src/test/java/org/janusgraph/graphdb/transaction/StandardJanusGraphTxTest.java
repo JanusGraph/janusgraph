@@ -28,8 +28,6 @@ import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
-import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.junit.jupiter.api.Test;
 
 import static org.easymock.EasyMock.expect;
@@ -82,7 +80,6 @@ public class StandardJanusGraphTxTest extends EasyMockSupport {
         IDManager idManager = createMock(IDManager.class);
         PropertyKey propertyKey = createMock(PropertyKey.class);
         DefaultSchemaMaker defaultSchemaMaker = createMock(DefaultSchemaMaker.class);
-        IndexSelectionStrategy indexSelectionStrategy = createMock(ThresholdBasedIndexSelectionStrategy.class);
 
         expect(mockGraph.getConfiguration()).andReturn(gdbConfig).times(2);
         expect(mockGraph.isOpen()).andReturn(true).anyTimes();
@@ -90,7 +87,6 @@ public class StandardJanusGraphTxTest extends EasyMockSupport {
         expect(mockGraph.getEdgeSerializer()).andReturn(mockEdgeSerializer);
         expect(mockGraph.getIndexSerializer()).andReturn(mockIndexSerializer);
         expect(mockGraph.getIDManager()).andReturn(idManager);
-        expect(mockGraph.getIndexSelector()).andReturn(indexSelectionStrategy);
         mockGraph.closeTransaction(isA(StandardJanusGraphTx.class));
         EasyMock.expectLastCall().anyTimes();
 
