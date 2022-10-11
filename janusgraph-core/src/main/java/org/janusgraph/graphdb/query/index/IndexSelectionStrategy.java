@@ -38,17 +38,4 @@ public interface IndexSelectionStrategy {
                                      final MultiCondition<JanusGraphElement> conditions,
                                      final Set<Condition> coveredClauses, OrderList orders,
                                      IndexSerializer serializer);
-    class SelectedIndexQuery {
-        private JointIndexQuery query;
-        private boolean isSorted;
-
-        public SelectedIndexQuery(JointIndexQuery query, boolean isSorted) {
-            this.query = query;
-            this.isSorted = isSorted;
-        }
-
-        public JointIndexQuery getQuery() { return query; }
-
-        public boolean isSorted() { return isSorted; }
-    }
 }

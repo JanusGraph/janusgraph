@@ -41,6 +41,7 @@ import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.SelectedIndexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.util.CloseableIteratorUtils;
@@ -290,7 +291,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
         final Set<Condition> coveredClauses = new HashSet<>();
-        final IndexSelectionStrategy.SelectedIndexQuery selectedIndex = indexSelector.selectIndices(
+        final SelectedIndexQuery selectedIndex = indexSelector.selectIndices(
             resultType, conditions, coveredClauses, orders, serializer);
 
         BackendQueryHolder<JointIndexQuery> query;
