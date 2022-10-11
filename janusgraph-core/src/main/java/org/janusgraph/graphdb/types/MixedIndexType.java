@@ -30,5 +30,5 @@ public interface MixedIndexType extends IndexType {
 
     String getStoreName();
 
-    boolean coversAll(Condition<JanusGraphElement> condition, IndexSerializer indexInfo);
+    <E extends JanusGraphElement> boolean coversAll(Condition<E> condition, IndexSerializer indexInfo);
 }

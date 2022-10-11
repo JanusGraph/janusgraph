@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.query.index.candidate;
 
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
 
@@ -23,16 +24,16 @@ import java.util.Set;
 /**
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */
-public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
+public class IndexCandidateGroup<E extends JanusGraphElement> implements Comparable<IndexCandidateGroup<E>> {
 
-    private Set<AbstractIndexCandidate> indexCandidates;
-    private Set<Condition> coveredClauses;
+    private final Set<AbstractIndexCandidate<?,E>> indexCandidates;
+    private final Set<Condition<E>> coveredClauses;
     private final OrderList orders;
 
     // initialize with the worst possible score
     private double score = Double.NEGATIVE_INFINITY;
 
-    public IndexCandidateGroup(Set<AbstractIndexCandidate> indexCandidates, OrderList orders) {
+    public IndexCandidateGroup(Set<AbstractIndexCandidate<?,E>> indexCandidates, OrderList orders) {
         this.indexCandidates = new HashSet<>();
         this.coveredClauses = new HashSet<>();
         this.orders = orders;
@@ -40,19 +41,19 @@ public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
         indexCandidates.forEach(this::addCandidate);
     }
 
-    public void addCandidate(AbstractIndexCandidate newCandidate) {
-        Set<Condition> newClauses = newCandidate.getSubCover();
+    public void addCandidate(AbstractIndexCandidate<?,E> newCandidate) {
+        Set<Condition<E>> newClauses = newCandidate.getSubCover();
         newClauses.removeAll(coveredClauses);
 
         indexCandidates.add(newCandidate);
         coveredClauses.addAll(newClauses);
     }
 
-    public Set<AbstractIndexCandidate> getIndexCandidates() {
+    public Set<AbstractIndexCandidate<?,E>> getIndexCandidates() {
         return indexCandidates;
     }
 
-    public Set<Condition> getCoveredClauses() {
+    public Set<Condition<E>> getCoveredClauses() {
         return coveredClauses;
     }
 
@@ -71,7 +72,7 @@ public class IndexCandidateGroup implements Comparable<IndexCandidateGroup> {
      * @return
      */
     @Override
-    public int compareTo(IndexCandidateGroup that) {
+    public int compareTo(IndexCandidateGroup<E> that) {
         if (that == null) return 1;
         if (coveredClauses.size() > that.getCoveredClauses().size()) return 1;
         if (coveredClauses.size() < that.getCoveredClauses().size()) return -1;

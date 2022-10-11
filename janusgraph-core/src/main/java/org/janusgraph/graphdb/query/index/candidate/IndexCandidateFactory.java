@@ -43,18 +43,18 @@ import javax.annotation.Nullable;
 public class IndexCandidateFactory {
 
     @Nullable
-    public static AbstractIndexCandidate<? extends IndexType> build(final IndexType index,
-                                                                    final MultiCondition conditions,
-                                                                    final IndexSerializer serializer,
-                                                                    OrderList orders) {
-        final Set<Condition> subCover = new HashSet<>(1);
+    public static <E extends JanusGraphElement> AbstractIndexCandidate<? extends IndexType, E> build(final IndexType index,
+                                                                                                     final MultiCondition<E> conditions,
+                                                                                                     final IndexSerializer serializer,
+                                                                                                     OrderList orders) {
+        final Set<Condition<E>> subCover = new HashSet<>(1);
 
         // Check that this index actually applies in case of a schema constraint
         if (index.hasSchemaTypeConstraint()) {
             final JanusGraphSchemaType type = index.getSchemaTypeConstraint();
 
             // Only equality conditions are supported
-            final Pair<Condition<JanusGraphElement>, Collection<Object>> labelCondition = QueryUtil.getEqualityConditionValues(conditions, ImplicitKey.LABEL);
+            final Pair<Condition<E>, Collection<Object>> labelCondition = QueryUtil.getEqualityConditionValues(conditions, ImplicitKey.LABEL);
             if (labelCondition == null) return null;
 
             final Collection<Object> labels = labelCondition.getValue();
@@ -76,20 +76,20 @@ public class IndexCandidateFactory {
         }
     }
 
-    private static AbstractIndexCandidate<CompositeIndexType> indexCover(final CompositeIndexType index,
-                                                                         Condition completeCondition,
-                                                                         Set<Condition> alreadyCovered,
-                                                                         OrderList orders) {
+    private static <E extends JanusGraphElement> AbstractIndexCandidate<CompositeIndexType, E> indexCover(final CompositeIndexType index,
+                                                                                                          Condition<E> completeCondition,
+                                                                                                          Set<Condition<E>> alreadyCovered,
+                                                                                                          OrderList orders) {
         if (!QueryUtil.isQueryNormalForm(completeCondition)) return null;
         assert completeCondition instanceof And;
         if (index.getStatus()!= SchemaStatus.ENABLED) return null;
 
         final IndexField[] fields = index.getFieldKeys();
-        final Set<Condition> coveredClauses = new HashSet<>(fields.length);
+        final Set<Condition<E>> coveredClauses = new HashSet<>(fields.length);
         final ArrayList<List<Object>> indexValues = new ArrayList<>(fields.length);
 
         for (IndexField field : fields) {
-            final Pair<Condition,Collection<Object>> equalCon = QueryUtil.getEqualityConditionValues(completeCondition, field.getFieldKey());
+            final Pair<Condition<E>,Collection<Object>> equalCon = QueryUtil.getEqualityConditionValues(completeCondition, field.getFieldKey());
             if (equalCon == null) return null;
             coveredClauses.add(equalCon.getKey());
             indexValues.add(new ArrayList<>(equalCon.getValue()));
@@ -101,34 +101,34 @@ public class IndexCandidateFactory {
 
         if (subCondition.isEmpty()) return null;
         alreadyCovered.addAll(coveredClauses);
-        return new CompositeIndexCandidate(index, alreadyCovered, subCondition, orders);
+        return new CompositeIndexCandidate<>(index, alreadyCovered, subCondition, orders);
     }
 
-    private static AbstractIndexCandidate<MixedIndexType> indexCover(final MixedIndexType index,
-                                                                     Condition completeCondition,
+    private static <E extends JanusGraphElement> AbstractIndexCandidate<MixedIndexType, E> indexCover(final MixedIndexType index,
+                                                                     Condition<E> completeCondition,
                                                                      final IndexSerializer indexInfo,
-                                                                     final Set<Condition> alreadyCovered,
+                                                                     final Set<Condition<E>> alreadyCovered,
                                                                      OrderList orders) {
         if (!indexInfo.features(index).supportNotQueryNormalForm() && !QueryUtil.isQueryNormalForm(completeCondition)) return null;
 
         if (completeCondition instanceof Or) {
             if (index.coversAll(completeCondition, indexInfo)) {
                 alreadyCovered.add(completeCondition);
-                return new MixedIndexCandidate(index, alreadyCovered, completeCondition, orders);
+                return new MixedIndexCandidate<>(index, alreadyCovered, completeCondition, orders);
             } else {
                 return null;
             }
         }
 
         assert completeCondition instanceof And;
-        final And subCondition = new And(completeCondition.numChildren());
-        for (final Condition subClause : completeCondition.getChildren()) {
+        final And<E> subCondition = new And<>(completeCondition.numChildren());
+        for (final Condition<E> subClause : completeCondition.getChildren()) {
             if (index.coversAll(subClause, indexInfo)) {
                 subCondition.add(subClause);
                 alreadyCovered.add(subClause);
             }
         }
 
-        return subCondition.isEmpty() ? null : new MixedIndexCandidate(index, alreadyCovered, subCondition, orders);
+        return subCondition.isEmpty() ? null : new MixedIndexCandidate<>(index, alreadyCovered, subCondition, orders);
     }
 }

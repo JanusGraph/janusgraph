@@ -99,9 +99,9 @@ public class BruteForceIndexSelectionStrategy
         return new SelectedIndexQuery(jointQuery, coveredClauses, isSorted);
     }
 
-    private double calculateIndexCandidateScore(final AbstractIndexCandidate ic) {
+    private double calculateIndexCandidateScore(final AbstractIndexCandidate<?,?> ic) {
         double score = 0.0;
-        for (final Condition c : ic.getSubCover()) {
+        for (final Condition<?> c : ic.getSubCover()) {
             score += getConditionBasicScore(c) + getIndexTypeScore(ic.getIndex());
         }
         return score;

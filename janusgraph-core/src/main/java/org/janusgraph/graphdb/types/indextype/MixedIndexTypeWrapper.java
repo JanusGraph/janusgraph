@@ -92,7 +92,7 @@ public class MixedIndexTypeWrapper extends IndexTypeWrapper implements MixedInde
     }
 
     @Override
-    public boolean coversAll(Condition<JanusGraphElement> condition, IndexSerializer indexInfo) {
+    public <E extends JanusGraphElement> boolean coversAll(Condition<E> condition, IndexSerializer indexInfo) {
         if (condition.getType()!=Condition.Type.LITERAL) {
             return StreamSupport.stream(condition.getChildren().spliterator(), false)
                 .allMatch(child -> coversAll(child, indexInfo));
@@ -100,7 +100,7 @@ public class MixedIndexTypeWrapper extends IndexTypeWrapper implements MixedInde
         if (!(condition instanceof PredicateCondition)) {
             return false;
         }
-        final PredicateCondition<RelationType, JanusGraphElement> atom = (PredicateCondition) condition;
+        final PredicateCondition<RelationType, E> atom = (PredicateCondition<RelationType, E>) condition;
         if (atom.getValue() == null && atom.getPredicate() != Cmp.NOT_EQUAL) {
             return false;
         }

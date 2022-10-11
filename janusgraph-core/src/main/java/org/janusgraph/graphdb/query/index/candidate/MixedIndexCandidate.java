@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.query.index.candidate;
 
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
@@ -23,11 +24,11 @@ import org.janusgraph.graphdb.types.MixedIndexType;
 
 import java.util.Set;
 
-public class MixedIndexCandidate extends AbstractIndexCandidate<MixedIndexType> {
+public class MixedIndexCandidate<E extends JanusGraphElement> extends AbstractIndexCandidate<MixedIndexType, E> {
 
-    private final Condition subCondition;
+    private final Condition<E> subCondition;
 
-    public MixedIndexCandidate(MixedIndexType index, Set<Condition> subCover, Condition subCondition, OrderList orders) {
+    public MixedIndexCandidate(MixedIndexType index, Set<Condition<E>> subCover, Condition<E> subCondition, OrderList orders) {
         super(index, subCover, orders);
         this.subCondition = subCondition;
     }

@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.query.index.candidate;
 
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
@@ -24,11 +25,11 @@ import org.janusgraph.graphdb.types.CompositeIndexType;
 import java.util.List;
 import java.util.Set;
 
-public class CompositeIndexCandidate extends AbstractIndexCandidate<CompositeIndexType> {
+public class CompositeIndexCandidate<E extends JanusGraphElement> extends AbstractIndexCandidate<CompositeIndexType, E> {
 
     private final List<Object[]> subCondition;
 
-    public CompositeIndexCandidate(CompositeIndexType index, Set<Condition> subCover, List<Object[]> subCondition, OrderList orders) {
+    public CompositeIndexCandidate(CompositeIndexType index, Set<Condition<E>> subCover, List<Object[]> subCondition, OrderList orders) {
         super(index, subCover, orders);
         this.subCondition = subCondition;
     }

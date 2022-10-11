@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.query.index.candidate;
 
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
@@ -25,15 +26,15 @@ import java.util.Set;
 /**
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */
-public abstract class AbstractIndexCandidate<I extends IndexType> {
+public abstract class AbstractIndexCandidate<I extends IndexType, E extends JanusGraphElement> {
     protected final I index;
-    private final Set<Condition> subCover;
+    private final Set<Condition<E>> subCover;
     protected OrderList orders;
 
     // initialize with the worst possible score
     private double score = Double.NEGATIVE_INFINITY;
 
-    public AbstractIndexCandidate(final I index, final Set<Condition> subCover, OrderList orders) {
+    public AbstractIndexCandidate(final I index, final Set<Condition<E>> subCover, OrderList orders) {
         this.index = index;
         this.subCover = subCover;
         this.orders = orders;
@@ -42,7 +43,7 @@ public abstract class AbstractIndexCandidate<I extends IndexType> {
     public I getIndex() {
         return index;
     }
-    public Set<Condition> getSubCover() {
+    public Set<Condition<E>> getSubCover() {
         return subCover;
     }
     public void setScore(double newScore) { this.score = newScore; }

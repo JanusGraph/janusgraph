@@ -94,12 +94,12 @@ public class ApproximateIndexSelectionStrategy
         return new SelectedIndexQuery(jointQuery, coveredClauses, isSorted);
     }
 
-    private double calculateIndexCandidateScore(final AbstractIndexCandidate indexCandidate,
+    private double calculateIndexCandidateScore(final AbstractIndexCandidate<?,?> indexCandidate,
                                                 final Set<Condition> coveredClauses,
                                                 boolean supportsSort) {
         double score = 0.0;
 
-        for (final Condition c : indexCandidate.getSubCover()) {
+        for (final Condition<?> c : indexCandidate.getSubCover()) {
             double subScore = getConditionBasicScore(c);
             if (coveredClauses.contains(c)) {
                 subScore = subScore * ALREADY_MATCHED_ADJUSTOR;
