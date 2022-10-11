@@ -709,7 +709,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             RelationType type=null;
             Interval newInterval=null;
             if (condition instanceof Or) {
-                Pair<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)condition);
+                Pair<RelationType,Collection> orEqual = QueryUtil.extractEqualPredicateValuesNestedInOrCondition((Or) condition, null);
                 if (orEqual!=null) {
                     type = orEqual.getKey();
                     newInterval = new PointInterval(orEqual.getValue());
