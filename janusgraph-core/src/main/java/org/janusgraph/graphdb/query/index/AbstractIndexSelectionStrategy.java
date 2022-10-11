@@ -66,10 +66,10 @@ public abstract class AbstractIndexSelectionStrategy implements IndexSelectionSt
     @Override
     public SelectedIndexQuery selectIndices(final ElementCategory resultType,
                                             final MultiCondition<JanusGraphElement> conditions,
-                                            final Set<Condition> coveredClauses, OrderList orders,
+                                            OrderList orders,
                                             IndexSerializer serializer) {
         final Set<IndexType> rawCandidates = createIndexRawCandidates(conditions, resultType, serializer);
-        return selectIndices(rawCandidates, conditions, coveredClauses, orders, serializer);
+        return selectIndices(rawCandidates, conditions, orders, serializer);
     }
 
     //Compile all indexes that cover at least one of the query conditions

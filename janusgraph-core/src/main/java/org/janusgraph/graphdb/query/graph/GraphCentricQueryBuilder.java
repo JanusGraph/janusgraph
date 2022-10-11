@@ -290,9 +290,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         orders.makeImmutable();
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
-        final Set<Condition> coveredClauses = new HashSet<>();
         final SelectedIndexQuery selectedIndex = indexSelector.selectIndices(
-            resultType, conditions, coveredClauses, orders, serializer);
+            resultType, conditions, orders, serializer);
+        final Set<Condition> coveredClauses = selectedIndex.getCoveredClauses();
 
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {

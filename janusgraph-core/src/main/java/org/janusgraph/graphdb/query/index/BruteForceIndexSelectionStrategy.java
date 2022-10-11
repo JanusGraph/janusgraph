@@ -51,10 +51,11 @@ public class BruteForceIndexSelectionStrategy
     @Override
     public SelectedIndexQuery selectIndices(final Set<IndexType> rawCandidates,
                                             final MultiCondition<JanusGraphElement> conditions,
-                                            final Set<Condition> coveredClauses, OrderList orders,
+                                            OrderList orders,
                                             IndexSerializer serializer) {
         final JointIndexQuery jointQuery = new JointIndexQuery();
         final Set<IndexCandidate> indexCandidates = new HashSet<>();
+        final Set<Condition> coveredClauses = new HashSet<>();
         boolean isSorted = orders.isEmpty();
 
         // validate, enrich index candidates and calculate scores
@@ -92,7 +93,7 @@ public class BruteForceIndexSelectionStrategy
             }
         }
 
-        return new SelectedIndexQuery(jointQuery, isSorted);
+        return new SelectedIndexQuery(jointQuery, coveredClauses, isSorted);
     }
 
     private double calculateIndexCandidateScore(final IndexCandidate ic) {

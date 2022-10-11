@@ -59,7 +59,7 @@ public class ThresholdBasedIndexSelectionStrategy
     @Override
     public SelectedIndexQuery selectIndices(final Set<IndexType> indexCandidates,
                                             final MultiCondition<JanusGraphElement> conditions,
-                                            final Set<Condition> coveredClauses, OrderList orders,
+                                            OrderList orders,
                                             IndexSerializer serializer) {
         /* TODO: smarter optimization:
         - use in-memory histograms to estimate selectivity of PredicateConditions and filter out
@@ -69,7 +69,7 @@ public class ThresholdBasedIndexSelectionStrategy
         IndexSelectionStrategy preferredStrategy = indexCandidates.size() <= threshold
             ? usedIfLessOrEqualThreshold
             : usedIfGreaterThanThreshold;
-        return preferredStrategy.selectIndices(indexCandidates, conditions, coveredClauses, orders,
+        return preferredStrategy.selectIndices(indexCandidates, conditions, orders,
             serializer);
     }
 }

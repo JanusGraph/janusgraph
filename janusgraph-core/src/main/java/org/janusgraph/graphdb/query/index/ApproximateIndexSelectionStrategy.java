@@ -24,6 +24,7 @@ import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -49,9 +50,10 @@ public class ApproximateIndexSelectionStrategy
     @Override
     public SelectedIndexQuery selectIndices(final Set<IndexType> rawCandidates,
                                             final MultiCondition<JanusGraphElement> conditions,
-                                            final Set<Condition> coveredClauses, OrderList orders,
+                                            OrderList orders,
                                             IndexSerializer serializer) {
         final JointIndexQuery jointQuery = new JointIndexQuery();
+        final Set<Condition> coveredClauses = new HashSet<>();
         boolean isSorted = orders.isEmpty();
         while (true) {
             IndexCandidate bestCandidate = null;
@@ -88,7 +90,7 @@ public class ApproximateIndexSelectionStrategy
                 break;
             }
         }
-        return new SelectedIndexQuery(jointQuery, isSorted);
+        return new SelectedIndexQuery(jointQuery, coveredClauses, isSorted);
     }
 
     private double calculateIndexCandidateScore(final IndexCandidate indexCandidate,

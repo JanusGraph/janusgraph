@@ -14,19 +14,30 @@
 
 package org.janusgraph.graphdb.query.index;
 
+import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 
-public class SelectedIndexQuery {
+import java.util.Collections;
+import java.util.Set;
+
+public class SelectedIndexQuery<E extends JanusGraphElement> {
     private final JointIndexQuery query;
+    private final Set<Condition<E>> coveredClauses;
     private final boolean isSorted;
 
-    public SelectedIndexQuery(JointIndexQuery query, boolean isSorted) {
+    public SelectedIndexQuery(JointIndexQuery query, Set<Condition<E>> coveredClauses, boolean isSorted) {
         this.query = query;
+        this.coveredClauses = coveredClauses;
         this.isSorted = isSorted;
     }
 
     public JointIndexQuery getQuery() {
         return query;
+    }
+
+    public Set<Condition<E>> getCoveredClauses() {
+        return Collections.unmodifiableSet(coveredClauses);
     }
 
     public boolean isSorted() {
