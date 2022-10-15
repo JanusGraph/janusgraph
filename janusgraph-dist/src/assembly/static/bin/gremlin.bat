@@ -84,7 +84,7 @@ SET CP=%CLASSPATH%;%SLF4J_LOG4J_JAR%;%JANUSGRAPH_JARS%;%JANUSGRAPH_LIB%\*;%EXTDI
 IF NOT DEFINED JAVA_OPTIONS (
  SET JAVA_OPTIONS=-Xms32m -Xmx512m ^
  -Dtinkerpop.ext=%JANUSGRAPH_EXT% ^
- -Dlog4j.configurationFile=file:/%JANUSGRAPH_HOME%\conf\log4j2-server.xml ^
+ -Dlog4j2.configurationFile=file:/%JANUSGRAPH_HOME%\conf\log4j2-server.xml ^
  -Djline.terminal=none ^
  -javaagent:%JAMM_JAR% ^
  -Dgremlin.io.kryoShimService=org.janusgraph.hadoop.serialize.JanusGraphKryoShimService

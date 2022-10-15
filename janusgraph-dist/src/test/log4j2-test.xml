@@ -8,6 +8,9 @@
         </File>
     </Appenders>
     <Loggers>
+        <Logger name="org.apache.hadoop.hbase" level="warn">
+            <AppenderRef ref="TestFile"/>
+        </Logger>
         <Root level="info">
             <AppenderRef ref="TestFile"/>
         </Root>

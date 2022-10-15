@@ -60,6 +60,12 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-shaded-mapreduce</artifactId>
             <version>${hbase2.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.reload4j</groupId>
+                    <artifactId>reload4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
