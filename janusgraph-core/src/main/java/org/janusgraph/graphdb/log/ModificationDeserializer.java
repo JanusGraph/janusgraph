@@ -18,9 +18,11 @@ import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.log.Change;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.graphdb.database.log.TransactionLogHeader;
+import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
@@ -31,12 +33,14 @@ import org.janusgraph.graphdb.relations.RelationCache;
 import org.janusgraph.graphdb.relations.StandardEdge;
 import org.janusgraph.graphdb.relations.StandardVertexProperty;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.types.VertexLabelVertex;
+import org.janusgraph.graphdb.vertices.AbstractVertex;
+import org.janusgraph.graphdb.vertices.AbstractVertexUtil;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class ModificationDeserializer {
-
 
     public static InternalRelation parseRelation(TransactionLogHeader.Modification modification, StandardJanusGraphTx tx) {
         Change state = modification.state;
@@ -44,6 +48,15 @@ public class ModificationDeserializer {
         long outVertexId = modification.outVertexId;
         Entry relEntry = modification.relationEntry;
         InternalVertex outVertex = tx.getInternalVertex(outVertexId);
+        if(outVertex instanceof AbstractVertex){
+            long outVertexLabelId = modification.outVertexLabelId;
+            if(IDManager.VertexIDType.VertexLabel.is(outVertexLabelId)){
+                VertexLabel vertexLabel = tx.getExistingVertexLabel(outVertexLabelId);
+                if(vertexLabel instanceof VertexLabelVertex){
+                    AbstractVertexUtil.cacheInternalVertexLabel((AbstractVertex) outVertex, (VertexLabelVertex) vertexLabel);
+                }
+            }
+        }
         //Special relation parsing, compare to {@link RelationConstructor}
         RelationCache relCache = tx.getEdgeSerializer().readRelation(relEntry, false, tx);
         assert relCache.direction == Direction.OUT;

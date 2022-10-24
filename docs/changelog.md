@@ -171,6 +171,24 @@ A new optimization has been added to compute aggregations (min, max, sum and avg
 If the index backend is Elasticsearch, a `double` value is used to hold the result. As a result, aggregations on long numbers greater than 2^53 are approximate.
 In this case, if the accurate result is essential, the optimization can be disabled by removing the strategy `JanusGraphMixedIndexAggStrategy`: `g.traversal().withoutStrategies(JanusGraphMixedIndexAggStrategy.class)`.
 
+##### Breaking change for transaction logs processing
+
+[Transaction Log](advanced-topics/transaction-log.md) processing has a breaking change.  
+Previously for all mutated vertices a default vertex label `vertex` has been used in `ChangeState` events. 
+The new approach stores vertex labels in logs as well which increases storage size for +8 bytes per each relation and 
+makes all previously stored transaction logs incompatible with the new structure.   
+To pass this breaking change it's necessary to ensure that transaction logs stored via previous JanusGraph versions are 
+not processed via JanusGraph version >= 1.0.0.   
+One of the possible ways to ensure previous logs are not processed is to use `setStartTimeNow` 
+to process only newest logs. Another way could be to process all previous logs, store log identifier state and start 
+processing logs from the latest log ensuring that the latest logs are send by the JanusGraph version >= 1.0.0.   
+For example:  
+```java
+LogProcessorBuilder logProcessorBuilder = logProcessorFramework
+  .addLogProcessor("myLogProcessorIdentifier")
+  .setStartTimeNow();
+```
+
 ### Version 0.6.3 (Release Date: ???)
 
 ```xml tab='Maven'

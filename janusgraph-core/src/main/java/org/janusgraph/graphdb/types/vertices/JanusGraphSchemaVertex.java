@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
@@ -34,6 +33,7 @@ import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.TypeDefinitionDescription;
 import org.janusgraph.graphdb.types.TypeDefinitionMap;
+import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.janusgraph.graphdb.types.indextype.CompositeIndexTypeWrapper;
 import org.janusgraph.graphdb.types.indextype.MixedIndexTypeWrapper;
 import org.janusgraph.graphdb.types.system.BaseKey;
@@ -73,7 +73,7 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
     }
 
     @Override
-    protected Vertex getVertexLabelInternal() {
+    protected VertexLabelVertex getVertexLabelInternal() {
         return null;
     }
 

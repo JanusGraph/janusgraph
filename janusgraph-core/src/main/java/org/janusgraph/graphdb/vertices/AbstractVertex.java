@@ -46,6 +46,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     private final StandardJanusGraphTx tx;
 
+    private volatile VertexLabelVertex internalCachedVertexLabel;
 
     protected AbstractVertex(StandardJanusGraphTx tx, long id) {
         super(id);
@@ -129,15 +130,21 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         return vertexLabel().name();
     }
 
-    protected Vertex getVertexLabelInternal() {
-        return Iterables.getOnlyElement(tx().query(this).noPartitionRestriction().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+    protected VertexLabelVertex getVertexLabelInternal() {
+        // Only if we `internalCachedVertexLabel` is not null it means that the vertex is guaranteed to have that label
+        // because `label` is immutable. In all other cases we need to try to fetch the vertex label even if it's a
+        // repeated operation.
+        if(internalCachedVertexLabel == null){
+            internalCachedVertexLabel = (VertexLabelVertex) Iterables.getOnlyElement(tx().query(this)
+                .noPartitionRestriction().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+        }
+        return internalCachedVertexLabel;
     }
 
     @Override
     public VertexLabel vertexLabel() {
-        Vertex label = getVertexLabelInternal();
-        if (label==null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
-        else return (VertexLabelVertex)label;
+        VertexLabelVertex label = getVertexLabelInternal();
+        return label == null ? BaseVertexLabel.DEFAULT_VERTEXLABEL : label;
     }
 
     @Override
@@ -200,10 +207,9 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     public Iterator<Vertex> vertices(final Direction direction, final String... edgeLabels) {
         return (Iterator)query().direction(direction).labels(edgeLabels).vertices().iterator();
-
     }
 
-
-
-
+    void cacheInternalVertexLabel(VertexLabelVertex internalCachedVertexLabel){
+        this.internalCachedVertexLabel = internalCachedVertexLabel;
+    }
 }

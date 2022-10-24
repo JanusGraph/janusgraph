@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.log.Change;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -26,6 +27,7 @@ import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.log.StandardTransactionId;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
@@ -85,7 +87,10 @@ public class TransactionLogHeader {
     private static void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardJanusGraphTx tx) {
         VariableLong.writePositive(out,relations.size());
         for (InternalRelation rel : relations) {
-            VariableLong.writePositive(out,rel.getVertex(0).longId());
+            InternalVertex vertex = rel.getVertex(0);
+            VariableLong.writePositive(out,vertex.longId());
+            VertexLabel vertexLabel = vertex.vertexLabel();
+            VariableLong.writePositive(out, vertexLabel.hasId() ? vertexLabel.longId() : 0L);
             org.janusgraph.diskstorage.Entry entry = tx.getEdgeSerializer().writeRelation(rel, 0, tx);
             BufferUtil.writeEntry(out,entry);
         }
@@ -238,9 +243,10 @@ public class TransactionLogHeader {
             long size = VariableLong.readPositive(in);
             List<Modification> mods = new ArrayList<>((int) size);
             for (int i = 0; i < size; i++) {
-                long vid = VariableLong.readPositive(in);
+                long vertexId = VariableLong.readPositive(in);
+                long labelId = VariableLong.readPositive(in);
                 org.janusgraph.diskstorage.Entry entry = BufferUtil.readEntry(in,serializer);
-                mods.add(new Modification(state,vid,entry));
+                mods.add(new Modification(state,vertexId,labelId,entry));
             }
             return mods;
         }
@@ -269,11 +275,13 @@ public class TransactionLogHeader {
 
         public final Change state;
         public final long outVertexId;
+        public final long outVertexLabelId;
         public final org.janusgraph.diskstorage.Entry relationEntry;
 
-        private Modification(Change state, long outVertexId, org.janusgraph.diskstorage.Entry relationEntry) {
+        private Modification(Change state, long outVertexId, long outVertexLabelId, org.janusgraph.diskstorage.Entry relationEntry) {
             this.state = state;
             this.outVertexId = outVertexId;
+            this.outVertexLabelId = outVertexLabelId;
             this.relationEntry = relationEntry;
         }
     }

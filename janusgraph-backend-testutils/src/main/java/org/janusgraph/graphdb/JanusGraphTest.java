@@ -141,9 +141,11 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
+import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
+import org.janusgraph.graphdb.vertices.AbstractVertexUtil;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.JanusGraphFeature;
@@ -4871,6 +4873,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         PropertyKey weight = tx.makePropertyKey("weight").dataType(Float.class).cardinality(Cardinality.SINGLE).make();
         EdgeLabel knows = tx.makeEdgeLabel("knows").make();
+        String testVertexLabel = "testVertex";
+        tx.makeVertexLabel(testVertexLabel).make();
         JanusGraphVertex n1 = tx.addVertex("weight", 10.5);
         tx.addProperties(knows, weight);
         newTx();
@@ -4885,7 +4889,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         final long v1id = getId(v1);
         txTimes[1] = times.getTime();
         tx2 = graph.buildTransaction().logIdentifier(userLogName).start();
-        JanusGraphVertex v2 = tx2.addVertex("weight", 222.2);
+        JanusGraphVertex v2 = (JanusGraphVertex) tx2.traversal().addV(testVertexLabel).property("weight", 222.2).next();
         v2.addEdge("knows", getV(tx2, v1id));
         tx2.commit();
         final long v2id = getId(v2);
@@ -4998,8 +5002,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             assertEquals(0, userLogMsgCounter.get());
         } else {
             assertEquals(4, userLogMsgCounter.get());
-            assertEquals(7, userChangeCounter.get(Change.ADDED).get());
-            assertEquals(4, userChangeCounter.get(Change.REMOVED).get());
+            assertEquals(8, userChangeCounter.get(Change.ADDED).get());
+            assertEquals(5, userChangeCounter.get(Change.REMOVED).get());
         }
 
         clopen(option(VERBOSE_TX_RECOVERY), true);
@@ -5057,6 +5061,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                         txNo = 2;
                         //v2 addition transaction
                         assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
+                        String vertexLabel = changes.getVertices(Change.ADDED).iterator().next().label();
+                        assertEquals(testVertexLabel, vertexLabel);
                         assertEquals(0, Iterables.size(changes.getVertices(Change.REMOVED)));
                         assertEquals(2, Iterables.size(changes.getVertices(Change.ANY)));
                         assertEquals(2, Iterables.size(changes.getRelations(Change.ADDED)));
@@ -5077,6 +5083,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                         //v2 deletion transaction
                         assertEquals(0, Iterables.size(changes.getVertices(Change.ADDED)));
                         assertEquals(1, Iterables.size(changes.getVertices(Change.REMOVED)));
+                        String vertexLabel = changes.getVertices(Change.REMOVED).iterator().next().label();
+                        assertEquals(testVertexLabel, vertexLabel);
                         assertEquals(2, Iterables.size(changes.getVertices(Change.ANY)));
                         assertEquals(0, Iterables.size(changes.getRelations(Change.ADDED)));
                         assertEquals(2, Iterables.size(changes.getRelations(Change.REMOVED)));
@@ -5105,12 +5113,12 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                         final JanusGraphVertex v = Iterables.getOnlyElement(changes.getVertices(Change.ANY));
                         assertEquals(v1id, getId(v));
                         JanusGraphEdge e1
-                                = Iterables.getOnlyElement(changes.getEdges(v, Change.REMOVED, Direction.OUT, "knows"));
+                                = Iterables.getOnlyElement(changes.getEdges(v, Change.REMOVED, OUT, "knows"));
                         assertFalse(e1.property("weight").isPresent());
-                        assertEquals(v, e1.vertex(Direction.IN));
-                        e1 = Iterables.getOnlyElement(changes.getEdges(v, Change.ADDED, Direction.OUT, "knows"));
+                        assertEquals(v, e1.vertex(IN));
+                        e1 = Iterables.getOnlyElement(changes.getEdges(v, Change.ADDED, OUT, "knows"));
                         assertEquals(44.4, e1.<Float>value("weight").doubleValue(), 0.01);
-                        assertEquals(v, e1.vertex(Direction.IN));
+                        assertEquals(v, e1.vertex(IN));
                     }
 
                     //See only current state of graph in transaction
@@ -5123,7 +5131,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 //                    assertTrue(txNo + " - " + v2, v2 == null || v2.isRemoved());
                     }
                     assertEquals(111.1, v11.<Float>value("weight").doubleValue(), 0.01);
-                    assertCount(1, v11.query().direction(Direction.OUT).edges());
+                    assertCount(1, v11.query().direction(OUT).edges());
 
                     userLogCount.incrementAndGet();
                 }).build();
@@ -8243,6 +8251,68 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testIndexWithIndexOnlyConstraintForceInvalidationFromDBCache() throws InterruptedException, ExecutionException {
+        if (features.hasLocking() || !features.isDistributed()) {
+            return;
+        }
+
+        String indexPropName = "indexedProp";
+        String vertexLabelName = "vertexLabelForIndexOnlyConstraint";
+        String indexName = "indexWithIndexOnlyConstraint";
+        PropertyKey indexedProp = mgmt.makePropertyKey(indexPropName).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        VertexLabel vertexLabel = mgmt.makeVertexLabel(vertexLabelName).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(indexedProp).indexOnly(vertexLabel).buildCompositeIndex();
+        finishSchema();
+        ManagementSystem.awaitGraphIndexStatus(graph, indexName).call();
+        mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.REINDEX).get();
+        finishSchema();
+
+        StandardJanusGraph graph1 = openInstanceWithDBCacheEnabled("testIndexWithIndexOnlyConstraintForceInvalidationFromDBCache1");
+        StandardJanusGraph graph2 = openInstanceWithDBCacheEnabled("testIndexWithIndexOnlyConstraintForceInvalidationFromDBCache2");
+
+        JanusGraphVertex v1 = graph1.addVertex(vertexLabelName);
+        v1.property(indexPropName, 1);
+
+        graph1.tx().commit();
+
+        // Cache data
+        JanusGraphTransaction tx2 = graph2.newTransaction();
+        assertEquals(1L, tx2.traversal().V().hasLabel(vertexLabelName).has(indexPropName, 1).count().next());
+        tx2.commit();
+
+        // Remove vertex
+        JanusGraphTransaction tx1 = graph1.newTransaction();
+        tx1.traversal().V(v1.id()).drop().iterate();
+        tx1.commit();
+
+        // Check that cached indexed vertex in graph2 was not refreshed
+        tx2 = graph2.newTransaction();
+        assertEquals(1L, tx2.traversal().V().hasLabel(vertexLabelName).has(indexPropName, 1).count().next());
+
+        // Try to invalidate data without vertex label
+        invalidateUpdatedVertexProperty(graph2, v1.longId(), indexPropName, 1, -1);
+        tx2.rollback();
+
+        tx2 = graph2.newTransaction();
+        // Check that invalidation didn't work
+        assertEquals(1L, tx2.traversal().V().hasLabel(vertexLabelName).has(indexPropName, 1).count().next());
+        tx2.rollback();
+
+        tx2 = graph2.newTransaction();
+        // Invalidate data using vertex label
+        invalidateUpdatedVertexProperty(graph2, v1.longId(), indexPropName, 1, -1, vertexLabelName);
+        tx2.commit();
+
+        tx2 = graph2.newTransaction();
+        // Check that invalidation worked
+        assertEquals(0L, tx2.traversal().V().hasLabel(vertexLabelName).has(indexPropName, 1).count().next());
+        tx2.rollback();
+
+        graph1.close();
+        graph2.close();
+    }
+
+    @Test
     public void testFullDBCacheInvalidation() throws InterruptedException, ExecutionException {
         if (features.hasLocking() || !features.isDistributed()) {
             return;
@@ -8339,10 +8409,18 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     private void invalidateUpdatedVertexProperty(StandardJanusGraph graph, long vertexIdUpdated, String propertyNameUpdated, Object previousPropertyValue, Object newPropertyValue){
+        invalidateUpdatedVertexProperty(graph, vertexIdUpdated, propertyNameUpdated, previousPropertyValue, newPropertyValue, null);
+    }
+
+    private void invalidateUpdatedVertexProperty(StandardJanusGraph graph, long vertexIdUpdated, String propertyNameUpdated, Object previousPropertyValue, Object newPropertyValue, String vertexLabelName){
         JanusGraphTransaction tx = graph.newTransaction();
         JanusGraphManagement graphMgmt = graph.openManagement();
         PropertyKey propertyKey = graphMgmt.getPropertyKey(propertyNameUpdated);
         CacheVertex cacheVertex = new CacheVertex((StandardJanusGraphTx) tx, vertexIdUpdated, ElementLifeCycle.Loaded);
+        if(vertexLabelName != null){
+            VertexLabel vertexLabel = graphMgmt.getVertexLabel(vertexLabelName);
+            AbstractVertexUtil.cacheInternalVertexLabel(cacheVertex, (VertexLabelVertex) vertexLabel);
+        }
         StandardVertexProperty propertyPreviousVal = new StandardVertexProperty(propertyKey.longId(), propertyKey, cacheVertex, previousPropertyValue, ElementLifeCycle.Removed);
         StandardVertexProperty propertyNewVal = new StandardVertexProperty(propertyKey.longId(), propertyKey, cacheVertex, newPropertyValue, ElementLifeCycle.New);
         IndexSerializer indexSerializer = graph.getIndexSerializer();
