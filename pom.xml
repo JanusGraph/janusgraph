@@ -1347,7 +1347,7 @@
             <dependency>
                 <groupId>com.fasterxml.woodstox</groupId>
                 <artifactId>woodstox-core</artifactId>
-                <version>6.2.4</version>
+                <version>6.4.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.htrace</groupId>
