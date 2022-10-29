@@ -19,7 +19,7 @@ use the latest versions of the software.
 ### Version Compatibility Matrix
 
 #### Currently supported
-All currently supported verions of JanusGraph are listed below. 
+All currently supported versions of JanusGraph are listed below. 
 
 !!! info
     You are currently viewing the documentation page of JanusGraph version {{ latest_version }}. To ensure that the information below is up to date, please double check that this is not an archived version of the documentation.
