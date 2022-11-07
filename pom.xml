@@ -1176,7 +1176,7 @@
             <dependency>
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>8.2.1</version>
+                <version>9.25.6</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
