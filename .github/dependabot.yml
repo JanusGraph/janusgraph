@@ -2,8 +2,22 @@ version: 2
 updates:
 - package-ecosystem: maven
   directory: "/"
-  target-branch: "v0.6"
+  target-branch: "master"
   schedule:
     interval: daily
     time: "11:00"
   open-pull-requests-limit: 10
+  labels:
+    - "backport"
+    - "backport/v0.6"
+
+- package-ecosystem: github-actions
+  directory: "/"
+  target-branch: "master"
+  schedule:
+    interval: daily
+    time: "11:00"
+  open-pull-requests-limit: 10
+  labels:
+    - "backport"
+    - "backport/v0.6"
