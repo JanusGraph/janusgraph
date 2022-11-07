@@ -4,6 +4,8 @@
     "targetBranchChoices": ["v0.6"],
     "branchLabelMapping": {
       "^backport/(.+)$": "$1"
-    },    
-    "targetPRLabels": ["backport/skip"]    
+    },
+    "autoMerge": true,
+    "autoMergeMethod": "rebase",
+    "targetPRLabels": ["backport/skip"]
 }

@@ -16,15 +16,21 @@ on:
   pull_request_target:
     types: ["labeled", "closed"]
 
+permissions:
+  actions: write
+  pull-requests: write
+  contents: write
+  repository-projects: write
+
 jobs:
   backport:
     name: Backport PR
     runs-on: ubuntu-latest
     if: |
       github.event.pull_request.merged == true
-      && contains(github.event.pull_request.labels.*.name, 'backport')
+      && !contains(github.event.pull_request.labels.*.name, 'backport/skip')
       && (
-        (github.event.action == 'labeled' && github.event.label.name == 'backport')
+        (github.event.action == 'labeled' && startsWith(github.event.label.name, 'backport/')
         || (github.event.action == 'closed')
       )
     steps:

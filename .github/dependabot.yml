@@ -7,7 +7,6 @@ updates:
     time: "11:00"
   open-pull-requests-limit: 10
   labels:
-    - "backport"
     - "backport/v0.6"
     - "dependencies"
     - "java"
@@ -19,6 +18,5 @@ updates:
     time: "11:00"
   open-pull-requests-limit: 10
   labels:
-    - "backport"
     - "backport/v0.6"
     - "dependencies"
