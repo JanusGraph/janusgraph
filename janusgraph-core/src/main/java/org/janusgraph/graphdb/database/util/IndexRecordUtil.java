@@ -61,6 +61,9 @@ import java.util.List;
 
 public class IndexRecordUtil {
 
+    public static final IndexAppliesToFunction FULL_INDEX_APPLIES_TO_FILTER = IndexRecordUtil::indexAppliesTo;
+    public static final IndexAppliesToFunction INDEX_APPLIES_TO_NO_CONSTRAINTS_FILTER = IndexRecordUtil::indexAppliesToWithoutConstraints;
+
     private static final int DEFAULT_OBJECT_BYTELEN = 30;
     private static final byte FIRST_INDEX_COLUMN_BYTE = 0;
 
@@ -134,10 +137,17 @@ public class IndexRecordUtil {
     }
 
     public static boolean indexAppliesTo(IndexType index, JanusGraphElement element) {
+        return indexAppliesToWithoutConstraints(index, element) && indexMatchesConstraints(index, element);
+    }
+
+    public static boolean indexAppliesToWithoutConstraints(IndexType index, JanusGraphElement element) {
         return index.getElement().isInstance(element) &&
-            (!(index instanceof CompositeIndexType) || ((CompositeIndexType)index).getStatus()!= SchemaStatus.DISABLED) &&
-            (!index.hasSchemaTypeConstraint() ||
-                index.getElement().matchesConstraint(index.getSchemaTypeConstraint(),element));
+            (!(index instanceof CompositeIndexType) || ((CompositeIndexType)index).getStatus()!= SchemaStatus.DISABLED);
+    }
+
+    public static boolean indexMatchesConstraints(IndexType index, JanusGraphElement element) {
+        return !index.hasSchemaTypeConstraint() ||
+            index.getElement().matchesConstraint(index.getSchemaTypeConstraint(),element);
     }
 
     public static PropertyKey[] getKeysOfRecords(IndexRecordEntry[] record) {

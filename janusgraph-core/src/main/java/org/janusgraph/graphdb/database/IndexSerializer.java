@@ -51,6 +51,7 @@ import org.janusgraph.graphdb.database.index.IndexMutationType;
 import org.janusgraph.graphdb.database.index.IndexRecords;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
 import org.janusgraph.graphdb.database.serialize.Serializer;
+import org.janusgraph.graphdb.database.util.IndexAppliesToFunction;
 import org.janusgraph.graphdb.database.util.IndexRecordUtil;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelation;
@@ -88,6 +89,8 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
+import static org.janusgraph.graphdb.database.util.IndexRecordUtil.FULL_INDEX_APPLIES_TO_FILTER;
+import static org.janusgraph.graphdb.database.util.IndexRecordUtil.INDEX_APPLIES_TO_NO_CONSTRAINTS_FILTER;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.bytebuffer2RelationId;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.getCompositeIndexUpdate;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.element2String;
@@ -180,6 +183,22 @@ public class IndexSerializer {
     ################################################### */
 
     public Collection<IndexUpdate> getIndexUpdates(InternalRelation relation) {
+        return getIndexUpdates(relation, FULL_INDEX_APPLIES_TO_FILTER);
+    }
+
+    public Collection<IndexUpdate> getIndexUpdates(InternalVertex vertex, Collection<InternalRelation> updatedProperties) {
+        return getIndexUpdates(vertex, updatedProperties, FULL_INDEX_APPLIES_TO_FILTER);
+    }
+
+    public Collection<IndexUpdate> getIndexUpdatesNoConstraints(InternalRelation relation) {
+        return getIndexUpdates(relation, INDEX_APPLIES_TO_NO_CONSTRAINTS_FILTER);
+    }
+
+    public Collection<IndexUpdate> getIndexUpdatesNoConstraints(InternalVertex vertex, Collection<InternalRelation> updatedProperties) {
+        return getIndexUpdates(vertex, updatedProperties, INDEX_APPLIES_TO_NO_CONSTRAINTS_FILTER);
+    }
+
+    public Collection<IndexUpdate> getIndexUpdates(InternalRelation relation, IndexAppliesToFunction indexFilter) {
         assert relation.isNew() || relation.isRemoved();
         final Set<IndexUpdate> updates = new HashSet<>();
         final IndexMutationType updateType = getUpdateType(relation);
@@ -187,7 +206,7 @@ public class IndexSerializer {
         for (final PropertyKey type : relation.getPropertyKeysDirect()) {
             if (type == null) continue;
             for (final IndexType index : ((InternalRelationType) type).getKeyIndexes()) {
-                if (!indexAppliesTo(index,relation)) continue;
+                if (!indexFilter.indexAppliesTo(index,relation)) continue;
                 IndexUpdate update;
                 if (index instanceof CompositeIndexType) {
                     final CompositeIndexType iIndex= (CompositeIndexType) index;
@@ -206,7 +225,7 @@ public class IndexSerializer {
         return updates;
     }
 
-    public Collection<IndexUpdate> getIndexUpdates(InternalVertex vertex, Collection<InternalRelation> updatedProperties) {
+    public Collection<IndexUpdate> getIndexUpdates(InternalVertex vertex, Collection<InternalRelation> updatedProperties, IndexAppliesToFunction indexFilter) {
         if (updatedProperties.isEmpty()) return Collections.emptyList();
         final Set<IndexUpdate> updates = new HashSet<>();
 
@@ -216,7 +235,7 @@ public class IndexSerializer {
             assert rel.isNew() || rel.isRemoved(); assert rel.getVertex(0).equals(vertex);
             final IndexMutationType updateType = getUpdateType(rel);
             for (final IndexType index : ((InternalRelationType)p.propertyKey()).getKeyIndexes()) {
-                if (!indexAppliesTo(index,vertex)) continue;
+                if (!indexFilter.indexAppliesTo(index,vertex)) continue;
                 if (index.isCompositeIndex()) { //Gather composite indexes
                     final CompositeIndexType cIndex = (CompositeIndexType)index;
                     final IndexRecords updateRecords = indexMatches(vertex,cIndex,updateType==IndexMutationType.DELETE,p.propertyKey(),new IndexRecordEntry(p));

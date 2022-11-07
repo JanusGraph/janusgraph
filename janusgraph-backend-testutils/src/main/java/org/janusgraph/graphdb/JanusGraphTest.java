@@ -8243,6 +8243,68 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testIndexWithIndexOnlyConstraintForceInvalidationFromDBCache() throws InterruptedException, ExecutionException {
+        if (features.hasLocking() || !features.isDistributed()) {
+            return;
+        }
+
+        String indexPropName = "indexedProp";
+        String vertexLabelName = "vertexLabelForIndexOnlyConstraint";
+        String indexName = "indexWithIndexOnlyConstraint";
+        PropertyKey indexedProp = mgmt.makePropertyKey(indexPropName).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        VertexLabel vertexLabel = mgmt.makeVertexLabel(vertexLabelName).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(indexedProp).indexOnly(vertexLabel).buildCompositeIndex();
+        finishSchema();
+        ManagementSystem.awaitGraphIndexStatus(graph, indexName).call();
+        mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.REINDEX).get();
+        finishSchema();
+
+        StandardJanusGraph graph1 = openInstanceWithDBCacheEnabled("testIndexWithIndexOnlyConstraintForceInvalidationFromDBCache1");
+        StandardJanusGraph graph2 = openInstanceWithDBCacheEnabled("testIndexWithIndexOnlyConstraintForceInvalidationFromDBCache2");
+
+        JanusGraphVertex v1 = graph1.addVertex(vertexLabelName);
+        v1.property(indexPropName, 1);
+
+        graph1.tx().commit();
+
+        // Cache data
+        JanusGraphTransaction tx2 = graph2.newTransaction();
+        assertEquals(1L, tx2.traversal().V().hasLabel(vertexLabelName).has(indexPropName, 1).count().next());
+        tx2.commit();
+
+        // Remove vertex
+        JanusGraphTransaction tx1 = graph1.newTransaction();
+        tx1.traversal().V(v1.id()).drop().iterate();
+        tx1.commit();
+
+        // Check that cached indexed vertex in graph2 was not refreshed
+        tx2 = graph2.newTransaction();
+        assertEquals(1L, tx2.traversal().V().hasLabel(vertexLabelName).has(indexPropName, 1).count().next());
+
+        // Try to invalidate data without vertex label with index constraints filter enabled
+        invalidateUpdatedVertexProperty(graph2, v1.longId(), indexPropName, 1, -1, true);
+        tx2.rollback();
+
+        tx2 = graph2.newTransaction();
+        // Check that invalidation didn't work
+        assertEquals(1L, tx2.traversal().V().hasLabel(vertexLabelName).has(indexPropName, 1).count().next());
+        tx2.rollback();
+
+        tx2 = graph2.newTransaction();
+        // Invalidate data without vertex label with index constraints filter disabled
+        invalidateUpdatedVertexProperty(graph2, v1.longId(), indexPropName, 1, -1, false);
+        tx2.commit();
+
+        tx2 = graph2.newTransaction();
+        // Check that invalidation worked
+        assertEquals(0L, tx2.traversal().V().hasLabel(vertexLabelName).has(indexPropName, 1).count().next());
+        tx2.rollback();
+
+        graph1.close();
+        graph2.close();
+    }
+
+    @Test
     public void testFullDBCacheInvalidation() throws InterruptedException, ExecutionException {
         if (features.hasLocking() || !features.isDistributed()) {
             return;
@@ -8339,6 +8401,10 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     private void invalidateUpdatedVertexProperty(StandardJanusGraph graph, long vertexIdUpdated, String propertyNameUpdated, Object previousPropertyValue, Object newPropertyValue){
+        invalidateUpdatedVertexProperty(graph, vertexIdUpdated, propertyNameUpdated, previousPropertyValue, newPropertyValue, true);
+    }
+
+    private void invalidateUpdatedVertexProperty(StandardJanusGraph graph, long vertexIdUpdated, String propertyNameUpdated, Object previousPropertyValue, Object newPropertyValue, boolean withIndexConstraintsFilter){
         JanusGraphTransaction tx = graph.newTransaction();
         JanusGraphManagement graphMgmt = graph.openManagement();
         PropertyKey propertyKey = graphMgmt.getPropertyKey(propertyNameUpdated);
@@ -8347,7 +8413,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         StandardVertexProperty propertyNewVal = new StandardVertexProperty(propertyKey.longId(), propertyKey, cacheVertex, newPropertyValue, ElementLifeCycle.New);
         IndexSerializer indexSerializer = graph.getIndexSerializer();
 
-        Collection<IndexUpdate> indexUpdates = indexSerializer.getIndexUpdates(cacheVertex, Arrays.asList(propertyPreviousVal, propertyNewVal));
+        Collection<IndexUpdate> indexUpdates;
+        if(withIndexConstraintsFilter){
+            indexUpdates = indexSerializer.getIndexUpdates(cacheVertex, Arrays.asList(propertyPreviousVal, propertyNewVal));
+        } else {
+            indexUpdates = indexSerializer.getIndexUpdatesNoConstraints(cacheVertex, Arrays.asList(propertyPreviousVal, propertyNewVal));
+        }
+
         CacheInvalidationService invalidationService = graph.getDBCacheInvalidationService();
 
         for(IndexUpdate indexUpdate : indexUpdates){
