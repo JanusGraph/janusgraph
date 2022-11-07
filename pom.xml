@@ -69,7 +69,7 @@
         <hadoop.version>3.3.4</hadoop.version>
         <hbase2.version>2.5.0</hbase2.version>
         <htrace.version>4.2.0-incubating</htrace.version>
-        <bigtable.version>1.24.0</bigtable.version>
+        <bigtable.version>2.6.3</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.13.4</jackson2.version>
