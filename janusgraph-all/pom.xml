@@ -59,6 +59,11 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
+            <artifactId>cassandra-hadoop-util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-cql</artifactId>
             <version>${project.version}</version>
         </dependency>

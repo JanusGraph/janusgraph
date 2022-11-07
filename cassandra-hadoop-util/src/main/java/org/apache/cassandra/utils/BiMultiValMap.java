@@ -17,14 +17,14 @@
  */
 package org.apache.cassandra.utils;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 
 /**
  *
@@ -43,19 +43,6 @@ public class BiMultiValMap<K, V> implements Map<K, V>
     {
         this.forwardMap = new HashMap<K, V>();
         this.reverseMap = HashMultimap.<V, K>create();
-    }
-
-    protected BiMultiValMap(Map<K, V> forwardMap, Multimap<V, K> reverseMap)
-    {
-        this.forwardMap = forwardMap;
-        this.reverseMap = reverseMap;
-    }
-
-    public BiMultiValMap(BiMultiValMap<K, V> map)
-    {
-        this();
-        forwardMap.putAll(map);
-        reverseMap.putAll(map.inverse());
     }
 
     public Multimap<V, K> inverse()
@@ -121,14 +108,6 @@ public class BiMultiValMap<K, V> implements Map<K, V>
         return oldVal;
     }
 
-    public Collection<K> removeValue(V value)
-    {
-        Collection<K> keys = reverseMap.removeAll(value);
-        for (K key : keys)
-            forwardMap.remove(key);
-        return keys;
-    }
-
     public int size()
     {
         return forwardMap.size();
@@ -137,10 +116,5 @@ public class BiMultiValMap<K, V> implements Map<K, V>
     public Collection<V> values()
     {
         return reverseMap.keys();
-    }
-
-    public Collection<V> valueSet()
-    {
-        return reverseMap.keySet();
     }
 }

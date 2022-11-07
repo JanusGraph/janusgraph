@@ -19,10 +19,28 @@ package org.apache.cassandra.hadoop.cql3;
 * under the License.
 *
 */
+
+import com.datastax.driver.core.AuthProvider;
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.HostDistance;
+import com.datastax.driver.core.PlainTextAuthProvider;
+import com.datastax.driver.core.PoolingOptions;
+import com.datastax.driver.core.ProtocolOptions;
+import com.datastax.driver.core.ProtocolVersion;
+import com.datastax.driver.core.QueryOptions;
+import com.datastax.driver.core.RemoteEndpointAwareJdkSSLOptions;
+import com.datastax.driver.core.SSLOptions;
+import com.datastax.driver.core.SocketOptions;
+import com.datastax.driver.core.policies.LoadBalancingPolicy;
+import com.google.common.base.Optional;
+import org.apache.cassandra.hadoop.ConfigHelper;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.io.InputStream;
-import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -31,28 +49,9 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
-
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-
-import com.google.common.base.Optional;
-import org.apache.commons.lang3.StringUtils;
-
-import com.datastax.driver.core.AuthProvider;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.HostDistance;
-import com.datastax.driver.core.JdkSSLOptions;
-import com.datastax.driver.core.PlainTextAuthProvider;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.policies.LoadBalancingPolicy;
-import com.datastax.driver.core.PoolingOptions;
-import com.datastax.driver.core.ProtocolOptions;
-import com.datastax.driver.core.QueryOptions;
-import com.datastax.driver.core.SSLOptions;
-import com.datastax.driver.core.SocketOptions;
-import org.apache.cassandra.hadoop.ConfigHelper;
-import org.apache.hadoop.conf.Configuration;
 
 
 public class CqlConfigHelper
@@ -86,75 +85,6 @@ public class CqlConfigHelper
 
     private static final String INPUT_NATIVE_PROTOCOL_VERSION = "cassandra.input.native.protocol.version";
 
-    private static final String OUTPUT_CQL = "cassandra.output.cql";
-    private static final String OUTPUT_NATIVE_PORT = "cassandra.output.native.port";
-
-    /**
-     * Set the CQL columns for the input of this job.
-     *
-     * @param conf Job configuration you are about to run
-     * @param columns
-     */
-    public static void setInputColumns(Configuration conf, String columns)
-    {
-        if (columns == null || columns.isEmpty())
-            return;
-
-        conf.set(INPUT_CQL_COLUMNS_CONFIG, columns);
-    }
-
-    /**
-     * Set the CQL query Limit for the input of this job.
-     *
-     * @param conf Job configuration you are about to run
-     * @param cqlPageRowSize
-     */
-    public static void setInputCQLPageRowSize(Configuration conf, String cqlPageRowSize)
-    {
-        if (cqlPageRowSize == null)
-        {
-            throw new UnsupportedOperationException("cql page row size may not be null");
-        }
-
-        conf.set(INPUT_CQL_PAGE_ROW_SIZE_CONFIG, cqlPageRowSize);
-    }
-
-    /**
-     * Set the CQL user defined where clauses for the input of this job.
-     *
-     * @param conf Job configuration you are about to run
-     * @param clauses
-     */
-    public static void setInputWhereClauses(Configuration conf, String clauses)
-    {
-        if (clauses == null || clauses.isEmpty())
-            return;
-
-        conf.set(INPUT_CQL_WHERE_CLAUSE_CONFIG, clauses);
-    }
-
-    /**
-     * Set the CQL prepared statement for the output of this job.
-     *
-     * @param conf Job configuration you are about to run
-     * @param cql
-     */
-    public static void setOutputCql(Configuration conf, String cql)
-    {
-        if (cql == null || cql.isEmpty())
-            return;
-
-        conf.set(OUTPUT_CQL, cql);
-    }
-
-    public static void setInputCql(Configuration conf, String cql)
-    {
-        if (cql == null || cql.isEmpty())
-            return;
-
-        conf.set(INPUT_CQL, cql);
-    }
-
     public static void setUserNameAndPassword(Configuration conf, String username, String password)
     {
         if (StringUtils.isNotBlank(username))
@@ -178,11 +108,6 @@ public class CqlConfigHelper
     public static int getInputNativePort(Configuration conf)
     {
         return Integer.parseInt(conf.get(INPUT_NATIVE_PORT, "9042"));
-    }
-
-    public static int getOutputNativePort(Configuration conf)
-    {
-        return Integer.parseInt(conf.get(OUTPUT_NATIVE_PORT, "9042"));
     }
 
     public static Optional<Integer> getInputMaxSimultReqPerConnections(Configuration conf)
@@ -280,36 +205,14 @@ public class CqlConfigHelper
         return conf.get(INPUT_CQL);
     }
 
-    public static String getOutputCql(Configuration conf)
-    {
-        return conf.get(OUTPUT_CQL);
-    }
-
     private static Optional<Integer> getProtocolVersion(Configuration conf)
     {
         return getIntSetting(INPUT_NATIVE_PROTOCOL_VERSION, conf);
     }
 
-    public static Cluster getInputCluster(String host, Configuration conf)
-    {
-        // this method has been left for backward compatibility
-        return getInputCluster(new String[] {host}, conf);
-    }
-
     public static Cluster getInputCluster(String[] hosts, Configuration conf)
     {
         int port = getInputNativePort(conf);
-        return getCluster(hosts, conf, port);
-    }
-
-    public static Cluster getOutputCluster(String host, Configuration conf)
-    {
-        return getOutputCluster(new String[]{host}, conf);
-    }
-
-    public static Cluster getOutputCluster(String[] hosts, Configuration conf)
-    {
-        int port = getOutputNativePort(conf);
         return getCluster(hosts, conf, port);
     }
 
@@ -343,91 +246,6 @@ public class CqlConfigHelper
                 .withPoolingOptions(poolingOptions);
 
         return builder.build();
-    }
-
-    public static void setInputCoreConnections(Configuration conf, String connections)
-    {
-        conf.set(INPUT_NATIVE_CORE_CONNECTIONS_PER_HOST, connections);
-    }
-
-    public static void setInputMaxConnections(Configuration conf, String connections)
-    {
-        conf.set(INPUT_NATIVE_MAX_CONNECTIONS_PER_HOST, connections);
-    }
-
-    public static void setInputMaxSimultReqPerConnections(Configuration conf, String reqs)
-    {
-        conf.set(INPUT_NATIVE_MAX_SIMULT_REQ_PER_CONNECTION, reqs);
-    }
-
-    public static void setInputNativeConnectionTimeout(Configuration conf, String timeout)
-    {
-        conf.set(INPUT_NATIVE_CONNECTION_TIMEOUT, timeout);
-    }
-
-    public static void setInputNativeReadConnectionTimeout(Configuration conf, String timeout)
-    {
-        conf.set(INPUT_NATIVE_READ_CONNECTION_TIMEOUT, timeout);
-    }
-
-    public static void setInputNativeReceiveBufferSize(Configuration conf, String size)
-    {
-        conf.set(INPUT_NATIVE_RECEIVE_BUFFER_SIZE, size);
-    }
-
-    public static void setInputNativeSendBufferSize(Configuration conf, String size)
-    {
-        conf.set(INPUT_NATIVE_SEND_BUFFER_SIZE, size);
-    }
-
-    public static void setInputNativeSolinger(Configuration conf, String solinger)
-    {
-        conf.set(INPUT_NATIVE_SOLINGER, solinger);
-    }
-
-    public static void setInputNativeTcpNodelay(Configuration conf, String tcpNodelay)
-    {
-        conf.set(INPUT_NATIVE_TCP_NODELAY, tcpNodelay);
-    }
-
-    public static void setInputNativeAuthProvider(Configuration conf, String authProvider)
-    {
-        conf.set(INPUT_NATIVE_AUTH_PROVIDER, authProvider);
-    }
-
-    public static void setInputNativeSSLTruststorePath(Configuration conf, String path)
-    {
-        conf.set(INPUT_NATIVE_SSL_TRUST_STORE_PATH, path);
-    }
-
-    public static void setInputNativeSSLKeystorePath(Configuration conf, String path)
-    {
-        conf.set(INPUT_NATIVE_SSL_KEY_STORE_PATH, path);
-    }
-
-    public static void setInputNativeSSLKeystorePassword(Configuration conf, String pass)
-    {
-        conf.set(INPUT_NATIVE_SSL_KEY_STORE_PASSWARD, pass);
-    }
-
-    public static void setInputNativeSSLTruststorePassword(Configuration conf, String pass)
-    {
-        conf.set(INPUT_NATIVE_SSL_TRUST_STORE_PASSWARD, pass);
-    }
-
-    public static void setInputNativeSSLCipherSuites(Configuration conf, String suites)
-    {
-        conf.set(INPUT_NATIVE_SSL_CIPHER_SUITES, suites);
-    }
-
-    public static void setInputNativeReuseAddress(Configuration conf, String reuseAddress)
-    {
-        conf.set(INPUT_NATIVE_REUSE_ADDRESS, reuseAddress);
-    }
-
-    public static void setInputNativeKeepAlive(Configuration conf, String keepAlive)
-    {
-        conf.set(INPUT_NATIVE_KEEP_ALIVE, keepAlive);
     }
 
     public static void setInputNativePort(Configuration conf, String port)
@@ -554,7 +372,8 @@ public class CqlConfigHelper
             String[] css = null;
             if (cipherSuites.isPresent())
                 css = cipherSuites.get().split(",");
-            return Optional.of(JdkSSLOptions.builder()
+
+            return Optional.of(RemoteEndpointAwareJdkSSLOptions.builder()
                                             .withSSLContext(context)
                                             .withCipherSuites(css)
                                             .build());

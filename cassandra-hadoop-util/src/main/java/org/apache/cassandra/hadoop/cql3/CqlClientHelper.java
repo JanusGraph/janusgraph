@@ -18,17 +18,17 @@
 
 package org.apache.cassandra.hadoop.cql3;
 
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.Token;
+import com.datastax.driver.core.TokenRange;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.Token;
-import com.datastax.driver.core.TokenRange;
 
 public class CqlClientHelper
 {

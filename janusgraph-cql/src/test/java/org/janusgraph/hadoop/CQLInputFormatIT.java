@@ -68,7 +68,7 @@ public class CQLInputFormatIT extends AbstractInputFormatIT {
     }
 
     @Test
-    public void testOpenFromFileWithMultiHosts() throws ConfigurationException, IOException {
+    public void testOpenFromFileWithMultiHosts() {
         final Graph g = GraphFactory.open("target/test-classes/cql-read-multi-hosts.properties");
         runTraversalWithInvalidHost(g, "invalid-host");
     }

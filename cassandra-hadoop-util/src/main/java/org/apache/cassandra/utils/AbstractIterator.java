@@ -18,15 +18,15 @@
 */
 package org.apache.cassandra.utils;
 
+import com.google.common.collect.PeekingIterator;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import com.google.common.collect.PeekingIterator;
-
-public abstract class AbstractIterator<V> implements Iterator<V>, PeekingIterator<V>, CloseableIterator<V>
+public abstract class AbstractIterator<V> implements Iterator<V>, PeekingIterator<V>
 {
 
-    private static enum State { MUST_FETCH, HAS_NEXT, DONE, FAILED }
+    private enum State { MUST_FETCH, HAS_NEXT, DONE, FAILED }
     private State state = State.MUST_FETCH;
     private V next;
 
@@ -81,8 +81,4 @@ public abstract class AbstractIterator<V> implements Iterator<V>, PeekingIterato
         throw new UnsupportedOperationException();
     }
 
-    public void close()
-    {
-        //no-op
-    }
 }

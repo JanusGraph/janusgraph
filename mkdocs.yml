@@ -170,4 +170,4 @@ extra:
   snapshot_version: 1.0.0-SNAPSHOT
   tinkerpop_version: 3.6.1
   hadoop_version: 3.3.4
-  jamm_version: 0.3.0
+  jamm_version: 0.3.3

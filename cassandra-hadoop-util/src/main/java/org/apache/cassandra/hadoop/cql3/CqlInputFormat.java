@@ -17,11 +17,6 @@
  */
 package org.apache.cassandra.hadoop.cql3;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.util.*;
-import java.util.concurrent.*;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
@@ -31,14 +26,19 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.TokenRange;
-
+import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-
-import com.datastax.driver.core.exceptions.InvalidQueryException;
+import org.apache.cassandra.db.SystemKeyspace;
+import org.apache.cassandra.hadoop.ColumnFamilySplit;
+import org.apache.cassandra.hadoop.ConfigHelper;
+import org.apache.cassandra.hadoop.HadoopCompat;
+import org.apache.cassandra.hadoop.ReporterWrapper;
 import org.apache.cassandra.schema.SchemaConstants;
+import org.apache.cassandra.utils.BiMultiValMap;
+import org.apache.cassandra.utils.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
@@ -49,10 +49,24 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.cassandra.db.SystemKeyspace;
-import org.apache.cassandra.dht.*;
-import org.apache.cassandra.hadoop.*;
-import org.apache.cassandra.utils.*;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -77,13 +91,14 @@ import static java.util.stream.Collectors.toMap;
  *
  *   other native protocol connection parameters in CqlConfigHelper
  */
-public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long, Row> implements org.apache.hadoop.mapred.InputFormat<Long, Row>
+public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long, Row> implements org.apache.hadoop.mapred.InputFormat<Long, Row> 
 {
     public static final String MAPRED_TASK_ID = "mapred.task.id";
     private static final Logger logger = LoggerFactory.getLogger(CqlInputFormat.class);
     private String keyspace;
     private String cfName;
-    private IPartitioner partitioner;
+    private String partitioner;
+    private Metadata metadata;
 
     public RecordReader<Long, Row> getRecordReader(InputSplit split, JobConf jobConf, final Reporter reporter)
             throws IOException
@@ -105,8 +120,7 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
 
     @Override
     public org.apache.hadoop.mapreduce.RecordReader<Long, Row> createRecordReader(
-            org.apache.hadoop.mapreduce.InputSplit arg0, TaskAttemptContext arg1) throws IOException,
-            InterruptedException
+        org.apache.hadoop.mapreduce.InputSplit arg0, TaskAttemptContext arg1)
     {
         return new CqlRecordReader();
     }
@@ -148,14 +162,12 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
             // job range: [0, 10) - able to get estimate
             // job range: [5, 15) - unable to get estimate
             Pair<String, String> jobKeyRange = ConfigHelper.getInputKeyRange(conf);
-            Range<Token> jobRange = null;
+            metadata = cluster.getMetadata();
+            TokenRange jobRange = null;
             if (jobKeyRange != null)
             {
-                jobRange = new Range<>(partitioner.getTokenFactory().fromString(jobKeyRange.left),
-                                       partitioner.getTokenFactory().fromString(jobKeyRange.right));
+                jobRange = metadata.newTokenRange(metadata.newToken(jobKeyRange.left), metadata.newToken(jobKeyRange.right));
             }
-
-            Metadata metadata = cluster.getMetadata();
 
             // canonical ranges and nodes holding replicas
             Map<TokenRange, List<Host>> masterRangeNodes = getRangeMap(keyspace, metadata, getTargetDC(metadata, inputInitialAddress));
@@ -173,15 +185,15 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
                 }
                 else
                 {
-                    TokenRange jobTokenRange = rangeToTokenRange(metadata, jobRange);
+                    TokenRange jobTokenRange = metadata.newTokenRange(jobRange.getStart(), jobRange.getEnd());
                     if (range.intersects(jobTokenRange))
                     {
-                        for (TokenRange intersection: range.intersectWith(jobTokenRange))
+                        for (TokenRange intersection : range.intersectWith(jobTokenRange))
                         {
                             for (TokenRange unwrapped : intersection.unwrap())
                             {
                                 // for each tokenRange, pick a live owner and ask it for the byte-sized splits
-                                SplitFuture task = new SplitFuture(new SplitCallable(unwrapped,  masterRangeNodes.get(range), conf, session));
+                                SplitFuture task = new SplitFuture(new SplitCallable(unwrapped, masterRangeNodes.get(range), conf, session));
                                 executor.submit(task);
                                 splitfutures.add(task);
                             }
@@ -274,12 +286,18 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
         for (String inputAddress : inputInitialAddress)
             addresses.addAll(parseAddress(inputAddress));
 
-        for (Host host : metadata.getAllHosts())
-        {
-            InetAddress address = host.getBroadcastAddress();
-            if (addresses.contains(address))
-                addressToDc.put(address, host.getDatacenter());
+        Set<Host> allHosts = metadata.getAllHosts();
+        if (allHosts.size() == 1) {//behavior for single dc
+            addressToDc.put(addresses.stream().findFirst().get(), allHosts.stream().findFirst().get().getDatacenter());
+        } else {
+            for (Host host : metadata.getAllHosts())
+            {
+                InetAddress address = host.getBroadcastAddress();
+                if (addresses.contains(address))
+                    addressToDc.put(address, host.getDatacenter());
+            }
         }
+
 
         switch (dcToAddresses.keySet().size())
         {
@@ -304,7 +322,7 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
                 // some how we were able to connect to the cluster, find multiple DCs using matching, and yet couldn't
                 // match again...
                 throw new AssertionError("Unable to infer datacenter from initial addresses; multiple datacenters found "
-                                         + dcToAddresses.keySet() + ", should only use addresses from one datacenter");
+                    + dcToAddresses.keySet() + ", should only use addresses from one datacenter");
         }
     }
 
@@ -320,12 +338,6 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
         }
     }
 
-    private TokenRange rangeToTokenRange(Metadata metadata, Range<Token> range)
-    {
-        return metadata.newTokenRange(metadata.newToken(partitioner.getTokenFactory().toString(range.left)),
-                metadata.newToken(partitioner.getTokenFactory().toString(range.right)));
-    }
-
     private Map<TokenRange, Long> getSubSplits(String keyspace, String cfName, TokenRange range, Host host, Configuration conf, Session session)
     {
         int splitSize = ConfigHelper.getInputSplitSize(conf);
@@ -335,6 +347,9 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
 
     private static Map<TokenRange, List<Host>> getRangeMap(String keyspace, Metadata metadata, String targetDC)
     {
+        if (metadata.getAllHosts().size() == 1) {
+            return metadata.getTokenRanges().stream().collect(toMap(p -> p, p -> new ArrayList<>(metadata.getReplicas('"' + keyspace + '"', p))));
+        }
         return CqlClientHelper.getLocalPrimaryRangeForDC(keyspace, metadata, targetDC);
     }
 
@@ -476,9 +491,9 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
         // hadoop needs hostname, not ip
         int endpointIndex = 0;
         for (Host endpoint : hosts)
-            endpoints[endpointIndex++] = endpoint.getAddress().getHostName();
+            endpoints[endpointIndex++] = endpoint.getEndPoint().resolve().getAddress().getHostName();
 
-        boolean partitionerIsOpp = partitioner instanceof OrderPreservingPartitioner || partitioner instanceof ByteOrderedPartitioner;
+        boolean partitionerIsOpp = partitioner.equalsIgnoreCase("OrderPreservingPartitioner") || partitioner.equalsIgnoreCase("ByteOrderedPartitioner");
 
         ArrayList<ColumnFamilySplit> splits = new ArrayList<>();
         for (Map.Entry<TokenRange, Long> subSplitEntry : subSplits.entrySet())

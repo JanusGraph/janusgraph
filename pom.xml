@@ -60,7 +60,7 @@
         <junit-platform.version>1.9.0</junit-platform.version>
         <junit.version>5.9.0</junit.version>
         <mockito.version>4.8.0</mockito.version>
-        <jamm.version>0.3.0</jamm.version>
+        <jamm.version>0.3.3</jamm.version>
         <metrics.version>4.2.12</metrics.version>
         <slf4j.version>1.7.36</slf4j.version>
         <logback.version>1.2.11</logback.version>
@@ -130,6 +130,7 @@
         <module>janusgraph-test</module>
         <module>janusgraph-inmemory</module>
         <module>janusgraph-berkeleyje</module>
+        <module>cassandra-hadoop-util</module>
         <module>janusgraph-cql</module>
         <module>janusgraph-hadoop</module>
         <module>janusgraph-hbase</module>
@@ -1043,17 +1044,6 @@
                 <groupId>com.clearspring.analytics</groupId>
                 <artifactId>stream</artifactId>
                 <version>2.9.8</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.cassandra</groupId>
-                <artifactId>cassandra-all</artifactId>
-                <version>${cassandra.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>log4j</groupId>
-                        <artifactId>log4j</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.javassist</groupId>

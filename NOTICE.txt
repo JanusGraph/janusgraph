@@ -93,3 +93,65 @@ ADDITIONAL THIRD PARTY NOTICES:
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+------------------------------------------------------------------------
+Apache Cassandra
+------------------------------------------------------------------------
+Apache Cassandra
+Copyright 2022 The Apache Software Foundation
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/db/SystemKeyspace.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/db/SystemKeyspace.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/hadoop/cql3/CqlClientHelper.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/hadoop/cql3/CqlClientHelper.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/hadoop/cql3/CqlConfigHelper.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/hadoop/cql3/CqlConfigHelper.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/hadoop/cql3/CqlInputFormat.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/hadoop/cql3/CqlInputFormat.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/hadoop/cql3/CqlRecordReader.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/hadoop/cql3/CqlRecordReader.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/hadoop/cql3/LimitedLocalNodeFirstLocalBalancingPolicy.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/hadoop/cql3/LimitedLocalNodeFirstLocalBalancingPolicy.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/hadoop/ColumnFamilySplit.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/hadoop/ColumnFamilySplit.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/hadoop/ConfigHelper.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/hadoop/ConfigHelper.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/hadoop/HadoopCompat.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/hadoop/HadoopCompat.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/hadoop/ReporterWrapper.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/hadoop/ReporterWrapper.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/schema/SchemaConstants.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/schema/SchemaConstants.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/utils/AbstractIterator.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/utils/AbstractIterator.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/utils/BiMultiValMap.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/utils/BiMultiValMap.java
+
+cassandra-hadoop-util/src/main/java/org/apache/cassandra/utils/Pair.java
+from
+https://github.com/apache/cassandra/blob/cassandra-4.0.6/src/java/org/apache/cassandra/utils/Pair.java

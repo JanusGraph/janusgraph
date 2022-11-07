@@ -17,25 +17,6 @@
  */
 package org.apache.cassandra.hadoop.cql3;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.InetAddress;
-import java.nio.ByteBuffer;
-import java.util.*;
-
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
-
-import com.datastax.driver.core.TypeCodec;
-import org.apache.cassandra.utils.AbstractIterator;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ColumnMetadata;
@@ -47,19 +28,42 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.Token;
 import com.datastax.driver.core.TupleValue;
+import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.UDTValue;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
-import org.apache.cassandra.db.marshal.AbstractType;
-import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.hadoop.HadoopCompat;
-import org.apache.cassandra.utils.ByteBufferUtil;
+import org.apache.cassandra.utils.AbstractIterator;
 import org.apache.cassandra.utils.Pair;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * <p>
@@ -72,8 +76,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
  * {@code
  * Row as C* java driver CQL result set row
  * 1) select clause must include partition key columns (to calculate the progress based on the actual CF row processed)
- * 2) where clause must include token(partition_key1, ...  , partition_keyn) > ? and 
- *       token(partition_key1, ... , partition_keyn) <= ?  (in the right order) 
+ * 2) where clause must include token(partition_key1, ...  , partition_keyn) > ? and
+ *       token(partition_key1, ... , partition_keyn) <= ?  (in the right order)
  * }
  */
 public class CqlRecordReader extends RecordReader<Long, Row>
@@ -91,7 +95,7 @@ public class CqlRecordReader extends RecordReader<Long, Row>
     private String cqlQuery;
     private Cluster cluster;
     private Session session;
-    private IPartitioner partitioner;
+    private Metadata metadata;
     private String inputColumns;
     private String userDefinedWhereClauses;
 
@@ -116,7 +120,6 @@ public class CqlRecordReader extends RecordReader<Long, Row>
                       : ConfigHelper.getInputSplitSize(conf);
         cfName = ConfigHelper.getInputColumnFamily(conf);
         keyspace = ConfigHelper.getInputKeyspace(conf);
-        partitioner = ConfigHelper.getInputPartitioner(conf);
         inputColumns = CqlConfigHelper.getInputcolumns(conf);
         userDefinedWhereClauses = CqlConfigHelper.getInputWhereClauses(conf);
 
@@ -134,11 +137,14 @@ public class CqlRecordReader extends RecordReader<Long, Row>
             throw new RuntimeException(e);
         }
 
-        if (cluster != null)
+        if (cluster != null) {
             session = cluster.connect(quote(keyspace));
+            metadata = cluster.getMetadata();
+        }
 
         if (session == null)
           throw new RuntimeException("Can't create connection session");
+
 
         //get negotiated serialization protocol
         nativeProtocolVersion = cluster.getConfiguration().getProtocolOptions().getProtocolVersion().toInt();
@@ -189,7 +195,7 @@ public class CqlRecordReader extends RecordReader<Long, Row>
 
         // the progress is likely to be reported slightly off the actual but close enough
         float progress = ((float) rowIterator.totalRead / totalRowCount);
-        return progress > 1.0F ? 1.0F : progress;
+        return Math.min(progress, 1.0F);
     }
 
     public boolean nextKeyValue() throws IOException
@@ -229,14 +235,14 @@ public class CqlRecordReader extends RecordReader<Long, Row>
         return false;
     }
 
-    public long getPos() throws IOException
+    public long getPos()
     {
         return rowIterator.totalRead;
     }
 
     public Long createKey()
     {
-        return Long.valueOf(0L);
+        return 0L;
     }
 
     public Row createValue()
@@ -244,20 +250,11 @@ public class CqlRecordReader extends RecordReader<Long, Row>
         return new WrappedRow();
     }
 
-    /**
-     * Return native version protocol of the cluster connection
-     * @return serialization protocol version.
-     */
-    public int getNativeProtocolVersion() 
-    {
-        return nativeProtocolVersion;
-    }
-
-    /** CQL row iterator 
-     *  Input cql query  
+    /** CQL row iterator
+     *  Input cql query
      *  1) select clause must include key columns (if we use partition key based row count)
-     *  2) where clause must include token(partition_key1 ... partition_keyn) > ? and 
-     *     token(partition_key1 ... partition_keyn) <= ? 
+     *  2) where clause must include token(partition_key1 ... partition_keyn) > ? and
+     *     token(partition_key1 ... partition_keyn) <= ?
      */
     private class RowIterator extends AbstractIterator<Pair<Long, Row>>
     {
@@ -268,8 +265,7 @@ public class CqlRecordReader extends RecordReader<Long, Row>
 
         public RowIterator()
         {
-            AbstractType type = partitioner.getTokenValidator();
-            ResultSet rs = session.execute(cqlQuery, type.compose(type.fromString(split.getStartToken())), type.compose(type.fromString(split.getEndToken())) );
+            ResultSet rs = session.execute(cqlQuery, metadata.newToken(split.getStartToken()), metadata.newToken(split.getEndToken()));
             for (ColumnMetadata meta : cluster.getMetadata().getKeyspace(quote(keyspace)).getTable(quote(cfName)).getPartitionKey())
                 partitionBoundColumns.put(meta.getName(), Boolean.TRUE);
             rows = rs.iterator();
@@ -281,7 +277,7 @@ public class CqlRecordReader extends RecordReader<Long, Row>
                 return endOfData();
 
             Row row = rows.next();
-            Map<String, ByteBuffer> keyColumns = new HashMap<String, ByteBuffer>(partitionBoundColumns.size()); 
+            Map<String, ByteBuffer> keyColumns = new HashMap<String, ByteBuffer>(partitionBoundColumns.size());
             for (String column : partitionBoundColumns.keySet())
                 keyColumns.put(column, row.getBytesUnsafe(column));
 
@@ -296,7 +292,7 @@ public class CqlRecordReader extends RecordReader<Long, Row>
                 for (String column : partitionBoundColumns.keySet())
                 {
                     // this is not correct - but we don't seem to have easy access to better type information here
-                    if (ByteBufferUtil.compareUnsigned(keyColumns.get(column), previousRowKey.get(column)) != 0)
+                    if (keyColumns.get(column).compareTo(previousRowKey.get(column)) != 0)
                     {
                         previousRowKey = keyColumns;
                         totalRead++;
