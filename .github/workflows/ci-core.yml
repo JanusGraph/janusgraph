@@ -39,7 +39,7 @@ jobs:
   build-all:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
@@ -56,7 +56,7 @@ jobs:
     needs: build-all
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
@@ -109,7 +109,7 @@ jobs:
             install-args: "-Pjava-11"
             java: 11
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 2
       - uses: actions/cache@v2

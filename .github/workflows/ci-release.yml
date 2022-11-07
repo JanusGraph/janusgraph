@@ -43,7 +43,7 @@ jobs:
   build-all:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
@@ -68,7 +68,7 @@ jobs:
           - args: "-Pjava-11"
             java: 11
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
@@ -138,7 +138,7 @@ jobs:
             args: "-Dtest.skip.tp=false -DskipTests=true"
             java: 11
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
