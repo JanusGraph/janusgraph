@@ -41,7 +41,7 @@ jobs:
   build-all:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
@@ -68,7 +68,7 @@ jobs:
             args: "-Psolr8"
             name: solr8
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 2
       - uses: actions/cache@v2
