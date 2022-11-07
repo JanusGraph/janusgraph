@@ -32,7 +32,14 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -47,11 +54,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * <li>the collection of the remaining hosts (which is shuffled on each request)</li>
  * </ul>
  */
-class LimitedLocalNodeFirstLocalBalancingPolicy implements LoadBalancingPolicy
-{
-    private final static Logger logger = LoggerFactory.getLogger(LimitedLocalNodeFirstLocalBalancingPolicy.class);
+class LimitedLocalNodeFirstLocalBalancingPolicy implements LoadBalancingPolicy {
+    private static final Logger logger = LoggerFactory.getLogger(LimitedLocalNodeFirstLocalBalancingPolicy.class);
 
-    private final static Set<InetAddress> localAddresses = Collections.unmodifiableSet(getLocalInetAddresses());
+    private static final Set<InetAddress> localAddresses = Collections.unmodifiableSet(getLocalInetAddresses());
 
     private final CopyOnWriteArraySet<Host> liveReplicaHosts = new CopyOnWriteArraySet<>();
 
@@ -83,7 +89,7 @@ class LimitedLocalNodeFirstLocalBalancingPolicy implements LoadBalancingPolicy
         Set<String> dcs = new HashSet<>();
         for (Host host : hosts)
         {
-            if (replicaAddresses.contains(host.getAddress()))
+            if (replicaAddresses.contains(host.getEndPoint().resolve().getAddress()))
                 dcs.add(host.getDatacenter());
         }
         // filter to all nodes within the targeted DCs
@@ -180,35 +186,21 @@ class LimitedLocalNodeFirstLocalBalancingPolicy implements LoadBalancingPolicy
         }
     }
 
-    public void onSuspected(Host host)
-    {
-        // not supported by this load balancing policy
-    }
-
     private static boolean isLocalHost(Host host)
     {
-        InetAddress hostAddress = host.getAddress();
+        InetAddress hostAddress = host.getEndPoint().resolve().getAddress();
         return hostAddress.isLoopbackAddress() || localAddresses.contains(hostAddress);
     }
 
     private static Set<InetAddress> getLocalInetAddresses()
     {
-        try
-        {
+        try {
             return Sets.newHashSet(Iterators.concat(
-                    Iterators.transform(
-                            Iterators.forEnumeration(NetworkInterface.getNetworkInterfaces()),
-                            new Function<NetworkInterface, Iterator<InetAddress>>()
-                            {
-                                @Override
-                                public Iterator<InetAddress> apply(NetworkInterface netIface)
-                                {
-                                    return Iterators.forEnumeration(netIface.getInetAddresses());
-                                }
-                            })));
-        }
-        catch (SocketException e)
-        {
+                Iterators.transform(
+                    Iterators.forEnumeration(NetworkInterface.getNetworkInterfaces()),
+                    (Function<NetworkInterface, Iterator<InetAddress>>) 
+                        netIface -> Iterators.forEnumeration(netIface.getInetAddresses()))));
+        } catch (SocketException e) {
             logger.warn("Could not retrieve local network interfaces.", e);
             return Collections.emptySet();
         }

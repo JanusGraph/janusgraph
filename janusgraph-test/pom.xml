@@ -30,6 +30,7 @@
     </repositories>
 
     <dependencies>
+        <!-- Logging backends. -->
         <!-- Enforce a classpath ordering constraint to ensure log4j is used for logging. -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

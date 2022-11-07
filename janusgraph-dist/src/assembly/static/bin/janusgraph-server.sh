@@ -123,7 +123,7 @@ if [[ -f "$JAVA_OPTIONS_FILE" ]]; then
   done
 fi
 
-JAVA_OPTIONS="$COLLECTED_JAVA_OPTIONS_FILE $JAVA_OPTIONS -javaagent:$JANUSGRAPH_LIB/jamm-0.3.0.jar"
+JAVA_OPTIONS="$COLLECTED_JAVA_OPTIONS_FILE $JAVA_OPTIONS -javaagent:$JANUSGRAPH_LIB/jamm-0.3.3.jar"
 
 # Build Java CLASSPATH
 if [[ -z "$CP" ]];then

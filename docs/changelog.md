@@ -88,6 +88,12 @@ For more information on features and bug fixes in 1.0.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### Removal of cassandra-all dependency
+
+JanusGraph had a dependency on cassandra-all only for some Hadoop-related classes. We moved these few classes into 
+a new module cassandra-hadoop-util to reduce the dependencies of JanusGraph. If you are running JanusGraph with 
+an embeded Cassandra, you have to exclude the `cassandra-hadoop-util` from `janusgraph-cql`.
+
 ##### Drop support for HBase 1
 
 We are dropping support for HBase 1.

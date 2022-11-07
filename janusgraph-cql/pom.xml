@@ -45,6 +45,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+            <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
         <!-- End logging backends. -->
@@ -67,71 +68,6 @@
                 <exclusion>
                     <groupId>javax.annotation</groupId>
                     <artifactId>javax.annotation-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.cassandra</groupId>
-            <artifactId>cassandra-all</artifactId>
-            <exclusions>
-                <!-- Use more recent version of jbcrypt from gremlin-groovy -->
-                <exclusion>
-                    <groupId>org.mindrot</groupId>
-                    <artifactId>jbcrypt</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>net.java.dev.jna</groupId>
-                    <artifactId>jna</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>jcl-over-slf4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.dropwizard.metrics</groupId>
-                    <artifactId>metrics-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.dropwizard.metrics</groupId>
-                    <artifactId>metrics-jvm</artifactId>
-                </exclusion>
-                <!-- We already use slf4j-log4j12, having both on the class path leads to cyclic dependency:  https://www.slf4j.org/codes.html#log4jDelegationLoop -->
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>log4j-over-slf4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.github.ben-manes.caffeine</groupId>
-                    <artifactId>caffeine</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.thinkaurelius.thrift</groupId>
-                    <artifactId>thrift-server</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.ning</groupId>
-                    <artifactId>compress-lzf</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jctools</groupId>
-                    <artifactId>jctools-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.checkerframework</groupId>
-                    <artifactId>checker-qual</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -186,34 +122,16 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- Required for Cassandra-3 connectivity, see issue 172 -->
-        <dependency>
-            <groupId>com.datastax.cassandra</groupId>
-            <artifactId>cassandra-driver-core</artifactId>
-            <version>3.11.2</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.github.jnr</groupId>
-                    <artifactId>jnr-ffi</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.github.jnr</groupId>
-                    <artifactId>jnr-posix</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.dropwizard.metrics</groupId>
-                    <artifactId>metrics-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-handler</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>io.vavr</groupId>
             <artifactId>vavr</artifactId>
             <version>${vavr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>cassandra-hadoop-util</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- Test Dependencies -->
@@ -224,7 +142,6 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
-        <!-- JNA is needed by Cassandra. -->
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>

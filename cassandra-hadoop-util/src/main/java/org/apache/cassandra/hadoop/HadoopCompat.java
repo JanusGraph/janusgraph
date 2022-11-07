@@ -18,13 +18,7 @@
 
 package org.apache.cassandra.hadoop;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.JobID;
@@ -35,7 +29,11 @@ import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.StatusReporter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.mapreduce.TaskInputOutputContext;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /*
  * This is based on ContextFactory.java from hadoop-2.0.x sources.
@@ -59,10 +57,6 @@ public class HadoopCompat
     private static final Field WRITER_FIELD;
 
     private static final Method GET_CONFIGURATION_METHOD;
-    private static final Method SET_STATUS_METHOD;
-    private static final Method GET_COUNTER_METHOD;
-    private static final Method INCREMENT_COUNTER_METHOD;
-    private static final Method GET_TASK_ATTEMPT_ID;
     private static final Method PROGRESS_METHOD;
 
     static
@@ -137,18 +131,6 @@ public class HadoopCompat
                                 OutputCommitter.class,
                                 StatusReporter.class,
                                 InputSplit.class);
-                Method get_counter;
-                try
-                {
-                    get_counter = Class.forName(PACKAGE + ".TaskAttemptContext").getMethod("getCounter", String.class,
-                            String.class);
-                }
-                catch (Exception e)
-                {
-                    get_counter = Class.forName(PACKAGE + ".TaskInputOutputContext").getMethod("getCounter",
-                            String.class, String.class);
-                }
-                GET_COUNTER_METHOD = get_counter;
             }
             else
             {
@@ -160,8 +142,6 @@ public class HadoopCompat
                                 OutputCommitter.class,
                                 StatusReporter.class,
                                 InputSplit.class);
-                GET_COUNTER_METHOD = Class.forName(PACKAGE+".TaskInputOutputContext")
-                        .getMethod("getCounter", String.class, String.class);
             }
             MAP_CONTEXT_CONSTRUCTOR.setAccessible(true);
             READER_FIELD = mapContextCls.getDeclaredField("reader");
@@ -170,12 +150,6 @@ public class HadoopCompat
             WRITER_FIELD.setAccessible(true);
             GET_CONFIGURATION_METHOD = Class.forName(PACKAGE+".JobContext")
                     .getMethod("getConfiguration");
-            SET_STATUS_METHOD = Class.forName(PACKAGE+".TaskAttemptContext")
-                    .getMethod("setStatus", String.class);
-            GET_TASK_ATTEMPT_ID = Class.forName(PACKAGE+".TaskAttemptContext")
-                    .getMethod("getTaskAttemptID");
-            INCREMENT_COUNTER_METHOD = Class.forName(PACKAGE+".Counter")
-                    .getMethod("increment", Long.TYPE);
             PROGRESS_METHOD = Class.forName(PACKAGE+".TaskAttemptContext")
                     .getMethod("progress");
 
@@ -198,14 +172,6 @@ public class HadoopCompat
         }
     }
 
-    /**
-     * True if runtime Hadoop version is 2.x, false otherwise.
-     */
-    public static boolean isVersion2x()
-    {
-        return useV21;
-    }
-
     private static Object newInstance(Constructor<?> constructor, Object...args)
     {
         try
@@ -224,14 +190,6 @@ public class HadoopCompat
         {
             throw new IllegalArgumentException("Can't instantiate " + constructor, e);
         }
-    }
-
-    /**
-     * Creates JobContext from a JobConf and jobId using the correct constructor
-     * for based on Hadoop version. <code>jobId</code> could be null.
-     */
-    public static JobContext newJobContext(Configuration conf, JobID jobId) {
-        return (JobContext) newInstance(JOB_CONTEXT_CONSTRUCTOR, conf, jobId);
     }
 
     /**
@@ -260,23 +218,6 @@ public class HadoopCompat
     }
 
     /**
-     * @return with Hadoop 2 : <code>new GenericCounter(args)</code>,<br>
-     *         with Hadoop 1 : <code>new Counter(args)</code>
-     */
-    public static Counter newGenericCounter(String name, String displayName, long value)
-    {
-        try
-        {
-            return (Counter)
-                    GENERIC_COUNTER_CONSTRUCTOR.newInstance(name, displayName, value);
-        }
-        catch (InstantiationException | IllegalAccessException | InvocationTargetException e)
-        {
-            throw new IllegalArgumentException("Can't instantiate Counter", e);
-        }
-    }
-
-    /**
      * Invokes a method and rethrows any exception as runtime excetpions.
      */
     private static Object invoke(Method method, Object obj, Object... args)
@@ -298,53 +239,5 @@ public class HadoopCompat
     public static Configuration getConfiguration(JobContext context)
     {
         return (Configuration) invoke(GET_CONFIGURATION_METHOD, context);
-    }
-
-    /**
-     * Invoke setStatus() on TaskAttemptContext. Works with both
-     * Hadoop 1 and 2.
-     */
-    public static void setStatus(TaskAttemptContext context, String status)
-    {
-        invoke(SET_STATUS_METHOD, context, status);
-    }
-
-    /**
-     * returns TaskAttemptContext.getTaskAttemptID(). Works with both
-     * Hadoop 1 and 2.
-     */
-    public static TaskAttemptID getTaskAttemptID(TaskAttemptContext taskContext)
-    {
-        return (TaskAttemptID) invoke(GET_TASK_ATTEMPT_ID, taskContext);
-    }
-
-    /**
-     * Invoke getCounter() on TaskInputOutputContext. Works with both
-     * Hadoop 1 and 2.
-     */
-    public static Counter getCounter(TaskInputOutputContext context,
-                                     String groupName, String counterName)
-    {
-        return (Counter) invoke(GET_COUNTER_METHOD, context, groupName, counterName);
-    }
-
-    /**
-     * Invoke TaskAttemptContext.progress(). Works with both
-     * Hadoop 1 and 2.
-     */
-    public static void progress(TaskAttemptContext context)
-    {
-        invoke(PROGRESS_METHOD, context);
-    }
-
-    /**
-     * Increment the counter. Works with both Hadoop 1 and 2
-     */
-    public static void incrementCounter(Counter counter, long increment)
-    {
-        // incrementing a count might be called often. Might be affected by
-        // cost of invoke(). might be good candidate to handle in a shim.
-        // (TODO Raghu) figure out how achieve such a build with maven
-        invoke(INCREMENT_COUNTER_METHOD, counter, increment);
     }
 }

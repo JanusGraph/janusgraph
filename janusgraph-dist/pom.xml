@@ -140,10 +140,8 @@
             <artifactId>elasticsearch</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Logging backends.
-             Enforce a classpath ordering constraint to ensure slf4j-log4j12
-             binding appears on the classpath before logback-classic.
-             See comments in janusgraph-cassandra/pom.xml for more information. -->
+        <!-- Logging backends. -->
+        <!-- Enforce a classpath ordering constraint to ensure log4j is used for logging. -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
