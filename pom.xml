@@ -115,7 +115,7 @@
         <gson.version>2.9.1</gson.version>
         <jmh.version>1.33</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
-        <jetty.version>9.4.44.v20210927</jetty.version>
+        <jetty.version>9.4.48.v20220622</jetty.version>
         <log4j2.version>2.19.0</log4j2.version>
         <graalvm-nativeimage.version>22.2.0</graalvm-nativeimage.version>
         <caffeine.version>2.9.3</caffeine.version>
