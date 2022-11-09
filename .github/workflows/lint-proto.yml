@@ -23,6 +23,8 @@ on:
     paths:
     - 'janusgraph-grpc/**'
     - '.github/workflows/lint-proto.yml'
+    branches-ignore:
+      - 'dependabot/**'
 
 jobs:
   lint-proto:

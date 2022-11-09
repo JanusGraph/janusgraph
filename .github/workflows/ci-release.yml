@@ -31,6 +31,8 @@ on:
     - 'requirements.txt'
     - 'docs.Dockerfile'
     - '*.md'
+    branches-ignore:
+      - 'dependabot/**'
   schedule:
     - cron:  '0 0 * * 3'
 

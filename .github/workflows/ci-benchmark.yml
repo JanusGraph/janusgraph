@@ -22,6 +22,8 @@ on:
     - 'requirements.txt'
     - 'docs.Dockerfile'
     - '*.md'
+    branches-ignore:
+      - 'dependabot/**'
 
 env:
   BUILD_MAVEN_OPTS: "-DskipTests=true --batch-mode --also-make"

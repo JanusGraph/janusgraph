@@ -31,6 +31,8 @@ on:
     - 'requirements.txt'
     - 'docs.Dockerfile'
     - '*.md'
+    branches-ignore:
+      - 'dependabot/**'
 
 env:
   ES_JAVA_OPTS: "-Xms256m -Xmx512m"
