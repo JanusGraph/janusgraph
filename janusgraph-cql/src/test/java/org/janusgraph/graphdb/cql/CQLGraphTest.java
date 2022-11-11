@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.cql;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -43,6 +44,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
@@ -112,6 +114,12 @@ public class CQLGraphTest extends JanusGraphTest {
                 log.info("Attempt #{} fails", i, ex);
             }
         }
+    }
+
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void testReindexingForEdgeIndex() throws ExecutionException, InterruptedException {
+        super.testReindexingForEdgeIndex();
     }
 
     protected static Stream<Arguments> generateConsistencyConfigs() {

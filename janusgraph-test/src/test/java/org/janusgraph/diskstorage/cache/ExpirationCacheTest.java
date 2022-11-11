@@ -26,7 +26,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.util.BufferUtil;
-import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -97,7 +96,7 @@ public class ExpirationCacheTest extends KCVSCacheTest {
         verifyResults(key, keys, query, 4);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = 3)
     public void testGracePeriod() throws Exception {
         testGracePeriod(Duration.ofMillis(200));
         testGracePeriod(Duration.ZERO);
