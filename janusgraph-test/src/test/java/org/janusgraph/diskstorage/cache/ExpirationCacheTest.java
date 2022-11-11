@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.cache;
 
 import com.google.common.collect.Lists;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -97,7 +98,7 @@ public class ExpirationCacheTest extends KCVSCacheTest {
         verifyResults(key, keys, query, 4);
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = 3)
     public void testGracePeriod() throws Exception {
         testGracePeriod(Duration.ofMillis(200));
         testGracePeriod(Duration.ZERO);

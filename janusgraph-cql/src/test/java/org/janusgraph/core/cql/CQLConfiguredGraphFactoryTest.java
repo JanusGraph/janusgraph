@@ -15,6 +15,7 @@
 package org.janusgraph.core.cql;
 
 import com.datastax.driver.core.Session;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.commons.configuration2.MapConfiguration;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.AbstractConfiguredGraphFactoryTest;
@@ -129,6 +130,12 @@ public class CQLConfiguredGraphFactoryTest extends AbstractConfiguredGraphFactor
             ConfiguredGraphFactory.removeConfiguration(graphName);
             ConfiguredGraphFactory.close(graphName);
         }
+    }
+
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void updateConfigurationShouldRemoveGraphFromCache() throws Exception {
+        super.updateConfigurationShouldRemoveGraphFromCache();
     }
 }
 

@@ -37,6 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
@@ -68,6 +69,12 @@ public class CQLGraphTest extends JanusGraphTest {
     @Override
     public void simpleLogTest() throws InterruptedException{
         super.simpleLogTest();
+    }
+
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void testReindexingForEdgeIndex() throws ExecutionException, InterruptedException {
+        super.testReindexingForEdgeIndex();
     }
 
     protected static Stream<Arguments> generateConsistencyConfigs() {
