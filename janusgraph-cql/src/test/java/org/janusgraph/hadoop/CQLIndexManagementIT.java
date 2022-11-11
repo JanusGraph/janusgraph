@@ -14,10 +14,14 @@
 
 package org.janusgraph.hadoop;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.JanusGraphCassandraContainer;
+import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.concurrent.ExecutionException;
 
 @Testcontainers
 public class CQLIndexManagementIT extends AbstractIndexManagementIT {
@@ -27,5 +31,11 @@ public class CQLIndexManagementIT extends AbstractIndexManagementIT {
     @Override
     public WriteConfiguration getConfiguration() {
         return cql.getConfiguration(getClass().getSimpleName().toLowerCase()).getConfiguration();
+    }
+
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void testRepairRelationIndex() throws ExecutionException, InterruptedException, BackendException {
+        super.testRepairRelationIndex();
     }
 }
