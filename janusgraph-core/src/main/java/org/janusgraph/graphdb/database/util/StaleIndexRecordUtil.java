@@ -22,6 +22,7 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.util.HashingUtil;
 import org.janusgraph.graphdb.database.IndexRecordEntry;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -32,10 +33,13 @@ import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
+import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -145,13 +149,16 @@ import java.util.Map;
  */
 public class StaleIndexRecordUtil {
 
+    private static final String ANY_UPDATE_KEY = "_";
+    private static final Object ANY_UPDATE_VALUE = new Object();
+
     /**
-     * Force removes vertex record from a graph index. Notice, only Composite indices are supported by this method at the moment.
+     * Force removes vertex record from a graph index.
      *
      * @param vertexId the vertex which should be removed from a specified index
      * @param indexRecordPropertyValues all property values of the index record
      * @param graph JanusGraph instance to be used to open graph management and new backend transaction for index removal.
-     * @param graphIndexName name of the index for which to remove a record
+     * @param graphIndexName name of the graph index for which to remove a record
      * @throws BackendException is thrown in case backend transaction cannot be mutated for any reason.
      */
     public static void forceRemoveVertexFromGraphIndex(long vertexId,
@@ -163,19 +170,21 @@ public class StaleIndexRecordUtil {
 
         try{
             JanusGraphIndex index = managementSystem.getGraphIndex(graphIndexName);
-
             PropertyKey[] propertyKeys = index.getFieldKeys();
 
-            IndexRecordEntry[] indexRecord = toIndexRecord(propertyKeys, indexRecordPropertyValues);
+            if(index.isCompositeIndex()){
+                IndexRecordEntry[] indexRecord = toCompositeIndexRecord(propertyKeys, indexRecordPropertyValues);
+                StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
+                try{
+                    JanusGraphElement elementToBeRemoved = new CacheVertex(tx, vertexId, ElementLifeCycle.New);
+                    forceRemoveElementFromCompositeIndex(elementToBeRemoved, indexRecord, (StandardJanusGraph) graph, index, managementSystem);
+                } finally {
+                    tx.rollback();
+                }
 
-            StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
-
-            try{
-                JanusGraphElement elementToBeRemoved = new CacheVertex(tx, vertexId, ElementLifeCycle.New);
-                forceRemoveElementFromGraphIndex(elementToBeRemoved, indexRecord, (StandardJanusGraph) graph, index, managementSystem);
-
-            } finally {
-                tx.rollback();
+            } else if(index.isMixedIndex()){
+                IndexRecordEntry[] indexRecord = toMixedIndexRecord(propertyKeys, indexRecordPropertyValues);
+                forceRemoveElementFromMixedGraphIndex(vertexId, indexRecord, (StandardJanusGraph)  graph, index, managementSystem);
             }
 
         } finally {
@@ -184,7 +193,7 @@ public class StaleIndexRecordUtil {
     }
 
     /**
-     * Force removes element record from a graph index. Notice, only Composite indices are supported by this method at the moment.
+     * Force removes element record from a graph index.
      * <p>
      * An example of using this method is below:
      * <pre>
@@ -221,7 +230,7 @@ public class StaleIndexRecordUtil {
      * @param elementToRemoveFromIndex an element which should be removed.
      * @param indexRecord an ordered array or index record properties which represent this index record.
      * @param graph JanusGraph instance to be used to open graph management and new backend transaction for index removal.
-     * @param graphIndexName index name of the index for which to delete a specified indexRecord.
+     * @param graphIndexName index name of the graph index for which to delete a specified indexRecord.
      * @throws BackendException is thrown in case backend transaction cannot be mutated for any reason.
      */
     public static void forceRemoveElementFromGraphIndex(JanusGraphElement elementToRemoveFromIndex,
@@ -233,49 +242,95 @@ public class StaleIndexRecordUtil {
 
         try{
             JanusGraphIndex index = managementSystem.getGraphIndex(graphIndexName);
-
-            forceRemoveElementFromGraphIndex(elementToRemoveFromIndex, indexRecord, graph, index, managementSystem);
-
+            if(index.isCompositeIndex()){
+                forceRemoveElementFromCompositeIndex(elementToRemoveFromIndex, indexRecord, graph, index, managementSystem);
+            } else if(index.isMixedIndex()){
+                forceRemoveElementFromMixedGraphIndex(elementToRemoveFromIndex.id(), indexRecord, graph, index, managementSystem);
+            }
         } finally {
             managementSystem.rollback();
         }
     }
 
-    private static IndexRecordEntry[] toIndexRecord(PropertyKey[] propertyKeys, Map<String, Object> indexRecordPropertyValues){
+    /**
+     * Force removes element record from a mixed index.
+     *
+     * @param elementId id of the element which should be removed from a specified index
+     * @param indexRecordPropertyValues all property values of the index record
+     * @param graph JanusGraph instance to be used to open graph management and new backend transaction for index removal.
+     * @param mixedIndexName name of the mixed index for which to remove a record
+     * @throws BackendException is thrown in case backend transaction cannot be mutated for any reason.
+     */
+    public static void forceRemoveElementFromMixedIndex(Object elementId,
+                                                        Map<String, Object> indexRecordPropertyValues,
+                                                        JanusGraph graph,
+                                                        String mixedIndexName) throws BackendException {
 
-        if(indexRecordPropertyValues.size() != propertyKeys.length){
-            throw new IllegalArgumentException("indexRecordPropertyValues contains "+indexRecordPropertyValues.size()
-                +" properties but provided index has "+propertyKeys.length+" indexed properties. " +
-                "It is necessary to include all but only indexed properties in indexRecordPropertyValues.");
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+
+        try{
+            JanusGraphIndex index = managementSystem.getGraphIndex(mixedIndexName);
+            PropertyKey[] propertyKeys = index.getFieldKeys();
+            IndexRecordEntry[] indexRecord = toMixedIndexRecord(propertyKeys, indexRecordPropertyValues);
+            forceRemoveElementFromMixedGraphIndex(elementId, indexRecord, (StandardJanusGraph)  graph, index, managementSystem);
+        } finally {
+            managementSystem.rollback();
         }
-
-        IndexRecordEntry[] indexRecord = new IndexRecordEntry[propertyKeys.length];
-
-        for(int i=0; i<propertyKeys.length; i++){
-            PropertyKey propertyKey = propertyKeys[i];
-            String propertyKeyName = propertyKey.name();
-            if(!indexRecordPropertyValues.containsKey(propertyKeyName)){
-                throw new IllegalArgumentException("indexRecordPropertyValues doesn't contain property "+propertyKeyName
-                    +" but provided index has this property. It is necessary to include all but only indexed properties in indexRecordPropertyValues.");
-            }
-            Object propertyValue = indexRecordPropertyValues.get(propertyKeyName);
-            long propertyKeyId = propertyKey.longId();
-            indexRecord[i] = new IndexRecordEntry(propertyKeyId, propertyValue, propertyKey);
-        }
-
-        return indexRecord;
     }
 
-    private static void forceRemoveElementFromGraphIndex(JanusGraphElement elementToRemoveFromIndex,
-                                                         IndexRecordEntry[] indexRecord,
-                                                         StandardJanusGraph graph,
-                                                         JanusGraphIndex index,
-                                                         ManagementSystem managementSystem) throws BackendException {
+    /**
+     * Force removes element record from a mixed index.
+     *
+     * @param elementId id of the element which should be removed from a specified index
+     * @param indexRecord an unordered array or index record properties which represent this index record.
+     * @param graph JanusGraph instance to be used to open graph management and new backend transaction for index removal.
+     * @param mixedIndexName name of the mixed index for which to remove a record
+     * @throws BackendException is thrown in case backend transaction cannot be mutated for any reason.
+     */
+    public static void forceRemoveElementFromMixedIndex(Object elementId,
+                                                        IndexRecordEntry[] indexRecord,
+                                                        JanusGraph graph,
+                                                        String mixedIndexName) throws BackendException {
 
-        if(!index.isCompositeIndex()){
-            throw new IllegalArgumentException("Index ["+index.name()+"] is not a Composite index " +
-                "but only Composite index type is allowed in "+StaleIndexRecordUtil.class.getSimpleName()+" tool at this moment.");
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+
+        try{
+            JanusGraphIndex index = managementSystem.getGraphIndex(mixedIndexName);
+            forceRemoveElementFromMixedGraphIndex(elementId, indexRecord, (StandardJanusGraph)  graph, index, managementSystem);
+        } finally {
+            managementSystem.rollback();
         }
+    }
+
+    /**
+     * Force removes element fully from a mixed index.
+     *
+     * @param elementId id of the element which should be removed from a specified index
+     * @param graph JanusGraph instance to be used to open graph management and new backend transaction for index removal.
+     * @param mixedIndexName name of the mixed index for which to remove a record
+     * @throws BackendException is thrown in case backend transaction cannot be mutated for any reason.
+     */
+    public static void forceRemoveElementFromMixedIndex(Object elementId,
+                                                        JanusGraph graph,
+                                                        String mixedIndexName) throws BackendException {
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+
+        try{
+            JanusGraphIndex index = managementSystem.getGraphIndex(mixedIndexName);
+            forceRemoveElementFullyFromMixedGraphIndex(elementId, (StandardJanusGraph)  graph, index, managementSystem);
+        } finally {
+            managementSystem.rollback();
+        }
+    }
+
+    private static void forceRemoveElementFromCompositeIndex(JanusGraphElement elementToRemoveFromIndex,
+                                                             IndexRecordEntry[] indexRecord,
+                                                             StandardJanusGraph graph,
+                                                             JanusGraphIndex index,
+                                                             ManagementSystem managementSystem) throws BackendException {
+
+        verifyIndexIsComposite(index);
 
         Serializer serializer = graph.getDataSerializer();
         boolean hashKeys = graph.getIndexSerializer().isHashKeys();
@@ -306,6 +361,125 @@ public class StaleIndexRecordUtil {
             } finally {
                 tx.commit();
             }
+        }
+    }
+
+    private static void forceRemoveElementFromMixedGraphIndex(Object elementIdToRemoveFromIndex,
+                                                              IndexRecordEntry[] indexRecord,
+                                                              StandardJanusGraph graph,
+                                                              JanusGraphIndex index,
+                                                              ManagementSystem managementSystem) throws BackendException {
+
+        verifyIndexIsMixed(index);
+
+        JanusGraphSchemaVertex indexSchemaVertex = managementSystem.getSchemaVertex(index);
+        MixedIndexType indexType = (MixedIndexType) indexSchemaVertex.asIndexType();
+        String elementKey = IndexRecordUtil.element2String(elementIdToRemoveFromIndex);
+
+        StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
+        BackendTransaction transaction = tx.getTxHandle();
+        IndexTransaction indexTransaction = transaction.getIndexTransaction(indexType.getBackingIndexName());
+
+        try{
+            for(IndexRecordEntry indexRecordEntry : indexRecord){
+                indexTransaction.delete(indexType.getStoreName(), elementKey,
+                    IndexRecordUtil.key2Field(indexType, indexRecordEntry.getKey()),
+                    indexRecordEntry.getValue(), false);
+            }
+        } finally {
+            try{
+                transaction.commit();
+            } finally {
+                tx.commit();
+            }
+        }
+    }
+
+    private static void forceRemoveElementFullyFromMixedGraphIndex(Object elementIdToRemoveFromIndex,
+                                                                   StandardJanusGraph graph,
+                                                                   JanusGraphIndex index,
+                                                                   ManagementSystem managementSystem) throws BackendException {
+
+        verifyIndexIsMixed(index);
+
+        JanusGraphSchemaVertex indexSchemaVertex = managementSystem.getSchemaVertex(index);
+        MixedIndexType indexType = (MixedIndexType) indexSchemaVertex.asIndexType();
+        String elementKey = IndexRecordUtil.element2String(elementIdToRemoveFromIndex);
+
+        StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
+        BackendTransaction transaction = tx.getTxHandle();
+        IndexTransaction indexTransaction = transaction.getIndexTransaction(indexType.getBackingIndexName());
+
+        try{
+            indexTransaction.delete(indexType.getStoreName(), elementKey, ANY_UPDATE_KEY, ANY_UPDATE_VALUE, true);
+        } finally {
+            try{
+                transaction.commit();
+            } finally {
+                tx.commit();
+            }
+        }
+    }
+
+    private static IndexRecordEntry[] toCompositeIndexRecord(PropertyKey[] propertyKeys, Map<String, Object> indexRecordPropertyValues){
+
+        if(indexRecordPropertyValues.size() != propertyKeys.length){
+            throw new IllegalArgumentException("indexRecordPropertyValues contains "+indexRecordPropertyValues.size()
+                +" properties but provided index has "+propertyKeys.length+" indexed properties. " +
+                "It is necessary to include all but only indexed properties in indexRecordPropertyValues.");
+        }
+
+        IndexRecordEntry[] indexRecord = new IndexRecordEntry[propertyKeys.length];
+
+        for(int i=0; i<propertyKeys.length; i++){
+            PropertyKey propertyKey = propertyKeys[i];
+            String propertyKeyName = propertyKey.name();
+            if(!indexRecordPropertyValues.containsKey(propertyKeyName)){
+                throw new IllegalArgumentException("indexRecordPropertyValues doesn't contain property "+propertyKeyName
+                    +" but provided index has this property. It is necessary to include all but only indexed properties in indexRecordPropertyValues.");
+            }
+            Object propertyValue = indexRecordPropertyValues.get(propertyKeyName);
+            long propertyKeyId = propertyKey.longId();
+            indexRecord[i] = new IndexRecordEntry(propertyKeyId, propertyValue, propertyKey);
+        }
+
+        return indexRecord;
+    }
+
+    private static IndexRecordEntry[] toMixedIndexRecord(PropertyKey[] propertyKeys, Map<String, Object> indexRecordPropertyValues){
+
+        Map<String, PropertyKey> propertyKeyMap = new HashMap<>(propertyKeys.length);
+        for(PropertyKey propertyKey : propertyKeys){
+            propertyKeyMap.put(propertyKey.name(), propertyKey);
+        }
+
+        IndexRecordEntry[] indexRecord = new IndexRecordEntry[indexRecordPropertyValues.size()];
+        Iterator<Map.Entry<String, Object>> recordPropertyIt = indexRecordPropertyValues.entrySet().iterator();
+
+        for(int i=0; i<indexRecord.length; i++){
+            Map.Entry<String, Object> recordProperty = recordPropertyIt.next();
+            String propertyName = recordProperty.getKey();
+            PropertyKey propertyKey = propertyKeyMap.get(propertyName);
+            if(propertyKey == null){
+                throw new IllegalArgumentException("indexRecordPropertyValues contains property "+propertyName
+                    +" which isn't presented in the index.");
+            }
+            long propertyKeyId = propertyKey.longId();
+            indexRecord[i] = new IndexRecordEntry(propertyKeyId, recordProperty.getValue(), propertyKey);
+        }
+
+        return indexRecord;
+    }
+
+    private static void verifyIndexIsComposite(JanusGraphIndex index){
+        if(!index.isCompositeIndex()){
+            throw new IllegalArgumentException("Index ["+index.name()+"] is not a Composite index but a Composite index is expected");
+        }
+    }
+
+    private static void verifyIndexIsMixed(JanusGraphIndex index){
+        if(!index.isMixedIndex()){
+            throw new IllegalArgumentException("Index ["+index.name()+"] is not a Mixed index but a Mixed index is expected");
         }
     }
 }
