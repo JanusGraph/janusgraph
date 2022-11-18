@@ -37,6 +37,7 @@ import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphIndexQuery;
@@ -60,17 +61,26 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.indexing.IndexInformation;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
+import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.IndexRecordEntry;
+import org.janusgraph.graphdb.database.index.IndexMutationType;
+import org.janusgraph.graphdb.database.index.IndexUpdate;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
+import org.janusgraph.graphdb.database.util.IndexRecordUtil;
+import org.janusgraph.graphdb.database.util.StaleIndexRecordUtil;
 import org.janusgraph.graphdb.internal.ElementCategory;
+import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
@@ -81,12 +91,17 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggSte
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
+import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.testutil.TestGraphConfigs;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -3305,5 +3320,433 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         finishSchema();
 
         testMultipleOrClauses();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testStaleGraphIndexForceRemoveVertex(boolean withLabelConstraint) throws BackendException {
+        clopen();
+        String namePropKeyStr = "name";
+        String indexName = "mixed";
+        String nameValue = "testValue";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        JanusGraphManagement.IndexBuilder indexBuilder = mgmt.buildIndex(indexName, Vertex.class)
+            .addKey(nameProp, getStringMapping());
+        String vertexLabelName;
+        if(withLabelConstraint){
+            vertexLabelName = "testVertexLabel";
+            VertexLabel vertexLabel = mgmt.makeVertexLabel(vertexLabelName).make();
+            indexBuilder = indexBuilder.indexOnly(vertexLabel);
+        } else {
+            vertexLabelName = null;
+        }
+        indexBuilder.buildMixedIndex(INDEX);
+        finishSchema();
+
+        if(vertexLabelName == null){
+            tx.addVertex().property(namePropKeyStr, nameValue);
+        } else {
+            tx.addVertex(vertexLabelName).property(namePropKeyStr, nameValue);
+        }
+        newTx();
+
+        Vertex testVertex = getV(namePropKeyStr, nameValue, vertexLabelName).next();
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex(indexName);
+        JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
+        MixedIndexType index = (MixedIndexType) indexChangeVertex.asIndexType();
+
+        JanusGraphVertexProperty indexedProperty = (JanusGraphVertexProperty) testVertex.property(namePropKeyStr);
+        long propertyId = indexedProperty.longId();
+        PropertyKey propertyKey = indexedProperty.propertyKey();
+        IndexRecordEntry[] record = new IndexRecordEntry[]{new IndexRecordEntry(propertyId, nameValue, propertyKey)};
+
+        getV(namePropKeyStr, nameValue, vertexLabelName).drop().iterate();
+        newTx();
+
+        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) testVertex).longId(), ElementLifeCycle.New);
+
+        IndexUpdate<String, IndexEntry> update = IndexRecordUtil.getMixedIndexUpdate(
+            element,
+            propertyKey,
+            nameValue,
+            index,
+            IndexMutationType.ADD
+        );
+
+        BackendTransaction transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+        IndexTransaction indexTransaction = transaction.getIndexTransaction(index.getBackingIndexName());
+
+        // Adds index entry of the non-existing vertex to the index. I.e. this line corrupts index.
+        // This is a possible situation of a stale index being introduced.
+        indexTransaction.add(index.getStoreName(), update.getKey(), update.getEntry(), true);
+        newTx();
+
+        assertFalse(tx.traversal().V(testVertex.id()).hasNext());
+        assertTrue(getV(namePropKeyStr, nameValue, vertexLabelName).hasNext());
+
+        // Check that if we try to remove non-existent vertex we receive an exception
+        assertThrows(Exception.class, () -> getV(namePropKeyStr, nameValue, vertexLabelName).drop().next());
+
+        newTx();
+        assertFalse(tx.traversal().V(testVertex.id()).hasNext());
+        // Check that even when we tried to remove vertex - it wasn't removed.
+        // Thus, we got a stale index which won't be fixed by itself.
+        assertTrue(getV(namePropKeyStr, nameValue, vertexLabelName).hasNext());
+
+        StaleIndexRecordUtil.forceRemoveElementFromGraphIndex(
+            element,
+            record,
+            graph,
+            indexName
+        );
+
+        newTx();
+
+        assertFalse(tx.traversal().V(testVertex.id()).hasNext());
+        assertFalse(getV(namePropKeyStr, nameValue, vertexLabelName).hasNext());
+    }
+
+    @Test
+    public void testStaleMixedIndexForceFullVertexRemove() throws BackendException {
+        clopen();
+        String namePropKeyStr = "name";
+        String agePropKeyStr = "age";
+        String indexName = "mixed";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey ageProp = mgmt.makePropertyKey(agePropKeyStr).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(nameProp, getStringMapping()).addKey(ageProp).buildMixedIndex(INDEX);
+        finishSchema();
+
+        tx.traversal().addV().property(namePropKeyStr, "vertex2").property(agePropKeyStr, 123).iterate();
+        newTx();
+
+        Vertex vertex2 = tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).next();
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex(indexName);
+        JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
+        MixedIndexType index = (MixedIndexType) indexChangeVertex.asIndexType();
+
+        JanusGraphVertexProperty indexedNameProperty = (JanusGraphVertexProperty) vertex2.property(namePropKeyStr);
+        PropertyKey namePropertyKey = indexedNameProperty.propertyKey();
+        JanusGraphVertexProperty indexedAgeProperty = (JanusGraphVertexProperty) vertex2.property(agePropKeyStr);
+        PropertyKey agePropertyKey = indexedAgeProperty.propertyKey();
+
+        tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().iterate();
+        newTx();
+
+        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) vertex2).longId(), ElementLifeCycle.New);
+
+        IndexUpdate<String, IndexEntry> nameUpdate = IndexRecordUtil.getMixedIndexUpdate(
+            element,
+            namePropertyKey,
+            "vertex2",
+            index,
+            IndexMutationType.ADD
+        );
+        IndexUpdate<String, IndexEntry> ageUpdate = IndexRecordUtil.getMixedIndexUpdate(
+            element,
+            agePropertyKey,
+            123,
+            index,
+            IndexMutationType.ADD
+        );
+
+        BackendTransaction transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+        IndexTransaction indexTransaction = transaction.getIndexTransaction(index.getBackingIndexName());
+
+        // Adds index entry of the non-existing vertex to the index. I.e. this line corrupts index.
+        // This is a possible situation of a stale index being introduced.
+        indexTransaction.add(index.getStoreName(), nameUpdate.getKey(), nameUpdate.getEntry(), true);
+        indexTransaction.add(index.getStoreName(), ageUpdate.getKey(), ageUpdate.getEntry(), true);
+        newTx();
+
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").hasNext());
+        assertTrue(tx.traversal().V().has(agePropKeyStr, 123).hasNext());
+        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+
+        // Check that if we try to remove non-existent vertex we receive an exception
+        assertThrows(Exception.class, () -> tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().next());
+
+        newTx();
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        // Check that even when we tried to remove vertex - it wasn't removed.
+        // Thus, we got a stale index which won't be fixed by itself.
+        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").hasNext());
+        assertTrue(tx.traversal().V().has(agePropKeyStr, 123).hasNext());
+        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+
+        StaleIndexRecordUtil.forceRemoveElementFromMixedIndex(
+            element.id(),
+            graph,
+            indexName
+        );
+
+        newTx();
+
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertFalse(tx.traversal().V().has(namePropKeyStr, "vertex2").hasNext());
+        assertFalse(tx.traversal().V().has(agePropKeyStr, 123).hasNext());
+        assertFalse(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+    }
+
+    @Test
+    public void testStaleMixedIndexForcePartialEdgeRemove() throws BackendException {
+        clopen();
+        String namePropKeyStr = "name";
+        String agePropKeyStr = "age";
+        String edgeKeyStr = "testEdge";
+        String indexName = "mixed";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey ageProp = mgmt.makePropertyKey(agePropKeyStr).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel(edgeKeyStr).make();
+        mgmt.buildIndex(indexName, Edge.class).addKey(nameProp, getStringMapping()).addKey(ageProp).buildMixedIndex(INDEX);
+        finishSchema();
+
+        Vertex vertex1 = tx.traversal().addV().next();
+        Vertex vertex2 = tx.traversal().addV().next();
+
+        tx.traversal().addE("testEdge").from(vertex1).to(vertex2)
+            .property(namePropKeyStr, "vertex2").property(agePropKeyStr, 123).iterate();
+        newTx();
+
+        Edge edge = tx.traversal().E().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).next();
+
+        tx.traversal().E().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().iterate();
+        newTx();
+        graph.tx().rollback();
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex(indexName);
+        JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
+        MixedIndexType index = (MixedIndexType) indexChangeVertex.asIndexType();
+
+        BackendTransaction transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+        IndexTransaction indexTransaction = transaction.getIndexTransaction(index.getBackingIndexName());
+
+        String elementIndexId = IndexRecordUtil.element2String(edge.id());
+        String nameIndexField = IndexRecordUtil.key2Field(index, managementSystem.getPropertyKey(namePropKeyStr));
+        String ageIndexField = IndexRecordUtil.key2Field(index, managementSystem.getPropertyKey(agePropKeyStr));
+
+        assertEquals(0, graph.indexQuery(indexName, nameIndexField+":vertex2").edgeTotals());
+        assertEquals(0, graph.indexQuery(indexName, ageIndexField+":123").edgeTotals());
+        assertEquals(0, graph.indexQuery(indexName, nameIndexField+":vertex2 AND "+ageIndexField+":123").edgeTotals());
+
+        // Adds index entry of the non-existing vertex to the index. I.e. this line corrupts index.
+        // This is a possible situation of a stale index being introduced.
+        indexTransaction.add(index.getStoreName(), elementIndexId, nameIndexField, "vertex2", true);
+        indexTransaction.add(index.getStoreName(), elementIndexId, ageIndexField, 123, true);
+        newTx();
+        graph.tx().rollback();
+
+        assertFalse(tx.traversal().E(edge.id()).hasNext());
+        assertEquals(1, graph.indexQuery(indexName, nameIndexField+":vertex2").edgeTotals());
+        assertEquals(1, graph.indexQuery(indexName, ageIndexField+":123").edgeTotals());
+        assertEquals(1, graph.indexQuery(indexName, nameIndexField+":vertex2 AND "+ageIndexField+":123").edgeTotals());
+
+        // Check that if we try to remove non-existent edge we receive an exception
+        assertThrows(Exception.class, () -> tx.traversal().E().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().next());
+
+        newTx();
+        graph.tx().rollback();
+
+        assertFalse(tx.traversal().E(edge.id()).hasNext());
+        // Check that even when we tried to remove the edge - it wasn't removed.
+        // Thus, we got a stale index which won't be fixed by itself.
+        assertEquals(1, graph.indexQuery(indexName, nameIndexField+":vertex2").edgeTotals());
+        assertEquals(1, graph.indexQuery(indexName, ageIndexField+":123").edgeTotals());
+        assertEquals(1, graph.indexQuery(indexName, nameIndexField+":vertex2 AND "+ageIndexField+":123").edgeTotals());
+
+        newTx();
+        graph.tx().rollback();
+
+        managementSystem = (ManagementSystem) graph.openManagement();
+        nameProp = managementSystem.getPropertyKey(namePropKeyStr);
+        IndexRecordEntry[] record = new IndexRecordEntry[]{
+            new IndexRecordEntry(nameProp.longId(), "vertex2", nameProp)
+        };
+
+        StaleIndexRecordUtil.forceRemoveElementFromMixedIndex(
+            edge.id(),
+            record,
+            graph,
+            indexName
+        );
+
+        managementSystem.rollback();
+        graph.tx().rollback();
+        newTx();
+
+        assertFalse(tx.traversal().E(edge.id()).hasNext());
+        assertEquals(0, graph.indexQuery(indexName, nameIndexField+":vertex2").edgeTotals());
+        assertEquals(0, graph.indexQuery(indexName, nameIndexField+":vertex2 AND "+ageIndexField+":123").edgeTotals());
+        // Check that the age record wasn't removed
+        assertEquals(1, graph.indexQuery(indexName, ageIndexField+":123").edgeTotals());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testStaleGraphIndexForcePartialVertexRemoveByPropertyMap(boolean useMixedIndexMethod) throws BackendException {
+        clopen();
+        String namePropKeyStr = "name";
+        String agePropKeyStr = "age";
+        String indexName = "mixed";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey ageProp = mgmt.makePropertyKey(agePropKeyStr).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(nameProp, getStringMapping()).addKey(ageProp).buildMixedIndex(INDEX);
+        finishSchema();
+
+        tx.traversal().addV().property(namePropKeyStr, "vertex2").property(agePropKeyStr, 123).iterate();
+        newTx();
+
+        Vertex vertex2 = tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).next();
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex(indexName);
+        JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
+        MixedIndexType index = (MixedIndexType) indexChangeVertex.asIndexType();
+
+        JanusGraphVertexProperty indexedNameProperty = (JanusGraphVertexProperty) vertex2.property(namePropKeyStr);
+        PropertyKey namePropertyKey = indexedNameProperty.propertyKey();
+        JanusGraphVertexProperty indexedAgeProperty = (JanusGraphVertexProperty) vertex2.property(agePropKeyStr);
+        PropertyKey agePropertyKey = indexedAgeProperty.propertyKey();
+
+        tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().iterate();
+        newTx();
+
+        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) vertex2).longId(), ElementLifeCycle.New);
+
+        IndexUpdate<String, IndexEntry> nameUpdate = IndexRecordUtil.getMixedIndexUpdate(
+            element,
+            namePropertyKey,
+            "vertex2",
+            index,
+            IndexMutationType.ADD
+        );
+        IndexUpdate<String, IndexEntry> ageUpdate = IndexRecordUtil.getMixedIndexUpdate(
+            element,
+            agePropertyKey,
+            123,
+            index,
+            IndexMutationType.ADD
+        );
+
+        BackendTransaction transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+        IndexTransaction indexTransaction = transaction.getIndexTransaction(index.getBackingIndexName());
+
+        // Adds index entry of the non-existing vertex to the index. I.e. this line corrupts index.
+        // This is a possible situation of a stale index being introduced.
+        indexTransaction.add(index.getStoreName(), nameUpdate.getKey(), nameUpdate.getEntry(), true);
+        indexTransaction.add(index.getStoreName(), ageUpdate.getKey(), ageUpdate.getEntry(), true);
+        newTx();
+
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").hasNext());
+        assertTrue(tx.traversal().V().has(agePropKeyStr, 123).hasNext());
+        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+
+        // Check that if we try to remove non-existent vertex we receive an exception
+        assertThrows(Exception.class, () -> tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().next());
+
+        newTx();
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        // Check that even when we tried to remove vertex - it wasn't removed.
+        // Thus, we got a stale index which won't be fixed by itself.
+        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").hasNext());
+        assertTrue(tx.traversal().V().has(agePropKeyStr, 123).hasNext());
+        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+
+        if(useMixedIndexMethod){
+            StaleIndexRecordUtil.forceRemoveElementFromMixedIndex(
+                element.id(),
+                Collections.singletonMap(namePropertyKey.name(), "vertex2"),
+                graph,
+                indexName
+            );
+        } else {
+            StaleIndexRecordUtil.forceRemoveVertexFromGraphIndex(
+                (Long) element.id(),
+                Collections.singletonMap(namePropertyKey.name(), "vertex2"),
+                graph,
+                indexName
+            );
+        }
+
+        newTx();
+
+        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertFalse(tx.traversal().V().has(namePropKeyStr, "vertex2").hasNext());
+        assertFalse(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+        // Check that the age record wasn't removed
+        assertTrue(tx.traversal().V().has(agePropKeyStr, 123).hasNext());
+    }
+
+    @Test
+    public void testForceRemoveElementFromMixedIndexShouldFailOnCompositeIndex() {
+        clopen();
+        String namePropKeyStr = "name";
+        String indexName = "mixed";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(nameProp).buildCompositeIndex();
+        finishSchema();
+
+        assertThrows(IllegalArgumentException.class, () ->
+            StaleIndexRecordUtil.forceRemoveElementFromMixedIndex(
+                123L,
+                graph,
+                indexName
+            )
+        );
+    }
+
+    @Test
+    public void testForceRemoveElementFromMixedIndexShouldFailOnWrongPropertiesUsed() throws BackendException {
+        clopen();
+        String fooPropKeyStr = "foo";
+        String barPropKeyStr = "bar";
+        String foobarPropKeyStr = "foobar";
+        String indexName = "mixed";
+        PropertyKey fooProp = mgmt.makePropertyKey(fooPropKeyStr).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey barProp = mgmt.makePropertyKey(barPropKeyStr).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey(foobarPropKeyStr).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(fooProp).addKey(barProp).buildMixedIndex(INDEX);
+        finishSchema();
+
+        // Tests force mixed index record removal works for indexed property
+        StaleIndexRecordUtil.forceRemoveElementFromMixedIndex(
+            123L,
+            Collections.singletonMap(fooPropKeyStr, 123),
+            graph,
+            indexName
+        );
+
+        // Tests force mixed index record removal fails for non-indexed property
+        assertThrows(IllegalArgumentException.class, () ->
+            StaleIndexRecordUtil.forceRemoveElementFromMixedIndex(
+                123L,
+                Collections.singletonMap(foobarPropKeyStr, 123),
+                graph,
+                indexName
+            )
+        );
+
+        // Tests force mixed index record removal works for indexed property
+        StaleIndexRecordUtil.forceRemoveElementFromMixedIndex(
+            123L,
+            Collections.singletonMap(barPropKeyStr, 123),
+            graph,
+            indexName
+        );
+    }
+
+    private GraphTraversal<Vertex, Vertex> getV(String propertyName, Object value, String vertexLabel){
+        GraphTraversal<Vertex, Vertex> traversal = tx.traversal().V();
+        if(vertexLabel != null){
+            traversal = traversal.hasLabel(vertexLabel);
+        }
+        return traversal.has(propertyName, value);
     }
 }

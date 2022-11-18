@@ -18,13 +18,13 @@ As for now there is the utility tool which may be used to fix permanent stale in
 to fix permanent stale index entries. 
 
 `StaleIndexRecordUtil.forceRemoveVertexFromGraphIndex` can be used to force remove an index record for any vertex from 
-a graph index. Right now the limitations of this method is that it can be used with Composite indices only.  
+a graph index.   
 An example of using this method is below:
 ```java
 // Let's say we want to remove non-existent vertex from a stale index. 
 // We will assume the next constraints: 
 // Vertex id is: `12345`
-// Composite index name is: `nameAgeIndex`
+// Index name is: `nameAgeIndex`
 // There are two indexed properties: `name` and `age`
 // Value of the name property is: `HelloWorld`
 // Value of the age property is: `123`
@@ -41,7 +41,7 @@ StaleIndexRecordUtil.forceRemoveVertexFromGraphIndex(
     12345L, // vertex id of the index record to be removed
     indexRecordPropertyValues, // index record property values
     graph,
-    "nameAgeIndex" // composite index name for which to remove the index record
+    "nameAgeIndex" // graph index name for which to remove the index record
 );
 ```
-For more in-depth information about usage of this tool see JavaDoc for `StaleIndexRecordUtil`.
+For more in-depth information about usage of this tool as well as explanations of additional methods of this tool see JavaDoc for `StaleIndexRecordUtil`.
