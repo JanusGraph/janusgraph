@@ -7758,25 +7758,40 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(tx.traversal().V(vertex1).out(edgeName).is(vertex2).hasNext());
     }
 
-    @Test
-    public void testStaleIndexForceRemoveVertexFromGraphIndexByHelperMethod() throws BackendException {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testStaleIndexForceRemoveVertexFromGraphIndexByHelperMethod(boolean withLabelConstraint) throws BackendException {
         clopenForStaleIndex();
         String namePropKeyStr = "name";
         String agePropKeyStr = "age";
         String indexName = "nameAgeIndex";
+        String nameValue = "testNameValue";
+        Integer ageValue = 123;
         PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
         PropertyKey ageProp = mgmt.makePropertyKey(agePropKeyStr).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex(indexName, Vertex.class).addKey(nameProp).addKey(ageProp).buildCompositeIndex();
+        JanusGraphManagement.IndexBuilder indexBuilder = mgmt.buildIndex(indexName, Vertex.class)
+            .addKey(nameProp).addKey(ageProp);
+        String vertexLabelName;
+        if(withLabelConstraint){
+            vertexLabelName = "testVertexLabel";
+            VertexLabel vertexLabel = mgmt.makeVertexLabel(vertexLabelName).make();
+            indexBuilder = indexBuilder.indexOnly(vertexLabel);
+        } else {
+            vertexLabelName = null;
+        }
+        indexBuilder.buildCompositeIndex();
         finishSchema();
 
-        JanusGraphVertex addedVertex = tx.addVertex();
-        addedVertex.property(namePropKeyStr, "vertex2");
-        addedVertex.property(agePropKeyStr, 123);
+        JanusGraphVertex addedVertex = vertexLabelName == null ?
+            tx.addVertex() :
+            tx.addVertex(vertexLabelName);
+        addedVertex.property(namePropKeyStr, nameValue);
+        addedVertex.property(agePropKeyStr, ageValue);
 
         tx.commit();
         newTx();
 
-        Vertex vertex2 = tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).next();
+        Vertex testVertex = getV(namePropKeyStr, nameValue, agePropKeyStr, ageValue, vertexLabelName).next();
 
         ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
         JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex(indexName);
@@ -7786,24 +7801,24 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         boolean hashKeys = graph.getIndexSerializer().isHashKeys();
         HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
 
-        JanusGraphVertexProperty indexedNameProperty = (JanusGraphVertexProperty) vertex2.property("name");
+        JanusGraphVertexProperty indexedNameProperty = (JanusGraphVertexProperty) testVertex.property(namePropKeyStr);
         long namePropertyId = indexedNameProperty.longId();
         PropertyKey namePropertyKey = indexedNameProperty.propertyKey();
 
-        JanusGraphVertexProperty indexedAgeProperty = (JanusGraphVertexProperty) vertex2.property("name");
+        JanusGraphVertexProperty indexedAgeProperty = (JanusGraphVertexProperty) testVertex.property(agePropKeyStr);
         long agePropertyId = indexedAgeProperty.longId();
         PropertyKey agePropertyKey = indexedAgeProperty.propertyKey();
         IndexRecordEntry[] record = new IndexRecordEntry[]{
-            new IndexRecordEntry(namePropertyId, "vertex2", namePropertyKey),
-            new IndexRecordEntry(agePropertyId, 123, agePropertyKey)
+            new IndexRecordEntry(namePropertyId, nameValue, namePropertyKey),
+            new IndexRecordEntry(agePropertyId, ageValue, agePropertyKey)
         };
 
-        tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().iterate();
+        getV(namePropKeyStr, nameValue, agePropKeyStr, ageValue, vertexLabelName).drop().iterate();
         tx.commit();
         newTx();
 
-        long vertexId = ((JanusGraphElement) vertex2).longId();
-        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) vertex2).longId(), ElementLifeCycle.New);
+        long vertexId = ((JanusGraphElement) testVertex).longId();
+        JanusGraphElement element = new CacheVertex((StandardJanusGraphTx) tx, ((JanusGraphElement) testVertex).longId(), ElementLifeCycle.New);
 
         IndexUpdate<StaticBuffer, Entry> update = IndexRecordUtil.getCompositeIndexUpdate(
             index,
@@ -7824,21 +7839,21 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         transaction.commit();
         newTx();
 
-        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
-        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+        assertFalse(tx.traversal().V(testVertex.id()).hasNext());
+        assertTrue(getV(namePropKeyStr, nameValue, agePropKeyStr, ageValue, vertexLabelName).hasNext());
 
         // Check that if we try to remove non-existent vertex we receive an exception
-        assertThrows(Exception.class, () -> tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).drop().next());
+        assertThrows(Exception.class, () -> getV(namePropKeyStr, nameValue, agePropKeyStr, ageValue, vertexLabelName).drop().next());
 
         newTx();
-        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
+        assertFalse(tx.traversal().V(testVertex.id()).hasNext());
         // Check that even when we tried to remove vertex - it wasn't removed.
         // Thus, we got a stale index which won't be fixed by itself.
-        assertTrue(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+        assertTrue(getV(namePropKeyStr, nameValue, agePropKeyStr, ageValue, vertexLabelName).hasNext());
 
         Map<String, Object> indexRecordPropertyValues = new HashMap<>();
-        indexRecordPropertyValues.put(namePropKeyStr, "vertex2");
-        indexRecordPropertyValues.put(agePropKeyStr, 123);
+        indexRecordPropertyValues.put(namePropKeyStr, nameValue);
+        indexRecordPropertyValues.put(agePropKeyStr, ageValue);
 
         // Force-remove index record. I.e. fix stale index.
         StaleIndexRecordUtil.forceRemoveVertexFromGraphIndex(
@@ -7850,8 +7865,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         newTx();
 
-        assertFalse(tx.traversal().V(vertex2.id()).hasNext());
-        assertFalse(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
+        assertFalse(tx.traversal().V(testVertex.id()).hasNext());
+        assertFalse(getV(namePropKeyStr, nameValue, agePropKeyStr, ageValue, vertexLabelName).hasNext());
     }
 
     @Test
@@ -8457,5 +8472,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         configCopy.set(ConfigElement.getPath(DB_CACHE_TIME), 0);
         configCopy.set(ConfigElement.getPath(STORAGE_BATCH), false);
         return (StandardJanusGraph) JanusGraphFactory.open(configCopy);
+    }
+
+    private GraphTraversal<Vertex, Vertex> getV(String propertyName1, Object value1, String propertyName2, Object value2, String vertexLabel){
+        GraphTraversal<Vertex, Vertex> traversal = tx.traversal().V();
+        if(vertexLabel != null){
+            traversal = traversal.hasLabel(vertexLabel);
+        }
+        return traversal.has(propertyName1, value1).has(propertyName2, value2);
     }
 }
