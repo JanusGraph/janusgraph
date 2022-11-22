@@ -77,8 +77,17 @@ public class VertexIdListTest {
     }
 
     @Test
-    public void testMergeUnsortedHeterogeneousIdLists() {
+    public void testMergeSortedWithUnsortedIdLists() {
         VertexIdList list = new VertexIdList(tx, new ArrayList<>(Arrays.asList("x1", "x2", "y1")), true);
+        VertexIdList otherList = new VertexIdList(tx, Arrays.asList(2, 4), false);
+        list.addAll(otherList);
+        assertEquals(Arrays.asList("x1", "x2", "y1", 2, 4), list.getIDs());
+        assertFalse(list.isSorted());
+    }
+
+    @Test
+    public void testMergeUnsortedHeterogeneousIdLists() {
+        VertexIdList list = new VertexIdList(tx, new ArrayList<>(Arrays.asList("x1", "x2", "y1")), false);
         VertexIdList otherList = new VertexIdList(tx, Arrays.asList("x3", 4, 2), false);
         list.addAll(otherList);
         assertEquals(Arrays.asList("x1", "x2", "y1", "x3", 4, 2), list.getIDs());
