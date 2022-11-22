@@ -19,6 +19,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
+import org.janusgraph.graphdb.grpc.types.VertexCompositeGraphIndex;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
 
 import java.util.List;
@@ -46,7 +47,8 @@ public class SchemaManagerClient {
      * @return {@link VertexLabel}
      */
     public VertexLabel getVertexLabelByName(String name) {
-        GetVertexLabelByNameRequest request = GetVertexLabelByNameRequest.newBuilder().setContext(context).setName(name).build();
+        GetVertexLabelByNameRequest request = GetVertexLabelByNameRequest.newBuilder()
+            .setContext(context).setName(name).build();
         GetVertexLabelByNameResponse response = blockingStub.getVertexLabelByName(request);
         return response.getVertexLabel();
     }
@@ -58,6 +60,27 @@ public class SchemaManagerClient {
         GetVertexLabelsRequest request = GetVertexLabelsRequest.newBuilder().setContext(context).build();
         GetVertexLabelsResponse response = blockingStub.getVertexLabels(request);
         return response.getVertexLabelsList();
+    }
+
+    /**
+     * @param name Get a VertexCompositeGraphIndex by name
+     * @return {@link VertexCompositeGraphIndex}
+     */
+    public VertexCompositeGraphIndex getVertexCompositeGraphIndexByName(String name) {
+        GetVertexCompositeGraphIndexByNameRequest request = GetVertexCompositeGraphIndexByNameRequest.newBuilder()
+            .setContext(context).setName(name).build();
+        GetVertexCompositeGraphIndexByNameResponse response = blockingStub.getVertexCompositeGraphIndexByName(request);
+        return response.getIndex();
+    }
+
+    /**
+     * @return Returns a list of {@link VertexCompositeGraphIndex}
+     */
+    public List<VertexCompositeGraphIndex> getVertexCompositeGraphIndices() {
+        GetVertexCompositeGraphIndicesRequest request = GetVertexCompositeGraphIndicesRequest.newBuilder()
+            .setContext(context).build();
+        GetVertexCompositeGraphIndicesResponse response = blockingStub.getVertexCompositeGraphIndices(request);
+        return response.getIndicesList();
     }
 
     /**

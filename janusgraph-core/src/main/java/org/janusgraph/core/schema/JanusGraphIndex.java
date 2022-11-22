@@ -30,6 +30,31 @@ import org.janusgraph.core.PropertyKey;
 public interface JanusGraphIndex extends Index {
 
     /**
+     * Returns a unique identifier for this entity.
+     * <p>
+     * The unique identifier may only be set when the transaction in which entity is created commits.
+     * Some entities are never assigned a unique identifier if they depend on a parent entity.
+     * <p>
+     * JanusGraph allocates blocks of identifiers and automatically assigns identifiers to elements
+     * automatically be default.  This behavior can be partially overridden by setting
+     * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}
+     *
+     * @return The unique identifier for this entity
+     * @throws IllegalStateException if the entity does not (yet) have a unique identifier
+     */
+    default Object id() {
+        return longId();
+    }
+
+    /**
+     * Unique identifier for this entity. This id can be temporarily assigned and might change.
+     * Use {@link #id()} for the permanent id.
+     *
+     * @return Unique long id
+     */
+    long longId();
+
+    /**
      * Returns the name of the index
      * @return
      */
@@ -96,5 +121,6 @@ public interface JanusGraphIndex extends Index {
      */
     boolean isMixedIndex();
 
+    JanusGraphSchemaType getSchemaTypeConstraint();
 
 }

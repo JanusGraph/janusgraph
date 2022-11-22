@@ -116,6 +116,11 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
         }
 
         @Override
+        public long longId() {
+            return BaseKey.this.longId();
+        }
+
+        @Override
         public long getID() {
             return ((Number) id()).longValue();
         }

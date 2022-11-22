@@ -60,6 +60,42 @@ public class SchemaManagerImplTest extends JanusGraphGrpcServerBaseTest {
         assertEquals(Status.INVALID_ARGUMENT.getCode(), exception.getStatus().getCode());
     }
 
+    @Test
+    public void testGetVertexCompositeGraphIndexByNameContextIsNull() {
+        SchemaManagerServiceGrpc.SchemaManagerServiceBlockingStub stub = SchemaManagerServiceGrpc.newBlockingStub(managedChannel);
+
+        StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.getVertexCompositeGraphIndexByName(GetVertexCompositeGraphIndexByNameRequest.newBuilder().build()));
+
+        assertEquals(Status.INVALID_ARGUMENT.getCode(), exception.getStatus().getCode());
+    }
+
+    @Test
+    public void testGetVertexCompositeGraphIndexByNameRequestIsNull() {
+        SchemaManagerServiceGrpc.SchemaManagerServiceBlockingStub stub = SchemaManagerServiceGrpc.newBlockingStub(managedChannel);
+
+        StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.getVertexCompositeGraphIndexByName(null));
+
+        assertEquals(Status.INVALID_ARGUMENT.getCode(), exception.getStatus().getCode());
+    }
+
+    @Test
+    public void testGetVertexCompositeGraphIndicesContextIsNull() {
+        SchemaManagerServiceGrpc.SchemaManagerServiceBlockingStub stub = SchemaManagerServiceGrpc.newBlockingStub(managedChannel);
+
+        StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.getVertexCompositeGraphIndices(GetVertexCompositeGraphIndicesRequest.newBuilder().build()));
+
+        assertEquals(Status.INVALID_ARGUMENT.getCode(), exception.getStatus().getCode());
+    }
+
+    @Test
+    public void testGetVertexCompositeGraphIndicesRequestIsNull() {
+        SchemaManagerServiceGrpc.SchemaManagerServiceBlockingStub stub = SchemaManagerServiceGrpc.newBlockingStub(managedChannel);
+
+        StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> stub.getVertexCompositeGraphIndices(null));
+
+        assertEquals(Status.INVALID_ARGUMENT.getCode(), exception.getStatus().getCode());
+    }
+
 
     @Test
     public void testGetEdgeLabelByNameContextIsNull() {

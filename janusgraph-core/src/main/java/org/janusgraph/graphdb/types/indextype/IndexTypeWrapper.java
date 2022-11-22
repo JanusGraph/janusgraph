@@ -50,6 +50,11 @@ public abstract class IndexTypeWrapper implements IndexType {
     }
 
     @Override
+    public long longId() {
+        return base.longId();
+    }
+
+    @Override
     public ElementCategory getElement() {
         return base.getDefinition().getValue(TypeDefinitionCategory.ELEMENT_CATEGORY,ElementCategory.class);
     }

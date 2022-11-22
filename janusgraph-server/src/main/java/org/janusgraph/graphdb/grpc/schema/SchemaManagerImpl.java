@@ -15,10 +15,12 @@
 package org.janusgraph.graphdb.grpc.schema;
 
 import io.grpc.Status;
+import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
 import org.janusgraph.graphdb.grpc.JanusGraphContextHandler;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
+import org.janusgraph.graphdb.grpc.types.VertexCompositeGraphIndex;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
 
 import java.util.List;
@@ -63,14 +65,16 @@ public class SchemaManagerImpl extends SchemaManagerServiceGrpc.SchemaManagerSer
                 .withDescription("name is required").asException());
             return;
         }
-        VertexLabel vertexLabel = provider.getVertexLabelByName(vertexLabelName);
-        if (vertexLabel == null) {
-            responseObserver.onError(Status.NOT_FOUND
-                .withDescription("No vertexLabel found with name: " + vertexLabelName).asException());
-            return;
+
+        try {
+            VertexLabel vertexLabel = provider.getVertexLabelByName(vertexLabelName);
+            responseObserver.onNext(GetVertexLabelByNameResponse.newBuilder().setVertexLabel(vertexLabel).build());
+            responseObserver.onCompleted();
+        } catch (StatusException exception) {
+            responseObserver.onError(exception);
+        } catch (Exception exception) {
+            responseObserver.onError(Status.INTERNAL.withCause(exception).asException());
         }
-        responseObserver.onNext(GetVertexLabelByNameResponse.newBuilder().setVertexLabel(vertexLabel).build());
-        responseObserver.onCompleted();
     }
 
     @Override
@@ -81,9 +85,13 @@ public class SchemaManagerImpl extends SchemaManagerServiceGrpc.SchemaManagerSer
         SchemaManagerProvider provider = getSchemaManagerProvider(request.getContext(), responseObserver::onError);
         if (provider == null) return;
 
-        List<VertexLabel> vertexLabels = provider.getVertexLabels();
-        responseObserver.onNext(GetVertexLabelsResponse.newBuilder().addAllVertexLabels(vertexLabels).build());
-        responseObserver.onCompleted();
+        try {
+            List<VertexLabel> vertexLabels = provider.getVertexLabels();
+            responseObserver.onNext(GetVertexLabelsResponse.newBuilder().addAllVertexLabels(vertexLabels).build());
+            responseObserver.onCompleted();
+        } catch (Exception exception) {
+            responseObserver.onError(Status.INTERNAL.withCause(exception).asException());
+        }
     }
 
     @Override
@@ -100,14 +108,16 @@ public class SchemaManagerImpl extends SchemaManagerServiceGrpc.SchemaManagerSer
                 .withDescription("name is required").asException());
             return;
         }
-        EdgeLabel edgeLabel = provider.getEdgeLabelByName(edgeLabelName);
-        if (edgeLabel == null) {
-            responseObserver.onError(Status.NOT_FOUND
-                .withDescription("No edgeLabel found with name: " + edgeLabelName).asException());
-            return;
+
+        try {
+            EdgeLabel edgeLabel = provider.getEdgeLabelByName(edgeLabelName);
+            responseObserver.onNext(GetEdgeLabelByNameResponse.newBuilder().setEdgeLabel(edgeLabel).build());
+            responseObserver.onCompleted();
+        } catch (StatusException exception) {
+            responseObserver.onError(exception);
+        } catch (Exception exception) {
+            responseObserver.onError(Status.INTERNAL.withCause(exception).asException());
         }
-        responseObserver.onNext(GetEdgeLabelByNameResponse.newBuilder().setEdgeLabel(edgeLabel).build());
-        responseObserver.onCompleted();
     }
 
     @Override
@@ -118,8 +128,54 @@ public class SchemaManagerImpl extends SchemaManagerServiceGrpc.SchemaManagerSer
         SchemaManagerProvider provider = getSchemaManagerProvider(request.getContext(), responseObserver::onError);
         if (provider == null) return;
 
-        List<EdgeLabel> edgeLabels = provider.getEdgeLabels();
-        responseObserver.onNext(GetEdgeLabelsResponse.newBuilder().addAllEdgeLabels(edgeLabels).build());
-        responseObserver.onCompleted();
+        try {
+            List<EdgeLabel> edgeLabels = provider.getEdgeLabels();
+            responseObserver.onNext(GetEdgeLabelsResponse.newBuilder().addAllEdgeLabels(edgeLabels).build());
+            responseObserver.onCompleted();
+        } catch (Exception exception) {
+            responseObserver.onError(Status.INTERNAL.withCause(exception).asException());
+        }
+    }
+
+    @Override
+    public void getVertexCompositeGraphIndexByName(
+        GetVertexCompositeGraphIndexByNameRequest request,
+        StreamObserver<GetVertexCompositeGraphIndexByNameResponse> responseObserver
+    ) {
+        SchemaManagerProvider provider = getSchemaManagerProvider(request.getContext(), responseObserver::onError);
+        if (provider == null) return;
+
+        final String indexName = request.getName();
+        if (indexName.isEmpty()) {
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                .withDescription("name is required").asException());
+            return;
+        }
+        try {
+            VertexCompositeGraphIndex index = provider.getVertexCompositeGraphIndexByName(indexName);
+            responseObserver.onNext(GetVertexCompositeGraphIndexByNameResponse.newBuilder().setIndex(index).build());
+            responseObserver.onCompleted();
+        } catch (StatusException exception) {
+            responseObserver.onError(exception);
+        } catch (Exception exception) {
+            responseObserver.onError(Status.INTERNAL.withCause(exception).asException());
+        }
+    }
+
+    @Override
+    public void getVertexCompositeGraphIndices(
+        GetVertexCompositeGraphIndicesRequest request,
+        StreamObserver<GetVertexCompositeGraphIndicesResponse> responseObserver
+    ) {
+        SchemaManagerProvider provider = getSchemaManagerProvider(request.getContext(), responseObserver::onError);
+        if (provider == null) return;
+
+        try {
+            List<VertexCompositeGraphIndex> indices = provider.getVertexCompositeGraphIndices();
+            responseObserver.onNext(GetVertexCompositeGraphIndicesResponse.newBuilder().addAllIndices(indices).build());
+            responseObserver.onCompleted();
+        } catch (Exception exception) {
+            responseObserver.onError(Status.INTERNAL.withCause(exception).asException());
+        }
     }
 }

@@ -276,7 +276,7 @@ public class IndexRecordUtil {
 
     public static StaticBuffer getIndexKey(CompositeIndexType index, Object[] values, Serializer serializer, boolean hashKeys, HashingUtil.HashLength hashLength) {
         final DataOutput out = serializer.getDataOutput(8*DEFAULT_OBJECT_BYTELEN + 8);
-        VariableLong.writePositive(out, index.getID());
+        VariableLong.writePositive(out, index.longId());
         final IndexField[] fields = index.getFieldKeys();
         Preconditions.checkArgument(fields.length>0 && fields.length==values.length);
         for (int i = 0; i < fields.length; i++) {

@@ -25,30 +25,34 @@ import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.schema.EdgeLabelMaker;
+import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.core.schema.VertexLabelMaker;
+import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.grpc.schema.SchemaManagerImpl;
 import org.janusgraph.graphdb.grpc.schema.util.GrpcUtils;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.EdgeLabelOrBuilder;
 import org.janusgraph.graphdb.grpc.types.EdgeProperty;
+import org.janusgraph.graphdb.grpc.types.VertexCompositeGraphIndexOrBuilder;
 import org.janusgraph.graphdb.grpc.types.VertexLabelOrBuilder;
 import org.janusgraph.graphdb.grpc.types.VertexProperty;
-import org.janusgraph.graphdb.server.TestingServerClosable;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.javatuples.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 public abstract class JanusGraphGrpcServerBaseTest {
 
     protected JanusGraphContextHandler contextHandler;
     protected GraphManager graphManager;
     protected ManagedChannel managedChannel;
-    private TestingServerClosable closable;
+    protected Server server;
 
     protected static GraphManager getGraphManager() {
         Settings settings = new Settings();
@@ -81,6 +85,28 @@ public abstract class JanusGraphGrpcServerBaseTest {
 
         management.commit();
         return vertexLabel.id();
+    }
+
+    public Object createVertexCompositeGraphIndex(String graph, VertexCompositeGraphIndexOrBuilder builder) {
+        JanusGraph tx = (JanusGraph) graphManager.getGraph(graph);
+        ManagementSystem management = (ManagementSystem) tx.openManagement();
+        JanusGraphManagement.IndexBuilder indexBuilder = management.buildIndex(builder.getName(), Vertex.class);
+        for (VertexProperty vertexProperty : builder.getKeysList()) {
+            PropertyKey propertyKey = management.getPropertyKey(vertexProperty.getName());
+            indexBuilder.addKey(propertyKey);
+        }
+
+        if (builder.hasIndexOnly()) {
+            VertexLabel vertexLabel = management.getVertexLabel(builder.getIndexOnly().getName());
+            indexBuilder.indexOnly(vertexLabel);
+        }
+        if (builder.getUnique()) {
+            indexBuilder.unique();
+        }
+
+        JanusGraphIndex index = indexBuilder.buildCompositeIndex();
+        management.commit();
+        return index.id();
     }
 
     public Object createEdgeLabel(String graph, EdgeLabelOrBuilder builder) {
@@ -122,11 +148,18 @@ public abstract class JanusGraphGrpcServerBaseTest {
         contextHandler = new JanusGraphContextHandler(graphManager);
         Pair<Server, String> server = createServer(contextHandler);
         managedChannel = InProcessChannelBuilder.forName(server.getValue1()).directExecutor().build();
-        closable = new TestingServerClosable(server.getValue0(), managedChannel);
+        this.server = server.getValue0();
     }
 
     @AfterEach
     public void stopServer() throws IOException {
-        closable.close();
+        managedChannel.shutdown();
+        server.shutdown();
+        try {
+            managedChannel.awaitTermination(1, TimeUnit.SECONDS);
+            server.awaitTermination();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        }
     }
 }

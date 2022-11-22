@@ -34,19 +34,19 @@ public class IndexLockTuple extends LockTuple {
 
     @Override
     public int hashCode() {
-        return super.hashCode()*10043 + Long.hashCode(index.getID());
+        return super.hashCode()*10043 + Long.hashCode(index.longId());
     }
 
     @Override
     public boolean equals(Object oth) {
         if (this==oth) return true;
         else if (oth==null || !(oth instanceof IndexLockTuple)) return false;
-        return super.equals(oth) && ((IndexLockTuple)oth).index.getID()==index.getID();
+        return super.equals(oth) && ((IndexLockTuple)oth).index.longId()==index.longId();
     }
 
     @Override
     public String toString() {
-        return super.toString()+":"+index.getID();
+        return super.toString()+":"+index.longId();
     }
 
 

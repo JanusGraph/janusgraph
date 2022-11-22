@@ -14,10 +14,15 @@
 
 package org.janusgraph.graphdb.grpc.schema;
 
+import io.grpc.Status;
+import io.grpc.StatusException;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.grpc.schema.util.GrpcUtils;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
+import org.janusgraph.graphdb.grpc.types.VertexCompositeGraphIndex;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
 
 import java.util.List;
@@ -31,10 +36,10 @@ public class SchemaManagerProvider {
         this.management = graph.openManagement();
     }
 
-    public VertexLabel getVertexLabelByName(String name) {
+    public VertexLabel getVertexLabelByName(String name) throws StatusException {
         org.janusgraph.core.VertexLabel vertexLabel = management.getVertexLabel(name);
         if (vertexLabel == null) {
-            return null;
+            throw Status.NOT_FOUND.withDescription("No vertexLabel found with name: " + name).asException();
         }
 
         return GrpcUtils.createVertexLabelProto(vertexLabel);
@@ -46,10 +51,10 @@ public class SchemaManagerProvider {
             .map(GrpcUtils::createVertexLabelProto).collect(Collectors.toList());
     }
 
-    public EdgeLabel getEdgeLabelByName(String name) {
+    public EdgeLabel getEdgeLabelByName(String name) throws StatusException {
         org.janusgraph.core.EdgeLabel edgeLabel = management.getEdgeLabel(name);
         if (edgeLabel == null) {
-            return null;
+            throw Status.NOT_FOUND.withDescription("No edgeLabel found with name: " + name).asException();
         }
 
         return GrpcUtils.createEdgeLabelProto(edgeLabel);
@@ -59,5 +64,32 @@ public class SchemaManagerProvider {
         return StreamSupport
             .stream(management.getRelationTypes(org.janusgraph.core.EdgeLabel.class).spliterator(), false)
             .map(GrpcUtils::createEdgeLabelProto).collect(Collectors.toList());
+    }
+
+    public VertexCompositeGraphIndex getVertexCompositeGraphIndexByName(String indexName) throws StatusException {
+        JanusGraphIndex graphIndex = management.getGraphIndex(indexName);
+        if (graphIndex == null) {
+            throw Status.NOT_FOUND
+                .withDescription("No composite graph index found with name: " + indexName).asException();
+        }
+        if (!graphIndex.isCompositeIndex()) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("Graph index isn't a composite index with name: " + indexName).asException();
+        }
+        if (!Vertex.class.isAssignableFrom(graphIndex.getIndexedElement())) {
+            throw Status.FAILED_PRECONDITION
+                .withDescription("Composite graph index isn't assignable to a vertex with name: " + indexName)
+                .asException();
+        }
+        return GrpcUtils.createVertexCompositeGraphIndex(graphIndex);
+    }
+
+    public List<VertexCompositeGraphIndex> getVertexCompositeGraphIndices() {
+        Iterable<JanusGraphIndex> indices = management.getGraphIndexes(Vertex.class);
+        return StreamSupport
+            .stream(indices.spliterator(), false)
+            .filter(JanusGraphIndex::isCompositeIndex)
+            .map(GrpcUtils::createVertexCompositeGraphIndex)
+            .collect(Collectors.toList());
     }
 }
