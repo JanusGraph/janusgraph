@@ -25,6 +25,7 @@ import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.EdgeProperty;
 import org.janusgraph.graphdb.grpc.types.JanusGraphContext;
 import org.janusgraph.graphdb.grpc.types.PropertyDataType;
+import org.janusgraph.graphdb.grpc.types.VertexCompositeGraphIndex;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
 import org.janusgraph.graphdb.grpc.types.VertexProperty;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -52,7 +54,7 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
 
     private boolean isIdEqualCreated(Any id, Object createdId) {
         try {
-            return id.unpack(Int64Value.class).getValue() == (long)createdId;
+            return id.unpack(Int64Value.class).getValue() == (long) createdId;
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
@@ -163,7 +165,7 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
 
         for (int i = 0; i < numberOfVertices; i++) {
             Object id = createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
-                .setName("testMultipleVertices"+i));
+                .setName("testMultipleVertices" + i));
             createdIds.add(id);
         }
 
@@ -226,7 +228,7 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = PropertyDataType.class, mode = EXCLUDE, names = { "PROPERTY_DATA_TYPE_UNSPECIFIED", "UNRECOGNIZED" })
+    @EnumSource(value = PropertyDataType.class, mode = EXCLUDE, names = {"PROPERTY_DATA_TYPE_UNSPECIFIED", "UNRECOGNIZED"})
     public void testGetVertexLabelByNameVertexLabelWithVertexProperty(PropertyDataType propertyDataType) {
         final String name = "testVertexPropertyType";
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
@@ -249,7 +251,7 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = VertexProperty.Cardinality.class, mode = EXCLUDE, names = { "CARDINALITY_UNSPECIFIED", "UNRECOGNIZED" })
+    @EnumSource(value = VertexProperty.Cardinality.class, mode = EXCLUDE, names = {"CARDINALITY_UNSPECIFIED", "UNRECOGNIZED"})
     public void testGetVertexLabelByNameVertexLabelWithVertexProperty(VertexProperty.Cardinality cardinality) {
         final String name = "testPropertyCardinality";
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
@@ -283,7 +285,7 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
 
         for (int i = 0; i < numberOfProperties; i++) {
             VertexProperty test = VertexProperty.newBuilder()
-                .setName("test"+i)
+                .setName("test" + i)
                 .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN)
                 .setCardinality(VertexProperty.Cardinality.CARDINALITY_SINGLE)
                 .build();
@@ -402,7 +404,7 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
 
         for (int i = 0; i < numberOfEdges; i++) {
             Object id = createEdgeLabel(defaultGraphName, EdgeLabel.newBuilder()
-                .setName("testMultipleEdges"+i));
+                .setName("testMultipleEdges" + i));
             createdIds.add(id);
         }
 
@@ -462,10 +464,10 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = PropertyDataType.class, mode = EXCLUDE, names = { "PROPERTY_DATA_TYPE_UNSPECIFIED", "UNRECOGNIZED" })
+    @EnumSource(value = PropertyDataType.class, mode = EXCLUDE, names = {"PROPERTY_DATA_TYPE_UNSPECIFIED", "UNRECOGNIZED"})
     public void testGetEdgeLabelByNameEdgeLabelWithEdgeProperty(PropertyDataType propertyDataType) {
         final String name = "testEdgePropertyType";
-        final String propertyName =name + "-prop";
+        final String propertyName = name + "-prop";
         SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
 
         //create property
@@ -496,7 +498,7 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
 
         for (int i = 0; i < numberOfProperties; i++) {
             EdgeProperty test = EdgeProperty.newBuilder()
-                .setName("test"+i)
+                .setName("test" + i)
                 .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN)
                 .build();
             builder.addProperties(test);
@@ -506,5 +508,185 @@ public class SchemaManagerClientTest extends JanusGraphGrpcServerBaseTest {
         EdgeLabel label = schemaManagerClient.getEdgeLabelByName(name);
 
         assertEquals(numberOfProperties, label.getPropertiesCount());
+    }
+
+    @Test
+    public void testGetVertexCompositeGraphIndexByNameNotFound() {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        StatusRuntimeException test = assertThrows(StatusRuntimeException.class, () -> schemaManagerClient.getVertexCompositeGraphIndexByName("test"));
+
+        assertEquals(Status.NOT_FOUND.getCode(), test.getStatus().getCode());
+    }
+
+    @Test
+    public void testGetVertexCompositeGraphIndexByNameInvalidArgumentEmptyName() {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        StatusRuntimeException test = assertThrows(StatusRuntimeException.class, () -> schemaManagerClient.getVertexCompositeGraphIndexByName(""));
+
+        assertEquals(Status.INVALID_ARGUMENT.getCode(), test.getStatus().getCode());
+    }
+
+    @Test
+    public void testGetVertexCompositeGraphIndexByNameInvalidArgumentNullContext() {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(null, managedChannel);
+
+        assertThrows(NullPointerException.class, () -> schemaManagerClient.getVertexCompositeGraphIndexByName("test"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"test", "test2"})
+    public void testGetVertexCompositeGraphIndexByNameCompositeGraphIndexExists(String name) {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        //create property
+        VertexProperty property = VertexProperty.newBuilder()
+            .setName("testProperty")
+            .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_STRING)
+            .build();
+        //create vertex
+        createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
+            .setName("testVertex")
+            .addProperties(property));
+
+        createVertexCompositeGraphIndex(defaultGraphName, VertexCompositeGraphIndex.newBuilder()
+            .setName(name)
+            .addKeys(property));
+
+        VertexCompositeGraphIndex index = schemaManagerClient.getVertexCompositeGraphIndexByName(name);
+
+        assertEquals(name, index.getName());
+        assertEquals(1, index.getKeysCount());
+        assertEquals("testProperty", index.getKeys(0).getName());
+        assertFalse(index.getUnique());
+        assertFalse(index.hasIndexOnly());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGetVertexCompositeGraphIndexByNameCompositeGraphIndexAndUnique(boolean unique) {
+        final String name = "testCompositeGraphIndexAndMultipleProperties";
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        //create property
+        VertexProperty property = VertexProperty.newBuilder()
+            .setName("testProperty")
+            .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_STRING)
+            .build();
+        //create vertex
+        createVertexLabel(defaultGraphName, VertexLabel.newBuilder()
+            .setName("testVertex")
+            .addProperties(property));
+
+        createVertexCompositeGraphIndex(defaultGraphName, VertexCompositeGraphIndex.newBuilder()
+            .setName(name)
+            .setUnique(unique)
+            .addKeys(property));
+
+        VertexCompositeGraphIndex index = schemaManagerClient.getVertexCompositeGraphIndexByName(name);
+
+        assertEquals(name, index.getName());
+        assertEquals(1, index.getKeysCount());
+        assertEquals("testProperty", index.getKeys(0).getName());
+        assertEquals(unique, index.getUnique());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"test", "test2"})
+    public void testGetVertexCompositeGraphIndexByNameCompositeGraphIndexExistsAndIndexOnly(String name) throws InvalidProtocolBufferException {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        //create property
+        VertexProperty property = VertexProperty.newBuilder()
+            .setName("testProperty")
+            .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_STRING)
+            .build();
+        //create vertex
+        VertexLabel vertex = VertexLabel.newBuilder()
+            .setName("testVertex")
+            .addProperties(property)
+            .build();
+        Object vertexLabelId = createVertexLabel(defaultGraphName, vertex);
+
+        createVertexCompositeGraphIndex(defaultGraphName, VertexCompositeGraphIndex.newBuilder()
+            .setName(name)
+            .setIndexOnly(vertex)
+            .addKeys(property));
+
+        VertexCompositeGraphIndex index = schemaManagerClient.getVertexCompositeGraphIndexByName(name);
+
+        assertEquals(name, index.getName());
+        assertEquals(1, index.getKeysCount());
+        assertEquals("testProperty", index.getKeys(0).getName());
+        assertFalse(index.getUnique());
+        assertTrue(index.hasIndexOnly());
+        assertEquals(vertexLabelId, index.getIndexOnly().getId().unpack(Int64Value.class).getValue());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 4, 8, 16})
+    public void testGetVertexCompositeGraphIndexByNameCompositeGraphIndexAndMultipleProperties(int numberOfProperties) {
+        final String name = "testCompositeGraphIndexAndMultipleProperties";
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+
+        VertexLabel.Builder builder = VertexLabel.newBuilder()
+            .setName(name);
+
+        VertexCompositeGraphIndex.Builder indexBuilder = VertexCompositeGraphIndex.newBuilder()
+            .setName(name);
+
+        for (int i = 0; i < numberOfProperties; i++) {
+            VertexProperty test = VertexProperty.newBuilder()
+                .setName("test" + i)
+                .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN)
+                .setCardinality(VertexProperty.Cardinality.CARDINALITY_SINGLE)
+                .build();
+            builder.addProperties(test);
+            indexBuilder.addKeys(test);
+        }
+        createVertexLabel(defaultGraphName, builder);
+        createVertexCompositeGraphIndex(defaultGraphName, indexBuilder);
+        VertexCompositeGraphIndex index = schemaManagerClient.getVertexCompositeGraphIndexByName(name);
+
+        assertEquals(name, index.getName());
+        assertEquals(numberOfProperties, index.getKeysCount());
+    }
+
+    @Test
+    public void testGetVertexCompositeGraphIndicesInvalidArgumentNullContext() {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(null, managedChannel);
+
+        assertThrows(NullPointerException.class, schemaManagerClient::getVertexCompositeGraphIndices);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 4, 8, 16})
+    public void testGetVertexCompositeGraphIndices(int numberOfVertices) {
+        SchemaManagerClient schemaManagerClient = new SchemaManagerClient(getDefaultContext(), managedChannel);
+        List<Object> createdIds = new ArrayList<>();
+        VertexProperty test = VertexProperty.newBuilder()
+            .setName("test")
+            .setDataType(PropertyDataType.PROPERTY_DATA_TYPE_BOOLEAN)
+            .setCardinality(VertexProperty.Cardinality.CARDINALITY_SINGLE)
+            .build();
+        VertexLabel vertexLabel = VertexLabel.newBuilder().setName("testMultipleVertices").addProperties(test).build();
+        createVertexLabel(defaultGraphName, vertexLabel);
+
+        for (int i = 0; i < numberOfVertices; i++) {
+            VertexCompositeGraphIndex.Builder indexBuilder = VertexCompositeGraphIndex.newBuilder()
+                .setName("testGetVertexCompositeGraphIndices" + i)
+                .addKeys(test);
+            Object id = createVertexCompositeGraphIndex(defaultGraphName, indexBuilder);
+                createdIds.add(id);
+        }
+
+        List<VertexCompositeGraphIndex> compositeGraphIndices = schemaManagerClient.getVertexCompositeGraphIndices();
+
+        assertEquals(numberOfVertices, compositeGraphIndices.size());
+        for (Object createdId : createdIds) {
+            long count = compositeGraphIndices.stream().filter(v -> isIdEqualCreated(v.getId(), createdId)).count();
+            assertEquals(1, count);
+        }
     }
 }

@@ -22,6 +22,7 @@ import "janusgraph/types/v1/schema_types.proto";
 option java_multiple_files = true;
 option java_package = "org.janusgraph.graphdb.grpc.schema";
 
+// VERTEX
 
 message GetVertexLabelByNameRequest {
     janusgraph.types.v1.JanusGraphContext context = 1;
@@ -39,6 +40,27 @@ message GetVertexLabelsRequest {
 message GetVertexLabelsResponse {
     repeated janusgraph.types.v1.VertexLabel vertex_labels = 1;
 }
+
+// VERTEX COMPOSITE GRAPH INDEX
+
+message GetVertexCompositeGraphIndexByNameRequest {
+    janusgraph.types.v1.JanusGraphContext context = 1;
+    string name = 2;
+}
+
+message GetVertexCompositeGraphIndexByNameResponse {
+    janusgraph.types.v1.VertexCompositeGraphIndex index = 1;
+}
+
+message GetVertexCompositeGraphIndicesRequest {
+    janusgraph.types.v1.JanusGraphContext context = 1;
+}
+
+message GetVertexCompositeGraphIndicesResponse {
+    repeated janusgraph.types.v1.VertexCompositeGraphIndex indices = 1;
+}
+
+// EDGE
 
 message GetEdgeLabelByNameRequest {
     janusgraph.types.v1.JanusGraphContext context = 1;
@@ -60,6 +82,10 @@ message GetEdgeLabelsResponse {
 service SchemaManagerService {
     rpc GetVertexLabelByName(GetVertexLabelByNameRequest) returns (GetVertexLabelByNameResponse);
     rpc GetVertexLabels(GetVertexLabelsRequest) returns (GetVertexLabelsResponse);
+
+    rpc GetVertexCompositeGraphIndexByName(GetVertexCompositeGraphIndexByNameRequest) returns (GetVertexCompositeGraphIndexByNameResponse);
+    rpc GetVertexCompositeGraphIndices(GetVertexCompositeGraphIndicesRequest) returns (GetVertexCompositeGraphIndicesResponse);
+
     rpc GetEdgeLabelByName(GetEdgeLabelByNameRequest) returns (GetEdgeLabelByNameResponse);
     rpc GetEdgeLabels(GetEdgeLabelsRequest) returns (GetEdgeLabelsResponse);
 }

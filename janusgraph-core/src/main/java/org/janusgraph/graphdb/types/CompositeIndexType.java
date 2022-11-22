@@ -23,6 +23,11 @@ import org.janusgraph.core.schema.SchemaStatus;
 */
 public interface CompositeIndexType extends IndexType {
 
+    /**
+     * @deprecated use longId()
+     * @return return index id
+     */
+    @Deprecated
     long getID();
 
     IndexField[] getFieldKeys();

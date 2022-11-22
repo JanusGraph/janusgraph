@@ -23,6 +23,12 @@ import org.janusgraph.graphdb.internal.ElementCategory;
  */
 public interface IndexType {
 
+    default Object id() {
+        return longId();
+    }
+
+    long longId();
+
     ElementCategory getElement();
 
     IndexField[] getFieldKeys();

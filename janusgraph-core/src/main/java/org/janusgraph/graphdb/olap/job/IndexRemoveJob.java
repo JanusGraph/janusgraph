@@ -105,7 +105,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
                 throw new UnsupportedOperationException("Cannot remove mixed indexes through JanusGraph. This can " +
                         "only be accomplished in the indexing system directly.");
             CompositeIndexType indexType = (CompositeIndexType) managementSystem.getSchemaVertex(index).asIndexType();
-            graphIndexId = indexType.getID();
+            graphIndexId = indexType.longId();
         }
 
         //Must be a relation type index or a composite graph index

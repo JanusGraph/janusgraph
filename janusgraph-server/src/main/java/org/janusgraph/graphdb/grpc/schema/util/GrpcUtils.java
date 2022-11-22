@@ -21,9 +21,12 @@ import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.graphdb.grpc.types.EdgeLabel;
 import org.janusgraph.graphdb.grpc.types.EdgeProperty;
 import org.janusgraph.graphdb.grpc.types.PropertyDataType;
+import org.janusgraph.graphdb.grpc.types.VertexCompositeGraphIndex;
 import org.janusgraph.graphdb.grpc.types.VertexLabel;
 import org.janusgraph.graphdb.grpc.types.VertexProperty;
 
@@ -206,5 +209,24 @@ public class GrpcUtils {
             .setDataType(convertToGrpcPropertyDataType(propertyKey.dataType()))
             .setName(propertyKey.name())
             .build();
+    }
+
+    public static Any getIdProtoForElement(JanusGraphIndex index) {
+        return Any.pack(Int64Value.of(index.longId()));
+    }
+
+    public static VertexCompositeGraphIndex createVertexCompositeGraphIndex(JanusGraphIndex graphIndex) {
+        VertexCompositeGraphIndex.Builder builder = VertexCompositeGraphIndex.newBuilder()
+            .setId(getIdProtoForElement(graphIndex))
+            .setName(graphIndex.name())
+            .setUnique(graphIndex.isUnique());
+        for (PropertyKey fieldKey : graphIndex.getFieldKeys()) {
+            builder.addKeys(GrpcUtils.createVertexPropertyProto(fieldKey));
+        }
+        JanusGraphSchemaType schemaTypeConstraint = graphIndex.getSchemaTypeConstraint();
+        if (schemaTypeConstraint instanceof org.janusgraph.core.VertexLabel) {
+            builder.setIndexOnly(GrpcUtils.createVertexLabelProto((org.janusgraph.core.VertexLabel)schemaTypeConstraint));
+        }
+        return builder.build();
     }
 }

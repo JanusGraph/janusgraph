@@ -85,6 +85,19 @@ message VertexLabel {
     repeated VertexProperty properties = 5;
 }
 
+message VertexCompositeGraphIndex {
+    // The Internal id.
+    google.protobuf.Any id = 1;
+    // The GraphIndex Name.
+    string name = 2;
+    // The vertex property keys.
+    repeated VertexProperty keys = 3;
+    // Only for following vertex label.
+    VertexLabel index_only = 4; //nullable
+    // Whether the index is marked as unique or not.
+    bool unique = 5;
+}
+
 message EdgeProperty {
     // The Internal id.
     google.protobuf.Any id = 1;
