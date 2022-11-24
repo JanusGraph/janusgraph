@@ -80,7 +80,7 @@ public class CQLStoreFeaturesBuilder {
         }
         switch (partitioner) {
             case "DefaultPartitioner": // Amazon managed KeySpace uses com.amazonaws.cassandra.DefaultPartitioner
-                fb.timestamps(false).cellTTL(false);
+                fb.timestamps(false);
             case "RandomPartitioner":
             case "Murmur3Partitioner": {
                 fb.keyOrdered(false).orderedScan(false).unorderedScan(true);
