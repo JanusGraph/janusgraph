@@ -21,7 +21,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
-import org.janusgraph.util.datastructures.AbstractIdListUtil;
+import org.janusgraph.util.IDUtils;
 
 import java.util.Objects;
 
@@ -85,7 +85,7 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
     public static int compare(JanusGraphElement e1, JanusGraphElement e2) {
         Object e1id = (e1 instanceof AbstractElement) ? ((AbstractElement) e1).getCompareId() : e1.id();
         Object e2id = (e2 instanceof AbstractElement) ? ((AbstractElement) e2).getCompareId() : e2.id();
-        return AbstractIdListUtil.compare(e1id, e2id);
+        return IDUtils.compare(e1id, e2id);
     }
 
     @Override

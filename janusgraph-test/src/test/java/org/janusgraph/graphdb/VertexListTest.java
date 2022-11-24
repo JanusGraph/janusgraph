@@ -21,7 +21,7 @@ import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.query.vertex.VertexArrayList;
 import org.janusgraph.graphdb.query.vertex.VertexIdList;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.util.datastructures.AbstractIdListUtil;
+import org.janusgraph.util.IDUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
@@ -64,7 +64,7 @@ public class VertexListTest {
             JanusGraphVertex previous = null;
             for (int i = 0; i < num; i++) {
                 JanusGraphVertex next = iterator.next();
-                if (previous!=null) assertTrue(AbstractIdListUtil.compare(previous.id(), next.id()) < 0);
+                if (previous!=null) assertTrue(IDUtils.compare(previous.id(), next.id()) < 0);
                 previous = next;
             }
             try {

@@ -108,7 +108,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         if (type.equals(ImplicitKey.ADJACENT_ID.name())) {
             Preconditions.checkArgument(rel == Cmp.EQUAL, "Only equality constraints are supported for %s", type);
             Object vertexId = ElementUtils.getVertexId(value);
-            IDUtils.checkVertexId(vertexId);
+            IDUtils.checkId(vertexId);
             return adjacent(getVertex(vertexId));
         } else if (type.equals(ImplicitKey.ID.name())) {
             RelationIdentifier rid = ElementUtils.getEdgeId(value);

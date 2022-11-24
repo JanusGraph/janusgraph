@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static org.janusgraph.util.IDUtils.compare;
+
 /**
  * Utility class for merging and sorting lists of ids
  * An id can either be a String or a number
@@ -27,29 +29,6 @@ import java.util.Objects;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class AbstractIdListUtil {
-
-    private static void validateId(Object id) {
-        if (!(id instanceof Number || id instanceof String)) {
-            throw new IllegalArgumentException("id must be number or string, but get: " + id);
-        }
-    }
-
-    public static int compare(Object id1, Object id2) {
-        validateId(id1);
-        validateId(id2);
-        if (id1 instanceof Number && id2 instanceof String) return -1;
-        if (id1 instanceof String && id2 instanceof Number) return 1;
-        if (id1 instanceof String) {
-            assert id2 instanceof String;
-            return ((String) id1).compareTo((String) id2);
-        } else {
-            assert id1 instanceof Number;
-            assert id2 instanceof Number;
-            return Double.compare(((Number) id1).doubleValue(), ((Number) id2).doubleValue());
-        }
-    }
-
-
     public static boolean isSorted(List<Object> l, final boolean unique) {
         for (int i = 1; i < l.size(); i++) {
             if (compare(l.get(i), l.get(i - 1)) < 0 || (unique && Objects.equals(l.get(i), l.get(i - 1)))) return false;

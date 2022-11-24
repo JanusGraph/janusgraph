@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.query.vertex;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexList;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.util.IDUtils;
 import org.janusgraph.util.datastructures.AbstractIdListUtil;
 
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ import java.util.NoSuchElementException;
  */
 public class VertexIdList implements VertexListInternal {
 
-    public static final Comparator<Object> VERTEX_ID_COMPARATOR = (x, y) -> AbstractIdListUtil.compare(x, y);
+    public static final Comparator<Object> VERTEX_ID_COMPARATOR = (x, y) -> IDUtils.compare(x, y);
     private final StandardJanusGraphTx tx;
     private List<Object> vertices;
     private boolean sorted;
@@ -56,7 +57,7 @@ public class VertexIdList implements VertexListInternal {
     @Override
     public void add(JanusGraphVertex n) {
         if (!vertices.isEmpty()) {
-            sorted = sorted && (AbstractIdListUtil.compare(vertices.get(vertices.size() - 1), n.id()) <= 0);
+            sorted = sorted && (IDUtils.compare(vertices.get(vertices.size() - 1), n.id()) <= 0);
         }
         vertices.add(n.id());
     }

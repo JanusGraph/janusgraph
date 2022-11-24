@@ -15,20 +15,31 @@
 package org.janusgraph.util;
 
 public class IDUtils {
-    public static void checkVertexId(Object vertexId) {
-        if (vertexId == null) {
-            throw new IllegalArgumentException("vertex id cannot be null");
+    public static int compare(Object id1, Object id2) {
+        if (id1 instanceof Number && id2 instanceof String) return -1;
+        if (id1 instanceof String && id2 instanceof Number) return 1;
+        if (id1 instanceof String && id2 instanceof String) {
+            return ((String) id1).compareTo((String) id2);
         }
-        if (vertexId instanceof String) {
-            // string-type vertex id is allowed
+        if (id1 instanceof Number && id2 instanceof Number) {
+            return Long.compare(((Number) id1).longValue(), ((Number) id2).longValue());
+        }
+        throw new IllegalArgumentException("Cannot compare ids: " + id1 + ", " + id2);
+    }
+
+    public static void checkId(Object id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Id cannot be null");
+        }
+        if (id instanceof String) {
             return;
         }
-        if (vertexId instanceof Number) {
-            if (((Number) vertexId).longValue() <= 0) {
-                throw new IllegalArgumentException(String.format("vertex id %d is non-positive", ((Number) vertexId).longValue()));
+        if (id instanceof Number) {
+            if (((Number) id).longValue() <= 0) {
+                throw new IllegalArgumentException(String.format("Id %d is non-positive", ((Number) id).longValue()));
             }
             return;
         }
-        throw new IllegalArgumentException("vertex id must be either String or a positive long value");
+        throw new IllegalArgumentException("Id must be either String or a positive long value");
     }
 }

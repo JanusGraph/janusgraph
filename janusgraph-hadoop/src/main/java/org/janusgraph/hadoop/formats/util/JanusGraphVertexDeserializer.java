@@ -81,7 +81,7 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
 
         // Convert key to a vertex ID
         final Object vertexId = idManager.getKeyID(key);
-        IDUtils.checkVertexId(vertexId);
+        IDUtils.checkId(vertexId);
 
         // Partitioned vertex handling
         if (idManager.isPartitionedVertex(vertexId)) {

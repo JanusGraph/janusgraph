@@ -148,7 +148,7 @@ import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.JanusGraphFeature;
 import org.janusgraph.testutil.TestGraphConfigs;
-import org.janusgraph.util.datastructures.AbstractIdListUtil;
+import org.janusgraph.util.IDUtils;
 import org.janusgraph.util.stats.MetricManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
@@ -4347,7 +4347,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     private boolean isSortedByID(VertexList vl) {
         for (int i = 1; i < vl.size(); i++) {
-            if (AbstractIdListUtil.compare(vl.getID(i - 1), vl.getID(i)) > 0) return false;
+            if (IDUtils.compare(vl.getID(i - 1), vl.getID(i)) > 0) return false;
         }
         return true;
     }

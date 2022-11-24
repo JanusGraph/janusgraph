@@ -28,7 +28,7 @@ import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.RelationConstructor;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.util.datastructures.AbstractIdListUtil;
+import org.janusgraph.util.IDUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -107,7 +107,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
                 return edgeSerializer.readRelation(entry,true,tx).getOtherVertexId();
             }
         })) {
-            if (!list.isEmpty() && AbstractIdListUtil.compare(list.get(list.size() - 1), id) > 0) {
+            if (!list.isEmpty() && IDUtils.compare(list.get(list.size() - 1), id) > 0) {
                 sorted = false;
             }
             list.add(id);

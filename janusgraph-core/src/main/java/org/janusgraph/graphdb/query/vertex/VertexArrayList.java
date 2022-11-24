@@ -19,7 +19,7 @@ import com.google.common.collect.Iterators;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexList;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.util.datastructures.AbstractIdListUtil;
+import org.janusgraph.util.IDUtils;
 import org.janusgraph.util.datastructures.IterablesUtil;
 
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ import java.util.List;
  */
 public class VertexArrayList implements VertexListInternal {
 
-    public static final Comparator<JanusGraphVertex> VERTEX_ID_COMPARATOR = (x, y) -> AbstractIdListUtil.compare(x.id(), y.id());
+    public static final Comparator<JanusGraphVertex> VERTEX_ID_COMPARATOR = (x, y) -> IDUtils.compare(x.id(), y.id());
 
     private final StandardJanusGraphTx tx;
     private List<JanusGraphVertex> vertices;
@@ -58,7 +58,7 @@ public class VertexArrayList implements VertexListInternal {
 
     @Override
     public void add(JanusGraphVertex n) {
-        if (!vertices.isEmpty()) sorted = sorted && (AbstractIdListUtil.compare(vertices.get(vertices.size()-1).id(), n.id()) <= 0);
+        if (!vertices.isEmpty()) sorted = sorted && (IDUtils.compare(vertices.get(vertices.size()-1).id(), n.id()) <= 0);
         vertices.add(n);
     }
 

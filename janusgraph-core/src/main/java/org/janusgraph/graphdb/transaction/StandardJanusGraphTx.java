@@ -527,7 +527,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
         @Override
         public InternalVertex get(Object vertexId) {
-            IDUtils.checkVertexId(vertexId);
+            IDUtils.checkId(vertexId);
             Preconditions.checkArgument(idInspector.isSchemaVertexId(vertexId) || idInspector.isUserVertexId(vertexId), "Not a valid vertex id: %s", vertexId);
 
             byte lifecycle = ElementLifeCycle.Loaded;

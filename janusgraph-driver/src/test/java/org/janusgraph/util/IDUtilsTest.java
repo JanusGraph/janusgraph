@@ -18,16 +18,32 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IDUtilsTest {
     @Test
-    public void testCheckVertexId() {
-        IDUtils.checkVertexId("a-string-id");
-        IDUtils.checkVertexId(1);
-        assertThrows(IllegalArgumentException.class, () -> IDUtils.checkVertexId(null));
-        assertThrows(IllegalArgumentException.class, () -> IDUtils.checkVertexId(-1));
-        assertThrows(IllegalArgumentException.class, () -> IDUtils.checkVertexId(0));
-        assertThrows(IllegalArgumentException.class, () -> IDUtils.checkVertexId(UUID.randomUUID()));
+    public void testCheckId() {
+        IDUtils.checkId("a-string-id");
+        IDUtils.checkId(1);
+        assertThrows(IllegalArgumentException.class, () -> IDUtils.checkId(null));
+        assertThrows(IllegalArgumentException.class, () -> IDUtils.checkId(-1));
+        assertThrows(IllegalArgumentException.class, () -> IDUtils.checkId(0));
+        assertThrows(IllegalArgumentException.class, () -> IDUtils.checkId(UUID.randomUUID()));
+    }
+
+    @Test
+    public void testCompare() {
+        assertTrue(IDUtils.compare(123, "x") < 0);
+        assertTrue(IDUtils.compare("x", 123) > 0);
+        assertTrue(IDUtils.compare("x", "y") < 0);
+        assertTrue(IDUtils.compare(123, 123L) == 0);
+        assertTrue(IDUtils.compare(Long.MAX_VALUE - 1, Long.MAX_VALUE) < 0);
+        assertTrue(IDUtils.compare(Long.MAX_VALUE, Long.MAX_VALUE) == 0);
+        UUID uuid = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        Exception ex = assertThrows(IllegalArgumentException.class, () -> IDUtils.compare(uuid, uuid2));
+        assertEquals("Cannot compare ids: " + uuid + ", " + uuid2, ex.getMessage());
     }
 }

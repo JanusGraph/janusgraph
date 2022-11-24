@@ -557,7 +557,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         Preconditions.checkArgument(vertexIdsAsObjects != null && !vertexIdsAsObjects.isEmpty());
         final List<StaticBuffer> vertexIds = new ArrayList<>(vertexIdsAsObjects.size());
         for (int i = 0; i < vertexIdsAsObjects.size(); i++) {
-            IDUtils.checkVertexId(vertexIdsAsObjects.get(i));
+            IDUtils.checkId(vertexIdsAsObjects.get(i));
             vertexIds.add(idManager.getKey(vertexIdsAsObjects.get(i)));
         }
         final Map<StaticBuffer,EntryList> result = tx.edgeStoreMultiQuery(vertexIds, query);
@@ -702,7 +702,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
         //5) Add relation mutations
         for (Object vertexId : mutations.keySet()) {
-            IDUtils.checkVertexId(vertexId);
+            IDUtils.checkId(vertexId);
             final List<InternalRelation> edges = mutations.get(vertexId);
             final List<Entry> additions = new ArrayList<>(edges.size());
             final List<Entry> deletions = new ArrayList<>(Math.max(10, edges.size() / 10));

@@ -17,28 +17,12 @@ package org.janusgraph.util.datastructures;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AbstractIdListUtilTest {
-
-    @Test
-    public void testCompare() {
-        assertTrue(AbstractIdListUtil.compare(123, "x") < 0);
-        assertTrue(AbstractIdListUtil.compare("x", 123) > 0);
-        assertTrue(AbstractIdListUtil.compare("x", "y") < 0);
-        assertTrue(AbstractIdListUtil.compare(123, 123L) == 0);
-        assertTrue(AbstractIdListUtil.compare(123, 123.2) < 0);
-        assertTrue(AbstractIdListUtil.compare(123L, 122.99) > 0);
-        UUID uuid = UUID.randomUUID();
-        Exception ex = assertThrows(IllegalArgumentException.class, () -> AbstractIdListUtil.compare(uuid, UUID.randomUUID()));
-        assertEquals("id must be number or string, but get: " + uuid, ex.getMessage());
-    }
-
     @Test
     public void testIsSortedNoUnique() {
         assertTrue(AbstractIdListUtil.isSorted(Arrays.asList("a1", "a2", "b1")));
