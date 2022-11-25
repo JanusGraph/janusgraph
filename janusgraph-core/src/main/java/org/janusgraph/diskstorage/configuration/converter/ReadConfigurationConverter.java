@@ -15,8 +15,12 @@
 package org.janusgraph.diskstorage.configuration.converter;
 
 import org.apache.commons.configuration2.BaseConfiguration;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.janusgraph.diskstorage.configuration.ReadConfiguration;
 import org.janusgraph.util.system.ConfigurationUtil;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Converter from {@link ReadConfiguration} into {@link BaseConfiguration}
@@ -34,7 +38,7 @@ public class ReadConfigurationConverter {
         return configurationConverter;
     }
 
-    public BaseConfiguration convert(ReadConfiguration readConfiguration) {
+    public BaseConfiguration convertToBaseConfiguration(ReadConfiguration readConfiguration) {
         BaseConfiguration result = ConfigurationUtil.createBaseConfiguration();
         for (String k : readConfiguration.getKeys("")) {
             result.setProperty(k, readConfiguration.get(k, Object.class));
@@ -42,4 +46,11 @@ public class ReadConfigurationConverter {
         return result;
     }
 
+    public MapConfiguration convertToMapConfiguration(ReadConfiguration readConfiguration) {
+        Map<String, Object> map = new HashMap<>();
+        for (String k : readConfiguration.getKeys("")) {
+            map.put(k, readConfiguration.get(k, Object.class));
+        }
+        return new MapConfiguration(map);
+    }
 }

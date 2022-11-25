@@ -1450,7 +1450,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public org.apache.commons.configuration2.Configuration getConfigurationAtOpen() {
-        return ReadConfigurationConverter.getInstance().convert(configurationAtOpen);
+        return ReadConfigurationConverter.getInstance().convertToBaseConfiguration(configurationAtOpen);
     }
 
     private void preLoadConfiguration() {

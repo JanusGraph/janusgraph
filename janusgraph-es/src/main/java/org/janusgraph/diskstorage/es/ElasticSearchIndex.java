@@ -95,6 +95,7 @@ import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_GEO_COORDS
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_LANG_KEY;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_SCRIPT_KEY;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_TYPE_KEY;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
@@ -365,7 +366,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
 
-        indexName = config.get(INDEX_NAME);
+        indexName = determineIndexName(config);
         parameterizedAdditionScriptId = generateScriptId("add");
         parameterizedDeletionScriptId = generateScriptId("del");
         useAllField = config.get(USE_ALL_FIELD);
@@ -389,6 +390,12 @@ public class ElasticSearchIndex implements IndexProvider {
         setupMaxOpenScrollContextsIfNeeded(config);
 
         setupStoredScripts();
+    }
+
+    public static String determineIndexName(Configuration config) {
+        return !config.has(INDEX_NAME) && config.has(GRAPH_NAME)
+            ? config.get(GRAPH_NAME)
+            : config.get(INDEX_NAME);
     }
 
     private void checkClusterHealth(String healthCheck) throws BackendException {

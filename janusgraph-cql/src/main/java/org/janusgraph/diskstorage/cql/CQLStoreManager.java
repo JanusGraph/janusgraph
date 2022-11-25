@@ -303,8 +303,9 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     }
 
     public static String determineKeyspaceName(Configuration config) {
-        if ((!config.has(KEYSPACE) && (config.has(GRAPH_NAME)))) return config.get(GRAPH_NAME);
-        return config.get(KEYSPACE);
+        return !config.has(KEYSPACE) && config.has(GRAPH_NAME)
+            ? config.get(GRAPH_NAME)
+            : config.get(KEYSPACE);
     }
 
     @Override
