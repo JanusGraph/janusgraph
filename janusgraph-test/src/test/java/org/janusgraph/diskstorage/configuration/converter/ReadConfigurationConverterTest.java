@@ -57,7 +57,7 @@ public class ReadConfigurationConverterTest {
             return configurationProperties.get(key);
         });
 
-        BaseConfiguration baseConfiguration = readConfigurationConverter.convert(readConfiguration);
+        BaseConfiguration baseConfiguration = readConfigurationConverter.convertToBaseConfiguration(readConfiguration);
 
         Iterator<String> keyIterator = baseConfiguration.getKeys();
         int propertiesAmount = 0;

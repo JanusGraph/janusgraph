@@ -367,11 +367,11 @@ the property `graph.graphname`, then these graphs will be stored in the
 JanusGraphManager and thus bound in your gremlin script executions as
 `graph1` and `graph2`, respectively.
 
-### Important
+### Automatic Separation of Graphs in Backends
 
 For convenience, if your configuration used to open a graph specifies
 `graph.graphname`, but does not specify the backend’s storage directory,
-tablename, or keyspacename, then the relevant parameter will
+table name, keyspace name, or index name, then the relevant parameter will
 automatically be set to the value of `graph.graphname`. However, if you
 supply one of those parameters, that value will always take precedence.
 And if you supply neither, they default to the configuration option’s
