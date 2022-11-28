@@ -29,11 +29,12 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 
 public class RelationIdentifierUtils {
-    public static RelationIdentifier get(InternalRelation r) {
-        if (r.hasId()) {
-            return new RelationIdentifier(r.getVertex(0).longId(),
+    public static RelationIdentifier get(InternalRelation r, long relationId) {
+        if (relationId > 0) {
+            RelationIdentifier rId = new RelationIdentifier(r.getVertex(0).id(),
                 r.getType().longId(),
-                r.longId(), (r.isEdge() ? r.getVertex(1).longId() : 0));
+                relationId, (r.isEdge() ? r.getVertex(1).id() : null));
+            return rId;
         } else return null;
     }
 

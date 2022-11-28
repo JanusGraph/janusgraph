@@ -158,14 +158,14 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                         } else {
                             assert pos == 1;
                             InternalVertex otherVertex = janusgraphRelation.getVertex(1);
-                            StaticBuffer otherVertexKey = writeTx.getIdInspector().getKey(otherVertex.longId());
+                            StaticBuffer otherVertexKey = writeTx.getIdInspector().getKey(otherVertex.id());
                             inAdditionsMap.computeIfAbsent(otherVertexKey, k -> new ArrayList<>()).add(entry);
                         }
                     }
                 }
 
                 //Mutating all OUT relationships for the current vertex
-                StaticBuffer vertexKey = writeTx.getIdInspector().getKey(vertex.longId());
+                StaticBuffer vertexKey = writeTx.getIdInspector().getKey(vertex.id());
                 mutator.mutateEdges(vertexKey, outAdditions, KCVSCache.NO_DELETIONS);
 
                 //Mutating all IN relationships for the current vertex

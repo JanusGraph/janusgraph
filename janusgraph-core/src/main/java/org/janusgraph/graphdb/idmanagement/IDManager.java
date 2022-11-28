@@ -349,8 +349,13 @@ public class IDManager {
             return id >>> offset();
         }
 
-        public final boolean is(long id) {
-            return (id & ((1L << offset()) - 1)) == suffix();
+        public final boolean is(Object id) {
+            if (id instanceof Number) {
+                return (((Number) id).longValue() & ((1L << offset()) - 1)) == suffix();
+            } else {
+                // only user-defined vertex can be of other type
+                return suffix() == 0;
+            }
         }
 
         public final boolean isSubType(VertexIDType type) {
@@ -453,7 +458,7 @@ public class IDManager {
         return id;
     }
 
-    private static VertexIDType getUserVertexIDType(long vertexId) {
+    private static VertexIDType getUserVertexIDType(Object vertexId) {
         VertexIDType type=null;
         if (VertexIDType.NormalVertex.is(vertexId)) type=VertexIDType.NormalVertex;
         else if (VertexIDType.PartitionedVertex.is(vertexId)) type=VertexIDType.PartitionedVertex;
@@ -464,9 +469,13 @@ public class IDManager {
         return type;
     }
 
-    public final boolean isUserVertexId(long vertexId) {
-        return (VertexIDType.NormalVertex.is(vertexId) || VertexIDType.PartitionedVertex.is(vertexId) || VertexIDType.UnmodifiableVertex.is(vertexId))
-                && ((vertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
+    public final boolean isUserVertexId(Object vertexId) {
+        if (vertexId instanceof Number) {
+            return (VertexIDType.NormalVertex.is(vertexId) || VertexIDType.PartitionedVertex.is(vertexId) || VertexIDType.UnmodifiableVertex.is(vertexId))
+                && ((((Number) vertexId).longValue() >>> (partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
+        } else {
+            return true;
+        }
     }
 
     public long getPartitionId(long vertexId) {
@@ -477,16 +486,17 @@ public class IDManager {
         return partition;
     }
 
-    public StaticBuffer getKey(long vertexId) {
-        if (VertexIDType.Schema.is(vertexId)) {
+    public StaticBuffer getKey(Object vertexId) {
+        final long longId = ((Number) vertexId).longValue();
+        if (VertexIDType.Schema.is(longId)) {
             //No partition for schema vertices
-            return BufferUtil.getLongBuffer(vertexId);
+            return BufferUtil.getLongBuffer(longId);
         } else {
-            assert isUserVertexId(vertexId);
-            VertexIDType type = getUserVertexIDType(vertexId);
+            assert isUserVertexId(longId);
+            VertexIDType type = getUserVertexIDType(longId);
             assert type.offset()==USERVERTEX_PADDING_BITWIDTH;
-            long partition = getPartitionId(vertexId);
-            long count = vertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+            long partition = getPartitionId(longId);
+            long count = longId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
             assert count>0;
             long keyId = (partition<<partitionOffset) | type.addPadding(count);
             return BufferUtil.getLongBuffer(keyId);
@@ -594,7 +604,7 @@ public class IDManager {
         return id>>USERVERTEX_PADDING_BITWIDTH+partitionBits;
     }
 
-    public boolean isPartitionedVertex(long id) {
+    public boolean isPartitionedVertex(Object id) {
         return isUserVertexId(id) && VertexIDType.PartitionedVertex.is(id);
     }
 
@@ -673,7 +683,7 @@ public class IDManager {
         return typeId;
     }
 
-    public static boolean isSystemRelationTypeId(long id) {
+    public static boolean isSystemRelationTypeId(Object id) {
         return VertexIDType.SystemEdgeLabel.is(id) || VertexIDType.SystemPropertyKey.is(id);
     }
 
@@ -683,31 +693,31 @@ public class IDManager {
 
     //ID inspection ------------------------------
 
-    public final boolean isSchemaVertexId(long id) {
+    public final boolean isSchemaVertexId(Object id) {
         return isRelationTypeId(id) || isVertexLabelVertexId(id) || isGenericSchemaVertexId(id);
     }
 
-    public final boolean isRelationTypeId(long id) {
+    public final boolean isRelationTypeId(Object id) {
         return VertexIDType.RelationType.is(id);
     }
 
-    public final boolean isEdgeLabelId(long id) {
+    public final boolean isEdgeLabelId(Object id) {
         return VertexIDType.EdgeLabel.is(id);
     }
 
-    public final boolean isPropertyKeyId(long id) {
+    public final boolean isPropertyKeyId(Object id) {
         return VertexIDType.PropertyKey.is(id);
     }
 
-    public boolean isGenericSchemaVertexId(long id) {
+    public boolean isGenericSchemaVertexId(Object id) {
         return VertexIDType.GenericSchemaType.is(id);
     }
 
-    public boolean isVertexLabelVertexId(long id) {
+    public boolean isVertexLabelVertexId(Object id) {
         return VertexIDType.VertexLabel.is(id);
     }
 
-    public boolean isUnmodifiableVertex(long id) {
+    public boolean isUnmodifiableVertex(Object id) {
         return isUserVertexId(id) && VertexIDType.UnmodifiableVertex.is(id);
     }
 }

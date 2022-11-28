@@ -93,7 +93,7 @@ public class VertexJobConverter extends AbstractScanJob {
 
     @Override
     public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
-        long vertexId = getVertexId(key);
+        Object vertexId = getVertexId(key);
         assert entries.get(VERTEX_EXISTS_QUERY)!=null;
         if (isGhostVertex(vertexId, entries.get(VERTEX_EXISTS_QUERY))) {
             metrics.incrementCustom(GHOST_VERTEX_COUNT);

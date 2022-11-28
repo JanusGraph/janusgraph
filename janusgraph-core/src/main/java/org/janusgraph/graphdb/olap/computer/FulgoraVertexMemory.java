@@ -21,9 +21,10 @@ import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
-import org.jctools.maps.NonBlockingHashMapLong;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.jctools.maps.NonBlockingHashMap;
+import org.jctools.maps.NonBlockingHashMapLong;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +43,7 @@ public class FulgoraVertexMemory<M> {
 
 
 
-    private final NonBlockingHashMapLong<VertexState<M>> vertexStates;
+    private final NonBlockingHashMap<Object, VertexState<M>> vertexStates;
     private final IDManager idManager;
     private final Set<VertexComputeKey> computeKeys;
     private final Map<String,Integer> elementKeyMap;
@@ -55,7 +56,7 @@ public class FulgoraVertexMemory<M> {
 
     public FulgoraVertexMemory(int numVertices, final IDManager idManager, final VertexProgram<M> vertexProgram) {
         Preconditions.checkArgument(numVertices>=0 && vertexProgram!=null && idManager!=null);
-        vertexStates = new NonBlockingHashMapLong<>(numVertices);
+        vertexStates = new NonBlockingHashMap<>(numVertices);
         partitionVertices = new NonBlockingHashMapLong<>(64);
         this.idManager = idManager;
         this.combiner = vertexProgram.getMessageCombiner().orElse(null);
@@ -64,8 +65,8 @@ public class FulgoraVertexMemory<M> {
         this.previousScopes = Collections.emptyMap();
     }
 
-    private VertexState<M> get(long vertexId, boolean create) {
-        assert vertexId==getCanonicalId(vertexId);
+    private VertexState<M> get(Object vertexId, boolean create) {
+        assert vertexId.equals(getCanonicalId(vertexId));
         VertexState<M> state = vertexStates.get(vertexId);
         if (state==null) {
             if (!create) return VertexState.EMPTY_STATE;
@@ -75,30 +76,30 @@ public class FulgoraVertexMemory<M> {
         return state;
     }
 
-    public long getCanonicalId(long vertexId) {
+    public Object getCanonicalId(Object vertexId) {
         if (!idManager.isPartitionedVertex(vertexId)) return vertexId;
-        else return idManager.getCanonicalVertexId(vertexId);
+        else return idManager.getCanonicalVertexId(((Number) vertexId).longValue());
     }
 
     public Set<MessageScope> getPreviousScopes() {
         return previousScopes.keySet();
     }
 
-    public<V> void setProperty(long vertexId, String key, V value) {
+    public<V> void setProperty(Object vertexId, String key, V value) {
         get(vertexId,true).setProperty(key,value,elementKeyMap);
     }
 
-    public<V> V getProperty(long vertexId, String key) {
+    public<V> V getProperty(Object vertexId, String key) {
         return get(vertexId,false).getProperty(key,elementKeyMap);
     }
 
-    void sendMessage(long vertexId, M message, MessageScope scope) {
+    void sendMessage(Object vertexId, M message, MessageScope scope) {
         VertexState<M> state = get(vertexId,true);
         if (scope instanceof MessageScope.Global) state.addMessage(message,GLOBAL_SCOPE,currentScopes,combiner);
         else state.setMessage(message,scope,currentScopes);
     }
 
-    Stream<M> getMessage(long vertexId, MessageScope scope) {
+    Stream<M> getMessage(Object vertexId, MessageScope scope) {
         return get(vertexId,false).getMessage(normalizeScope(scope),previousScopes);
     }
 
@@ -115,7 +116,7 @@ public class FulgoraVertexMemory<M> {
         inExecute = true;
     }
 
-    public Map<Long,Map<String,Object>> getMutableVertexProperties() {
+    public Map<Object,Map<String,Object>> getMutableVertexProperties() {
         return Maps.transformValues(vertexStates, vs -> {
             Map<String,Object> map = new HashMap<>(elementKeyMap.size());
             for (String key : elementKeyMap.keySet()) {
@@ -144,7 +145,7 @@ public class FulgoraVertexMemory<M> {
 
     private PartitionVertexAggregate<M> getPartitioned(long vertexId) {
         assert idManager.isPartitionedVertex(vertexId);
-        vertexId=getCanonicalId(vertexId);
+        vertexId = ((Number) getCanonicalId(vertexId)).longValue();
         PartitionVertexAggregate<M> state = partitionVertices.get(vertexId);
         if (state==null) {
             partitionVertices.putIfAbsent(vertexId,new PartitionVertexAggregate<>(previousScopes));

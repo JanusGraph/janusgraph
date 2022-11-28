@@ -61,7 +61,7 @@ public interface JanusGraphTransaction extends Transaction {
      * @param vertexLabel vertex label for this vertex - can be null if no vertex label should be set.
      * @return New vertex
      */
-    JanusGraphVertex addVertex(Long id, VertexLabel vertexLabel);
+    JanusGraphVertex addVertex(Object id, VertexLabel vertexLabel);
 
     /**
      * Retrieves the vertex for the specified id.
@@ -71,10 +71,10 @@ public interface JanusGraphTransaction extends Transaction {
      * @param id id of the vertex to retrieve
      * @return vertex with the given id if it exists, else null
      */
-    JanusGraphVertex getVertex(long id);
+    JanusGraphVertex getVertex(Object id);
 
 
-    Iterable<JanusGraphVertex> getVertices(long... ids);
+    Iterable<JanusGraphVertex> getVertices(Object... ids);
 
     Iterable<JanusGraphEdge> getEdges(RelationIdentifier... ids);
 

@@ -37,9 +37,9 @@ public class RelationIdentifierGraphBinarySerializer extends JanusGraphTypeSeria
 
     @Override
     protected void writeNonNullableValue(RelationIdentifier value, Buffer buffer, GraphBinaryWriter context) throws IOException {
-        buffer.writeLong(value.getOutVertexId());
+        buffer.writeLong(((Number) value.getOutVertexId()).longValue());
         buffer.writeLong(value.getTypeId());
         buffer.writeLong(value.getRelationId());
-        buffer.writeLong(value.getInVertexId());
+        buffer.writeLong(((Number) value.getInVertexId()).longValue());
     }
 }

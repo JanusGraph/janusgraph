@@ -23,7 +23,7 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.vertices.AbstractVertex;
 import org.janusgraph.util.datastructures.Retriever;
-import org.jctools.maps.NonBlockingHashMapLong;
+import org.jctools.maps.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,17 +35,17 @@ public class CaffeineVertexCache implements VertexCache {
     private static final Logger log =
         LoggerFactory.getLogger(CaffeineVertexCache.class);
 
-    private final ConcurrentMap<Long, InternalVertex> volatileVertices;
-    private final Cache<Long, InternalVertex> cache;
+    private final ConcurrentMap<Object, InternalVertex> volatileVertices;
+    private final Cache<Object, InternalVertex> cache;
 
     private final long createdTime;
 
     public CaffeineVertexCache(final long maxCacheSize, final int initialDirtySize) {
-        volatileVertices = new NonBlockingHashMapLong<>(initialDirtySize);
+        volatileVertices = new NonBlockingHashMap<>(initialDirtySize);
         log.debug("Created dirty vertex map with initial size {}", initialDirtySize);
 
-        Caffeine<Long, InternalVertex> cacheBuilder = Caffeine.newBuilder().maximumSize(maxCacheSize)
-            .removalListener((RemovalListener<Long, InternalVertex>) (key, v, removalCause) -> {
+        Caffeine<Object, InternalVertex> cacheBuilder = Caffeine.newBuilder().maximumSize(maxCacheSize)
+            .removalListener((RemovalListener<Object, InternalVertex>) (key, v, removalCause) -> {
                 if (removalCause == RemovalCause.EXPLICIT) {
                     assert volatileVertices.isEmpty();
                     return;
@@ -65,27 +65,24 @@ public class CaffeineVertexCache implements VertexCache {
     }
 
     @Override
-    public boolean contains(long id) {
-        Long vertexId = id;
-        return cache.getIfPresent(vertexId) != null || volatileVertices.containsKey(vertexId);
+    public boolean contains(Object id) {
+        return cache.getIfPresent(id) != null || volatileVertices.containsKey(id);
     }
 
     @Override
-    public InternalVertex get(long id, Retriever<Long, InternalVertex> retriever) {
-        final Long vertexId = id;
-
-        InternalVertex vertex = cache.getIfPresent(vertexId);
+    public InternalVertex get(final Object id, final Retriever<Object, InternalVertex> retriever) {
+        InternalVertex vertex = cache.getIfPresent(id);
 
         if (vertex == null) {
-            InternalVertex newVertex = volatileVertices.get(vertexId);
+            InternalVertex newVertex = volatileVertices.get(id);
 
             if (newVertex == null) {
-                newVertex = retriever.get(vertexId);
+                newVertex = retriever.get(id);
             }
             assert newVertex != null;
             final InternalVertex v = newVertex;
             try {
-                vertex = cache.get(vertexId, (k) -> v);
+                vertex = cache.get(id, (k) -> v);
             } catch (Exception e) { throw new AssertionError("Should not happen: "+e.getMessage()); }
             assert vertex!=null;
         }
@@ -94,14 +91,13 @@ public class CaffeineVertexCache implements VertexCache {
     }
 
     @Override
-    public void add(InternalVertex vertex, long id) {
+    public void add(InternalVertex vertex, Object id) {
         Preconditions.checkNotNull(vertex);
-        Preconditions.checkArgument(id != 0);
-        Long vertexId = id;
+        Preconditions.checkArgument(!(id instanceof Number) || (long) id != 0);
 
-        cache.put(vertexId, vertex);
+        cache.put(id, vertex);
         if (vertex.isNew() || vertex.hasAddedRelations())
-            volatileVertices.put(vertexId, vertex);
+            volatileVertices.put(id, vertex);
     }
 
     @Override

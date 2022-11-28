@@ -130,9 +130,9 @@ public class QueryTest {
         Vertex v1 = tx.addVertex("pos", 0, "age", 30);
         Vertex v2 = tx.addVertex("age", 20);
         Edge e = v1.addEdge("connects", v2, "prop", "val");
-        String vId = v1.id().toString();
-        String v2Id = v2.id().toString();
-        String eId = e.id().toString();
+        Object vId = v1.id();
+        Object v2Id = v2.id();
+        Object eId = e.id();
         tx.commit();
 
         tx = graph.newTransaction();

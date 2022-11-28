@@ -47,7 +47,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     private final StandardJanusGraphTx tx;
 
 
-    protected AbstractVertex(StandardJanusGraphTx tx, long id) {
+    protected AbstractVertex(StandardJanusGraphTx tx, Object id) {
         super(id);
         assert tx != null;
         this.tx = tx;
@@ -58,7 +58,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         if (tx.isOpen())
             return this;
 
-        InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(longId());
+        InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(id());
         if (next == null) throw InvalidElementException.removedException(this);
         else return next;
     }
@@ -73,19 +73,14 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public long getCompareId() {
-        if (tx.isPartitionedVertex(this)) return tx.getIdInspector().getCanonicalVertexId(longId());
-        else return longId();
+    public Object getCompareId() {
+        if (tx.isPartitionedVertex(this)) return tx.getIdInspector().getCanonicalVertexId(((Number) id()).longValue());
+        else return id();
     }
 
     @Override
     public String toString() {
         return StringFactory.vertexString(this);
-    }
-
-    @Override
-    public Object id() {
-        return longId();
     }
 
     @Override

@@ -211,7 +211,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                                 && isFailedIndex.apply(index.getBackingIndexName())) {
                                 assert rel.isProperty();
                                 indexRestores.put(index.getBackingIndexName(), new IndexRestore(
-                                    rel.getVertex(0).longId(), ElementCategory.VERTEX, getIndexId(index)));
+                                    rel.getVertex(0).id(), ElementCategory.VERTEX, getIndexId(index)));
                             }
                         }
                         //See if relation itself is affected

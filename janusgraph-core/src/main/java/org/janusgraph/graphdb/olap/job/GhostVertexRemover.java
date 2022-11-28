@@ -89,7 +89,7 @@ public class GhostVertexRemover extends AbstractScanJob {
 
     @Override
     public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
-        long vertexId = getVertexId(key);
+        Object vertexId = getVertexId(key);
         assert entries.size() == 1;
         assert entries.get(everythingQueryLimit) != null;
         final EntryList everything = entries.get(everythingQueryLimit);

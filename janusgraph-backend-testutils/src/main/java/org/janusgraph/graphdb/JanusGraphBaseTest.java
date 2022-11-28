@@ -25,7 +25,6 @@ import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphQuery;
@@ -436,8 +435,8 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         else return obj.toString();
     }
 
-    public static long getId(Element e) {
-        return ((JanusGraphElement)e).longId();
+    public static Object getId(Element e) {
+        return e.id();
     }
 
     public static void verifyElementOrder(Iterable<? extends Element> elements, String key, Order order, int expectedCount) {

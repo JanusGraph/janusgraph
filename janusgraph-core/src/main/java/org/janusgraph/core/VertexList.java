@@ -14,7 +14,7 @@
 
 package org.janusgraph.core;
 
-import com.carrotsearch.hppc.LongArrayList;
+import java.util.List;
 
 /**
  * List of {@link JanusGraphVertex}s.
@@ -72,12 +72,9 @@ public interface VertexList extends Iterable<JanusGraphVertex> {
     /**
      * Returns a list of ids of all vertices in this list of vertices in the same order of the original vertex list.
      * <p>
-     * Uses an efficient primitive variable-sized array.
-     *
      * @return A list of idAuthorities of all vertices in this list of vertices in the same order of the original vertex list.
-     * @see LongArrayList
      */
-    LongArrayList getIDs();
+    List<Object> getIDs();
 
     /**
      * Returns the id of the vertex at the specified position
@@ -85,6 +82,6 @@ public interface VertexList extends Iterable<JanusGraphVertex> {
      * @param pos The position of the vertex in the list
      * @return The id of that vertex
      */
-    long getID(int pos);
+    Object getID(int pos);
 
 }

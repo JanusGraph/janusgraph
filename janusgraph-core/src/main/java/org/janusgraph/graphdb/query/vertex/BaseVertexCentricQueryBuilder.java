@@ -25,6 +25,7 @@ import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.schema.SchemaInspector;
+import org.janusgraph.util.IDUtils;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.internal.RelationCategory;
@@ -84,7 +85,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     protected abstract Q getThis();
 
-    protected abstract JanusGraphVertex getVertex(long vertexId);
+    protected abstract JanusGraphVertex getVertex(Object vertexId);
 
 
     /* ---------------------------------------------------------------
@@ -106,8 +107,8 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         //Treat special cases
         if (type.equals(ImplicitKey.ADJACENT_ID.name())) {
             Preconditions.checkArgument(rel == Cmp.EQUAL, "Only equality constraints are supported for %s", type);
-            long vertexId = ElementUtils.getVertexId(value);
-            Preconditions.checkArgument(vertexId > 0, "Expected valid vertex id: %s", value);
+            Object vertexId = ElementUtils.getVertexId(value);
+            IDUtils.checkId(vertexId);
             return adjacent(getVertex(vertexId));
         } else if (type.equals(ImplicitKey.ID.name())) {
             RelationIdentifier rid = ElementUtils.getEdgeId(value);

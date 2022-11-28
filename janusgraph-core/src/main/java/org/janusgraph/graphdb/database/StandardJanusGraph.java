@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.database;
 
-import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -71,6 +70,7 @@ import org.janusgraph.graphdb.database.cache.KCVSCacheInvalidationService;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
 import org.janusgraph.graphdb.database.idhandling.IDHandler;
+import org.janusgraph.util.IDUtils;
 import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
 import org.janusgraph.graphdb.database.log.LogTxStatus;
@@ -489,7 +489,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                         StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
                 consistentTx.getTxHandle().disableCache();
                 JanusGraphVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(consistentTx, BaseKey.SchemaName, typeName), null);
-                return v!=null?v.longId():null;
+                return v != null? ((Number) v.id()).longValue(): null;
             } finally {
                 TXUtils.rollbackQuietly(consistentTx);
             }
@@ -512,7 +512,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     };
 
-    public RecordIterator<Long> getVertexIDs(final BackendTransaction tx) {
+    public RecordIterator<Object> getVertexIDs(final BackendTransaction tx) {
         Preconditions.checkArgument(backend.getStoreFeatures().hasOrderedScan() ||
                 backend.getStoreFeatures().hasUnorderedScan(),
                 "The configured storage backend does not support global graph operations - use Faunus instead");
@@ -524,7 +524,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             keyIterator = tx.edgeStoreKeys(new KeyRangeQuery(IDHandler.MIN_KEY, IDHandler.MAX_KEY, vertexExistenceQuery));
         }
 
-        return new RecordIterator<Long>() {
+        return new RecordIterator<Object>() {
 
             @Override
             public boolean hasNext() {
@@ -532,7 +532,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             }
 
             @Override
-            public Long next() {
+            public Object next() {
                 return idManager.getKeyID(keyIterator.next());
             }
 
@@ -548,17 +548,17 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         };
     }
 
-    public EntryList edgeQuery(long vid, SliceQuery query, BackendTransaction tx) {
-        Preconditions.checkArgument(vid > 0);
+    public EntryList edgeQuery(Object vid, SliceQuery query, BackendTransaction tx) {
+        Preconditions.checkArgument(!(vid instanceof Number) || ((Number) vid).longValue() > 0);
         return tx.edgeStoreQuery(new KeySliceQuery(idManager.getKey(vid), query));
     }
 
-    public List<EntryList> edgeMultiQuery(LongArrayList vertexIdsAsLongs, SliceQuery query, BackendTransaction tx) {
-        Preconditions.checkArgument(vertexIdsAsLongs != null && !vertexIdsAsLongs.isEmpty());
-        final List<StaticBuffer> vertexIds = new ArrayList<>(vertexIdsAsLongs.size());
-        for (int i = 0; i < vertexIdsAsLongs.size(); i++) {
-            Preconditions.checkArgument(vertexIdsAsLongs.get(i) > 0);
-            vertexIds.add(idManager.getKey(vertexIdsAsLongs.get(i)));
+    public List<EntryList> edgeMultiQuery(List<Object> vertexIdsAsObjects, SliceQuery query, BackendTransaction tx) {
+        Preconditions.checkArgument(vertexIdsAsObjects != null && !vertexIdsAsObjects.isEmpty());
+        final List<StaticBuffer> vertexIds = new ArrayList<>(vertexIdsAsObjects.size());
+        for (int i = 0; i < vertexIdsAsObjects.size(); i++) {
+            IDUtils.checkId(vertexIdsAsObjects.get(i));
+            vertexIds.add(idManager.getKey(vertexIdsAsObjects.get(i)));
         }
         final Map<StaticBuffer,EntryList> result = tx.edgeStoreMultiQuery(vertexIds, query);
         final List<EntryList> resultList = new ArrayList<>(result.size());
@@ -618,7 +618,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     public static int getTTL(InternalVertex v) {
         assert v.hasId();
-        if (IDManager.VertexIDType.UnmodifiableVertex.is(v.longId())) {
+        if (IDManager.VertexIDType.UnmodifiableVertex.is(v.id())) {
             assert v.isNew() : "Should not be able to add relations to existing static vertices: " + v;
             return ((InternalVertexLabel)v.vertexLabel()).getTTL();
         } else return 0;
@@ -642,7 +642,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                                      final boolean acquireLocks) throws BackendException {
 
 
-        ListMultimap<Long, InternalRelation> mutations = ArrayListMultimap.create();
+        ListMultimap<Object, InternalRelation> mutations = ArrayListMultimap.create();
         ListMultimap<InternalVertex, InternalRelation> mutatedProperties = ArrayListMultimap.create();
         List<IndexUpdate> indexUpdates = Lists.newArrayList();
         //1) Collect deleted edges and their index updates and acquire edge locks
@@ -652,11 +652,11 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 InternalVertex vertex = del.getVertex(pos);
                 if (pos == 0 || !del.isLoop()) {
                     if (del.isProperty()) mutatedProperties.put(vertex,del);
-                    mutations.put(vertex.longId(), del);
+                    mutations.put(vertex.id(), del);
                 }
                 if (acquireLock(del,pos,acquireLocks)) {
                     Entry entry = edgeSerializer.writeRelation(del, pos, tx);
-                    mutator.acquireEdgeLock(idManager.getKey(vertex.longId()), entry);
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.id()), entry);
                 }
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(del));
@@ -670,11 +670,11 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 InternalVertex vertex = add.getVertex(pos);
                 if (pos == 0 || !add.isLoop()) {
                     if (add.isProperty()) mutatedProperties.put(vertex,add);
-                    mutations.put(vertex.longId(), add);
+                    mutations.put(vertex.id(), add);
                 }
                 if (!vertex.isNew() && acquireLock(add,pos,acquireLocks)) {
                     Entry entry = edgeSerializer.writeRelation(add, pos, tx);
-                    mutator.acquireEdgeLock(idManager.getKey(vertex.longId()), entry.getColumn());
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.id()), entry.getColumn());
                 }
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(add));
@@ -701,8 +701,8 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         }
 
         //5) Add relation mutations
-        for (Long vertexId : mutations.keySet()) {
-            Preconditions.checkArgument(vertexId > 0, "Vertex has no id: %s", vertexId);
+        for (Object vertexId : mutations.keySet()) {
+            IDUtils.checkId(vertexId);
             final List<InternalRelation> edges = mutations.get(vertexId);
             final List<Entry> additions = new ArrayList<>(edges.size());
             final List<Entry> deletions = new ArrayList<>(Math.max(10, edges.size() / 10));
@@ -715,7 +715,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                     for (int pos = 0; pos < edge.getArity(); pos++) {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
-                        if (edge.getVertex(pos).longId()==vertexId) {
+                        if (edge.getVertex(pos).id().equals(vertexId)) {
                             StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
                             if (edge.isRemoved()) {
                                 deletions.add(entry);
