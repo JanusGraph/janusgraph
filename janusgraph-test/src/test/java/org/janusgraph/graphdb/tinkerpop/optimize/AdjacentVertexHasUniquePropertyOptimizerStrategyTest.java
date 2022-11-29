@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.NoneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
@@ -31,8 +30,6 @@ import static org.janusgraph.testutil.JanusGraphAssert.assertSameResultWithOptim
  */
 public class AdjacentVertexHasUniquePropertyOptimizerStrategyTest extends OptimizerStrategyTest {
 
-    private static TraversalStrategy optimizer = AdjacentVertexHasUniquePropertyOptimizerStrategy.instance();
-
     @Test
     public void testWithAndWithoutStrategy() {
         makeSampleGraph();
@@ -46,11 +43,11 @@ public class AdjacentVertexHasUniquePropertyOptimizerStrategyTest extends Optimi
 
         // AdjacentVertexHasUniquePropertyOptimizer
         assertNumStep(1, 0, g.V(sv[0]).out().has("uniqueId", 0), HasStep.class);
-        assertNumStep(1, 0, g.V(sv[0]).out().barrier(2500).has("uniqueId", 0), NoOpBarrierStep.class);
-        assertNumStep(1, 0, g.V(sv[0]).outE().inV().has("uniqueId", 0), NoOpBarrierStep.class);
+        assertNumStep(1, 1, g.V(sv[0]).out().barrier(2500).has("uniqueId", 0), NoOpBarrierStep.class);
+        assertNumStep(1, 1, g.V(sv[0]).outE().inV().has("uniqueId", 0), NoOpBarrierStep.class);
         assertNumStep(1, 0, g.V(sv[0]).outE().inV().has("uniqueId", 0), HasStep.class);
-        assertNumStep(1, 0, g.V(sv[0]).outE().inV().barrier(2500).has("uniqueId", 0), NoOpBarrierStep.class);
-        assertNumStep(1, 0, g.V(sv[0]).outE().barrier(2500).inV().has("uniqueId", 0), NoOpBarrierStep.class);
+        assertNumStep(1, 1, g.V(sv[0]).outE().inV().barrier(2500).has("uniqueId", 0), NoOpBarrierStep.class);
+        assertNumStep(1, 1, g.V(sv[0]).outE().barrier(2500).inV().has("uniqueId", 0), NoOpBarrierStep.class);
         assertNumStep(1, 1, g.V(sv[0]).barrier(2500).out().barrier(2500).has("uniqueId", 0), NoOpBarrierStep.class);
         assertNumStep(1, 0, g.V(sv[0]).out().barrier(2500).has("uniqueId", 0), HasStep.class);
         assertNumStep(1, 1, g.V(sv[0]).out().has("id", 0), HasStep.class);
@@ -70,11 +67,10 @@ public class AdjacentVertexHasUniquePropertyOptimizerStrategyTest extends Optimi
 
         // AdjacentVertexHasUniquePropertyOptimizer
         assertNumStep(1, 1, g.V(sv[0]).out().has("uniqueId", 0), HasStep.class);
-        assertNumStep(1, 1, g.V(sv[0]).out().barrier(2500).has("uniqueId", 0), NoOpBarrierStep.class);
-        assertNumStep(1, 0, g.V(sv[0]).outE().inV().has("uniqueId", 0), NoOpBarrierStep.class);
+        assertNumStep(1, 1, g.V(sv[0]).outE().inV().has("uniqueId", 0), NoOpBarrierStep.class);
         assertNumStep(1, 1, g.V(sv[0]).outE().inV().has("uniqueId", 0), HasStep.class);
-        assertNumStep(1, 1, g.V(sv[0]).outE().inV().barrier(2500).has("uniqueId", 0), NoOpBarrierStep.class);
-        assertNumStep(1, 1, g.V(sv[0]).outE().barrier(2500).inV().has("uniqueId", 0), NoOpBarrierStep.class);
+        assertNumStep(1, 2, g.V(sv[0]).outE().inV().barrier(2500).has("uniqueId", 0), NoOpBarrierStep.class);
+        assertNumStep(1, 2, g.V(sv[0]).outE().barrier(2500).inV().has("uniqueId", 0), NoOpBarrierStep.class);
         assertNumStep(1, 2, g.V(sv[0]).barrier(2500).out().barrier(2500).has("uniqueId", 0), NoOpBarrierStep.class);
         assertNumStep(1, 1, g.V(sv[0]).out().barrier(2500).has("uniqueId", 0), HasStep.class);
         assertNumStep(1, 1, g.V(sv[0]).out().has("id", 0), HasStep.class);

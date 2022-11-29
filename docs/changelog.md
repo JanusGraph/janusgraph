@@ -139,6 +139,22 @@ Support for Gryo MessageSerializer [has been dropped in TinkerPop 3.6.0](https:/
 and we therefore also no longer support it in JanusGraph.
 GraphBinary is now used as the default MessageSerializer.hb
 
+##### Batch Processing enabled by default
+
+[Batch processing](https://docs.janusgraph.org/operations/batch-processing/) allows JanusGraph to fetch a batch of
+vertices from the storage backend together instead of requesting each vertex individually which leads to a high number
+of backend queries.
+This was however disabled by default in JanusGraph because these batches could become much larger than what was needed
+for the traversal and therefore have a negative performance impact for some traversals.
+That is why an improved batch processing mode was added in JanusGraph 0.6.0 that limits the size of these batches
+retrieved from the storage backend, called
+[_Limited Batch Processing_](https://docs.janusgraph.org/operations/batch-processing/#limited-batch-processing).
+This mode therefore solves the problem of having potentially unlimited batch sizes.
+That is why we now enable this mode by default as most users should benefit from this limited batch processing.
+
+If you want to continue using JanusGraph without batch processing, then you have to manually disable it by setting
+`query.batch` to `false`.
+
 ##### Breaking change for Geoshape GraphBinary serialization
 
 Support for the [GraphBinary](http://tinkerpop.apache.org/docs/3.6.1/dev/io/#graphbinary) serialization format was

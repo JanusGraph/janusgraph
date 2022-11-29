@@ -26,6 +26,9 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 
+import java.util.Collections;
+import java.util.Set;
+
 
 /**
  * If the query can be satisfied by a single mixed index query, and the query is followed by an aggregation step, then
@@ -37,6 +40,9 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 abstract class AbstractJanusGraphMixedIndexAggStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy>
     implements TraversalStrategy.ProviderOptimizationStrategy {
 
+    private static final Set<Class<? extends ProviderOptimizationStrategy>> POSTS =
+        Collections.singleton(JanusGraphLocalQueryOptimizerStrategy.class);
+
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         if (TraversalHelper.onGraphComputer(traversal))
@@ -45,6 +51,11 @@ abstract class AbstractJanusGraphMixedIndexAggStrategy extends AbstractTraversal
         TraversalHelper.getStepsOfClass(JanusGraphStep.class, traversal).forEach(originalGraphStep -> {
             buildMixedIndexAggStep(originalGraphStep, traversal);
         });
+    }
+
+    @Override
+    public Set<Class<? extends ProviderOptimizationStrategy>> applyPost() {
+        return POSTS;
     }
 
     /**

@@ -9,16 +9,22 @@ In general, there are two ways of doing this:
 - Maintain a list of what data is needed.
   Once the list reaches a certain size, execute a batched
   backend query to fetch all of it at once.
-  
+
 The first option tends to be more responsive and consume less
 memory because the query can emit the first results very early
 without waiting for larger batches of queries to complete.
-This is also the option that JanusGraph uses by default.
-The second option can be configured in multiple ways which are
-explained below.
+It however sends many small queries to the storage backend for traversals
+that traverse a high number of vertices which leads to poor performance.
+That is why JanusGraph uses batch processing by default.
+Both of these options are described in greater detail below, including
+information about configuring batch processing.
+
+!!! note
+    The default setting was changed in version 1.0.0.
+    Older versions of JanusGraph used no batch processing (first option)
+    by default.
 
 ## No Batch Processing
-This is the default configuration of JanusGraph.
 In terms of graph traversals, the execution of queries is
 loosely coupled to the principle of Depth-First-Search.
 
@@ -78,6 +84,8 @@ In contrast to _unrestricted batch processing_ where one batch
 corresponds to one step in the query, this approach can
 construct multiple batches per step.
 
+This is the default configuration of JanusGraph since version 1.0.0.
+
 ### Configuring the batch size
 Although batch size does not necessarily need to be configured,
 it can provide an additional tuning parameter to improve the
@@ -122,14 +130,14 @@ traversal can only aggregate traversers once they enter the
 previous iteration.
 
 ### Use this configuration in use cases where for example ...
-- ... your need to dynamically switch between the previously
-  mentioned workloads.
+- ... you have a mixture of traversals that traverse a high number of vertices
+  and traversals that only access few vertices of the graph.
 
 ### Possible limitations
-- Increased memory consumption
+- Increased memory consumption (compared to no batch processing)
 - The performance of queries depends on the configured batch
   size.
-  If you switch to this configuration, make sure that the
+  If you use this configuration, make sure that the
   latency and throughput of your queries meet your
   requirements and if not, tweak the batch size accordingly.
 
