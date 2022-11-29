@@ -21,9 +21,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
+import org.apache.tinkerpop.gremlin.structure.util.star.StarGraph;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.VertexLabel;
@@ -41,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 public class JanusGraphVertexDeserializer implements AutoCloseable {
 
@@ -74,9 +71,9 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
         return false;
     }
 
-    // Read a single row from the edgestore and create a TinkerVertex corresponding to the row
+    // Read a single row from the edgestore and create a Vertex corresponding to the row
     // The neighboring vertices are represented by DetachedVertex instances
-    public TinkerVertex readHadoopVertex(final StaticBuffer key, Iterable<Entry> entries) {
+    public Vertex readHadoopVertex(final StaticBuffer key, Iterable<Entry> entries) {
 
         // Convert key to a vertex ID
         final long vertexId = idManager.getKeyID(key);
@@ -90,10 +87,9 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
             return null;
         }
 
-        // Create TinkerVertex
-        TinkerGraph tg = TinkerGraph.open();
-
-        TinkerVertex tv = null;
+        // Create Vertex
+        StarGraph sg = StarGraph.open();
+        Vertex sv = null;
 
         // Iterate over edgestore columns to find the vertex's label relation
         for (final Entry data : entries) {
@@ -103,8 +99,8 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                 // Found vertex Label
                 long vertexLabelId = relation.getOtherVertexId();
                 VertexLabel vl = typeManager.getExistingVertexLabel(vertexLabelId);
-                // Create TinkerVertex with this label
-                tv = getOrCreateVertex(vertexId, vl.name(), tg);
+                // Create Vertex with this label
+                sv = getOrCreateVertex(vertexId, vl.name(), sg);
             } else if (systemTypes.isTypeSystemType(relation.typeId)) {
                 log.trace("Vertex {} is a system vertex", vertexId);
                 return null;
@@ -112,11 +108,11 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
         }
 
         // Added this following testing
-        if (null == tv) {
-            tv = getOrCreateVertex(vertexId, null, tg);
+        if (null == sv) {
+            sv = getOrCreateVertex(vertexId, null, sg);
         }
 
-        Preconditions.checkNotNull(tv, "Unable to determine vertex label for vertex with ID %s", vertexId);
+        Preconditions.checkNotNull(sv, "Unable to determine vertex label for vertex with ID %s", vertexId);
 
         // Iterate over and decode edgestore columns (relations) on this vertex
         for (final Entry data : entries) {
@@ -134,7 +130,7 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
                     VertexProperty.Cardinality card = getPropertyKeyCardinality(type.name());
-                    VertexProperty<Object> vp = tv.property(card, type.name(), value, T.id, relation.relationId);
+                    VertexProperty<Object> vp = sv.property(card, type.name(), value, T.id, relation.relationId);
 
                     // Decode meta properties
                     decodeProperties(relation, vp);
@@ -153,30 +149,30 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                     }
 
                     // Decode edge
-                    TinkerEdge te;
+                    StarGraph.StarEdge se;
 
                     // We don't know the label of the other vertex, but one must be provided
-                    TinkerVertex adjacentVertex = getOrCreateVertex(relation.getOtherVertexId(), null, tg);
+                    Vertex adjacentVertex = getOrCreateVertex(relation.getOtherVertexId(), null, sg);
 
                     // skip self-loop edges that were already processed, but from a different direction
-                    if (tv.equals(adjacentVertex) && edgeExists(tv, type, relation)) {
+                    if (sv.equals(adjacentVertex) && edgeExists(sv, type, relation)) {
                         continue;
                     }
 
                     if (relation.direction.equals(Direction.IN)) {
-                        te = (TinkerEdge)adjacentVertex.addEdge(type.name(), tv, T.id, relation.relationId);
+                        se = (StarGraph.StarEdge)adjacentVertex.addEdge(type.name(), sv, T.id, relation.relationId);
                     } else if (relation.direction.equals(Direction.OUT)) {
-                        te = (TinkerEdge)tv.addEdge(type.name(), adjacentVertex, T.id, relation.relationId);
+                        se = (StarGraph.StarEdge)sv.addEdge(type.name(), adjacentVertex, T.id, relation.relationId);
                     } else {
                         throw new RuntimeException("Direction.BOTH is not supported");
                     }
-                    decodeProperties(relation, te);
+                    decodeProperties(relation, se);
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-        return tv;
+        return sv;
     }
 
     private void decodeProperties(final RelationCache relation, final Element element) {
@@ -194,20 +190,19 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
         }
     }
 
-    public TinkerVertex getOrCreateVertex(final long vertexId, final String label, final TinkerGraph tg) {
-        TinkerVertex v;
-
-        try {
-            v = (TinkerVertex)tg.vertices(vertexId).next();
-        } catch (NoSuchElementException e) {
+    private Vertex getOrCreateVertex(final long vertexId, final String label, final StarGraph sg) {
+        Vertex sv;
+        Iterator<Vertex> it = sg.vertices(vertexId);
+        if (it.hasNext()) {
+            sv = it.next();
+        } else {
             if (null != label) {
-                v = (TinkerVertex) tg.addVertex(T.label, label, T.id, vertexId);
+                sv = sg.addVertex(T.label, label, T.id, vertexId);
             } else {
-                v = (TinkerVertex) tg.addVertex(T.id, vertexId);
+                sv = sg.addVertex(T.id, vertexId);
             }
         }
-
-        return v;
+        return sv;
     }
 
     private VertexProperty.Cardinality getPropertyKeyCardinality(String name) {
