@@ -24,8 +24,8 @@ import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import org.apache.tinkerpop.gremlin.hadoop.structure.util.ConfUtil;
 import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
 import org.apache.tinkerpop.gremlin.process.computer.util.VertexProgramHelper;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.star.StarGraph;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 
@@ -65,10 +65,10 @@ public class HadoopRecordReader extends RecordReader<NullWritable, VertexWritabl
     public boolean nextKeyValue() throws IOException, InterruptedException {
         while (reader.nextKeyValue()) {
             // TODO janusgraph05 integration -- the duplicate() call may be unnecessary
-            final TinkerVertex maybeNullTinkerVertex =
+            final Vertex maybeNullVertex =
                     deserializer.readHadoopVertex(reader.getCurrentKey(), reader.getCurrentValue());
-            if (null != maybeNullTinkerVertex) {
-                vertex = new VertexWritable(maybeNullTinkerVertex);
+            if (null != maybeNullVertex) {
+                vertex = new VertexWritable(maybeNullVertex);
                 if (graphFilter == null) {
                     return true;
                 } else {
