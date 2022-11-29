@@ -28,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -44,11 +44,12 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
         V2E_E2V_ID // vertex-to-edge step with following edge-to-vertex-step and filter on id
     }
 
+    private static final Set<Class<? extends ProviderOptimizationStrategy>> POSTS =
+        Collections.singleton(JanusGraphLocalQueryOptimizerStrategy.class);
+
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPost() {
-        Set<Class<? extends ProviderOptimizationStrategy>> postStrategies = new HashSet<>();
-        postStrategies.add(JanusGraphLocalQueryOptimizerStrategy.class);
-        return postStrategies;
+        return POSTS;
     }
 
     protected void optimizeStep(T step) {

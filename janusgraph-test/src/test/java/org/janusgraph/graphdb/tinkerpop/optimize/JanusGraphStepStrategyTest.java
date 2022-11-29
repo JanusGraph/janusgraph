@@ -309,36 +309,36 @@ public class JanusGraphStepStrategyTest {
 
         return Arrays.stream(new Arguments[]{
             arguments(g.V().in("knows").out("knows"),
-                g_V().is(MQ_STEP).in("knows").is(MQ_STEP).out("knows"), otherStrategies),
+                g_V().is(MQ_STEP).barrier().in("knows").is(MQ_STEP).barrier().out("knows"), otherStrategies),
             arguments(g.V().in("knows").values("weight"),
-                g_V().is(MQ_STEP).in("knows").is(MQ_STEP).values("weight"), otherStrategies),
+                g_V().is(MQ_STEP).barrier().in("knows").is(MQ_STEP).barrier().values("weight"), otherStrategies),
             // Need two JanusGraphMultiQuerySteps, one for each sub query because caches are flushed when queried
             arguments(g.V().choose(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),
-                g_V().is(MQ_STEP).choose(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)), otherStrategies),
+                g_V().is(MQ_STEP).barrier().choose(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)), otherStrategies),
             arguments(g.V().union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),
-                g_V().is(MQ_STEP).union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)), otherStrategies),
+                g_V().is(MQ_STEP).barrier().union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)), otherStrategies),
             arguments(g.V().outE().optional(__.inE("knows").has("weight", 0)),
-                g_V().is(MQ_STEP).outE().is(MQ_STEP).optional(__.inE("knows").has("weight", 0)), otherStrategies),
+                g_V().is(MQ_STEP).barrier().outE().is(MQ_STEP).barrier().optional(__.inE("knows").has("weight", 0)), otherStrategies),
             arguments(g.V().outE().filter(__.inE("knows").has("weight", 0)),
-                g_V().is(MQ_STEP).outE().is(MQ_STEP).filter(__.inE("knows").has("weight", 0)), otherStrategies),
+                g_V().is(MQ_STEP).barrier().outE().is(MQ_STEP).barrier().filter(__.inE("knows").has("weight", 0)), otherStrategies),
             // An additional JanusGraphMultiQueryStep for repeat goes before the RepeatEndStep allowing it to feed its starts to the next iteration
             arguments(g.V().outE("knows").inV().repeat(__.outE("knows").inV().has("weight", 0)).times(10),
-                g_V().is(MQ_STEP).outE("knows").inV().is(MQ_STEP).repeat(__.is(MQ_STEP).outE("knows").inV().has("weight", 0)).times(10), otherStrategies),
+                g_V().is(MQ_STEP).barrier().outE("knows").inV().is(MQ_STEP).barrier().repeat(__.is(MQ_STEP).barrier().outE("knows").inV().has("weight", 0)).times(10), otherStrategies),
             // Choose does not have a child traversal of JanusGraphVertexStep so won't benefit from JanusGraphMultiQueryStep(ChooseStep)
             arguments(g.V().choose(has("weight", lt(3)), __.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1))),
-                g_V().is(MQ_STEP).choose(has("weight", lt(3)), __.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1))), otherStrategies),
+                g_V().is(MQ_STEP).barrier().choose(has("weight", lt(3)), __.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1))), otherStrategies),
             // Choose now has a child traversal of JanusGraphVertexStep and so will benefit from JanusGraphMultiQueryStep(ChooseStep)
             arguments(g.V().choose(__.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),__.inE("knows").has("weight", gt(2))),
-                g_V().is(MQ_STEP).choose(__.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),__.inE("knows").has("weight", gt(2))), otherStrategies),
+                g_V().is(MQ_STEP).barrier().choose(__.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),__.inE("knows").has("weight", gt(2))), otherStrategies),
             // There are 'as' side effect steps preceding the JanusGraphVertexStep
             arguments(g.V().choose(has("weight", 0),__.as("true").inE("knows"),__.as("false").inE("knows")),
-                g_V().is(MQ_STEP).choose(has("weight", 0),__.as("true").inE("knows"),__.as("false").inE("knows")), otherStrategies),
+                g_V().is(MQ_STEP).barrier().choose(has("weight", 0),__.as("true").inE("knows"),__.as("false").inE("knows")), otherStrategies),
             // There are 'sideEffect' and 'as' steps preceding the JanusGraphVertexStep
             arguments(g.V().choose(has("weight", 0),__.as("true").sideEffect(i -> {}).inE("knows"),__.as("false").sideEffect(i -> {}).inE("knows")),
-                g_V().is(MQ_STEP).choose(has("weight", 0),__.as("true").sideEffect(i -> {}).inE("knows"),__.as("false").sideEffect(i -> {}).inE("knows")), otherStrategies),
+                g_V().is(MQ_STEP).barrier().choose(has("weight", 0),__.as("true").sideEffect(i -> {}).inE("knows"),__.as("false").sideEffect(i -> {}).inE("knows")), otherStrategies),
             // 'local' is not MultiQueryCompatible (at the moment)
             arguments(g.V().and(__.inE("knows"), __.inE("knows")),
-                g_V().and(__.is(MQ_STEP).inE("knows"), __.is(MQ_STEP).inE("knows")), otherStrategies),
+                g_V().and(__.is(MQ_STEP).barrier().inE("knows"), __.is(MQ_STEP).barrier().inE("knows")), otherStrategies),
         });
     }
 }

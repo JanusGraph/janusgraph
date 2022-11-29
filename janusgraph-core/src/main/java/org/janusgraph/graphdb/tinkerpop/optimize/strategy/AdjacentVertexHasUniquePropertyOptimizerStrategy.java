@@ -39,6 +39,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -55,6 +56,9 @@ public class AdjacentVertexHasUniquePropertyOptimizerStrategy
     private static final AdjacentVertexHasUniquePropertyOptimizerStrategy INSTANCE =
         new AdjacentVertexHasUniquePropertyOptimizerStrategy();
 
+    private static final Set<Class<? extends ProviderOptimizationStrategy>> POSTS =
+        new HashSet<>(Arrays.asList(JanusGraphStepStrategy.class, JanusGraphLocalQueryOptimizerStrategy.class));
+
     private AdjacentVertexHasUniquePropertyOptimizerStrategy() {}
 
     public static AdjacentVertexHasUniquePropertyOptimizerStrategy instance() {
@@ -63,10 +67,7 @@ public class AdjacentVertexHasUniquePropertyOptimizerStrategy
 
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPost() {
-        Set<Class<? extends ProviderOptimizationStrategy>> postStrategies = new HashSet<>();
-        postStrategies.add(JanusGraphStepStrategy.class);
-        postStrategies.add(JanusGraphLocalQueryOptimizerStrategy.class);
-        return postStrategies;
+        return POSTS;
     }
 
     @Override

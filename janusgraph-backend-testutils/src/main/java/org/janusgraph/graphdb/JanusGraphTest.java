@@ -6490,7 +6490,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         // satisfied by a single vertex-centric query which is satisfied by one edge query
         newTx();
-        Metrics mSingleLabel = tx.traversal().V(v).outE("friend").has("time", P.lt(10)).profile().next().getMetrics(1);
+        Metrics mSingleLabel = tx.traversal().V(v).outE("friend").has("time", P.lt(10)).profile().next().getMetrics(3);
         assertEquals("JanusGraphVertexStep([time.lt(10)])", mSingleLabel.getName());
         assertTrue(mSingleLabel.getDuration(TimeUnit.MICROSECONDS) > 0);
         Map<String, String> annotations = new HashMap() {{
@@ -6500,6 +6500,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("isFitted", "true");
             put("isOrdered", "true");
             put("query", "2069:byTime:SliceQuery[0xB0E0FF7FFFFFF6,0xB0E1)");
+            put("multi", "true");
         }};
         mSingleLabel.getAnnotations().remove("percentDur");
         assertEquals(annotations, mSingleLabel.getAnnotations());
@@ -6507,12 +6508,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // satisfied by a single vertex-centric query which is satisfied by union of two edge queries
         newTx();
         Metrics mMultiLabels = tx.traversal().V(v).outE("friend", "friend-no-index").has("time", 100)
-            .profile().next().getMetrics(1);
+            .profile().next().getMetrics(3);
         assertEquals("JanusGraphVertexStep([time.eq(100)])", mMultiLabels.getName());
         assertTrue(mMultiLabels.getDuration(TimeUnit.MICROSECONDS) > 0);
         annotations = new HashMap() {{
             put("condition", "(time = 100 AND (type[friend] OR type[friend-no-index]))");
             put("orders", "[]");
+            put("multi", "true");
             put("vertices", 1);
         }};
         mMultiLabels.getAnnotations().remove("percentDur");

@@ -266,14 +266,14 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<>(QUERY_NS,"batch",
             "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
                     "performance improvement if there is a non-trivial latency to the backend.",
-            ConfigOption.Type.MASKABLE, false);
+            ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigOption<Boolean> LIMIT_BATCH_SIZE = new ConfigOption<>(QUERY_NS,"limit-batch-size",
             "Configure a maximum batch size for queries against the storage backend. This can be used to ensure " +
                     "responsiveness if batches tend to grow very large. The used batch size is equivalent to the " +
                     "barrier size of a preceding barrier() step. If a step has no preceding barrier(), the default barrier of TinkerPop " +
                     "will be inserted. This option only takes effect if query.batch is enabled.",
-            ConfigOption.Type.MASKABLE, false);
+            ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigOption<String> INDEX_SELECT_STRATEGY = new ConfigOption<>(QUERY_NS, "index-select-strategy",
             String.format("Name of the index selection strategy or full class name. Following shorthands can be used: <br>" +
