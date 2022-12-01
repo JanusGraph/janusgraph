@@ -70,7 +70,7 @@ jobs:
       - name: Print content of the generated target directory for debugging purposes
         run: echo $(ls janusgraph-dist/target/)
       - name: Deploy JanusGraph JAR artifacts into staging repository
-        run: mvn deploy -Pjanusgraph-release -DskipTests=true
+        run: mvn deploy -Pjanusgraph-release,publish-ossrh -DskipTests=true
       - name: Sign JanusGraph full distribution artifact
         run: gpg --armor --detach-sign --yes janusgraph-dist/target/${JG_FULL_DIST_NAME}.zip
       - name: Install requirements to build documentation
