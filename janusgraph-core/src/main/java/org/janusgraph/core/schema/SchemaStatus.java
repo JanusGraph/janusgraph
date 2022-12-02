@@ -27,7 +27,7 @@ public enum SchemaStatus {
     INSTALLED,
 
     /**
-     * The index is registered with all instances in the cluster but not (yet) enabled
+     * The index is registered with all instances in the cluster but empty and not (yet) enabled.
      */
     REGISTERED,
 
@@ -37,10 +37,14 @@ public enum SchemaStatus {
     ENABLED,
 
     /**
-     * The index is disabled and no longer in use
+     * The index is temporarily disabled and not in use
      */
-    DISABLED;
+    DISABLED,
 
+    /**
+     * The index is cleared and ready for deletion
+     */
+    DISCARDED;
 
     public boolean isStable() {
         return this != SchemaStatus.INSTALLED;

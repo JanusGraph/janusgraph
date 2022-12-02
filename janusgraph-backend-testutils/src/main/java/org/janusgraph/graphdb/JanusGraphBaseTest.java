@@ -37,6 +37,8 @@ import org.janusgraph.core.RelationType;
 import org.janusgraph.core.Transaction;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.SchemaAction;
+import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
@@ -52,6 +54,7 @@ import org.janusgraph.diskstorage.log.LogManager;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.testutil.TestGraphConfigs;
@@ -60,10 +63,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -73,6 +78,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -478,4 +484,59 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         return JanusGraphFactory.open(adjustedWriteConfig);
     }
 
+    protected void discardIndex(String indexName) throws InterruptedException, ExecutionException {
+        mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.DISCARD_INDEX).get();
+        mgmt.commit();
+        assertTrue(ManagementSystem
+            .awaitGraphIndexStatus(graph, indexName)
+            .status(SchemaStatus.DISCARDED)
+            .timeout(10, ChronoUnit.SECONDS)
+            .call()
+            .getSucceeded()
+        );
+        mgmt = graph.openManagement();
+    }
+
+    protected void markIndexDiscarded(String indexName) throws InterruptedException, ExecutionException {
+        mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.MARK_DISCARDED).get();
+        mgmt.commit();
+        assertTrue(ManagementSystem
+            .awaitGraphIndexStatus(graph, indexName)
+            .status(SchemaStatus.DISCARDED)
+            .call()
+            .getSucceeded()
+        );
+        mgmt = graph.openManagement();
+    }
+
+    protected void enableIndex(String indexName) throws InterruptedException, ExecutionException {
+        mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.ENABLE_INDEX).get();
+        mgmt.commit();
+        assertTrue(ManagementSystem
+            .awaitGraphIndexStatus(graph, indexName)
+            .status(SchemaStatus.ENABLED)
+            .call()
+            .getSucceeded()
+        );
+        mgmt = graph.openManagement();
+    }
+
+    protected void dropIndex(String indexName) throws InterruptedException, ExecutionException {
+        mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.DROP_INDEX).get();
+        mgmt.commit();
+        mgmt = graph.openManagement();
+        assertNull(mgmt.getGraphIndex(indexName));
+    }
+
+    protected void disableIndex(String indexName) throws InterruptedException, ExecutionException {
+        mgmt.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.DISABLE_INDEX).get();
+        mgmt.commit();
+        assertTrue(ManagementSystem
+            .awaitGraphIndexStatus(graph, indexName)
+            .status(SchemaStatus.DISABLED)
+            .call()
+            .getSucceeded()
+        );
+        mgmt = graph.openManagement();
+    }
 }

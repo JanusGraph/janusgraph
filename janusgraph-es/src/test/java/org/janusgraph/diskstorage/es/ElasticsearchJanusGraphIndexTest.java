@@ -14,11 +14,26 @@
 
 package org.janusgraph.diskstorage.es;
 
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
+
+import java.time.Duration;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTest {
 
@@ -40,6 +55,44 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
     }
 
     public abstract ModifiableConfiguration getStorageConfiguration();
+
+    @Test
+    public void indexShouldExistAfterCreation() throws Exception {
+        PropertyKey key = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.buildIndex("verticesByName", Vertex.class).addKey(key).buildMixedIndex("search");
+        mgmt.commit();
+
+        String expectedIndexName = INDEX_NAME.getDefaultValue() + "_" + "verticesByName".toLowerCase();
+        assertTrue(esr.indexExists(expectedIndexName));
+    }
+
+    @Test
+    public void indexShouldNotExistAfterDeletion() throws Exception {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250),
+            option(FORCE_INDEX_USAGE), true
+        );
+
+        String indexName = "mixed";
+        String propertyName = "prop";
+
+        makeKey(propertyName, String.class);
+        finishSchema();
+
+        //Never create new indexes while a transaction is active
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        mgmt = graph.openManagement();
+
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+        disableIndex(indexName);
+        discardIndex(indexName);
+        dropIndex(indexName);
+
+        String expectedIndexName = INDEX_NAME.getName() + "_" + indexName.toLowerCase();
+        assertFalse(esr.indexExists(expectedIndexName));
+    }
 
     @Override
     public boolean supportsLuceneStyleQueries() {

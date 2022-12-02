@@ -636,7 +636,6 @@ public class ManagementSystem implements JanusGraphManagement {
         return new GraphIndexStatusWatcher(g, graphIndexName);
     }
 
-
     /**
      * Returns a {@link RelationIndexStatusWatcher} configured to watch the index specified by
      * {@code relationIndexName} and {@code relationIndexType} through graph {@code g}.
@@ -873,8 +872,6 @@ public class ManagementSystem implements JanusGraphManagement {
                     if (applicableStatus.contains(field.getStatus()))
                         keySubset.add((PropertyKeyVertex) field.getFieldKey());
                 }
-                if (keySubset.isEmpty())
-                    return null;
 
                 dependentTypes.addAll(keySubset);
             }
@@ -910,22 +907,39 @@ public class ManagementSystem implements JanusGraphManagement {
                 future = new EmptyScanJobFuture();
                 break;
             case DISABLE_INDEX:
-                setStatus(schemaVertex, SchemaStatus.INSTALLED, keySubset);
+                setStatus(schemaVertex, SchemaStatus.DISABLED, keySubset);
                 updatedTypes.add(schemaVertex);
                 if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
-                setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.DISABLED, keySubset));
                 future = new EmptyScanJobFuture();
                 break;
-            case REMOVE_INDEX:
-                if (index instanceof RelationTypeIndex) {
+            case MARK_DISCARDED:
+                setStatus(schemaVertex, SchemaStatus.DISCARDED, keySubset);
+                updatedTypes.add(schemaVertex);
+                if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
+                future = new EmptyScanJobFuture();
+                break;
+            case DISCARD_INDEX:
+                if (index instanceof JanusGraphIndex && ((JanusGraphIndex) index).isMixedIndex()) {
+                    try {
+                        JanusGraphIndexWrapper indexWrapper = (JanusGraphIndexWrapper) index;
+                        MixedIndexType mixedIndex = (MixedIndexType) indexWrapper.getBaseIndex();
+                        IndexSerializer.clearStore(mixedIndex, transaction.getTxHandle());
+                        setStatus(schemaVertex, SchemaStatus.DISCARDED, keySubset);
+                        updatedTypes.add(schemaVertex);
+                        if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
+                    } catch (BackendException ex) {
+                        throw new UnsupportedOperationException("Index removal is not supported for this Backend. Index must be removed in the indexing system directly.", ex);
+                    }
+                    future = new EmptyScanJobFuture();
+                    break;
+                } else if (index instanceof JanusGraphIndex && ((JanusGraphIndex) index).isCompositeIndex()) {
+                    builder = graph.getBackend().buildGraphIndexScanJob();
+                } else if (index instanceof RelationTypeIndex) {
                     builder = graph.getBackend().buildEdgeScanJob();
                 } else {
-                    JanusGraphIndex graphIndex = (JanusGraphIndex) index;
-                    if (graphIndex.isMixedIndex())
-                        throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
-                    builder = graph.getBackend().buildGraphIndexScanJob();
+                    throw new IllegalArgumentException("Unsupported Index Type");
                 }
-                builder.setFinishJob(indexId.getIndexJobFinisher());
+                builder.setFinishJob(indexId.getIndexJobFinisher(graph, SchemaAction.MARK_DISCARDED));
                 builder.setJobId(indexId);
                 builder.setNumProcessingThreads(numOfThreads);
                 builder.setJob(new IndexRemoveJob(graph, indexId.indexName, indexId.relationTypeName));
@@ -934,6 +948,12 @@ public class ManagementSystem implements JanusGraphManagement {
                 } catch (BackendException e) {
                     throw new JanusGraphException(e);
                 }
+                break;
+            case DROP_INDEX:
+                updatedTypes.add(schemaVertex);
+                updatedTypes.addAll(dependentTypes);
+                schemaVertex.remove();
+                future = new EmptyScanJobFuture();
                 break;
             default:
                 throw new UnsupportedOperationException("Update action not supported: " + updateAction);

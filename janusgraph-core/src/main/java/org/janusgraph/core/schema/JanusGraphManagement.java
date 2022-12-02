@@ -312,7 +312,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
 
     /**
      * Updates the provided index according to the given {@link SchemaAction}.
-     * If action is REINDEX or REMOVE_INDEX, then number of threads running the
+     * If action is REINDEX or DISCARD_INDEX, then number of threads running the
      * action will be the number of available processors running on current JVM.
      *
      * @param index
@@ -323,7 +323,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
 
     /**
      * Updates the provided index according to the given {@link SchemaAction}, using
-     * given number of threads if applicable (REINDEX and REMOVE_INDEX).
+     * given number of threads if applicable (REINDEX and DISCARD_INDEX).
      *
      * @param index
      * @param updateAction
@@ -334,7 +334,7 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
 
     /**
      * If an index update job was triggered through {@link #updateIndex(Index, SchemaAction)} with schema actions
-     * {@link org.janusgraph.core.schema.SchemaAction#REINDEX} or {@link org.janusgraph.core.schema.SchemaAction#REMOVE_INDEX}
+     * {@link org.janusgraph.core.schema.SchemaAction#REINDEX} or {@link org.janusgraph.core.schema.SchemaAction#DISCARD_INDEX}
      * then this method can be used to track the status of this asynchronous process.
      *
      * @param index

@@ -32,6 +32,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -1589,6 +1590,132 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testDiscardAndDropRegisteredIndex() throws ExecutionException, InterruptedException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250),
+            option(FORCE_INDEX_USAGE), true
+        );
+
+        String indexName = "composite";
+        String propertyName = "prop";
+
+        makeKey(propertyName, String.class);
+        finishSchema();
+
+        //Never create new indexes while a transaction is active
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        mgmt = graph.openManagement();
+
+        registerIndex(indexName, Vertex.class, propertyName);
+        discardIndex(indexName);
+        dropIndex(indexName);
+
+        // try to register index again to ensure that it was properly deleted
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+    }
+
+    @Test
+    public void testReenableDisabledIndex() throws ExecutionException, InterruptedException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250),
+            option(FORCE_INDEX_USAGE), true
+        );
+
+        String indexName = "composite";
+        String propertyName = "prop";
+        String propertyValue = "value";
+
+        makeKey(propertyName, String.class);
+        finishSchema();
+
+        //Never create new indexes while a transaction is active
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        mgmt = graph.openManagement();
+
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+
+        graph.addVertex(propertyName, propertyValue);
+        graph.tx().commit();
+
+        disableIndex(indexName);
+
+        graph.addVertex(propertyName, propertyValue);
+        graph.tx().commit();
+
+        enableIndex(indexName);
+
+        // verify that vertices are not picked up by the index when they are inserted while the index was disabled
+        assertEquals(1, graph.traversal().V().has(propertyName, propertyValue).count().next());
+
+        graph.addVertex(propertyName, propertyValue);
+        graph.tx().commit();
+
+        // verify that the index picks up vertices after re-enabling
+        assertEquals(2, graph.traversal().V().has(propertyName, propertyValue).count().next());
+    }
+
+    @Test
+    public void testCreateCompositeIndexThatPreviouslyExisted() throws ExecutionException, InterruptedException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250),
+            option(FORCE_INDEX_USAGE), true
+        );
+
+        String indexName = "composite";
+        String propertyName = "prop";
+        String propertyValue = "value";
+
+        makeKey(propertyName, String.class);
+        finishSchema();
+
+        //Never create new indexes while a transaction is active
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        mgmt = graph.openManagement();
+
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+
+        graph.addVertex(propertyName, propertyValue);
+        graph.tx().commit();
+
+        disableIndex(indexName);
+        discardIndex(indexName);
+        dropIndex(indexName);
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+
+        // verify that old vertex is not found anymore
+        assertFalse(graph.traversal().V().has(propertyName, propertyValue).hasNext());
+
+        // verify that index gets updated for new vertices
+        graph.addVertex(propertyName, propertyValue);
+        graph.tx().commit();
+        assertTrue(graph.traversal().V().has(propertyName, propertyValue).hasNext());
+    }
+
+    private void registerIndex(String indexName, Class<? extends Element> type, String... propertyNames) throws InterruptedException {
+        JanusGraphManagement.IndexBuilder builder = mgmt.buildIndex(indexName, type);
+        for (String prop : propertyNames) {
+            builder.addKey(mgmt.getPropertyKey(prop));
+        }
+        builder.buildCompositeIndex();
+        mgmt.commit();
+        assertTrue(ManagementSystem
+            .awaitGraphIndexStatus(graph, indexName)
+            .status(SchemaStatus.REGISTERED)
+            .timeout(10, ChronoUnit.SECONDS)
+            .call()
+            .getSucceeded()
+        );
+        mgmt = graph.openManagement();
+    }
+
+    @Test
     public void testUpdateSchemaChangeNameForPropertyKey() {
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         mgmt.buildIndex("timeIndex", Vertex.class).addKey(time).buildCompositeIndex();
@@ -1684,25 +1811,30 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(name, graphIndex.getFieldKeys()[0].name());
         assertEquals("internalindex", graphIndex.getBackingIndex());
         assertEquals(SchemaStatus.ENABLED, graphIndex.getIndexStatus(graphIndex.getFieldKeys()[0]));
-        finishSchema();
+        mgmt.commit();
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback); //Never create new indexes while a transaction is active
+        mgmt = graph.openManagement();
 
         // Disable name index
         graphIndex = mgmt.getGraphIndex(name);
         mgmt.updateIndex(graphIndex, SchemaAction.DISABLE_INDEX);
         mgmt.commit();
-        tx.commit();
-
-        ManagementUtil.awaitGraphIndexUpdate(graph, name, 5, ChronoUnit.SECONDS);
-        finishSchema();
+        mgmt = graph.openManagement();
 
         // Remove name index
-        graphIndex = mgmt.getGraphIndex(name);
-        mgmt.updateIndex(graphIndex, SchemaAction.REMOVE_INDEX);
-        ScanJobFuture graphMetrics = mgmt.getIndexJobStatus(graphIndex);
-        finishSchema();
+        ScanJobFuture future = mgmt.updateIndex(mgmt.getGraphIndex(name), SchemaAction.DISCARD_INDEX);
+        mgmt.commit();
 
+        assertTrue(ManagementSystem
+            .awaitGraphIndexStatus(graph, name)
+            .status(SchemaStatus.DISCARDED)
+            .timeout(10, ChronoUnit.SECONDS)
+            .call()
+            .getSucceeded()
+        );
+        ScanMetrics scanMetrics = future.get();
         // Should have deleted at least one record
-        assertNotEquals(0, graphMetrics.get().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
+        assertNotEquals(0, scanMetrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
     }
 
     @Test
@@ -1992,8 +2124,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         finishSchema();
         pindex2 = mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime");
         graphIndex2 = mgmt.getGraphIndex("bySensorReading");
-        ScanMetrics pmetrics = mgmt.updateIndex(pindex2, SchemaAction.REMOVE_INDEX).get();
-        ScanMetrics graphIndexMetrics = mgmt.updateIndex(graphIndex2, SchemaAction.REMOVE_INDEX).get();
+        ScanMetrics pmetrics = mgmt.updateIndex(pindex2, SchemaAction.DISCARD_INDEX).get();
+        ScanMetrics graphIndexMetrics = mgmt.updateIndex(graphIndex2, SchemaAction.DISCARD_INDEX).get();
         finishSchema();
         assertEquals(30, pmetrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
         assertEquals(30, graphIndexMetrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));

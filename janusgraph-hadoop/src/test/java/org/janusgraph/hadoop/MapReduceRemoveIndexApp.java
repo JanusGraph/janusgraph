@@ -40,7 +40,7 @@ public class MapReduceRemoveIndexApp extends Configured implements Tool {
         Configuration hadoopConf = getConf();
         MapReduceIndexManagement mr = new MapReduceIndexManagement(graph);
         JanusGraphManagement mgmt = graph.openManagement();
-        metrics = mr.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.REMOVE_INDEX, hadoopConf).get();
+        metrics = mr.updateIndex(mgmt.getGraphIndex(indexName), SchemaAction.DISCARD_INDEX, hadoopConf).get();
         return 0;
     }
 

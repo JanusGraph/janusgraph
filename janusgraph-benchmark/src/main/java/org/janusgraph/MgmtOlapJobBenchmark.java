@@ -21,6 +21,7 @@ import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.SchemaAction;
+import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -49,7 +50,7 @@ import java.util.concurrent.TimeUnit;
  * This benchmark evaluates performance of OLAP jobs that
  * can be run via the ManagementSystem interface, including:
  * 1) REINDEX
- * 2) REMOVE_INDEX
+ * 2) DISCARD_INDEX
  *
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */
@@ -77,7 +78,7 @@ public class MgmtOlapJobBenchmark {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
         mgmt.buildIndex("nameIndex", Vertex.class).addKey(name).buildCompositeIndex();
         mgmt.commit();
-        ManagementSystem.awaitGraphIndexStatus(graph, "nameIndex").call();
+        ManagementSystem.awaitGraphIndexStatus(graph, "nameIndex").status(SchemaStatus.ENABLED).call();
 
         for (int j = 0; j < size; j++) {
             graph.addVertex("name", "value" + j, "alias", "value" + j);
@@ -87,12 +88,12 @@ public class MgmtOlapJobBenchmark {
         mgmt = graph.openManagement();
         mgmt.buildIndex("aliasIndex", Vertex.class).addKey(mgmt.getPropertyKey("alias")).buildCompositeIndex();
         mgmt.commit();
-        ManagementSystem.awaitGraphIndexStatus(graph, "aliasIndex").call();
+        ManagementSystem.awaitGraphIndexStatus(graph, "aliasIndex").status(SchemaStatus.ENABLED).call();
 
         mgmt = graph.openManagement();
         mgmt.updateIndex(mgmt.getGraphIndex("nameIndex"), SchemaAction.DISABLE_INDEX).get();
         mgmt.commit();
-        ManagementSystem.awaitGraphIndexStatus(graph, "nameIndex").call();
+        ManagementSystem.awaitGraphIndexStatus(graph, "nameIndex").status(SchemaStatus.DISABLED).call();
     }
 
     @Benchmark
@@ -100,13 +101,15 @@ public class MgmtOlapJobBenchmark {
         JanusGraphManagement mgmt = graph.openManagement();
         blackhole.consume(mgmt.updateIndex(mgmt.getGraphIndex("aliasIndex"), SchemaAction.REINDEX).get());
         mgmt.commit();
+        ManagementSystem.awaitGraphIndexStatus(graph, "aliasIndex").status(SchemaStatus.ENABLED).call();
     }
 
     @Benchmark
-    public void runRemoveIndex(Blackhole blackhole) throws ExecutionException, InterruptedException {
+    public void runClearIndex(Blackhole blackhole) throws ExecutionException, InterruptedException {
         JanusGraphManagement mgmt = graph.openManagement();
-        blackhole.consume(mgmt.updateIndex(mgmt.getGraphIndex("nameIndex"), SchemaAction.REMOVE_INDEX).get());
+        blackhole.consume(mgmt.updateIndex(mgmt.getGraphIndex("nameIndex"), SchemaAction.DISCARD_INDEX).get());
         mgmt.commit();
+        ManagementSystem.awaitGraphIndexStatus(graph, "nameIndex").status(SchemaStatus.DISCARDED).call();
     }
 
 

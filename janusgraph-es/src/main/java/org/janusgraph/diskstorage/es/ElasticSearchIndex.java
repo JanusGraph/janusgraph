@@ -1428,6 +1428,15 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
+    public void clearStore(String storeName) throws BackendException {
+        try {
+            client.clearStore(indexName, storeName);
+        } catch (final Exception e) {
+            throw new PermanentBackendException("Could not clear store " + indexName + "_" + storeName, e);
+        }
+    }
+
+    @Override
     public boolean exists() throws BackendException {
         try {
             return client.indexExists(indexName);

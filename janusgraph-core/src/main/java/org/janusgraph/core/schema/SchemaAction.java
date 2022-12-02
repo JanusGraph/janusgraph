@@ -20,6 +20,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.janusgraph.core.schema.SchemaStatus.DISCARDED;
+import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
+import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
+import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
+import static org.janusgraph.core.schema.SchemaStatus.DISABLED;
+
 /**
  * Update actions to be executed through {@link JanusGraphManagement} in {@link JanusGraphManagement#updateIndex(Index, SchemaAction)}.
  *
@@ -31,48 +37,52 @@ public enum SchemaAction {
      * Registers the index with all instances in the graph cluster. After an index is installed, it must be registered
      * with all graph instances.
      */
-    REGISTER_INDEX(Collections.singleton(SchemaStatus.INSTALLED), Collections.singleton(SchemaStatus.DISABLED)),
+    REGISTER_INDEX(Collections.singleton(INSTALLED)),
 
     /**
      * Re-builds the index from the graph
      */
-    REINDEX(Arrays.asList(SchemaStatus.REGISTERED, SchemaStatus.ENABLED), Arrays.asList(SchemaStatus.INSTALLED, SchemaStatus.DISABLED)),
+    REINDEX(Arrays.asList(REGISTERED, ENABLED, DISABLED)),
 
     /**
      * Enables the index so that it can be used by the query processing engine. An index must be registered before it
      * can be enabled.
      */
-    ENABLE_INDEX(Collections.singleton(SchemaStatus.REGISTERED), Arrays.asList(SchemaStatus.INSTALLED, SchemaStatus.DISABLED)),
+    ENABLE_INDEX(Arrays.asList(REGISTERED, DISABLED, ENABLED)),
 
     /**
      * Disables the index in the graph so that it is no longer used.
      */
-    DISABLE_INDEX(Arrays.asList(SchemaStatus.REGISTERED, SchemaStatus.INSTALLED, SchemaStatus.ENABLED), Collections.emptySet()),
+    DISABLE_INDEX(Arrays.asList(ENABLED, DISABLED, REGISTERED)),
 
     /**
-     * Removes the index from the graph (optional operation)
+     * Deletes indexed data and leaves the index in an empty state.
      */
-    REMOVE_INDEX(Collections.singleton(SchemaStatus.DISABLED), Arrays.asList(SchemaStatus.REGISTERED,SchemaStatus.INSTALLED,SchemaStatus.ENABLED));
+    DISCARD_INDEX(Arrays.asList(DISABLED, REGISTERED, DISCARDED)),
+
+    /**
+     * Removes the internal index vertex, which completely deletes the index
+     */
+    DROP_INDEX(Collections.singleton(DISCARDED)),
+
+    /**
+     * Registers the index as empty which qualifies it for deletion.
+     */
+    MARK_DISCARDED(Arrays.asList(DISABLED, REGISTERED));
 
     private final Set<SchemaStatus> applicableStatuses;
-    private final Set<SchemaStatus> failureStatuses;
 
-    SchemaAction(Collection<SchemaStatus> applicableStatuses, Collection<SchemaStatus> failureStatuses){
+    SchemaAction(Collection<SchemaStatus> applicableStatuses) {
         this.applicableStatuses = Collections.unmodifiableSet(new HashSet<>(applicableStatuses));
-        this.failureStatuses = Collections.unmodifiableSet(new HashSet<>(failureStatuses));
     }
 
     public Set<SchemaStatus> getApplicableStatus() {
         return applicableStatuses;
     }
 
-    public Set<SchemaStatus> getFailureStatus() {
-        return failureStatuses;
-    }
-
     public boolean isApplicableStatus(SchemaStatus status) {
-        if (failureStatuses.contains(status))
+        if (!applicableStatuses.contains(status))
             throw new IllegalArgumentException(String.format("Update action [%s] cannot be invoked for index with status [%s]",this,status));
-        return applicableStatuses.contains(status);
+        return true;
     }
 }
