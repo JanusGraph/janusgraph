@@ -94,6 +94,8 @@ markdown_extensions:
   - markdown.extensions.codehilite:
       linenums: True
   - codehilite
+  - attr_list
+  - def_list
 
 nav:
   - Introduction: index.md

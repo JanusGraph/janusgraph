@@ -99,6 +99,11 @@ For more information on features and bug fixes in 1.0.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### New index management
+
+The index management has received an overhaul which enables proper index removal.
+The schema action `REMOVE_INDEX` is no longer available and has been replaced by `DISCARD_INDEX`.
+
 ##### Add support for Java 11
 
 JanusGraph now officially supports Java 11 in addition to Java 8. We encourage everyone to update to Java 11.

@@ -111,7 +111,8 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
         //Must be a relation type index or a composite graph index
         JanusGraphSchemaVertex schemaVertex = managementSystem.getSchemaVertex(index);
         SchemaStatus actualStatus = schemaVertex.getStatus();
-        Preconditions.checkArgument(actualStatus==SchemaStatus.DISABLED,"The index [%s] must be disabled before it can be removed",indexName);
+        Preconditions.checkArgument(actualStatus == SchemaStatus.REGISTERED || actualStatus == SchemaStatus.DISABLED,
+            "The index [%s] must be disabled before it can be removed", indexName);
     }
 
     @Override

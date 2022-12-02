@@ -143,6 +143,12 @@ public interface IndexProvider extends IndexInformation {
     void clearStorage() throws BackendException;
 
     /**
+     * Clears a single field by removing all its entries.
+     * @throws org.janusgraph.diskstorage.BackendException
+     */
+    void clearStore(String storeName) throws BackendException;
+
+    /**
      * Checks whether the index exists.
      * @return Flag indicating whether index exists
      * @throws org.janusgraph.diskstorage.BackendException

@@ -92,6 +92,13 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         return m;
     }
 
+    public void clearStorage() throws BackendException {
+        index.clearStorage();
+    }
+
+    public void clearStore(String storeName) throws BackendException {
+        index.clearStore(storeName);
+    }
 
     public void register(String store, String key, KeyInformation information) throws BackendException {
         index.register(store,key,information,indexTx);

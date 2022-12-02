@@ -2235,7 +2235,12 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         addVertex(defTime, defText, defHeight, defPhones);
         tx.commit();
         //Should not yet be able to enable since not yet registered
-        assertNull(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX));
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+        assertFalse(ManagementSystem.awaitGraphIndexStatus(graph, "theIndex")
+            .status(SchemaStatus.ENABLED)
+            .timeout(10L, ChronoUnit.SECONDS)
+            .call()
+            .getSucceeded());
         //This call is redundant and just here to make sure it doesn't mess anything up
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX).get();
         mgmt.commit();
@@ -3748,5 +3753,189 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             traversal = traversal.hasLabel(vertexLabel);
         }
         return traversal.has(propertyName, value);
+    }
+
+    @Test
+    public void testDisableAndDiscardManuallyAndDropEnabledIndex() throws Exception {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250),
+            option(FORCE_INDEX_USAGE), true
+        );
+
+        String indexName = "mixed";
+        String propertyName = "prop";
+
+        makeKey(propertyName, String.class);
+        finishSchema();
+
+        //Never create new indexes while a transaction is active
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        mgmt = graph.openManagement();
+
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+        disableIndex(indexName);
+        markIndexDiscarded(indexName);
+        dropIndex(indexName);
+
+        // try to register index again to ensure that it was properly deleted
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+    }
+
+    @Test
+    public void testDiscardManuallyAndDropRegisteredIndex() throws Exception {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250),
+            option(FORCE_INDEX_USAGE), true
+        );
+
+        String indexName = "mixed";
+        String propertyName = "prop";
+
+        makeKey(propertyName, String.class);
+        finishSchema();
+
+        //Never create new indexes while a transaction is active
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        mgmt = graph.openManagement();
+
+        registerIndex(indexName, Vertex.class, propertyName);
+        markIndexDiscarded(indexName);
+        dropIndex(indexName);
+
+        // try to register index again to ensure that it was properly deleted
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+    }
+
+    @Test
+    public void testDiscardAndDropRegisteredIndex() throws ExecutionException, InterruptedException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250),
+            option(FORCE_INDEX_USAGE), true
+        );
+
+        String indexName = "mixed";
+        String propertyName = "prop";
+
+        makeKey(propertyName, String.class);
+        finishSchema();
+
+        //Never create new indexes while a transaction is active
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        mgmt = graph.openManagement();
+
+        registerIndex(indexName, Vertex.class, propertyName);
+        discardIndex(indexName);
+        dropIndex(indexName);
+
+        // try to register index again to ensure that it was properly deleted
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+    }
+
+    @Test
+    public void testReenableDisabledIndex() throws ExecutionException, InterruptedException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250),
+            option(FORCE_INDEX_USAGE), true
+        );
+
+        String indexName = "mixed";
+        String propertyName = "prop";
+        String propertyValue = "value";
+
+        makeKey(propertyName, String.class);
+        finishSchema();
+
+        //Never create new indexes while a transaction is active
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        mgmt = graph.openManagement();
+
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+
+        graph.addVertex(propertyName, propertyValue);
+        graph.tx().commit();
+
+        disableIndex(indexName);
+
+        graph.addVertex(propertyName, propertyValue);
+        graph.tx().commit();
+
+        enableIndex(indexName);
+
+        // verify that vertices are not picked up by the index when they are inserted while the index was disabled
+        assertEquals(1, graph.traversal().V().has(propertyName, Text.textContains(propertyValue)).count().next());
+
+        graph.addVertex(propertyName, propertyValue);
+        graph.tx().commit();
+
+        // verify that the index picks up vertices after re-enabling
+        assertEquals(2, graph.traversal().V().has(propertyName, Text.textContains(propertyValue)).count().next());
+    }
+
+    @Test
+    public void testCreateMixedIndexThatPreviouslyExisted() throws ExecutionException, InterruptedException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250),
+            option(FORCE_INDEX_USAGE), true
+        );
+
+        String indexName = "mixed";
+        String propertyName = "prop";
+        String propertyValue = "value";
+
+        makeKey(propertyName, String.class);
+        finishSchema();
+
+        //Never create new indexes while a transaction is active
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        mgmt = graph.openManagement();
+
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+
+        // verify that no vertex is found initially
+        assertFalse(graph.traversal().V().has(propertyName, Text.textContains(propertyValue)).hasNext());
+
+        graph.addVertex(propertyName, propertyValue);
+        graph.tx().commit();
+
+        disableIndex(indexName);
+        discardIndex(indexName);
+        dropIndex(indexName);
+        registerIndex(indexName, Vertex.class, propertyName);
+        enableIndex(indexName);
+
+        // verify that old vertex is not found anymore
+        assertFalse(graph.traversal().V().has(propertyName, Text.textContains(propertyValue)).hasNext());
+
+        // verify that index gets updated for new vertices
+        graph.addVertex(propertyName, propertyValue);
+        graph.tx().commit();
+        assertTrue(graph.traversal().V().has(propertyName, Text.textContains(propertyValue)).hasNext());
+    }
+
+    protected void registerIndex(String indexName, Class<? extends Element> type, String... propertyNames) throws InterruptedException {
+        JanusGraphManagement.IndexBuilder builder = mgmt.buildIndex(indexName, type);
+        for (String prop : propertyNames) {
+            builder.addKey(mgmt.getPropertyKey(prop));
+        }
+        builder.buildMixedIndex(INDEX);
+        mgmt.commit();
+        assertTrue(ManagementSystem
+            .awaitGraphIndexStatus(graph, indexName)
+            .status(SchemaStatus.REGISTERED)
+            .call()
+            .getSucceeded()
+        );
+        mgmt = graph.openManagement();
     }
 }

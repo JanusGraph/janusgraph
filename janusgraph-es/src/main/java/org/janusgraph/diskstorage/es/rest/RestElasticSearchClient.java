@@ -357,6 +357,14 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     }
 
     @Override
+    public void clearStore(String indexName, String storeName) throws IOException {
+        String name = indexName + "_" + storeName;
+        if (indexExists(name)) {
+            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName + "_" + storeName, null);
+        }
+    }
+
+    @Override
     public void bulkRequest(List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         for (final ElasticSearchMutation request : requests) {

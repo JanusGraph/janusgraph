@@ -113,6 +113,11 @@ public class MetricInstrumentedIndexProvider implements IndexProvider {
     }
 
     @Override
+    public void clearStore(String storeName) throws BackendException {
+        indexProvider.clearStore(storeName);
+    }
+
+    @Override
     public boolean exists() throws BackendException {
         return indexProvider.exists();
     }

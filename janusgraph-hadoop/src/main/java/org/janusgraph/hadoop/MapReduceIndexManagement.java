@@ -57,7 +57,7 @@ public class MapReduceIndexManagement {
     private final StandardJanusGraph graph;
 
     private static final EnumSet<SchemaAction> SUPPORTED_ACTIONS =
-            EnumSet.of(SchemaAction.REINDEX, SchemaAction.REMOVE_INDEX);
+            EnumSet.of(SchemaAction.REINDEX, SchemaAction.DISCARD_INDEX);
 
     private static final String SUPPORTED_ACTIONS_STRING =
             Joiner.on(", ").join(SUPPORTED_ACTIONS);
@@ -72,10 +72,10 @@ public class MapReduceIndexManagement {
 
     /**
      * Updates the provided index according to the given {@link SchemaAction}.
-     * Only {@link SchemaAction#REINDEX} and {@link SchemaAction#REMOVE_INDEX} are supported.
+     * Only {@link SchemaAction#REINDEX} and {@link SchemaAction#DISCARD_INDEX} are supported.
      *
      * @param index the index to process
-     * @param updateAction either {@code REINDEX} or {@code REMOVE_INDEX}
+     * @param updateAction either {@code REINDEX} or {@code DISCARD_INDEX}
      * @param hadoopConf
      * @return a future that returns immediately;
      *         this method blocks until the Hadoop MapReduce job completes
@@ -98,7 +98,7 @@ public class MapReduceIndexManagement {
         ModifiableHadoopConfiguration janusGraphMapReduceConfiguration =
                 ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, hadoopConf);
 
-        // The job we'll execute to either REINDEX or REMOVE_INDEX
+        // The job we'll execute to either REINDEX or DISCARD_INDEX
         final Class<? extends IndexUpdateJob> indexJobClass;
         final Class<? extends Mapper> mapperClass;
 
@@ -107,7 +107,7 @@ public class MapReduceIndexManagement {
             indexJobClass = IndexRepairJob.class;
             mapperClass = HadoopVertexScanMapper.class;
         } else {
-            assert updateAction.equals(SchemaAction.REMOVE_INDEX);
+            assert updateAction.equals(SchemaAction.DISCARD_INDEX);
             indexJobClass = IndexRemoveJob.class;
             mapperClass = HadoopScanMapper.class;
         }
@@ -122,7 +122,7 @@ public class MapReduceIndexManagement {
                 throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
 
             Preconditions.checkState(JanusGraphIndex.class.isAssignableFrom(index.getClass()));
-            if (updateAction.equals(SchemaAction.REMOVE_INDEX))
+            if (updateAction.equals(SchemaAction.DISCARD_INDEX))
                 readCF = Backend.INDEXSTORE_NAME;
             else
                 readCF = Backend.EDGESTORE_NAME;

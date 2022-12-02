@@ -145,6 +145,10 @@ public class IndexSerializer {
             new StandardKeyInformation(key,parameters));
     }
 
+    public static void clearStore(final MixedIndexType index, final BackendTransaction tx) throws BackendException {
+        tx.getIndexTransaction(index.getBackingIndexName()).clearStore(index.getStoreName());
+    }
+
     public static void register(final MixedIndexType index, final PropertyKey key, final BackendTransaction tx) throws BackendException {
         tx.getIndexTransaction(index.getBackingIndexName()).register(index.getStoreName(), key2Field(index,key), getKeyInformation(index.getField(key)));
     }

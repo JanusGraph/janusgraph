@@ -75,7 +75,7 @@ public abstract class AbstractIndexManagementIT extends JanusGraphBaseTest {
         MapReduceIndexManagement mri = new MapReduceIndexManagement(graph);
         JanusGraphManagement m = graph.openManagement();
         JanusGraphIndex index = m.getGraphIndex("name");
-        ScanMetrics metrics = mri.updateIndex(index, SchemaAction.REMOVE_INDEX).get();
+        ScanMetrics metrics = mri.updateIndex(index, SchemaAction.DISCARD_INDEX).get();
 
         assertEquals(12, metrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
     }
@@ -118,7 +118,7 @@ public abstract class AbstractIndexManagementIT extends JanusGraphBaseTest {
         m = graph.openManagement();
         battled = m.getRelationType("battled");
         battlesByTime = m.getRelationIndex(battled, "battlesByTime");
-        ScanMetrics metrics = mri.updateIndex(battlesByTime, SchemaAction.REMOVE_INDEX).get();
+        ScanMetrics metrics = mri.updateIndex(battlesByTime, SchemaAction.DISCARD_INDEX).get();
 
         assertEquals(6, metrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
     }

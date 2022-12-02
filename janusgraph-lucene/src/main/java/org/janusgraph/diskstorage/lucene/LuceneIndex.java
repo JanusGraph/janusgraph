@@ -1119,6 +1119,11 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
+    public void clearStore(String storeName) throws BackendException {
+        throw new PermanentBackendException("Lucene index does not yet support deleting single stores.");
+    }
+
+    @Override
     public boolean exists() throws BackendException {
         if (Files.exists(Paths.get(basePath))) {
             try (final DirectoryStream<Path> dirStream = Files.newDirectoryStream(Paths.get(basePath))) {

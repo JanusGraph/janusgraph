@@ -7,24 +7,22 @@
 
 ## Overview
 
-Index removal is a two-stage process. In the first stage, one JanusGraph
-signals to all others via the storage backend that the index is slated
-for deletion. This changes the index’s state to `DISABLED`. At that
-point, JanusGraph stops using the index to answer queries and stops
-incrementally updating the index. Index-related data in the storage
-backend remains present but ignored.
+Index removal is a multi-stage process.
+In the first stage, one JanusGraph instance deactivates the index by setting its state to `DISABLED`.
+At that point, JanusGraph stops using the index to answer queries and stops incrementally updating the index.
+Index-related data in the storage backend remains present but ignored.
 
-The second stage depends on whether the index is mixed or composite. A
-composite index can be deleted via JanusGraph. As with reindexing,
-removal can be done through either MapReduce or JanusGraphManagement.
-However, a mixed index must be manually dropped in the index backend;
-JanusGraph does not provide an automated mechanism to delete an index
-from its index backend.
+The second stage depends on whether the index is mixed or composite.
+All composite indices can be deleted via JanusGraph.
+As with reindexing, removal can be done through either MapReduce or JanusGraphManagement.
+However, not all mixed index backends allow automatic removal.
+Index backends for which JanusGraph does not provide an automated deletion mechanism — currently Lucene and
+Solr — must be manually dropped in the index backend.
+For supported mixed index backends, the removal process is analogue to the composite index removal,
+with the exception that neither MapReduce nor multi threading in JanusGraphManagement is necessary.
 
-Index removal deletes everything associated with the index except its
-schema definition and its `DISABLED` state. This schema stub for the
-index remains even after deletion, though its storage footprint is
-negligible and fixed.
+Discarding an index deletes everything associated with the index except its schema definition and its `DISCARDED` state.
+Removing this schema stub for the index is the third step.
 
 ## Preparing for Index Removal
 
@@ -63,14 +61,14 @@ Index removal requires:
     building a new index)
 -   The index type (a string — the name of the edge label or property
     key on which the vertex-centric index is built). This applies only
-    to vertex-centric indexes - leave blank for global graph indexes.
+    to vertex-centric indices - leave blank for global graph indices.
+ 
+## Executing an index removal job on MapReduce
 
-As noted in the overview, a mixed index must be manually dropped from
-the indexing backend. Neither the MapReduce framework nor the
-JanusGraphManagement framework will delete a mixed backend from the
-indexing backend.
+!!! info
+    This method applies to the following types of indices: 
 
-## Executing an Index Removal Job on MapReduce
+    - All composite indices
 
 As with reindexing, the recommended way to generate and run an index
 removal job on MapReduce is through the `MapReduceIndexManagement`
@@ -80,7 +78,7 @@ using this class:
 - Open a `JanusGraph` instance
 - If the index has not yet been disabled, disable it through `JanusGraphManagement`
 - Pass the graph instance into `MapReduceIndexManagement`'s constructor
-- Call `updateIndex(<index>, SchemaAction.REMOVE_INDEX)`
+- Call `updateIndex(<index>, SchemaAction.DISCARD_INDEX)`
 
 A commented code example follows in the next subsection.
 
@@ -98,41 +96,47 @@ g.V().has('name', 'jupiter')
 
 // Disable the "name" composite index
 m = graph.openManagement()
-nameIndex = m.getGraphIndex('name')
-m.updateIndex(nameIndex, SchemaAction.DISABLE_INDEX).get()
+m.updateIndex(m.getGraphIndex('name'), SchemaAction.DISABLE_INDEX).get()
 m.commit()
 graph.tx().commit()
 
-// Block until the SchemaStatus transitions from INSTALLED to REGISTERED
+// Block until the SchemaStatus transitions from ENABLED to DISABLED
 ManagementSystem.awaitGraphIndexStatus(graph, 'name').status(SchemaStatus.DISABLED).call()
 
-// Delete the index using MapReduceIndexJobs
+// Delete the indexed data using MapReduceIndexJobs
 m = graph.openManagement()
 mr = new MapReduceIndexManagement(graph)
-future = mr.updateIndex(m.getGraphIndex('name'), SchemaAction.REMOVE_INDEX)
+future = mr.updateIndex(m.getGraphIndex('name'), SchemaAction.DISCARD_INDEX)
 m.commit()
 graph.tx().commit()
 future.get()
 
-// Index still shows up in management interface as DISABLED -- this is normal
+// Block until the SchemaStatus transitions from DISABLED to DISCARDED
+ManagementSystem.awaitGraphIndexStatus(graph, 'name').status(SchemaStatus.DISCARDED).call()
+
+// Index still shows up in management interface as DISCARDED -- it can now be dropped entirely
 m = graph.openManagement()
-idx = m.getGraphIndex('name')
-idx.getIndexStatus(m.getPropertyKey('name'))
-m.rollback()
+m.updateIndex(m.getGraphIndex('name'), SchemaAction.DROP_INDEX).get()
+m.commit()
 
 // JanusGraph should issue a warning about this query requiring a full scan
 g.V().has('name', 'jupiter')
 ```
 
-## Executing an Index Removal job on ManagementSystem
+## Executing an index removal job on ManagementSystem
+
+!!! info
+    This method applies to the following types of indices:
+
+    - All composite indices
+    - Mixed indices (Elasticsearch only)
 
 To run an index removal job on ManagementSystem, invoke
-`ManagementSystem.updateIndex` with the `SchemaAction.REMOVE_INDEX`
+`ManagementSystem.updateIndex` with the `SchemaAction.DISCARD_INDEX`
 argument. For example:
 ```groovy
 m = graph.openManagement()
-i = m.getGraphIndex('indexName')
-m.updateIndex(i, SchemaAction.REMOVE_INDEX).get()
+m.updateIndex(m.getGraphIndex('indexName'), SchemaAction.DISCARD_INDEX).get()
 m.commit()
 ```
 
@@ -142,7 +146,7 @@ equal to the number of available processors. If you want to change the
 default concurrency level, you can add a parameter as follows:
 ```groovy
 // Use only one thread to execute index removal job
-m.updateIndex(i, SchemaAction.REMOVE_INDEX, 1).get()
+m.updateIndex(m.getGraphIndex('indexName'), SchemaAction.DISCARD_INDEX, 1).get()
 ```
 
 ### Example for ManagementSystem
@@ -162,25 +166,103 @@ g.V().has('name', 'jupiter')
 
 // Disable the "name" composite index
 m = graph.openManagement()
-nameIndex = m.getGraphIndex('name')
-m.updateIndex(nameIndex, SchemaAction.DISABLE_INDEX).get()
+m.updateIndex(m.getGraphIndex('name'), SchemaAction.DISABLE_INDEX).get()
 m.commit()
 graph.tx().commit()
 
-// Block until the SchemaStatus transitions from INSTALLED to REGISTERED
+// Block until the SchemaStatus transitions from ENABLED to DISABLED
 ManagementSystem.awaitGraphIndexStatus(graph, 'name').status(SchemaStatus.DISABLED).call()
 
 // Delete the index using JanusGraphManagement
 m = graph.openManagement()
-nameIndex = m.getGraphIndex('name')
-future = m.updateIndex(nameIndex, SchemaAction.REMOVE_INDEX)
+future = m.updateIndex(m.getGraphIndex('name'), SchemaAction.DISCARD_INDEX)
+m.commit()
+graph.tx().commit()
+future.get()
+
+// Block until the SchemaStatus transitions from DISABLED to DISCARDED
+ManagementSystem.awaitGraphIndexStatus(graph, 'name').status(SchemaStatus.DISCARDED).call()
+
+// Index still shows up in management interface as DISCARDED -- it can now be dropped entirely
+m = graph.openManagement()
+m.updateIndex(m.getGraphIndex('name'), SchemaAction.DROP_INDEX).get()
+m.commit()
+
+// JanusGraph should issue a warning about this query requiring a full scan
+g.V().has('name', 'jupiter')
+```
+
+## Executing a manual index removal for mixed indices
+
+!!! info
+    This method applies to the following types of indices:
+
+    - Mixed indices which can not be removed by Janusgraph automatically
+
+If an index backend does not support automatic removal, you will receive an exception when trying to execute
+`DISCARD_INDEX`.
+This currently applies to all mixed indices except for Elasticsearch.
+For those index backends, indices have to be removed by hand in the index backend without the help of JanusGraph.
+In order to inform JanusGraph that an index has been removed manually, the transition to the state `DISCARDED` can be
+manually triggered by executing `MARK_DISCARDED`.
+
+```groovy
+m = graph.openManagement()
+m.updateIndex(m.getGraphIndex('indexName'), SchemaAction.MARK_DISCARDED).get()
+m.commit()
+```
+
+!!! warning
+    This action does not execute any operation except overwriting the state of the index.
+    Any data stored in the index backend will still be present.
+
+It is recommended to execute this step before actually touching the backend and deleting the data.
+This way, it is guaranteed that no instance concurrently re-enables the index.
+Once the index has entered the state `DISCARDED`, all indexed data can be safely deleted.
+
+### Example for manual mixed index removal
+```groovy
+import org.janusgraph.graphdb.database.management.ManagementSystem
+
+// Load the "Graph of the Gods" sample data
+graph = JanusGraphFactory.open('conf/janusgraph-cql-es.properties')
+g = graph.traversal()
+GraphOfTheGodsFactory.load(graph)
+
+g.V().has("name", "jupiter")
+
+// Disable the "name" composite index
+m = graph.openManagement()
+m.updateIndex(m.getGraphIndex("name"), SchemaAction.DISABLE_INDEX).get()
 m.commit()
 graph.tx().commit()
 
+// Block until the SchemaStatus transitions from ENABLED to DISABLED
+ManagementSystem.awaitGraphIndexStatus(graph, "name").status(SchemaStatus.DISABLED).call()
+
+// Since JanusGraph is not capable of removing the index, we have to set the state manually.
+m = graph.openManagement()
+future = m.updateIndex(m.getGraphIndex("name"), SchemaAction.MARK_DISCARDED)
+m.commit()
+graph.tx().commit()
 future.get()
 
-m = graph.openManagement()
-nameIndex = m.getGraphIndex('name')
+// Block until the SchemaStatus transitions from DISABLED to DISCARDED
+ManagementSystem.awaitGraphIndexStatus(graph, "name").status(SchemaStatus.DISCARDED).call()
 
-g.V().has('name', 'jupiter')
+/*
+ * At this point, the index is marked as DISCARDED,
+ * so it is ensured that no instance will ever be
+ * able to use it again. You are now safe to manually
+ * perform the necessary operations in your index
+ * backend to remove the indexed data by hand.
+ */
+
+// Index still shows up in management interface as DISCARDED -- it can now be dropped entirely
+m = graph.openManagement()
+m.updateIndex(m.getGraphIndex("name"), SchemaAction.DROP_INDEX).get()
+m.commit()
+
+// JanusGraph should issue a warning about this query requiring a full scan
+g.V().has("name", "jupiter")
 ```

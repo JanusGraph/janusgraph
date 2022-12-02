@@ -75,7 +75,7 @@ the steps to run a reindex job using this class:
 - If the index has not yet been enabled, enable it through `JanusGraphManagement`
 
 This class implements an `updateIndex` method that supports only the
-`REINDEX` and `REMOVE_INDEX` actions for its `SchemaAction` parameter.
+`REINDEX` and `DISCARD_INDEX` actions for its `SchemaAction` parameter.
 The class starts a Hadoop MapReduce job using the Hadoop configuration
 and jars on the classpath. Both Hadoop 1 and 2 are supported. This class
 gets metadata about the index and storage backend (e.g. the Cassandra
@@ -209,7 +209,7 @@ i = m.getGraphIndex('names')
 m.updateIndex(i, SchemaAction.REINDEX)
 m.commit()
 
-// Enable the index
+// Wait for the index to be enabled
 ManagementSystem.awaitGraphIndexStatus(graph, 'names').status(SchemaStatus.ENABLED).call()
 
 // Run a query -- JanusGraph will use the new index, no planner warning
@@ -233,10 +233,10 @@ built, the job might fail with an exception like one of the following:
 
     The index mixedExample is in an invalid state and cannot be indexed.
     The following index keys have invalid status: desc has status INSTALLED
-    (status must be one of [REGISTERED, ENABLED])
+    (status must be one of [REGISTERED, ENABLED, DISABLED])
 
     The index mixedExample is in an invalid state and cannot be indexed.
-    The index has status INSTALLED, but one of [REGISTERED, ENABLED] is required
+    The index has status INSTALLED, but one of [REGISTERED, ENABLED, DISABLED] is required
 
 When an index is built, its existence is broadcast to all other
 JanusGraph instances in the cluster. Those must acknowledge the

@@ -26,6 +26,7 @@ import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -136,6 +137,18 @@ public class BerkeleyLuceneTest extends JanusGraphIndexTest {
             "battlesByTime                  | battled     | BOTH      | time           | desc     |    ENABLED |\n" +
             "---------------------------------------------------------------------------------------------------\n";
         assertEquals(expectedIndexes, mgmt.printIndexes());
+    }
+
+    @Test
+    @Override
+    public void testDiscardAndDropRegisteredIndex() {
+        assertThrows(UnsupportedOperationException.class, super::testDiscardAndDropRegisteredIndex);
+    }
+
+    @Test
+    @Override
+    public void testCreateMixedIndexThatPreviouslyExisted() {
+        assertThrows(UnsupportedOperationException.class, super::testCreateMixedIndexThatPreviouslyExisted);
     }
 
 }
