@@ -161,6 +161,7 @@ nav:
     - JanusGraph Bus: advanced-topics/janusgraph-bus.md
     - ExecutorService: advanced-topics/executor-service.md
     - Technical Limitations: advanced-topics/technical-limitations.md
+    - Snapshot Releases: advanced-topics/commit-releases.md
   - Common Questions: common-questions.md
   - Development: development.md
   - Changelog: changelog.md
