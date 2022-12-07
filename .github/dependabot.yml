@@ -2,7 +2,6 @@ version: 2
 updates:
 - package-ecosystem: maven
   directory: "/"
-  target-branch: "master"
   schedule:
     interval: daily
     time: "11:00"
@@ -10,10 +9,11 @@ updates:
   labels:
     - "backport"
     - "backport/v0.6"
+    - "dependencies"
+    - "java"
 
 - package-ecosystem: github-actions
   directory: "/"
-  target-branch: "master"
   schedule:
     interval: daily
     time: "11:00"
@@ -21,3 +21,4 @@ updates:
   labels:
     - "backport"
     - "backport/v0.6"
+    - "dependencies"
