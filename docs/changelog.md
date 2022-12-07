@@ -59,13 +59,22 @@ compile "org.janusgraph:janusgraph-core:0.6.3"
 
 * Apache Cassandra 3.0.14, 3.11.10
 * Apache HBase 1.6.0, 2.2.7
-* Google Bigtable 1.3.0, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.0, 1.11.0, 1.14.0
 * Oracle BerkeleyJE 7.5.11
 * Elasticsearch 6.0.1, 6.6.0, 7.14.0
 * Apache Lucene 8.9.0
 * Apache Solr 7.7.2, 8.11.0
 * Apache TinkerPop 3.5.3
 * Java 1.8
+
+!!! note
+    Google Bigtable was removed from this list because there is no automatic testing in place specifically for that
+    backend.
+    Since the adapter for Bigtable is however just using the HBase adapter, it is also covered by the tests for HBase.
+    
+    We invite anyone who is interested in the Bigtable storage adapter to help with this by contributing so that the
+    tests for HBase are also automatically executed for Bigtable.
+    More information can be found in this GitHub issue:
+    [janusgraph/janusgraph#415](https://github.com/JanusGraph/janusgraph/issues/415).
 
 #### Changes
 
