@@ -19,6 +19,7 @@ use the latest versions of the software.
 ### Version Compatibility Matrix
 
 #### Currently supported
+
 All currently supported versions of JanusGraph are listed below. 
 
 !!! info
@@ -30,6 +31,7 @@ All currently supported versions of JanusGraph are listed below.
 | 1.0.z | 2 | 3.11.z, 4.0.z | 2.5.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 8.y | 3.6.z | 3.2.z | 2.12.z |
 
 #### End-of-Life
+
 The versions of JanusGraph listed below are outdated and will no longer receive bugfixes.
 
 | JanusGraph | Storage Version | Cassandra | HBase | Bigtable | Elasticsearch | Solr | TinkerPop | Spark | Scala |
@@ -68,7 +70,7 @@ compile "org.janusgraph:janusgraph-core:1.0.0"
 * Apache TinkerPop 3.6.1
 * Java 8, 11
 
-**Installed versions in the Pre-Packaged Distribution**
+**Installed versions in the Pre-Packaged Distribution:**
 
 * Cassandra 4.0.6
 * Elasticsearch 7.14.0
@@ -88,10 +90,25 @@ For more information on features and bug fixes in 1.0.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### Add support for Java 11
+
+JanusGraph now officially supports Java 11 in addition to Java 8. We encourage everyone to update to Java 11.
+
+!!! note
+    The pre-packaged distribution now requires Java 11.
+
+##### Upgrade of log4j to version 2
+
+This change requires a new log4j configuration. You can find an example configuration in `conf/log4j2-server.xml`. As a result of the changed configuration format,
+we clean up all configurations. This could lead to unexpected new log lines. Please open an issue, if you see any unwanted log line.
+
+!!! note
+    Log4j is only used for standalone server deployments and JanusGraph testing.
+
 ##### Removal of cassandra-all dependency
 
-JanusGraph had a dependency on cassandra-all only for some Hadoop-related classes. We moved these few classes into 
-a new module cassandra-hadoop-util to reduce the dependencies of JanusGraph. If you are running JanusGraph with 
+JanusGraph had a dependency on cassandra-all only for some Hadoop-related classes. We moved these few classes into
+a new module cassandra-hadoop-util to reduce the dependencies of JanusGraph. If you are running JanusGraph with
 an embeded Cassandra, you have to exclude the `cassandra-hadoop-util` from `janusgraph-cql`.
 
 ##### Drop support for HBase 1
@@ -102,9 +119,15 @@ We are dropping support for HBase 1.
 
 We are dropping support for Solr 7.
 
+##### Drop support for Gryo MessageSerializer
+
+Support for Gryo MessageSerializer [has been dropped in TinkerPop 3.6.0](https://tinkerpop.apache.org/docs/3.6.1/upgrade/#_removed_gryo_messageserializers)
+and we therefore also no longer support it in JanusGraph.
+GraphBinary is now used as the default MessageSerializer.hb
+
 ##### Breaking change for Geoshape GraphBinary serialization
 
-Support for the [GraphBinary](http://tinkerpop.apache.org/docs/3.5.1/dev/io/#graphbinary) serialization format was
+Support for the [GraphBinary](http://tinkerpop.apache.org/docs/3.6.1/dev/io/#graphbinary) serialization format was
 added in JanusGraph 0.6.0. This also included support to serialize Geoshapes via GraphBinary. The implementation of the
 Geoshape serializer was unfortunately closely tied to the Java library `Spatial4j` that we are using to implement
 Geoshapes in Java. This made it very complicated to add support for GraphBinary in other languages than Java. To make
@@ -126,6 +149,17 @@ is provided in the template configuration. This is exactly like it was already t
 example.
 
 Users who don't want to use this feature can simply continue providing the `index.name` in the template configuration.
+
+##### Remove support for old serialization format of JanusGraph predicates
+
+We are dropping support for old serialization format of JanusGraph predicates. The old predicates serialization format is only used by client older than 0.6.
+The change only affects GraphSON.
+
+##### Mixed index aggregation optimization
+
+A new optimization has been added to compute aggregations (min, max, sum and avg) using mixed index engine (if the aggregation function follows an indexed query).
+If the index backend is Elasticsearch, a `double` value is used to hold the result. As a result, aggregations on long numbers greater than 2^53 are approximate.
+In this case, if the accurate result is essential, the optimization can be disabled by removing the strategy `JanusGraphMixedIndexAggStrategy`: `g.traversal().withoutStrategies(JanusGraphMixedIndexAggStrategy.class)`.
 
 ##### Removal of deprecated classes/methods/functionalities
 
@@ -156,36 +190,6 @@ Users who don't want to use this feature can simply continue providing the `inde
 * RemovableRelationIterable class
 * RemovableRelationIterator class
 * ImmutableConfiguration class
-
-##### Remove support for old serialization format of JanusGraph predicates
-
-We are dropping support for old serialization format of JanusGraph predicates. The old predicates serialization format is only used by client older than 0.6. 
-The change only affects Gryo and GraphSON.
-
-##### Upgrade of log4j to version 2
-
-This change requires a new log4j configuration. You can find an example configuration in `conf/log4j2-server.xml`. As a result of the changed configuration format, 
-we clean up all configurations. This could lead to unexpected new log lines. Please open an issue, if you see any unwanted log line.
-
-!!! note 
-    Log4j is only used for standalone server deployments and JanusGraph testing.
-
-##### Add support for Java 11
-
-JanusGraph now officially supports Java 11 in addition to Java 8. We encourage everyone to update to Java 11.
-
-!!! note
-    The pre-packaged distribution now requires Java 11.
-
-##### Drop support for 
-
-Preparation for TinkerPop 3.6.
-
-##### Mixed index aggregation optimization
-
-A new optimization has been added to compute aggregations (min, max, sum and avg) using mixed index engine (if the aggregation function follows an indexed query).
-If the index backend is Elasticsearch, a `double` value is used to hold the result. As a result, aggregations on long numbers greater than 2^53 are approximate.
-In this case, if the accurate result is essential, the optimization can be disabled by removing the strategy `JanusGraphMixedIndexAggStrategy`: `g.traversal().withoutStrategies(JanusGraphMixedIndexAggStrategy.class)`.
 
 ### Version 0.6.3 (Release Date: ???)
 
