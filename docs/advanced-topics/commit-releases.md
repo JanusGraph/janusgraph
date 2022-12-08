@@ -13,10 +13,11 @@ JanusGraph features without relying on official JanusGraph releases.
 ## Maven repository artifacts
 
 Both official and commit release are deployed to Sonatype OSS and are available in Sonatype Maven Central Repository 
-under different group ids.
+under the same group id `org.janusgraph`, but with different artifact id format.  
 
-Official JanusGraph releases have the next groupId: `org.janusgraph`.  
+Official JanusGraph releases have the next format for artifact id: `MAJOR.MINOR.PATCH`.  
 Dependencies example:
+
 ```xml tab='Maven'
 <dependency>
     <groupId>org.janusgraph</groupId>
@@ -29,24 +30,25 @@ Dependencies example:
 compile "org.janusgraph:janusgraph-core:0.6.2"
 ```
 
-Commit JanusGraph releases have the next groupId: `org.janusgraph.commit`.  
 Artifact id for commit releases have the next format: `FOLLOWING_VERSION-DATE-TIME.COMMIT`.  
-- `FOLLOWING_VERSION` is the upcoming official version to be used after release is finalized (i.e. `0.6.3` if the current latest release is `0.6.2`).
+- `FOLLOWING_VERSION` is the upcoming official version to be used after release is finalized (i.e. `0.6.3` if the current latest release is `0.6.2`). 
+It has `MAJOR.MINOR.PATCH` format.
 - `DATE` - date of the commit release in `yyyyMMdd` format.
 - `TIME` - time of the commit release in `HHmmss` format.
 - `COMMIT` - short commit hash of the commit used in the release.
 
 Dependencies example:
+
 ```xml tab='Maven'
 <dependency>
-    <groupId>org.janusgraph.commit</groupId>
+    <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph-core</artifactId>
     <version>0.6.3-20221207-100250.39839b810</version>
 </dependency>
 ```
 
 ```groovy tab='Gradle'
-compile "org.janusgraph.commit:janusgraph-core:0.6.3-20221207-100250.39839b810"
+compile "org.janusgraph:janusgraph-core:0.6.3-20221207-100250.39839b810"
 ```
 
 ## JanusGraph distribution builds
@@ -55,7 +57,7 @@ In addition to distribution builds provided for each official JanusGraph release
 provided for all commits.
 
 !!! info
-GitHub allows to download distribution builds only for authenticated GitHub users.
+    GitHub allows to download distribution builds only for authenticated GitHub users.
 
 To access the distribution build bundle for any commit, please open the commit you are interested in and select its
 `CI Release` details. For example:
@@ -66,9 +68,9 @@ file named `distribution-builds`. This will download `distribution-builds.zip` a
 ![](github_distribution_builds.png)
 
 !!! warning
-Old snapshot distribution builds are expiring in GitHub due to timing and memory limits. It's not guaranteed that
-the snapshot distribution build downloaded yesterday is available today. We encourage to use either official release
-distribution builds or newer snapshot distribution builds.
+    Old snapshot distribution builds are expiring in GitHub due to timing and memory limits. It's not guaranteed that
+    the snapshot distribution build downloaded yesterday is available today. We encourage to use either official release
+    distribution builds or newer snapshot distribution builds.
 
 If you see expired distribution builds or don't see any distribution builds for a specific commit, it means that it isn't
 available to be downloaded anymore. Thus, the distribution builds from newer commits should be used.
