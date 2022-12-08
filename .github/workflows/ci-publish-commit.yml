@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: CI Release commit artifacts publish to `org.janusgraph.commit` groupId
+name: CI Release commit artifacts
 
 on:
   push:
@@ -61,8 +61,6 @@ jobs:
           MASTER_PASSWORD: ${{ secrets.MASTER_PASSWORD }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-      - name: Replace groupId to commit groupId
-        run:  find ./ -type f -name "pom.xml" -exec sed -i "s/<groupId>org.janusgraph<\/groupId>/<groupId>org.janusgraph.commit<\/groupId>/g" {} \;
       - name: Setup unique version
         run:  mvn versions:set -DnewVersion="$JG_VER" -DgenerateBackupPoms=false
       - name: Make JanusGraph JAR artifacts
