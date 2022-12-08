@@ -156,59 +156,6 @@ To build JanusGraph you need [git](http://git-scm.com/) and
     Note, that running the comprehensive test suite requires a 
     significant amount of of time (&gt; 1 hour).
 
-### Depending on JanusGraph Snapshots
-
-For developing against the most current version of JanusGraph, depend on
-JanusGraph snapshot releases. Note, that these releases are development
-releases and therefore unstable and likely to change. Unless one is
-interested in the most recent development status of JanusGraph, we
-recommend to use the stable JanusGraph release instead.
-
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>{{ snapshot_version }}</version>
-    </dependency>
-    ```
-
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:{{ snapshot_version }}"
-    ```
-
-Check the [master branch](https://github.com/JanusGraph/janusgraph/tree/master) for the
-most current release version. SNAPSHOTs will be available through the
-[Sonatype repository](https://oss.sonatype.org/content/repositories/snapshots/org/janusgraph/).
-
-When adding this dependency, be sure to add the following repository to build file:
-
-=== "Maven"
-    ```xml
-    <repository>
-      <id>ossrh</id>
-      <name>Sonatype Nexus Snapshots</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    ```
-
-=== "Gradle"
-    ```groovy
-    maven {
-      url "https://oss.sonatype.org/content/repositories/snapshots"
-      mavenContent {
-        snapshotsOnly()
-      }
-    }
-    ```
-
 ### FAQs
 
 **Maven build causes dozens of "\[WARNING\] We have a duplicate…"
