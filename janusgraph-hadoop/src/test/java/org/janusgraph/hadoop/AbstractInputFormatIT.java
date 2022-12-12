@@ -27,6 +27,8 @@ import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.JanusGraphBaseTest;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -116,6 +118,10 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         Set<Object> edges = new HashSet<>();
         edgeIdIterator.forEachRemaining(edges::add);
         assertEquals(2, edges.size());
+        // Check the edgeID format
+        checkEdgeIDFormat(edges);
+        // Make sure the edgeID returned by OLAP is consistent with OLTP result
+        assertTrue(graph.traversal().E(edges.iterator().next()).hasNext());
     }
 
     @Test
@@ -147,6 +153,10 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         Set<Object> edges = new HashSet<>();
         edgeIdIterator.forEachRemaining(edges::add);
         assertEquals(4, edges.size());
+        // Check the edgeID format
+        checkEdgeIDFormat(edges);
+        // Make sure the edgeID returned by OLAP is consistent with OLTP result
+        assertTrue(graph.traversal().E(edges.iterator().next()).hasNext());
     }
 
     @Test
@@ -237,6 +247,18 @@ public abstract class AbstractInputFormatIT extends JanusGraphBaseTest {
         assertEquals(1L, (long) t.V().has("name", "sky").properties("prop").count().next());
         assertEquals(1L, (long) t.V().has("name", "sky").properties("prop")
             .properties("meta_property").count().next());
+    }
+
+    private void checkEdgeIDFormat(Set<Object> edges) {
+        Iterator<Object> it = edges.iterator();
+        while (it.hasNext()) {
+            Object edgeId = it.next();
+            RelationIdentifier relationIdentifier = RelationIdentifier.parse((String)edgeId);
+            Assert.assertTrue(relationIdentifier.getRelationId() > 0);
+            Assert.assertTrue(relationIdentifier.getInVertexId() != null);
+            Assert.assertTrue(relationIdentifier.getOutVertexId() != null);
+            Assert.assertTrue(relationIdentifier.getTypeId() > 0);
+        }
     }
 
     protected abstract Graph getGraph() throws IOException, ConfigurationException;
