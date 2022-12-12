@@ -28,6 +28,7 @@ import org.janusgraph.core.VertexLabel;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.graphdb.database.RelationReader;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.relations.RelationCache;
@@ -159,13 +160,31 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                         continue;
                     }
 
+                    // assign the edge a unique ID through RelationIdentifier: relationId-outVertexId-typeId-inVertexId
+                    Object inVertexId = null;
+                    Object outVertexId = null;
                     if (relation.direction.equals(Direction.IN)) {
-                        se = (StarGraph.StarEdge)adjacentVertex.addEdge(type.name(), sv, T.id, relation.relationId);
+                        inVertexId = sv.id();
+                        outVertexId = adjacentVertex.id();
                     } else if (relation.direction.equals(Direction.OUT)) {
-                        se = (StarGraph.StarEdge)sv.addEdge(type.name(), adjacentVertex, T.id, relation.relationId);
+                        inVertexId = adjacentVertex.id();
+                        outVertexId = sv.id();
                     } else {
                         throw new RuntimeException("Direction.BOTH is not supported");
                     }
+                    RelationIdentifier relationIdentifier = new RelationIdentifier(outVertexId,
+                        typeManager.getRelationType(type.name()).longId(),
+                        relation.relationId,
+                        inVertexId);
+
+                    if (relation.direction.equals(Direction.IN)) {
+                        se = (StarGraph.StarEdge)adjacentVertex.addEdge(type.name(), sv, T.id, relationIdentifier.toString());
+                    } else if (relation.direction.equals(Direction.OUT)) {
+                        se = (StarGraph.StarEdge)sv.addEdge(type.name(), adjacentVertex, T.id, relationIdentifier.toString());
+                    } else {
+                        throw new RuntimeException("Direction.BOTH is not supported");
+                    }
+
                     decodeProperties(relation, se);
                 }
             } catch (Exception e) {
