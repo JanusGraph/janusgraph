@@ -14,7 +14,7 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [![CII Best Practices][bestpractices-shield]][bestpractices-link]
 [![Codacy Badge][codacy-shield]][codacy-link]
 
-[actions-shield]: https://img.shields.io/github/workflow/status/JanusGraph/janusgraph/CI%20Core
+[actions-shield]: https://img.shields.io/github/actions/workflow/status/JanusGraph/janusgraph/ci-core.yml?branch=master
 [actions-link]: https://github.com/JanusGraph/janusgraph/actions
 [awesome-shield]: https://awesome.re/mentioned-badge-flat.svg
 [awesome-link]: https://github.com/zrosenbauer/awesome-bigtable
