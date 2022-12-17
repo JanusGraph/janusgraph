@@ -250,7 +250,7 @@ as per this [doc](https://docs.datastax.com/en/astra/docs/manage-application-tok
 To learn more about different configuration options of DataStax driver, please refer to the DataStax driver configuration
 [documentation](https://docs.datastax.com/en/developer/java-driver/latest/manual/core/configuration/).
 
-## Deploying on Amazon Keyspaces (Experimental)
+## Deploying on Amazon Keyspaces
 
 > Amazon Keyspaces (for Apache Cassandra) is a scalable, highly available, and managed
 > Apache Cassandra–compatible database service. Amazon Keyspaces is serverless, so you
@@ -343,6 +343,13 @@ storage.cql.ssl.truststore.password=<your-trust-store-password>
 # Thus, the below config must be turned off
 graph.assign-timestamp=false
 
+# We strongly recommend you to turn on this config. It will
+# prohibit all full-scan attempts. This is because Amazon keyspace
+# diverges from Apache Cassandra and might result in incomplete
+# results when a full-scan is executed. See issue #3390 for more
+# details
+query.force-index=true
+
 # Amazon Keyspaces only supports LOCAL QUORUM consistency
 storage.cql.only-use-local-consistency-for-system-operations=true
 storage.cql.read-consistency-level=LOCAL_QUORUM
@@ -352,10 +359,12 @@ log.tx.key-consistent=true
 
 # Amazon Keyspaces does not have metadata available to clients
 # Thus, we need to tell JanusGraph that metadata are disabled,
-# and provide a hint of which partitioner AWS is using.
+# and provide a hint of which partitioner AWS is using. Valid
+# partitioner-names are: Murmur3Partitioner, RandomPartitioner,
+# and DefaultPartitioner
 storage.cql.metadata-schema-enabled=false
 storage.cql.metadata-token-map-enabled=false
-storage.cql.partitioner-name=DefaultPartitioner
+storage.cql.partitioner-name=Murmur3Partitioner
 ```
 
 Now you should be able to open the graph via gremlin console
