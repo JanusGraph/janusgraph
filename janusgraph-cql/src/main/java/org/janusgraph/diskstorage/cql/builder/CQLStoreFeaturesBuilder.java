@@ -26,6 +26,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_TOKEN_MAP
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PARTITIONER_NAME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.TTL_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
@@ -62,6 +63,10 @@ public class CQLStoreFeaturesBuilder {
         fb.optimisticLocking(true);
         fb.multiQuery(false);
 
+        if (!configuration.get(TTL_ENABLED)) {
+            fb.cellTTL(false).storeTTL(false);
+        }
+
         String partitioner = null;
         if (configuration.has(PARTITIONER_NAME)) {
             partitioner = getShortPartitionerName(configuration.get(PARTITIONER_NAME));
@@ -79,8 +84,7 @@ public class CQLStoreFeaturesBuilder {
                 "server, please check %s and %s options", PARTITIONER_NAME.getName(), METADATA_TOKEN_MAP_ENABLED.getName()));
         }
         switch (partitioner) {
-            case "DefaultPartitioner": // Amazon managed KeySpace uses com.amazonaws.cassandra.DefaultPartitioner
-                fb.timestamps(false);
+            case "DefaultPartitioner": // Amazon managed KeySpace supports com.amazonaws.cassandra.DefaultPartitioner
             case "RandomPartitioner":
             case "Murmur3Partitioner": {
                 fb.keyOrdered(false).orderedScan(false).unorderedScan(true);
