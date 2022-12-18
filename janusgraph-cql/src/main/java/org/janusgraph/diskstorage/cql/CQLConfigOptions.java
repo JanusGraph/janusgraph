@@ -207,6 +207,15 @@ public interface CQLConfigOptions {
         ConfigOption.Type.MASKABLE,
         Long.class);
 
+    ConfigOption<Boolean> TTL_ENABLED = new ConfigOption<>(
+        CQL_NS,
+        "ttl-enabled",
+        "Whether TTL should be enabled or not. Must be turned off if the storage does not support TTL. " +
+            "Amazon Keyspace, for example, does not support TTL by default unless otherwise enabled.",
+        ConfigOption.Type.LOCAL,
+        Boolean.class,
+        true);
+
     ConfigOption<String> PARTITIONER_NAME = new ConfigOption<>(
         CQL_NS,
         "partitioner-name",
