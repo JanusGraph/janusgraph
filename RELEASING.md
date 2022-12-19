@@ -62,13 +62,17 @@ Add your key to the KEYS file:
 (gpg --list-sigs <key id> && gpg --armor --export <key id>) >> KEYS.
 ```
 
-Once your key has been created and added to the KEYS file it needs to be published to a [public key server](https://sks-keyservers.net/status/).  
-You can upload to multiple key servers within the pool or use an alternate if `pgp.mit.edu` is down.  
-Sonatype typically uses the following key servers: `pool.sks-keyservers.net`, `keyserver.ubuntu.com`, `keys.gnupg.net`.
+Once your key has been created and added to the KEYS file it needs to be published to a public key server.
+You can upload to multiple key servers within the pool or use an alternate if `pgp.mit.edu` is down.
+[Sonatype typically uses](https://central.sonatype.org/publish/requirements/gpg/#distributing-your-public-key) the
+following key servers: `keyserver.ubuntu.com`, `keys.openpgp.org`, `pgp.mit.edu`.
+
 ```Shell
 gpg --keyserver <key server> --send-keys <key id>
 ```
-Example: 
+
+Example:
+
 ```Shell
 gpg --keyserver pgp.mit.edu --send-keys 7F87F9BD4D9F71A6
 ```
@@ -286,8 +290,12 @@ and it will be populated with all necessary release artifacts. Notice, you will 
 action to be finished after your tag is submitted (Usually it takes about 10-15 minutes for this CI to be finished) for 
 the draft release to be created.  
 You will need to change the body of the draft release and replace `*MILESTONE_NUMBER*` with the correct milestone number 
-associated to the release. You will also need to add `Tested Compatibility`, `Contributors`, and `Notable new features` to the release body.
-Use the previous releases as a template.  
+associated to the release. You will also need to add `Notable new features`, `Tested Compatibility`,
+`Installed versions in the Pre-Packaged Distribution`, and `Contributors` to the release body.
+Use the previous releases as a template.
+The versions can be copied from the changelog.
+You need to manually determine and mark the first-time contributors.
+
 It is recommended to keep the release in draft status until you're ready to start a vote.
 
 Notice, if your release is already created due to re-submitting the tag again the body of your release will not be changed.  
@@ -345,16 +353,18 @@ Verify that on the release page that the release is now labeled "Latest Release"
 ```
 
 Restore the `<scm>` to `<tag>HEAD</tag>` in the root `pom.xml` file.
-
-Create an issue to initialize the next SNAPSHOT release.
-
-Open a pull request with the `pom.xml` updates as a fix for that issue and also
-update `snapshot_version` in the `mkdocs.yml`. 
+Also update `snapshot_version` in the `mkdocs.yml`.
+These changes can be pushed with a CTR commit.
 
 ### Announce the new release
 
 Once it has been verified that the artifacts have populated in Nexus the release manager should announce the release in [janusgraph-user](https://lists.lfaidata.foundation/g/janusgraph-users), [janusgraph-dev](https://lists.lfaidata.foundation/g/janusgraph-dev) and [janusgraph-announce](https://lists.lfaidata.foundation/g/janusgraph-announce).  
 Here is an [example announcement thread](https://lists.lfaidata.foundation/g/janusgraph-dev/topic/announce_janusgraph_0_6_0/85417137).
+
+After announcing the release on our mailing lists, also announce it on Twitter and Discord.
+Past announcements can also be used there as an inspiration.
+Make sure that you *publish* the post in the Discord announcement channel.
+This will allow other Discord servers to consume our announcements.
 
 ### Document lessons learned
 
