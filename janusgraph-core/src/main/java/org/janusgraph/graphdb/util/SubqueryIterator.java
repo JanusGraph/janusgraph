@@ -24,6 +24,8 @@ import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -35,6 +37,7 @@ import java.util.stream.Stream;
  * @author davidclement90@laposte.net
  */
 public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElement> {
+    private static final Logger log = LoggerFactory.getLogger(SubqueryIterator.class);
 
     private final JointIndexQuery.Subquery subQuery;
 
@@ -67,7 +70,18 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                 throw new JanusGraphException("Could not call index", e);
             }
         }
-        elementIterator = stream.filter(e -> otherResults == null || otherResults.contains(e)).limit(limit).map(function).map(r -> (JanusGraphElement) r).iterator();
+        elementIterator = stream
+                .filter(e -> otherResults == null || otherResults.contains(e))
+                .map(e -> {
+                    JanusGraphElement r = function.apply(e);
+                    if (r == null) {
+                        log.warn("Subquery returned invalid element id: {}", e);
+                    }
+                    return r;
+                })
+                .filter(r -> r != null) // ignore invalid elements
+                .limit(limit)
+                .iterator();
     }
 
     @Override
