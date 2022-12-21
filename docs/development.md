@@ -83,7 +83,7 @@ include:
 
 - Documentation typo or small documentation addition
 - Addition of a new test case
-- Merging approved fixes into an upstream branch
+- Backporting approved changes into other release branches
 
 Any commit that is made following CTR shall include the fact that it is
 a CTR in the commit comments. Community members who wish to review CTRs
@@ -92,27 +92,53 @@ list so that they will see CTRs as they come through. If another
 committer responds with a -1, the commit should be rolled back and the
 formal RTC process should be followed.
 
+### Enable Automatic Backporting
+
+Before merging the pull request, it should be decided whether the contribution should be backported to other release
+branches.
+This should be the case for most non-breaking changes.
+If the change applies to something that is not present at all on other still supported release branches, like updating
+a dependency that was only introduced on `master` or code that was added / heavily modified on `master`, then
+backporting cannot work or would require too much effort.
+Otherwise, the appropriate labels for backporting (for example `backport/v0.6` for the branch `v0.6`) should be added
+before the pull requests gets merged as that allows the backporting action to automatically handle the backporting.
+
 ### Merging of Pull Requests
 
 A pull request is ready to be merged when it has been approved (see
-[Review-Then-Commit (RTC)](#review-then-commit)). It can either be
-merged manually with `git` commands or through the GitHub UI with the
-*Merge pull request* button. If the pull request targets a release
-branch that is upstream of other release branches (e.g., `v0.2` is
-upstream of `master`), then it is important to make sure that the change
-also lands in the downstream release branches. This is the
-responsibility of the committer who merges the pull request. Therefore,
-merge the pull request first into its target branch and then merge that
-branch (e.g., `v0.2`) into the next downstream branch (e.g., `v0.3`), and
-so on until you merge the last release branch into `master`. Afterwards
-push all release branches, ideally with an atomic commit:
+[Review-Then-Commit (RTC)](#review-then-commit-rtc)).
+It can either be merged manually with `git` commands or through the GitHub UI.
+
+For pull requests that should be backported (see [Enable Automatic Backporting](#enable-automatic-backporting)), the
+backporting action should create a pull request to backport the changes to other release branches after the pull
+request has been merged.
+The committer who merges the pull request should ensure that this automatic backporting succeeds.
+It may fail in case of merge conflicts.
+In that case the backporting needs to be [performed manually](#manual-backporting).
+
+### Manual Backporting
+
+The [Backport CLI tool](https://github.com/sqren/backport) can be used to manually backport a pull request.
+This can be necessary if the automatic backporting of a pull request fails.
+After installing the CLI tool, you also need to configure it with a GitHub access token.
+This is explained in the README.md of the Backport CLI tool.
+
+You can then use the tool to backport a pull request #xyz:
 
 ```bash
-git push --atomic origin master v0.3 v0.2
+ backport --pr xyz
 ```
 
-This approach keeps merge conflicts to a minimum when a release branch
-is merged into a downstream release branch.
+This will checkout the repository, apply the change from the pull request to the appropriate release branch
+(like `v0.6`), and then ask you to resolve any merge conflicts.
+After the merge conflicts are resolved, it will create a pull request that backports the changes.
+Note that such a backporting pull request can usually be merged via [CTR](#commit-then-review-ctr) after all
+automatic checks have been executed.
+If non-trivial changes were necessary to resolve merge conflicts, then waiting for a review before merging the
+pull request may still make sense.
+
+It is of course also possible to use cherry-picking to apply the commits manually to a different release branch instead
+of using this CLI tool.
 
 ## Release Policy
 
