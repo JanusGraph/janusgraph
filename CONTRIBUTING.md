@@ -87,15 +87,7 @@ $ git config user.email "my-email@example.com"
 
 ## Create a new branch
 
-First, you need to decide which release branch (e.g., `master`, `v0.2`) to
-create the feature branch from. If you intend to add a new feature, then
-`master` is the right branch. Bug fixes however should also be applied to
-other releases, so you should create your feature branch from the release
-branch with the lowest version number that is still active (e.g., `v0.2`).
-When in doubt, ask on [janusgraph-dev](https://lists.lfaidata.foundation/g/janusgraph-dev).
-Changes to all release branches will also be merged into `master`.
-
-Do not develop on the release branch: feature branches are intended to be
+Do not develop on a release branch like `master`: feature branches are intended to be
 light-weight and deleted after being merged to upstream, but you should not
 delete your release branch, so don't use it for development.
 
@@ -107,9 +99,9 @@ $ git pull --ff-only upstream master
 $ git checkout -b my-new-feature
 ```
 
-> NOTE: This listing assumes that you create the feature branch from `master`.
-> Replace `master` by the name of the release branch (e.g., `v0.2`) if you want
-> to create the branch from that release branch instead.
+JanusGraph uses a backporting strategy to ensure that changes can be applied to all release branches that are still
+maintained.
+This means that a feature branch should always be created from `master`.
 
 ## Develop and test your changes
 
