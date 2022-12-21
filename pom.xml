@@ -64,7 +64,7 @@
         <metrics.version>4.2.13</metrics.version>
         <slf4j.version>1.7.36</slf4j.version>
         <logback.version>1.2.11</logback.version>
-        <httpcomponents.httpclient.version>4.5.13</httpcomponents.httpclient.version>
+        <httpcomponents.httpclient.version>4.5.14</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.16</httpcomponents.httpcore.version>
         <hadoop.version>3.3.4</hadoop.version>
         <hbase2.version>2.5.0</hbase2.version>
