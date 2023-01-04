@@ -12,15 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.tinkerpop.io.binary;
+package org.janusgraph.graphdb.tinkerpop.gremlin.server.io;
 
+import org.apache.tinkerpop.gremlin.driver.Cluster;
+import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
+import org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0;
 import org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphSerializerBaseIT;
 
-public class JanusGraphBinaryModuleIT extends JanusGraphSerializerBaseIT {
+public class JanusGraphSONModuleIT extends JanusGraphSerializerBaseIT {
     @Override
     protected GraphTraversalSource traversal() {
-        return AnonymousTraversalSource.traversal().withRemote(janusGraphContainer.remoteConnectionWithGraphBinary());
+        Cluster cluster = Cluster.build("localhost").port(8182)
+            .serializer(new GraphSONMessageSerializerV3d0(GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.instance())))
+            .create();
+        return AnonymousTraversalSource.traversal().withRemote(DriverRemoteConnection.using(cluster));
     }
 }
