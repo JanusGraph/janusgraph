@@ -3,6 +3,7 @@
 In addition to official JanusGraph releases, JanusGraph publishes 
 releases for each commit. The commit releases allow users to use latest
 JanusGraph features without relying on official JanusGraph releases.
+
 - Official JanusGraph releases are better tested and usually come with finalized
   changes which signals that the used features are most likely to be stable for long term.
 - Commit releases are not manually verified but instead verified by main CI tests as
@@ -31,6 +32,7 @@ compile "org.janusgraph:janusgraph-core:0.6.2"
 ```
 
 Artifact id for commit releases have the next format: `FOLLOWING_VERSION-DATE-TIME.COMMIT`.  
+
 - `FOLLOWING_VERSION` is the upcoming official version to be used after release is finalized (i.e. `0.6.3` if the current latest release is `0.6.2`). 
 It has `MAJOR.MINOR.PATCH` format.
 - `DATE` - date of the commit release in `yyyyMMdd` format.
@@ -43,12 +45,12 @@ Dependencies example:
 <dependency>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph-core</artifactId>
-    <version>0.6.3-20221207-100250.39839b810</version>
+    <version>0.6.3-20230104-164606.a49366e</version>
 </dependency>
 ```
 
 ```groovy tab='Gradle'
-compile "org.janusgraph:janusgraph-core:0.6.3-20221207-100250.39839b810"
+compile "org.janusgraph:janusgraph-core:0.6.3-20230104-164606.a49366e"
 ```
 
 ## JanusGraph distribution builds
