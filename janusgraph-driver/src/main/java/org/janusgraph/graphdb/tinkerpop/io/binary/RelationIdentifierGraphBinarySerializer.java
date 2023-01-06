@@ -40,6 +40,10 @@ public class RelationIdentifierGraphBinarySerializer extends JanusGraphTypeSeria
         buffer.writeLong(((Number) value.getOutVertexId()).longValue());
         buffer.writeLong(value.getTypeId());
         buffer.writeLong(value.getRelationId());
-        buffer.writeLong(((Number) value.getInVertexId()).longValue());
+        if (value.getInVertexId() != null) {
+            buffer.writeLong(((Number) value.getInVertexId()).longValue());
+        } else {
+            buffer.writeLong(0);
+        }
     }
 }

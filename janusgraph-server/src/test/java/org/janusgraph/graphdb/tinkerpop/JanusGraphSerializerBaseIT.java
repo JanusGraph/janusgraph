@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import static org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality.single;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -43,6 +44,18 @@ public abstract class JanusGraphSerializerBaseIT {
     @AfterEach
     public void tearDown() {
         server.stop().join();
+    }
+
+    @Test
+    public void testPropertiesWriteAndRead() {
+        GraphTraversalSource g = traversal();
+        g.addV("person").
+            property(single, "age", 29).
+            property(single, "name", "marko").
+            addV("person").
+            property(single, "age", 27).
+            property(single, "name", "vadas").iterate();
+        assertEquals(4, g.V().properties().toList().size());
     }
 
     @Test
