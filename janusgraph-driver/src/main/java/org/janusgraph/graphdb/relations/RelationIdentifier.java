@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.relations;
 
-import com.google.common.base.Preconditions;
 import org.janusgraph.util.encoding.LongEncoding;
 
 import java.io.Serializable;
@@ -60,7 +59,6 @@ public final class RelationIdentifier implements Serializable {
     }
 
     public long getInVertexId() {
-        Preconditions.checkState(inVertexId != 0);
         return inVertexId;
     }
 
