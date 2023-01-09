@@ -5,9 +5,10 @@
 For virtualization and easy access, JanusGraph provides a [Docker image](https://hub.docker.com/r/janusgraph/janusgraph).
 Docker makes it easier to run servers and clients on a single machine without dealing with multiple installations.
 For instructions on installing and using Docker, please refer to the [docker guide](https://docker.com/get-started).
-With JanusGraph server running in one container, we can either run the client in another container, or on our bare-metal machine.
+With JanusGraph Server running in one container, we can either run the client in another container, or on our bare-metal machine.
+In the examples below, we use Gremlin Console as the client.
 
-### Running Client inside another Docker container
+### Running Gremlin Console inside another Docker container
 
 Let's start by running a simple JanusGraph instance in Docker:
 
@@ -39,7 +40,7 @@ The server may need a few seconds to start up so be patient and wait for the cor
     ```
 
 We can now instruct Docker to start a second container for the client and link it to the already running server. Here we
-use gremlin console (`gremlin.sh`) as the client.
+use Gremlin Console (`gremlin.sh`) as the client.
 
 ```bash
 $ docker run --rm --link janusgraph-default:janusgraph -e GREMLIN_REMOTE_HOSTS=janusgraph \
@@ -64,10 +65,10 @@ gremlin> :remote connect tinkerpop.server conf/remote.yaml
     Due to a known [issue](https://github.com/JanusGraph/janusgraph-docker/issues/123), `gremlin.sh` won't work in ARM
     containers.
 
-### Running Client on Bare-metal
+### Running Gremlin Console on Bare-metal
 
-We can also run the client on our bare-metal machine. To make the server able to communicate with the client, we need
-to expose the 8182 port when launching JanusGraph server:
+We can also run the Gremlin Console on our bare-metal machine. To make the server able to communicate with the gremlin
+console, we need to expose the 8182 port when launching JanusGraph server:
 
 ```bash
 $ docker run -it -p 8182:8182 janusgraph/janusgraph
