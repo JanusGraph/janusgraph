@@ -16,7 +16,7 @@ Let's start by running a simple JanusGraph instance in Docker:
 $ docker run --name janusgraph-default janusgraph/janusgraph:latest
 ```
 
-The above command launches a JanusGraph server instance. We name the container so that we can link a second container to it.
+The above command launches a JanusGraph Server instance. We name the container so that we can link a second container to it.
 The server may need a few seconds to start up so be patient and wait for the corresponding log messages to appear.
 
 ??? note "Example log"
@@ -68,7 +68,7 @@ gremlin> :remote connect tinkerpop.server conf/remote.yaml
 ### Running Gremlin Console on Bare-metal
 
 We can also run the Gremlin Console on our bare-metal machine. To make the server able to communicate with the gremlin
-console, we need to expose the 8182 port when launching JanusGraph server:
+console, we need to expose the 8182 port when launching JanusGraph Server:
 
 ```bash
 $ docker run -it -p 8182:8182 janusgraph/janusgraph
