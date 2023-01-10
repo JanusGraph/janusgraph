@@ -1296,9 +1296,9 @@ public class ElasticSearchIndex implements IndexProvider {
         final Map<String,Object> esQuery = getFilter(query.getCondition(), information.get(query.getStore()));
         sr.setQuery(compat.prepareQuery(esQuery));
         try {
-            return client.countTotal(
+            return Math.min(query.getLimit(), client.countTotal(
                 getIndexStoreName(query.getStore()),
-                compat.createRequestBody(sr, null));
+                compat.createRequestBody(sr, null)));
         } catch (final IOException | UncheckedIOException e) {
             throw new PermanentBackendException(e);
         }
