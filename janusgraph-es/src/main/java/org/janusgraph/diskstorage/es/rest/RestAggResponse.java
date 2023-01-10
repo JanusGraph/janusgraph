@@ -27,4 +27,3 @@ public class RestAggResponse {
         this.aggregations = aggregations;
     }
 }
-
