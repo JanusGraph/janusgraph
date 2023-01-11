@@ -30,7 +30,7 @@ jobs:
       github.event.pull_request.merged == true
       && !contains(github.event.pull_request.labels.*.name, 'backport/skip')
       && (
-        (github.event.action == 'labeled' && startsWith(github.event.label.name, 'backport/')
+        (github.event.action == 'labeled' && startsWith(github.event.label.name, 'backport/'))
         || (github.event.action == 'closed')
       )
     steps:
