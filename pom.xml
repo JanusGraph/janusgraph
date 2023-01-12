@@ -1396,7 +1396,7 @@
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-recipes</artifactId>
-                <version>4.2.0</version>
+                <version>5.4.0</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.woodstox</groupId>
