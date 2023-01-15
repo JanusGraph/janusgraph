@@ -18,6 +18,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.SchemaAction;
@@ -25,6 +26,7 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -73,6 +75,8 @@ public class MgmtOlapJobBenchmark {
     @Setup(Level.Iteration)
     public void setUp() throws Exception {
         graph = JanusGraphFactory.open(getConfiguration());
+
+        ((StandardJanusGraph) graph).getOpenTransactions().forEach(JanusGraphTransaction::rollback);
 
         JanusGraphManagement mgmt = graph.openManagement();
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
