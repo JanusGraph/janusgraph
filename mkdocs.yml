@@ -109,7 +109,7 @@ nav:
       - Introduction: interactions/connecting/index.md
       - Using Java: interactions/connecting/java.md
       - Using Python: interactions/connecting/python.md
-      - Using .Net: interactions/connecting/dotnet.md
+      - Using .NET: interactions/connecting/dotnet.md
   - Configuration:
     - Introduction: configs/index.md
     - Configuration Reference: configs/configuration-reference.md
