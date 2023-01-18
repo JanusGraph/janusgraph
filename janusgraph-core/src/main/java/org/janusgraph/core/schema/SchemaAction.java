@@ -68,7 +68,7 @@ public enum SchemaAction {
     /**
      * Registers the index as empty which qualifies it for deletion.
      */
-    MARK_DISCARDED(Arrays.asList(DISABLED, REGISTERED));
+    MARK_DISCARDED(Arrays.asList(DISABLED, REGISTERED, DISCARDED));
 
     private final Set<SchemaStatus> applicableStatuses;
 
