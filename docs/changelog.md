@@ -158,11 +158,12 @@ Users who do not use GraphBinary yet or who are not using Geoshapes are not affe
 
 If the ConfiguredGraphFactory is used together with Elasticsearch as the index backend, then the same Elasticsearch
 index is used for all graphs (if the same index names were used across different graphs).
-Now it is possible to let JanusGraph create the index names dynamically by using the `graph.graphname` if no `index.name`
-is provided in the template configuration. This is exactly like it was already the case for the CQL keyspace name for
-example.
+Now it is possible to let JanusGraph create the index names dynamically by using the `graph.graphname` if no
+`index.[X].index-name` is provided in the template configuration. This is exactly like it was already the case for the
+CQL keyspace name for example.
 
-Users who don't want to use this feature can simply continue providing the `index.name` in the template configuration.
+Users who don't want to use this feature can simply continue providing the index name via `index.[X].index-name` in the
+template configuration.
 
 ##### Remove support for old serialization format of JanusGraph predicates
 
