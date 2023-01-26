@@ -115,7 +115,7 @@
         <protobuf.version>3.21.12</protobuf.version>
         <grpc.version>1.51.1</grpc.version>
         <protoc.version>3.15.3</protoc.version>
-        <gson.version>2.9.1</gson.version>
+        <gson.version>2.10.1</gson.version>
         <jmh.version>1.21</jmh.version>
         <graalvm-nativeimage.version>22.3.1</graalvm-nativeimage.version>
     </properties>
