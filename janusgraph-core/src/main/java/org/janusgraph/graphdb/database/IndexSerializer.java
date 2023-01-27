@@ -755,7 +755,7 @@ public class IndexSerializer {
         return element2String(element.id());
     }
 
-    private static String element2String(Object elementId) {
+    public static String element2String(Object elementId) {
         Preconditions.checkArgument(elementId instanceof Long || elementId instanceof RelationIdentifier);
         if (elementId instanceof Long) return longID2Name((Long)elementId);
         else return ((RelationIdentifier) elementId).toString();
@@ -766,7 +766,7 @@ public class IndexSerializer {
         else return name2LongID(str);
     }
 
-    private static String key2Field(MixedIndexType index, PropertyKey key) {
+    public static String key2Field(MixedIndexType index, PropertyKey key) {
         return key2Field(index.getField(key));
     }
 
