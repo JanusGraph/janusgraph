@@ -44,6 +44,7 @@ import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
@@ -60,15 +61,18 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.indexing.IndexInformation;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
+import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.Order;
@@ -81,8 +85,10 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexCountS
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.testutil.TestGraphConfigs;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -3281,5 +3287,65 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         finishSchema();
 
         testMultipleOrClauses();
+    }
+
+    @Test
+    public void testStaleEdgesAreSkippedFromMixedIndex() {
+        clopen();
+        String namePropKeyStr = "name";
+        String edgeKeyStr = "testEdge";
+        String indexName = "mixed";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel(edgeKeyStr).multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex(indexName, Edge.class).addKey(nameProp, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+        String nameValue = "NameTestValue";
+
+        Vertex vertex1 = tx.traversal().addV().next();
+        Vertex vertex2 = tx.traversal().addV().next();
+
+        tx.traversal()
+            .addE("testEdge").from(vertex1).to(vertex2).property(namePropKeyStr, nameValue)
+            .iterate();
+        newTx();
+
+        Edge edge = tx.traversal().E().has(namePropKeyStr, nameValue).next();
+        Object edgeId = edge.id();
+        edge.remove();
+        newTx();
+        graph.tx().rollback();
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex(indexName);
+        JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
+        MixedIndexType index = (MixedIndexType) indexChangeVertex.asIndexType();
+
+        BackendTransaction transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+        IndexTransaction indexTransaction = transaction.getIndexTransaction(index.getBackingIndexName());
+
+        String elementIndexId = IndexSerializer.element2String(edgeId);
+        String nameIndexField = IndexSerializer.key2Field(index, managementSystem.getPropertyKey(namePropKeyStr));
+
+        assertEquals(0, graph.indexQuery(indexName, nameIndexField+":"+nameValue).edgeTotals());
+
+        // Adds index entry of the non-existing vertex to the index. I.e. this line corrupts index.
+        // This is a possible situation of a stale index being introduced.
+        indexTransaction.add(index.getStoreName(), elementIndexId, nameIndexField, nameValue, true);
+        newTx();
+        graph.tx().rollback();
+
+        // Add another edge, so that a new index record is applied after a stale index record
+        tx.traversal()
+            .addE("testEdge").from(tx.traversal().V(vertex1).next()).to(tx.traversal().V(vertex2).next())
+            .property(namePropKeyStr, nameValue)
+            .iterate();
+        newTx();
+        graph.tx().rollback();
+
+        assertFalse(tx.traversal().E(edgeId).hasNext());
+        // Check that direct mixed query returns a stale edge as well as a new edge
+        assertEquals(2, graph.indexQuery(indexName, nameIndexField+":"+nameValue).edgeTotals());
+        // Check that Gremlin query doesn't return a stale edge and doesn't skip edges after a stale one
+        assertEquals(1, tx.traversal().E().has(namePropKeyStr, nameValue).toList().size());
     }
 }
