@@ -45,6 +45,7 @@ import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
@@ -3944,5 +3945,65 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             .getSucceeded()
         );
         mgmt = graph.openManagement();
+    }
+
+    @Test
+    public void testStaleEdgesAreSkippedFromMixedIndex() {
+        clopen();
+        String namePropKeyStr = "name";
+        String edgeKeyStr = "testEdge";
+        String indexName = "mixed";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel(edgeKeyStr).multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex(indexName, Edge.class).addKey(nameProp, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+        String nameValue = "NameTestValue";
+
+        Vertex vertex1 = tx.traversal().addV().next();
+        Vertex vertex2 = tx.traversal().addV().next();
+
+        tx.traversal()
+            .addE("testEdge").from(vertex1).to(vertex2).property(namePropKeyStr, nameValue)
+            .iterate();
+        newTx();
+
+        Edge edge = tx.traversal().E().has(namePropKeyStr, nameValue).next();
+        Object edgeId = edge.id();
+        edge.remove();
+        newTx();
+        graph.tx().rollback();
+
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        JanusGraphIndex janusGraphIndex = managementSystem.getGraphIndex(indexName);
+        JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
+        MixedIndexType index = (MixedIndexType) indexChangeVertex.asIndexType();
+
+        BackendTransaction transaction = ((StandardJanusGraphTx) tx).getTxHandle();
+        IndexTransaction indexTransaction = transaction.getIndexTransaction(index.getBackingIndexName());
+
+        String elementIndexId = IndexRecordUtil.element2String(edgeId);
+        String nameIndexField = IndexRecordUtil.key2Field(index, managementSystem.getPropertyKey(namePropKeyStr));
+
+        assertEquals(0, graph.indexQuery(indexName, nameIndexField+":"+nameValue).edgeTotals());
+
+        // Adds index entry of the non-existing vertex to the index. I.e. this line corrupts index.
+        // This is a possible situation of a stale index being introduced.
+        indexTransaction.add(index.getStoreName(), elementIndexId, nameIndexField, nameValue, true);
+        newTx();
+        graph.tx().rollback();
+
+        // Add another edge, so that a new index record is applied after a stale index record
+        tx.traversal()
+            .addE("testEdge").from(tx.traversal().V(vertex1).next()).to(tx.traversal().V(vertex2).next())
+            .property(namePropKeyStr, nameValue)
+            .iterate();
+        newTx();
+        graph.tx().rollback();
+
+        assertFalse(tx.traversal().E(edgeId).hasNext());
+        // Check that direct mixed query returns a stale edge as well as a new edge
+        assertEquals(2, graph.indexQuery(indexName, nameIndexField+":"+nameValue).edgeTotals());
+        // Check that Gremlin query doesn't return a stale edge and doesn't skip edges after a stale one
+        assertEquals(1, tx.traversal().E().has(namePropKeyStr, nameValue).toList().size());
     }
 }
