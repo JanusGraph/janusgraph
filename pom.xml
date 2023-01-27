@@ -84,7 +84,7 @@
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <zookeeper.version>3.8.0</zookeeper.version>
-        <netty4.version>4.1.86.Final</netty4.version>
+        <netty4.version>4.1.87.Final</netty4.version>
         <jna.version>5.7.0</jna.version>
         <gmavenplus.version>1.12.1</gmavenplus.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -99,7 +99,7 @@
         <test.skip.default>false</test.skip.default>
         <test.skip.tp>true</test.skip.tp>
         <top.level.basedir>${basedir}</top.level.basedir>
-        <maven.javadoc.version>3.2.0</maven.javadoc.version>
+        <maven.javadoc.version>3.4.1</maven.javadoc.version>
         <compiler.source>1.8</compiler.source>
         <compiler.target>1.8</compiler.target>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
