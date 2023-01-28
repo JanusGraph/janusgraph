@@ -15,14 +15,9 @@
 package org.janusgraph.graphdb.database;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.jsr223.GremlinScriptEngine;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -118,6 +113,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -126,6 +122,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import javax.script.Bindings;
 import javax.script.ScriptException;
 
@@ -434,7 +431,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     }
 
     public Set<? extends JanusGraphTransaction> getOpenTransactions() {
-        return Sets.newHashSet(openTransactions);
+        return new HashSet<>(openTransactions);
     }
 
     // ################### TRANSACTIONS #########################
@@ -556,9 +553,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     public List<EntryList> edgeMultiQuery(List<Object> vertexIdsAsObjects, SliceQuery query, BackendTransaction tx) {
         Preconditions.checkArgument(vertexIdsAsObjects != null && !vertexIdsAsObjects.isEmpty());
         final List<StaticBuffer> vertexIds = new ArrayList<>(vertexIdsAsObjects.size());
-        for (int i = 0; i < vertexIdsAsObjects.size(); i++) {
-            IDUtils.checkId(vertexIdsAsObjects.get(i));
-            vertexIds.add(idManager.getKey(vertexIdsAsObjects.get(i)));
+        for (Object vertexIdsAsObject : vertexIdsAsObjects) {
+            IDUtils.checkId(vertexIdsAsObject);
+            vertexIds.add(idManager.getKey(vertexIdsAsObject));
         }
         final Map<StaticBuffer,EntryList> result = tx.edgeStoreMultiQuery(vertexIds, query);
         final List<EntryList> resultList = new ArrayList<>(result.size());
@@ -600,7 +597,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
      * 2) The TTL configured for the label any of the relation end point vertices (if exists)
      *
      * @param rel relation to determine the TTL for
-     * @return
+     * @return TTL
      */
     public static int getTTL(InternalRelation rel) {
         assert rel.isNew();
@@ -636,17 +633,41 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     }
 
     public ModificationSummary prepareCommit(final Collection<InternalRelation> addedRelations,
-                                     final Collection<InternalRelation> deletedRelations,
-                                     final Predicate<InternalRelation> filter,
-                                     final BackendTransaction mutator, final StandardJanusGraphTx tx,
-                                     final boolean acquireLocks) throws BackendException {
-
+                                             final Collection<InternalRelation> deletedRelations,
+                                             final Predicate<InternalRelation> filter,
+                                             final BackendTransaction mutator,
+                                             final StandardJanusGraphTx tx,
+                                             final boolean acquireLocks) throws BackendException {
 
         ListMultimap<Object, InternalRelation> mutations = ArrayListMultimap.create();
         ListMultimap<InternalVertex, InternalRelation> mutatedProperties = ArrayListMultimap.create();
-        List<IndexUpdate> indexUpdates = Lists.newArrayList();
-        //1) Collect deleted edges and their index updates and acquire edge locks
-        for (InternalRelation del : Iterables.filter(deletedRelations,filter)) {
+        List<IndexUpdate> indexUpdates = new ArrayList<>();
+
+        prepareCommitDeletes(deletedRelations, filter, mutator, tx, acquireLocks, mutations, mutatedProperties, indexUpdates);
+        prepareCommitAdditions(addedRelations, filter, mutator, tx, acquireLocks, mutations, mutatedProperties, indexUpdates);
+        prepareCommitVertexIndexUpdates(mutatedProperties, indexUpdates);
+        prepareCommitAcquireIndexLocks(indexUpdates, mutator, acquireLocks);
+        prepareCommitAddRelationMutations(mutations, mutator, tx);
+        boolean has2iMods = prepareCommitIndexUpdatesAndCheckIfAnyMixedIndexUsed(indexUpdates, mutator);
+
+        return new ModificationSummary(!mutations.isEmpty(),has2iMods);
+    }
+
+    /**
+     * Collect deleted edges and their index updates and acquire edge locks
+     */
+    private void prepareCommitDeletes(final Collection<InternalRelation> deletedRelations,
+                                      final Predicate<InternalRelation> filter,
+                                      final BackendTransaction mutator,
+                                      final StandardJanusGraphTx tx,
+                                      final boolean acquireLocks,
+                                      final ListMultimap<Object, InternalRelation> mutations,
+                                      final ListMultimap<InternalVertex, InternalRelation> mutatedProperties,
+                                      final List<IndexUpdate> indexUpdates) throws BackendException {
+        for(InternalRelation del : deletedRelations){
+            if(!filter.test(del)){
+                continue;
+            }
             Preconditions.checkArgument(del.isRemoved());
             for (int pos = 0; pos < del.getLen(); pos++) {
                 InternalVertex vertex = del.getVertex(pos);
@@ -661,11 +682,24 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(del));
         }
+    }
 
-        //2) Collect added edges and their index updates and acquire edge locks
-        for (InternalRelation add : Iterables.filter(addedRelations,filter)) {
+    /**
+     * Collect added edges and their index updates and acquire edge locks
+     */
+    private void prepareCommitAdditions(final Collection<InternalRelation> addedRelations,
+                                        final Predicate<InternalRelation> filter,
+                                        final BackendTransaction mutator,
+                                        final StandardJanusGraphTx tx,
+                                        final boolean acquireLocks,
+                                        final ListMultimap<Object, InternalRelation> mutations,
+                                        final ListMultimap<InternalVertex, InternalRelation> mutatedProperties,
+                                        final List<IndexUpdate> indexUpdates) throws BackendException {
+        for (InternalRelation add : addedRelations) {
+            if(!filter.test(add)){
+                continue;
+            }
             Preconditions.checkArgument(add.isNew());
-
             for (int pos = 0; pos < add.getLen(); pos++) {
                 InternalVertex vertex = add.getVertex(pos);
                 if (pos == 0 || !add.isLoop()) {
@@ -679,12 +713,24 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(add));
         }
+    }
 
-        //3) Collect all index update for vertices
+    /**
+     * Collect all index update for vertices
+     */
+    private void prepareCommitVertexIndexUpdates(final ListMultimap<InternalVertex, InternalRelation> mutatedProperties,
+                                                 final List<IndexUpdate> indexUpdates){
         for (InternalVertex v : mutatedProperties.keySet()) {
             indexUpdates.addAll(indexSerializer.getIndexUpdates(v,mutatedProperties.get(v)));
         }
-        //4) Acquire index locks (deletions first)
+    }
+
+    /**
+     * Acquire index locks (deletions first)
+     */
+    private void prepareCommitAcquireIndexLocks(final List<IndexUpdate> indexUpdates,
+                                                final BackendTransaction mutator,
+                                                final boolean acquireLocks) throws BackendException {
         for (IndexUpdate update : indexUpdates) {
             if (!update.isCompositeIndex() || !update.isDeletion()) continue;
             CompositeIndexType iIndex = (CompositeIndexType) update.getIndex();
@@ -699,8 +745,14 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 mutator.acquireIndexLock((StaticBuffer)update.getKey(), ((Entry)update.getEntry()).getColumn());
             }
         }
+    }
 
-        //5) Add relation mutations
+    /**
+     * Add relation mutations
+     */
+    private void prepareCommitAddRelationMutations(final ListMultimap<Object, InternalRelation> mutations,
+                                                   final BackendTransaction mutator,
+                                                   final StandardJanusGraphTx tx) throws BackendException {
         for (Object vertexId : mutations.keySet()) {
             IDUtils.checkId(vertexId);
             final List<InternalRelation> edges = mutations.get(vertexId);
@@ -735,17 +787,24 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             StaticBuffer vertexKey = idManager.getKey(vertexId);
             mutator.mutateEdges(vertexKey, additions, deletions);
         }
+    }
 
-        //6) Add index updates
+    /**
+     * Add index updates
+     *
+     * @return `true` if there was any mixed index update
+     */
+    private boolean prepareCommitIndexUpdatesAndCheckIfAnyMixedIndexUsed(final List<IndexUpdate> indexUpdates,
+                                                                         final BackendTransaction mutator) throws BackendException {
         boolean has2iMods = false;
         for (IndexUpdate indexUpdate : indexUpdates) {
             assert indexUpdate.isAddition() || indexUpdate.isDeletion();
             if (indexUpdate.isCompositeIndex()) {
                 final IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
                 if (update.isAddition())
-                    mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()), KCVSCache.NO_DELETIONS);
+                    mutator.mutateIndex(update.getKey(), Collections.singletonList(update.getEntry()), KCVSCache.NO_DELETIONS);
                 else
-                    mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry()));
+                    mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(update.getEntry()));
             } else {
                 final IndexUpdate<String,IndexEntry> update = indexUpdate;
                 has2iMods = true;
@@ -757,15 +816,16 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                     itx.delete(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
             }
         }
-        return new ModificationSummary(!mutations.isEmpty(),has2iMods);
+
+        return has2iMods;
     }
 
     private static final Predicate<InternalRelation> SCHEMA_FILTER =
         internalRelation -> internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof JanusGraphSchemaVertex;
 
-    private static final Predicate<InternalRelation> NO_SCHEMA_FILTER = internalRelation -> !SCHEMA_FILTER.apply(internalRelation);
+    private static final Predicate<InternalRelation> NO_SCHEMA_FILTER = internalRelation -> !SCHEMA_FILTER.test(internalRelation);
 
-    private static final Predicate<InternalRelation> NO_FILTER = Predicates.alwaysTrue();
+    private static final Predicate<InternalRelation> NO_FILTER = internalRelation -> true;
 
     public void commit(final Collection<InternalRelation> addedRelations,
                      final Collection<InternalRelation> deletedRelations, final StandardJanusGraphTx tx) throws BackendException {
@@ -800,8 +860,8 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
             //3.2 Commit schema elements and their associated relations in a separate transaction if backend does not support
             //    transactional isolation
-            boolean hasSchemaElements = !Iterables.isEmpty(Iterables.filter(deletedRelations,SCHEMA_FILTER))
-                    || !Iterables.isEmpty(Iterables.filter(addedRelations,SCHEMA_FILTER));
+            boolean hasSchemaElements = deletedRelations.stream().anyMatch(SCHEMA_FILTER)
+                || addedRelations.stream().anyMatch(SCHEMA_FILTER);
             Preconditions.checkArgument(!hasSchemaElements || (!tx.getConfiguration().hasEnabledBatchLoading() && acquireLocks),
                     "Attempting to create schema elements in inconsistent state");
 
@@ -861,7 +921,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
                 if (hasSecondaryPersistence) {
                     LogTxStatus status = LogTxStatus.SECONDARY_SUCCESS;
-                    Map<String,Throwable> indexFailures = ImmutableMap.of();
+                    Map<String,Throwable> indexFailures = Collections.emptyMap();
                     boolean userlogSuccess = true;
 
                     try {
