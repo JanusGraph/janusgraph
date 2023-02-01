@@ -18,7 +18,7 @@ ARG HBASE_VERSION=2.2.7
 ARG HBASE_DIST="http://archive.apache.org/dist/hbase"
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl=7.64.0-4+deb10u3
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl
 
 RUN curl -SL ${HBASE_DIST}/${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz | tar -x -z && mv hbase-${HBASE_VERSION} /opt/hbase
 WORKDIR /opt/hbase
