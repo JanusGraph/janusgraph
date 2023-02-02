@@ -72,7 +72,7 @@
         <bigtable.version>1.24.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
-        <jackson2.version>2.14.1</jackson2.version>
+        <jackson2.version>2.14.2</jackson2.version>
         <lucene-solr.version>8.11.2</lucene-solr.version>
         <!-- When this version updated please also update sha512 -->
         <elasticsearch.version>8.6.0</elasticsearch.version>
