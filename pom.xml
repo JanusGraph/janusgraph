@@ -67,7 +67,7 @@
         <httpcomponents.httpclient.version>4.5.14</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.16</httpcomponents.httpcore.version>
         <hadoop.version>3.3.4</hadoop.version>
-        <hbase2.version>2.5.2-hadoop3</hbase2.version>
+        <hbase2.version>2.5.3-hadoop3</hbase2.version>
         <htrace.version>4.2.0-incubating</htrace.version>
         <bigtable.version>1.24.0</bigtable.version>
         <scylladb.version>1.7.1</scylladb.version>
