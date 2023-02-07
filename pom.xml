@@ -290,7 +290,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.42</version>
+                        <version>10.7.0</version>
                     </dependency>
                 </dependencies>
                 <configuration>
