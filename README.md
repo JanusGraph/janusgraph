@@ -42,7 +42,7 @@ To visualize graphs stored in JanusGraph, you can use any of the following
 tools:
 
 * [Arcade Analytics](https://arcadeanalytics.com/usermanual/#arcade-analytics)
-* [Cytoscape](http://www.cytoscape.org/)
+* [Cytoscape](https://www.cytoscape.org/)
 * [Gephi](https://tinkerpop.apache.org/docs/current/reference/#gephi-plugin)
   plugin for Apache TinkerPop
 * [Graphexp](https://github.com/bricaud/graphexp)
@@ -121,7 +121,6 @@ CLAs and best practices for working with GitHub.
 * [Eclipse Keti](https://github.com/eclipse/keti) - access control service to protect RESTful APIs ([website](https://projects.eclipse.org/projects/iot.keti))
 * [Exakat](https://github.com/exakat/exakat) - PHP static analysis ([website](https://www.exakat.io/))
 * [Open Network Automation Platform (ONAP)](https://www.onap.org/) - automation and orchestration for Software-Defined Networks
-* [Unifi Catalog & Discovery](https://unifisoftware.com/product/data-catalog) - JanusGraph is embedded into the Unifi Data Catalog UI to enable users to determine how datasets and attributes are related.
 - [Uber Knowledge Graph](https://www.youtube.com/watch?v=C01Gh0g01JE) ([event info](https://leap.ai/events/2017/08/06/uber_knowledge_graph))
 - [Express-Cassandra](https://github.com/masumsoft/express-cassandra) - Cassandra ORM/ODM/OGM for Node.js with optional support for Elassandra & JanusGraph
 * [Windup](https://github.com/windup/windup) by RedHat - application migration and assessment tool ([website](https://developers.redhat.com/products/rhamt/overview/))
@@ -130,7 +129,7 @@ CLAs and best practices for working with GitHub.
 
 The following users have deployed JanusGraph in production.
 
-* [CELUM](https://www.celum.com/) - [use case and system architecture](https://www.celum.com/en/graph-driven-and-reactive-architecture)
+* [CELUM](https://www.celum.com/)
 * [Crédit Agricole CIB](https://www.ca-cib.com/) - [use case](https://github.com/JanusGraph/janusgraph/discussions/2734)
 * [eBay](https://www.ebay.com/) - [video](https://youtu.be/EtB1BPG00PE)
 * [FiNC](https://finc.com)
@@ -140,5 +139,5 @@ The following users have deployed JanusGraph in production.
   [slides](https://www.slideshare.net/RoopaTangirala/polyglot-persistence-netflix-cde-meetup-90955706#86) (graph discussion starts at #86)
 * [Qihoo 360](https://www.360.cn/) ([about](https://en.wikipedia.org/wiki/Qihoo_360))
 * [Red Hat](https://www.redhat.com/) - [application migration and assessment tool](https://developers.redhat.com/products/rhamt/overview/) built on [Windup](https://github.com/windup/windup)
-* [Times Internet](http://timesinternet.in) - [blog post about CMS use case](http://denmarkblog.timesinternet.in/blogs/graph/times-internet-is-using-janusgraph-as-main-database-in-cms-for-all-newsrooms/articleshow/63709837.cms) (the CMS which is serving this blog post runs on JanusGraph)
+* [Times Internet](https://timesinternet.in)
 * [Uber](https://uber.com)
