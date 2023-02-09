@@ -407,6 +407,10 @@ public class QueryUtil {
         return Math.max(0L, (query.hasLimit()) ? Math.min(count, query.getLimit()) : count);
     }
 
+    public static long applyOffsetWithQueryLimitAfterCount(long count, int offset, Query query){
+        return applyQueryLimitAfterCount((offset > 0) ? count - offset : count, query);
+    }
+
     public interface IndexCall<R> {
 
         Collection<R> call(int limit);

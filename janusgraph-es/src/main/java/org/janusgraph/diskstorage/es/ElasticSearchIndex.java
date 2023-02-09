@@ -1285,9 +1285,10 @@ public class ElasticSearchIndex implements IndexProvider {
 
     private long runCountQuery(RawQuery query) throws BackendException{
         try {
-            return client.countTotal(
+            long countTotal = client.countTotal(
                 getIndexStoreName(query.getStore()),
                 compat.createRequestBody(compat.queryString(query.getQuery()), query.getParameters()));
+            return QueryUtil.applyOffsetWithQueryLimitAfterCount(countTotal, query.getOffset(), query);
         } catch (final IOException | UncheckedIOException e) {
             throw new PermanentBackendException(e);
         }

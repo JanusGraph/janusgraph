@@ -110,6 +110,34 @@ For more information on features and bug fixes in 1.0.0, see the GitHub mileston
 The index management has received an overhaul which enables proper index removal.
 The schema action `REMOVE_INDEX` is no longer available and has been replaced by `DISCARD_INDEX`.
 
+##### `totals` for direct index queries now applies provided offset and limit
+
+Direct index queries which search count for totals (`vertexTotals`, `edgeTotals`, `propertyTotals` and direct execution of 
+`IndexProvider.totals`) now apply provided `limit` and `offset`. Previously provided `limit` and `offset` were ignored.    
+For example, previously the following query would return `500` if there were `500` indexed elements: 
+
+```groovy
+gremlin> graph.indexQuery("textIndex", "v.\"text\":fooBar").limit(10).vertexTotals()
+```
+
+Now the above query will return `10` elements because we limited the result to `10` elements only.
+Same applies to `offset`. Previously the following query would return `500` if there were `500` indexed elements:
+
+```groovy
+gremlin> graph.indexQuery("textIndex", "v.\"text\":fooBar").offset(10).vertexTotals()
+```
+
+Now the above query will return `490` as a result because we skip count of the first `10` elements.    
+`offset` provided with `limit` will apply `offset` first and `limit` last.  
+For example, the above query will return `10` elements now if there were `500` indexed elements:
+
+```groovy
+gremlin> graph.indexQuery("textIndex", "v.\"text\":fooBar").limit(10).offset(10).vertexTotals()
+```
+
+The new logic is applied similarly to Direct Index Queries `vertexTotals()`, `edgeTotals()`, `propertyTotals()` as well 
+as internal JanusGraph method `IndexProvider.totals`.
+
 ##### Add support for Java 11
 
 JanusGraph now officially supports Java 11 in addition to Java 8. We encourage everyone to update to Java 11.

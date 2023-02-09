@@ -87,10 +87,17 @@ retrieving and ranking all documents. This shortcut is exposed through
 the ".vertexTotals()", ".edgeTotals()", and ".propertyTotals()" methods.
 
 The totals can be retrieved using the same query syntax as the
-indexQuery builder, but size is overwritten to be 0.
+indexQuery builder.
 ```groovy
 graph.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertexTotals()
 ```
+
+!!! note
+    In JanusGraph versions earlier than 1.0.0 provided `limit` and `offset` was ignored
+    for any `totals` queries. Starting from JanusGraph 1.0.0 provided `limit` and `offset` are
+    applied to the final `totals` result (`vertexTotals()`, `edgeTotals()`, `propertyTotals()` as well
+    as internal JanusGraph method `IndexProvider.totals`). This was made to have consistent behaviour between
+    `totals` and `stream` direct index queries.
 
 ## Gotchas
 

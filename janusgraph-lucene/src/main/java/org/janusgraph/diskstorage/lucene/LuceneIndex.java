@@ -1029,11 +1029,9 @@ public class LuceneIndex implements IndexProvider {
 
             final long time = System.currentTimeMillis();
             // Lucene doesn't like limits of 0.  Also, it doesn't efficiently build a total list.
-            query.setLimit(1);
-            // We ignore offset and limit for totals
             final TopDocs docs = searcher.search(q, 1);
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
-            return docs.totalHits.value;
+            return QueryUtil.applyOffsetWithQueryLimitAfterCount(docs.totalHits.value, query.getOffset(), query);
         } catch (final IOException e) {
             throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
