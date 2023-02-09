@@ -802,7 +802,7 @@ public class SolrIndex implements IndexProvider {
             final QueryResponse response = solrClient.query(collection, runCommonQuery(query, information, tx,
                     collection, keyIdField));
             logger.debug("Executed query [{}] in {} ms", query.getQuery(), response.getElapsedTime());
-            return response.getResults().getNumFound();
+            return QueryUtil.applyOffsetWithQueryLimitAfterCount(response.getResults().getNumFound(), query.getOffset(), query);
         } catch (final IOException e) {
             logger.error("Query did not complete : ", e);
             throw new PermanentBackendException(e);

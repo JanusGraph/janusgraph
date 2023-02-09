@@ -112,7 +112,7 @@ public interface IndexProvider extends IndexInformation {
     Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
     /**
-     * Executes the given raw query against the index and returns the total hits. e.g. limit=0
+     * Executes the given raw query against the index and returns the total hits after specified offset and in limit scope if specified.
      *
      * @param query Query to execute
      * @param information Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.

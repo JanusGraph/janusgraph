@@ -216,7 +216,6 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     private Long executeTotals(ElementCategory resultType) {
         Preconditions.checkNotNull(indexName);
         Preconditions.checkNotNull(query);
-        this.setLimit(0);
         if (tx.hasModifications())
             log.warn("Modifications in this transaction might not be accurately reflected in this index query: {}",query);
         return serializer.executeTotals(this,resultType,tx.getTxHandle(),tx);
