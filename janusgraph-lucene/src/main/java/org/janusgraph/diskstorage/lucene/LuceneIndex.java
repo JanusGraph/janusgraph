@@ -95,6 +95,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
@@ -947,7 +948,7 @@ public class LuceneIndex implements IndexProvider {
             // We ignore offset and limit for totals
             final TopDocs docs = searcher.search(q, 1);
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
-            return docs.totalHits.value;
+            return QueryUtil.applyQueryLimitAfterCount(docs.totalHits.value, query);
         } catch (final IOException e) {
             throw new TemporaryBackendException("Could not execute Lucene query", e);
         }

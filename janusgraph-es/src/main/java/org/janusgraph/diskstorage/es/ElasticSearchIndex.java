@@ -55,6 +55,7 @@ import org.janusgraph.diskstorage.util.DefaultTransaction;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
@@ -1296,9 +1297,10 @@ public class ElasticSearchIndex implements IndexProvider {
         final Map<String,Object> esQuery = getFilter(query.getCondition(), information.get(query.getStore()));
         sr.setQuery(compat.prepareQuery(esQuery));
         try {
-            return client.countTotal(
+            long total = client.countTotal(
                 getIndexStoreName(query.getStore()),
                 compat.createRequestBody(sr, null));
+            return QueryUtil.applyQueryLimitAfterCount(total, query);
         } catch (final IOException | UncheckedIOException e) {
             throw new PermanentBackendException(e);
         }
