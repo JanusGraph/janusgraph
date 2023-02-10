@@ -57,6 +57,7 @@ import org.janusgraph.diskstorage.util.DefaultTransaction;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
@@ -1327,7 +1328,7 @@ public class ElasticSearchIndex implements IndexProvider {
             final String indexName = getIndexStoreName(query.getStore());
             final Map<String,Object> requestData = compat.createRequestBody(sr, null);
             switch (aggregation.getType()) {
-                case COUNT: return client.countTotal(indexName, requestData);
+                case COUNT: return QueryUtil.applyQueryLimitAfterCount(client.countTotal(indexName, requestData), query);
                 case MIN: return client.min(indexName, requestData, aggregation.getFieldName(), aggregation.getDataType());
                 case MAX: return client.max(indexName, requestData, aggregation.getFieldName(), aggregation.getDataType());
                 case AVG: return client.avg(indexName, requestData, aggregation.getFieldName());

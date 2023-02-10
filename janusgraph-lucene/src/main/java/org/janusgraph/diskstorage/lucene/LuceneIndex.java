@@ -96,6 +96,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
@@ -946,7 +947,7 @@ public class LuceneIndex implements IndexProvider {
             Query q = searchParams.getQuery();
 
             switch (aggregation.getType()) {
-                case COUNT: return executeCount(searcher, q);
+                case COUNT: return QueryUtil.applyQueryLimitAfterCount(executeCount(searcher, q), query);
                 case MIN: return executeMin(searcher, q, aggregation.getFieldName(), aggregation.getDataType());
                 case MAX: return executeMax(searcher, q, aggregation.getFieldName(), aggregation.getDataType());
                 case AVG: return executeAvg(searcher, q, aggregation.getFieldName());
