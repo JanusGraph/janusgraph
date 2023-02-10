@@ -82,6 +82,7 @@ import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
@@ -712,7 +713,7 @@ public class SolrIndex implements IndexProvider {
             solrQuery.addFilterQuery(queryFilter);
             final QueryResponse response = solrClient.query(collection, solrQuery);
             logger.debug("Executed query [{}] in {} ms", query.toString(), response.getElapsedTime());
-            return response.getResults().getNumFound();
+            return QueryUtil.applyQueryLimitAfterCount(response.getResults().getNumFound(), query);
         } catch (final IOException e) {
             logger.error("Query did not complete : ", e);
             throw new PermanentBackendException(e);
