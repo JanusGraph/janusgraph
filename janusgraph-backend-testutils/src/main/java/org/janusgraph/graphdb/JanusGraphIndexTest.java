@@ -4006,4 +4006,51 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         // Check that Gremlin query doesn't return a stale edge and doesn't skip edges after a stale one
         assertEquals(1, tx.traversal().E().has(namePropKeyStr, nameValue).toList().size());
     }
+
+    @Test
+    public void testMixedIndexAggregatedCountReturnsCorrectResult() {
+        clopen();
+        String namePropKeyStr = "name";
+        String indexName = "mixed";
+        PropertyKey nameProp = mgmt.makePropertyKey(namePropKeyStr).dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(indexName, Vertex.class).addKey(nameProp, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+        String nameValue = "NameTestValue";
+        int addedVerticesAmount = 10;
+
+        for(int i=0; i<addedVerticesAmount; i++){
+            tx.traversal().addV().property(namePropKeyStr, nameValue).iterate();
+        }
+
+        tx.commit();
+
+        long countWithoutOptimization = graph.traversal().withoutStrategies(JanusGraphMixedIndexCountStrategy.class)
+            .V().has(namePropKeyStr, nameValue).count().next();
+
+        assertEquals(addedVerticesAmount, countWithoutOptimization);
+
+        long countWithOptimization = graph.traversal().V().has(namePropKeyStr, nameValue).count().next();
+
+        assertEquals(addedVerticesAmount, countWithOptimization);
+
+        for(int i=0; i<addedVerticesAmount; i++){
+            assertEquals(
+                i,
+                graph.traversal().V().has(namePropKeyStr, nameValue).limit(i).count().next()
+            );
+        }
+
+        for(Long limit : Arrays.asList(
+            (long)addedVerticesAmount,
+            (long) (addedVerticesAmount+1),
+            (long) (addedVerticesAmount+2),
+            (long) (addedVerticesAmount*2),
+            Long.MAX_VALUE,
+            -1L)){
+            assertEquals(
+                addedVerticesAmount,
+                graph.traversal().V().has(namePropKeyStr, nameValue).limit(limit).count().next()
+            );
+        }
+    }
 }

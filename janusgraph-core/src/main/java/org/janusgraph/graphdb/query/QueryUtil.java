@@ -403,6 +403,9 @@ public class QueryUtil {
         return results;
     }
 
+    public static long applyQueryLimitAfterCount(long count, Query query){
+        return Math.max(0L, (query.hasLimit()) ? Math.min(count, query.getLimit()) : count);
+    }
 
     public interface IndexCall<R> {
 
