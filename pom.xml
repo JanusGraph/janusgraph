@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph</artifactId>
@@ -70,7 +70,6 @@
         <hbase2.version>2.5.3-hadoop3</hbase2.version>
         <htrace.version>4.2.0-incubating</htrace.version>
         <bigtable.version>1.24.0</bigtable.version>
-        <scylladb.version>1.7.1</scylladb.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.14.2</jackson2.version>
         <lucene-solr.version>8.11.2</lucene-solr.version>
@@ -104,7 +103,8 @@
         <cassandra-dist.version>4.0.6</cassandra-dist.version>
         <cassandra-dist.version.sha256>86d14a8e158e4e8554388b1aab598efcb879ddb09c480edecabb3c350b58fe6b</cassandra-dist.version.sha256>
         <cassandra-driver.version>4.15.0</cassandra-driver.version>
-        <scylladb.version>4.4.0</scylladb.version>
+        <scylla-driver.version>4.14.1.0</scylla-driver.version>
+        <scylladb.version>5.1.4</scylladb.version>
         <testcontainers.version>1.17.6</testcontainers.version>
         <easymock.version>5.1.0</easymock.version>
         <protobuf.version>3.21.12</protobuf.version>
@@ -129,6 +129,7 @@
         <module>janusgraph-inmemory</module>
         <module>janusgraph-berkeleyje</module>
         <module>cassandra-hadoop-util</module>
+        <module>scylla-hadoop-util</module>
         <module>janusgraph-cql</module>
         <module>janusgraph-hadoop</module>
         <module>janusgraph-hbase</module>
@@ -142,6 +143,7 @@
         <module>janusgraph-solr</module>
         <module>janusgraph-examples</module>
         <module>janusgraph-mixed-index-utils</module>
+        <module>janusgraph-scylla</module>
     </modules>
     <repositories>
         <repository>
@@ -264,6 +266,7 @@
                         <exclude>**/*.log</exclude>
                         <exclude>**/*.patch</exclude>
                         <exclude>**/*.crt</exclude>
+                        <exclude>**/*.key</exclude>
                         <exclude>**/*.sysconfig</exclude>
                         <exclude>**/*.csv</exclude>
                         <exclude>**/*.id</exclude>
@@ -326,7 +329,7 @@
                                 <module name="AvoidStarImport" />
                                 <module name="CustomImportOrder">
                                     <property name="customImportOrderRules"
-                                    value="THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
+                                              value="THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
                                 </module>
                                 <!-- Miscellaneous: https://checkstyle.sourceforge.io/config_misc.html -->
                                 <module name="ArrayTypeStyle" />
@@ -368,7 +371,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.22.2</version>
+                    <version>3.0.0-M8</version>
                     <configuration>
                         <argLine>${default.test.jvm.opts}</argLine>
                         <runOrder>alphabetical</runOrder>
@@ -1068,7 +1071,7 @@
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java-util</artifactId>
                 <version>${protobuf.version}</version>
-                 <exclusions>
+                <exclusions>
                     <exclusion>
                         <groupId>com.google.code.gson</groupId>
                         <artifactId>gson</artifactId>

@@ -25,22 +25,27 @@ All currently supported versions of JanusGraph are listed below.
 !!! info
     You are currently viewing the documentation page of JanusGraph version {{ latest_version }}. To ensure that the information below is up to date, please double check that this is not an archived version of the documentation.
 
-| JanusGraph | Storage Version | Cassandra | HBase | Bigtable | Elasticsearch | Solr | TinkerPop | Spark | Scala |
-| ----- | ---- | ---- | ---- | ---- | ---- | ---- | --- | ---- | ---- |
-| 0.6.z | 2 | 3.0.z, 3.11.z | 1.6.z, 2.2.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 7.y, 8.y | 3.5.z | 3.0.z | 2.12.z |
-| 1.0.z | 2 | 3.11.z, 4.0.z | 2.5.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y, 8.y | 8.y | 3.6.z | 3.2.z | 2.12.z |
+| JanusGraph | Storage Version | Cassandra | HBase | Bigtable | ScyllaDB | Elasticsearch | Solr | TinkerPop | Spark | Scala |
+| ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| 0.6.z | 2 | 3.0.z, 3.11.z | 1.6.z, 2.2.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | N/A | 6.y, 7.y | 7.y, 8.y | 3.5.z | 3.0.z | 2.12.z |
+| 1.0.z | 2 | 3.11.z, 4.0.z | 2.5.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 5.y | 6.y, 7.y, 8.y | 8.y | 3.6.z | 3.2.z | 2.12.z |
+
+!!! info
+    Even so ScyllaDB is marked as `N/A` prior version 1.0.0 it was actually supported using `cql` storage option. 
+    The only difference is that from version 1.0.0 JanusGraph officially supports ScyllaDB using `scylla` and `cql` 
+    storage options and have extended test coverage for ScyllaDB. 
 
 #### End-of-Life
 
 The versions of JanusGraph listed below are outdated and will no longer receive bugfixes.
 
-| JanusGraph | Storage Version | Cassandra | HBase | Bigtable | Elasticsearch | Solr | TinkerPop | Spark | Scala |
-| ----- | ---- | ---- | ---- | ---- | ---- | ---- | --- | ---- | ---- |
-| 0.1.z| 1| 1.2.z, 2.0.z, 2.1.z| 0.98.z, 1.0.z, 1.1.z, 1.2.z| 0.9.z, 1.0.0-preZ, 1.0.0| 1.5.z| 5.2.z| 3.2.z| 1.6.z| 2.10.z| 
-| 0.2.z | 1 | 1.2.z, 2.0.z, 2.1.z, 2.2.z, 3.0.z, 3.11.z | 0.98.z, 1.0.z, 1.1.z, 1.2.z, 1.3.z | 0.9.z, 1.0.0-preZ, 1.0.0 | 1.5-1.7.z, 2.3-2.4.z, 5.y, 6.y | 5.2-5.5.z, 6.2-6.6.z, 7.y | 3.2.z | 1.6.z | 2.10.z | 
-| 0.3.z | 2 | 1.2.z, 2.0.z, 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.0.z, 1.1.z, 1.2.z, 1.3.z, 1.4.z | 1.0.0, 1.1.0, 1.1.2, 1.2.0, 1.3.0, 1.4.0 | 1.5-1.7.z, 2.3-2.4.z, 5.y, 6.y |  5.2-5.5.z, 6.2-6.6.z, 7.y | 3.3.z | 2.2.z | 2.11.z |
-| 0.4.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | N/A | 5.y, 6.y | 7.y | 3.4.z | 2.2.z | 2.11.z |
-| 0.5.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y, 7.y | 7.y | 3.4.z | 2.2.z | 2.11.z | 
+| JanusGraph | Storage Version | Cassandra | HBase | Bigtable | ScyllaDB | Elasticsearch | Solr | TinkerPop | Spark | Scala |
+| ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| 0.1.z| 1| 1.2.z, 2.0.z, 2.1.z| 0.98.z, 1.0.z, 1.1.z, 1.2.z| 0.9.z, 1.0.0-preZ, 1.0.0| N/A | 1.5.z| 5.2.z| 3.2.z| 1.6.z| 2.10.z| 
+| 0.2.z | 1 | 1.2.z, 2.0.z, 2.1.z, 2.2.z, 3.0.z, 3.11.z | 0.98.z, 1.0.z, 1.1.z, 1.2.z, 1.3.z | 0.9.z, 1.0.0-preZ, 1.0.0 | N/A | 1.5-1.7.z, 2.3-2.4.z, 5.y, 6.y | 5.2-5.5.z, 6.2-6.6.z, 7.y | 3.2.z | 1.6.z | 2.10.z | 
+| 0.3.z | 2 | 1.2.z, 2.0.z, 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.0.z, 1.1.z, 1.2.z, 1.3.z, 1.4.z | 1.0.0, 1.1.0, 1.1.2, 1.2.0, 1.3.0, 1.4.0 | N/A | 1.5-1.7.z, 2.3-2.4.z, 5.y, 6.y |  5.2-5.5.z, 6.2-6.6.z, 7.y | 3.3.z | 2.2.z | 2.11.z |
+| 0.4.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | N/A | N/A | 5.y, 6.y | 7.y | 3.4.z | 2.2.z | 2.11.z |
+| 0.5.z | 2 | 2.1.z, 2.2.z, 3.0.z, 3.11.z | 1.2.z, 1.3.z, 1.4.z, 2.1.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | N/A | 6.y, 7.y | 7.y | 3.4.z | 2.2.z | 2.11.z | 
 
 ## Release Notes
 
@@ -63,6 +68,7 @@ compile "org.janusgraph:janusgraph-core:1.0.0"
 * Apache Cassandra 3.11.10, 4.0.6
 * Apache HBase 2.5.0
 * Oracle BerkeleyJE 7.5.11
+* ScyllaDB 5.1.4
 * Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.6.0
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
@@ -192,6 +198,32 @@ A new optimization has been added to compute aggregations (min, max, sum and avg
 If the index backend is Elasticsearch, a `double` value is used to hold the result. As a result, aggregations on long numbers greater than 2^53 are approximate.
 In this case, if the accurate result is essential, the optimization can be disabled by removing the strategy `JanusGraphMixedIndexAggStrategy`: `g.traversal().withoutStrategies(JanusGraphMixedIndexAggStrategy.class)`.
 
+##### Add support for ElasticSearch 8
+
+JanusGraph now supports ElasticSearch 8.   
+Notice, `Mapping.PREFIX_TREE` mapping is no longer available for Geoshape mappings using new ElasticSearch 8 indices.  
+`Mapping.PREFIX_TREE` is still supported in ElasticSearch 6, ElasticSearch 7, Solr, Lucene.     
+For ElasticSearch the new Geoshape mapping was added `Mapping.BKD`.  
+It's recommended to use `Mapping.BKD` mapping due to better performance characteristics over `Mapping.PREFIX_TREE`.   
+The downside of `Mapping.BKD` is that it doesn't support Circle shapes. Thus, JanusGraph provides BKD Circle processors
+to convert Circle into other shapes for indexing but use Circle at the storage level. More information about
+Circle processors available under configuration namespace `index.[X].bkd-circle-processor`.    
+ElasticSearch 8 doesn't allow creating new indexes with `Mapping.PREFIX_TREE` mapping, but the existing indices
+using `Mapping.PREFIX_TREE` will work in ElasticSearch 8 after migration. See
+[ElasticSearch 8 migration guide](https://www.elastic.co/guide/en/elasticsearch/reference/current/migrating-8.0.html#geo-shape-strategy).
+
+##### Add support for ScyllaDB driver
+
+A new module `janusgraph-scylla` provides ability to run JanusGraph with ScyllaDB Driver which is an optimized
+fork version of DataStax Java Driver for ScyllaDB storage backend.   
+For ScyllaDB storage backend you can use either `janusgraph-scylla` or `janusgraph-cql` (which is a general CQL storage
+driver implementation). That said, it's recommended to use `janusgraph-scylla` for ScyllaDB due to the provided internal
+optimizations (more about ScyllaDB driver optimizations can be found [here](https://docs.scylladb.com/stable/using-scylla/drivers/cql-drivers/scylla-java-driver.html)).
+
+Notice that `janusgraph-cql` and `janusgraph-scylla` are mutually exclusive. Use only one module at a time and never
+provide both dependencies in the same classpath. See [ScyllaDB Storage Backend documentation](storage-backend/scylladb.md) for more
+information about how to make `scylla` `storage.backend` options available.
+
 ##### Removal of deprecated classes/methods/functionalities
 
 ###### Methods
@@ -221,20 +253,6 @@ In this case, if the accurate result is essential, the optimization can be disab
 * RemovableRelationIterable class
 * RemovableRelationIterator class
 * ImmutableConfiguration class
-
-##### Add support for ElasticSearch 8
-
-JanusGraph now supports ElasticSearch 8.   
-Notice, `Mapping.PREFIX_TREE` mapping is no longer available for Geoshape mappings using new ElasticSearch 8 indices.  
-`Mapping.PREFIX_TREE` is still supported in ElasticSearch 6, ElasticSearch 7, Solr, Lucene.     
-For ElasticSearch the new Geoshape mapping was added `Mapping.BKD`.  
-It's recommended to use `Mapping.BKD` mapping due to better performance characteristics over `Mapping.PREFIX_TREE`.   
-The downside of `Mapping.BKD` is that it doesn't support Circle shapes. Thus, JanusGraph provides BKD Circle processors 
-to convert Circle into other shapes for indexing but use Circle at the storage level. More information about 
-Circle processors available under configuration namespace `index.[X].bkd-circle-processor`.    
-ElasticSearch 8 doesn't allow creating new indexes with `Mapping.PREFIX_TREE` mapping, but the existing indices 
-using `Mapping.PREFIX_TREE` will work in ElasticSearch 8 after migration. See 
-[ElasticSearch 8 migration guide](https://www.elastic.co/guide/en/elasticsearch/reference/current/migrating-8.0.html#geo-shape-strategy).
 
 ### Version 0.6.3 (Release Date: ???)
 

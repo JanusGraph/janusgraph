@@ -1,3 +1,4 @@
 [ssl]
 certfile = /etc/ssl/node.crt
+keyfile = /etc/ssl/node.key
 validate = false

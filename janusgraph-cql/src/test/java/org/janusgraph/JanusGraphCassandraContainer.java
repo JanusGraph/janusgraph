@@ -51,6 +51,7 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
     private static final boolean DEFAULT_USE_SSL = false;
     private static final boolean DEFAULT_ENABLE_CLIENT_AUTH = false;
     private static final boolean DEFAULT_USE_DEFAULT_CONFIG_FROM_IMAGE = false;
+    private static final String DEFAULT_STORAGE_BACKEND = "cql";
 
     private static String getVersion() {
         String property = System.getProperty("cassandra.docker.version");
@@ -94,7 +95,21 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         return DEFAULT_ENABLE_CLIENT_AUTH;
     }
 
+    private static String storageBackend() {
+        String property = System.getProperty("cql.storageBackend");
+        return property == null || property.isEmpty() ?
+            DEFAULT_STORAGE_BACKEND :
+            property;
+    }
+
+    private boolean isScylla(){
+        return getCassandraImage().contains("scylla");
+    }
+
     private String getConfigPrefix() {
+        if(isScylla()){
+            return "scylla";
+        }
         if (getVersion().startsWith("3.")) {
             return "cassandra3";
         }
@@ -114,30 +129,39 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         withEnv("HEAP_NEWSIZE", "1G");
 
         if (useDynamicConfig()) {
-            withCommand("-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false");
+            String commandArguments = isScylla() ?
+                "--skip-wait-for-gossip-to-settle 0 --memory 2G --smp 1 --developer-mode 1" :
+                "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false";
+            withCommand(commandArguments);
             switch (getPartitioner()){
                 case "byteordered":
-                    withClasspathResourceMapping(getConfigPrefix() + "-byteordered.yaml", "/etc/cassandra/cassandra.yaml", BindMode.READ_WRITE);
+                    applyConfiguration(getConfigPrefix() + "-byteordered.yaml");
                     break;
                 case "murmur":
                     if (useSSL()) {
                         withClasspathResourceMapping("cert/node.crt", "/etc/ssl/node.crt", BindMode.READ_WRITE);
+                        withClasspathResourceMapping("cert/node.key", "/etc/ssl/node.key", BindMode.READ_WRITE);
                         withClasspathResourceMapping("cert/node.keystore", "/etc/ssl/node.keystore", BindMode.READ_WRITE);
                         withClasspathResourceMapping("cqlshrc", "/root/.cassandra/cqlshrc", BindMode.READ_WRITE);
                         if(enableClientAuth()) {
                             withClasspathResourceMapping("cert/node.truststore", "/etc/ssl/node.truststore", BindMode.READ_WRITE);
-                            withClasspathResourceMapping(getConfigPrefix() + "-murmur-client-auth.yaml", "/etc/cassandra/cassandra.yaml", BindMode.READ_WRITE);
+                            applyConfiguration(getConfigPrefix() + "-murmur-client-auth.yaml");
                         } else {
-                            withClasspathResourceMapping(getConfigPrefix() + "-murmur-ssl.yaml", "/etc/cassandra/cassandra.yaml", BindMode.READ_WRITE);
+                            applyConfiguration(getConfigPrefix() + "-murmur-ssl.yaml");
                         }
                     } else {
-                        withClasspathResourceMapping(getConfigPrefix() + "-murmur.yaml", "/etc/cassandra/cassandra.yaml", BindMode.READ_WRITE);
+                        applyConfiguration(getConfigPrefix() + "-murmur.yaml");
                     }
                     break;
                 default:
                     throw new IllegalArgumentException("Unrecognized partitioner: " + getPartitioner());
             }
         }
+    }
+
+    private void applyConfiguration(String resourcePath){
+        String configPath = isScylla() ? "/etc/scylla/scylla.yaml" : "/etc/cassandra/cassandra.yaml";
+        withClasspathResourceMapping(resourcePath, configPath, BindMode.READ_WRITE);
     }
 
     private static String cleanKeyspaceName(String raw) {
@@ -157,7 +181,7 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         LOGGER.debug("Set keyspace name: {}", config.get(KEYSPACE));
         config.set(PAGE_SIZE, 500);
         config.set(CONNECTION_TIMEOUT, Duration.ofSeconds(60L));
-        config.set(STORAGE_BACKEND, "cql");
+        config.set(STORAGE_BACKEND, storageBackend());
         config.set(STORAGE_PORT, getMappedPort(CQL_PORT));
         config.set(STORAGE_HOSTS, new String[]{getHost()});
         config.set(DROP_ON_CLEAR, false);

@@ -74,11 +74,10 @@ jobs:
             args: "-Pscylladb -Dtest=\"**/graphdb/cql/*\""
             name: scylladb-graphdb
             java: 8
-          # FIXME: this takes forever to run
-          # - module: cql
-          #   args: "-Pscylladb -Dtest=\"**/hadoop/*\""
-          #   name: scylladb-hadoop
-          #   java: 8
+          - module: cql
+            args: "-Pscylladb -Dtest=\"**/hadoop/*\""
+            name: scylladb-hadoop
+            java: 8
           - module: cql
             args: "-Pscylladb -Dtest=\"**/core/cql/*\""
             name: scylladb-core
@@ -138,12 +137,11 @@ jobs:
             name: scylladb-graphdb
             install-args: "-Pjava-11"
             java: 11
-          # FIXME: this takes forever to run
-          # - module: cql
-          #   args: "-Pscylladb -Dtest=\"**/hadoop/*\""
-          #   name: scylladb-hadoop
-          #   install-args: "-Pjava-11"
-          #   java: 11
+          - module: cql
+            args: "-Pscylladb -Dtest=\"**/hadoop/*\""
+            name: scylladb-hadoop
+            install-args: "-Pjava-11"
+            java: 11
           - module: cql
             args: "-Pscylladb -Dtest=\"**/core/cql/*\""
             name: scylladb-core

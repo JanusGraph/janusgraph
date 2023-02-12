@@ -170,6 +170,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         put(StandardStoreManager.CQL, STORAGE_HOSTS);
         put(StandardStoreManager.HBASE, STORAGE_HOSTS);
         //put(StandardStorageBackend.IN_MEMORY, null);
+        put(StandardStoreManager.SCYLLA, STORAGE_HOSTS);
     }});
 
     public static final Map<String,String> REGISTERED_LOG_MANAGERS = new HashMap<String, String>() {{

@@ -1,0 +1,56 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>scylla-hadoop-util</artifactId>
+    <name>Scylla hadoop util extraction</name>
+    <url>https://janusgraph.org</url>
+
+
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>cassandra-hadoop-util</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.datastax.cassandra</groupId>
+                    <artifactId>cassandra-driver-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.scylladb</groupId>
+            <artifactId>scylla-driver-core</artifactId>
+            <version>3.11.2.4</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.github.jnr</groupId>
+                    <artifactId>jnr-ffi</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.github.jnr</groupId>
+                    <artifactId>jnr-posix</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-handler</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+</project>

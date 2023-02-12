@@ -27,3 +27,69 @@ ScyllaDB is fully compatible with Cassandra. To use it as the data storage layer
 - Spinning up a three-node Scylla Cluster and setting it as the data storage for the JanusGraph server
 - Performing some basic graph operations
 
+## Usage of Scylla optimized driver
+
+JanusGraph provides `scylla` `storage.backend` options in addition to generic `cql` option.  
+ScyllaDB can work using any of those storage options, but the dedicated `scylla` backend is better optimized 
+for ScyllaDB. Thus, it's recommended to use `scylla` backend option with ScyllaDB whenever possible.  
+`scylla` storage option is included in `janusgraph-scylla` library but this library isn't shipped via `janusgraph-all` 
+and this library is not part of the provided JanusGraph distributions.  
+To make `scylla` option available in JanusGraph it's necessary to replace `org.janusgraph:janusgraph-cql` 
+with `org.janusgraph:janusgraph-scylla` if JanusGraph is used in Embedded Mode.   
+
+In case `janusgraph-all` dependency is used instead of explicit JanusGraph dependencies then the replacement to
+`org.janusgraph:janusgraph-scylla` can be done like below.
+
+```xml tab='Maven'
+<dependencies>
+    <!-- Exclude `janusgraph-cql` from `janusgraph-all` -->
+    <dependency>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-all</artifactId>
+        <version>1.0.0</version>
+        <exclusions>
+            <exclusion>
+                <groupId>org.janusgraph</groupId>
+                <artifactId>janusgraph-cql</artifactId>
+            </exclusion>
+        </exclusions>
+    </dependency>
+
+    <!-- Include `janusgraph-scylla` -->
+    <dependency>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-scylla</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+</dependencies>
+```
+
+```groovy tab='Gradle'
+/* Exclude `janusgraph-cql` from `janusgraph-all` */
+compile("org.janusgraph:janusgraph-all:1.0.0") {
+    exclude group: 'org.janusgraph', module: 'janusgraph-cql'
+}
+/* Include `janusgraph-scylla` */
+compile "org.janusgraph:janusgraph-scylla:1.0.0"
+```
+
+#### Using Scylla driver in JanusGraph Server provided via the standard distribution builds
+
+!!! note
+    The manual process described below is temporary and should be replaced by automated process after the issue
+    [janusgraph/janusgraph#3580](https://github.com/JanusGraph/janusgraph/issues/3580) is resolved.
+
+In case `scylla` storage option is needed to be used in JanusGraph distribution then it's necessary to replace the next libraries 
+in `lib` directory (all libraries can be downloaded via Maven Central Repository). 
+- `org.janusgraph:janusgraph-cql` with `org.janusgraph:janusgraph-scylla`
+- `org.janusgraph:cassandra-hadoop-util` with `org.janusgraph:scylla-hadoop-util`
+- `com.datastax.oss:java-driver-core` with `com.scylladb:java-driver-core`
+- `com.datastax.oss:java-driver-query-builder` with `com.scylladb:java-driver-query-builder`
+- `com.datastax.cassandra:cassandra-driver-core` with `com.scylladb:scylla-driver-core`
+
+The versions of `com.scylladb:java-driver-core` and `com.scylladb:java-driver-query-builder` should be equal to the 
+version found in `pom.xml` of `org.janusgraph:janusgraph-scylla`. The version of `com.scylladb:scylla-driver-core` should 
+be equal to the version found in `org.janusgraph:scylla-hadoop-util`.
+
+After replacement is done it will be possible to use `scylla` as `storage.backend` options which will use the optimized 
+Scylla driver.

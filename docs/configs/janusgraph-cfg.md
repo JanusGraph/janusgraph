@@ -373,7 +373,7 @@ Configuration options for the storage backend.  Some options are applicable only
 
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
-| storage.backend | The primary persistence provider used by JanusGraph.  This is required.  It should be set one of JanusGraph's built-in shorthand names for its standard storage backends (shorthands: berkeleyje, cql, hbase, inmemory) or to the full package and classname of a custom/third-party StoreManager implementation. | String | (no default value) | LOCAL |
+| storage.backend | The primary persistence provider used by JanusGraph.  This is required.  It should be set one of JanusGraph's built-in shorthand names for its standard storage backends (shorthands: berkeleyje, cql, hbase, inmemory, scylla) or to the full package and classname of a custom/third-party StoreManager implementation. | String | (no default value) | LOCAL |
 | storage.batch-loading | Whether to enable batch loading into the storage backend | Boolean | false | LOCAL |
 | storage.buffer-size | Size of the batch in which mutations are persisted | Integer | 1024 | MASKABLE |
 | storage.conf-file | Path to a configuration file for those storage backends which require/support a single separate config file. | String | (no default value) | LOCAL |
