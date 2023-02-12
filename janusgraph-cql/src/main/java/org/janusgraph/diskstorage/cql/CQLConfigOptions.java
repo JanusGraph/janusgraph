@@ -96,26 +96,33 @@ public interface CQLConfigOptions {
             false);
 
     // Replication
+
+    String SIMPLE_REPLICATION_STRATEGY = "SimpleStrategy";
+    String NETWORK_TOPOLOGY_REPLICATION_STRATEGY = "NetworkTopologyStrategy";
+
+    ConfigOption<String> REPLICATION_STRATEGY = new ConfigOption<>(
+        CQL_NS,
+        "replication-strategy-class",
+        "The replication strategy to use for JanusGraph keyspace. Available strategies: "+
+            String.join(",",new String[]{SIMPLE_REPLICATION_STRATEGY, NETWORK_TOPOLOGY_REPLICATION_STRATEGY})+".",
+        ConfigOption.Type.FIXED,
+        SIMPLE_REPLICATION_STRATEGY);
+
     ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<>(
             CQL_NS,
             "replication-factor",
-            "The number of data replicas (including the original copy) that should be kept",
+        "The number of data replicas (including the original copy) that should be kept. This options is used when "
+            +ConfigElement.getPath(REPLICATION_STRATEGY)+" is set to "+SIMPLE_REPLICATION_STRATEGY,
             ConfigOption.Type.GLOBAL_OFFLINE,
             1);
-
-    ConfigOption<String> REPLICATION_STRATEGY = new ConfigOption<>(
-            CQL_NS,
-            "replication-strategy-class",
-            "The replication strategy to use for JanusGraph keyspace",
-            ConfigOption.Type.FIXED,
-            "SimpleStrategy");
 
     ConfigOption<String[]> REPLICATION_OPTIONS = new ConfigOption<>(
             CQL_NS,
             "replication-strategy-options",
             "Replication strategy options, e.g. factor or replicas per datacenter.  This list is interpreted as a " +
-                    "map.  It must have an even number of elements in [key,val,key,val,...] form.  A replication_factor set " +
-                    "here takes precedence over one set with " + ConfigElement.getPath(REPLICATION_FACTOR),
+                "map.  It must have an even number of elements in [key,val,key,val,...] form. This options is used when "
+                +ConfigElement.getPath(REPLICATION_STRATEGY)+" is set to "+NETWORK_TOPOLOGY_REPLICATION_STRATEGY+". " +
+                "`replication_factor` can be used to specify a replication factor.",
             ConfigOption.Type.FIXED,
             String[].class);
 

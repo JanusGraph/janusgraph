@@ -66,9 +66,11 @@ import static io.vavr.API.Case;
 import static io.vavr.API.Match;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETWORK_TOPOLOGY_REPLICATION_STRATEGY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_OPTIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_STRATEGY;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SIMPLE_REPLICATION_STRATEGY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
@@ -180,8 +182,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
         // Setting replication strategy based on value reading from the configuration: either "SimpleStrategy" or "NetworkTopologyStrategy"
         final Map<String, Object> replication = Match(configuration.get(REPLICATION_STRATEGY)).of(
-            Case($("SimpleStrategy"), strategy -> HashMap.<String, Object> of("class", strategy, "replication_factor", configuration.get(REPLICATION_FACTOR))),
-            Case($("NetworkTopologyStrategy"),
+            Case($(SIMPLE_REPLICATION_STRATEGY), strategy -> HashMap.<String, Object> of("class", strategy, "replication_factor", configuration.get(REPLICATION_FACTOR))),
+            Case($(NETWORK_TOPOLOGY_REPLICATION_STRATEGY),
                 strategy -> HashMap.<String, Object> of("class", strategy)
                     .merge(Array.of(configuration.get(REPLICATION_OPTIONS))
                         .grouped(2)
