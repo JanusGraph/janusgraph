@@ -7,12 +7,11 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>janusgraph-cql</artifactId>
-    <name>JanusGraph-CQL: Distributed Graph Database</name>
+    <artifactId>janusgraph-scylla</artifactId>
+    <name>JanusGraph-Scylla: Distributed Graph Database</name>
     <url>https://janusgraph.org</url>
 
     <properties>
-        <vavr.version>0.10.4</vavr.version>
         <test.byteordered>byteordered</test.byteordered>
         <test.murmur>murmur</test.murmur>
         <test.javaagent.opts>-javaagent:${com.github.jbellis:jamm:jar}</test.javaagent.opts>
@@ -20,9 +19,10 @@
         <test.jvm.opts>-Xms256m -Xmx1280m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</test.jvm.opts>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <test.docker.version.cassandra3>${cassandra.version}</test.docker.version.cassandra3>
-        <test.docker.version.cassandra4>${cassandra-dist.version}</test.docker.version.cassandra4>
+        <cassandra.docker.version>${scylladb.version}</cassandra.docker.version>
+        <cassandra.docker.image>scylladb/scylla</cassandra.docker.image>
         <cassandra.docker.useDefaultConfigFromImage>false</cassandra.docker.useDefaultConfigFromImage>
+        <test.skip.byteordered>true</test.skip.byteordered>
     </properties>
 
     <dependencies>
@@ -53,9 +53,20 @@
         <!-- Compile Dependencies -->
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-core</artifactId>
+            <artifactId>janusgraph-cql</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.datastax.oss</groupId>
+                    <artifactId>java-driver-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.datastax.oss</groupId>
+                    <artifactId>java-driver-query-builder</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-hadoop</artifactId>
@@ -74,9 +85,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>com.scylladb</groupId>
             <artifactId>java-driver-core</artifactId>
-            <version>${cassandra-driver.version}</version>
+            <version>${scylla-driver.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.json</groupId>
@@ -105,9 +116,9 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>com.scylladb</groupId>
             <artifactId>java-driver-query-builder</artifactId>
-            <version>${cassandra-driver.version}</version>
+            <version>${scylla-driver.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.json</groupId>
@@ -127,19 +138,34 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>io.vavr</groupId>
-            <artifactId>vavr</artifactId>
-            <version>${vavr.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>cassandra-hadoop-util</artifactId>
+            <artifactId>scylla-hadoop-util</artifactId>
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
 
         <!-- Test Dependencies -->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-cql</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+            <type>test-jar</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.datastax.oss</groupId>
+                    <artifactId>java-driver-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.datastax.oss</groupId>
+                    <artifactId>java-driver-query-builder</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-hadoop</artifactId>
@@ -183,13 +209,17 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
-        </dependency>      
+        </dependency>
     </dependencies>
 
     <build>
         <resources>
             <resource>
                 <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>${basedir}/../janusgraph-cql/src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
@@ -200,6 +230,14 @@
             </testResource>
             <testResource>
                 <directory>${basedir}/src/test/resources</directory>
+                <filtering>false</filtering>
+            </testResource>
+            <testResource>
+                <directory>${basedir}/../janusgraph-cql/src/main/resources</directory>
+                <filtering>false</filtering>
+            </testResource>
+            <testResource>
+                <directory>${basedir}/../janusgraph-cql/src/test/resources</directory>
                 <filtering>false</filtering>
             </testResource>
         </testResources>
@@ -234,8 +272,11 @@
                         <cassandra.docker.useSSL>${cassandra.docker.useSSL}</cassandra.docker.useSSL>
                         <cassandra.docker.enableClientAuth>${cassandra.docker.enableClientAuth}</cassandra.docker.enableClientAuth>
                         <cassandra.docker.useDefaultConfigFromImage>${cassandra.docker.useDefaultConfigFromImage}</cassandra.docker.useDefaultConfigFromImage>
-                        <cql.storageBackend>cql</cql.storageBackend>
+                        <cql.storageBackend>scylla</cql.storageBackend>
                     </systemPropertyVariables>
+                    <dependenciesToScan>
+                        <dependency>org.janusgraph:janusgraph-cql:test-jar:tests</dependency>
+                    </dependenciesToScan>
                 </configuration>
                 <executions>
                     <execution>
@@ -284,102 +325,49 @@
     </build>
     <profiles>
         <profile>
-	        <id>coverage</id>
-	        <activation>
-	            <activeByDefault>false</activeByDefault>
-	        </activation>
-	        <properties>
-	            <test.extra.jvm.opts>${jacoco.opts} ${test.javaagent.opts}</test.extra.jvm.opts>
-	        </properties>
-        </profile>
-
-        <profile>
-            <id>cassandra3-byteordered</id>
-	        <activation>
-	            <activeByDefault>false</activeByDefault>
-	        </activation>
-            <properties>
-                <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
-                <cassandra.docker.partitioner>${test.byteordered}</cassandra.docker.partitioner>
-                <test.skip.serial>true</test.skip.serial>
-                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
-            </properties>
-        </profile>
-        <profile>
-            <id>cassandra3-murmur</id>
-	        <activation>
-	            <activeByDefault>false</activeByDefault>
-	        </activation>
-            <properties>
-                <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
-                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
-                <test.skip.serial>false</test.skip.serial>
-                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
-            </properties>
-        </profile>
-        <profile>
-            <id>cassandra3-murmur-ssl</id>
-	        <activation>
-	            <activeByDefault>false</activeByDefault>
-	        </activation>
-            <properties>
-                <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
-                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
-                <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
-                <test.skip.serial>false</test.skip.serial>
-                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
-            </properties>
-        </profile>
-        <profile>
-            <id>cassandra3-murmur-client-auth</id>
+            <id>coverage</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <cassandra.docker.version>${test.docker.version.cassandra3}</cassandra.docker.version>
+                <test.extra.jvm.opts>${jacoco.opts} ${test.javaagent.opts}</test.extra.jvm.opts>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>scylla-murmur</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
+                <test.skip.serial>false</test.skip.serial>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>scylla-murmur-ssl</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
+                <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
+                <test.skip.serial>false</test.skip.serial>
+                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
+            </properties>
+        </profile>
+        <profile>
+            <id>scylla-murmur-client-auth</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
                 <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
                 <cassandra.docker.useSSL>true</cassandra.docker.useSSL>
                 <cassandra.docker.enableClientAuth>true</cassandra.docker.enableClientAuth>
                 <test.skip.serial>false</test.skip.serial>
-                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>cassandra4-byteordered</id>
-	        <activation>
-	            <activeByDefault>false</activeByDefault>
-	        </activation>
-            <properties>
-                <cassandra.docker.version>${test.docker.version.cassandra4}</cassandra.docker.version>
-                <cassandra.docker.partitioner>${test.byteordered}</cassandra.docker.partitioner>
-                <test.skip.serial>true</test.skip.serial>
-                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
-            </properties>
-        </profile>
-        <profile>
-            <id>cassandra4-murmur</id>
-	        <activation>
-	            <activeByDefault>false</activeByDefault>
-	        </activation>
-            <properties>
-                <cassandra.docker.version>${test.docker.version.cassandra4}</cassandra.docker.version>
-                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
-                <test.skip.serial>false</test.skip.serial>
-                <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>scylladb</id>
-            <properties>
-                <cassandra.docker.version>${scylladb.version}</cassandra.docker.version>
-                <cassandra.docker.image>scylladb/scylla</cassandra.docker.image>
-                <cassandra.docker.partitioner>${test.murmur}</cassandra.docker.partitioner>
-                <test.skip.byteordered>true</test.skip.byteordered>
-                <test.skip.murmur>false</test.skip.murmur>
-                <test.skip.serial>false</test.skip.serial>
-                <test.skip.murmur-ssl>false</test.skip.murmur-ssl>
                 <test.cql.excludes>${test.excluded.groups},SERIAL_TESTS</test.cql.excludes>
             </properties>
         </profile>

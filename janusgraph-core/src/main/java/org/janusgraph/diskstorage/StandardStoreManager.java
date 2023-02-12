@@ -29,7 +29,8 @@ public enum StandardStoreManager {
     BDB_JE("org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager", "berkeleyje"),
     CQL("org.janusgraph.diskstorage.cql.CQLStoreManager", "cql"),
     HBASE("org.janusgraph.diskstorage.hbase.HBaseStoreManager", "hbase"),
-    IN_MEMORY("org.janusgraph.diskstorage.inmemory.InMemoryStoreManager", "inmemory");
+    IN_MEMORY("org.janusgraph.diskstorage.inmemory.InMemoryStoreManager", "inmemory"),
+    SCYLLA("org.janusgraph.diskstorage.cql.ScyllaStoreManager", "scylla");
 
     private static final Set<String> ALL_SHORTHANDS;
     private static final Map<String, String> ALL_MANAGER_CLASSES;
