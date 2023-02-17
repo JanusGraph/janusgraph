@@ -366,7 +366,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.22.2</version>
+                    <version>3.0.0-M9</version>
                     <configuration>
                         <argLine>${default.test.jvm.opts}</argLine>
                         <runOrder>alphabetical</runOrder>
