@@ -232,7 +232,7 @@ Configuration options for JanusGraph's logging system
 
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
-| log.[X].backend | Define the log backed to use | String | default | GLOBAL_OFFLINE |
+| log.[X].backend | Define the log backend to use. A reserved shortcut `default` can be used to use graph's storage backend to manage logs. A custom log implementation can be specified by providing full class path which implements `org.janusgraph.diskstorage.log.LogManager` and accepts a single parameter `org.janusgraph.diskstorage.configuration.Configuration` in the public constructor. | String | default | GLOBAL_OFFLINE |
 | log.[X].fixed-partition | Whether all log entries are written to one fixed partition even if the backend store is partitioned.This can cause imbalanced loads and should only be used on low volume logs | Boolean | false | GLOBAL_OFFLINE |
 | log.[X].key-consistent | Whether to require consistency for log reading and writing messages to the storage backend | Boolean | false | MASKABLE |
 | log.[X].max-partitions | The maximum number of partitions to use for logging. Setting up this many actual or virtual partitions. Must be bigger than 0and a power of 2. | Integer | (no default value) | FIXED |

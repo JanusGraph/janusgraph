@@ -189,3 +189,42 @@ records read in each batch, the read interval, and whether the
 transaction change records should automatically expire and be removed
 from the log after a configurable amount of time (TTL).
 
+An example configuration for user transaction log could look like below:
+
+```properties
+log.user.backend=default
+log.user.fixed-partition=false
+log.user.max-read-time=10000 ms
+log.user.max-write-time=5000 ms
+log.user.read-batch-size=1024
+log.user.read-interval=3000 ms
+log.user.read-lag-time=2000 ms
+log.user.read-threads=1
+log.user.send-batch-size=256
+log.user.send-delay=0 ms
+log.user.ttl=120000 ms
+```
+
+#### Custom storage backend
+
+By default JanusGraph supports a single log backend implementation which is defined 
+by a reserved shortcut `default` in `log.user.backend` configuration option and has 
+the following class implementation `org.janusgraph.diskstorage.log.kcvs.KCVSLogManager`.  
+
+`KCVSLogManager` reuses the graph's storage backend (defined by `storage.backend`) to store all logs.  
+Usually for default management-only operations the default storage backend is good enough to manage logs 
+and custom log storage backend is not necessary.  
+That said, in case User Transaction Log is used the underlying graph's storage backend might be far from optimal 
+in highly loaded applications for `log.user` log and a better storage might be preferred (i.e. Kafka or else).   
+Thus, JanusGraph allows providing custom log implementations via `log.[x].backend` option.  
+The custom log implementation needs to implement `org.janusgraph.diskstorage.log.LogManager` interface and the 
+implementation class has to have a public constructor which accepts `org.janusgraph.diskstorage.configuration.Configuration` 
+as a single parameter. 
+
+The main purpose of that `LogManager` implementation is to open new logging implementations which extend 
+`org.janusgraph.diskstorage.log.Log` interface. 
+For example, logs opened by `KCVSLogManager` have `org.janusgraph.diskstorage.log.kcvs.KCVSLog` implementations 
+which manage logs inside graph's storage backend but the user may implement `Log` which uses Kafka storage backend or else.  
+
+To specify any custom log implementation it's necessary to provide full class path of the `LogManager` implementing class 
+via `log.[x].backend` configuration option.
