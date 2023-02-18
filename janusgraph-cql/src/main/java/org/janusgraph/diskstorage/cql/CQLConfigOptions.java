@@ -605,7 +605,7 @@ public interface CQLConfigOptions {
             "Disabling executor service reduces overhead of thread pool but might be more difficult to tune.",
         ConfigOption.Type.LOCAL,
         Boolean.class,
-        true);
+        false);
 
     ConfigOption<Integer> EXECUTOR_SERVICE_CORE_POOL_SIZE = new ConfigOption<>(
         EXECUTOR_SERVICE,
