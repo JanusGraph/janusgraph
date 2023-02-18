@@ -942,7 +942,11 @@ public class GraphDatabaseConfiguration {
     public static final Duration TRANSACTION_LOG_DEFAULT_TTL = Duration.ofDays(7);
 
     public static final ConfigOption<String> LOG_BACKEND = new ConfigOption<>(LOG_NS,"backend",
-            "Define the log backed to use",
+            "Define the log backend to use. A reserved shortcut `default` can be used to use graph's storage backend to manage logs. " +
+                "A custom log implementation can be specified by providing " +
+                "full class path which implements " +
+                "`org.janusgraph.diskstorage.log.LogManager` and accepts a single parameter " +
+                "`org.janusgraph.diskstorage.configuration.Configuration` in the public constructor.",
             ConfigOption.Type.GLOBAL_OFFLINE, "default");
 
     public static final ConfigOption<Integer> LOG_NUM_BUCKETS = new ConfigOption<>(LOG_NS,"num-buckets",
