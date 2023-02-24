@@ -254,7 +254,7 @@ information about how to make `scylla` `storage.backend` options available.
 * RemovableRelationIterator class
 * ImmutableConfiguration class
 
-### Version 0.6.3 (Release Date: ???)
+### Version 0.6.3 (Release Date: February 18, 2023)
 
 ```xml tab='Maven'
 <dependency>
@@ -276,7 +276,7 @@ compile "org.janusgraph:janusgraph-core:0.6.3"
 * Elasticsearch 6.0.1, 6.6.0, 7.14.0
 * Apache Lucene 8.9.0
 * Apache Solr 7.7.2, 8.11.0
-* Apache TinkerPop 3.5.3
+* Apache TinkerPop 3.5.5
 * Java 1.8
 
 !!! note
