@@ -24,7 +24,7 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [codacy-shield]: https://app.codacy.com/project/badge/Grade/850c7549ea72424486664ffc4f64f526
 [codacy-link]: https://www.codacy.com/gh/JanusGraph/janusgraph/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=JanusGraph/janusgraph&amp;utm_campaign=Badge_Grade
 [maven-shield]: https://img.shields.io/maven-central/v/org.janusgraph/janusgraph-core.svg
-[maven-link]: https://search.maven.org/#search%7Cga%7C1%7Corg.janusgraph
+[maven-link]: https://central.sonatype.com/search?q=org.janusgraph
 [javadoc-shield]: https://javadoc.io/badge/org.janusgraph/janusgraph-core.svg?color=blue
 [javadoc-link]: https://javadoc.io/doc/org.janusgraph/janusgraph-core
 [downloads-shield]: https://img.shields.io/github/downloads/JanusGraph/janusgraph/total.svg
