@@ -61,10 +61,6 @@ gremlin> :remote connect tinkerpop.server conf/remote.yaml
     To forward every command to the remote server, use the `:remote console` command.
     Further documentation can be found in the [TinkerPop reference docs](https://tinkerpop.apache.org/docs/{{ tinkerpop_version }}/reference/#console-remote-console)
 
-!!! info
-    Due to a known [issue](https://github.com/JanusGraph/janusgraph-docker/issues/123), `gremlin.sh` won't work in ARM
-    containers.
-
 ### Running Gremlin Console on Bare-metal
 
 We can also run the Gremlin Console on our bare-metal machine. To make the server able to communicate with the gremlin
