@@ -63,7 +63,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -490,7 +489,6 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         assertTrue(ManagementSystem
             .awaitGraphIndexStatus(graph, indexName)
             .status(SchemaStatus.DISCARDED)
-            .timeout(10, ChronoUnit.SECONDS)
             .call()
             .getSucceeded()
         );
