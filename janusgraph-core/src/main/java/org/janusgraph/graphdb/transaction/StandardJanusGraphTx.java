@@ -768,7 +768,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
         Collection<Connection> connections = outVertexLabel.mappedConnections();
         for (Connection connection : connections) {
-            if (connection.getIncomingVertexLabel() != inVertexLabel) continue;
+            if (connection.getIncomingVertexLabel().longId() != inVertexLabel.longId()) continue;
             if (connection.getEdgeLabel().equals(edgeLabel.name())) return;
         }
         config.getAutoSchemaMaker().makeConnectionConstraint(edgeLabel, outVertexLabel, inVertexLabel, this);
