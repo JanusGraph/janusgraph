@@ -125,8 +125,6 @@ class MultiThreadsRowsCollector extends RowsCollector {
                 while (!dataPuller.isFinished() && qr == null) {
                     qr = queue.poll(TIME_PER_TRY, TimeUnit.MILLISECONDS);
                 }
-                if (qr==null && !dataPuller.isFinished())
-                    throw new TemporaryBackendException("Timed out waiting for next row data - storage error likely");
             }
             currentResults[i]=qr;
         }
