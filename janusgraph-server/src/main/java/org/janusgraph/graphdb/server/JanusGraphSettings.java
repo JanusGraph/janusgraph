@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.server;
 
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.janusgraph.graphdb.server.util.JanusGraphSettingsUtils;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -34,7 +35,7 @@ public class JanusGraphSettings extends Settings {
 
     public static JanusGraphSettings read(final InputStream stream) {
         Objects.requireNonNull(stream);
-        Constructor constructor = new Constructor(JanusGraphSettings.class);
+        Constructor constructor = new Constructor(JanusGraphSettings.class, new LoaderOptions());
         TypeDescription grpcServerSettings = new TypeDescription(JanusGraphSettings.GrpcServerSettings.class);
         constructor.addTypeDescription(grpcServerSettings);
 
