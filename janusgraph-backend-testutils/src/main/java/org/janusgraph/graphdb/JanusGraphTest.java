@@ -1708,7 +1708,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(ManagementSystem
             .awaitGraphIndexStatus(graph, indexName)
             .status(SchemaStatus.REGISTERED)
-            .timeout(10, ChronoUnit.SECONDS)
             .call()
             .getSucceeded()
         );
@@ -1828,7 +1827,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(ManagementSystem
             .awaitGraphIndexStatus(graph, name)
             .status(SchemaStatus.DISCARDED)
-            .timeout(10, ChronoUnit.SECONDS)
             .call()
             .getSucceeded()
         );
@@ -2010,7 +2008,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         mgmt.updateIndex(eindex2, SchemaAction.ENABLE_INDEX);
         finishSchema();
         assertTrue(ManagementSystem.awaitRelationIndexStatus(graph, "byTime", "friend").status(SchemaStatus.ENABLED)
-                .timeout(10L, ChronoUnit.SECONDS).call().getSucceeded());
+                .call().getSucceeded());
 
         //Reindex the other two
         pindex2 = mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime");

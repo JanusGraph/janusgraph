@@ -2250,14 +2250,13 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
         assertFalse(ManagementSystem.awaitGraphIndexStatus(graph, "theIndex")
             .status(SchemaStatus.ENABLED)
-            .timeout(10L, ChronoUnit.SECONDS)
             .call()
             .getSucceeded());
         //This call is redundant and just here to make sure it doesn't mess anything up
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX).get();
         mgmt.commit();
 
-        ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").timeout(10L, ChronoUnit.SECONDS).call();
+        ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").call();
 
         finishSchema();
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX).get();
