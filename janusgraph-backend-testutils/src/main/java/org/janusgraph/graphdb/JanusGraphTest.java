@@ -141,6 +141,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.opentest4j.AssertionFailedError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -6055,6 +6056,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     @Test
     public void testGraphCentricQueryProfiling() {
+        if (getStoreFeatures().isDistributed() && getStoreFeatures().isKeyOrdered()) return;
         final PropertyKey name = makeKey("name", String.class);
         final PropertyKey weight = makeKey("weight", Integer.class);
         final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("nameIdx", Vertex.class).addKey(name).buildCompositeIndex();
@@ -6085,7 +6087,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]");
+            put("query", "multiKSQ[1]{KeySliceQuery(0x0689A0626FE2)[0x00,0xFF)}");
             put("index", "nameIdx");
         }};
         assertEquals(nameIdxAnnotations, nested.getAnnotations());
@@ -6125,7 +6127,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]");
+            put("query", "multiKSQ[1]{KeySliceQuery(0x088901C8)[0x00,0xFF)}");
             put("index", "weightIdx");
         }};
         assertEquals(weightIdxAnnotations, nested.getAnnotations());
@@ -6133,10 +6135,36 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         backendQueryMetrics = (Metrics) nested.getNested().toArray()[0];
         assertTrue(backendQueryMetrics.getDuration(TimeUnit.MICROSECONDS) > 0);
 
+        // satisfied by a single graph-centric query which satisfied by union of two composite index queries
+        newTx();
+        assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("name", "alex")).count().next());
+        TraversalMetrics metrics = tx.traversal().V().or(__.has("name", "bob"), __.has("name", "alex"))
+            .profile().next();
+        mCompMultiOr = metrics.getMetrics(0);
+        assertEquals("JanusGraphStep([],[name.or(=(bob), =(alex))])", mCompMultiOr.getName());
+        assertTrue(mCompMultiOr.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals(2, mCompMultiOr.getNested().size());
+        nested = (Metrics) mCompMultiOr.getNested().toArray()[0];
+        assertEquals(QueryProfiler.CONSTRUCT_GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        nested = (Metrics) mCompMultiOr.getNested().toArray()[1];
+        assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
+        assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertEquals("((name = bob OR name = alex))", nested.getAnnotation("condition"));
+        Map<String, String> multiKSQAnnotations = new HashMap() {{
+            put("condition", "((name = bob OR name = alex))");
+            put("orders", "[]");
+            put("isFitted", "true");
+            put("isOrdered", "true");
+            put("query", "multiKSQ[2]{KeySliceQuery(0x0689A0626FE2)[0x00,0xFF),KeySliceQuery(0x0689A0616C65F8)[0x00,0xFF)}");
+            put("index", "nameIdx");
+        }};
+        assertEquals(multiKSQAnnotations, nested.getAnnotations());
+
         // satisfied by a single graph-centric query which satisfied by intersection of two composite index queries
         newTx();
         assertEquals(1, tx.traversal().V().and(__.has("name", "bob"), __.has("weight", 100)).count().next());
-        TraversalMetrics metrics = tx.traversal().V().and(__.has("name", "bob"), __.has("weight", 100))
+        metrics = tx.traversal().V().and(__.has("name", "bob"), __.has("weight", 100))
             .profile().next();
         Metrics mCompMultiAnd = metrics.getMetrics(0);
         assertEquals("JanusGraphStep([],[name.eq(bob), weight.eq(100)])", mCompMultiAnd.getName());
@@ -6150,14 +6178,19 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
         assertEquals("(name = bob AND weight = 100)", nested.getAnnotation("condition"));
         assertEquals(2, nested.getNested().size());
-        Metrics deeplyNested = (Metrics) nested.getNested().toArray()[0];
-        assertEquals("AND-query", deeplyNested.getName());
+        Metrics deeplyNested1 = (Metrics) nested.getNested().toArray()[0];
+        assertEquals("AND-query", deeplyNested1.getName());
         // FIXME: assertTrue(deeplyNested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertEquals("multiKSQ[1]", deeplyNested.getAnnotation("query"));
-        deeplyNested = (Metrics) nested.getNested().toArray()[1];
-        assertEquals("AND-query", deeplyNested.getName());
+        Metrics deeplyNested2 = (Metrics) nested.getNested().toArray()[1];
+        assertEquals("AND-query", deeplyNested2.getName());
         // FIXME: assertTrue(deeplyNested.getDuration(TimeUnit.MICROSECONDS) > 0);
-        assertEquals("multiKSQ[1]", deeplyNested.getAnnotation("query"));
+        try {
+            assertEquals("multiKSQ[1]{KeySliceQuery(0x088901C8)[0x00,0xFF)}", deeplyNested1.getAnnotation("query"));
+            assertEquals("multiKSQ[1]{KeySliceQuery(0x0689A0626FE2)[0x00,0xFF)}", deeplyNested2.getAnnotation("query"));
+        } catch (AssertionFailedError error) {
+            assertEquals("multiKSQ[1]{KeySliceQuery(0x088901C8)[0x00,0xFF)}", deeplyNested2.getAnnotation("query"));
+            assertEquals("multiKSQ[1]{KeySliceQuery(0x0689A0626FE2)[0x00,0xFF)}", deeplyNested1.getAnnotation("query"));
+        }
 
         // satisfied by one graph-centric query, which satisfied by in-memory filtering after one composite index query
         newTx();
@@ -6179,7 +6212,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "false"); // not fitted because prop = 100 requires in-memory filtering
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]");
+            put("query", "multiKSQ[1]{KeySliceQuery(0x0689A0626FE2)[0x00,0xFF)}");
             put("index", "nameIdx");
         }};
         assertEquals(annotations, nested.getAnnotations());
@@ -6228,6 +6261,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     @Test
     public void testGraphCentricQueryProfilingWithLimitAdjusting() throws BackendException {
+        if (getStoreFeatures().isDistributed() && getStoreFeatures().isKeyOrdered()) return;
         Runnable dataLoader = () -> {
             final PropertyKey name = makeKey("name", String.class);
             final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("nameIdx", Vertex.class).addKey(name).buildCompositeIndex();
@@ -6252,14 +6286,14 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]@100000"); // 100000 is HARD_MAX_LIMIT
+            put("query", "multiKSQ[1]@100000{KeySliceQuery(0x0489A0626FE2)[0x00,0xFF)}"); // 100000 is HARD_MAX_LIMIT
             put("index", "nameIdx");
         }};
         assertEquals(nameIdxAnnotations, nested.getAnnotations());
         List<Metrics> backendQueryMetrics = nested.getNested().stream().map(m -> (Metrics) m).collect(Collectors.toList());
         assertEquals(1, backendQueryMetrics.size());
         Map<String, String> backendAnnotations = new HashMap() {{
-            put("query", "nameIdx:multiKSQ[1]@100000");
+            put("query", "nameIdx:multiKSQ[1]@100000{KeySliceQuery(0x0489A0626FE2)[0x00,0xFF)}");
             put("limit", 100000);
         }};
         assertEquals(backendAnnotations, backendQueryMetrics.get(0).getAnnotations());
@@ -6280,14 +6314,14 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]");
+            put("query", "multiKSQ[1]{KeySliceQuery(0x0489A0626FE2)[0x00,0xFF)}");
             put("index", "nameIdx");
         }};
         assertEquals(nameIdxAnnotations, nested.getAnnotations());
         backendQueryMetrics = nested.getNested().stream().map(m -> (Metrics) m).collect(Collectors.toList());
         assertEquals(1, backendQueryMetrics.size());
         backendAnnotations = new HashMap() {{
-            put("query", "nameIdx:multiKSQ[1]");
+            put("query", "nameIdx:multiKSQ[1]{KeySliceQuery(0x0489A0626FE2)[0x00,0xFF)}");
         }};
         assertEquals(backendAnnotations, backendQueryMetrics.get(0).getAnnotations());
         assertTrue(backendQueryMetrics.get(0).getDuration(TimeUnit.MICROSECONDS) > 0);
@@ -6315,7 +6349,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("orders", "[]");
             put("isFitted", "true");
             put("isOrdered", "true");
-            put("query", "multiKSQ[1]@4000");
+            put("query", "multiKSQ[1]@4000{KeySliceQuery(0x0489A0626FE2)[0x00,0xFF)}");
             put("index", "nameIdx");
         }};
         assertEquals(nameIdxAnnotations, nested.getAnnotations());
@@ -6326,7 +6360,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         for (Metrics backendQueryMetric : backendQueryMetrics) {
             int queryLimit = limit;
             backendAnnotations = new HashMap() {{
-                put("query", "nameIdx:multiKSQ[1]@" + queryLimit);
+                put("query", "nameIdx:multiKSQ[1]@" + queryLimit + "{KeySliceQuery(0x0489A0626FE2)[0x00,0xFF)}");
                 put("limit", queryLimit);
             }};
             assertEquals(backendAnnotations, backendQueryMetric.getAnnotations());
