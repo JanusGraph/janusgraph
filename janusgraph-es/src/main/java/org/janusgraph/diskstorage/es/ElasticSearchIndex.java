@@ -62,6 +62,7 @@ import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.util.datastructures.IterablesUtil;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1146,11 +1147,11 @@ public class ElasticSearchIndex implements IndexProvider {
         } else if (condition instanceof Not) {
             return compat.boolMustNot(getFilter(((Not) condition).getChild(),information));
         } else if (condition instanceof And) {
-            final List queries = StreamSupport.stream(condition.getChildren().spliterator(), false)
+            final List queries = IterablesUtil.stream(condition.getChildren())
                 .map(c -> getFilter(c,information)).collect(Collectors.toList());
             return compat.boolMust(queries);
         } else if (condition instanceof Or) {
-            final List queries = StreamSupport.stream(condition.getChildren().spliterator(), false)
+            final List queries = IterablesUtil.stream(condition.getChildren())
                 .map(c -> getFilter(c,information)).collect(Collectors.toList());
             return compat.boolShould(queries);
         } else throw new IllegalArgumentException("Invalid condition: " + condition);

@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.query.vertex;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -70,7 +69,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
 
 /**
  * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into
@@ -205,13 +203,9 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
     protected static Iterable<JanusGraphVertex> edges2Vertices(final Iterable<JanusGraphEdge> edges,
                                                                final JanusGraphVertex other) {
-        return Iterables.transform(edges, new Function<JanusGraphEdge, JanusGraphVertex>() {
-            @Nullable
-            @Override
-            public JanusGraphVertex apply(@Nullable JanusGraphEdge janusgraphEdge) {
-                return janusgraphEdge.otherVertex(other);
-            }
-        });
+        // We don't use here `stream::iterator` because such iterable can be traversed only once.
+        // We don't use `stream.collect(Collectors.toList())` because such list will be evaluated immediately instead of lazily.
+        return Iterables.transform(edges, janusgraphEdge ->  janusgraphEdge.otherVertex(other));
     }
 
     protected VertexList edges2VertexIds(final Iterable<JanusGraphEdge> edges, final JanusGraphVertex other) {
@@ -237,7 +231,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      */
     protected Iterable<JanusGraphRelation> executeImplicitKeyQuery(InternalVertex v) {
         assert isImplicitKeyQuery(RelationCategory.PROPERTY);
-        if (dir==Direction.IN || limit<1) return ImmutableList.of();
+        if (dir==Direction.IN || limit<1) return Collections.emptyList();
         ImplicitKey key = (ImplicitKey)tx.getRelationType(types[0]);
         return ImmutableList.of(new StandardVertexProperty(0, key, v, key.computeProperty(v),
                 v.isNew() ? ElementLifeCycle.New : ElementLifeCycle.Loaded));
@@ -302,7 +296,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
 
     protected final boolean isPartitionedVertex(InternalVertex vertex) {
-        return tx.isPartitionedVertex(vertex) && !queryOnlyGivenVertex;
+        return !queryOnlyGivenVertex && tx.isPartitionedVertex(vertex);
     }
 
     protected boolean useSimpleQueryProcessor(BaseVertexCentricQuery query, InternalVertex... vertices) {

@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.util.time.Durations;
+import org.janusgraph.util.datastructures.IterablesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,6 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class HadoopConfiguration implements WriteConfiguration {
 
@@ -103,7 +103,7 @@ public class HadoopConfiguration implements WriteConfiguration {
          * Iterating over Map.Entry is needlessly wasteful since we don't need the values.
          */
 
-        return StreamSupport.stream(config.spliterator(), false)
+        return IterablesUtil.stream(config)
             .map(Entry::getKey)
             .filter(internalKey -> {
                 String k = internalKey;

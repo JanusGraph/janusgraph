@@ -3577,6 +3577,27 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void shouldBeAbleToIterateManagementIterablesMultipleTimes() {
+        EdgeLabel child = mgmt.makeEdgeLabel("child").multiplicity(Multiplicity.ONE2MANY).make();
+
+        Iterable<VertexLabel> vertexLabels = mgmt.getVertexLabels();
+        vertexLabels.iterator();
+        vertexLabels.iterator();
+
+        Iterable<JanusGraphIndex> graphIndexes = mgmt.getGraphIndexes(Vertex.class);
+        graphIndexes.iterator();
+        graphIndexes.iterator();
+
+        Iterable<EdgeLabel> relationTypes = mgmt.getRelationTypes(EdgeLabel.class);
+        relationTypes.iterator();
+        relationTypes.iterator();
+
+        Iterable<RelationTypeIndex> relationTypeIndices = mgmt.getRelationIndexes(child);
+        relationTypeIndices.iterator();
+        relationTypeIndices.iterator();
+    }
+
+    @Test
     public void testRelationTypeIndexes() {
         PropertyKey weight = makeKey("weight", Float.class);
         PropertyKey time = makeKey("time", Long.class);
