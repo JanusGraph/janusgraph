@@ -150,6 +150,7 @@ import org.janusgraph.testutil.FeatureFlag;
 import org.janusgraph.testutil.JanusGraphFeature;
 import org.janusgraph.testutil.TestGraphConfigs;
 import org.janusgraph.util.IDUtils;
+import org.janusgraph.util.datastructures.IterablesUtil;
 import org.janusgraph.util.stats.MetricManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
@@ -190,7 +191,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
@@ -3715,6 +3715,27 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void shouldBeAbleToIterateManagementIterablesMultipleTimes() {
+        EdgeLabel child = mgmt.makeEdgeLabel("child").multiplicity(Multiplicity.ONE2MANY).make();
+
+        Iterable<VertexLabel> vertexLabels = mgmt.getVertexLabels();
+        vertexLabels.iterator();
+        vertexLabels.iterator();
+
+        Iterable<JanusGraphIndex> graphIndexes = mgmt.getGraphIndexes(Vertex.class);
+        graphIndexes.iterator();
+        graphIndexes.iterator();
+
+        Iterable<EdgeLabel> relationTypes = mgmt.getRelationTypes(EdgeLabel.class);
+        relationTypes.iterator();
+        relationTypes.iterator();
+
+        Iterable<RelationTypeIndex> relationTypeIndices = mgmt.getRelationIndexes(child);
+        relationTypeIndices.iterator();
+        relationTypeIndices.iterator();
+    }
+
+    @Test
     public void testRelationTypeIndexes() {
         PropertyKey weight = makeKey("weight", Float.class);
         PropertyKey time = makeKey("time", Long.class);
@@ -5870,7 +5891,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key));
 
         //Check subqueries
-        SimpleQueryProfiler simpleQueryProfiler = Iterables.getOnlyElement(StreamSupport.stream(profiler.spliterator(), false)
+        SimpleQueryProfiler simpleQueryProfiler = Iterables.getOnlyElement(IterablesUtil.stream(profiler)
             .filter(p -> !p.getGroupName().equals(QueryProfiler.OPTIMIZATION)).collect(Collectors.toList()));
         if (subQuerySpecs.length == 2) { //0=>fitted, 1=>ordered
             assertEquals(subQuerySpecs[0], simpleQueryProfiler.getAnnotation(QueryProfiler.FITTED_ANNOTATION));

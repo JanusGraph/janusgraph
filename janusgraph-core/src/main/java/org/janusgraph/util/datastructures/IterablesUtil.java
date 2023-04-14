@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
@@ -53,8 +53,8 @@ public class IterablesUtil {
         }
     }
 
-    public static <O> Iterable<O> limitedIterable(final Iterable<O> iterable, final int limit) {
-        return StreamSupport.stream(iterable.spliterator(), false).limit(limit).collect(Collectors.toList());
+    public static <T> Stream<T> stream(Iterable<T> iterable){
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     public static int size(Iterable i) {
