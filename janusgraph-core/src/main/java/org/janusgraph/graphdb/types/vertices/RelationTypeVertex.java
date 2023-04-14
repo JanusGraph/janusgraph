@@ -28,7 +28,6 @@ import org.janusgraph.graphdb.util.CollectionsUtil;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -94,13 +93,13 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
 
     @Override
     public Iterable<InternalRelationType> getRelationIndexes() {
-        return Stream.concat(
-            Stream.of(this),
-            getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX, Direction.OUT).stream()
-                .map(entry -> {
-                    assert entry.getSchemaType() instanceof InternalRelationType;
-                    return (InternalRelationType) entry.getSchemaType();
-                }))::iterator;
+        return Iterables.concat(
+            Collections.singletonList(this),
+            Iterables.transform(getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX,Direction.OUT), entry -> {
+                assert entry.getSchemaType() instanceof InternalRelationType;
+                return (InternalRelationType) entry.getSchemaType();
+            })
+        );
     }
 
     @Override

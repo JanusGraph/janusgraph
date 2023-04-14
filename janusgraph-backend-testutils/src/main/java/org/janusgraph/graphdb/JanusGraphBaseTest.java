@@ -58,6 +58,7 @@ import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.testutil.TestGraphConfigs;
+import org.janusgraph.util.datastructures.IterablesUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -69,7 +70,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
@@ -467,7 +467,7 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
 
     public static <T> Stream<T> asStream(final Iterator<T> source) {
         final Iterable<T> iterable = () -> source;
-        return StreamSupport.stream(iterable.spliterator(),false);
+        return IterablesUtil.stream(iterable);
     }
 
     public JanusGraph getForceIndexGraph() {

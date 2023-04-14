@@ -18,10 +18,9 @@ import com.google.common.collect.ImmutableSet;
 import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.util.datastructures.IterablesUtil;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.Test;
-
-import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -149,13 +148,13 @@ public class ConfigurationTest {
         ReflectiveConfigOptionLoader.INSTANCE.setEnabled(false);
         ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
 
-        assertFalse(StreamSupport.stream(GraphDatabaseConfiguration.LOG_NS.getChildren().spliterator(), false)
+        assertFalse(IterablesUtil.stream(GraphDatabaseConfiguration.LOG_NS.getChildren())
             .anyMatch(elem -> elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time")));
 
         ReflectiveConfigOptionLoader.INSTANCE.setEnabled(true);
         ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
 
-        assertTrue(StreamSupport.stream(GraphDatabaseConfiguration.LOG_NS.getChildren().spliterator(), false)
+        assertTrue(IterablesUtil.stream(GraphDatabaseConfiguration.LOG_NS.getChildren())
             .anyMatch(elem -> elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time")));
     }
 }

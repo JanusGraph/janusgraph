@@ -98,6 +98,7 @@ import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
 import org.janusgraph.graphdb.types.vertices.RelationTypeVertex;
+import org.janusgraph.util.datastructures.IterablesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +117,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
@@ -404,10 +404,12 @@ public class ManagementSystem implements JanusGraphManagement {
 
     @Override
     public Iterable<RelationTypeIndex> getRelationIndexes(final RelationType type) {
-        Preconditions.checkArgument(type != null && type instanceof InternalRelationType, "Invalid relation type provided: %s", type);
-        return StreamSupport.stream(((InternalRelationType) type).getRelationIndexes().spliterator(), false)
-            .filter(internalRelationType -> !type.equals(internalRelationType))
-            .map(internalType -> (RelationTypeIndex) new RelationTypeIndexWrapper(internalType))::iterator;
+        Preconditions.checkArgument(type instanceof InternalRelationType, "Invalid relation type provided: %s", type);
+        // We don't use here stream::iterator because such iterable can be traversed only once.
+        return Iterables.transform(
+            Iterables.filter(((InternalRelationType) type).getRelationIndexes(),
+                internalRelationType -> !type.equals(internalRelationType)),
+            internalType -> (RelationTypeIndex) new RelationTypeIndexWrapper(internalType));
     }
 
     /* --------------
@@ -433,8 +435,8 @@ public class ManagementSystem implements JanusGraphManagement {
 
     @Override
     public Iterable<JanusGraphIndex> getGraphIndexes(final Class<? extends Element> elementType) {
-        return StreamSupport.stream(
-            QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.GRAPHINDEX).spliterator(), false)
+        return IterablesUtil.stream(
+            QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, JanusGraphSchemaCategory.GRAPHINDEX))
             .map(janusGraphVertex -> {
                 assert janusGraphVertex instanceof JanusGraphSchemaVertex;
                 return ((JanusGraphSchemaVertex) janusGraphVertex).asIndexType();
@@ -1014,7 +1016,7 @@ public class ManagementSystem implements JanusGraphManagement {
             this.graph = graph;
             this.schemaVertexId = vertex.longId();
             this.newStatus = newStatus;
-            this.propertyKeys = StreamSupport.stream(keys.spliterator(), false)
+            this.propertyKeys = IterablesUtil.stream(keys)
                 .map(PropertyKey::longId)
                 .collect(Collectors.toSet());
         }

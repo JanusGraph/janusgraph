@@ -40,6 +40,7 @@ import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.util.datastructures.IterablesUtil;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -50,7 +51,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
 public abstract class AbstractIndexSelectionStrategy implements IndexSelectionStrategy {
@@ -241,7 +241,7 @@ public abstract class AbstractIndexSelectionStrategy implements IndexSelectionSt
     private boolean coversAll(final MixedIndexType index, Condition<JanusGraphElement> condition,
                              IndexSerializer indexInfo) {
         if (condition.getType()!=Condition.Type.LITERAL) {
-            return StreamSupport.stream(condition.getChildren().spliterator(), false)
+            return IterablesUtil.stream(condition.getChildren())
                 .allMatch(child -> coversAll(index, child, indexInfo));
         }
         if (!(condition instanceof PredicateCondition)) {
