@@ -63,8 +63,8 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     /* ---------------------------------------------------------------
      * Query Construction
-	 * ---------------------------------------------------------------
-	 */
+     * ---------------------------------------------------------------
+     */
 
     @Override
     public JanusGraphMultiVertexQuery addVertex(Vertex vertex) {
@@ -82,8 +82,8 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     /* ---------------------------------------------------------------
      * Query Execution
-	 * ---------------------------------------------------------------
-	 */
+     * ---------------------------------------------------------------
+     */
 
     /**
      * Constructs the BaseVertexCentricQuery through {@link BasicVertexCentricQueryBuilder#constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}.

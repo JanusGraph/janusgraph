@@ -29,13 +29,13 @@ import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.util.StreamIterable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -226,7 +226,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     @Deprecated
     @Override
     public Iterable<Result<JanusGraphVertex>> vertices() {
-        return new StreamIterable<>(vertexStream());
+        return vertexStream().collect(Collectors.toList());
     }
 
     @Override
@@ -238,7 +238,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     @Deprecated
     @Override
     public Iterable<Result<JanusGraphEdge>> edges() {
-        return new StreamIterable<>(edgeStream());
+        return edgeStream().collect(Collectors.toList());
     }
 
     @Override
@@ -250,7 +250,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     @Deprecated
     @Override
     public Iterable<Result<JanusGraphVertexProperty>> properties() {
-        return new StreamIterable<>(propertyStream());
+        return propertyStream().collect(Collectors.toList());
     }
 
     @Override

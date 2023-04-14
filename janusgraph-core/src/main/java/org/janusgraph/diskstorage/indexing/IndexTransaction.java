@@ -22,7 +22,6 @@ import org.janusgraph.diskstorage.LoggableTransaction;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
-import org.janusgraph.graphdb.util.StreamIterable;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -119,7 +118,7 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
      */
     @Deprecated
     public Iterable<RawQuery.Result<String>> query(RawQuery query) throws BackendException {
-        return new StreamIterable<>(index.query(query, keyInformation,indexTx));
+        return index.query(query, keyInformation,indexTx).collect(Collectors.toList());
     }
 
     public Stream<RawQuery.Result<String>> queryStream(RawQuery query) throws BackendException {
