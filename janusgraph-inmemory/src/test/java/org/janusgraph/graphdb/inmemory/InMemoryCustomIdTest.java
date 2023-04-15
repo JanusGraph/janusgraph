@@ -33,4 +33,10 @@ public class InMemoryCustomIdTest extends JanusGraphCustomIdTest {
     public void testUpgrade() {
         // an in-memory graph is destroyed when it's closed
     }
+
+    @Disabled
+    @Override
+    public void testEnableAndDisableStringId() {
+        // an in-memory graph is destroyed when it's closed
+    }
 }

@@ -498,8 +498,8 @@ public class Backend implements LockerProvider, AutoCloseable {
         StoreManager manager = getImplementationClass(storageConfig, storageConfig.get(STORAGE_BACKEND),
                 StandardStoreManager.getAllManagerClasses());
         if (manager instanceof OrderedKeyValueStoreManager) {
-            if (storageConfig.get(ALLOW_STRING_VERTEX_ID).booleanValue()) {
-                throw new IllegalArgumentException(ALLOW_STRING_VERTEX_ID.getName() + " does not guarantee fixed key length");
+            if (storageConfig.get(ALLOW_STRING_VERTEX_ID)) {
+                throw new JanusGraphException(ALLOW_STRING_VERTEX_ID.getName() + " is not supported for OrderedKeyValueStore");
             }
             Map<String, Integer> keyLength = new HashMap<>(3);
             keyLength.put(EDGESTORE_NAME, 8);

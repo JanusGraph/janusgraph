@@ -23,7 +23,9 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphBaseTest;
@@ -77,6 +79,38 @@ public abstract class JanusGraphCustomIdSparkTest extends JanusGraphBaseTest {
         config.set(ALLOW_SETTING_VERTEX_ID, allowSettingVertexId, new String[0]);
         config.set(ALLOW_STRING_VERTEX_ID, allowStringVertexId, new String[0]);
         open(config.getConfiguration());
+    }
+
+    @Test
+    public void testUpgrade() throws Exception {
+        open(true, false);
+        int numV = 10;
+        for (int i = 1; i <= numV; i++) {
+            graph.traversal().addV().property(T.id, graph.getIDManager().toVertexId(i)).next();
+        }
+        graph.tx().commit();
+        graph.close();
+
+        // enable custom string ID mode
+        open(true, true);
+        JanusGraphManagement mgmt = graph.openManagement();
+        mgmt.set(ConfigElement.getPath(ALLOW_STRING_VERTEX_ID), true);
+        mgmt.commit();
+
+        // open the graph again, it now has the latest config
+        open(true, true);
+        GraphTraversalSource t = getSparkGraph().traversal().withComputer(SparkGraphComputer.class);
+        assertEquals(numV, t.V().count().next());
+
+        for (int i = 1; i <= numV; i++) {
+            Vertex outV = graph.traversal().V().hasId(graph.getIDManager().toVertexId(i)).next();
+            Vertex inV = graph.traversal().addV().property(T.id, "STRING_ID_" + i).next();
+            graph.traversal().addE("links").from(outV).to(inV).next();
+        }
+        graph.tx().commit();
+
+        assertEquals(2 * numV, t.V().count().next());
+        assertEquals(numV, t.E().count().next());
     }
 
     /**

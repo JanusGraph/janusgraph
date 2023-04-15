@@ -177,6 +177,43 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
         assertEquals(3, graph.traversal().V().has("prop", "val").count().next());
     }
 
+    /**
+     * This test verifies that users could "downgrade"
+     * in the sense that they could disable string id
+     * feature after using it for a while
+     */
+    @Test
+    public void testEnableAndDisableStringId() {
+        open(true, true);
+        graph.addVertex(T.id, "s_vid_a");
+        graph.tx().commit();
+        graph.close();
+
+        // turn off custom string ID setting
+        open(null, null);
+        JanusGraphManagement mgmt = graph.openManagement();
+        mgmt.set(ConfigElement.getPath(ALLOW_STRING_VERTEX_ID), false);
+        mgmt.commit();
+
+        open(null, null);
+        Exception ex = assertThrows(UnsupportedOperationException.class, () -> graph.addVertex(T.id, "s_vid_b"));
+        assertEquals("Vertex does not support user supplied identifiers of this type", ex.getMessage());
+        graph.addVertex(T.id, graph.getIDManager().toVertexId(1L));
+        graph.tx().commit();
+        graph.close();
+
+        // further turn off custom ID setting
+        open(null, null);
+        mgmt = graph.openManagement();
+        mgmt.set(ConfigElement.getPath(ALLOW_SETTING_VERTEX_ID), false);
+        mgmt.commit();
+
+        open(null, null);
+        graph.addVertex();
+        graph.tx().commit();
+        assertEquals(3, graph.traversal().V().count().next());
+    }
+
     @Test
     public void testInvalidCustomLongVertexId() {
         open(true, true);
