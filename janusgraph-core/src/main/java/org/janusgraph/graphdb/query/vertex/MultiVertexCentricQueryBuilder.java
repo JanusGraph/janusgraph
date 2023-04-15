@@ -52,8 +52,12 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     private final Set<InternalVertex> vertices;
 
     public MultiVertexCentricQueryBuilder(final StandardJanusGraphTx tx) {
+        this(tx, null);
+    }
+
+    public MultiVertexCentricQueryBuilder(final StandardJanusGraphTx tx, Integer initialVerticesCapacity) {
         super(tx);
-        vertices = new HashSet<>();
+        vertices = initialVerticesCapacity!=null ? new HashSet<>(initialVerticesCapacity) : new HashSet<>();
     }
 
     @Override
@@ -108,14 +112,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
         profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,vertices.size());
         if (!bq.isEmpty()) {
             for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
-                Set<InternalVertex> adjVertices = new HashSet<>(vertices);
-                for (InternalVertex v : vertices) {
-                    if (isPartitionedVertex(v)) {
-                        profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION,true);
-                        adjVertices.remove(v);
-                        adjVertices.addAll(allRequiredRepresentatives(v));
-                    }
-                }
+                Collection<InternalVertex> adjVertices = getResolvedAdjVertices();
                 //Overwrite with more accurate size accounting for partitioned vertices
                 profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,adjVertices.size());
                 tx.executeMultiQuery(adjVertices, sq.getBackendQuery(), sq.getProfiler());
@@ -128,6 +125,35 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
                 result.put(v, resultConstructor.emptyResult());
         }
         return result;
+    }
+
+    private Collection<InternalVertex> getResolvedAdjVertices(){
+        if(hasQueryOnlyGivenVertex()){
+            return vertices;
+        }
+
+        boolean hasPartitionedVertices = false;
+        for (InternalVertex v : vertices) {
+            if (tx.isPartitionedVertex(v)) {
+                hasPartitionedVertices = true;
+                break;
+            }
+        }
+        if(!hasPartitionedVertices){
+            return vertices;
+        }
+
+        profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION,true);
+        Set<InternalVertex> adjVertices = new HashSet<>(vertices.size()*2);
+        for (InternalVertex v : vertices) {
+            if (tx.isPartitionedVertex(v)) {
+                adjVertices.addAll(allRequiredRepresentatives(v));
+            } else {
+                adjVertices.add(v);
+            }
+        }
+
+        return adjVertices;
     }
 
     public Map<JanusGraphVertex, Iterable<? extends JanusGraphRelation>> executeImplicitKeyQuery() {

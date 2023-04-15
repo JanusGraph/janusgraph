@@ -1193,14 +1193,14 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     @Override
     public JanusGraphMultiVertexQuery multiQuery(JanusGraphVertex... vertices) {
-        MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this);
+        MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this, vertices.length);
         for (JanusGraphVertex v : vertices) builder.addVertex(v);
         return builder;
     }
 
     @Override
     public JanusGraphMultiVertexQuery multiQuery(Collection<JanusGraphVertex> vertices) {
-        MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this);
+        MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this, vertices.size());
         builder.addAllVertices(vertices);
         return builder;
     }

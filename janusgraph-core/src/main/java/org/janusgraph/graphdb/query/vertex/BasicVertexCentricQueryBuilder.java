@@ -300,9 +300,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return Arrays.asList(tx.getAllRepresentatives(partitionedVertex,restrict2Partitions));
     }
 
-
     protected final boolean isPartitionedVertex(InternalVertex vertex) {
-        return tx.isPartitionedVertex(vertex) && !queryOnlyGivenVertex;
+        return !queryOnlyGivenVertex && tx.isPartitionedVertex(vertex);
     }
 
     protected boolean useSimpleQueryProcessor(BaseVertexCentricQuery query, InternalVertex... vertices) {
