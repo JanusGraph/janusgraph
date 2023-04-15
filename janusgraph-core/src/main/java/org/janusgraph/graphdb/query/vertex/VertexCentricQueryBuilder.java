@@ -78,7 +78,7 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
             vertex.query().properties().iterator().hasNext();
         }
 
-        if (isPartitionedVertex(vertex) && !hasQueryOnlyGivenVertex()) { //If it's a preloaded vertex we shouldn't preload data explicitly
+        if (isPartitionedVertex(vertex)) { //If it's a preloaded vertex we shouldn't preload data explicitly
             List<InternalVertex> vertices = allRequiredRepresentatives(vertex);
             profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION,true);
             profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,vertices.size());
