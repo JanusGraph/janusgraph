@@ -217,15 +217,16 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
     @Test
     public void testInvalidCustomLongVertexId() {
         open(true, true);
-        // string ID can be of any value
-        graph.addVertex(T.id, "1");
         // long ID must be converted first
         Exception ex = assertThrows(IllegalArgumentException.class, () -> graph.addVertex(T.id, 1));
         assertEquals("Not a valid vertex id: 1", ex.getMessage());
         graph.addVertex(T.id, graph.getIDManager().toVertexId(1));
-        assertTrue(graph.traversal().V().hasId("1").hasNext());
         assertFalse(graph.traversal().V().hasId(1).hasNext());
         assertTrue(graph.traversal().V().hasId(graph.getIDManager().toVertexId(1)).hasNext());
+        assertEquals(1, graph.getIDManager().fromVertexId((long) graph.traversal().V().id().next()));
+        // string ID can be of any value
+        graph.addVertex(T.id, "1");
+        assertTrue(graph.traversal().V().hasId("1").hasNext());
     }
 
     @Test
