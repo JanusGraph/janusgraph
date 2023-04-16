@@ -127,7 +127,7 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
         ex = assertThrows(IllegalArgumentException.class, () -> graph.addVertex(T.id, "id™"));
         assertEquals("Custom string id contains non-ascii character: id™", ex.getMessage());
         ex = assertThrows(IllegalArgumentException.class, () -> graph.addVertex(T.id, "custom-vertex"));
-        assertEquals("Custom string id contains reserved character (-): custom-vertex", ex.getMessage());
+        assertEquals("Custom string id contains reserved string (-): custom-vertex", ex.getMessage());
         List<String> vids = new ArrayList<>();
         for (int i = 1; i < 100; i++) {
             StringBuilder builder = new StringBuilder();
@@ -270,6 +270,7 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
 
     /**
      * See {@link JanusGraphTest#testIndexUpdatesWithReindexAndRemove()}
+     *
      * @throws ExecutionException
      * @throws InterruptedException
      */
@@ -485,19 +486,20 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
 
     /**
      * See {@link OLAPTest#removeGhostVertices()}
+     *
      * @throws Exception
      */
     @Test
     public void removeGhostVertices() throws Exception {
         open(true, true);
         JanusGraphVertex v1 = tx.addVertex(T.label, "person", T.id, "person1");
-        v1.property("name","stephen");
+        v1.property("name", "stephen");
         JanusGraphVertex v2 = tx.addVertex(T.label, "person", T.id, "person2");
-        v1.property("name","marko");
+        v1.property("name", "marko");
         JanusGraphVertex v3 = tx.addVertex(T.label, "person", T.id, graph.getIDManager().toVertexId(3));
-        v1.property("name","dan");
-        v2.addEdge("knows",v3);
-        v1.addEdge("knows",v2);
+        v1.property("name", "dan");
+        v2.addEdge("knows", v3);
+        v1.addEdge("knows", v2);
         newTx();
         Object v3id = getId(v3);
         Object v1id = getId(v1);
@@ -519,7 +521,7 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
         xx.commit();
 
         newTx();
-        assertNull(getV(tx,v3id));
+        assertNull(getV(tx, v3id));
         v1 = getV(tx, v1id);
         assertNotNull(v1);
         assertEquals(v3id, v1.query().direction(Direction.IN).labels("knows").vertices().iterator().next().id());

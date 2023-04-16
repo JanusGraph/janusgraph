@@ -459,7 +459,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 return false;
             }
             if (((String) id).contains(RelationIdentifier.TOSTRING_DELIMITER)) {
-                log.warn("ID contains illegal " + RelationIdentifier.TOSTRING_DELIMITER + " character, ignored: " + id);
+                log.warn("ID contains illegal " + RelationIdentifier.TOSTRING_DELIMITER + " substring, ignored: " + id);
                 return false;
             }
             return true;
@@ -613,7 +613,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             throw new IllegalArgumentException("Custom string id contains non-ascii character: " + vertexId);
         }
         if (vertexId != null && vertexId instanceof String && ((String) vertexId).contains(RelationIdentifier.TOSTRING_DELIMITER)) {
-            throw new IllegalArgumentException("Custom string id contains reserved character ("
+            throw new IllegalArgumentException("Custom string id contains reserved string ("
                 + RelationIdentifier.TOSTRING_DELIMITER + "): " + vertexId);
         }
         StandardVertex vertex = new StandardVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.NormalVertex, temporaryIds.nextID()), ElementLifeCycle.New);

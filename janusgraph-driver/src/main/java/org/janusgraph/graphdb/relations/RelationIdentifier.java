@@ -14,7 +14,10 @@
 
 package org.janusgraph.graphdb.relations;
 
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.util.encoding.LongEncoding;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -27,12 +30,32 @@ import static org.janusgraph.util.encoding.LongEncoding.STRING_MARKER;
 
 public final class RelationIdentifier implements Serializable {
 
-    public static final String TOSTRING_DELIMITER = "-";
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelationIdentifier.class);
+    public static final String JANUSGRAPH_RELATION_DELIMITER = "JANUSGRAPH_RELATION_DELIMITER";
+    public static final String TOSTRING_DELIMITER;
 
     private final Object outVertexId;
     private final long typeId;
     private final long relationId;
     private final Object inVertexId;
+
+    static {
+        String reservedKeyword = System.getProperty(JANUSGRAPH_RELATION_DELIMITER);
+        if (StringUtils.isNotEmpty(reservedKeyword)) {
+            if (!StringUtils.isAsciiPrintable(reservedKeyword)) {
+                throw new IllegalStateException("JanusGraph relation delimiter must be ASCII printable: " + reservedKeyword);
+            }
+            if (reservedKeyword.length() > 1) {
+                throw new IllegalStateException("JanusGraph relation delimiter must be single character: " + reservedKeyword);
+            }
+            TOSTRING_DELIMITER = reservedKeyword;
+            LOGGER.info("Loaded {} from system property, relation delimiter is: {}",
+                JANUSGRAPH_RELATION_DELIMITER, TOSTRING_DELIMITER);
+        } else {
+            TOSTRING_DELIMITER = "-";
+            LOGGER.info("Use default relation delimiter: {}", TOSTRING_DELIMITER);
+        }
+    }
 
     private RelationIdentifier() {
         outVertexId = null;
