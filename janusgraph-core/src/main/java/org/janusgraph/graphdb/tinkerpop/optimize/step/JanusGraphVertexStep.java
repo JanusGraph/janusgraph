@@ -21,14 +21,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.janusgraph.core.BaseVertexQuery;
 import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphMultiVertexQuery;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexQuery;
@@ -38,13 +36,13 @@ import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.fetcher.VertexStepBatchFetcher;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -54,8 +52,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
 
     private boolean useMultiQuery = false;
     private boolean batchPropertyPrefetching = false;
-    private Set<Vertex> verticesToPrefetch = new HashSet<>();
-    private Map<JanusGraphVertex, Iterable<? extends JanusGraphElement>> multiQueryResults = null;
+    private VertexStepBatchFetcher vertexStepBatchFetcher;
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
     private int txVertexCacheSize = 20000;
 
@@ -65,7 +62,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
 
         if (originalStep instanceof JanusGraphVertexStep) {
             JanusGraphVertexStep originalJanusGraphVertexStep = (JanusGraphVertexStep) originalStep;
-            this.useMultiQuery = originalJanusGraphVertexStep.useMultiQuery;
+            setUseMultiQuery(originalJanusGraphVertexStep.useMultiQuery);
             this.hasContainers = originalJanusGraphVertexStep.hasContainers;
             this.limit = originalJanusGraphVertexStep.limit;
         } else {
@@ -77,11 +74,16 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     @Override
     public void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = useMultiQuery;
+        if(useMultiQuery && vertexStepBatchFetcher == null){
+            vertexStepBatchFetcher = new VertexStepBatchFetcher(JanusGraphVertexStep.this::makeQuery, getReturnClass());
+        }
     }
 
     @Override
     public void registerFutureVertexForPrefetching(Vertex futureVertex) {
-        verticesToPrefetch.add(futureVertex);
+        if(useMultiQuery){
+            vertexStepBatchFetcher.registerFutureVertexForPrefetching(futureVertex);
+        }
     }
 
     public void setBatchPropertyPrefetching(boolean batchPropertyPrefetching) {
@@ -104,48 +106,23 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         return query;
     }
 
-    /**
-     * This initialisation method is called when an attempt to retrieve a vertex from the cached multiQuery results
-     * doesn't find an entry.
-     */
-    private void prefetchNextBatch(final Traverser.Admin<Vertex> traverser) {
-        final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(getTraversal()).multiQuery();
-        if (verticesToPrefetch.isEmpty()) {
-            multiQuery.addVertex(JanusGraphTraversalUtil.getJanusGraphVertex(traverser));
-        } else {
-            multiQuery.addAllVertices(verticesToPrefetch);
-            verticesToPrefetch.clear();
-        }
-
-        makeQuery(multiQuery);
-
-        try {
-            multiQueryResults = (Vertex.class.isAssignableFrom(getReturnClass())) ? multiQuery.vertices() : multiQuery.edges();
-        } catch (JanusGraphException janusGraphException) {
-            if (janusGraphException.isCausedBy(InterruptedException.class)) {
-                throw new TraversalInterruptedException();
-            }
-        }
-    }
-
     @Override
     protected Iterator<E> flatMap(final Traverser.Admin<Vertex> traverser) {
         Iterable<? extends JanusGraphElement> result;
 
+        JanusGraphVertex vertexToFetchDataFor = JanusGraphTraversalUtil.getJanusGraphVertex(traverser);
+
         if (useMultiQuery) {
-            if (multiQueryResults == null || !multiQueryResults.containsKey(traverser.get())) {
-                prefetchNextBatch(traverser); // current batch is exhausted, fetch new batch
-            }
-            result = multiQueryResults.get(traverser.get());
+            result = vertexStepBatchFetcher.fetchData(getTraversal(), vertexToFetchDataFor);
         } else {
-            final JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
+            final JanusGraphVertexQuery query = makeQuery(vertexToFetchDataFor.query());
             result = (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices() : query.edges();
         }
 
         if (batchPropertyPrefetching && txVertexCacheSize > 1) {
-            Set<Vertex> vertices = new HashSet<>();
+            Set<JanusGraphVertex> vertices = new HashSet<>();
             for(JanusGraphElement v : result){
-                vertices.add((Vertex) v);
+                vertices.add((JanusGraphVertex) v);
                 if (vertices.size() >= txVertexCacheSize) {
                     break;
                 }
@@ -154,9 +131,9 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
             // If there are multiple vertices then fetch the properties for all of them in a single multiQuery to
             // populate the vertex cache so subsequent queries of properties don't have to go to the storage back end
             if (vertices.size() > 1) {
-                JanusGraphMultiVertexQuery propertyMultiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
+                JanusGraphMultiVertexQuery propertyMultiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery(vertices);
                 ((BasicVertexCentricQueryBuilder) propertyMultiQuery).profiler(queryProfiler);
-                propertyMultiQuery.addAllVertices(vertices).preFetch();
+                propertyMultiQuery.preFetch();
             }
         }
 
