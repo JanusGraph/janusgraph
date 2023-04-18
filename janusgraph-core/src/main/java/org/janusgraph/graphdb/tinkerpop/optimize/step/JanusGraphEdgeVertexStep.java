@@ -23,6 +23,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraphMultiVertexQuery;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
@@ -64,7 +65,7 @@ public class JanusGraphEdgeVertexStep extends EdgeVertexStep implements Profilin
         }
 
         List<Traverser.Admin<Edge>> edges = new ArrayList<>();
-        Set<Vertex> vertices = new HashSet<>();
+        Set<JanusGraphVertex> vertices = new HashSet<>();
 
         do{
             Traverser.Admin<Edge> e = starts.next();
@@ -72,12 +73,12 @@ public class JanusGraphEdgeVertexStep extends EdgeVertexStep implements Profilin
 
             if(vertices.size() < txVertexCacheSize){
                 if(Direction.IN.equals(direction)){
-                    vertices.add(e.get().inVertex());
+                    vertices.add((JanusGraphVertex) e.get().inVertex());
                 } else if(Direction.OUT.equals(direction)){
-                    vertices.add(e.get().outVertex());
+                    vertices.add((JanusGraphVertex) e.get().outVertex());
                 } else if(Direction.BOTH.equals(direction)){
-                    vertices.add(e.get().inVertex());
-                    vertices.add(e.get().outVertex());
+                    vertices.add((JanusGraphVertex) e.get().inVertex());
+                    vertices.add((JanusGraphVertex) e.get().outVertex());
                 }
             }
 
@@ -86,9 +87,9 @@ public class JanusGraphEdgeVertexStep extends EdgeVertexStep implements Profilin
         // If there are multiple vertices then fetch the properties for all of them in a single multiQuery to
         // populate the vertex cache so subsequent queries of properties don't have to go to the storage back end
         if (vertices.size() > 1) {
-            JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
+            JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery(vertices);
             ((BasicVertexCentricQueryBuilder) multiQuery).profiler(queryProfiler);
-            multiQuery.addAllVertices(vertices).preFetch();
+            multiQuery.preFetch();
         }
 
         starts.add(edges.iterator());
