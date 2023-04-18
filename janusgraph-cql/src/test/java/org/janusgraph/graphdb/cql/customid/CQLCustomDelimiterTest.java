@@ -52,6 +52,7 @@ public class CQLCustomDelimiterTest extends JanusGraphBaseTest {
         Edge edge = graph.traversal().E().has("count", 1).next();
         assertEquals(id1, edge.outVertex().id());
         assertEquals(id2, edge.inVertex().id());
+        System.clearProperty(JANUSGRAPH_RELATION_DELIMITER);
     }
 
     @Override

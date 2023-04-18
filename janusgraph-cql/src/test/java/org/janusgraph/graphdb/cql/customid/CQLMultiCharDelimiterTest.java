@@ -40,6 +40,7 @@ public class CQLMultiCharDelimiterTest extends JanusGraphBaseTest {
         System.setProperty(JANUSGRAPH_RELATION_DELIMITER, "@@");
         clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_STRING_VERTEX_ID), true);
         assertThrows(ExceptionInInitializerError.class, () -> graph.addVertex(T.id, UUID.randomUUID().toString()));
+        System.clearProperty(JANUSGRAPH_RELATION_DELIMITER);
     }
 
     @Override
