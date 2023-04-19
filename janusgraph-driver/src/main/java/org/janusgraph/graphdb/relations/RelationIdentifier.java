@@ -41,6 +41,9 @@ public final class RelationIdentifier implements Serializable {
 
     static {
         String reservedKeyword = System.getProperty(JANUSGRAPH_RELATION_DELIMITER);
+        if (StringUtils.isEmpty(reservedKeyword)) {
+            reservedKeyword = System.getenv(JANUSGRAPH_RELATION_DELIMITER);
+        }
         if (StringUtils.isNotEmpty(reservedKeyword)) {
             if (!StringUtils.isAsciiPrintable(reservedKeyword)) {
                 throw new IllegalStateException("JanusGraph relation delimiter must be ASCII printable: " + reservedKeyword);

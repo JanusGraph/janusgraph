@@ -65,8 +65,10 @@ JanusGraph reserved relation delimiter. By default, this reserved character is `
 which means you cannot use UUID string as a vertex ID since it contains a `-` character.
 However, JanusGraph allows you to set `JANUSGRAPH_RELATION_DELIMITER` system property
 which can be any visible ASCII character. Once it is set, JanusGraph will prohibit that
-specific character instead of the default `-` character. For example, you can use the
-following command to set system property when opening gremlin console:
+specific character instead of the default `-` character. Alternatively, you can set
+`JANUSGRAPH_RELATION_DELIMITER` environment variable, which is evaluated if and only if
+the `JANUSGRAPH_RELATION_DELIMITER` system property is not present. For example, you can
+use the following command to set system property when opening gremlin console:
 
 ```bash
 JAVA_OPTIONS="-DJANUSGRAPH_RELATION_DELIMITER=@" ./bin/gremlin.sh
@@ -84,6 +86,7 @@ g.tx().commit()
 
 !!! warning
     If you decide to replace default `JANUSGRAPH_RELATION_DELIMITER`, you must
-    always set the system property value consistently across all JanusGraph
-    instances, including servers and clients. Otherwise, data corruption could
-    happen.
+    always set the system property or environment value consistently across all
+    JanusGraph instances, including servers and clients. Otherwise, data corruption
+    could happen. For example, if you only set it on client side, then the server will
+    not be able to deserialize any property or edge because of the setting mismatch.

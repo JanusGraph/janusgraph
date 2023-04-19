@@ -24,6 +24,9 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
@@ -36,9 +39,21 @@ public class CQLCustomDelimiterTest extends JanusGraphBaseTest {
     @Container
     public static final JanusGraphCassandraContainer cqlContainer = new JanusGraphCassandraContainer();
 
+    private static Map<String,String> getModifiableEnvironment() throws Exception{
+        Class pe = Class.forName("java.lang.ProcessEnvironment");
+        Method getenv = pe.getDeclaredMethod("getenv");
+        getenv.setAccessible(true);
+        Object unmodifiableEnvironment = getenv.invoke(null);
+        Class map = Class.forName("java.util.Collections$UnmodifiableMap");
+        Field m = map.getDeclaredField("m");
+        m.setAccessible(true);
+        return (Map) m.get(unmodifiableEnvironment);
+    }
+
     @Test
-    public void testCustomRelationDelimiter() {
-        System.setProperty(JANUSGRAPH_RELATION_DELIMITER, "@");
+    public void testCustomRelationDelimiter() throws Exception {
+        Map<String, String> env = getModifiableEnvironment();
+        env.put(JANUSGRAPH_RELATION_DELIMITER, "@");
         clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_STRING_VERTEX_ID), true);
         String id1 = UUID.randomUUID().toString();
         String id2 = UUID.randomUUID().toString();
@@ -52,7 +67,7 @@ public class CQLCustomDelimiterTest extends JanusGraphBaseTest {
         Edge edge = graph.traversal().E().has("count", 1).next();
         assertEquals(id1, edge.outVertex().id());
         assertEquals(id2, edge.inVertex().id());
-        System.clearProperty(JANUSGRAPH_RELATION_DELIMITER);
+        env.remove(JANUSGRAPH_RELATION_DELIMITER);
     }
 
     @Override
