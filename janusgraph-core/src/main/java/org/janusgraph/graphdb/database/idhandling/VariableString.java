@@ -21,7 +21,8 @@ import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.serialize.attribute.StringSerializer;
 import org.janusgraph.util.encoding.StringEncoding;
 
-import static org.janusgraph.graphdb.database.idhandling.VariableLong.STOP_MASK;
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.STOP_MASK;
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.STRING_ID_MARKER;
 
 
 /**
@@ -29,11 +30,11 @@ import static org.janusgraph.graphdb.database.idhandling.VariableLong.STOP_MASK;
  * This does not use any compression technique, so it is most suitable for short string, e.g. vertex
  * id.
  *
- * Important: it uses {@link VariableLong#STOP_MASK} as the first byte. This is because JanusGraph used
+ * Important: it uses {@link IDHandler#STRING_ID_MARKER} as the first byte. This is because JanusGraph used
  * to assume all IDs are positive long values. To maintain backward compatibility, we have to make sure
  * JanusGraph knows how to distinguish between string ID and long ID when decoding binary data. The
- * convention is, if the first byte is STOP_MASK, then it's a string ID, otherwise it's a long ID. This
- * leverages the fact that IDs are always positive, so the first byte would never be STOP_MASK for long
+ * convention is, if the first byte is STRING_MARKER, then it's a string ID, otherwise it's a long ID. This
+ * leverages the fact that IDs are always positive, so the first byte would never be STRING_MARKER for long
  * IDs.
  *
  * This class uses {@link StringSerializer} as a reference.
@@ -46,7 +47,7 @@ public class VariableString {
         if (StringUtils.isEmpty(value) || !StringEncoding.isAsciiString(value)) {
             throw new IllegalArgumentException("value must be non-empty ASCII string!");
         }
-        out.putByte(STOP_MASK);
+        out.putByte(STRING_ID_MARKER);
         for (int i = 0; i < value.length(); i++) {
             int c = value.charAt(i);
             assert c <= 127;
@@ -64,10 +65,10 @@ public class VariableString {
             int c = value.charAt(i);
             assert c <= 127;
             byte b = (byte)c;
-            if (i == value.length() - 1) b |= 0x80; //End marker
+            if (i == value.length() - 1) b |= STOP_MASK; //End marker
             out.putByte(b);
         }
-        out.putByte(STOP_MASK);
+        out.putByte(STRING_ID_MARKER);
     }
 
     public static String read(ReadBuffer in, boolean skipFirstByte) {
@@ -85,7 +86,7 @@ public class VariableString {
 
     public static String readBackward(ReadBuffer in) {
         int position = in.getPosition();
-        Preconditions.checkArgument(in.getByte(--position) == STOP_MASK);
+        Preconditions.checkArgument(in.getByte(--position) == STRING_ID_MARKER);
         StringBuilder sb = new StringBuilder();
         while (true) {
             int c = 0xFF & in.getByte(--position);

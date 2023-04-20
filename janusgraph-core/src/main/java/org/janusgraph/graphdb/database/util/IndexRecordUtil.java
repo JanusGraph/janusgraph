@@ -62,7 +62,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.janusgraph.util.encoding.LongEncoding.STRING_MARKER;
+import static org.janusgraph.util.encoding.LongEncoding.STRING_ENCODING_MARKER;
 
 public class IndexRecordUtil {
 
@@ -135,12 +135,12 @@ public class IndexRecordUtil {
         if (id instanceof Number) {
             return LongEncoding.encode(((Number) id).longValue());
         } else {
-            return STRING_MARKER + id.toString();
+            return STRING_ENCODING_MARKER + id.toString();
         }
     }
 
     public static Object name2Id(String name) {
-        if (name.charAt(0) == STRING_MARKER) {
+        if (name.charAt(0) == STRING_ENCODING_MARKER) {
             return name.substring(1);
         } else {
             return LongEncoding.decode(name);

@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import static org.janusgraph.util.encoding.LongEncoding.STRING_MARKER;
+import static org.janusgraph.util.encoding.LongEncoding.STRING_ENCODING_MARKER;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -131,7 +131,7 @@ public final class RelationIdentifier implements Serializable {
             s.append(LongEncoding.encode(((Number) outVertexId).longValue()));
         } else {
             assert outVertexId instanceof String;
-            s.append(STRING_MARKER).append(outVertexId);
+            s.append(STRING_ENCODING_MARKER).append(outVertexId);
         }
         s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(typeId));
         if (inVertexId != null) {
@@ -140,7 +140,7 @@ public final class RelationIdentifier implements Serializable {
                 s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(((Number) inVertexId).longValue()));
             } else {
                 assert inVertexId instanceof String;
-                s.append(TOSTRING_DELIMITER).append(STRING_MARKER).append(inVertexId);
+                s.append(TOSTRING_DELIMITER).append(STRING_ENCODING_MARKER).append(inVertexId);
             }
         }
         return s.toString();
@@ -152,7 +152,7 @@ public final class RelationIdentifier implements Serializable {
             throw new IllegalArgumentException("Not a valid relation identifier: " + id);
         try {
             Object outVertexId;
-            if (elements[1].charAt(0) == STRING_MARKER) {
+            if (elements[1].charAt(0) == STRING_ENCODING_MARKER) {
                 outVertexId = elements[1].substring(1);
             } else {
                 outVertexId = LongEncoding.decode(elements[1]);
@@ -161,7 +161,7 @@ public final class RelationIdentifier implements Serializable {
             final long relationId = LongEncoding.decode(elements[0]);
             Object inVertexId = null;
             if (elements.length == 4) {
-                if (elements[3].charAt(0) == STRING_MARKER) {
+                if (elements[3].charAt(0) == STRING_ENCODING_MARKER) {
                     inVertexId = elements[3].substring(1);
                 } else {
                     inVertexId = LongEncoding.decode(elements[3]);

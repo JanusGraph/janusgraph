@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import static org.janusgraph.util.encoding.LongEncoding.STRING_MARKER;
+import static org.janusgraph.util.encoding.LongEncoding.STRING_ENCODING_MARKER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -54,7 +54,7 @@ public class LongEncodingTest {
 
     @Test
     public void testConflictWithStringMarker() {
-        assertEquals(-1, LongEncoding.BASE_SYMBOLS.indexOf(STRING_MARKER));
+        assertEquals(-1, LongEncoding.BASE_SYMBOLS.indexOf(STRING_ENCODING_MARKER));
     }
 
 }

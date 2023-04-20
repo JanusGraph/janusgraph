@@ -25,7 +25,6 @@ import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.RelationCategory;
 
-import static org.janusgraph.graphdb.database.idhandling.VariableLong.STOP_MASK;
 import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.SystemEdgeLabel;
 import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.SystemPropertyKey;
 import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.UserEdgeLabel;
@@ -39,6 +38,15 @@ public class IDHandler {
 
     public static final StaticBuffer MIN_KEY = BufferUtil.getLongBuffer(0);
     public static final StaticBuffer MAX_KEY = BufferUtil.getLongBuffer(-1);
+
+    public static final byte STOP_MASK = -128;
+
+    /**
+     * See {@link VariableString} for more detail. This marker has highest
+     * bit being one. When JanusGraph sees it, it knows the buffer stores
+     * a string ID rather than a positive long ID (whose highest bit is zero).
+     */
+    public static final byte STRING_ID_MARKER = -128;
 
     public enum DirectionID {
 
@@ -215,7 +223,7 @@ public class IDHandler {
 
     public static Object readVertexId(ReadBuffer in, boolean forward) {
         int position = forward ? in.getPosition() : in.getPosition() - 1;
-        boolean isStringId = in.getByte(position) == STOP_MASK;
+        boolean isStringId = in.getByte(position) == STRING_ID_MARKER;
         if (forward) {
             if (isStringId) {
                 return VariableString.read(in, true);

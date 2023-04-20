@@ -30,7 +30,7 @@ import org.janusgraph.util.encoding.StringEncoding;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import static org.janusgraph.graphdb.database.idhandling.VariableLong.STOP_MASK;
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.STOP_MASK;
 
 /**
  * Utility methods for dealing with {@link ByteBuffer}.
@@ -87,10 +87,21 @@ public class BufferUtil {
             int c = s.charAt(i);
             assert c <= 127;
             byte b = (byte)c;
-            if (i+1==s.length()) b |= 0x80; //End marker
+            /**
+             * we don't have to apply STOP_MASK here because a static buffer
+             * has a fixed length, and thus upon read time, we know where
+             * to end reading the string. This is more to keep it consistent
+             * with {@link StringEncoding#writeAsciiString(byte[], int, String)}
+             * where we use STOP_MASK to mark the end of the string.
+             *
+             * An additional benefit of doing so is to enable corruption check
+             * in the future. Note: this approach has no overhead.
+             */
+            if (i+1==s.length()) b |= STOP_MASK;
             buffer.put(b);
         }
         if (s.length() == longSize) {
+            // this could be any dummy byte
             buffer.put(STOP_MASK);
         }
         byte[] arr = buffer.array();
