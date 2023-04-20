@@ -59,6 +59,7 @@ import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.util.StringUtils;
@@ -288,12 +289,6 @@ public class GraphDatabaseConfiguration {
                 "will give the optimizer a chance to find more efficient execution plan but also increase the optimization overhead.",
             ConfigOption.Type.MASKABLE, true);
 
-    public static final ConfigOption<Boolean> BATCH_PROPERTY_PREFETCHING = new ConfigOption<>(QUERY_NS,"batch-property-prefetch",
-            "Whether to do a batched pre-fetch of all properties on adjacent vertices against the storage backend prior to evaluating a has condition against those vertices. " +
-                    "Because these vertex properties will be loaded into the transaction-level cache of recently-used vertices when the condition is evaluated this can " +
-                    "lead to significant performance improvement if there are many edges to adjacent vertices and there is a non-trivial latency to the backend.",
-            ConfigOption.Type.MASKABLE, false);
-
     // ################ BATCH QUERY CONFIGURATION #######################
 
     public static final ConfigNamespace QUERY_BATCH_NS = new ConfigNamespace(QUERY_NS,"batch",
@@ -332,6 +327,33 @@ public class GraphDatabaseConfiguration {
             MultiQueryStrategyRepeatStepMode.ALL_REPEAT_PARENTS.getConfigName(),
             MultiQueryStrategyRepeatStepMode.STARTS_ONLY_OF_ALL_REPEAT_PARENTS.getConfigName()),
         ConfigOption.Type.MASKABLE, MultiQueryStrategyRepeatStepMode.ALL_REPEAT_PARENTS.getConfigName());
+
+    public static final ConfigOption<String> HAS_STEP_BATCH_MODE = new ConfigOption<>(QUERY_BATCH_NS,"has-step-mode",
+        String.format("Properties pre-fetching mode for `has` step. Used only when "+USE_MULTIQUERY.toStringWithoutRoot()+" is `true`.<br>" +
+                "Supported modes:<br>" +
+                "- `%s` Pre-fetch all vertex properties on any property access<br>" +
+                "- `%s` Pre-fetch necessary vertex properties for the whole chain of foldable `has` steps<br>" +
+                "- `%s` Prefetch the same properties as with `%s` mode, but also prefetch\n" +
+                "properties which may be needed in the next properties access step like `values`, `properties,` `valueMap`, or `elementMap`.\n" +
+                "In case the next step is not one of those properties access steps then this mode behaves same as `%s`.\n" +
+                "In case the next step is one of the properties access steps with limited scope of properties, those properties will be\n" +
+                "pre-fetched together in the same multi-query.\n" +
+                "In case the next step is one of the properties access steps with unspecified scope of property keys then this mode\n" +
+                "behaves same as `%s`.<br>"+
+                "- `%s` Prefetch the same properties as with `%s`, but in case the next step is not\n" +
+                "`values`, `properties,` `valueMap`, or `elementMap` then acts like `%s`.<br>"+
+                "- `%s` Skips `has` step batch properties pre-fetch optimization.<br>",
+            MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName(),
+            MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName(),
+            MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName(),
+            MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES_OR_ALL.getConfigName(),
+            MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName(),
+            MultiQueryHasStepStrategyMode.NONE.getConfigName()),
+        ConfigOption.Type.MASKABLE, MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName());
 
     // ################ SCHEMA #######################
     // ################################################
@@ -1298,12 +1320,12 @@ public class GraphDatabaseConfiguration {
     private MultiQueryStrategyRepeatStepMode repeatStepMode;
     private boolean optimizerBackendAccess;
     private IndexSelectionStrategy indexSelectionStrategy;
-    private Boolean batchPropertyPrefetching;
     private boolean allowVertexIdSetting;
     private boolean allowCustomVertexIdType;
     private boolean logTransactions;
     private String metricsPrefix;
     private String unknownIndexKeyName;
+    private MultiQueryHasStepStrategyMode hasStepStrategyMode;
 
     private StoreFeatures storeFeatures = null;
 
@@ -1418,8 +1440,8 @@ public class GraphDatabaseConfiguration {
         return indexSelectionStrategy;
     }
 
-    public boolean batchPropertyPrefetching() {
-        return batchPropertyPrefetching;
+    public MultiQueryHasStepStrategyMode hasStepStrategyMode() {
+        return hasStepStrategyMode;
     }
 
     public boolean adjustQueryLimit() {
@@ -1549,11 +1571,12 @@ public class GraphDatabaseConfiguration {
         limitedBatch = configuration.get(LIMITED_BATCH);
         limitedBatchSize = configuration.get(LIMITED_BATCH_SIZE);
         repeatStepMode = selectExactConfig(REPEAT_STEP_BATCH_MODE, MultiQueryStrategyRepeatStepMode.values());
+        hasStepStrategyMode = selectExactConfig(HAS_STEP_BATCH_MODE, MultiQueryHasStepStrategyMode.values());
 
         indexSelectionStrategy = Backend.getImplementationClass(configuration, configuration.get(INDEX_SELECT_STRATEGY),
             REGISTERED_INDEX_SELECTION_STRATEGIES);
         optimizerBackendAccess = configuration.get(OPTIMIZER_BACKEND_ACCESS);
-        batchPropertyPrefetching = configuration.get(BATCH_PROPERTY_PREFETCHING);
+
         adjustQueryLimit = configuration.get(ADJUST_LIMIT);
         hardMaxLimit = configuration.get(HARD_MAX_LIMIT);
 

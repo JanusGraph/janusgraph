@@ -225,4 +225,15 @@ public class JanusGraphAssert {
 
         assertEquals(stepsCount, stepsFound);
     }
+
+    public static Metrics getLastStepMetrics(TraversalMetrics traversalMetrics, Class<? extends Step> stepClass){
+        String stepMetricsName = stepClass.getSimpleName();
+        Metrics metricsToReturn = null;
+        for(Metrics metrics : traversalMetrics.getMetrics()){
+            if(metrics.getName().startsWith(stepMetricsName)){
+                metricsToReturn = metrics;
+            }
+        }
+        return metricsToReturn;
+    }
 }

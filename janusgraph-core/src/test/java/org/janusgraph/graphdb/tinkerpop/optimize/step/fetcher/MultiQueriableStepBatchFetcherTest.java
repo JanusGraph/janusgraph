@@ -40,7 +40,7 @@ public class MultiQueriableStepBatchFetcherTest {
     public void setupMocks(){
         JanusGraphMultiVertexQuery multiQuery = Mockito.mock(JanusGraphMultiVertexQuery.class);
         JanusGraphTransaction tx = Mockito.mock(JanusGraphTransaction.class);
-        mockVertex = Mockito.mock(Vertex.class);
+        mockVertex = Mockito.mock(JanusGraphVertex.class);
         traversal = Mockito.mock(Traversal.Admin.class);
         Mockito.doReturn(EmptyStep.instance()).when(traversal).getParent();
         Mockito.doReturn(traversal).when(traversal).asAdmin();

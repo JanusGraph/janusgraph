@@ -41,6 +41,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.fetcher.PropertiesStepBatchFetcher;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.janusgraph.graphdb.util.JanusGraphTraverserUtil;
+import org.janusgraph.graphdb.util.CopyStepUtil;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -61,7 +62,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
 
     public JanusGraphPropertiesStep(PropertiesStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnType(), originalStep.getPropertyKeys());
-        originalStep.getLabels().forEach(this::addLabel);
+        CopyStepUtil.copyAbstractStepModifiableFields(originalStep, this);
 
         if (originalStep instanceof JanusGraphPropertiesStep) {
             JanusGraphPropertiesStep originalJanusGraphPropertiesStep = (JanusGraphPropertiesStep) originalStep;

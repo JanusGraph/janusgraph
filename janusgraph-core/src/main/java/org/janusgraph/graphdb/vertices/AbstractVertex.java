@@ -32,11 +32,9 @@ import org.janusgraph.core.VertexLabel;
 import org.janusgraph.graphdb.internal.AbstractElement;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryUtil;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.VertexLabelVertex;
-import org.janusgraph.graphdb.types.system.BaseLabel;
-import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.util.ElementHelper;
 
 import java.util.Iterator;
@@ -125,14 +123,12 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     protected Vertex getVertexLabelInternal() {
-        return Iterables.getOnlyElement(tx().query(this).noPartitionRestriction().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+        return Iterables.getOnlyElement(BasicVertexCentricQueryUtil.withLabelVertices(tx().query(this)).vertices(),null);
     }
 
     @Override
     public VertexLabel vertexLabel() {
-        Vertex label = getVertexLabelInternal();
-        if (label==null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
-        else return (VertexLabelVertex)label;
+        return BasicVertexCentricQueryUtil.castToVertexLabel(getVertexLabelInternal());
     }
 
     @Override

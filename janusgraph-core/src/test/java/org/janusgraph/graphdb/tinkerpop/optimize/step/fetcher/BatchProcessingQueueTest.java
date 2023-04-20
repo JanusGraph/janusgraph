@@ -158,4 +158,10 @@ public class BatchProcessingQueueTest {
         assertDoesNotThrow(() -> batchProcessingQueue.softRemoveFromAllElementsRegistration("notExistentElement"));
     }
 
+    @Test
+    void ensureBatchSizeIsGraterThanZero() {
+        assertEquals(1, new BatchProcessingQueue<>(0).getBatchSize());
+        assertEquals(1, new BatchProcessingQueue<>(-1).getBatchSize());
+        assertEquals(1, new BatchProcessingQueue<>(Integer.MIN_VALUE).getBatchSize());
+    }
 }
