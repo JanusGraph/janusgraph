@@ -38,7 +38,7 @@ public class BatchProcessingQueue<T> {
      * @param batchSize max returned batch size
      */
     public BatchProcessingQueue(int batchSize) {
-        this.batchSize = batchSize;
+        this.batchSize = Math.max(batchSize, 1);
     }
 
     public void addToBatchToEnd(T element) {
@@ -86,5 +86,9 @@ public class BatchProcessingQueue<T> {
 
     public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
+    }
+
+    public int getBatchSize() {
+        return batchSize;
     }
 }

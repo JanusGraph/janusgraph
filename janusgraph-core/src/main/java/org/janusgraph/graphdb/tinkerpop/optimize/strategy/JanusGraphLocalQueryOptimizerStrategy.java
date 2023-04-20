@@ -20,17 +20,14 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
-import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphEdgeVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable;
@@ -59,18 +56,16 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
             return;
         }
 
-        boolean batchPropertyPrefetching = janusGraph.getConfiguration().batchPropertyPrefetching();
         int txVertexCacheSize = janusGraph.getConfiguration().getTxVertexCacheSize();
 
-        applyJanusGraphVertexSteps(traversal, batchPropertyPrefetching, txVertexCacheSize);
+        applyJanusGraphVertexSteps(traversal);
         applyJanusGraphPropertiesSteps(traversal, txVertexCacheSize);
         inspectLocalTraversals(traversal, txVertexCacheSize);
     }
 
-    private void applyJanusGraphVertexSteps(Admin<?, ?> traversal, boolean batchPropertyPrefetching, int txVertexCacheSize) {
+    private void applyJanusGraphVertexSteps(Admin<?, ?> traversal) {
         TraversalHelper.getStepsOfAssignableClass(VertexStep.class, traversal).forEach(originalStep -> {
             final JanusGraphVertexStep vertexStep = new JanusGraphVertexStep(originalStep);
-            vertexStep.setBatchSize(txVertexCacheSize);
             TraversalHelper.replaceStep(originalStep, vertexStep, originalStep.getTraversal());
 
             if (JanusGraphTraversalUtil.isEdgeReturnStep(vertexStep)) {
@@ -83,10 +78,6 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
             if (nextStep instanceof RangeGlobalStep) {
                 final int limit = QueryUtil.convertLimit(((RangeGlobalStep) nextStep).getHighRange());
                 vertexStep.setLimit(0, QueryUtil.mergeHighLimits(limit, vertexStep.getHighLimit()));
-            }
-
-            if (batchPropertyPrefetching) {
-                applyBatchPropertyPrefetching(originalStep.getTraversal(), vertexStep, nextStep, txVertexCacheSize);
             }
         });
     }
@@ -122,9 +113,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
 
 
                 unfoldLocalTraversal(traversal, localStep, localTraversal, vertexStep);
-            }
-
-            if (localStart instanceof PropertiesStep) {
+            } else if (localStart instanceof PropertiesStep) {
                 final JanusGraphPropertiesStep propertiesStep = new JanusGraphPropertiesStep((PropertiesStep) localStart);
                 propertiesStep.setBatchSize(txVertexCacheSize);
 
@@ -141,33 +130,6 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
             }
 
         });
-    }
-
-    /**
-     * If this step is followed by a subsequent has step then the properties will need to be
-     * known when that has step is executed. The batch property pre-fetching optimisation
-     * loads those properties into the vertex cache with a multiQuery preventing the need to
-     * go back to the storage back-end for each vertex to fetch the properties.
-     *
-     * @param traversal         The traversal containing the step
-     * @param vertexStep        The step to potentially apply the optimisation to
-     * @param nextStep          The next step in the traversal
-     * @param txVertexCacheSize The size of the vertex cache
-     */
-    private void applyBatchPropertyPrefetching(final Admin<?, ?> traversal, final JanusGraphVertexStep vertexStep, final Step nextStep, final int txVertexCacheSize) {
-        if (Vertex.class.isAssignableFrom(vertexStep.getReturnClass())) {
-            if (HasStepFolder.foldableHasContainerNoLimit(vertexStep)) {
-                vertexStep.setBatchPropertyPrefetching(true);
-                vertexStep.setTxVertexCacheSize(txVertexCacheSize);
-            }
-        }
-        else if (nextStep instanceof EdgeVertexStep) {
-            EdgeVertexStep edgeVertexStep = (EdgeVertexStep)nextStep;
-            if (HasStepFolder.foldableHasContainerNoLimit(edgeVertexStep)) {
-                JanusGraphEdgeVertexStep estep = new JanusGraphEdgeVertexStep(edgeVertexStep, txVertexCacheSize);
-                TraversalHelper.replaceStep(nextStep, estep, traversal);
-            }
-        }
     }
 
     private static void unfoldLocalTraversal(final Traversal.Admin<?, ?> traversal,

@@ -15,13 +15,14 @@
 package org.janusgraph.graphdb.tinkerpop.optimize.step.fetcher;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphMultiVertexQuery;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
+import org.janusgraph.util.datastructures.ExceptionUtil;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -92,7 +93,7 @@ public abstract class MultiQueriableStepBatchFetcher<R> {
         if (hasNoFetchedData(forVertex)) {
             refreshIfLoopsAreReset(traverserLoops, forVertex);
             ensureCorrectLoopQueues(traverserLoops);
-            prefetchNextBatch(traversal, forVertex);
+            multiQueryResults = prefetchNextBatch(traversal, forVertex);
         } else {
             ensureCorrectLoopQueues(traverserLoops);
         }
@@ -103,20 +104,19 @@ public abstract class MultiQueriableStepBatchFetcher<R> {
         return multiQueryResults == null || !multiQueryResults.containsKey(forVertex);
     }
 
-    private void prefetchNextBatch(final Traversal.Admin<?, ?> traversal, JanusGraphVertex requiredFetchVertex){
+    protected Map<JanusGraphVertex, R> prefetchNextBatch(final Traversal.Admin<?, ?> traversal, JanusGraphVertex requiredFetchVertex){
         final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal)
-            .multiQuery(currentLoopBatchProcessingQueue.removeFirst());
+            .multiQuery(nextBatch());
         multiQuery.addVertex(requiredFetchVertex);
         try {
-            multiQueryResults = makeQueryAndExecute(multiQuery);
+            return makeQueryAndExecute(multiQuery);
         } catch (JanusGraphException janusGraphException) {
-            if (janusGraphException.isCausedBy(InterruptedException.class)) {
-                TraversalInterruptedException traversalInterruptedException = new TraversalInterruptedException();
-                traversalInterruptedException.initCause(janusGraphException);
-                throw traversalInterruptedException;
-            }
-            throw janusGraphException;
+            throw ExceptionUtil.convertIfInterrupted(janusGraphException);
         }
+    }
+
+    protected Collection<JanusGraphVertex> nextBatch(){
+        return currentLoopBatchProcessingQueue.removeFirst();
     }
 
     private void ensureCorrectLoopQueues(int loops){

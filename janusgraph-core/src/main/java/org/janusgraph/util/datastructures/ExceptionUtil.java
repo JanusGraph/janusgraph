@@ -14,6 +14,8 @@
 
 package org.janusgraph.util.datastructures;
 
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
+
 /**
  * Utility class for analyzing exceptions
  *
@@ -21,9 +23,19 @@ package org.janusgraph.util.datastructures;
  */
 public class ExceptionUtil {
 
+    private ExceptionUtil() {}
+
     public static boolean isCausedBy(Throwable exception, Class<?> exType) {
         Throwable ex2 = exception.getCause();
         return ex2 != null && ex2 != exception && (exType.isInstance(ex2) || isCausedBy(ex2, exType));
     }
 
+    public static RuntimeException convertIfInterrupted(RuntimeException runtimeException){
+        if(isCausedBy(runtimeException, InterruptedException.class)){
+            TraversalInterruptedException traversalInterruptedException = new TraversalInterruptedException();
+            traversalInterruptedException.initCause(runtimeException);
+            return traversalInterruptedException;
+        }
+        return runtimeException;
+    }
 }

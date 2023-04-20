@@ -28,6 +28,7 @@ import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
 
 import java.time.Instant;
 
@@ -85,6 +86,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean skipDBCacheRead;
 
+    private MultiQueryHasStepStrategyMode hasStepStrategyMode;
+
     private final boolean forceIndexUsage;
 
     private final ModifiableConfiguration writableCustomOptions;
@@ -93,10 +96,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private final StandardJanusGraph graph;
 
-    /**
-     * Constructs a new JanusGraphTransaction configuration with default configuration parameters.
-     */
-    public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph) {
+    private StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph, ModifiableConfiguration writableCustomOptions, Configuration customOptions) {
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
         if (graphConfig.isReadOnly()) readOnly();
@@ -110,30 +110,26 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.multiQuery = graphConfig.useMultiQuery();
-        this.writableCustomOptions = GraphDatabaseConfiguration.buildGraphConfiguration();
-        this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
+        this.hasStepStrategyMode = graphConfig.hasStepStrategyMode();
+        this.writableCustomOptions = writableCustomOptions;
+        if(customOptions == null){
+            this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
+        } else {
+            this.customOptions = customOptions;
+        }
         vertexCacheSize(graphConfig.getTxVertexCacheSize());
         dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
     }
 
+    /**
+     * Constructs a new JanusGraphTransaction configuration with default configuration parameters.
+     */
+    public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph) {
+        this(graphConfig, graph, GraphDatabaseConfiguration.buildGraphConfiguration(), null);
+    }
+
     public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph, Configuration customOptions) {
-        Preconditions.checkNotNull(graphConfig);
-        Preconditions.checkNotNull(graph);
-        if (graphConfig.isReadOnly()) readOnly();
-        if (graphConfig.isBatchLoading()) enableBatchLoading();
-        this.graph = graph;
-        this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
-        this.hasDisabledSchemaConstraints = graphConfig.hasDisabledSchemaConstraints();
-        this.assignIDsImmediately = graphConfig.hasFlushIDs();
-        this.forceIndexUsage = graphConfig.hasForceIndexUsage();
-        this.groupName = graphConfig.getMetricsPrefix();
-        this.logIdentifier = null;
-        this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
-        this.multiQuery = graphConfig.useMultiQuery();
-        this.writableCustomOptions = null;
-        this.customOptions = customOptions;
-        vertexCacheSize(graphConfig.getTxVertexCacheSize());
-        dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
+        this(graphConfig, graph, null, customOptions);
     }
 
     public StandardTransactionBuilder threadBound() {
@@ -232,6 +228,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public TransactionBuilder setHasStepStrategyMode(MultiQueryHasStepStrategyMode hasStepStrategyMode) {
+        this.hasStepStrategyMode = hasStepStrategyMode;
+        return this;
+    }
+
+    @Override
     public void setCommitTime(Instant time) {
         throw new UnsupportedOperationException("Use setCommitTime(long,TimeUnit)");
     }
@@ -277,7 +279,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 propertyPrefetching, multiQuery, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, restrictedPartitions, groupName,
-                defaultSchemaMaker, hasDisabledSchemaConstraints, skipDBCacheRead, customOptions);
+                defaultSchemaMaker, hasDisabledSchemaConstraints, skipDBCacheRead, hasStepStrategyMode, customOptions);
         return graph.newTransaction(immutable);
     }
 
@@ -395,6 +397,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public MultiQueryHasStepStrategyMode getHasStepStrategyMode() {
+        return hasStepStrategyMode;
+    }
+
+    @Override
     public String getGroupName() {
         return groupName;
     }
@@ -453,6 +460,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final int[] restrictedPartitions;
         private final DefaultSchemaMaker defaultSchemaMaker;
         private boolean hasDisabledSchemaConstraints = true;
+        private MultiQueryHasStepStrategyMode hasStepStrategyMode;
 
         private final BaseTransactionConfig handleConfig;
 
@@ -472,6 +480,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 DefaultSchemaMaker defaultSchemaMaker,
                 boolean hasDisabledSchemaConstraints,
                 boolean skipDBCacheRead,
+                MultiQueryHasStepStrategyMode hasStepStrategyMode,
                 Configuration customOptions) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
@@ -494,6 +503,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.defaultSchemaMaker = defaultSchemaMaker;
             this.hasDisabledSchemaConstraints = hasDisabledSchemaConstraints;
             this.skipDBCacheRead = skipDBCacheRead;
+            this.hasStepStrategyMode = hasStepStrategyMode;
             this.handleConfig = new StandardBaseTransactionConfig.Builder()
                     .commitTime(commitTime)
                     .timestampProvider(times)
@@ -609,6 +619,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public boolean isSkipDBCacheRead() {
             return skipDBCacheRead;
+        }
+
+        @Override
+        public MultiQueryHasStepStrategyMode getHasStepStrategyMode() {
+            return hasStepStrategyMode;
         }
 
         @Override

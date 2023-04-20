@@ -24,6 +24,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTrav
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.IsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
@@ -51,10 +52,12 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphHasStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphHasStepStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMultiQueryStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphStepStrategy;
@@ -167,6 +170,10 @@ public class JanusGraphStepStrategyTest {
             if (expectedStep.equals(JanusGraphMultiQueryStep.class.getSimpleName())) {
                 TraversalHelper.replaceStep(isStep, new JanusGraphMultiQueryStep(isStep.getTraversal(), false), isStep.getTraversal());
             }
+        });
+        TraversalHelper.getStepsOfAssignableClassRecursively(HasStep.class, traversal).forEach(hasStep -> {
+            JanusGraphHasStep janusGraphHasStep = new JanusGraphHasStep<>(hasStep);
+            TraversalHelper.replaceStep(hasStep, janusGraphHasStep, hasStep.getTraversal());
         });
     }
 
@@ -328,6 +335,7 @@ public class JanusGraphStepStrategyTest {
 
         List<TraversalStrategy.ProviderOptimizationStrategy> otherStrategies = new ArrayList<>(2);
         otherStrategies.add(JanusGraphLocalQueryOptimizerStrategy.instance());
+        otherStrategies.add(JanusGraphHasStepStrategy.instance());
         otherStrategies.add(JanusGraphMultiQueryStrategy.instance());
         otherStrategies.add(JanusGraphUnusedMultiQueryRemovalStrategy.instance());
         int defaultBarrierSize = GraphDatabaseConfiguration.LIMITED_BATCH_SIZE.getDefaultValue();
@@ -348,7 +356,7 @@ public class JanusGraphStepStrategyTest {
                 g_V().is(MQ_STEP).barrier(defaultBarrierSize).outE().is(MQ_STEP).barrier(defaultBarrierSize).filter(__.inE("knows").has("weight", 0)), otherStrategies),
             // An additional JanusGraphMultiQueryStep for repeat goes before the RepeatEndStep allowing it to feed its starts to the next iteration
             arguments(g.V().outE("knows").inV().repeat(__.outE("knows").inV().has("weight", 0)).times(10),
-                g_V().is(MQ_STEP).barrier(defaultBarrierSize).outE("knows").inV().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.outE("knows").inV().has("weight", 0).is(MQ_STEP).barrier(defaultBarrierSize)).times(10), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).outE("knows").inV().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.outE("knows").inV().is(MQ_STEP).barrier(defaultBarrierSize).has("weight", 0).is(MQ_STEP).barrier(defaultBarrierSize)).times(10), otherStrategies),
             // Choose does not have a child traversal of JanusGraphVertexStep so won't benefit from JanusGraphMultiQueryStep(ChooseStep)
             arguments(g.V().choose(has("weight", lt(3)), __.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1))),
                 g_V().is(MQ_STEP).barrier(defaultBarrierSize).choose(has("weight", lt(3)), __.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1))), otherStrategies),
@@ -424,6 +432,12 @@ public class JanusGraphStepStrategyTest {
             // Repeat step mode: STARTS_ONLY_OF_ALL_REPEAT_PARENTS. Should use starts of all parent repeat steps as JanusGraphMultiQueryStep
             arguments(gRepeatStartsOnlyOfAllParents.V().repeat(__.union(__.repeat(__.out("knows")).emit())).emit(),
                 ((GraphTraversal<Vertex, Vertex>) g_V()).is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.is(MQ_STEP).barrier(defaultBarrierSize).union(__.repeat(__.out("knows").is(MQ_STEP).barrier(defaultBarrierSize)).emit())).emit(), otherStrategies),
+            // Need `JanusGraphMultiQuerySteps` before `has` step (we use `map` step here just to not fold has step containers into JanusGraphStep
+            arguments(g.V().map(Traverser::get).has("weight", 0),
+                g_V().map(Traverser::get).is(MQ_STEP).barrier(defaultBarrierSize).has("weight", 0), otherStrategies),
+            // Need `JanusGraphMultiQuerySteps` before `has` step which is used after other steps
+            arguments(g.V().out().has("weight", 0),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).has("weight", 0), otherStrategies),
         });
     }
 }

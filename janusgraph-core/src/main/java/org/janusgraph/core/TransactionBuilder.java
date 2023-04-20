@@ -15,6 +15,7 @@
 package org.janusgraph.core;
 
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
 
 import java.time.Instant;
 
@@ -146,6 +147,15 @@ public interface TransactionBuilder {
      * @return Object with the skip db-cache reads check settings
      */
     TransactionBuilder skipDBCacheRead();
+
+    /**
+     * Sets `has` step strategy mode.
+     * <p>
+     * Doesn't have any effect if multi-query was disabled via config `query.batch`.
+     *
+     * @return Object with the set `has` step strategy mode settings
+     */
+    TransactionBuilder setHasStepStrategyMode(MultiQueryHasStepStrategyMode hasStepStrategyMode);
 
     /**
      * Sets the group name for this transaction which provides a way for gathering

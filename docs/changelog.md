@@ -185,6 +185,10 @@ GraphBinary is now used as the default MessageSerializer.hb
 `query.batch` is now a configuration namespace. Thus, previous `query.batch` configuration is replaced by `query.batch.enabled`.
 `query.limit-batch-size` configuration option is changed to `query.batch.limited`.
 
+`query.batch-property-prefetch` was replaced by a better configurable option. In case previous behaviour is desired then
+use `query.batch.has-step-mode = none` as replacement for `query.batch-property-prefetch = false` or use
+`query.batch.has-step-mode = all_properties` as replacement for `query.batch-property-prefetch = true`.
+
 [Batch processing](https://docs.janusgraph.org/operations/batch-processing/) allows JanusGraph to fetch a batch of
 vertices from the storage backend together instead of requesting each vertex individually which leads to a high number
 of backend queries.

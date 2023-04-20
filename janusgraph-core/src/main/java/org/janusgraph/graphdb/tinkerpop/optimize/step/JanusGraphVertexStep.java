@@ -27,8 +27,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.janusgraph.core.BaseVertexQuery;
 import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphMultiVertexQuery;
-import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
@@ -38,13 +36,12 @@ import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.fetcher.VertexStepBatchFetcher;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
+import org.janusgraph.graphdb.util.CopyStepUtil;
 import org.janusgraph.graphdb.util.JanusGraphTraverserUtil;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -52,15 +49,13 @@ import java.util.Set;
 public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex, E>, Profiling, MultiQueriable<Vertex,E> {
 
     private boolean useMultiQuery = false;
-    private boolean batchPropertyPrefetching = false;
     private VertexStepBatchFetcher vertexStepBatchFetcher;
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
-    private int txVertexCacheSize = 20000;
     private int batchSize = Integer.MAX_VALUE;
 
     public JanusGraphVertexStep(VertexStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
-        originalStep.getLabels().forEach(this::addLabel);
+        CopyStepUtil.copyAbstractStepModifiableFields(originalStep, this);
 
         if (originalStep instanceof JanusGraphVertexStep) {
             JanusGraphVertexStep originalJanusGraphVertexStep = (JanusGraphVertexStep) originalStep;
@@ -102,14 +97,6 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         }
     }
 
-    public void setBatchPropertyPrefetching(boolean batchPropertyPrefetching) {
-        this.batchPropertyPrefetching = batchPropertyPrefetching;
-    }
-
-    public void setTxVertexCacheSize(int txVertexCacheSize) {
-        this.txVertexCacheSize = txVertexCacheSize;
-    }
-
     public <Q extends BaseVertexQuery> Q makeQuery(Q query) {
         query.labels(getEdgeLabels());
         query.direction(getDirection());
@@ -131,24 +118,6 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         } else {
             final JanusGraphVertexQuery query = makeQuery(JanusGraphTraversalUtil.getJanusGraphVertex(traverser).query());
             result = (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices() : query.edges();
-        }
-
-        if (batchPropertyPrefetching && txVertexCacheSize > 1) {
-            Set<JanusGraphVertex> vertices = new HashSet<>();
-            for(JanusGraphElement v : result){
-                vertices.add((JanusGraphVertex) v);
-                if (vertices.size() >= txVertexCacheSize) {
-                    break;
-                }
-            }
-
-            // If there are multiple vertices then fetch the properties for all of them in a single multiQuery to
-            // populate the vertex cache so subsequent queries of properties don't have to go to the storage back end
-            if (vertices.size() > 1) {
-                JanusGraphMultiVertexQuery propertyMultiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery(vertices);
-                ((BasicVertexCentricQueryBuilder) propertyMultiQuery).profiler(queryProfiler);
-                propertyMultiQuery.preFetch();
-            }
         }
 
         return (Iterator<E>) result.iterator();
@@ -240,5 +209,4 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     public void setMetrics(MutableMetrics metrics) {
         queryProfiler = new TP3ProfileWrapper(metrics);
     }
-
 }
