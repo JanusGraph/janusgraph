@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import static org.janusgraph.graphdb.database.idhandling.IDHandler.STOP_MASK;
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.STRING_ID_MARKER;
 
 /**
  * Utility methods for dealing with {@link ByteBuffer}.
@@ -65,10 +66,10 @@ public class BufferUtil {
     }
 
     /**
-     * If string is not 8 bytes, then we write it as it is. Otherwise, we write a special
-     * marker at the end, so that when JanusGraph sees the buffer, it knows it should
-     * reinterpret the byte buffer as string buffer. See {@link IDManager#getKeyID(StaticBuffer)}
-     * for more details.
+     * We always add a byte marker at the beginning to indicate it's a string buffer. Then we
+     * write the string uncompressed. Finally, if the total buffer size is 8, we add a dummy byte
+     * at the end so that upon read time, JanusGraph knows the buffer does not store a long value.
+     * See {@link IDManager#getKeyID(StaticBuffer)} for more details.
      *
      * @param s
      * @return
@@ -78,11 +79,12 @@ public class BufferUtil {
             throw new IllegalArgumentException("value must be non-empty ASCII string but received: " + s);
         }
         ByteBuffer buffer;
-        if (s.length() == longSize) {
+        if (s.length() + byteSize == longSize) {
             buffer = ByteBuffer.allocate(longSize + byteSize);
         } else {
-            buffer = ByteBuffer.allocate(s.length());
+            buffer = ByteBuffer.allocate(s.length() + byteSize);
         }
+        buffer.put(STRING_ID_MARKER);
         for (int i = 0; i < s.length(); i++) {
             int c = s.charAt(i);
             assert c <= 127;
@@ -90,7 +92,7 @@ public class BufferUtil {
             /**
              * we don't have to apply STOP_MASK here because a static buffer
              * has a fixed length, and thus upon read time, we know where
-             * to end reading the string. This is more to keep it consistent
+             * to stop reading the string. This is more to keep it consistent
              * with {@link StringEncoding#writeAsciiString(byte[], int, String)}
              * where we use STOP_MASK to mark the end of the string.
              *
@@ -100,7 +102,7 @@ public class BufferUtil {
             if (i+1==s.length()) b |= STOP_MASK;
             buffer.put(b);
         }
-        if (s.length() == longSize) {
+        if (s.length() + byteSize == longSize) {
             // this could be any dummy byte
             buffer.put(STOP_MASK);
         }

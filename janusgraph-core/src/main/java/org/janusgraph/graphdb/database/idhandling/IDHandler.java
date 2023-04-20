@@ -226,7 +226,7 @@ public class IDHandler {
         boolean isStringId = in.getByte(position) == STRING_ID_MARKER;
         if (forward) {
             if (isStringId) {
-                return VariableString.read(in, true);
+                return VariableString.read(in);
             } else {
                 return VariableLong.readPositive(in);
             }

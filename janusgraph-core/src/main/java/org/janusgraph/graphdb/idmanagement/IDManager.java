@@ -512,22 +512,28 @@ public class IDManager {
     /**
      * Parse and get vertex ID from static buffer
      * Historically, JanusGraph only supports long-type ID, so the buffer was assumed to be 8-byte and represent
-     * a long value. To support string-type ID, we use a convention that if the buffer's length is not 8 bytes,
-     * then it's string-type ID. Note that if the string-type ID is 8 bytes, we always append one dummy byte at
-     * the end to make its length not equivalent to 8.
+     * a long value. To support non long-type ID, we use a convention that if the buffer's length is not 8 bytes,
+     * then it's non long-type ID. The first byte is a marker representing the type of the ID. Currently, there
+     * is only one possibility: string-type ID.
+     *
+     * For string-type ID, we use {@link BufferUtil#getStringBuffer(String)} to encode it. Note that if
+     * the marker + length of the ID is equivalent to 8 bytes, then we add a dummy padding byte at the
+     * end to make it not equivalent to 8 bytes.
      *
      * NOTE: due to design reason, the encoding scheme of long-type ID here is different
-     * from {@link IDHandler}. The encoding scheme of String-type ID here, therefore, is different
-     * from {@link IDHandler}, too. Here we can use the "size == 8" trick to know if the buffer stores
-     * a long or a string, because we know the entire buffer represents the ID only, while in {@link IDHandler},
-     * only a (non-fixed) portion of the buffer represents the ID, so we use a different trick there.
+     * from {@link IDHandler}. An important difference here is that the first bit of the
+     * first byte for a long-type ID is not guaranteed to be zero (as opposed to the case in
+     * {@link} IDHandler)). Therefore, we cannot rely on the first byte to check if it's long-type
+     * or not. Luckily, we can use the "size == 8" trick to know if the buffer stores a long value,
+     * because we know the entire buffer represents the ID only. While in {@link IDHandler}, only
+     * a (non-fixed) portion of the buffer represents the ID, so we use a different trick there.
      *
      * @param b
      * @return
      */
     public Object getKeyID(StaticBuffer b) {
         if (b.length() != longSize) {
-           return VariableString.read(b.asReadBuffer(), false);
+           return VariableString.read(b.asReadBuffer());
         }
         long value = b.getLong(0);
         if (VertexIDType.Schema.is(value)) {

@@ -235,15 +235,19 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
         List<Object> vids = new ArrayList<>();
         for (int i = 1; i < 100; i++) {
             Object vid;
-            if (i % 2 == 0) {
-                StringBuilder builder = new StringBuilder();
-                for (int j = 0; j < i; j++) {
-                    builder.append((char) ('a' + (j % 26)));
-                }
-                vid = builder.toString();
-            } else {
-                vid = graph.getIDManager().toVertexId(i);
+
+            // add string-type ID
+            StringBuilder builder = new StringBuilder();
+            for (int j = 0; j < i; j++) {
+                builder.append((char) ('a' + (j % 26)));
             }
+            vid = builder.toString();
+            assertEquals(i, vid.toString().length());
+            vids.add(vid);
+            graph.addVertex(T.id, vid);
+
+            // add long-type ID
+            vid = graph.getIDManager().toVertexId(i);
             vids.add(vid);
             graph.addVertex(T.id, vid);
         }

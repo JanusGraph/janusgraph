@@ -71,10 +71,8 @@ public class VariableString {
         out.putByte(STRING_ID_MARKER);
     }
 
-    public static String read(ReadBuffer in, boolean skipFirstByte) {
-        if (skipFirstByte) {
-            Preconditions.checkArgument(in.getByte() == STOP_MASK);
-        }
+    public static String read(ReadBuffer in) {
+        Preconditions.checkArgument(in.getByte() == STRING_ID_MARKER);
         StringBuilder sb = new StringBuilder();
         while (true) {
             int c = 0xFF & in.getByte();
