@@ -45,8 +45,7 @@ To provide a long vertex ID, you must call `graph.getIDManager().toVertexId(long
 retrieve a transformed JanusGraph ID. The input number must be positive. This is because
 certain range of long IDs are reserved for internal usage, so you have to always call
 the aforementioned utility to convert your ID. Unfortunately, this is not supported in
-all gremlin clients as it is a JanusGraph specific utility. You can create vertices like
-below:
+all gremlin clients as it is a JanusGraph specific utility. You can create vertices as follows:
 
 ```groovy
 g = graph.traversal()
@@ -63,12 +62,22 @@ A string vertex ID can have arbitrary length as long as the underlying storage b
 permits. The string value must consist of printable ASCII characters only, and it cannot contain
 JanusGraph reserved relation delimiter. By default, this reserved character is `-` (dash),
 which means you cannot use UUID string as a vertex ID since it contains a `-` character.
-However, JanusGraph allows you to set `JANUSGRAPH_RELATION_DELIMITER` system property
-which can be any printable ASCII character. Once it is set, JanusGraph will prohibit that
-specific character instead of the default `-` character. Alternatively, you can set
-`JANUSGRAPH_RELATION_DELIMITER` environment variable, which is evaluated if and only if
-the `JANUSGRAPH_RELATION_DELIMITER` system property is not present. For example, you can
-use the following command to set system property when opening gremlin console:
+You can create vertices as follows:
+
+```groovy
+g = graph.traversal()
+g.addV().property(T.id, "custom_vid_001").next()
+g.tx().commit()
+```
+
+### Override reserved Character
+
+If you create a new graph (using 1.0.0 or later version), JanusGraph allows you to set
+`JANUSGRAPH_RELATION_DELIMITER` system property which can be any printable ASCII character.
+Once it is set, JanusGraph will prohibit that specific character instead of the default `-` character.
+Alternatively, you can set `JANUSGRAPH_RELATION_DELIMITER` environment variable, which is
+evaluated if and only if the `JANUSGRAPH_RELATION_DELIMITER` system property is not present.
+For example, you can use the following command to set system property when opening gremlin console:
 
 ```bash
 JAVA_OPTIONS="-DJANUSGRAPH_RELATION_DELIMITER=@" ./bin/gremlin.sh
@@ -80,13 +89,15 @@ becomes `@` rather than `-`.
 ```groovy
 g = graph.traversal()
 g.addV().property(T.id, UUID.randomUUID().toString()).next()
-g.addV().property(T.id, "custom_vid_001").next()
+g.addV().property(T.id, "custom-vid-001").next()
 g.tx().commit()
 ```
 
 !!! warning
-    If you decide to replace default `JANUSGRAPH_RELATION_DELIMITER`, you must
+    If you decide to replace default `JANUSGRAPH_RELATION_DELIMITER`, you MUST
     always set the system property or environment value consistently across all
-    JanusGraph instances, including servers and clients. Otherwise, data corruption
-    could happen. For example, if you only set it on client side, then the server will
-    not be able to deserialize any property or edge because of the setting mismatch.
+    JanusGraph instances, including servers and clients, during the entire lifecycle
+    of the graph. Otherwise, data corruption could happen. For example, if you only
+    set it on client side, then the server will not be able to deserialize any
+    property or edge because of the setting mismatch. Also, you must not use this setting
+    on a legacy graph. In other words, you cannot alter this property at any time.
