@@ -19,7 +19,6 @@ import org.apache.commons.lang.StringUtils;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.serialize.attribute.StringSerializer;
-import org.janusgraph.util.encoding.StringEncoding;
 
 import static org.janusgraph.graphdb.database.idhandling.IDHandler.STOP_MASK;
 import static org.janusgraph.graphdb.database.idhandling.IDHandler.STRING_ID_MARKER;

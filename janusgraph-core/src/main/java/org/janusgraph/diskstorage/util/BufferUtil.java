@@ -71,6 +71,12 @@ public class BufferUtil {
      * at the end so that upon read time, JanusGraph knows the buffer does not store a long value.
      * See {@link IDManager#getKeyID(StaticBuffer)} for more details.
      *
+     * Note that we apply STOP_MASK to the last character. We don't have to do it because a static buffer
+     * has a fixed length, and thus upon read time, we know where to stop reading the string. This is more
+     * to keep it consistent with {@link StringEncoding#writeAsciiString(byte[], int, String)} where we use
+     * STOP_MASK to mark the end of the string. An additional benefit of doing so is to enable corruption check
+     * in the future. Note: this approach has no overhead.
+     *
      * @param s
      * @return
      */
@@ -90,14 +96,7 @@ public class BufferUtil {
             assert c <= 127;
             byte b = (byte)c;
             /**
-             * we don't have to apply STOP_MASK here because a static buffer
-             * has a fixed length, and thus upon read time, we know where
-             * to stop reading the string. This is more to keep it consistent
-             * with {@link StringEncoding#writeAsciiString(byte[], int, String)}
-             * where we use STOP_MASK to mark the end of the string.
-             *
-             * An additional benefit of doing so is to enable corruption check
-             * in the future. Note: this approach has no overhead.
+
              */
             if (i+1==s.length()) b |= STOP_MASK;
             buffer.put(b);
