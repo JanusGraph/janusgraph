@@ -454,8 +454,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             return ((Number) id).longValue() > 0;
         } else {
             assert id instanceof String;
-            if (!StringEncoding.isAsciiString((String) id)) {
-                log.warn("ID contains non-ascii character, ignored: " + id);
+            if (!StringUtils.isAsciiPrintable((String) id)) {
+                log.warn("ID contains non-ascii or non-printable character, ignored: " + id);
                 return false;
             }
             if (((String) id).contains(RelationIdentifier.TOSTRING_DELIMITER)) {
@@ -609,8 +609,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Preconditions.checkArgument(vertexId == null || IDManager.VertexIDType.NormalVertex.is(vertexId), "Not a valid vertex id: %s", vertexId);
         Preconditions.checkArgument(vertexId == null || ((InternalVertexLabel)label).hasDefaultConfiguration(), "Cannot only use default vertex labels: %s",label);
         Preconditions.checkArgument(vertexId == null || !config.hasVerifyExternalVertexExistence() || !containsVertex(vertexId), "Vertex with given id already exists: %s", vertexId);
-        if (vertexId != null && vertexId instanceof String && !StringEncoding.isAsciiString((String) vertexId)) {
-            throw new IllegalArgumentException("Custom string id contains non-ascii character: " + vertexId);
+        if (vertexId != null && vertexId instanceof String && !StringUtils.isAsciiPrintable((String) vertexId)) {
+            throw new IllegalArgumentException("Custom string id contains non-ascii or non-printable character: " + vertexId);
         }
         if (vertexId != null && vertexId instanceof String && ((String) vertexId).contains(RelationIdentifier.TOSTRING_DELIMITER)) {
             throw new IllegalArgumentException("Custom string id contains reserved string ("

@@ -44,8 +44,8 @@ import static org.janusgraph.graphdb.database.idhandling.IDHandler.STRING_ID_MAR
 public class VariableString {
 
     public static void write(WriteBuffer out, final String value) {
-        if (StringUtils.isEmpty(value) || !StringEncoding.isAsciiString(value)) {
-            throw new IllegalArgumentException("value must be non-empty ASCII string!");
+        if (StringUtils.isEmpty(value) || !StringUtils.isAsciiPrintable(value)) {
+            throw new IllegalArgumentException("value must be non-empty printable ASCII string!");
         }
         out.putByte(STRING_ID_MARKER);
         for (int i = 0; i < value.length(); i++) {
@@ -58,7 +58,7 @@ public class VariableString {
     }
 
     public static void writeBackward(WriteBuffer out, final String value) {
-        if (StringUtils.isEmpty(value) || !StringEncoding.isAsciiString(value)) {
+        if (StringUtils.isEmpty(value) || !StringUtils.isAsciiPrintable(value)) {
             throw new IllegalArgumentException("value must be non-empty ASCII string!");
         }
         for (int i = value.length() - 1; i >= 0; i--) {

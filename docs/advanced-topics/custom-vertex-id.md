@@ -60,11 +60,11 @@ Note that if you want to get back the original ID you provided, you need to call
 ## Custom String ID
 
 A string vertex ID can have arbitrary length as long as the underlying storage backend
-permits. The string value must consist of ASCII characters only, and it cannot contain
+permits. The string value must consist of printable ASCII characters only, and it cannot contain
 JanusGraph reserved relation delimiter. By default, this reserved character is `-` (dash),
 which means you cannot use UUID string as a vertex ID since it contains a `-` character.
 However, JanusGraph allows you to set `JANUSGRAPH_RELATION_DELIMITER` system property
-which can be any visible ASCII character. Once it is set, JanusGraph will prohibit that
+which can be any printable ASCII character. Once it is set, JanusGraph will prohibit that
 specific character instead of the default `-` character. Alternatively, you can set
 `JANUSGRAPH_RELATION_DELIMITER` environment variable, which is evaluated if and only if
 the `JANUSGRAPH_RELATION_DELIMITER` system property is not present. For example, you can

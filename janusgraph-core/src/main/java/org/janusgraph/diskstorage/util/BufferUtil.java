@@ -75,8 +75,8 @@ public class BufferUtil {
      * @return
      */
     public static StaticBuffer getStringBuffer(String s) {
-        if (StringUtils.isEmpty(s) || !StringEncoding.isAsciiString(s)) {
-            throw new IllegalArgumentException("value must be non-empty ASCII string but received: " + s);
+        if (StringUtils.isEmpty(s) || !StringUtils.isAsciiPrintable(s)) {
+            throw new IllegalArgumentException("value must be non-empty printable ASCII string but received: " + s);
         }
         ByteBuffer buffer;
         if (s.length() + byteSize == longSize) {
