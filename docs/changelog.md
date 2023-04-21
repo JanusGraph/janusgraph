@@ -105,6 +105,13 @@ For more information on features and bug fixes in 1.0.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### String vertex ID support
+
+Users now can use custom string vertex ids. See `Custom Vertex ID` chapter in documentation. Prior
+to this change, JanusGraph automatically casts IDs of string type to long type if possible. Now this
+auto conversion is disabled. If you have a vertex with ID 1234, `g.V("1234")` would no longer help you
+find the vertex - you would have to do `g.V(1234)` now.
+
 ##### New index management
 
 The index management has received an overhaul which enables proper index removal.
