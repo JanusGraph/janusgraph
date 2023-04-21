@@ -150,6 +150,6 @@ public class BerkeleyGraphTest extends JanusGraphTest {
     public void testCannotUseCustomStringId() {
         JanusGraphException ex = assertThrows(JanusGraphException.class,
             () -> clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_CUSTOM_VERTEX_ID_TYPES), true));
-        assertEquals("allow-string-vid is not supported for OrderedKeyValueStore", ex.getMessage());
+        assertEquals("allow-custom-vid-types is not supported for OrderedKeyValueStore", ex.getMessage());
     }
 }

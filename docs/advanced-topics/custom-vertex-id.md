@@ -6,11 +6,11 @@ you to define custom vertex IDs.
 
 ## Configs
 
-There are two boolean options you can control: `graph.set-vertex-id` and `graph.allow-string-vid`.
+There are two boolean options you can control: `graph.set-vertex-id` and `graph.allow-custom-vid-types`.
 Once the first option is enabled, you would be able to and must provide a vertex ID when
 you create a vertex. The vertex ID must be long-type, unless you turn on the second option.
 The second option allows to you either provide a long-type ID or a string-type ID. Note that
-if you turn on `graph.allow-string-vid`, you must also turn on `graph.set-vertex-id`.
+if you turn on `graph.allow-custom-vid-types`, you must also turn on `graph.set-vertex-id`.
 
 Both of the two options are `GLOBAL_OFFLINE`, with default values being `false`. Being
 global offline means once they are set, you would have to bring down the entire JanusGraph
@@ -18,7 +18,7 @@ cluster to alter the value. See the below two scenarios.
 
 ### Create a new Graph
 
-Simply set `graph.set-vertex-id=<true/false>` and `graph.allow-string-vid=<true/false>` in your config file.
+Simply set `graph.set-vertex-id=<true/false>` and `graph.allow-custom-vid-types=<true/false>` in your config file.
 When the graph is created, this value is loaded and persisted. After the graph is created,
 changing the option value in the config file would make no difference as JanusGraph simply ignores the value.
 
@@ -32,7 +32,7 @@ the following:
 mgmt = graph.openManagement();
 mgmt.set("graph.set-vertex-id", true);
 // optional, if you want to provide string ID
-mgmt.set("graph.allow-string-vid", true);
+mgmt.set("graph.allow-custom-vid-types", true);
 mgmt.commit();
 ```
 

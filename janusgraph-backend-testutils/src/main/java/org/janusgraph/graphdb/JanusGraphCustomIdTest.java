@@ -116,7 +116,7 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
     @Test
     public void testConfig() {
         Exception ex = assertThrows(JanusGraphConfigurationException.class, () -> open(false, true));
-        assertEquals("allow-string-vid is enabled but set-vertex-id is disabled", ex.getMessage());
+        assertEquals("allow-custom-vid-types is enabled but set-vertex-id is disabled", ex.getMessage());
     }
 
     @Test
