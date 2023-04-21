@@ -95,7 +95,7 @@ public class StandardJanusGraphTxTest extends EasyMockSupport {
         EasyMock.expectLastCall().anyTimes();
 
         expect(gdbConfig.getTimestampProvider()).andReturn(tsProvider);
-        expect(gdbConfig.allowStringVertexId()).andReturn(false);
+        expect(gdbConfig.allowCustomVertexIdType()).andReturn(false);
 
         expect(txConfig.isSingleThreaded()).andReturn(true);
         expect(txConfig.hasPreloadedData()).andReturn(false);

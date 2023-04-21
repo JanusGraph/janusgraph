@@ -47,7 +47,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STRING_VERTEX_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class JanusGraphCustomIdSparkTest extends JanusGraphBaseTest {
@@ -74,10 +74,10 @@ public abstract class JanusGraphCustomIdSparkTest extends JanusGraphBaseTest {
         readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config, BasicConfiguration.Restriction.NONE);
     }
 
-    private void open(boolean allowSettingVertexId, boolean allowStringVertexId) {
+    private void open(boolean allowSettingVertexId, boolean allowCustomVertexIdType) {
         ModifiableConfiguration config = getModifiableConfiguration();
         config.set(ALLOW_SETTING_VERTEX_ID, allowSettingVertexId, new String[0]);
-        config.set(ALLOW_STRING_VERTEX_ID, allowStringVertexId, new String[0]);
+        config.set(ALLOW_CUSTOM_VERTEX_ID_TYPES, allowCustomVertexIdType, new String[0]);
         open(config.getConfiguration());
     }
 
@@ -94,7 +94,7 @@ public abstract class JanusGraphCustomIdSparkTest extends JanusGraphBaseTest {
         // enable custom string ID mode
         open(true, true);
         JanusGraphManagement mgmt = graph.openManagement();
-        mgmt.set(ConfigElement.getPath(ALLOW_STRING_VERTEX_ID), true);
+        mgmt.set(ConfigElement.getPath(ALLOW_CUSTOM_VERTEX_ID_TYPES), true);
         mgmt.commit();
 
         // open the graph again, it now has the latest config

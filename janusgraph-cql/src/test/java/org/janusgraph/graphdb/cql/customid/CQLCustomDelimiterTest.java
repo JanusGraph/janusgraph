@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STRING_VERTEX_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
 import static org.janusgraph.graphdb.relations.RelationIdentifier.JANUSGRAPH_RELATION_DELIMITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -54,7 +54,7 @@ public class CQLCustomDelimiterTest extends JanusGraphBaseTest {
     public void testCustomRelationDelimiter() throws Exception {
         Map<String, String> env = getModifiableEnvironment();
         env.put(JANUSGRAPH_RELATION_DELIMITER, "@");
-        clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_STRING_VERTEX_ID), true);
+        clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_CUSTOM_VERTEX_ID_TYPES), true);
         String id1 = UUID.randomUUID().toString();
         String id2 = UUID.randomUUID().toString();
         Vertex v1 = graph.addVertex(T.id, id1, "prop", "val");

@@ -84,7 +84,6 @@ public class TransactionLogHeader {
     }
 
     private void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardJanusGraphTx tx) {
-        final boolean allowStringVertexId = tx.getGraph().getConfiguration().allowStringVertexId();
         VariableLong.writePositive(out,relations.size());
         for (InternalRelation rel : relations) {
             IDHandler.writeVertexId(out, rel.getVertex(0).id(), true);

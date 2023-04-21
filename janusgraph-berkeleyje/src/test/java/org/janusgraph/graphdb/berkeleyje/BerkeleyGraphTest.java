@@ -38,7 +38,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STRING_VERTEX_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -149,7 +149,7 @@ public class BerkeleyGraphTest extends JanusGraphTest {
     @Test
     public void testCannotUseCustomStringId() {
         JanusGraphException ex = assertThrows(JanusGraphException.class,
-            () -> clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_STRING_VERTEX_ID), true));
+            () -> clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_CUSTOM_VERTEX_ID_TYPES), true));
         assertEquals("allow-string-vid is not supported for OrderedKeyValueStore", ex.getMessage());
     }
 }

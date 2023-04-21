@@ -56,9 +56,9 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     protected abstract JanusGraphBlueprintsGraph getGraph();
 
     /**
-     * Whether this graph allows usage of custom vertex id of string type
+     * Whether this graph allows usage of custom vertex id of non-long-type
      */
-    protected boolean allowStringVertexId;
+    protected boolean allowCustomVertexIdType;
 
     @Override
     public Features features() {
@@ -118,7 +118,7 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
         if (idValue.isPresent() && !config.allowVertexIdSetting()) {
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         }
-        if (idValue.isPresent() && !(idValue.get() instanceof Number) && !config.allowStringVertexId()) {
+        if (idValue.isPresent() && !(idValue.get() instanceof Number) && !config.allowCustomVertexIdType()) {
             throw Vertex.Exceptions.userSuppliedIdsOfThisTypeNotSupported();
         }
         Object labelValue = null;

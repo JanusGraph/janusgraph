@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class RelationIdentifierTest {
 
     @Test
-    public void testDisallowStringVertexId() {
+    public void testDisallowCustomVertexIdType() {
         long outVertexId = 12135151000L;
         long inVertexId = 21423513000L;
         long typeId = 123;
@@ -39,7 +39,7 @@ public class RelationIdentifierTest {
     }
 
     @Test
-    public void testAllowStringVertexId() {
+    public void testallowCustomVertexIdType() {
         String outVertexId = UUID.randomUUID().toString().replace('-', '_');
         long inVertexId = Long.MAX_VALUE;
         long typeId = 123;

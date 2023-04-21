@@ -47,7 +47,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STRING_VERTEX_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
 
 /**
  * Bundles all storage/index transactions and provides a proxy for some of their
@@ -84,13 +84,13 @@ public class BackendTransaction implements LoggableTransaction {
 
     private boolean acquiredLock = false;
     private boolean cacheEnabled;
-    private boolean allowStringVertexId;
+    private boolean allowCustomVertexIdType;
 
     public BackendTransaction(CacheTransaction storeTx, BaseTransactionConfig txConfig,
                               StoreFeatures features, KCVSCache edgeStore, KCVSCache indexStore,
                               KCVSCache txLogStore, Duration maxReadTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool,
-                              boolean cacheEnabled, boolean allowStringVertexId) {
+                              boolean cacheEnabled, boolean allowCustomVertexIdType) {
         this.storeTx = storeTx;
         this.txConfig = txConfig;
         this.storeFeatures = features;
@@ -101,7 +101,7 @@ public class BackendTransaction implements LoggableTransaction {
         this.indexTx = indexTx;
         this.threadPool = threadPool;
         this.cacheEnabled = cacheEnabled;
-        this.allowStringVertexId = allowStringVertexId;
+        this.allowCustomVertexIdType = allowCustomVertexIdType;
     }
 
     public boolean hasAcquiredLock() {
@@ -377,7 +377,7 @@ public class BackendTransaction implements LoggableTransaction {
         return executeRead(new Callable<KeyIterator>() {
             @Override
             public KeyIterator call() throws Exception {
-                return (storeFeatures.isKeyOrdered() && !allowStringVertexId)
+                return (storeFeatures.isKeyOrdered() && !allowCustomVertexIdType)
                     // if string vertex id is allowed, then min key and max key are unknown
                     ? edgeStore.getKeys(new KeyRangeQuery(EDGESTORE_MIN_KEY, EDGESTORE_MAX_KEY, sliceQuery), storeTx)
                     : edgeStore.getKeys(sliceQuery, storeTx);
@@ -392,10 +392,10 @@ public class BackendTransaction implements LoggableTransaction {
 
     public KeyIterator edgeStoreKeys(final KeyRangeQuery range) {
         Preconditions.checkArgument(storeFeatures.hasOrderedScan(), "The configured storage backend does not support ordered scans");
-        if (allowStringVertexId) {
-            throw new IllegalArgumentException(ALLOW_STRING_VERTEX_ID.getName() + " must be disabled since current " +
+        if (allowCustomVertexIdType) {
+            throw new IllegalArgumentException(ALLOW_CUSTOM_VERTEX_ID_TYPES.getName() + " must be disabled since current " +
                 "backend does not support unordered scan. Global graph operations require unordered scan when " +
-                ALLOW_STRING_VERTEX_ID.getName() + " is enabled");
+                ALLOW_CUSTOM_VERTEX_ID_TYPES.getName() + " is enabled");
         }
         return executeRead(new Callable<KeyIterator>() {
             @Override

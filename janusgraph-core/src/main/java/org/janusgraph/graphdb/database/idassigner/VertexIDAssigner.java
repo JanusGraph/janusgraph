@@ -87,7 +87,7 @@ public class VertexIDAssigner implements AutoCloseable {
     private final int partitionIdBound;
     private final boolean hasLocalPartitions;
 
-    public VertexIDAssigner(Configuration config, IDAuthority idAuthority, StoreFeatures idAuthFeatures, boolean allowStringVertexId) {
+    public VertexIDAssigner(Configuration config, IDAuthority idAuthority, StoreFeatures idAuthFeatures) {
         Preconditions.checkNotNull(idAuthority);
         this.idAuthority = idAuthority;
 

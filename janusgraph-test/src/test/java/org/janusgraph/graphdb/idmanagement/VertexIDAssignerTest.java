@@ -58,8 +58,8 @@ public class VertexIDAssignerTest {
         for (int maxPerPartition : new int[]{Integer.MAX_VALUE, 100, 300}) {
             for (int numPartitions : new int[]{2, 4, 10}) {
                 for (int[] local : new int[][]{null, {0,2, numPartitions}, {235,234,8}, {1,1,2}, {0,1<<(numPartitions-1),numPartitions}}) {
-                    for (boolean allowStringVertexId : new boolean[] {true, false}) {
-                        configurations.add(generateConfigurationArguments(numPartitions, maxPerPartition, local, allowStringVertexId));
+                    for (boolean allowCustomVertexIdType : new boolean[] {true, false}) {
+                        configurations.add(generateConfigurationArguments(numPartitions, maxPerPartition, local, allowCustomVertexIdType));
                     }
                 }
             }
@@ -74,10 +74,10 @@ public class VertexIDAssignerTest {
      * @param partitionMax The maximum number of ids that can be allocated per partition. This is artificially constrained by the MockIDAuthority
      * @param localPartitionDef This array contains three integers: 1+2) lower and upper bounds for the local partition range, and
      *                          3) the bit width of the local bounds. The bounds will be bit-shifted forward to consume the bit width
-     * @param allowStringVertexId Whether usage of string-type vertex id is allowed
+     * @param allowCustomVertexIdType Whether usage of string-type vertex id is allowed
      */
     private static Arguments generateConfigurationArguments(int numPartitionsBits, int partitionMax,
-                                                            int[] localPartitionDef, boolean allowStringVertexId){
+                                                            int[] localPartitionDef, boolean allowCustomVertexIdType){
         MockIDAuthority idAuthority = new MockIDAuthority(11, partitionMax);
 
         StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
@@ -90,7 +90,7 @@ public class VertexIDAssignerTest {
 
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS,1<<numPartitionsBits);
-        VertexIDAssigner idAssigner = new VertexIDAssigner(config, idAuthority, features, allowStringVertexId);
+        VertexIDAssigner idAssigner = new VertexIDAssigner(config, idAuthority, features);
         System.out.println(String.format("Configuration [%s|%s|%s]",numPartitionsBits,partitionMax,Arrays.toString(localPartitionDef)));
 
         long maxIDAssignments;
@@ -100,7 +100,7 @@ public class VertexIDAssignerTest {
             maxIDAssignments = (1<<numPartitionsBits)*((long)partitionMax);
         }
 
-        return Arguments.arguments(idAssigner, maxIDAssignments, numPartitionsBits, allowStringVertexId);
+        return Arguments.arguments(idAssigner, maxIDAssignments, numPartitionsBits, allowCustomVertexIdType);
     }
 
 
@@ -109,14 +109,14 @@ public class VertexIDAssignerTest {
         HIGH
     }
 
-    private JanusGraph getInMemoryGraph(boolean allowSettingVertexId, boolean allowStringVertexId, boolean idsFlush, int numPartitionsBits) {
+    private JanusGraph getInMemoryGraph(boolean allowSettingVertexId, boolean allowCustomVertexIdType, boolean idsFlush, int numPartitionsBits) {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, InMemoryStoreManager.class.getCanonicalName());
         config.set(GraphDatabaseConfiguration.IDS_FLUSH, idsFlush);
         config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ofMillis(1L));
         config.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS, 1<<numPartitionsBits);
         config.set(GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID, allowSettingVertexId);
-        config.set(GraphDatabaseConfiguration.ALLOW_STRING_VERTEX_ID, allowStringVertexId);
+        config.set(GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES, allowCustomVertexIdType);
         return JanusGraphFactory.open(config);
     }
 
@@ -276,8 +276,8 @@ public class VertexIDAssignerTest {
     @ParameterizedTest
     @MethodSource("configs")
     public void testCustomStringIdAssignment(VertexIDAssigner idAssigner, long maxIDAssignments,
-                                             int numPartitionsBits, boolean allowStringVertexId) {
-        if (!allowStringVertexId) return;
+                                             int numPartitionsBits, boolean allowCustomVertexIdType) {
+        if (!allowCustomVertexIdType) return;
         testCustomStringIdAssignment(idAssigner, CustomIdStrategy.LOW, numPartitionsBits);
         testCustomStringIdAssignment(idAssigner, CustomIdStrategy.HIGH, numPartitionsBits);
     }

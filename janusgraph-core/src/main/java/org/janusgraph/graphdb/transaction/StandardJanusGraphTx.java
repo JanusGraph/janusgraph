@@ -271,7 +271,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Preconditions.checkNotNull(config);
         this.graph = graph;
         this.times = graph.getConfiguration().getTimestampProvider();
-        this.allowStringVertexId = graph.getConfiguration().allowStringVertexId();
+        this.allowCustomVertexIdType = graph.getConfiguration().allowCustomVertexIdType();
         this.config = config;
         this.idManager = graph.getIDManager();
         this.idInspector = idManager;
@@ -492,7 +492,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         final List<Object> vertexIds = new ArrayList<>(ids.length);
         for (Object id : ids) {
             assert id instanceof String || id instanceof Number;
-            if (!allowStringVertexId && id instanceof String) {
+            if (!allowCustomVertexIdType && id instanceof String) {
                 // Convert string to long to keep backward compatibility prior to 1.0.0
                 // prior to JanusGraph 1.0.0, vertices always have ids of long types. However, even if
                 // a vertex has id 100L, both g.V(100L) and g.V("100") will return this vertex.

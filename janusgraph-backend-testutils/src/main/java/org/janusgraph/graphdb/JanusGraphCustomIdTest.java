@@ -63,7 +63,7 @@ import java.util.concurrent.ExecutionException;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STRING_VERTEX_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
@@ -102,13 +102,13 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
         readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config, BasicConfiguration.Restriction.NONE);
     }
 
-    private void open(Boolean allowSettingVertexId, Boolean allowStringVertexId) {
+    private void open(Boolean allowSettingVertexId, Boolean allowCustomVertexIdType) {
         ModifiableConfiguration config = getModifiableConfiguration();
         if (allowSettingVertexId != null) {
             config.set(ALLOW_SETTING_VERTEX_ID, allowSettingVertexId);
         }
-        if (allowStringVertexId != null) {
-            config.set(ALLOW_STRING_VERTEX_ID, allowStringVertexId);
+        if (allowCustomVertexIdType != null) {
+            config.set(ALLOW_CUSTOM_VERTEX_ID_TYPES, allowCustomVertexIdType);
         }
         open(config.getConfiguration());
     }
@@ -159,7 +159,7 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
         open(null, null);
         JanusGraphManagement mgmt = graph.openManagement();
         mgmt.set(ConfigElement.getPath(ALLOW_SETTING_VERTEX_ID), true);
-        mgmt.set(ConfigElement.getPath(ALLOW_STRING_VERTEX_ID), true);
+        mgmt.set(ConfigElement.getPath(ALLOW_CUSTOM_VERTEX_ID_TYPES), true);
         mgmt.commit();
 
         // open the graph again, it now has the latest config
@@ -192,7 +192,7 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
         // turn off custom string ID setting
         open(null, null);
         JanusGraphManagement mgmt = graph.openManagement();
-        mgmt.set(ConfigElement.getPath(ALLOW_STRING_VERTEX_ID), false);
+        mgmt.set(ConfigElement.getPath(ALLOW_CUSTOM_VERTEX_ID_TYPES), false);
         mgmt.commit();
 
         open(null, null);
@@ -283,7 +283,7 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
     public void testIndexUpdatesWithReindexAndRemove() throws ExecutionException, InterruptedException {
         ModifiableConfiguration config = getModifiableConfiguration();
         config.set(ALLOW_SETTING_VERTEX_ID, true, new String[0]);
-        config.set(ALLOW_STRING_VERTEX_ID, true, new String[0]);
+        config.set(ALLOW_CUSTOM_VERTEX_ID_TYPES, true, new String[0]);
         config.set(LOG_SEND_DELAY, Duration.ofMillis(0), MANAGEMENT_LOG);
         config.set(KCVSLog.LOG_READ_LAG_TIME, Duration.ofMillis(50), MANAGEMENT_LOG);
         config.set(LOG_READ_INTERVAL, Duration.ofMillis(250), MANAGEMENT_LOG);

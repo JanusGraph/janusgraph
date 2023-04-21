@@ -25,7 +25,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.UUID;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STRING_VERTEX_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
 import static org.janusgraph.graphdb.relations.RelationIdentifier.JANUSGRAPH_RELATION_DELIMITER;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -38,7 +38,7 @@ public class CQLNonAsciiDelimiterTest extends JanusGraphBaseTest {
     public void testCustomRelationDelimiter() {
         // Non-ASCII delimiter
         System.setProperty(JANUSGRAPH_RELATION_DELIMITER, "™");
-        clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_STRING_VERTEX_ID), true);
+        clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_CUSTOM_VERTEX_ID_TYPES), true);
         assertThrows(ExceptionInInitializerError.class, () -> graph.addVertex(T.id, UUID.randomUUID().toString()));
         System.clearProperty(JANUSGRAPH_RELATION_DELIMITER);
     }

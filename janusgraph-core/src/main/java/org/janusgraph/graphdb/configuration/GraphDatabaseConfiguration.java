@@ -110,11 +110,11 @@ public class GraphDatabaseConfiguration {
             "this is enabled, you have to provide vertex id when creating new vertices. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
 
-    public static final ConfigOption<Boolean> ALLOW_STRING_VERTEX_ID = new ConfigOption<>(GRAPH_NS, "allow-string-vid",
-            "Whether string-type vertex ids are allowed. " + ALLOW_SETTING_VERTEX_ID.getName() +
-            " must be enabled in order to use this functionality. This does not prevent users from using custom ids with " +
-            "long type - both string ids and long ids are supported. If your storage backend does not support unordered " +
-            "scan, then some operations will be disabled. You cannot use this feature with Berkeley DB. EXPERT FEATURE - USE WITH GREAT CARE.",
+    public static final ConfigOption<Boolean> ALLOW_CUSTOM_VERTEX_ID_TYPES = new ConfigOption<>(GRAPH_NS, "allow-custom-vid-types",
+            "Whether non long-type vertex ids are allowed. " + ALLOW_SETTING_VERTEX_ID.getName() +
+            " must be enabled in order to use this functionality. Currently, only string-type is supported. This does not " +
+            "prevent users from using custom ids with long type. If your storage backend does not support unordered " +
+            "scan, then some scan operations will be disabled. You cannot use this feature with Berkeley DB. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
 
     public static final ConfigOption<String> GRAPH_NAME = new ConfigOption<>(GRAPH_NS, "graphname",
@@ -1270,7 +1270,7 @@ public class GraphDatabaseConfiguration {
     private IndexSelectionStrategy indexSelectionStrategy;
     private Boolean batchPropertyPrefetching;
     private boolean allowVertexIdSetting;
-    private boolean allowStringVertexId;
+    private boolean allowCustomVertexIdType;
     private boolean logTransactions;
     private String metricsPrefix;
     private String unknownIndexKeyName;
@@ -1344,8 +1344,8 @@ public class GraphDatabaseConfiguration {
         return allowVertexIdSetting;
     }
 
-    public boolean allowStringVertexId() {
-        return allowStringVertexId;
+    public boolean allowCustomVertexIdType() {
+        return allowCustomVertexIdType;
     }
 
     public Duration getMaxCommitTime() {
@@ -1409,7 +1409,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public VertexIDAssigner getIDAssigner(Backend backend) {
-        return new VertexIDAssigner(configuration, backend.getIDAuthority(), backend.getStoreFeatures(), allowStringVertexId);
+        return new VertexIDAssigner(configuration, backend.getIDAuthority(), backend.getStoreFeatures());
     }
 
     public String getBackendDescription() {
@@ -1517,10 +1517,10 @@ public class GraphDatabaseConfiguration {
         hardMaxLimit = configuration.get(HARD_MAX_LIMIT);
 
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
-        allowStringVertexId = configuration.get(ALLOW_STRING_VERTEX_ID);
-        if (allowStringVertexId && !allowVertexIdSetting) {
+        allowCustomVertexIdType = configuration.get(ALLOW_CUSTOM_VERTEX_ID_TYPES);
+        if (allowCustomVertexIdType && !allowVertexIdSetting) {
             throw new JanusGraphConfigurationException(String.format("%s is enabled but %s is disabled",
-                ALLOW_STRING_VERTEX_ID.getName(), ALLOW_SETTING_VERTEX_ID.getName()));
+                ALLOW_CUSTOM_VERTEX_ID_TYPES.getName(), ALLOW_SETTING_VERTEX_ID.getName()));
         }
 
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);

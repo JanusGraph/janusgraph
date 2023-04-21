@@ -53,7 +53,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STRING_VERTEX_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
@@ -92,10 +92,10 @@ public abstract class JanusGraphCustomIdIndexTest extends JanusGraphBaseTest {
         readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config, BasicConfiguration.Restriction.NONE);
     }
 
-    private void open(boolean allowSettingVertexId, boolean allowStringVertexId) {
+    private void open(boolean allowSettingVertexId, boolean allowCustomVertexIdType) {
         ModifiableConfiguration config = getModifiableConfiguration();
         config.set(ALLOW_SETTING_VERTEX_ID, allowSettingVertexId, new String[0]);
-        config.set(ALLOW_STRING_VERTEX_ID, allowStringVertexId, new String[0]);
+        config.set(ALLOW_CUSTOM_VERTEX_ID_TYPES, allowCustomVertexIdType, new String[0]);
         open(config.getConfiguration());
         indexFeatures = graph.getBackend().getIndexFeatures().get(INDEX);
     }
