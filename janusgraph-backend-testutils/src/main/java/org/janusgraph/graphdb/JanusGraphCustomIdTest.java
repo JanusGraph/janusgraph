@@ -125,7 +125,7 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
         Exception ex = assertThrows(IllegalArgumentException.class, () -> graph.addVertex());
         assertEquals("Must provide vertex id", ex.getMessage());
         ex = assertThrows(IllegalArgumentException.class, () -> graph.addVertex(T.id, "id™"));
-        assertEquals("Custom string id contains non-ascii character: id™", ex.getMessage());
+        assertEquals("Custom string id contains non-ascii or non-printable character: id™", ex.getMessage());
         ex = assertThrows(IllegalArgumentException.class, () -> graph.addVertex(T.id, "custom-vertex"));
         assertEquals("Custom string id contains reserved string (-): custom-vertex", ex.getMessage());
         List<String> vids = new ArrayList<>();
