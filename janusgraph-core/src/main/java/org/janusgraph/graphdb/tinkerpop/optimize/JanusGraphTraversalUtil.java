@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import org.apache.tinkerpop.gremlin.process.traversal.step.PathProcessor;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.ConnectiveStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ProfileStep;
@@ -65,7 +66,7 @@ public class JanusGraphTraversalUtil {
      * using them to initialise a JanusGraphVertexStep if it's the first step of any child traversal.
      */
     private static final List<Class<? extends TraversalParent>> MULTIQUERY_COMPATIBLE_PARENTS =
-            Arrays.asList(BranchStep.class, OptionalStep.class, RepeatStep.class, TraversalFilterStep.class);
+            Arrays.asList(BranchStep.class, OptionalStep.class, RepeatStep.class, TraversalFilterStep.class, ConnectiveStep.class);
 
     public static StandardJanusGraph getJanusGraph(final Traversal.Admin<?, ?> traversal) {
         Optional<Graph> optionalGraph = traversal.getGraph();

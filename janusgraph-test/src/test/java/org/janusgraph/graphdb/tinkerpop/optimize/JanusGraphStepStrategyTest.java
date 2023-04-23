@@ -338,15 +338,18 @@ public class JanusGraphStepStrategyTest {
             // There are 'sideEffect' and 'as' steps preceding the JanusGraphVertexStep
             arguments(g.V().choose(has("weight", 0),__.as("true").sideEffect(i -> {}).inE("knows"),__.as("false").sideEffect(i -> {}).inE("knows")),
                 g_V().is(MQ_STEP).barrier().choose(has("weight", 0),__.as("true").sideEffect(i -> {}).inE("knows"),__.as("false").sideEffect(i -> {}).inE("knows")), otherStrategies),
-            // 'local' is not MultiQueryCompatible (at the moment)
-            arguments(g.V().and(__.inE("knows"), __.inE("knows")),
-                g_V().and(__.is(MQ_STEP).barrier().inE("knows"), __.is(MQ_STEP).barrier().inE("knows")), otherStrategies),
             // `JanusGraphMultiQueryStep` should be used for filter step when at least one child is registered as a client of `JanusGraphMultiQueryStep`.
             arguments(g.V().where(__.out("knows").count().is(P.gte(5))),
                 g_V().is(MQ_STEP).barrier().where(__.out("knows").count().is(P.gte(5))), otherStrategies),
             // `JanusGraphMultiQueryStep` should not be used for filter step when none of children is registered as a client of `JanusGraphMultiQueryStep`.
             arguments(g.V().where(__.count().is(P.gte(5))),
                 g_V().where(__.count().is(P.gte(5))), otherStrategies),
+            // Needs one JanusGraphMultiQueryStep before executing `and` step with `MultiQueriable` steps
+            arguments(g.V().and(__.inE("knows"), __.inE("knows")),
+                g_V().is(MQ_STEP).barrier().and(__.inE("knows"), __.inE("knows")), otherStrategies),
+            // Needs one JanusGraphMultiQueryStep before executing `or` step with `MultiQueriable` steps
+            arguments(g.V().or(__.inE("knows"), __.inE("knows")),
+                g_V().is(MQ_STEP).barrier().or(__.inE("knows"), __.inE("knows")), otherStrategies),
         });
     }
 }

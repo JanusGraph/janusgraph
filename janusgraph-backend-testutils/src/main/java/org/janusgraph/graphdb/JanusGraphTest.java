@@ -4703,6 +4703,62 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         profile = traversal.get().profile().next();
         assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
 
+        // test batching for `out()` inside `and()`
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).and(__.out().count().is(P.gte(0)), __.inE().count().is(P.gte(0)));
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals((int) Math.ceil((double) bs.length / barrierSize) * 2, countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `and()` limited
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).and(__.out().count().is(P.gte(0)), __.inE().count().is(P.gte(0))).limit(limit);
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals((int) Math.ceil((double) Math.min(bs.length, limit) / barrierSize) * 2, countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `and()` with second filter not being executed due to first filter is false
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).and(__.out().count().is(P.gte(1000000)), __.inE().count().is(P.gte(0)));
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals((int) Math.ceil((double) bs.length / barrierSize), countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `and()` limited with second filter not being executed due to first filter is false
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).and(__.out().count().is(P.gte(1000000)), __.inE().count().is(P.gte(0))).limit(limit);
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals((int) Math.ceil((double) bs.length / barrierSize), countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `or()`
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).or(__.out().count().is(P.gte(1000000)), __.inE().count().is(P.gte(0)));
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals((int) Math.ceil((double) bs.length / barrierSize) * 2, countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `or()` limited
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).or(__.out().count().is(P.gte(1000000)), __.inE().count().is(P.gte(0))).limit(limit);
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals((int) Math.ceil((double) Math.min(bs.length, limit) / barrierSize) * 2, countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `or()` with second filter not being executed due to first filter is true
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).or(__.out().count().is(P.gte(0)), __.inE().count().is(P.gte(0)));
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals((int) Math.ceil((double) bs.length / barrierSize), countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `or()` limited with second filter not being executed due to first filter is true
+        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).or(__.out().count().is(P.gte(0)), __.inE().count().is(P.gte(0))).limit(limit);
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        profile = traversal.get().profile().next();
+        assertEquals((int) Math.ceil((double) Math.min(bs.length, limit) / barrierSize), countOptimizationQueries(profile.getMetrics()));
+
         // test batching for `values()`
         traversal = () -> graph.traversal().V(cs).barrier(barrierSize).values("foo");
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
@@ -4774,6 +4830,16 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             .count();
         long nestedCount = metrics.stream()
             .mapToLong(m -> countBackendQueriesOfSize(size, m.getNested()))
+            .sum();
+        return count + nestedCount;
+    }
+
+    private long countOptimizationQueries(Collection<? extends Metrics> metrics) {
+        long count = metrics.stream()
+            .filter(m -> m.getName().equals("optimization"))
+            .count();
+        long nestedCount = metrics.stream()
+            .mapToLong(m -> countOptimizationQueries(m.getNested()))
             .sum();
         return count + nestedCount;
     }
