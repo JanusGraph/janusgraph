@@ -15,9 +15,7 @@
 package org.janusgraph.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -152,6 +150,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -174,7 +173,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     private static final Logger log = LoggerFactory.getLogger(StandardJanusGraphTx.class);
 
-    private static final Map<Long, InternalRelation> EMPTY_DELETED_RELATIONS = ImmutableMap.of();
+    private static final Map<Long, InternalRelation> EMPTY_DELETED_RELATIONS = Collections.emptyMap();
     private static final ConcurrentMap<LockTuple, TransactionLock> UNINITIALIZED_LOCKS = null;
     private static final Duration LOCK_TIMEOUT = Duration.ofMillis(5000L);
 
@@ -655,7 +654,6 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             internalVertex -> !isPartitionedVertex(internalVertex) ||
                 internalVertex.id().equals(idInspector.getCanonicalVertexId(((Number) internalVertex.id()).longValue())));
     }
-
 
     /*
      * ------------------------------------ Adding and Removing Relations ------------------------------------
@@ -1385,7 +1383,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 PredicateCondition<PropertyKey, JanusGraphElement> standardIndexKey = getEqualityCondition(query.getCondition());
                 Iterator<JanusGraphVertex> vertices;
                 if (standardIndexKey == null) {
-                    final Set<PropertyKey> keys = Sets.newHashSet();
+                    final Set<PropertyKey> keys = new HashSet<>();
                     ConditionUtil.traversal(query.getCondition(), cond -> {
                         Preconditions.checkArgument(cond.getType() != Condition.Type.LITERAL || cond instanceof PredicateCondition);
                         if (cond instanceof PredicateCondition) {
@@ -1394,7 +1392,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                         return true;
                     });
                     Preconditions.checkArgument(!keys.isEmpty(), "Invalid query condition: %s", query.getCondition());
-                    Set<JanusGraphVertex> vertexSet = Sets.newHashSet();
+                    Set<JanusGraphVertex> vertexSet = new HashSet<>();
                     for (final JanusGraphRelation r : addedRelations.getView(relation -> keys.contains(relation.getType()))) {
                         vertexSet.add(((JanusGraphVertexProperty) r).element());
                     }

@@ -73,6 +73,7 @@ import org.janusgraph.graphdb.query.profile.SimpleQueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.testutil.TestGraphConfigs;
+import org.janusgraph.util.datastructures.IterablesUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -87,7 +88,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
@@ -486,7 +486,7 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
 
     public static <T> Stream<T> asStream(final Iterator<T> source) {
         final Iterable<T> iterable = () -> source;
-        return StreamSupport.stream(iterable.spliterator(),false);
+        return IterablesUtil.stream(iterable);
     }
 
     public JanusGraph getForceIndexGraph() {
@@ -695,7 +695,7 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key));
 
         //Check subqueries
-        SimpleQueryProfiler simpleQueryProfiler = Iterables.getOnlyElement(StreamSupport.stream(profiler.spliterator(), false)
+        SimpleQueryProfiler simpleQueryProfiler = Iterables.getOnlyElement(IterablesUtil.stream(profiler)
             .filter(p -> !p.getGroupName().equals(QueryProfiler.OPTIMIZATION)).collect(Collectors.toList()));
         if (subQuerySpecs.length == 2) { //0=>fitted, 1=>ordered
             assertEquals(subQuerySpecs[0], simpleQueryProfiler.getAnnotation(QueryProfiler.FITTED_ANNOTATION));

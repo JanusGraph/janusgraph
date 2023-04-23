@@ -21,10 +21,10 @@ import org.janusgraph.core.PropertyKey;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.util.CollectionsUtil;
+import org.janusgraph.util.datastructures.IterablesUtil;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class EdgeLabelVertex extends RelationTypeVertex implements EdgeLabel {
 
@@ -56,7 +56,7 @@ public class EdgeLabelVertex extends RelationTypeVertex implements EdgeLabel {
         String name = name();
         return getRelated(TypeDefinitionCategory.UPDATE_CONNECTION_EDGE, Direction.OUT).stream()
             .map(entry -> (JanusGraphSchemaVertex) entry.getSchemaType())
-            .flatMap(s -> StreamSupport.stream(s.getEdges(TypeDefinitionCategory.CONNECTION_EDGE, Direction.OUT).spliterator(), false))
+            .flatMap(s -> IterablesUtil.stream(s.getEdges(TypeDefinitionCategory.CONNECTION_EDGE, Direction.OUT)))
             .map(Connection::new)
             .filter(s -> s.getEdgeLabel().equals(name))
             .collect(Collectors.toList());
