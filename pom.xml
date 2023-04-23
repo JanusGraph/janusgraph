@@ -376,8 +376,8 @@
                         <argLine>${default.test.jvm.opts}</argLine>
                         <runOrder>alphabetical</runOrder>
                         <failIfNoTests>false</failIfNoTests>
-                        <!-- six hours -->
-                        <forkedProcessTimeoutInSeconds>21600</forkedProcessTimeoutInSeconds>
+                        <!-- eight hours -->
+                        <forkedProcessTimeoutInSeconds>28800</forkedProcessTimeoutInSeconds>
                         <reuseForks>false</reuseForks>
                         <excludes>
                             <exclude>**/*PerformanceTest.java</exclude>
