@@ -58,8 +58,11 @@ Note that if you want to get back the original ID you provided, you need to call
 
 ## Custom String ID
 
-A string vertex ID can have arbitrary length as long as the underlying storage backend
-permits. The string value must consist of printable ASCII characters only, and it cannot contain
+A string vertex ID can have arbitrary length as long as the underlying storage and index backends
+permit. Elasticsearch, for example, requires the length of the ID to be smaller than or equal to
+512.
+
+The string value must consist of printable ASCII characters only, and it cannot contain
 JanusGraph reserved relation delimiter. By default, this reserved character is `-` (dash),
 which means you cannot use UUID string as a vertex ID since it contains a `-` character.
 You can create vertices as follows:

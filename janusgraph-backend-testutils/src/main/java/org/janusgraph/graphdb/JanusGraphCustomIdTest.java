@@ -49,8 +49,6 @@ import org.janusgraph.testutil.TestGraphConfigs;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -62,8 +60,8 @@ import java.util.concurrent.ExecutionException;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
@@ -81,8 +79,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * This test suite is responsible for testing custom vertex id assignment
  */
 public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
-
-    private static final Logger log = LoggerFactory.getLogger(JanusGraphCustomIdTest.class);
 
     @Override
     public WriteConfiguration getConfiguration() {

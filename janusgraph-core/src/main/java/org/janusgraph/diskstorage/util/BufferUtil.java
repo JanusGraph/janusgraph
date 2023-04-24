@@ -95,9 +95,6 @@ public class BufferUtil {
             int c = s.charAt(i);
             assert c <= 127;
             byte b = (byte)c;
-            /**
-
-             */
             if (i+1==s.length()) b |= STOP_MASK;
             buffer.put(b);
         }

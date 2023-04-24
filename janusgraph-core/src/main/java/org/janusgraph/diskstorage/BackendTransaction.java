@@ -378,7 +378,7 @@ public class BackendTransaction implements LoggableTransaction {
             @Override
             public KeyIterator call() throws Exception {
                 return (storeFeatures.isKeyOrdered() && !allowCustomVertexIdType)
-                    // if string vertex id is allowed, then min key and max key are unknown
+                    // if non-long-type vertex id is allowed, then min key and max key are unknown
                     ? edgeStore.getKeys(new KeyRangeQuery(EDGESTORE_MIN_KEY, EDGESTORE_MAX_KEY, sliceQuery), storeTx)
                     : edgeStore.getKeys(sliceQuery, storeTx);
             }
