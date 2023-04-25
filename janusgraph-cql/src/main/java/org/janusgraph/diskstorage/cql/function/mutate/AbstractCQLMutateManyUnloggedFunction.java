@@ -14,12 +14,12 @@
 
 package org.janusgraph.diskstorage.cql.function.mutate;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.BatchStatement;
-import com.datastax.oss.driver.api.core.cql.BatchableStatement;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.DefaultBatchType;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.BatchStatement;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.BatchableStatement;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.BoundStatement;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.DefaultBatchType;
 import io.vavr.collection.Iterator;
 import io.vavr.collection.Seq;
 import org.janusgraph.diskstorage.BackendException;

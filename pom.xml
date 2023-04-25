@@ -130,6 +130,7 @@
         <module>janusgraph-berkeleyje</module>
         <module>cassandra-hadoop-util</module>
         <module>scylla-hadoop-util</module>
+        <module>janusgraph-shaded</module>
         <module>janusgraph-cql</module>
         <module>janusgraph-hadoop</module>
         <module>janusgraph-hbase</module>
@@ -501,6 +502,11 @@
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>0.8.9</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.2.4</version>
                 </plugin>
             </plugins>
         </pluginManagement>

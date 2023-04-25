@@ -14,10 +14,10 @@
 
 package org.janusgraph.diskstorage.cql.builder;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSessionBuilder;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import org.janusgraph.shaded.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigParseOptions;

@@ -14,11 +14,11 @@
 
 package org.janusgraph.diskstorage.cql.builder;
 
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
-import com.datastax.oss.driver.internal.core.auth.PlainTextAuthProvider;
-import com.datastax.oss.driver.internal.core.ssl.DefaultSslEngineFactory;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
+import org.janusgraph.shaded.datastax.oss.driver.internal.core.auth.PlainTextAuthProvider;
+import org.janusgraph.shaded.datastax.oss.driver.internal.core.ssl.DefaultSslEngineFactory;
 import org.janusgraph.diskstorage.configuration.Configuration;
 
 import java.time.Duration;

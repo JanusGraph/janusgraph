@@ -20,18 +20,18 @@ package org.apache.cassandra.hadoop.cql3;
 *
 */
 
-import com.datastax.driver.core.AuthProvider;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.HostDistance;
-import com.datastax.driver.core.PlainTextAuthProvider;
-import com.datastax.driver.core.PoolingOptions;
-import com.datastax.driver.core.ProtocolOptions;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.QueryOptions;
-import com.datastax.driver.core.RemoteEndpointAwareJdkSSLOptions;
-import com.datastax.driver.core.SSLOptions;
-import com.datastax.driver.core.SocketOptions;
-import com.datastax.driver.core.policies.LoadBalancingPolicy;
+import org.janusgraph.shaded.datastax.driver.core.AuthProvider;
+import org.janusgraph.shaded.datastax.driver.core.Cluster;
+import org.janusgraph.shaded.datastax.driver.core.HostDistance;
+import org.janusgraph.shaded.datastax.driver.core.PlainTextAuthProvider;
+import org.janusgraph.shaded.datastax.driver.core.PoolingOptions;
+import org.janusgraph.shaded.datastax.driver.core.ProtocolOptions;
+import org.janusgraph.shaded.datastax.driver.core.ProtocolVersion;
+import org.janusgraph.shaded.datastax.driver.core.QueryOptions;
+import org.janusgraph.shaded.datastax.driver.core.RemoteEndpointAwareJdkSSLOptions;
+import org.janusgraph.shaded.datastax.driver.core.SSLOptions;
+import org.janusgraph.shaded.datastax.driver.core.SocketOptions;
+import org.janusgraph.shaded.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.google.common.base.Optional;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.commons.lang3.StringUtils;
@@ -280,7 +280,7 @@ public class CqlConfigHelper
         Optional<Integer> fetchSize = getInputPageRowSize(conf);
         QueryOptions queryOptions = new QueryOptions();
         if (CL != null && !CL.isEmpty())
-            queryOptions.setConsistencyLevel(com.datastax.driver.core.ConsistencyLevel.valueOf(CL));
+            queryOptions.setConsistencyLevel(org.janusgraph.shaded.datastax.driver.core.ConsistencyLevel.valueOf(CL));
 
         if (fetchSize.isPresent())
             queryOptions.setFetchSize(fetchSize.get());

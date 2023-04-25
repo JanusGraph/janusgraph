@@ -14,7 +14,7 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -518,7 +518,7 @@ public interface CQLConfigOptions {
         "class",
         "It is either a predefined DataStax driver value for a builtin request tracker " +
             "or a full qualified class name which implements " +
-            "`com.datastax.oss.driver.internal.core.tracker.RequestTracker` interface. " +
+            "`org.janusgraph.shaded.datastax.oss.driver.internal.core.tracker.RequestTracker` interface. " +
             "If no any value provided, the default DataStax request tracker is used, which is `NoopRequestTracker` " +
             "which doesn't do anything. If `RequestLogger` value is provided, the DataStax [RequestLogger]" +
             "(https://docs.datastax.com/en/developer/java-driver/4.9/manual/core/request_tracker/#request-logger) " +

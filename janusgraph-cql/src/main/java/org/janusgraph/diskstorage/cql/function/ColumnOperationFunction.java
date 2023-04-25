@@ -14,8 +14,8 @@
 
 package org.janusgraph.diskstorage.cql.function;
 
-import com.datastax.oss.driver.api.core.cql.BatchableStatement;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.BatchableStatement;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.BoundStatement;
 import io.vavr.collection.Iterator;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;

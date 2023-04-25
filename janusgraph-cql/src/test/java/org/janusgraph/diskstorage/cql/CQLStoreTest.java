@@ -14,11 +14,11 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.Statement;
-import com.datastax.oss.driver.api.core.metadata.Metadata;
-import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.Statement;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.metadata.Metadata;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.KeyColumnValueStoreTest;

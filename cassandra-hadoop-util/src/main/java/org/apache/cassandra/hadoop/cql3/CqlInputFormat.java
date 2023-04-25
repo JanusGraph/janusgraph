@@ -17,16 +17,16 @@
  */
 package org.apache.cassandra.hadoop.cql3;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.TokenRange;
-import com.datastax.driver.core.exceptions.InvalidQueryException;
+import org.janusgraph.shaded.datastax.driver.core.Cluster;
+import org.janusgraph.shaded.datastax.driver.core.Host;
+import org.janusgraph.shaded.datastax.driver.core.Metadata;
+import org.janusgraph.shaded.datastax.driver.core.ResultSet;
+import org.janusgraph.shaded.datastax.driver.core.Row;
+import org.janusgraph.shaded.datastax.driver.core.Session;
+import org.janusgraph.shaded.datastax.driver.core.SimpleStatement;
+import org.janusgraph.shaded.datastax.driver.core.Statement;
+import org.janusgraph.shaded.datastax.driver.core.TokenRange;
+import org.janusgraph.shaded.datastax.driver.core.exceptions.InvalidQueryException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;

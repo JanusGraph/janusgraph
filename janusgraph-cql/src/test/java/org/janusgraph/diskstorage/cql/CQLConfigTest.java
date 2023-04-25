@@ -13,11 +13,11 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import com.datastax.oss.driver.api.core.config.DriverExecutionProfile;
-import com.datastax.oss.driver.internal.core.tracker.RequestLogger;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.config.DriverExecutionProfile;
+import org.janusgraph.shaded.datastax.oss.driver.internal.core.tracker.RequestLogger;
 import org.apache.commons.io.FileUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;

@@ -14,8 +14,8 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import com.datastax.oss.driver.api.core.ConsistencyLevel;
-import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.ConsistencyLevel;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.DefaultConsistencyLevel;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.common.AbstractStoreTransaction;

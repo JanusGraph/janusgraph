@@ -14,12 +14,12 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import com.datastax.oss.driver.api.core.type.DataTypes;
-import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.type.DataTypes;
+import org.janusgraph.shaded.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.junit.Test;
 
-import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable;
+import static org.janusgraph.shaded.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
