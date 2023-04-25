@@ -225,6 +225,27 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
         assertTrue(graph.traversal().V().hasId("1").hasNext());
     }
 
+    /**
+     * This is to test that JanusGraph properly handles vertex Ids that are of length
+     * 7 and 8 (byte size of long type). See https://github.com/JanusGraph/janusgraph/issues/3732
+     * to understand why these numbers are special.
+     */
+    @Test
+    public void testSpecialLengthHandling() {
+        open(true, true);
+        // seven letters
+        graph.traversal().addV().property(T.id, "abcdefg").next();
+        assertTrue(graph.traversal().V("abcdefg").hasNext());
+
+        // eight letters
+        graph.traversal().addV().property(T.id, "abcdefgh").next();
+        assertTrue(graph.traversal().V("abcdefgh").hasNext());
+
+        graph.tx().commit();
+        assertTrue(graph.traversal().V("abcdefg").hasNext());
+        assertTrue(graph.traversal().V("abcdefgh").hasNext());
+    }
+
     @Test
     public void testMixedStringAndLongVertexId() {
         open(true, true);
