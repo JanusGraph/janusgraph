@@ -15,13 +15,14 @@
 package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.graphdb.database.idhandling.VariableString;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.idmanagement.IDManager;
@@ -31,7 +32,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import static org.janusgraph.graphdb.database.idhandling.IDHandler.STOP_MASK;
-import static org.janusgraph.graphdb.database.idhandling.IDHandler.STRING_ID_MARKER;
 
 /**
  * Utility methods for dealing with {@link ByteBuffer}.
@@ -80,30 +80,21 @@ public class BufferUtil {
      * @param s
      * @return
      */
-    public static StaticBuffer getStringBuffer(String s) {
-        if (StringUtils.isEmpty(s) || !StringUtils.isAsciiPrintable(s)) {
-            throw new IllegalArgumentException("value must be non-empty printable ASCII string but received: " + s);
-        }
-        ByteBuffer buffer;
+    public static StaticBuffer getStringIdBuffer(String s) {
+        VariableString.checkAsciiPrintableString(s);
+        WriteBuffer buffer;
         if (s.length() + byteSize == longSize) {
-            buffer = ByteBuffer.allocate(longSize + byteSize);
+            buffer = new WriteByteBuffer(longSize + byteSize);
         } else {
-            buffer = ByteBuffer.allocate(s.length() + byteSize);
+            buffer = new WriteByteBuffer(s.length() + byteSize);
         }
-        buffer.put(STRING_ID_MARKER);
-        for (int i = 0; i < s.length(); i++) {
-            int c = s.charAt(i);
-            assert c <= 127;
-            byte b = (byte)c;
-            if (i+1==s.length()) b |= STOP_MASK;
-            buffer.put(b);
-        }
+        VariableString.write(buffer, s);
+
         if (s.length() + byteSize == longSize) {
-            // this could be any dummy byte
-            buffer.put(STOP_MASK);
+            // this could be any dummy byte, so we just use STOP_MASK
+            buffer.putByte(STOP_MASK);
         }
-        byte[] arr = buffer.array();
-        return StaticArrayBuffer.of(arr);
+        return buffer.getStaticBuffer();
     }
 
     public static StaticBuffer getLongBuffer(long id) {

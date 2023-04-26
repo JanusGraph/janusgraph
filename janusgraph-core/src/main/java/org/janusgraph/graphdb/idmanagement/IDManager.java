@@ -502,7 +502,7 @@ public class IDManager {
                 long keyId = (partition<<partitionOffset) | type.addPadding(count);
                 return BufferUtil.getLongBuffer(keyId);
             } else if (vertexId instanceof String) {
-                return BufferUtil.getStringBuffer((String) vertexId);
+                return BufferUtil.getStringIdBuffer((String) vertexId);
             } else {
                 throw new IllegalArgumentException("Only long and string types are supported for vertexId: " + vertexId);
             }
@@ -516,7 +516,7 @@ public class IDManager {
      * then it's non long-type ID. The first byte is a marker representing the type of the ID. Currently, there
      * is only one possibility: string-type ID.
      *
-     * For string-type ID, we use {@link BufferUtil#getStringBuffer(String)} to encode it. Note that if
+     * For string-type ID, we use {@link BufferUtil#getStringIdBuffer(String)} to encode it. Note that if
      * the marker + length of the ID is equivalent to 8 bytes, then we add a dummy padding byte at the
      * end to make it not equivalent to 8 bytes.
      *

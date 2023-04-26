@@ -47,7 +47,11 @@ public class RelationIdentifierGraphBinarySerializerTest {
         return Stream.of(
             new RelationIdentifier(1000, 1000, 8000, 8000),
             new RelationIdentifier(2000, 1000, 2000, 1000),
-            new RelationIdentifier(1000, 4000, 1000, 4000)
+            new RelationIdentifier(1000, 4000, 1000, null),
+            new RelationIdentifier(1000, 4000, 1000, "in_vertex_id"),
+            new RelationIdentifier("out_vertex_id", 1000, 8000, 8000),
+            new RelationIdentifier("out_vertex_id", 1000, 8000, "in_vertex_id"),
+        new RelationIdentifier("out_vertex_id", 1000, 8000, null)
         );
     }
 

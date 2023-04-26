@@ -510,6 +510,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         uid = tx.getPropertyKey("name");
         assertNotNull(getV(tx, nid));
         assertNotNull(getV(tx, uid.id()));
+        // even though id is long-type, we can use string-type to query and JanusGraph will cast it to long
+        assertNotNull(getV(tx, uid.id().toString()));
         assertMissing(tx, nid + 64);
         uid = tx.getPropertyKey(uid.name());
         n1 = getV(tx, nid);

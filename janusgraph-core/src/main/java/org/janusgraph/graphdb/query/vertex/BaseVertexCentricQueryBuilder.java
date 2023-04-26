@@ -25,7 +25,6 @@ import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.schema.SchemaInspector;
-import org.janusgraph.util.IDUtils;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.internal.RelationCategory;
@@ -34,9 +33,9 @@ import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.tinkerpop.ElementUtils;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.graphdb.types.system.SystemRelationType;
+import org.janusgraph.util.IDUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -80,8 +79,8 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     private final SchemaInspector schemaInspector;
 
-    protected BaseVertexCentricQueryBuilder(StandardJanusGraphTx tx) {
-        this.schemaInspector = tx;
+    protected BaseVertexCentricQueryBuilder(SchemaInspector schemaInspector) {
+        this.schemaInspector = schemaInspector;
     }
 
     protected abstract Q getThis();

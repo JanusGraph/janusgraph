@@ -117,12 +117,6 @@ public abstract class JanusGraphCustomIdIndexTest extends JanusGraphBaseTest {
         newTx();
     }
 
-    private Parameter getStringMapping() {
-        if (indexFeatures.supportsStringMapping(Mapping.STRING)) return Mapping.STRING.asParameter();
-        else if (indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return Mapping.TEXTSTRING.asParameter();
-        throw new AssertionError("String mapping not supported");
-    }
-
     private Parameter getTextMapping() {
         if (indexFeatures.supportsStringMapping(Mapping.TEXT)) return Mapping.TEXT.asParameter();
         else if (indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return Mapping.TEXTSTRING.asParameter();

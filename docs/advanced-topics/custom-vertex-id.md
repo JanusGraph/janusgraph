@@ -63,9 +63,9 @@ permit. Elasticsearch, for example, requires the length of the ID to be smaller 
 512.
 
 The string value must consist of printable ASCII characters only, and it cannot contain
-JanusGraph reserved relation delimiter. By default, this reserved character is `-` (dash),
-which means you cannot use UUID string as a vertex ID since it contains a `-` character.
-You can create vertices as follows:
+JanusGraph reserved relation delimiter (a single character string). By default, this reserved
+delimiter is `-` (dash), which means you cannot use UUID string as a vertex ID since it
+contains a `-` character. You can create vertices as follows:
 
 ```groovy
 g = graph.traversal()
@@ -76,11 +76,12 @@ g.tx().commit()
 ### Override reserved Character
 
 If you create a new graph (using 1.0.0 or later version), JanusGraph allows you to set
-`JANUSGRAPH_RELATION_DELIMITER` system property which can be any printable ASCII character.
-Once it is set, JanusGraph will prohibit that specific character instead of the default `-` character.
-Alternatively, you can set `JANUSGRAPH_RELATION_DELIMITER` environment variable, which is
-evaluated if and only if the `JANUSGRAPH_RELATION_DELIMITER` system property is not present.
-For example, you can use the following command to set system property when opening gremlin console:
+`JANUSGRAPH_RELATION_DELIMITER` system property, a single character string which can be any
+printable ASCII character. Once it is set, JanusGraph will prohibit that specific character
+instead of the default `-` character. Alternatively, you can set `JANUSGRAPH_RELATION_DELIMITER`
+environment variable, which is evaluated if and only if the `JANUSGRAPH_RELATION_DELIMITER`
+system property is not present. For example, you can use the following command to set system
+property when opening gremlin console:
 
 ```bash
 JAVA_OPTIONS="-DJANUSGRAPH_RELATION_DELIMITER=@" ./bin/gremlin.sh
