@@ -129,14 +129,14 @@ JAVA_OPTIONS="$COLLECTED_JAVA_OPTIONS_FILE $JAVA_OPTIONS -javaagent:$JANUSGRAPH_
 if [[ -z "$CP" ]];then
   # Initialize classpath to $JANUSGRAPH_CFG
   CP="${JANUSGRAPH_CONF}"
-  # Add the slf4j-log4j12 binding
-  CP="$CP":$(find -L $JANUSGRAPH_LIB -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+  # Add the slf4j-reload4j binding
+  CP="$CP":$(find -L $JANUSGRAPH_LIB -name 'slf4j-reload4j*.jar' | sort | tr '\n' ':')
   # Add the jars in $JANUSGRAPH_HOME/lib that start with "janusgraph"
   CP="$CP":$(find -L $JANUSGRAPH_LIB -name 'janusgraph*.jar' | sort | tr '\n' ':')
   # Add the remaining jars in $JANUSGRAPH_HOME/lib.
   CP="$CP":$(find -L $JANUSGRAPH_LIB -name '*.jar' \
                   \! -name 'janusgraph*' \
-                  \! -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+                  \! -name 'slf4j-reload4j*.jar' | sort | tr '\n' ':')
   # Add the jars in $BIN/../ext (at any subdirectory depth)
   CP="$CP":$( find -L "$JANUSGRAPH_HOME"/ext -mindepth 1 -maxdepth 1 -type d | \
         sort | sed 's/$/\/plugin\/*/' | tr '\n' ':' )
