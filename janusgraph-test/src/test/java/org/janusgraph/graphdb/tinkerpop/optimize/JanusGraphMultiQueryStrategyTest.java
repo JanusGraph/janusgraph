@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
@@ -32,6 +33,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphUnusedMultiQueryRemovalStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -149,5 +151,33 @@ public class JanusGraphMultiQueryStrategyTest extends OptimizerStrategyTest {
         t = g.V().has("id", sid).values("names").profile("~metrics");
         assertCount(superV * numV, t);
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
+    }
+
+    @Test
+    public void testNonNecessaryMultiQueryUnused(){
+        clopen(option(USE_MULTIQUERY), true);
+        makeSampleGraph();
+
+        TraversalMetrics traversalMetricsWithStrategy = graph.traversal()
+            .V().id()
+            .choose(__.is(P.gte(5000L)), __.constant(12345L), __.identity())
+            .limit(3).profile().next();
+
+        Long graphStepTraversalsCount = traversalMetricsWithStrategy.getMetrics().stream().filter(metrics -> metrics.getName().startsWith(JanusGraphStep.class.getSimpleName()))
+            .findFirst().get().getCount(TraversalMetrics.TRAVERSER_COUNT_ID);
+
+        // It would be expected 3, but due to the bug on TinkerPop side it's 4.
+        // See https://issues.apache.org/jira/browse/TINKERPOP-2490
+        assertTrue(graphStepTraversalsCount < 5L);
+
+        TraversalMetrics traversalMetricsWithoutStrategy = graph.traversal().withoutStrategies(JanusGraphUnusedMultiQueryRemovalStrategy.class)
+            .V().id()
+            .choose(__.is(P.gte(5000L)), __.constant(12345L), __.identity())
+            .limit(3).profile().next();
+
+        graphStepTraversalsCount = traversalMetricsWithoutStrategy.getMetrics().stream().filter(metrics -> metrics.getName().startsWith(JanusGraphStep.class.getSimpleName()))
+            .findFirst().get().getCount(TraversalMetrics.TRAVERSER_COUNT_ID);
+
+        assertTrue(graphStepTraversalsCount > 5L);
     }
 }

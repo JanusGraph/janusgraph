@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.tinkerpop.optimize.step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser.Admin;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -45,11 +46,17 @@ public final class JanusGraphMultiQueryStep extends AbstractStep<Element, Elemen
     private List<MultiQueriable> clientSteps = new ArrayList<>();
     private final boolean limitBatchSize;
     private boolean initialized;
+    private final NoOpBarrierStep generatedBarrierStep;
 
     public JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize) {
+        this(traversal, limitBatchSize, null);
+    }
+
+    public JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize, NoOpBarrierStep generatedBarrierStep) {
         super(traversal);
         this.limitBatchSize = limitBatchSize;
         this.initialized = false;
+        this.generatedBarrierStep = generatedBarrierStep;
     }
 
     public void attachClient(MultiQueriable mq) {
@@ -107,5 +114,9 @@ public final class JanusGraphMultiQueryStep extends AbstractStep<Element, Elemen
 
     public List<MultiQueriable> getClientSteps() {
         return Collections.unmodifiableList(clientSteps);
+    }
+
+    public NoOpBarrierStep getGeneratedBarrierStep() {
+        return generatedBarrierStep;
     }
 }

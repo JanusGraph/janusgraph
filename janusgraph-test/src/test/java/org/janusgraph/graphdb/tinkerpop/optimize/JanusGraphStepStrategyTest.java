@@ -55,6 +55,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMultiQueryStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphStepStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphUnusedMultiQueryRemovalStrategy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -306,6 +307,7 @@ public class JanusGraphStepStrategyTest {
         List<TraversalStrategy.ProviderOptimizationStrategy> otherStrategies = new ArrayList<>(2);
         otherStrategies.add(JanusGraphLocalQueryOptimizerStrategy.instance());
         otherStrategies.add(JanusGraphMultiQueryStrategy.instance());
+        otherStrategies.add(JanusGraphUnusedMultiQueryRemovalStrategy.instance());
 
         return Arrays.stream(new Arguments[]{
             arguments(g.V().in("knows").out("knows"),
@@ -339,6 +341,12 @@ public class JanusGraphStepStrategyTest {
             // 'local' is not MultiQueryCompatible (at the moment)
             arguments(g.V().and(__.inE("knows"), __.inE("knows")),
                 g_V().and(__.is(MQ_STEP).barrier().inE("knows"), __.is(MQ_STEP).barrier().inE("knows")), otherStrategies),
+            // `JanusGraphMultiQueryStep` should be used for filter step when at least one child is registered as a client of `JanusGraphMultiQueryStep`.
+            arguments(g.V().where(__.out("knows").count().is(P.gte(5))),
+                g_V().is(MQ_STEP).barrier().where(__.out("knows").count().is(P.gte(5))), otherStrategies),
+            // `JanusGraphMultiQueryStep` should not be used for filter step when none of children is registered as a client of `JanusGraphMultiQueryStep`.
+            arguments(g.V().where(__.count().is(P.gte(5))),
+                g_V().where(__.count().is(P.gte(5))), otherStrategies),
         });
     }
 }
