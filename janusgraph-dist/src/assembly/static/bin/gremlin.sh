@@ -46,14 +46,14 @@ cd -P $BIN/../ext
 EXT=$(pwd)
 # Initialize classpath to $CFG
 CP="$CFG"
-# Add the slf4j-log4j12 binding
-CP="$CP":$(find -L $LIB -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+# Add the slf4j-reload4j binding
+CP="$CP":$(find -L $LIB -name 'slf4j-reload4j*.jar' | sort | tr '\n' ':')
 # Add the jars in $BIN/../lib that start with "janusgraph"
 CP="$CP":$(find -L $LIB -name 'janusgraph*.jar' | sort | tr '\n' ':')
 # Add the remaining jars in $BIN/../lib.
 CP="$CP":$(find -L $LIB -name '*.jar' \
                 \! -name 'janusgraph*' \
-                \! -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+                \! -name 'slf4j-reload4j*.jar' | sort | tr '\n' ':')
 # Add the jars in $BIN/../ext (at any subdirectory depth)
 CP="$CP":$(find -L $EXT -name '*.jar' | sort | tr '\n' ':')
 
