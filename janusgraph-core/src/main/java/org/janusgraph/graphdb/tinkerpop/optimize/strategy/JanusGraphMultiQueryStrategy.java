@@ -80,12 +80,15 @@ public class JanusGraphMultiQueryStrategy extends AbstractTraversalStrategy<Trav
             Optional<Step> multiQueryPosition = JanusGraphTraversalUtil.getLocalMultiQueryPositionForStep(step);
             if (multiQueryPosition.isPresent() && JanusGraphTraversalUtil.isLegalMultiQueryPosition(multiQueryPosition.get())) {
                 Step pos = multiQueryPosition.get();
+                JanusGraphMultiQueryStep multiQueryStep;
                 if (limitBatchSize && !(multiQueryPosition.get() instanceof NoOpBarrierStep)) {
                     NoOpBarrierStep barrier = new NoOpBarrierStep(traversal);
                     TraversalHelper.insertBeforeStep(barrier, pos, traversal);
                     pos = barrier;
+                    multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitBatchSize, barrier);
+                } else {
+                    multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitBatchSize);
                 }
-                JanusGraphMultiQueryStep multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitBatchSize);
                 TraversalHelper.insertBeforeStep(multiQueryStep, pos, traversal);
             }
         });

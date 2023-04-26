@@ -65,6 +65,7 @@ import org.janusgraph.graphdb.database.cache.KCVSCacheInvalidationService;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
 import org.janusgraph.graphdb.database.idhandling.IDHandler;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphUnusedMultiQueryRemovalStrategy;
 import org.janusgraph.util.IDUtils;
 import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
@@ -146,6 +147,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                                AdjacentVertexHasUniquePropertyOptimizerStrategy.instance(),
                                JanusGraphLocalQueryOptimizerStrategy.instance(),
                                JanusGraphMultiQueryStrategy.instance(),
+                               JanusGraphUnusedMultiQueryRemovalStrategy.instance(),
                                JanusGraphMixedIndexAggStrategy.instance(),
                                JanusGraphMixedIndexCountStrategy.instance(),
                                JanusGraphStepStrategy.instance(),
