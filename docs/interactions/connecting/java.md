@@ -92,6 +92,6 @@ used directly from a Java application through the dependency `janusgraph-driver`
 ## Consideration for Accessing the Management API
 
 !!! note
-    We are working to replace the Management API with a language acoustic solution, see [Management System](../../operations/management.md)
+    We are working to replace the Management API with a language agnostic solution, see [Management System](../../operations/management.md)
 
 The described connection uses [GraphBinary](http://tinkerpop.apache.org/docs/current/dev/io/#graphbinary) and the `janusgraph-driver` which doesn't allow accessing the internal JanusGraph components such as `ManagementSystem`. To access the `ManagementSystem`, you have to submit java-based scripts, see [Submitting Scripts](https://tinkerpop.apache.org/docs/current/reference/#gremlin-java-scripts), or directly accessing JanusGraph by local opening a JanusGraph instance.
