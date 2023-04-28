@@ -19,7 +19,11 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.core.InvalidIDException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.graphdb.database.idhandling.IDHandler;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.graphdb.database.idhandling.VariableString;
+
+import static org.janusgraph.diskstorage.util.BufferUtil.longSize;
 
 /**
  * Handles the allocation of ids based on the type of element
@@ -121,7 +125,6 @@ public class IDManager {
                 return true;
             }
         },
-
         Invisible {
             @Override
             final long offset() {
@@ -406,14 +409,12 @@ public class IDManager {
      */
     private static final long SCHEMA_COUNT_BOUND = (1L << (TOTAL_BITS - MAX_PADDING_BITWIDTH - TYPE_LEN_RESERVE));
 
-
     private final long partitionBits;
     private final long partitionOffset;
     private final long partitionIDBound;
 
     private final long relationCountBound;
     private final long vertexCountBound;
-
 
     public IDManager(long partitionBits) {
         Preconditions.checkArgument(partitionBits >= 0);
@@ -426,7 +427,6 @@ public class IDManager {
         relationCountBound = partitionBits==0?Long.MAX_VALUE:(1L << (TOTAL_BITS - partitionBits));
         assert VertexIDType.NormalVertex.offset()>0;
         vertexCountBound = (1L << (TOTAL_BITS - partitionBits - USERVERTEX_PADDING_BITWIDTH));
-
 
         partitionOffset = Long.SIZE - partitionBits;
     }
@@ -487,23 +487,54 @@ public class IDManager {
     }
 
     public StaticBuffer getKey(Object vertexId) {
-        final long longId = ((Number) vertexId).longValue();
-        if (VertexIDType.Schema.is(longId)) {
+        if (VertexIDType.Schema.is(vertexId)) {
+            assert vertexId instanceof Number;
             //No partition for schema vertices
-            return BufferUtil.getLongBuffer(longId);
+            return BufferUtil.getLongBuffer(((Number) vertexId).longValue());
         } else {
-            assert isUserVertexId(longId);
-            VertexIDType type = getUserVertexIDType(longId);
-            assert type.offset()==USERVERTEX_PADDING_BITWIDTH;
-            long partition = getPartitionId(longId);
-            long count = longId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
-            assert count>0;
-            long keyId = (partition<<partitionOffset) | type.addPadding(count);
-            return BufferUtil.getLongBuffer(keyId);
+            assert isUserVertexId(vertexId);
+            if (vertexId instanceof Number) {
+                VertexIDType type = getUserVertexIDType(vertexId);
+                assert type.offset()==USERVERTEX_PADDING_BITWIDTH;
+                long partition = getPartitionId((long) vertexId);
+                long count = (long) vertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+                assert count>0;
+                long keyId = (partition<<partitionOffset) | type.addPadding(count);
+                return BufferUtil.getLongBuffer(keyId);
+            } else if (vertexId instanceof String) {
+                return BufferUtil.getStringIdBuffer((String) vertexId);
+            } else {
+                throw new IllegalArgumentException("Only long and string types are supported for vertexId: " + vertexId);
+            }
         }
     }
 
-    public long getKeyID(StaticBuffer b) {
+    /**
+     * Parse and get vertex ID from static buffer
+     * Historically, JanusGraph only supports long-type ID, so the buffer was assumed to be 8-byte and represent
+     * a long value. To support non long-type ID, we use a convention that if the buffer's length is not 8 bytes,
+     * then it's non long-type ID. The first byte is a marker representing the type of the ID. Currently, there
+     * is only one possibility: string-type ID.
+     *
+     * For string-type ID, we use {@link BufferUtil#getStringIdBuffer(String)} to encode it. Note that if
+     * the marker + length of the ID is equivalent to 8 bytes, then we add a dummy padding byte at the
+     * end to make it not equivalent to 8 bytes.
+     *
+     * NOTE: due to design reason, the encoding scheme of long-type ID here is different
+     * from {@link IDHandler}. An important difference here is that the first bit of the
+     * first byte for a long-type ID is not guaranteed to be zero (as opposed to the case in
+     * {@link} IDHandler)). Therefore, we cannot rely on the first byte to check if it's long-type
+     * or not. Luckily, we can use the "size == 8" trick to know if the buffer stores a long value,
+     * because we know the entire buffer represents the ID only. While in {@link IDHandler}, only
+     * a (non-fixed) portion of the buffer represents the ID, so we use a different trick there.
+     *
+     * @param b
+     * @return
+     */
+    public Object getKeyID(StaticBuffer b) {
+        if (b.length() != longSize) {
+           return VariableString.read(b.asReadBuffer());
+        }
         long value = b.getLong(0);
         if (VertexIDType.Schema.is(value)) {
             return value;

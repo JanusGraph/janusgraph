@@ -46,11 +46,9 @@ import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.Transaction;
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.janusgraph.graphdb.olap.QueryContainer;
-import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.VertexScanJob;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
@@ -95,18 +93,6 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
     @BeforeEach
     public void setUp(TestInfo testInfo) throws Exception {
         super.setUp(testInfo);
-    }
-
-    private ScanMetrics executeScanJob(VertexScanJob job) throws Exception {
-        return executeScanJob(VertexJobConverter.convert(graph,job));
-    }
-
-    private ScanMetrics executeScanJob(ScanJob job) throws Exception {
-        return graph.getBackend().buildEdgeScanJob()
-                .setNumProcessingThreads(2)
-                .setWorkBlockSize(100)
-                .setJob(job)
-                .execute().get();
     }
 
     private int generateRandomGraph(int numV) {

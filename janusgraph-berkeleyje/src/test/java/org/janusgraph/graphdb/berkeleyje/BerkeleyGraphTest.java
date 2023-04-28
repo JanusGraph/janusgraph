@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -142,5 +144,12 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         // We set LOCK_MODE to READ_UNCOMMITTED here to mitigate an issue with deadlock problem described in
         // https://github.com/JanusGraph/janusgraph/issues/1623
         clopen(option(BerkeleyJEStoreManager.LOCK_MODE), LockMode.READ_UNCOMMITTED.toString());
+    }
+
+    @Test
+    public void testCannotUseCustomStringId() {
+        JanusGraphException ex = assertThrows(JanusGraphException.class,
+            () -> clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_CUSTOM_VERTEX_ID_TYPES), true));
+        assertEquals("allow-custom-vid-types is not supported for OrderedKeyValueStore", ex.getMessage());
     }
 }

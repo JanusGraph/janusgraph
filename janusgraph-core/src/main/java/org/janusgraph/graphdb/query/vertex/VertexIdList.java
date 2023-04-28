@@ -38,7 +38,7 @@ import java.util.NoSuchElementException;
  */
 public class VertexIdList implements VertexListInternal {
 
-    public static final Comparator<Object> VERTEX_ID_COMPARATOR = (x, y) -> IDUtils.compare(x, y);
+    public static final Comparator<Object> VERTEX_ID_COMPARATOR = IDUtils::compare;
     private final StandardJanusGraphTx tx;
     private List<Object> vertices;
     private boolean sorted;

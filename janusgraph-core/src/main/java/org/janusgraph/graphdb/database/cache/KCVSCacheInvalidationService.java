@@ -34,7 +34,7 @@ public class KCVSCacheInvalidationService implements CacheInvalidationService{
     }
 
     @Override
-    public void markVertexAsExpiredInEdgeStore(Long vertexId) {
+    public void markVertexAsExpiredInEdgeStore(Object vertexId) {
         StaticBuffer vertexIdKey = idManager.getKey(vertexId);
         markKeyAsExpiredInEdgeStore(vertexIdKey);
     }
@@ -60,14 +60,14 @@ public class KCVSCacheInvalidationService implements CacheInvalidationService{
     }
 
     @Override
-    public void forceInvalidateVertexInEdgeStoreCache(Long vertexId) {
+    public void forceInvalidateVertexInEdgeStoreCache(Object vertexId) {
         markVertexAsExpiredInEdgeStore(vertexId);
         forceClearExpiredKeysInEdgeStoreCache();
     }
 
     @Override
-    public void forceInvalidateVerticesInEdgeStoreCache(Iterable<Long> vertexIds) {
-        for(Long vertexId : vertexIds){
+    public void forceInvalidateVerticesInEdgeStoreCache(Iterable<Object> vertexIds) {
+        for(Object vertexId : vertexIds){
             markVertexAsExpiredInEdgeStore(vertexId);
         }
         forceClearExpiredKeysInEdgeStoreCache();

@@ -31,6 +31,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.STOP_MASK;
+
 /**
  * Serializes Strings by trying to find the most efficient serialization format:
  * 1) ASCII encoding (one byte per char)
@@ -178,7 +180,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
                     int c = attribute.charAt(i);
                     assert c <= 127;
                     byte b = (byte)c;
-                    if (i+1==attribute.length()) b |= 0x80; //End marker
+                    if (i+1==attribute.length()) b |= STOP_MASK; //End marker
                     buffer.putByte(b);
                 }
             } else {

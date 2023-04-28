@@ -83,6 +83,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BUFFER_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
@@ -222,6 +223,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     private final int bufferSize;
     private final Duration maxWriteTime;
     private final Duration maxReadTime;
+    private final boolean allowCustomVertexIdType;
     private final boolean cacheEnabled;
     private final ExecutorService threadPool;
     private final long threadPoolShutdownMaxWaitTime;
@@ -247,6 +249,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         txLogManager = getKCVSLogManager(TRANSACTION_LOG);
         userLogManager = getLogManager(USER_LOG);
 
+        allowCustomVertexIdType = configuration.get(ALLOW_CUSTOM_VERTEX_ID_TYPES);
 
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
 
@@ -495,6 +498,9 @@ public class Backend implements LockerProvider, AutoCloseable {
         StoreManager manager = getImplementationClass(storageConfig, storageConfig.get(STORAGE_BACKEND),
                 StandardStoreManager.getAllManagerClasses());
         if (manager instanceof OrderedKeyValueStoreManager) {
+            if (storageConfig.get(ALLOW_CUSTOM_VERTEX_ID_TYPES)) {
+                throw new JanusGraphException(ALLOW_CUSTOM_VERTEX_ID_TYPES.getName() + " is not supported for OrderedKeyValueStore");
+            }
             Map<String, Integer> keyLength = new HashMap<>(3);
             keyLength.put(EDGESTORE_NAME, 8);
             keyLength.put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, 8);
@@ -586,7 +592,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
         return new BackendTransaction(cacheTx, configuration, storeFeatures,
                 edgeStore, indexStore, txLogStore,
-                maxReadTime, indexTx, threadPool, !configuration.isSkipDBCacheRead());
+                maxReadTime, indexTx, threadPool, !configuration.isSkipDBCacheRead(), allowCustomVertexIdType);
     }
 
     public synchronized void close() throws BackendException {

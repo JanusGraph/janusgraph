@@ -20,6 +20,8 @@ import com.google.common.base.Preconditions;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.STOP_MASK;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -49,7 +51,7 @@ public class StringEncoding {
                 int c = attribute.charAt(i);
                 assert c <= 127;
                 byte b = (byte)c;
-                if (i+1==attribute.length()) b |= 0x80; //End marker
+                if (i+1==attribute.length()) b |= STOP_MASK; //End marker
                 array[startPos++]=b;
             }
         }

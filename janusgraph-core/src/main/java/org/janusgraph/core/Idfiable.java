@@ -28,13 +28,4 @@ public interface Idfiable {
      */
     Object id();
 
-    /**
-     * Unique identifier for this entity.
-     *
-     * @deprecated Use id() instead
-     * @return Unique long id for this entity
-     */
-    @Deprecated
-    long longId();
-
 }

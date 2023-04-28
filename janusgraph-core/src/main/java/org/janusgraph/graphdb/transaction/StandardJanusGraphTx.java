@@ -50,16 +50,14 @@ import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.util.IDUtils;
-import org.janusgraph.graphdb.database.index.IndexRecords;
-import org.janusgraph.graphdb.database.util.IndexRecordUtil;
-import org.janusgraph.graphdb.query.graph.MixedIndexAggQueryBuilder;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.idassigner.IDPool;
+import org.janusgraph.graphdb.database.index.IndexRecords;
 import org.janusgraph.graphdb.database.serialize.AttributeHandler;
+import org.janusgraph.graphdb.database.util.IndexRecordUtil;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
@@ -81,6 +79,7 @@ import org.janusgraph.graphdb.query.graph.GraphCentricQuery;
 import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
 import org.janusgraph.graphdb.query.graph.IndexQueryBuilder;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
+import org.janusgraph.graphdb.query.graph.MixedIndexAggQueryBuilder;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.MultiVertexCentricQueryBuilder;
@@ -106,8 +105,8 @@ import org.janusgraph.graphdb.transaction.lock.IndexLockTuple;
 import org.janusgraph.graphdb.transaction.lock.LockTuple;
 import org.janusgraph.graphdb.transaction.lock.ReentrantTransactionLock;
 import org.janusgraph.graphdb.transaction.lock.TransactionLock;
-import org.janusgraph.graphdb.transaction.subquerycache.EmptySubqueryCache;
 import org.janusgraph.graphdb.transaction.subquerycache.CaffeineSubqueryCache;
+import org.janusgraph.graphdb.transaction.subquerycache.EmptySubqueryCache;
 import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
 import org.janusgraph.graphdb.transaction.vertexcache.CaffeineVertexCache;
 import org.janusgraph.graphdb.transaction.vertexcache.EmptyVertexCache;
@@ -139,6 +138,7 @@ import org.janusgraph.graphdb.util.VertexCentricEdgeIterable;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.janusgraph.graphdb.vertices.StandardVertex;
+import org.janusgraph.util.IDUtils;
 import org.janusgraph.util.datastructures.Retriever;
 import org.janusgraph.util.stats.MetricManager;
 import org.jctools.maps.NonBlockingHashMap;
@@ -269,6 +269,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Preconditions.checkNotNull(config);
         this.graph = graph;
         this.times = graph.getConfiguration().getTimestampProvider();
+        this.allowCustomVertexIdType = graph.getConfiguration().allowCustomVertexIdType();
         this.config = config;
         this.idManager = graph.getIDManager();
         this.idInspector = idManager;
@@ -444,7 +445,23 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     }
 
     private boolean isValidVertexId(Object id) {
-        return (!(id instanceof Number) || ((Number) id).longValue() > 0) && (idInspector.isSchemaVertexId(id) || idInspector.isUserVertexId(id));
+        if (!idInspector.isSchemaVertexId(id) && !idInspector.isUserVertexId(id)) {
+            return false;
+        }
+        if (id instanceof Number) {
+            return ((Number) id).longValue() > 0;
+        } else {
+            assert id instanceof String;
+            if (!StringUtils.isAsciiPrintable((String) id)) {
+                log.warn("ID contains non-ascii or non-printable character, ignored: " + id);
+                return false;
+            }
+            if (((String) id).contains(RelationIdentifier.TOSTRING_DELIMITER)) {
+                log.warn("ID contains illegal " + RelationIdentifier.TOSTRING_DELIMITER + " substring, ignored: " + id);
+                return false;
+            }
+            return true;
+        }
     }
 
     @Override
@@ -472,6 +489,16 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         final List<JanusGraphVertex> result = new ArrayList<>(ids.length);
         final List<Object> vertexIds = new ArrayList<>(ids.length);
         for (Object id : ids) {
+            assert id instanceof String || id instanceof Number;
+            if (!allowCustomVertexIdType && id instanceof String) {
+                // Convert string to long to keep backward compatibility prior to 1.0.0
+                // prior to JanusGraph 1.0.0, vertices always have ids of long types. However, even if
+                // a vertex has id 100L, both g.V(100L) and g.V("100") will return this vertex.
+                // Since JanusGraph 1.0.0, vertex id can be of either long type or string type. To
+                // keep backward compatibility, we hereby explicitly cast string id to long ids, if
+                // string custom vertex id functionality is disabled.
+                id = Long.valueOf((String) id);
+            }
             if (isValidVertexId(id)) {
                 if (idInspector.isPartitionedVertex(id)) id=idManager.getCanonicalVertexId(((Number) id).longValue());
                 if (vertexCache.contains(id))
@@ -580,6 +607,13 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         Preconditions.checkArgument(vertexId == null || IDManager.VertexIDType.NormalVertex.is(vertexId), "Not a valid vertex id: %s", vertexId);
         Preconditions.checkArgument(vertexId == null || ((InternalVertexLabel)label).hasDefaultConfiguration(), "Cannot only use default vertex labels: %s",label);
         Preconditions.checkArgument(vertexId == null || !config.hasVerifyExternalVertexExistence() || !containsVertex(vertexId), "Vertex with given id already exists: %s", vertexId);
+        if (vertexId != null && vertexId instanceof String && !StringUtils.isAsciiPrintable((String) vertexId)) {
+            throw new IllegalArgumentException("Custom string id contains non-ascii or non-printable character: " + vertexId);
+        }
+        if (vertexId != null && vertexId instanceof String && ((String) vertexId).contains(RelationIdentifier.TOSTRING_DELIMITER)) {
+            throw new IllegalArgumentException("Custom string id contains reserved string ("
+                + RelationIdentifier.TOSTRING_DELIMITER + "): " + vertexId);
+        }
         StandardVertex vertex = new StandardVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.NormalVertex, temporaryIds.nextID()), ElementLifeCycle.New);
         if (vertexId != null) {
             vertex.setId(vertexId);

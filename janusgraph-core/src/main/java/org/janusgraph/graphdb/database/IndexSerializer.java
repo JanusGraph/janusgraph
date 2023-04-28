@@ -45,7 +45,7 @@ import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.HashingUtil;
-import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.graphdb.database.idhandling.IDHandler;
 import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.janusgraph.graphdb.database.index.IndexMutationType;
 import org.janusgraph.graphdb.database.index.IndexRecords;
@@ -328,7 +328,7 @@ public class IndexSerializer {
                     entryValue.movePositionTo(entry.getValuePosition());
                     switch(index.getElement()) {
                         case VERTEX:
-                            results.add(VariableLong.readPositive(entryValue));
+                            results.add(IDHandler.readVertexId(entryValue, true));
                             break;
                         default:
                             results.add(bytebuffer2RelationId(entryValue));
@@ -492,6 +492,7 @@ public class IndexSerializer {
     public boolean isHashKeys() {
         return hashKeys;
     }
+
 
     public HashingUtil.HashLength getHashLength() {
         return hashLength;

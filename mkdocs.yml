@@ -155,6 +155,7 @@ nav:
     - Apache Lucene: index-backend/lucene.md
   - Advanced Topics:
     - Eventually-Consistent Storage Backends: advanced-topics/eventual-consistency.md
+    - Custom Vertex ID: advanced-topics/custom-vertex-id.md
     - Graph Partitioning: advanced-topics/partitioning.md
     - Datatype and Attribute Serializer Configuration: advanced-topics/serializer.md
     - JanusGraph with TinkerPop’s Hadoop-Gremlin: advanced-topics/hadoop.md

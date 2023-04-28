@@ -58,7 +58,7 @@ public interface CacheInvalidationService {
      *
      * @param vertexId vertex id to expire in `edgeStore` cache
      */
-    void markVertexAsExpiredInEdgeStore(Long vertexId);
+    void markVertexAsExpiredInEdgeStore(Object vertexId);
 
     /**
      * Marks specific key as expired in `edgeStore` cache.
@@ -69,12 +69,12 @@ public interface CacheInvalidationService {
      * `indexStore`.
      * <p>
      * {@link org.janusgraph.graphdb.idmanagement.IDManager#getKey(Object)} can be used to form a `key` from vertex id.
-     * Alternatively, a method {@link #markVertexAsExpiredInEdgeStore(Long)} can be used which converts vertex id into
+     * Alternatively, a method {@link #markVertexAsExpiredInEdgeStore(Object)} can be used which converts vertex id into
      * the `key` before passing the key to this method.
      * <p>
      * In case vertices invalidation is needed by processing transaction logs via {@link org.janusgraph.core.log.ChangeState}
      * then the method {@link org.janusgraph.core.log.ChangeState#getVertices(Change)} can be used to retrieve all
-     * changed vertices and passing their ids to {@link #markVertexAsExpiredInEdgeStore(Long)}.
+     * changed vertices and passing their ids to {@link #markVertexAsExpiredInEdgeStore(Object)}.
      *
      * @param key key to expire in `edgeStore` cache
      */
@@ -143,20 +143,20 @@ public interface CacheInvalidationService {
     void forceClearExpiredKeysInIndexStoreCache();
 
     /**
-     * Marks a vertex as expired in `edgeStore` cache ({@link #markVertexAsExpiredInEdgeStore(Long)}) and triggers force
+     * Marks a vertex as expired in `edgeStore` cache ({@link #markVertexAsExpiredInEdgeStore(Object)}) and triggers force
      * clear of expired cache (i.e. {@link #forceClearExpiredKeysInEdgeStoreCache()})
      *
      * @param vertexId vertex id to invalidate in `edgeStore` cache
      */
-    void forceInvalidateVertexInEdgeStoreCache(Long vertexId);
+    void forceInvalidateVertexInEdgeStoreCache(Object vertexId);
 
     /**
-     * Marks vertices as expired in `edgeStore` cache ({@link #markVertexAsExpiredInEdgeStore(Long)}) and triggers force
+     * Marks vertices as expired in `edgeStore` cache ({@link #markVertexAsExpiredInEdgeStore(Object)}) and triggers force
      * clear of expired cache (i.e. {@link #forceClearExpiredKeysInEdgeStoreCache()})
      *
      * @param vertexIds vertex ids to invalidate in `edgeStore` cache
      */
-    void forceInvalidateVerticesInEdgeStoreCache(Iterable<Long> vertexIds);
+    void forceInvalidateVerticesInEdgeStoreCache(Iterable<Object> vertexIds);
 
     /**
      * Clears `edgeStore` cache fully

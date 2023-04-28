@@ -20,12 +20,18 @@ import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.graphdb.database.idhandling.VariableString;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.util.encoding.StringEncoding;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.STOP_MASK;
 
 /**
  * Utility methods for dealing with {@link ByteBuffer}.
@@ -35,6 +41,8 @@ public class BufferUtil {
 
     public static final int longSize = StaticArrayBuffer.LONG_LEN;
     public static final int intSize = StaticArrayBuffer.INT_LEN;
+    public static final int charSize = StaticArrayBuffer.CHAR_LEN;
+    public static final int byteSize = StaticArrayBuffer.BYTE_LEN;
 
     /* ###############
      * Simple StaticBuffer construction
@@ -57,6 +65,38 @@ public class BufferUtil {
         return StaticArrayBuffer.of(arr);
     }
 
+    /**
+     * We always add a byte marker at the beginning to indicate it's a string buffer. Then we
+     * write the string uncompressed. Finally, if the total buffer size is 8, we add a dummy byte
+     * at the end so that upon read time, JanusGraph knows the buffer does not store a long value.
+     * See {@link IDManager#getKeyID(StaticBuffer)} for more details.
+     *
+     * Note that we apply STOP_MASK to the last character. We don't have to do it because a static buffer
+     * has a fixed length, and thus upon read time, we know where to stop reading the string. This is more
+     * to keep it consistent with {@link StringEncoding#writeAsciiString(byte[], int, String)} where we use
+     * STOP_MASK to mark the end of the string. An additional benefit of doing so is to enable corruption check
+     * in the future. Note: this approach has no overhead.
+     *
+     * @param s
+     * @return
+     */
+    public static StaticBuffer getStringIdBuffer(String s) {
+        VariableString.checkAsciiPrintableString(s);
+        WriteBuffer buffer;
+        if (s.length() + byteSize == longSize) {
+            buffer = new WriteByteBuffer(longSize + byteSize);
+        } else {
+            buffer = new WriteByteBuffer(s.length() + byteSize);
+        }
+        VariableString.write(buffer, s);
+
+        if (s.length() + byteSize == longSize) {
+            // this could be any dummy byte, so we just use STOP_MASK
+            buffer.putByte(STOP_MASK);
+        }
+        return buffer.getStaticBuffer();
+    }
+
     public static StaticBuffer getLongBuffer(long id) {
         ByteBuffer buffer = ByteBuffer.allocate(longSize);
         buffer.putLong(id);
@@ -64,7 +104,6 @@ public class BufferUtil {
         Preconditions.checkArgument(arr.length == longSize);
         return StaticArrayBuffer.of(arr);
     }
-
 
     public static StaticBuffer fillBuffer(int len, byte value) {
         byte[] res = new byte[len];

@@ -21,6 +21,8 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
 
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.STOP_MASK;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -39,7 +41,6 @@ public class VariableLong {
     //Move stop bit back to front => rewrite prefix variable encoding by custom writing first byte
 
     private static final byte BIT_MASK = 127;
-    private static final byte STOP_MASK = -128;
 
     private static long readUnsigned(ScanBuffer in) {
         long value = 0;

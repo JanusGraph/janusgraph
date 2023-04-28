@@ -108,6 +108,7 @@ public class IndexSerializerTest {
         doReturn(false).when(mit).hasSchemaTypeConstraint();
 
         PropertyKey pk = mock(PropertyKey.class);
+        doReturn(1L).when(pk).id();
         doReturn(1L).when(pk).longId();
         doReturn(key).when(pk).name();
         ParameterIndexField pif = mock(ParameterIndexField.class);

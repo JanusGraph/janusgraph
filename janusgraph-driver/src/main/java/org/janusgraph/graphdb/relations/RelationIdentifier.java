@@ -14,10 +14,15 @@
 
 package org.janusgraph.graphdb.relations;
 
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.util.encoding.LongEncoding;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.Arrays;
+
+import static org.janusgraph.util.encoding.LongEncoding.STRING_ENCODING_MARKER;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -25,12 +30,35 @@ import java.util.Arrays;
 
 public final class RelationIdentifier implements Serializable {
 
-    public static final String TOSTRING_DELIMITER = "-";
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelationIdentifier.class);
+    public static final String JANUSGRAPH_RELATION_DELIMITER = "JANUSGRAPH_RELATION_DELIMITER";
+    public static final String TOSTRING_DELIMITER;
 
     private final Object outVertexId;
     private final long typeId;
     private final long relationId;
     private final Object inVertexId;
+
+    static {
+        String reservedKeyword = System.getProperty(JANUSGRAPH_RELATION_DELIMITER);
+        if (StringUtils.isEmpty(reservedKeyword)) {
+            reservedKeyword = System.getenv(JANUSGRAPH_RELATION_DELIMITER);
+        }
+        if (StringUtils.isNotEmpty(reservedKeyword)) {
+            if (!StringUtils.isAsciiPrintable(reservedKeyword)) {
+                throw new IllegalStateException("JanusGraph relation delimiter must be ASCII printable: " + reservedKeyword);
+            }
+            if (reservedKeyword.length() > 1) {
+                throw new IllegalStateException("JanusGraph relation delimiter must be single character: " + reservedKeyword);
+            }
+            TOSTRING_DELIMITER = reservedKeyword;
+            LOGGER.info("Loaded {} from system property, relation delimiter is: {}",
+                JANUSGRAPH_RELATION_DELIMITER, TOSTRING_DELIMITER);
+        } else {
+            TOSTRING_DELIMITER = "-";
+            LOGGER.info("Use default relation delimiter: {}", TOSTRING_DELIMITER);
+        }
+    }
 
     private RelationIdentifier() {
         outVertexId = null;
@@ -98,10 +126,22 @@ public final class RelationIdentifier implements Serializable {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(LongEncoding.encode(relationId)).append(TOSTRING_DELIMITER).append(LongEncoding.encode(((Number) outVertexId).longValue()))
-            .append(TOSTRING_DELIMITER).append(LongEncoding.encode(typeId));
-        if (inVertexId != null && ((Number) inVertexId).longValue() > 0) {
-            s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(((Number) inVertexId).longValue()));
+        s.append(LongEncoding.encode(relationId)).append(TOSTRING_DELIMITER);
+        if (outVertexId instanceof Number) {
+            s.append(LongEncoding.encode(((Number) outVertexId).longValue()));
+        } else {
+            assert outVertexId instanceof String;
+            s.append(STRING_ENCODING_MARKER).append(outVertexId);
+        }
+        s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(typeId));
+        if (inVertexId != null) {
+            if (inVertexId instanceof Number) {
+                assert ((Number) inVertexId).longValue() > 0;
+                s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(((Number) inVertexId).longValue()));
+            } else {
+                assert inVertexId instanceof String;
+                s.append(TOSTRING_DELIMITER).append(STRING_ENCODING_MARKER).append(inVertexId);
+            }
         }
         return s.toString();
     }
@@ -111,10 +151,23 @@ public final class RelationIdentifier implements Serializable {
         if (elements.length != 3 && elements.length != 4)
             throw new IllegalArgumentException("Not a valid relation identifier: " + id);
         try {
-            return new RelationIdentifier(LongEncoding.decode(elements[1]),
-                LongEncoding.decode(elements[2]),
-                LongEncoding.decode(elements[0]),
-                elements.length == 4 ? LongEncoding.decode(elements[3]) : 0);
+            Object outVertexId;
+            if (elements[1].charAt(0) == STRING_ENCODING_MARKER) {
+                outVertexId = elements[1].substring(1);
+            } else {
+                outVertexId = LongEncoding.decode(elements[1]);
+            }
+            final long typeId = LongEncoding.decode(elements[2]);
+            final long relationId = LongEncoding.decode(elements[0]);
+            Object inVertexId = null;
+            if (elements.length == 4) {
+                if (elements[3].charAt(0) == STRING_ENCODING_MARKER) {
+                    inVertexId = elements[3].substring(1);
+                } else {
+                    inVertexId = LongEncoding.decode(elements[3]);
+                }
+            }
+            return new RelationIdentifier(outVertexId, typeId, relationId, inVertexId);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid id - each token expected to be a number", e);
         }

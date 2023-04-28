@@ -22,6 +22,7 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.HashingUtil;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.graphdb.database.idhandling.IDHandler;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
@@ -82,10 +83,10 @@ public class TransactionLogHeader {
         return out.getStaticBuffer();
     }
 
-    private static void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardJanusGraphTx tx) {
+    private void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardJanusGraphTx tx) {
         VariableLong.writePositive(out,relations.size());
         for (InternalRelation rel : relations) {
-            VariableLong.writePositive(out, ((Number) rel.getVertex(0).id()).longValue());
+            IDHandler.writeVertexId(out, rel.getVertex(0).id(), true);
             org.janusgraph.diskstorage.Entry entry = tx.getEdgeSerializer().writeRelation(rel, 0, tx);
             BufferUtil.writeEntry(out,entry);
         }

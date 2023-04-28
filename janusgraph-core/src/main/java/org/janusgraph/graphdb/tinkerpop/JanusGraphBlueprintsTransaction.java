@@ -30,6 +30,7 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.diskstorage.util.Hex;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
@@ -53,6 +54,11 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
      * @return
      */
     protected abstract JanusGraphBlueprintsGraph getGraph();
+
+    /**
+     * Whether this graph allows usage of custom vertex id of non-long-type
+     */
+    protected boolean allowCustomVertexIdType;
 
     @Override
     public Features features() {
@@ -108,7 +114,13 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
     public JanusGraphVertex addVertex(Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         final Optional<Object> idValue = ElementHelper.getIdValue(keyValues);
-        if (idValue.isPresent() && !((StandardJanusGraph) getGraph()).getConfiguration().allowVertexIdSetting()) throw Vertex.Exceptions.userSuppliedIdsNotSupported();
+        GraphDatabaseConfiguration config = ((StandardJanusGraph) getGraph()).getConfiguration();
+        if (idValue.isPresent() && !config.allowVertexIdSetting()) {
+            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
+        }
+        if (idValue.isPresent() && !(idValue.get() instanceof Number) && !config.allowCustomVertexIdType()) {
+            throw Vertex.Exceptions.userSuppliedIdsOfThisTypeNotSupported();
+        }
         Object labelValue = null;
         for (int i = 0; i < keyValues.length; i = i + 2) {
             if (keyValues[i].equals(T.label)) {
@@ -122,7 +134,7 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
         if (labelValue!=null) {
             label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getOrCreateVertexLabel((String) labelValue);
         }
-        Object id = idValue.map(Number.class::cast).map(Number::longValue).orElse(null);
+        Object id = idValue.map(v -> v instanceof Number ? ((Number) v).longValue() : v).orElse(null);
         final JanusGraphVertex vertex = addVertex(id, label);
         org.janusgraph.graphdb.util.ElementHelper.attachProperties(vertex, keyValues);
         return vertex;
