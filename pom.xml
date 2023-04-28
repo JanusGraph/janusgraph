@@ -1015,7 +1015,7 @@
             <dependency>
                 <groupId>org.jacoco</groupId>
                 <artifactId>org.jacoco.ant</artifactId>
-                <version>0.8.9</version>
+                <version>0.8.10</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
@@ -1675,7 +1675,7 @@
                             <dependency>
                                 <groupId>org.jacoco</groupId>
                                 <artifactId>org.jacoco.ant</artifactId>
-                                <version>0.8.9</version>
+                                <version>0.8.10</version>
                             </dependency>
                         </dependencies>
                     </plugin>
