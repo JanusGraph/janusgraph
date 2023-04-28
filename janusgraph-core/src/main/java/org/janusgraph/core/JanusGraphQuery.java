@@ -15,7 +15,9 @@
 package org.janusgraph.core;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.tinkerpop.optimize.hint.TraversalHints;
 
 import java.util.Collection;
 
@@ -58,6 +60,8 @@ public interface JanusGraphQuery<Q extends JanusGraphQuery<Q>> {
     Q hasNot(String key, Object value);
 
     Q or(Collection<Q> subQueries);
+
+    Q withHints(Configuration hints);
 
     <T extends Comparable<?>> Q interval(String key, T startValue, T endValue);
 

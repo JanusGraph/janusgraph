@@ -215,25 +215,41 @@ public class GraphDatabaseConfiguration {
     // ################################################
 
     public static final ConfigNamespace TRANSACTION_NS = new ConfigNamespace(ROOT_NS,"tx",
-            "Configuration options for transaction handling");
+        "Configuration options for transaction handling");
 
     public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<>(TRANSACTION_NS,"log-tx",
-            "Whether transaction mutations should be logged to JanusGraph's write-ahead transaction log which can be used for recovery of partially failed transactions",
-            ConfigOption.Type.GLOBAL, false);
+        "Whether transaction mutations should be logged to JanusGraph's write-ahead transaction log which can be used for recovery of partially failed transactions",
+        ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<>(TRANSACTION_NS,"max-commit-time",
-            "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
-                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
-                    "Must be longer than the maximum allowed write time.",
-            ConfigOption.Type.GLOBAL, Duration.ofSeconds(10));
+        "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
+            "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
+            "Must be longer than the maximum allowed write time.",
+        ConfigOption.Type.GLOBAL, Duration.ofSeconds(10));
 
 
     public static final ConfigNamespace TRANSACTION_RECOVERY_NS = new ConfigNamespace(TRANSACTION_NS,"recovery",
-            "Configuration options for transaction recovery processes");
+        "Configuration options for transaction recovery processes");
 
     public static final ConfigOption<Boolean> VERBOSE_TX_RECOVERY = new ConfigOption<>(TRANSACTION_RECOVERY_NS,"verbose",
-            "Whether the transaction recovery system should print recovered transactions and other activity to standard output",
-            ConfigOption.Type.MASKABLE, false);
+        "Whether the transaction recovery system should print recovered transactions and other activity to standard output",
+        ConfigOption.Type.MASKABLE, false);
+
+
+    // ############# Traversal Hints ##################
+    // ################################################
+
+    public static final ConfigNamespace HINT_NS = new ConfigNamespace(ROOT_NS,"hint",
+            "Configuration options for traversal hints");
+
+    public static final ConfigNamespace INDEX_SELECTION_NS = new ConfigNamespace(HINT_NS, "index-selection",
+            "Hints for index selection strategies");
+
+    public static final ConfigOption<String[]> PREFERRED_INDEXES = new ConfigOption<>(INDEX_SELECTION_NS, "preferred-indexes",
+            "foo", ConfigOption.Type.HINT, new String[0]);
+
+    public static final ConfigOption<String[]> SUPPRESSED_INDEXES = new ConfigOption<>(INDEX_SELECTION_NS, "suppressed-indexes",
+        "bar", ConfigOption.Type.HINT, new String[0]);
 
     // ################ Query Processing #######################
     // ################################################

@@ -42,6 +42,7 @@ import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.index.CostBasedIndexSelector;
 import org.janusgraph.graphdb.query.index.SelectedIndexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.tinkerpop.optimize.hint.TraversalHints;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.util.CloseableIteratorUtils;
 import org.slf4j.Logger;
@@ -104,6 +105,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
      * The hard max limit of each query
      */
     private int hardMaxLimit;
+    /**
+     * Hints provided to a traversal using with()
+     */
+    private Configuration hints;
 
     public GraphCentricQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer) {
         Preconditions.checkNotNull(tx);
@@ -114,6 +119,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         hardMaxLimit = customOptions.has(HARD_MAX_LIMIT) ? customOptions.get(HARD_MAX_LIMIT) : graphConfigs.getHardMaxLimit();
         this.tx = tx;
         this.serializer = serializer;
+        this.hints = Configuration.EMPTY;
     }
 
     public void disableSmartLimit() {
@@ -210,6 +216,12 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return this;
     }
 
+    @Override
+    public GraphCentricQueryBuilder withHints(Configuration hints) {
+        this.hints = hints;
+        return this;
+    }
+
     /* ---------------------------------------------------------------
      * Query Execution
 	 * ---------------------------------------------------------------
@@ -284,7 +296,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
         final SelectedIndexQuery<?> selectedIndex = CostBasedIndexSelector.selectIndices(
-            resultType, conditions, orders, serializer);
+            resultType, conditions, orders, serializer, hints);
         final Set<?> coveredClauses = selectedIndex.getCoveredClauses();
 
         BackendQueryHolder<JointIndexQuery> query;

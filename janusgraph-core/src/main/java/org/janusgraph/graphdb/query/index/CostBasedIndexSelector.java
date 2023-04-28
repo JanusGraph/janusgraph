@@ -15,6 +15,8 @@
 package org.janusgraph.graphdb.query.index;
 
 import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.OrderList;
@@ -24,12 +26,14 @@ import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.index.candidate.AbstractIndexCandidate;
 import org.janusgraph.graphdb.query.index.candidate.IndexCandidateFactory;
 import org.janusgraph.graphdb.query.index.candidate.IndexCandidateGroup;
+import org.janusgraph.graphdb.tinkerpop.optimize.hint.TraversalHints;
 import org.janusgraph.graphdb.types.IndexType;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class CostBasedIndexSelector {
@@ -39,11 +43,14 @@ public class CostBasedIndexSelector {
     public static <E extends JanusGraphElement> SelectedIndexQuery<E> selectIndices(ElementCategory resultType,
                                                                                     MultiCondition<E> conditions,
                                                                                     OrderList orders,
-                                                                                    IndexSerializer serializer) {
+                                                                                    IndexSerializer serializer,
+                                                                                    Configuration hints) {
         Set<IndexType> rawCandidates = IndexSelectionUtil.getMatchingIndexes(conditions, resultType, serializer);
         final Set<AbstractIndexCandidate<?,E>> remainingCandidates = new HashSet<>(rawCandidates.size());
         final Set<Condition<E>> allCoverableClauses = new HashSet<>();
         final JointIndexQuery jointQuery = new JointIndexQuery();
+
+        removeSuppressedIndexes(rawCandidates, hints.get(GraphDatabaseConfiguration.SUPPRESSED_INDEXES));
 
         // validate, enrich index candidates
         for (final IndexType index : rawCandidates) {
@@ -54,6 +61,8 @@ public class CostBasedIndexSelector {
         }
 
         IndexCandidateGroup<E> bestGroup = new IndexCandidateGroup<>(Collections.emptyList(), orders);
+
+        selectPreferredIndexes(bestGroup, remainingCandidates, hints.get(GraphDatabaseConfiguration.PREFERRED_INDEXES));
 
         // select indexes in a greedy fashion
         while (true) {
@@ -82,5 +91,29 @@ public class CostBasedIndexSelector {
         // build query
         bestGroup.getIndexCandidates().forEach(c -> c.addToJointQuery(jointQuery, serializer));
         return new SelectedIndexQuery<>(jointQuery, bestGroup.getCoveredClauses(), bestGroup.supportsOrders());
+    }
+
+    private static <E extends JanusGraphElement> void removeSuppressedIndexes(Set<IndexType> remainingCandidates,
+                                                                              String[] suppressedIndexNames) {
+        if (suppressedIndexNames == null) return;
+        for (String indexName : suppressedIndexNames) {
+            remainingCandidates.stream()
+                .filter(i -> i.getName().equals(indexName.trim()))
+                .findFirst()
+                .ifPresent(remainingCandidates::remove);
+        }
+    }
+
+    private static <E extends JanusGraphElement> void selectPreferredIndexes(IndexCandidateGroup<E> bestGroup,
+                                                                             Set<AbstractIndexCandidate<?,E>> remainingCandidates,
+                                                                             String[] preferredIndexNames) {
+        if (preferredIndexNames == null) return;
+        for (String indexName : preferredIndexNames) {
+            Optional<AbstractIndexCandidate<?, E>> index = remainingCandidates.stream()
+                .filter(i -> i.getIndex().getName().equals(indexName.trim()))
+                .findFirst();
+            index.ifPresent(bestGroup::addCandidate);
+            index.ifPresent(remainingCandidates::remove);
+        }
     }
 }
