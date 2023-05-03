@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.cql.function.mutate;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BatchStatement;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.DefaultBatchType;
@@ -22,21 +23,31 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore;
 import org.janusgraph.diskstorage.cql.function.ConsumerWithBackendException;
+import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
 import java.util.Map;
 
+import static org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore.EXCEPTION_MAPPER;
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 
-public abstract class AbstractCQLMutateManyLoggedFunction extends AbstractCQLMutateManyFunction implements CQLMutateManyFunction {
+public class CQLMutateManyLoggedFunction extends AbstractCQLMutateManyFunction implements CQLMutateManyFunction {
+
+    private final CqlSession session;
 
 
-    public AbstractCQLMutateManyLoggedFunction(TimestampProvider times, boolean assignTimestamp,
-                                               Map<String, CQLKeyColumnValueStore> openStores,
-                                               ConsumerWithBackendException<DistributedStoreManager.MaskedTimestamp> sleepAfterWriteFunction) {
+    private final QueryBackPressure queryBackPressure;
+
+    public CQLMutateManyLoggedFunction(TimestampProvider times, boolean assignTimestamp,
+                                       Map<String, CQLKeyColumnValueStore> openStores,
+                                       CqlSession session,
+                                       ConsumerWithBackendException<DistributedStoreManager.MaskedTimestamp> sleepAfterWriteFunction,
+                                       QueryBackPressure queryBackPressure) {
         super(sleepAfterWriteFunction, assignTimestamp, times, openStores);
+        this.session = session;
+        this.queryBackPressure = queryBackPressure;
     }
 
     // Use a single logged batch
@@ -66,6 +77,17 @@ public abstract class AbstractCQLMutateManyLoggedFunction extends AbstractCQLMut
 
     }
 
-    protected abstract void execute(BatchStatement batchStatement) throws BackendException;
+    private void execute(BatchStatement batchStatement) throws BackendException {
+
+        queryBackPressure.acquireBeforeQuery();
+
+        try{
+            this.session.execute(batchStatement);
+        } catch (Throwable throwable){
+            throw EXCEPTION_MAPPER.apply(throwable);
+        } finally {
+            queryBackPressure.releaseAfterQuery();
+        }
+    }
 
 }

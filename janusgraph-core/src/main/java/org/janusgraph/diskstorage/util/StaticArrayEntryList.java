@@ -26,9 +26,12 @@ import org.janusgraph.util.encoding.StringEncoding;
 import java.nio.ByteBuffer;
 import java.util.AbstractList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.concurrent.ExecutorService;
 
 import static org.janusgraph.diskstorage.util.ArrayUtil.growSpace;
 
@@ -398,11 +401,89 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     private static <E,D> EntryList of(Iterator<E> elements, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> dataHandler) {
         Preconditions.checkArgument(elements!=null && getter!=null && dataHandler!=null);
         if (!elements.hasNext()) return EMPTY_LIST;
+
+        EntryListComputationContext context = generateComputationContext();
+        applyElementsComputation(elements, getter, dataHandler, context);
+        return convert(context);
+    }
+
+    public static EntryListComputationContext generateComputationContext(){
         long[] limitAndValuePos = new long[10];
-        byte[] data = new byte[limitAndValuePos.length*15];
-        EntryMetaData[] metadataSchema = null;
-        int pos=0;
-        int offset=0;
+        return new EntryListComputationContext(limitAndValuePos, new byte[limitAndValuePos.length*15], null, 0, 0);
+    }
+
+    public static <E> void supplyEntryList(ChunkedJobDefinition<Iterator<E>, EntryListComputationContext, EntryList> chunkedJobDefinition,
+                                           StaticArrayEntry.GetColVal<E,StaticBuffer> getter,
+                                           ExecutorService executorService) {
+        supplyEntryList(chunkedJobDefinition, getter, StaticArrayEntry.StaticBufferHandler.INSTANCE, executorService);
+    }
+
+    private static <E,D> void supplyEntryList(ChunkedJobDefinition<Iterator<E>, EntryListComputationContext, EntryList> chunkedJobDefinition,
+                                              StaticArrayEntry.GetColVal<E,D> getter,
+                                              StaticArrayEntry.DataHandler<D> dataHandler,
+                                              ExecutorService executorService){
+        assert chunkedJobDefinition !=null && getter!=null && dataHandler!=null;
+
+        executorService.execute(() -> {
+
+            if(!chunkedJobDefinition.getProcessingLock().tryLock() || chunkedJobDefinition.getResult().isDone()){
+                return;
+            }
+
+            Queue<Iterator<E>> chunksQueue = chunkedJobDefinition.getDataChunks();
+            Iterator<E> elements = chunksQueue.isEmpty() ? Collections.emptyIterator() : chunksQueue.remove();
+
+            EntryListComputationContext context = chunkedJobDefinition.getProcessedDataContext();
+
+            if(context == null){
+                if(chunkedJobDefinition.isLastChunkRetrieved() && chunksQueue.isEmpty() && !elements.hasNext()){
+                    chunkedJobDefinition.complete(EMPTY_LIST);
+                    return;
+                }
+                context = generateComputationContext();
+                chunkedJobDefinition.setProcessedDataContext(context);
+            }
+
+            try {
+
+                do {
+                    if(elements.hasNext()){
+                        applyElementsComputation(elements, getter, dataHandler, context);
+                    }
+                    if(chunksQueue.isEmpty()){
+                        break;
+                    }
+                    elements = chunksQueue.remove();
+                } while (true);
+
+                if(chunkedJobDefinition.isLastChunkRetrieved() && chunksQueue.isEmpty()){
+                    if(context.metadataSchema == null){
+                        chunkedJobDefinition.complete(EMPTY_LIST);
+                    } else {
+                        chunkedJobDefinition.complete(convert(context));
+                    }
+                }
+
+            } catch (Throwable throwable){
+                chunkedJobDefinition.getResult().completeExceptionally(throwable);
+                return;
+            } finally {
+                chunkedJobDefinition.getProcessingLock().unlock();
+            }
+
+            if(!chunksQueue.isEmpty() || chunkedJobDefinition.isLastChunkRetrieved() && !chunkedJobDefinition.getResult().isDone()){
+                supplyEntryList(chunkedJobDefinition, getter, dataHandler, executorService);
+            }
+        });
+    }
+
+    private static <E,D> void applyElementsComputation(Iterator<E> elements, StaticArrayEntry.GetColVal<E,D> getter,
+                                                       StaticArrayEntry.DataHandler<D> dataHandler, EntryListComputationContext context){
+        long[] limitAndValuePos = context.limitAndValuePos;
+        byte[] data = context.data;
+        EntryMetaData[] metadataSchema = context.metadataSchema;
+        int pos=context.pos;
+        int offset=context.offset;
         while (elements.hasNext()) {
             E element = elements.next();
             if (element==null) throw new IllegalArgumentException("Unexpected null element in result set");
@@ -429,23 +510,32 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             pos++;
         }
         assert offset<=data.length;
-        if (data.length > offset + (offset >> 1)) {
+
+        context.limitAndValuePos = limitAndValuePos;
+        context.data = data;
+        context.metadataSchema = metadataSchema;
+        context.pos = pos;
+        context.offset = offset;
+    }
+
+    private static StaticArrayEntryList convert(EntryListComputationContext context){
+        if (context.data.length > context.offset + (context.offset >> 1)) {
             //  Resize to preserve memory. This happens when either of the following conditions is true:
             //  1) current memory space is 1.5x more than minimum required space
             //  2) 1.5 x minimum required space will overflow, in which case the wasted memory space is likely still considerable
-            byte[] newData = new byte[offset];
-            System.arraycopy(data,0,newData,0,offset);
-            data=newData;
+            byte[] newData = new byte[context.offset];
+            System.arraycopy(context.data,0,newData,0,context.offset);
+            context.data=newData;
         }
-        if (pos<limitAndValuePos.length) {
+        if (context.pos<context.limitAndValuePos.length) {
             //Resize so that the the array fits exactly
-            long[] newPos = new long[pos];
-            System.arraycopy(limitAndValuePos,0,newPos,0,pos);
-            limitAndValuePos=newPos;
+            long[] newPos = new long[context.pos];
+            System.arraycopy(context.limitAndValuePos,0,newPos,0,context.pos);
+            context.limitAndValuePos=newPos;
         }
-        assert offset<=data.length;
-        assert pos==limitAndValuePos.length;
-        return new StaticArrayEntryList(data,limitAndValuePos,metadataSchema);
+        assert context.offset<=context.data.length;
+        assert context.pos==context.limitAndValuePos.length;
+        return new StaticArrayEntryList(context.data,context.limitAndValuePos,context.metadataSchema);
     }
 
     private static byte[] ensureSpace(byte[] data, int offset, int length) {

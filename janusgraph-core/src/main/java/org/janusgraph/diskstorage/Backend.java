@@ -269,7 +269,18 @@ public class Backend implements LockerProvider, AutoCloseable {
             storeManagerLocking = storeManager;
         }
 
-        threadPool = configuration.get(PARALLEL_BACKEND_OPS) ? buildExecutorService(configuration) : null;
+        if(configuration.get(PARALLEL_BACKEND_OPS)){
+            if(storeFeatures.hasMultiQuery()){
+                log.info(storeManager.getName() + " supports multi-key queries. Thus, option {} is ignored in favor of multi-key queries. " +
+                    "Backend-ops executor pool will not be created for this storage backend.");
+                threadPool = null;
+            } else {
+                threadPool = buildExecutorService(configuration);
+            }
+        } else {
+            threadPool = null;
+        }
+
         threadPoolShutdownMaxWaitTime = configuration.get(PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME);
 
         final String lockBackendName = configuration.get(LOCK_BACKEND);

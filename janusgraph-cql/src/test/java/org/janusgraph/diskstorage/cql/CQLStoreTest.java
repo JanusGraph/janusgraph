@@ -15,8 +15,13 @@
 package org.janusgraph.diskstorage.cql;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfig;
+import com.datastax.oss.driver.api.core.config.DriverExecutionProfile;
+import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import org.janusgraph.JanusGraphCassandraContainer;
@@ -53,6 +58,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -356,6 +362,23 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
     @Override
     public CQLStoreManager openStorageManagerForClearStorageTest() throws Exception {
         return openStorageManager(getBaseStorageConfiguration().set(GraphDatabaseConfiguration.DROP_ON_CLEAR, true));
+    }
+
+    @Test
+    public void backPressureLimitOverflowTest(){
+        Metadata metadata = mock(Metadata.class);
+        DriverContext driverContext = mock(DriverContext.class);
+        DriverConfig driverConfig = mock(DriverConfig.class);
+        DriverExecutionProfile profile = mock(DriverExecutionProfile.class);
+        when(session.getMetadata()).thenReturn(metadata);
+        when(metadata.getNodes()).thenReturn(Collections.singletonMap(UUID.randomUUID(), mock(Node.class)));
+        when(session.getContext()).thenReturn(driverContext);
+        when(driverContext.getConfig()).thenReturn(driverConfig);
+        when(driverConfig.getDefaultProfile()).thenReturn(profile);
+        when(profile.getInt(DefaultDriverOption.CONNECTION_MAX_REQUESTS)).thenReturn(Integer.MAX_VALUE/2);
+        when(profile.getInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE)).thenReturn(10);
+        int backPressure = CQLStoreManager.getDefaultBackPressureLimit(session);
+        assertEquals(Integer.MAX_VALUE, backPressure);
     }
 
 }

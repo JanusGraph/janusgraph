@@ -1,4 +1,4 @@
-// Copyright 2021 JanusGraph Authors
+// Copyright 2023 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.cql.function.slice;
+package org.janusgraph.diskstorage.util.backpressure;
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+public class PassAllQueryBackPressure implements QueryBackPressure{
+    @Override
+    public void acquireBeforeQuery() {
+        // ignored
+    }
 
-import java.util.concurrent.CompletableFuture;
+    @Override
+    public void releaseAfterQuery() {
+        // ignored
+    }
 
-public interface CQLSliceFunction {
-
-    CompletableFuture<EntryList> getSlice(final KeySliceQuery query, final StoreTransaction txh) throws BackendException;
-
+    @Override
+    public void close() {
+        // ignored
+    }
 }

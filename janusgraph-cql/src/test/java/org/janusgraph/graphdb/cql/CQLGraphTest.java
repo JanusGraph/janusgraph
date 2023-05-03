@@ -22,6 +22,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.TemporaryBackendException;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -40,9 +42,14 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BACK_PRESSURE_LIMIT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_ENABLED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_CONNECTIONS_PER_HOST;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.MAX_REQUESTS_PER_CONNECTION;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECTIONS_PER_HOST;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ASSIGN_TIMESTAMP;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -72,18 +79,12 @@ public class CQLGraphTest extends JanusGraphTest {
 
     protected static Stream<Arguments> generateConsistencyConfigs() {
         return Arrays.stream(new Arguments[]{
-            arguments(true, true, 20, true),
-            arguments(true, false, 20, true),
-            arguments(true, false, 1, true),
-            arguments(false, true, 20, true),
-            arguments(false, false, 20, true),
-            arguments(false, false, 1, true),
-            arguments(true, true, 20, false),
-            arguments(true, false, 20, false),
-            arguments(true, false, 1, false),
-            arguments(false, true, 20, false),
-            arguments(false, false, 20, false),
-            arguments(false, false, 1, false),
+            arguments(true, true, 20),
+            arguments(true, false, 20),
+            arguments(true, false, 1),
+            arguments(false, true, 20),
+            arguments(false, false, 20),
+            arguments(false, false, 1),
         });
     }
 
@@ -96,8 +97,8 @@ public class CQLGraphTest extends JanusGraphTest {
 
     @ParameterizedTest
     @MethodSource("generateConsistencyConfigs")
-    public void testConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize, boolean executorServiceEnabled) {
-        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize, option(EXECUTOR_SERVICE_ENABLED), executorServiceEnabled);
+    public void testConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize) {
+        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize);
         super.testConsistencyEnforcement();
     }
 
@@ -110,8 +111,8 @@ public class CQLGraphTest extends JanusGraphTest {
 
     @ParameterizedTest
     @MethodSource("generateConsistencyConfigs")
-    public void testConcurrentConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize, boolean executorServiceEnabled) throws Exception {
-        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize, option(EXECUTOR_SERVICE_ENABLED), executorServiceEnabled);
+    public void testConcurrentConsistencyEnforcement(boolean assignTimestamp, boolean atomicBatch, int batchSize) throws Exception {
+        clopen(option(ASSIGN_TIMESTAMP), assignTimestamp, option(ATOMIC_BATCH_MUTATE), atomicBatch, option(BATCH_STATEMENT_SIZE), batchSize);
         super.testConcurrentConsistencyEnforcement();
     }
 
@@ -133,5 +134,55 @@ public class CQLGraphTest extends JanusGraphTest {
                 "Query should not produce a TemporaryBackendException");
         assertNotEquals(-1, ExceptionUtils.indexOfType(ex, PermanentBackendException.class),
                 "Query should produce a PermanentBackendException");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3, 10, 100, 1000})
+    public void fetchElementsUsingDifferentPageSize(int pageSize) {
+        clopen(option(USE_MULTIQUERY), true, option(PAGE_SIZE), pageSize);
+        assertSingleTxAdditionAndCount(10, pageSize * 3);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3, 10, 100, 1000})
+    public void testDifferentBackpressureLimitIsApplicable(int backPressureLimit) {
+        clopen(option(BACK_PRESSURE_LIMIT), backPressureLimit, option(USE_MULTIQUERY), true);
+        assertSingleTxAdditionAndCount(10, 20);
+    }
+
+    @Test
+    public void testBackpressureIsDisabled() {
+        clopen(option(BACK_PRESSURE_LIMIT), -1, option(USE_MULTIQUERY), true,
+            option(MAX_REQUESTS_PER_CONNECTION), 1024, option(LOCAL_MAX_CONNECTIONS_PER_HOST), 20, option(REMOTE_MAX_CONNECTIONS_PER_HOST), 1);
+        assertSingleTxAdditionAndCount(10, 20);
+    }
+
+    @Test
+    public void testInvalidBackpressureLimitIsNotApplicable() {
+        assertThrows(Throwable.class, () -> clopen(option(BACK_PRESSURE_LIMIT), -2, option(USE_MULTIQUERY), true));
+        assertThrows(Throwable.class, () -> clopen(option(BACK_PRESSURE_LIMIT), -100, option(USE_MULTIQUERY), true));
+        assertThrows(Throwable.class, () -> clopen(option(BACK_PRESSURE_LIMIT), Integer.MIN_VALUE, option(USE_MULTIQUERY), true));
+    }
+
+    private void assertSingleTxAdditionAndCount(int indexedVerticesCount, int adjacentVerticesCount){
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("nameIndex", Vertex.class).addKey(name).buildCompositeIndex();
+        mgmt.makeEdgeLabel("testEdge").multiplicity(Multiplicity.SIMPLE).make();
+        finishSchema();
+
+        GraphTraversalSource g = graph.traversal();
+        for(int i=0; i < indexedVerticesCount; i++){
+            Vertex indexedVertex = g.addV().property("name", "testName").next();
+            for(int j=0; j<adjacentVerticesCount; j++){
+                Vertex adjacentVertex = g.addV().next();
+                indexedVertex.addEdge("testEdge", adjacentVertex);
+            }
+        }
+
+        g.tx().commit();
+
+        int idsCount = g.V().has("name", "testName").out("testEdge").id().toList().size();
+
+        assertEquals(indexedVerticesCount * adjacentVerticesCount, idsCount);
     }
 }

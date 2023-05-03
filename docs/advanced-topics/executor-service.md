@@ -1,11 +1,11 @@
 # Backend ExecutorService
 
-By default JanusGraph uses `ExecutorService` to process some queries in parallel 
-(see `storage.parallel-backend-ops` configuration option).  
+By default, JanusGraph uses `ExecutorService` to process some queries in parallel for storage backend implementations 
+which don't support multi-key queries (see `storage.parallel-backend-ops` configuration option).  
 JanusGraph allows to configure the executor service which is used via configuration options 
 provided in `storage.parallel-backend-executor-service` configuration section.
 
-Currently JanusGraph has the next ExecutorService implementations which can be used (controlled via 
+Currently, JanusGraph has the next ExecutorService implementations which can be used (controlled via 
 `storage.parallel-backend-executor-service.class`):
 
 * `fixed` - fixed thread pool size;
@@ -30,18 +30,13 @@ are typically those configuration options which are provided via configurations 
 # Cassandra backend ExecutorService
 
 Apart from the general executor service mentioned in the previous section, Cassandra backend uses an additional 
-`ExecutorService` to process CQL queries by default (see `storage.cql.executor-service.enabled` configuration option).  
+`ExecutorService` to process result deserialization for CQL queries by default (see `storage.cql.executor-service` configuration options).  
 The rules by which the Cassandra backend `ExecutorService` is built are the 
 same as the rules which are used to build parallel backend queries `ExecutorService` (described above). 
 The only difference is that the configuration for Cassandra backend `ExecutorService` are provided via configuration 
-options under `storage.cql.executor-service`.  
-Disabling CQL executor service reduces overhead of thread pool but requires the user to tune maximum throughput thoroughly.  
-With disabled CQL executor service the parallelism will be controlled internally by the CQL driver via the next properties: 
-`storage.cql.max-requests-per-connection`, `storage.cql.local-max-connections-per-host`, `storage.cql.remote-max-connections-per-host`. 
-
-!!! info
-    It is recommended to disable CQL executor service in a production environment and properly configure maximum throughput. 
-    CQL executor service does not provide any benefits other than limiting the amount of parallel requests per JanusGraph instance.
+options under `storage.cql.executor-service`.
 
 !!! warning
-    Improper tuning of maximum throughput might result in failures under heavy workloads.
+    By default, `storage.cql.executor-service` is configured to have a core pool size of number of processors multiplied 
+    by 2. It's recommended to always use the default value unless there is a reason to artificially limit parallelism for 
+    CQL slice query deserialization.

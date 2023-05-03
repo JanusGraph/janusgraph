@@ -1,0 +1,33 @@
+// Copyright 2023 JanusGraph Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package org.janusgraph.diskstorage.util;
+
+import org.janusgraph.diskstorage.EntryMetaData;
+
+public class EntryListComputationContext {
+    public long[] limitAndValuePos;
+    public byte[] data;
+    public EntryMetaData[] metadataSchema;
+    public int pos;
+    public int offset;
+
+    public EntryListComputationContext(long[] limitAndValuePos, byte[] data, EntryMetaData[] metadataSchema, int pos, int offset) {
+        this.limitAndValuePos = limitAndValuePos;
+        this.data = data;
+        this.metadataSchema = metadataSchema;
+        this.pos = pos;
+        this.offset = offset;
+    }
+}

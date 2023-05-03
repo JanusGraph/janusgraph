@@ -62,7 +62,6 @@ import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BASE_PROGRAMMATIC_CONFIGURATION_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_CLASS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_ENABLED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.FILE_CONFIGURATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_TIMEOUT;
@@ -327,7 +326,6 @@ public class CQLConfigTest {
     public void shouldCreateCachedThreadPool() {
         WriteConfiguration wc = getConfiguration();
         wc.set(ConfigElement.getPath(EXECUTOR_SERVICE_CLASS), ExecutorServiceBuilder.CACHED_THREAD_POOL_CLASS);
-        wc.set(ConfigElement.getPath(EXECUTOR_SERVICE_ENABLED), true);
         graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
         assertDoesNotThrow(() -> {
             graph.traversal().V().hasNext();
@@ -338,7 +336,6 @@ public class CQLConfigTest {
     @Test
     public void shouldGracefullyCloseGraphWhichLostAConnection(){
         WriteConfiguration wc = getConfiguration();
-        wc.set(ConfigElement.getPath(EXECUTOR_SERVICE_ENABLED), true);
         wc.set(ConfigElement.getPath(EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME), 60000);
         wc.set(ConfigElement.getPath(PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME), 60000);
         wc.set(ConfigElement.getPath(IDS_RENEW_TIMEOUT), 10000);

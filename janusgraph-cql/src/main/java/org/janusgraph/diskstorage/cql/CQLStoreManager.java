@@ -16,10 +16,13 @@ package org.janusgraph.diskstorage.cql;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverExecutionProfile;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import io.vavr.Tuple;
 import io.vavr.collection.Array;
 import io.vavr.collection.HashMap;
@@ -33,13 +36,16 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.StoreMetaData.Container;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.cql.builder.CQLExecutorServiceBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLMutateManyFunctionBuilder;
-import org.janusgraph.diskstorage.cql.builder.CQLMutateManyFunctionWrapper;
 import org.janusgraph.diskstorage.cql.builder.CQLProgrammaticConfigurationLoaderBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLSessionBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLStoreFeaturesBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLStoreFeaturesWrapper;
 import org.janusgraph.diskstorage.cql.function.mutate.CQLMutateManyFunction;
+import org.janusgraph.diskstorage.util.backpressure.PassAllQueryBackPressure;
+import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
+import org.janusgraph.diskstorage.util.backpressure.SemaphoreQueryBackPressure;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -54,7 +60,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
@@ -64,6 +69,7 @@ import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.dropKeyspac
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BACK_PRESSURE_LIMIT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETWORK_TOPOLOGY_REPLICATION_STRATEGY;
@@ -107,6 +113,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private final StoreFeatures storeFeatures;
     private final Map<String, CQLKeyColumnValueStore> openStores;
     private final Deployment deployment;
+    private final QueryBackPressure queriesBackPressure;
 
     /**
      * Constructor for the {@link CQLStoreManager} given a JanusGraph {@link Configuration}.
@@ -143,18 +150,58 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             initializeJmxMetrics();
             initializeKeyspace();
 
-            CQLMutateManyFunctionWrapper mutateManyFunctionWrapper = mutateManyFunctionBuilder
-                .build(session, configuration, times, assignTimestamp, openStores, this::sleepAfterWrite);
-            this.executorService = mutateManyFunctionWrapper.getExecutorService();
-            this.executeManyFunction = mutateManyFunctionWrapper.getMutateManyFunction();
+            int backPressureLimit = getBackPressureLimit(configuration, session);
+            if(backPressureLimit == -1){
+                queriesBackPressure = new PassAllQueryBackPressure();
+            } else {
+                queriesBackPressure = new SemaphoreQueryBackPressure(backPressureLimit);
+            }
+
+            this.executeManyFunction = mutateManyFunctionBuilder
+                .build(session, configuration, times, assignTimestamp, openStores, this::sleepAfterWrite, queriesBackPressure);
 
             CQLStoreFeaturesWrapper storeFeaturesWrapper = storeFeaturesBuilder.build(session, configuration, hostnames);
             deployment = storeFeaturesWrapper.getDeployment();
             storeFeatures = storeFeaturesWrapper.getStoreFeatures();
 
+            this.executorService = CQLExecutorServiceBuilder.buildExecutorService(configuration);
+
         } catch (Throwable throwable){
             close();
             throw new PermanentBackendException("Couldn't initialize CQLStoreManager", throwable);
+        }
+    }
+
+    private static int getBackPressureLimit(final Configuration configuration, final CqlSession session){
+        if(configuration.has(BACK_PRESSURE_LIMIT)){
+            final int backPressureLimit = configuration.get(BACK_PRESSURE_LIMIT);
+            if(backPressureLimit == 0){
+                return getDefaultBackPressureLimit(session);
+            }
+            Preconditions.checkArgument(backPressureLimit >= -1, BACK_PRESSURE_LIMIT.toStringWithoutRoot()
+                +" must be at -1 (to disable back_pressure), 0 (to calculate back_pressure), " +
+                "or a positive number to set CQL requests back pressure limit.");
+            return backPressureLimit;
+        }
+        return getDefaultBackPressureLimit(session);
+    }
+
+    static int getDefaultBackPressureLimit(final CqlSession session){
+        DriverExecutionProfile profile = session.getContext().getConfig().getDefaultProfile();
+        int connectionMaxRequests = profile.getInt(DefaultDriverOption.CONNECTION_MAX_REQUESTS);
+        int connectionPoolLocalSize = profile.getInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE);
+        int currentAvailableNodesAmount = session.getMetadata().getNodes().size();
+        try{
+            return Math.multiplyExact(currentAvailableNodesAmount, Math.multiplyExact(connectionMaxRequests, connectionPoolLocalSize));
+        } catch (ArithmeticException overflowException){
+            LOGGER.warn("Default back pressure limit calculation is overflowed via the formula " +
+                "["+DefaultDriverOption.CONNECTION_MAX_REQUESTS.getPath()+"("+connectionMaxRequests+") * "+
+                DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE.getPath()+"("+connectionPoolLocalSize+
+                ") * currentAvailableNodesAmount("+currentAvailableNodesAmount+")]. " +
+                "Thus, the default back pressure limit is going to be "+Integer.MAX_VALUE+". " +
+                "It is possible to disable back pressure using configuration parameter `"+
+                BACK_PRESSURE_LIMIT.toStringWithoutRoot()+"=-1`.");
+            return Integer.MAX_VALUE;
         }
     }
 
@@ -196,8 +243,8 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             .build());
     }
 
-    Optional<ExecutorService> getExecutorService() {
-        return Optional.ofNullable(executorService);
+    ExecutorService getExecutorService() {
+        return executorService;
     }
 
     CqlSession getSession() {
@@ -243,6 +290,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
             executeWithCatching(this::clearJmxMetrics, exceptionWrapper);
             executeWithCatching(session::close, exceptionWrapper);
+            executeWithCatching(queriesBackPressure::close, exceptionWrapper);
             throwIfException(exceptionWrapper);
         } finally {
             gracefulExecutorServiceShutdown(executorService, threadPoolShutdownMaxWaitTime);
@@ -301,7 +349,11 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
 
     @Override
     public void mutateMany(final Map<String, Map<StaticBuffer, KCVMutation>> mutations, final StoreTransaction txh) throws BackendException {
-        executeManyFunction.mutateMany(mutations, txh);
+        try{
+            executeManyFunction.mutateMany(mutations, txh);
+        } catch (Throwable e){
+            throw CQLKeyColumnValueStore.EXCEPTION_MAPPER.apply(e);
+        }
     }
 
     public static String determineKeyspaceName(Configuration config) {
@@ -315,4 +367,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return new CqlHadoopStoreManager(this.session);
     }
 
+    public QueryBackPressure getQueriesBackPressure() {
+        return queriesBackPressure;
+    }
 }
