@@ -299,6 +299,60 @@ but it's recommended to tune CQL queries parallelism using CQL driver configurat
 * RemovableRelationIterator class
 * ImmutableConfiguration class
 
+### Version 0.6.4 (Release Date: ???)
+
+```xml tab='Maven'
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.6.4</version>
+</dependency>
+```
+
+```groovy tab='Gradle'
+compile "org.janusgraph:janusgraph-core:0.6.4"
+```
+
+**Tested Compatibility:**
+
+* Apache Cassandra 3.0.14, 3.11.10
+* Apache HBase 1.6.0, 2.2.7
+* Oracle BerkeleyJE 7.5.11
+* Elasticsearch 6.0.1, 6.6.0, 7.14.0
+* Apache Lucene 8.9.0
+* Apache Solr 7.7.2, 8.11.0
+* Apache TinkerPop 3.5.5
+* Java 1.8
+
+#### Changes
+
+For more information on features and bug fixes in 0.6.4, see the GitHub milestone:
+
+- <https://github.com/JanusGraph/janusgraph/milestone/26?closed=1>
+
+#### Assets
+
+* [JavaDoc](https://javadoc.io/doc/org.janusgraph/janusgraph-core/0.6.4)
+* [GitHub Release](https://github.com/JanusGraph/janusgraph/releases/tag/v0.6.4)
+* [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.4/janusgraph-0.6.4.zip)
+* [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v0.6.4/janusgraph-full-0.6.4.zip)
+
+#### Upgrade Instructions
+
+##### Default logging library changed to Reload4j
+
+The default logging library used in the pre-packaged distribution has been changed in version 0.6.3 by accident from
+Log4j to Logback.
+While this change meant that some security issues of Log4j were avoided, it was also a breaking change that was not
+intended.
+This resulted in only warnings being logged by default and also that a Log4j config file was ignored.
+To fix this breaking change, we change the default logging library in this release to [Reload4j](https://reload4j.qos.ch/)
+which is completely compatible with Log4j, but fixes the security issues of Log4j.
+This means that Log4j config files will continue to work with this version.
+
+Note that this only applies to JanusGraph 0.6.
+JanusGraph 1.0.0 uses Log4j2 by default.
+
 ### Version 0.6.3 (Release Date: February 18, 2023)
 
 ```xml tab='Maven'
