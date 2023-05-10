@@ -36,4 +36,6 @@ send ":> graph.tx().commit()\r"
 send ":> graph.traversal().V().count()\r"
 expect "1"
 expect gremlin>
+send ":> graph.close()\r"
+expect gremlin>
 exit 0
