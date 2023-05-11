@@ -156,7 +156,7 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
         runTraversalAgainstServer(createGraphBinaryMessageSerializerV1());
 
         // test use Gremlin console
-        unzipAndRunExpect("remote-console.expect.vm", Collections.emptyMap(), false, false);
+        parseTemplateAndRunExpect("remote-console.expect.vm", Collections.emptyMap(), full, debug);
 
         parseTemplateAndRunExpect("janusgraph-server-sh.after.expect.vm", contextVars, full, debug);
     }
