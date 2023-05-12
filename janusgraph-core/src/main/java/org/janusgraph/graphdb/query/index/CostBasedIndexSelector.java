@@ -26,7 +26,6 @@ import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.index.candidate.AbstractIndexCandidate;
 import org.janusgraph.graphdb.query.index.candidate.IndexCandidateFactory;
 import org.janusgraph.graphdb.query.index.candidate.IndexCandidateGroup;
-import org.janusgraph.graphdb.tinkerpop.optimize.hint.TraversalHints;
 import org.janusgraph.graphdb.types.IndexType;
 
 import java.util.ArrayList;
@@ -93,8 +92,7 @@ public class CostBasedIndexSelector {
         return new SelectedIndexQuery<>(jointQuery, bestGroup.getCoveredClauses(), bestGroup.supportsOrders());
     }
 
-    private static <E extends JanusGraphElement> void removeSuppressedIndexes(Set<IndexType> remainingCandidates,
-                                                                              String[] suppressedIndexNames) {
+    private static void removeSuppressedIndexes(Set<IndexType> remainingCandidates, String[] suppressedIndexNames) {
         if (suppressedIndexNames == null) return;
         for (String indexName : suppressedIndexNames) {
             remainingCandidates.stream()

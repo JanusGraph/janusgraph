@@ -42,7 +42,6 @@ import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.index.CostBasedIndexSelector;
 import org.janusgraph.graphdb.query.index.SelectedIndexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.tinkerpop.optimize.hint.TraversalHints;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.util.CloseableIteratorUtils;
 import org.slf4j.Logger;
