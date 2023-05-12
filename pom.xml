@@ -747,7 +747,7 @@
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
-                <version>2.0</version>
+                <version>1.32</version>
             </dependency>
             <dependency>
                 <groupId>net.oneandone.reflections8</groupId>
