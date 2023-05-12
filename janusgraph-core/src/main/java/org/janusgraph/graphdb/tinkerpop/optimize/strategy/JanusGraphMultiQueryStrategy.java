@@ -66,7 +66,7 @@ public class JanusGraphMultiQueryStrategy extends AbstractTraversalStrategy<Trav
             return;
         }
 
-        insertMultiQuerySteps(traversal, janusGraph.getConfiguration().limitBatchSize());
+        insertMultiQuerySteps(traversal, janusGraph.getConfiguration().limitedBatch(), janusGraph.getConfiguration().limitedBatchSize());
         configureMultiQueriables(traversal);
     }
 
@@ -75,19 +75,19 @@ public class JanusGraphMultiQueryStrategy extends AbstractTraversalStrategy<Trav
      *
      * @param traversal The local traversal layer.
      */
-    private void insertMultiQuerySteps(final Admin<?, ?> traversal, boolean limitBatchSize) {
+    private void insertMultiQuerySteps(final Admin<?, ?> traversal, boolean limitedBatch, int limitedBatchSize) {
         JanusGraphTraversalUtil.getSteps(JanusGraphTraversalUtil::isMultiQueryCompatibleStep, traversal).forEach(step -> {
             Optional<Step> multiQueryPosition = JanusGraphTraversalUtil.getLocalMultiQueryPositionForStep(step);
             if (multiQueryPosition.isPresent() && JanusGraphTraversalUtil.isLegalMultiQueryPosition(multiQueryPosition.get())) {
                 Step pos = multiQueryPosition.get();
                 JanusGraphMultiQueryStep multiQueryStep;
-                if (limitBatchSize && !(multiQueryPosition.get() instanceof NoOpBarrierStep)) {
-                    NoOpBarrierStep barrier = new NoOpBarrierStep(traversal);
+                if (limitedBatch && !(multiQueryPosition.get() instanceof NoOpBarrierStep)) {
+                    NoOpBarrierStep barrier = new NoOpBarrierStep(traversal, limitedBatchSize);
                     TraversalHelper.insertBeforeStep(barrier, pos, traversal);
                     pos = barrier;
-                    multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitBatchSize, barrier);
+                    multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitedBatch, barrier);
                 } else {
-                    multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitBatchSize);
+                    multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitedBatch);
                 }
                 TraversalHelper.insertBeforeStep(multiQueryStep, pos, traversal);
             }

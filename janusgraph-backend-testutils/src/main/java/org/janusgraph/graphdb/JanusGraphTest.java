@@ -202,7 +202,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HARD_MAX_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMIT_BATCH_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMITED_BATCH;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
@@ -4691,7 +4691,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test batching for `out()`
         Supplier<GraphTraversal<?, ?>> traversal = () -> graph.traversal().V(bs).barrier(barrierSize).out();
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
         TraversalMetrics profile = traversal.get().profile().next();
         assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
         assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
@@ -4699,14 +4699,14 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test early abort with limit for `out()`
         traversal = () -> graph.traversal().V(bs).barrier(barrierSize).out().limit(limit);
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
         profile = traversal.get().profile().next();
         assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
 
         // test batching for `values()`
         traversal = () -> graph.traversal().V(cs).barrier(barrierSize).values("foo");
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
         profile = traversal.get().profile().next();
         assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
         assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
@@ -4714,14 +4714,14 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test early abort with limit for `values()`
         traversal = () -> graph.traversal().V(cs).barrier(barrierSize).values("foo").limit(limit);
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
         profile = traversal.get().profile().next();
         assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
 
         // test batching with unlimited batch size
         traversal = () -> graph.traversal().V(bs).barrier(barrierSize).out();
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), false);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
         profile = traversal.get().profile().next();
         assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
         assertEquals(0, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
@@ -4730,7 +4730,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test nested VertexStep with unlimited batch size
         traversal = () -> graph.traversal().V(bs).barrier(barrierSize).where(__.out());
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), false);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
         profile = traversal.get().profile().next();
         assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
         assertEquals(0, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
@@ -4739,7 +4739,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test nested VertexStep with non-nested barrier
         traversal = () -> graph.traversal().V(bs).barrier(barrierSize).where(__.out());
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
         profile = traversal.get().profile().next();
         assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
         assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
@@ -4747,16 +4747,16 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test batching with repeat step
         traversal = () -> graph.traversal().V(a).repeat(__.barrier(barrierSize).out()).times(2);
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
         profile = traversal.get().profile().next();
         assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
         assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
     }
 
     private void assertEqualResultWithAndWithoutLimitBatchSize(Supplier<GraphTraversal<?, ?>> traversal) {
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
         final List<?> resultLimitedBatch = traversal.get().toList();
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), false);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
         final List<?> resultUnimitedBatch = traversal.get().toList();
         clopen(option(USE_MULTIQUERY), false);
         final List<?> resultNoMultiQuery = traversal.get().toList();
