@@ -133,7 +133,8 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
         assertNotEquals(0, vertices.size());
     }
 
-    protected void runTraversalAgainstServer(MessageSerializer serializer) {
+    protected void runTraversalAgainstServer(MessageSerializer serializer) throws Exception {
+        // test use Cluster class in Java
         Cluster cluster = Cluster.build("localhost")
             .port(8182)
             .serializer(serializer)
@@ -158,6 +159,9 @@ public abstract class AbstractJanusGraphAssemblyIT extends JanusGraphAssemblyBas
         runTraversalAgainstServer(createGraphSONMessageSerializer());
         runTraversalAgainstServer(createGraphBinaryMessageSerializerV1());
         runTraversalAgainstServer(createGryoMessageSerializer());
+
+        // test use Gremlin console
+        parseTemplateAndRunExpect("remote-console.expect.vm", Collections.emptyMap(), full, debug);
 
         parseTemplateAndRunExpect("janusgraph-server-sh.after.expect.vm", contextVars, full, debug);
     }
