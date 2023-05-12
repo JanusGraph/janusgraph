@@ -40,7 +40,7 @@ import java.util.List;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.janusgraph.graphdb.JanusGraphBaseTest.option;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMIT_BATCH_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMITED_BATCH;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.janusgraph.testutil.JanusGraphAssert.assertNumStep;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
@@ -78,7 +78,7 @@ public class JanusGraphMultiQueryStrategyTest extends OptimizerStrategyTest {
 
     @Test
     public void testNoOpBarrierStepInsertedIfNotPresentAndLimitBatchSize() {
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), true);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
         makeSampleGraph();
 
         final GraphTraversal<?,?> traversalWithoutExplicitBarrier = g.V(sv[0]).outE().inV();
@@ -90,7 +90,7 @@ public class JanusGraphMultiQueryStrategyTest extends OptimizerStrategyTest {
 
     @Test
     public void testNoOpBarrierStepNotInsertedLimitBatchSizeDisabled() {
-        clopen(option(USE_MULTIQUERY), true, option(LIMIT_BATCH_SIZE), false);
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
         makeSampleGraph();
 
         final GraphTraversal<?,?> traversalWithoutExplicitBarrier = g.V(sv[0]).outE().inV();

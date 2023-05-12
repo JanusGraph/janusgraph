@@ -20,6 +20,7 @@ import org.apache.commons.lang3.ClassUtils;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.tinkerpop.gremlin.jsr223.GremlinLangScriptEngine;
 import org.apache.tinkerpop.gremlin.jsr223.GremlinScriptEngine;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.LazyBarrierStrategy;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.JanusGraphConfigurationException;
 import org.janusgraph.core.JanusGraphFactory;
@@ -278,12 +279,19 @@ public class GraphDatabaseConfiguration {
                     "performance improvement if there is a non-trivial latency to the backend.",
             ConfigOption.Type.MASKABLE, true);
 
-    public static final ConfigOption<Boolean> LIMIT_BATCH_SIZE = new ConfigOption<>(QUERY_NS,"limit-batch-size",
+    public static final ConfigOption<Boolean> LIMITED_BATCH = new ConfigOption<>(QUERY_NS,"limited-batch",
             "Configure a maximum batch size for queries against the storage backend. This can be used to ensure " +
                     "responsiveness if batches tend to grow very large. The used batch size is equivalent to the " +
                     "barrier size of a preceding barrier() step. If a step has no preceding barrier(), the default barrier of TinkerPop " +
                     "will be inserted. This option only takes effect if query.batch is enabled.",
             ConfigOption.Type.MASKABLE, true);
+
+    public static final ConfigOption<Integer> LIMITED_BATCH_SIZE = new ConfigOption<>(QUERY_NS,"limited-batch-size",
+        "Default batch size (barrier() step size) for queries. This size is applied only for cases where `"
+        + LazyBarrierStrategy.class.getSimpleName()+"` strategy didn't apply `barrier` step and where user didn't apply " +
+            "barrier step either. This option is used only when `"+LIMITED_BATCH.toStringWithoutRoot()+"` is `true`. " +
+            "Notice, value `"+Integer.MAX_VALUE+"` is considered to be unlimited.",
+        ConfigOption.Type.MASKABLE, 2500);
 
     public static final ConfigOption<String> INDEX_SELECT_STRATEGY = new ConfigOption<>(QUERY_NS, "index-select-strategy",
             String.format("Name of the index selection strategy or full class name. Following shorthands can be used: <br>" +
@@ -1265,7 +1273,8 @@ public class GraphDatabaseConfiguration {
     private boolean adjustQueryLimit;
     private int hardMaxLimit;
     private Boolean useMultiQuery;
-    private boolean limitBatchSize;
+    private boolean limitedBatch;
+    private int limitedBatchSize;
     private boolean optimizerBackendAccess;
     private IndexSelectionStrategy indexSelectionStrategy;
     private Boolean batchPropertyPrefetching;
@@ -1368,8 +1377,12 @@ public class GraphDatabaseConfiguration {
         return useMultiQuery;
     }
 
-    public boolean limitBatchSize() {
-        return limitBatchSize;
+    public boolean limitedBatch() {
+        return limitedBatch;
+    }
+
+    public int limitedBatchSize() {
+        return limitedBatchSize;
     }
 
     public boolean optimizerBackendAccess() {
@@ -1508,7 +1521,8 @@ public class GraphDatabaseConfiguration {
 
         propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         useMultiQuery = configuration.get(USE_MULTIQUERY);
-        limitBatchSize = configuration.get(LIMIT_BATCH_SIZE);
+        limitedBatch = configuration.get(LIMITED_BATCH);
+        limitedBatchSize = configuration.get(LIMITED_BATCH_SIZE);
         indexSelectionStrategy = Backend.getImplementationClass(configuration, configuration.get(INDEX_SELECT_STRATEGY),
             REGISTERED_INDEX_SELECTION_STRATEGIES);
         optimizerBackendAccess = configuration.get(OPTIMIZER_BACKEND_ACCESS);

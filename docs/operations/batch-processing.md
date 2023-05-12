@@ -70,7 +70,7 @@ Breadth-First-Search.
 
 ### Steps to explicitly configure this option:
 - Ensure `query.batch` is set to `true`
-- Ensure `query.limit-batch-size` is set to `false`
+- Ensure `query.limited-batch` is set to `false`
 
 ## Limited Batch Processing
 
@@ -90,8 +90,11 @@ This is the default configuration of JanusGraph since version 1.0.0.
 Although batch size does not necessarily need to be configured,
 it can provide an additional tuning parameter to improve the
 performance of a query.
-By default, the batch size of [TinkerPop's barrier step](https://tinkerpop.apache.org/docs/current/reference/#barrier-step)
-will be used, which is currently at 2500.
+By default, the batch size for [TinkerPop's barrier step](https://tinkerpop.apache.org/docs/current/reference/#barrier-step)
+will be provided by `LazyBarrierStrategy`, which is currently at `2500`. 
+For batchable cases where `LazyBarrierStrategy` doesn't inject any `barrier` steps,
+the barrier step will be ingected with the size configured via `query.limited-batch-size` 
+(which defaults to `2500`, same as with `LazyBarrierStrategy`).  
 The batch size of each vertex step can be individually
 configured by prepending a `barrier(<size>)` step.
 For example, in the query below, the first `out()` step would
@@ -143,4 +146,4 @@ previous iteration.
 
 ### Steps to explicitly configure this option:
 - Ensure `query.batch` is set to `true`
-- Ensure `query.limit-batch-size` is set to `true`
+- Ensure `query.limited-batch` is set to `true`

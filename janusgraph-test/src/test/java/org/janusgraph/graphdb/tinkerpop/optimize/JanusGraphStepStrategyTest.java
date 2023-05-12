@@ -44,6 +44,7 @@ import org.janusgraph.StorageSetup;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
@@ -308,45 +309,49 @@ public class JanusGraphStepStrategyTest {
         otherStrategies.add(JanusGraphLocalQueryOptimizerStrategy.instance());
         otherStrategies.add(JanusGraphMultiQueryStrategy.instance());
         otherStrategies.add(JanusGraphUnusedMultiQueryRemovalStrategy.instance());
+        int defaultBarrierSize = GraphDatabaseConfiguration.LIMITED_BATCH_SIZE.getDefaultValue();
 
         return Arrays.stream(new Arguments[]{
             arguments(g.V().in("knows").out("knows"),
-                g_V().is(MQ_STEP).barrier().in("knows").is(MQ_STEP).barrier().out("knows"), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).in("knows").is(MQ_STEP).barrier(defaultBarrierSize).out("knows"), otherStrategies),
             arguments(g.V().in("knows").values("weight"),
-                g_V().is(MQ_STEP).barrier().in("knows").is(MQ_STEP).barrier().values("weight"), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).in("knows").is(MQ_STEP).barrier(defaultBarrierSize).values("weight"), otherStrategies),
             // Need two JanusGraphMultiQuerySteps, one for each sub query because caches are flushed when queried
             arguments(g.V().choose(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),
-                g_V().is(MQ_STEP).barrier().choose(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).choose(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)), otherStrategies),
             arguments(g.V().union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),
-                g_V().is(MQ_STEP).barrier().union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)), otherStrategies),
             arguments(g.V().outE().optional(__.inE("knows").has("weight", 0)),
-                g_V().is(MQ_STEP).barrier().outE().is(MQ_STEP).barrier().optional(__.inE("knows").has("weight", 0)), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).outE().is(MQ_STEP).barrier(defaultBarrierSize).optional(__.inE("knows").has("weight", 0)), otherStrategies),
             arguments(g.V().outE().filter(__.inE("knows").has("weight", 0)),
-                g_V().is(MQ_STEP).barrier().outE().is(MQ_STEP).barrier().filter(__.inE("knows").has("weight", 0)), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).outE().is(MQ_STEP).barrier(defaultBarrierSize).filter(__.inE("knows").has("weight", 0)), otherStrategies),
             // An additional JanusGraphMultiQueryStep for repeat goes before the RepeatEndStep allowing it to feed its starts to the next iteration
             arguments(g.V().outE("knows").inV().repeat(__.outE("knows").inV().has("weight", 0)).times(10),
-                g_V().is(MQ_STEP).barrier().outE("knows").inV().is(MQ_STEP).barrier().repeat(__.is(MQ_STEP).barrier().outE("knows").inV().has("weight", 0)).times(10), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).outE("knows").inV().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.is(MQ_STEP).barrier(defaultBarrierSize).outE("knows").inV().has("weight", 0)).times(10), otherStrategies),
             // Choose does not have a child traversal of JanusGraphVertexStep so won't benefit from JanusGraphMultiQueryStep(ChooseStep)
             arguments(g.V().choose(has("weight", lt(3)), __.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1))),
-                g_V().is(MQ_STEP).barrier().choose(has("weight", lt(3)), __.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1))), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).choose(has("weight", lt(3)), __.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1))), otherStrategies),
             // Choose now has a child traversal of JanusGraphVertexStep and so will benefit from JanusGraphMultiQueryStep(ChooseStep)
             arguments(g.V().choose(__.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),__.inE("knows").has("weight", gt(2))),
-                g_V().is(MQ_STEP).barrier().choose(__.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),__.inE("knows").has("weight", gt(2))), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).choose(__.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1)),__.inE("knows").has("weight", gt(2))), otherStrategies),
             // There are 'as' side effect steps preceding the JanusGraphVertexStep
             arguments(g.V().choose(has("weight", 0),__.as("true").inE("knows"),__.as("false").inE("knows")),
-                g_V().is(MQ_STEP).barrier().choose(has("weight", 0),__.as("true").inE("knows"),__.as("false").inE("knows")), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).choose(has("weight", 0),__.as("true").inE("knows"),__.as("false").inE("knows")), otherStrategies),
             // There are 'sideEffect' and 'as' steps preceding the JanusGraphVertexStep
             arguments(g.V().choose(has("weight", 0),__.as("true").sideEffect(i -> {}).inE("knows"),__.as("false").sideEffect(i -> {}).inE("knows")),
-                g_V().is(MQ_STEP).barrier().choose(has("weight", 0),__.as("true").sideEffect(i -> {}).inE("knows"),__.as("false").sideEffect(i -> {}).inE("knows")), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).choose(has("weight", 0),__.as("true").sideEffect(i -> {}).inE("knows"),__.as("false").sideEffect(i -> {}).inE("knows")), otherStrategies),
             // 'local' is not MultiQueryCompatible (at the moment)
             arguments(g.V().and(__.inE("knows"), __.inE("knows")),
-                g_V().and(__.is(MQ_STEP).barrier().inE("knows"), __.is(MQ_STEP).barrier().inE("knows")), otherStrategies),
+                g_V().and(__.is(MQ_STEP).barrier(defaultBarrierSize).inE("knows"), __.is(MQ_STEP).barrier(defaultBarrierSize).inE("knows")), otherStrategies),
             // `JanusGraphMultiQueryStep` should be used for filter step when at least one child is registered as a client of `JanusGraphMultiQueryStep`.
             arguments(g.V().where(__.out("knows").count().is(P.gte(5))),
-                g_V().is(MQ_STEP).barrier().where(__.out("knows").count().is(P.gte(5))), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).where(__.out("knows").count().is(P.gte(5))), otherStrategies),
             // `JanusGraphMultiQueryStep` should not be used for filter step when none of children is registered as a client of `JanusGraphMultiQueryStep`.
             arguments(g.V().where(__.count().is(P.gte(5))),
                 g_V().where(__.count().is(P.gte(5))), otherStrategies),
+            // Should include barrier steps with the default configured size by `LIMITED_BATCH_SIZE` option
+            arguments(g.V().out().repeat(__.out()).emit(),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.is(MQ_STEP).barrier(defaultBarrierSize).out()).emit(), otherStrategies),
         });
     }
 }
