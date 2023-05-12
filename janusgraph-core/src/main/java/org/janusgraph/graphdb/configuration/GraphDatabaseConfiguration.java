@@ -245,11 +245,14 @@ public class GraphDatabaseConfiguration {
     public static final ConfigNamespace INDEX_SELECTION_NS = new ConfigNamespace(HINT_NS, "index-selection",
             "Hints for index selection strategies");
 
-    public static final ConfigOption<String[]> PREFERRED_INDEXES = new ConfigOption<>(INDEX_SELECTION_NS, "preferred-indexes",
-            "foo", ConfigOption.Type.HINT, new String[0]);
+    public static final ConfigOption<String[]> PREFERRED_INDEXES = new ConfigOption<>(INDEX_SELECTION_NS,
+        "preferred-indexes", "List of indexes to be preferred over others. Each step that is eligible" +
+        "to use use one of the provided indexes is forced to do so, even if the index selector would normally prefer" +
+        "another index.", ConfigOption.Type.HINT, new String[0]);
 
-    public static final ConfigOption<String[]> SUPPRESSED_INDEXES = new ConfigOption<>(INDEX_SELECTION_NS, "suppressed-indexes",
-        "bar", ConfigOption.Type.HINT, new String[0]);
+    public static final ConfigOption<String[]> SUPPRESSED_INDEXES = new ConfigOption<>(INDEX_SELECTION_NS,
+        "suppressed-indexes", "List of indexes to be ignored by a query. Every index provided here" +
+        "will not be considered during index selection phase.", ConfigOption.Type.HINT, new String[0]);
 
     // ################ Query Processing #######################
     // ################################################

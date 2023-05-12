@@ -77,6 +77,15 @@ Gremlin configuration options
 | ---- | ---- | ---- | ---- | ---- |
 | gremlin.graph | The implementation of graph factory that will be used by gremlin server | String | org.janusgraph.core.JanusGraphFactory | LOCAL |
 
+### hint.index-selection
+Hints for index selection strategies
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| hint.index-selection.preferred-indexes | List of indexes to be preferred over others. Each step that is eligibleto use use one of the provided indexes is forced to do so, even if the index selector would normally preferanother index. | String[] |  | HINT |
+| hint.index-selection.suppressed-indexes | List of indexes to be ignored by a query. Every index provided herewill not be considered during index selection phase. | String[] |  | HINT |
+
 ### ids
 General configuration options for graph element IDs
 

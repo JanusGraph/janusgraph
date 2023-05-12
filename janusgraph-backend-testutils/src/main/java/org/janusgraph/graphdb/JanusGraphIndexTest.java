@@ -1386,7 +1386,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
         mixedIndex.name();
         finishSchema();
-        Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph -> graph.traversal().V().has("name", "value").has("prop", "value");
+        Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph ->
+            graph.traversal().V().has("name", "value").has("prop", "value");
 
         // best combination is to pick up only 1 index (mixed index)
         assertEquals(0, getIndexSelectResultNum(traversal, "composite"));
