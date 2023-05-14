@@ -26,7 +26,10 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.TemporaryBackendException;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.util.backpressure.SemaphoreQueryBackPressure;
+import org.janusgraph.diskstorage.util.backpressure.builder.QueryBackPressureBuilder;
 import org.janusgraph.graphdb.JanusGraphTest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -42,6 +45,7 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BACK_PRESSURE_CLASS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BACK_PRESSURE_LIMIT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_CONNECTIONS_PER_HOST;
@@ -60,6 +64,27 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 public class CQLGraphTest extends JanusGraphTest {
     @Container
     public static final JanusGraphCassandraContainer cqlContainer = new JanusGraphCassandraContainer();
+
+    protected static Stream<Arguments> generateSemaphoreBackPressureConfigs() {
+        return Arrays.stream(new Arguments[]{
+            arguments(0, QueryBackPressureBuilder.SEMAPHORE_QUERY_BACK_PRESSURE_CLASS),
+            arguments(1, QueryBackPressureBuilder.SEMAPHORE_QUERY_BACK_PRESSURE_CLASS),
+            arguments(2, QueryBackPressureBuilder.SEMAPHORE_QUERY_BACK_PRESSURE_CLASS),
+            arguments(3, QueryBackPressureBuilder.SEMAPHORE_QUERY_BACK_PRESSURE_CLASS),
+            arguments(10, QueryBackPressureBuilder.SEMAPHORE_QUERY_BACK_PRESSURE_CLASS),
+            arguments(100, QueryBackPressureBuilder.SEMAPHORE_QUERY_BACK_PRESSURE_CLASS),
+            arguments(1000, QueryBackPressureBuilder.SEMAPHORE_QUERY_BACK_PRESSURE_CLASS),
+            arguments(1500, QueryBackPressureBuilder.SEMAPHORE_QUERY_BACK_PRESSURE_CLASS),
+            arguments(0, QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS),
+            arguments(1, QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS),
+            arguments(2, QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS),
+            arguments(3, QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS),
+            arguments(10, QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS),
+            arguments(100, QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS),
+            arguments(1000, QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS),
+            arguments(1500, QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS),
+        });
+    }
 
     @Override
     public WriteConfiguration getConfiguration() {
@@ -144,24 +169,31 @@ public class CQLGraphTest extends JanusGraphTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2, 3, 10, 100, 1000})
-    public void testDifferentBackpressureLimitIsApplicable(int backPressureLimit) {
-        clopen(option(BACK_PRESSURE_LIMIT), backPressureLimit, option(USE_MULTIQUERY), true);
+    @MethodSource("generateSemaphoreBackPressureConfigs")
+    public void testDifferentBackpressureLimitIsApplicable(int backPressureLimit, String backPressureClass) {
+        clopen(option(BACK_PRESSURE_LIMIT), backPressureLimit,
+            option(BACK_PRESSURE_CLASS), backPressureClass,
+            option(MAX_REQUESTS_PER_CONNECTION), Math.max(MAX_REQUESTS_PER_CONNECTION.getDefaultValue(), backPressureLimit),
+            option(USE_MULTIQUERY), true);
         assertSingleTxAdditionAndCount(10, 20);
     }
 
     @Test
     public void testBackpressureIsDisabled() {
-        clopen(option(BACK_PRESSURE_LIMIT), -1, option(USE_MULTIQUERY), true,
-            option(MAX_REQUESTS_PER_CONNECTION), 1024, option(LOCAL_MAX_CONNECTIONS_PER_HOST), 20, option(REMOTE_MAX_CONNECTIONS_PER_HOST), 1);
+        clopen(option(BACK_PRESSURE_CLASS), QueryBackPressureBuilder.PASS_ALL_QUERY_BACK_PRESSURE_CLASS,
+            option(USE_MULTIQUERY), true, option(MAX_REQUESTS_PER_CONNECTION), 1024, option(LOCAL_MAX_CONNECTIONS_PER_HOST), 20,
+            option(REMOTE_MAX_CONNECTIONS_PER_HOST), 1);
         assertSingleTxAdditionAndCount(10, 20);
     }
 
     @Test
-    public void testInvalidBackpressureLimitIsNotApplicable() {
-        assertThrows(Throwable.class, () -> clopen(option(BACK_PRESSURE_LIMIT), -2, option(USE_MULTIQUERY), true));
-        assertThrows(Throwable.class, () -> clopen(option(BACK_PRESSURE_LIMIT), -100, option(USE_MULTIQUERY), true));
-        assertThrows(Throwable.class, () -> clopen(option(BACK_PRESSURE_LIMIT), Integer.MIN_VALUE, option(USE_MULTIQUERY), true));
+    public void testCustomBackPressureClassIsSet() {
+        CustomQueryBackPressure.acquireIsUsed = false;
+        CustomQueryBackPressure.releaseIsUsed = false;
+        clopen(option(BACK_PRESSURE_CLASS), CustomQueryBackPressure.class.getName(), option(USE_MULTIQUERY), true);
+        assertSingleTxAdditionAndCount(10, 20);
+        assertTrue(CustomQueryBackPressure.acquireIsUsed);
+        assertTrue(CustomQueryBackPressure.releaseIsUsed);
     }
 
     private void assertSingleTxAdditionAndCount(int indexedVerticesCount, int adjacentVerticesCount){
@@ -184,5 +216,28 @@ public class CQLGraphTest extends JanusGraphTest {
         int idsCount = g.V().has("name", "testName").out("testEdge").id().toList().size();
 
         assertEquals(indexedVerticesCount * adjacentVerticesCount, idsCount);
+    }
+
+    public static class CustomQueryBackPressure extends SemaphoreQueryBackPressure{
+
+        public static volatile boolean acquireIsUsed;
+        public static volatile boolean releaseIsUsed;
+
+        public CustomQueryBackPressure(Configuration configuration, Integer backPressureLimit) {
+            super(backPressureLimit);
+            // configuration ignored
+        }
+
+        @Override
+        public void acquireBeforeQuery() {
+            acquireIsUsed = true;
+            super.acquireBeforeQuery();
+        }
+
+        @Override
+        public void releaseAfterQuery(){
+            releaseIsUsed = true;
+            super.releaseAfterQuery();
+        }
     }
 }

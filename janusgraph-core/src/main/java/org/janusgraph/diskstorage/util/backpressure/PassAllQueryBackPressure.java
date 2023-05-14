@@ -14,6 +14,9 @@
 
 package org.janusgraph.diskstorage.util.backpressure;
 
+/**
+ * Query back pressure implementation to pass all acquires and releases
+ */
 public class PassAllQueryBackPressure implements QueryBackPressure{
     @Override
     public void acquireBeforeQuery() {

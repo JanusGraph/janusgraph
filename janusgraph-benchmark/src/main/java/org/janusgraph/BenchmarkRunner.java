@@ -100,6 +100,7 @@ public class BenchmarkRunner {
             builder.include(".*Benchmark");
             builder.exclude("StaticArrayEntryListBenchmark");
             builder.exclude("VertexCacheBenchmark");
+            builder.exclude("BackPressureBenchmark");
             builder.exclude("CQL.*Benchmark");
         }
         Collection<RunResult> results = new Runner(builder.build()).run();

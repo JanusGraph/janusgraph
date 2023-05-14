@@ -22,7 +22,6 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import io.vavr.Tuple;
 import io.vavr.collection.Array;
 import io.vavr.collection.HashMap;
@@ -43,15 +42,14 @@ import org.janusgraph.diskstorage.cql.builder.CQLSessionBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLStoreFeaturesBuilder;
 import org.janusgraph.diskstorage.cql.builder.CQLStoreFeaturesWrapper;
 import org.janusgraph.diskstorage.cql.function.mutate.CQLMutateManyFunction;
-import org.janusgraph.diskstorage.util.backpressure.PassAllQueryBackPressure;
-import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
-import org.janusgraph.diskstorage.util.backpressure.SemaphoreQueryBackPressure;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
+import org.janusgraph.diskstorage.util.backpressure.builder.QueryBackPressureBuilder;
 import org.janusgraph.hadoop.CqlHadoopStoreManager;
 import org.janusgraph.util.datastructures.ExceptionWrapper;
 import org.janusgraph.util.stats.MetricManager;
@@ -69,6 +67,7 @@ import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.dropKeyspac
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BACK_PRESSURE_CLASS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BACK_PRESSURE_LIMIT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
@@ -151,11 +150,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             initializeKeyspace();
 
             int backPressureLimit = getBackPressureLimit(configuration, session);
-            if(backPressureLimit == -1){
-                queriesBackPressure = new PassAllQueryBackPressure();
-            } else {
-                queriesBackPressure = new SemaphoreQueryBackPressure(backPressureLimit);
-            }
+            queriesBackPressure = QueryBackPressureBuilder.build(configuration, configuration.get(BACK_PRESSURE_CLASS), backPressureLimit);
 
             this.executeManyFunction = mutateManyFunctionBuilder
                 .build(session, configuration, times, assignTimestamp, openStores, this::sleepAfterWrite, queriesBackPressure);
@@ -175,13 +170,9 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
     private static int getBackPressureLimit(final Configuration configuration, final CqlSession session){
         if(configuration.has(BACK_PRESSURE_LIMIT)){
             final int backPressureLimit = configuration.get(BACK_PRESSURE_LIMIT);
-            if(backPressureLimit == 0){
-                return getDefaultBackPressureLimit(session);
+            if(backPressureLimit != 0){
+                return backPressureLimit;
             }
-            Preconditions.checkArgument(backPressureLimit >= -1, BACK_PRESSURE_LIMIT.toStringWithoutRoot()
-                +" must be at -1 (to disable back_pressure), 0 (to calculate back_pressure), " +
-                "or a positive number to set CQL requests back pressure limit.");
-            return backPressureLimit;
         }
         return getDefaultBackPressureLimit(session);
     }

@@ -16,33 +16,31 @@ package org.janusgraph.diskstorage.util.backpressure;
 
 import org.janusgraph.core.JanusGraphException;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
-import static org.janusgraph.util.system.ExecuteUtil.gracefulExecutorServiceShutdown;
-
-public class SemaphoreQueryBackPressure implements QueryBackPressure{
-
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private final Runnable releaseNonBlocking;
-    private final Semaphore semaphore;
+/**
+ * Query back pressure implementation which uses Semaphore to control back pressure.<br>
+ *
+ * Warning: This implementation assumes that for each `acquireBeforeQuery` call there will be exactly
+ * one `releaseAfterQuery` call. This implementation uses `backPressureLimit` as a starting `permits` amount
+ * of the Semaphore. Each time `releaseAfterQuery` is called it will add a new `permit` even if the
+ * current total amount of permits is already grater then `backPressureLimit`.
+ * In case you assume that the logic where `SemaphoreQueryBackPressure` is used might be affected by
+ * any bug which may call `releaseAfterQuery` more than once for a single `acquireBeforeQuery` call then
+ * it's suggested to use {@link  SemaphoreProtectedReleaseQueryBackPressure } which has a tiny overhead
+ * for `releaseAfterQuery` calls but protects those calls from the possible side effects of calling
+ * `releaseAfterQuery` more than once for any `acquireBeforeQuery` call.
+ */
+public class SemaphoreQueryBackPressure extends Semaphore implements QueryBackPressure{
 
     public SemaphoreQueryBackPressure(final int backPressureLimit) {
-        this.semaphore = new Semaphore(backPressureLimit, true);
-        this.releaseNonBlocking = () -> {
-            // ensure we never add more permits than `backPressureLimit`
-            // (even if `releaseAfterQuery()` is called more times than `acquireBeforeQuery()`);
-            if(semaphore.availablePermits()<backPressureLimit){
-                semaphore.release();
-            }
-        };
+        super(backPressureLimit, true);
     }
 
     @Override
     public void acquireBeforeQuery() {
         try {
-            semaphore.acquire();
+            acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new JanusGraphException(e);
@@ -51,15 +49,11 @@ public class SemaphoreQueryBackPressure implements QueryBackPressure{
 
     @Override
     public void releaseAfterQuery(){
-        executorService.execute(releaseNonBlocking);
+        release();
     }
 
     @Override
     public void close() {
-        gracefulExecutorServiceShutdown(executorService, Long.MAX_VALUE);
-    }
-
-    int availablePermits(){
-        return semaphore.availablePermits();
+        // ignored
     }
 }
