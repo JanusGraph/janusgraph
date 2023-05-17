@@ -201,4 +201,28 @@ public class JanusGraphAssert {
         }
         return null;
     }
+
+
+    /**
+     * Checks that the amount of steps of given type is equal to the provided amount.
+     */
+    public static void assertStepExists(Traversal traversal, Class<? extends Step> expectedStepType, int stepsCount) {
+
+        String traversalString = traversal.toString();
+
+        int lastStepIndex = traversalString.indexOf(expectedStepType.getSimpleName());
+
+        if(stepsCount <= 0){
+            assertEquals(-1, lastStepIndex);
+        }
+
+        int stepsFound = 0;
+
+        while (lastStepIndex != -1){
+            ++stepsFound;
+            lastStepIndex = traversalString.indexOf(expectedStepType.getSimpleName(), lastStepIndex+1);
+        }
+
+        assertEquals(stepsCount, stepsFound);
+    }
 }

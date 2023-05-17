@@ -180,7 +180,10 @@ Support for Gryo MessageSerializer [has been dropped in TinkerPop 3.6.0](https:/
 and we therefore also no longer support it in JanusGraph.
 GraphBinary is now used as the default MessageSerializer.hb
 
-##### Batch Processing enabled by default
+##### Batch Processing enabled by default. Configuration changes.
+
+`query.batch` is now a configuration namespace. Thus, previous `query.batch` configuration is replaced by `query.batch.enabled`.
+`query.limit-batch-size` configuration option is changed to `query.batch.limited`.
 
 [Batch processing](https://docs.janusgraph.org/operations/batch-processing/) allows JanusGraph to fetch a batch of
 vertices from the storage backend together instead of requesting each vertex individually which leads to a high number
@@ -194,12 +197,39 @@ This mode therefore solves the problem of having potentially unlimited batch siz
 That is why we now enable this mode by default as most users should benefit from this limited batch processing.
 
 If you want to continue using JanusGraph without batch processing, then you have to manually disable it by setting
-`query.batch` to `false`.
+`query.batch.enabled` to `false`.
 
-`limit-batch-size` configuration option is changed to `limited-batch`. 
-A new configuration option `limited-batch-size` exists to configure default barrier step size for batch processing 
+The size of the batches can be limited by using `barrier()` steps if limited batch processing is used (`query.batch.limited` set to `true`). 
+A special strategy exists which already inserts `barrier()` steps by default for some steps, the `LazyBarrierStrategy`. 
+A new configuration option `query.batch.limited-size` exists to configure default barrier step size for batch processing 
 for batch cases when `LazyBarrierStrategy` not applied `.barrier` step and no user-provided barrier step exists for 
-batchable query part. Notice, that `limited-batch-size` is only used when `limited-batch` is `true`.  
+batchable query part. Notice, that `query.batch.limited-size` is only used when `query.batch.limited` is `true` (default in this version).  
+
+##### Batch registration for nested batch compatible steps is changed for `repeat` step
+
+Previously any batch compatible steps like `out`, `in`, `values`, etc. would receive vertices for batch registration 
+from all `repeat` parent steps, but only for their starts in case of multi-nested repeat steps 
+(skipping their subsequent iterations registration). 
+With JanusGraph 1.0.0 batches registration for the subsequent iterations of multi-nested repeat steps are used as well.  
+
+```groovy
+g.V(startVertexId).emit().
+    repeat(__.repeat(__.in("connects")).emit()).
+    until(__.loops().is(P.gt(2)))
+```
+In the example above multi-nested `repeat` case would not register vertices returned from the inner `emit()` step
+for the next outer iteration which would result in sequential calls of `in("connects")` for next outer iteration. The behaviour is
+now changed to register these vertices for the next child `repeat` step start.
+
+The behaviour can be controlled by `query.batch.repeat-step-mode` configuration option.  
+In case the old behaviour is preferable then `query.batch.repeat-step-mode` should be set to `starts_only_of_all_repeat_parents`.
+
+However, in cases when transaction cache is small and repeat step traverses more than one level 
+deep, it could result for some vertices to be re-fetched again which would mean a waste of operation when it isn't necessary. 
+In such situations `closest_repeat_parent` mode might be more preferable than `all_repeat_parents`.  
+With `closest_repeat_parent` mode vertices for batch registration will be received from the start of the closest 
+`repeat` step as well as the end of the closest `repeat` step (for the next iteration). Any other parent `repeat` steps 
+will be ignored. 
 
 ##### Breaking change for Geoshape GraphBinary serialization
 

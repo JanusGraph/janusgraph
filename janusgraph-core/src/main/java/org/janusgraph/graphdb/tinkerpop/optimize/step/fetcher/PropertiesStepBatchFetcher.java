@@ -24,7 +24,8 @@ public class PropertiesStepBatchFetcher extends MultiQueriableStepBatchFetcher<I
 
     private final FetchQueryBuildFunction fetchQueryBuildFunction;
 
-    public PropertiesStepBatchFetcher(FetchQueryBuildFunction fetchQueryBuildFunction) {
+    public PropertiesStepBatchFetcher(FetchQueryBuildFunction fetchQueryBuildFunction, int batchSize) {
+        super(batchSize);
         this.fetchQueryBuildFunction = fetchQueryBuildFunction;
     }
 

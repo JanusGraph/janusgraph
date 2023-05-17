@@ -23,6 +23,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.AndStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
@@ -44,6 +46,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LI
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.janusgraph.testutil.JanusGraphAssert.assertNumStep;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
+import static org.janusgraph.testutil.JanusGraphAssert.assertStepExists;
 import static org.janusgraph.testutil.JanusGraphAssert.queryProfilerAnnotationIsPresent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -151,6 +154,20 @@ public class JanusGraphMultiQueryStrategyTest extends OptimizerStrategyTest {
         t = g.V().has("id", sid).values("names").profile("~metrics");
         assertCount(superV * numV, t);
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
+
+        //Verify that multi-query optimization is used with and step
+        t = g.V(vs[0],vs[1],vs[2]).and(__.inE("knows").count().is(P.gte(1)), __.in("knows").count().is(P.gte(2))).profile("~metrics");
+        assertNumStep(3, 1, (GraphTraversal)t, AndStep.class);
+        assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
+        assertStepExists(t, JanusGraphVertexStep.class, 2);
+        assertStepExists(t, JanusGraphMultiQueryStep.class, 1);
+
+        //Verify that multi-query optimization is used with or step
+        t = g.V(vs[0],vs[1],vs[2]).or(__.out("knows").count().is(P.gte(1000)), __.in("knows").count().is(P.gte(1))).profile("~metrics");
+        assertNumStep(3, 1, (GraphTraversal)t, OrStep.class);
+        assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
+        assertStepExists(t, JanusGraphVertexStep.class, 2);
+        assertStepExists(t, JanusGraphMultiQueryStep.class, 1);
     }
 
     @Test

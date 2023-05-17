@@ -27,7 +27,8 @@ public class VertexStepBatchFetcher extends MultiQueriableStepBatchFetcher<Itera
 
     private final Class<?> returnClass;
 
-    public VertexStepBatchFetcher(FetchQueryBuildFunction fetchQueryBuildFunction, Class<?> returnClass) {
+    public VertexStepBatchFetcher(FetchQueryBuildFunction fetchQueryBuildFunction, Class<?> returnClass, int batchSize) {
+        super(batchSize);
         this.fetchQueryBuildFunction = fetchQueryBuildFunction;
         this.returnClass = returnClass;
     }

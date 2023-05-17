@@ -40,6 +40,7 @@ import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.fetcher.PropertiesStepBatchFetcher;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
+import org.janusgraph.graphdb.util.JanusGraphTraverserUtil;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -55,6 +56,8 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
 
     private PropertiesStepBatchFetcher propertiesStepBatchFetcher;
+
+    private int batchSize = Integer.MAX_VALUE;
 
     public JanusGraphPropertiesStep(PropertiesStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnType(), originalStep.getPropertyKeys());
@@ -75,14 +78,28 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     public void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = useMultiQuery;
         if(useMultiQuery && propertiesStepBatchFetcher == null){
-            propertiesStepBatchFetcher = new PropertiesStepBatchFetcher(JanusGraphPropertiesStep.this::makeQuery);
+            propertiesStepBatchFetcher = new PropertiesStepBatchFetcher(JanusGraphPropertiesStep.this::makeQuery, batchSize);
         }
     }
 
     @Override
-    public void registerFutureVertexForPrefetching(Vertex futureVertex) {
+    public void registerFirstNewLoopFutureVertexForPrefetching(Vertex futureVertex, int futureVertexTraverserLoop) {
         if(useMultiQuery){
-            propertiesStepBatchFetcher.registerFutureVertexForPrefetching(futureVertex);
+            propertiesStepBatchFetcher.registerFirstNewLoopFutureVertexForPrefetching(futureVertex);
+        }
+    }
+
+    @Override
+    public void registerSameLoopFutureVertexForPrefetching(Vertex futureVertex, int futureVertexTraverserLoop) {
+        if(useMultiQuery){
+            propertiesStepBatchFetcher.registerCurrentLoopFutureVertexForPrefetching(futureVertex, futureVertexTraverserLoop);
+        }
+    }
+
+    @Override
+    public void registerNextLoopFutureVertexForPrefetching(Vertex futureVertex, int futureVertexTraverserLoop) {
+        if(useMultiQuery){
+            propertiesStepBatchFetcher.registerNextLoopFutureVertexForPrefetching(futureVertex, futureVertexTraverserLoop);
         }
     }
 
@@ -116,8 +133,7 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         Element elementToFetchDataFor = traverser.get();
 
         if (useMultiQuery && elementToFetchDataFor instanceof Vertex) {
-            JanusGraphVertex vertexToFetchDataFor = JanusGraphTraversalUtil.getJanusGraphVertex(traverser);
-            return convertIterator(propertiesStepBatchFetcher.fetchData(getTraversal(), vertexToFetchDataFor));
+            return convertIterator(propertiesStepBatchFetcher.fetchData(getTraversal(), (Vertex) elementToFetchDataFor, JanusGraphTraverserUtil.getLoops(traverser)));
         } else if (elementToFetchDataFor instanceof JanusGraphVertex || elementToFetchDataFor instanceof WrappedVertex) {
             final JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
             return convertIterator(query.properties());
@@ -145,6 +161,14 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
             }
             if (limit!=Query.NO_LIMIT) iterator = Iterators.limit(iterator,limit);
             return iterator;
+        }
+    }
+
+    @Override
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+        if(propertiesStepBatchFetcher != null){
+            propertiesStepBatchFetcher.setBatchSize(batchSize);
         }
     }
 

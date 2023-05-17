@@ -40,28 +40,36 @@ public class JanusGraphMultiQueryStepTest {
     @MethodSource("generateTestParameters")
     public void testClone(Traversal.Admin traversal, boolean limitBatchSize, Collection<MultiQueriable> clients) {
         JanusGraphMultiQueryStep originalStep = new JanusGraphMultiQueryStep(traversal, limitBatchSize);
-        clients.forEach(originalStep::attachClient);
+        clients.forEach(originalStep::attachSameLoopClient);
 
         JanusGraphMultiQueryStep clone = originalStep.clone();
 
         assertEquals(limitBatchSize, clone.isLimitBatchSize());
-        assertEquals(originalStep.getClientSteps().size(), clone.getClientSteps().size());
-        assertTrue(clone.getClientSteps().containsAll(originalStep.getClientSteps()));
-        assertTrue(originalStep.getClientSteps().containsAll(clone.getClientSteps()));
+        assertEquals(originalStep.getSameLoopClientSteps().size(), clone.getSameLoopClientSteps().size());
+        assertTrue(clone.getSameLoopClientSteps().containsAll(originalStep.getSameLoopClientSteps()));
+        assertTrue(originalStep.getSameLoopClientSteps().containsAll(clone.getSameLoopClientSteps()));
+
+        assertEquals(originalStep.getNextLoopClientSteps().size(), clone.getNextLoopClientSteps().size());
+        assertTrue(clone.getNextLoopClientSteps().containsAll(originalStep.getNextLoopClientSteps()));
+        assertTrue(originalStep.getNextLoopClientSteps().containsAll(clone.getNextLoopClientSteps()));
+
+        assertEquals(originalStep.getFirstLoopClientSteps().size(), clone.getFirstLoopClientSteps().size());
+        assertTrue(clone.getFirstLoopClientSteps().containsAll(originalStep.getFirstLoopClientSteps()));
+        assertTrue(originalStep.getFirstLoopClientSteps().containsAll(clone.getFirstLoopClientSteps()));
     }
 
     @ParameterizedTest
     @MethodSource("generateTestParameters")
     public void testReset(Traversal.Admin traversal, boolean limitBatchSize, Collection<MultiQueriable> clients) {
         JanusGraphMultiQueryStep originalStep = new JanusGraphMultiQueryStep(traversal, limitBatchSize);
-        clients.forEach(originalStep::attachClient);
+        clients.forEach(originalStep::attachSameLoopClient);
 
         originalStep.reset();
 
         assertEquals(limitBatchSize, originalStep.isLimitBatchSize());
-        assertEquals(originalStep.getClientSteps().size(), clients.size());
-        assertTrue(clients.containsAll(originalStep.getClientSteps()));
-        assertTrue(originalStep.getClientSteps().containsAll(clients));
+        assertEquals(originalStep.getSameLoopClientSteps().size(), clients.size());
+        assertTrue(clients.containsAll(originalStep.getSameLoopClientSteps()));
+        assertTrue(originalStep.getSameLoopClientSteps().containsAll(clients));
     }
 
     private static Stream<Arguments> generateTestParameters() {
