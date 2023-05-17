@@ -22,11 +22,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.graphdb.util.JanusGraphTraverserUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /**
  * This step can be injected before a traversal parent, such as a union, and will cache the
@@ -43,40 +45,54 @@ public final class JanusGraphMultiQueryStep extends AbstractStep<Element, Elemen
      * (such as union()), then all of its child traversals can use this cache. Thus,
      * there can be more than one client step.
      */
-    private List<MultiQueriable> clientSteps = new ArrayList<>();
-    private final boolean limitBatchSize;
+    private List<MultiQueriable> sameLoopClientSteps = new ArrayList<>();
+    private List<MultiQueriable> nextLoopClientSteps = new ArrayList<>();
+
     private boolean initialized;
-    private final NoOpBarrierStep generatedBarrierStep;
+    private boolean limitBatchSize;
+    private NoOpBarrierStep generatedBarrierStep;
+    private Integer relatedBarrierStepSize;
 
     public JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize) {
-        this(traversal, limitBatchSize, null);
+        this(traversal, limitBatchSize, null, null);
     }
 
     public JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize, NoOpBarrierStep generatedBarrierStep) {
+        this(traversal, limitBatchSize, generatedBarrierStep, generatedBarrierStep.getMaxBarrierSize());
+    }
+
+    public JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize, Integer relatedBarrierStepSize) {
+        this(traversal, limitBatchSize, null, relatedBarrierStepSize);
+    }
+
+    private JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize, NoOpBarrierStep generatedBarrierStep, Integer relatedBarrierStepSize) {
         super(traversal);
         this.limitBatchSize = limitBatchSize;
         this.initialized = false;
         this.generatedBarrierStep = generatedBarrierStep;
+        this.relatedBarrierStepSize = relatedBarrierStepSize;
     }
 
-    public void attachClient(MultiQueriable mq) {
-        clientSteps.add(mq);
+    public void attachSameLoopClient(MultiQueriable mq) {
+        sameLoopClientSteps.add(mq);
+    }
+
+    public void attachNextLoopClient(MultiQueriable mq) {
+        nextLoopClientSteps.add(mq);
     }
 
     private void initialize() {
         assert !initialized;
         initialized = true;
 
-        if (!limitBatchSize && !clientSteps.isEmpty()) { // eagerly cache all starts instead of batching
+        if (!limitBatchSize && (!sameLoopClientSteps.isEmpty() || !nextLoopClientSteps.isEmpty())) { // eagerly cache all starts instead of batching
             if (!starts.hasNext()) {
                 throw FastNoSuchElementException.instance();
             }
             final List<Traverser.Admin<Element>> elements = new ArrayList<>();
             starts.forEachRemaining(e -> {
                 elements.add(e);
-                if (e.get() instanceof Vertex) {
-                    clientSteps.forEach(client -> client.registerFutureVertexForPrefetching((Vertex) e.get()));
-                }
+                registerTraverser(e);
             });
             starts.add(elements.iterator());
         }
@@ -88,16 +104,29 @@ public final class JanusGraphMultiQueryStep extends AbstractStep<Element, Elemen
             initialize();
         }
         Admin<Element> start = this.starts.next();
-        if (start.get() instanceof Vertex) {
-            clientSteps.forEach(client -> client.registerFutureVertexForPrefetching((Vertex) start.get()));
-        }
+        registerTraverser(start);
         return start;
+    }
+
+    private void registerTraverser(Admin<Element> traverser){
+        if (traverser.get() instanceof Vertex) {
+            Vertex vertex = (Vertex) traverser.get();
+            int loops = JanusGraphTraverserUtil.getLoops(traverser);
+            sameLoopClientSteps.forEach(client -> client.registerSameLoopFutureVertexForPrefetching(vertex, loops));
+            nextLoopClientSteps.forEach(client -> client.registerNextLoopFutureVertexForPrefetching(vertex, loops));
+        }
     }
 
     @Override
     public JanusGraphMultiQueryStep clone() {
         JanusGraphMultiQueryStep clone = (JanusGraphMultiQueryStep) super.clone();
-        clone.clientSteps = new ArrayList<>(clientSteps);
+        clone.sameLoopClientSteps = new ArrayList<>(sameLoopClientSteps);
+        clone.nextLoopClientSteps = new ArrayList<>(nextLoopClientSteps);
+        clone.limitBatchSize = limitBatchSize;
+        clone.relatedBarrierStepSize = relatedBarrierStepSize;
+        if(generatedBarrierStep != null){
+            clone.generatedBarrierStep = generatedBarrierStep.clone();
+        }
         clone.initialized = false;
         return clone;
     }
@@ -112,11 +141,19 @@ public final class JanusGraphMultiQueryStep extends AbstractStep<Element, Elemen
         return limitBatchSize;
     }
 
-    public List<MultiQueriable> getClientSteps() {
-        return Collections.unmodifiableList(clientSteps);
+    public List<MultiQueriable> getSameLoopClientSteps() {
+        return Collections.unmodifiableList(sameLoopClientSteps);
+    }
+
+    public List<MultiQueriable> getNextLoopClientSteps() {
+        return Collections.unmodifiableList(nextLoopClientSteps);
     }
 
     public NoOpBarrierStep getGeneratedBarrierStep() {
         return generatedBarrierStep;
+    }
+
+    public Optional<Integer> getRelatedBarrierStepSize() {
+        return Optional.ofNullable(relatedBarrierStepSize);
     }
 }

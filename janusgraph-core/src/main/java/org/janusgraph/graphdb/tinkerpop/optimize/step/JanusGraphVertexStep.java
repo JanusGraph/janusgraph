@@ -18,10 +18,10 @@ import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
-import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -38,6 +38,7 @@ import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.fetcher.VertexStepBatchFetcher;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
+import org.janusgraph.graphdb.util.JanusGraphTraverserUtil;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -55,6 +56,7 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     private VertexStepBatchFetcher vertexStepBatchFetcher;
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
     private int txVertexCacheSize = 20000;
+    private int batchSize = Integer.MAX_VALUE;
 
     public JanusGraphVertexStep(VertexStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
@@ -75,14 +77,21 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     public void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = useMultiQuery;
         if(useMultiQuery && vertexStepBatchFetcher == null){
-            vertexStepBatchFetcher = new VertexStepBatchFetcher(JanusGraphVertexStep.this::makeQuery, getReturnClass());
+            vertexStepBatchFetcher = new VertexStepBatchFetcher(JanusGraphVertexStep.this::makeQuery, getReturnClass(), batchSize);
         }
     }
 
     @Override
-    public void registerFutureVertexForPrefetching(Vertex futureVertex) {
+    public void registerSameLoopFutureVertexForPrefetching(Vertex futureVertex, int futureVertexTraverserLoop) {
         if(useMultiQuery){
-            vertexStepBatchFetcher.registerFutureVertexForPrefetching(futureVertex);
+            vertexStepBatchFetcher.registerCurrentLoopFutureVertexForPrefetching(futureVertex, futureVertexTraverserLoop);
+        }
+    }
+
+    @Override
+    public void registerNextLoopFutureVertexForPrefetching(Vertex futureVertex, int futureVertexTraverserLoop) {
+        if(useMultiQuery){
+            vertexStepBatchFetcher.registerNextLoopFutureVertexForPrefetching(futureVertex, futureVertexTraverserLoop);
         }
     }
 
@@ -110,12 +119,10 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     protected Iterator<E> flatMap(final Traverser.Admin<Vertex> traverser) {
         Iterable<? extends JanusGraphElement> result;
 
-        JanusGraphVertex vertexToFetchDataFor = JanusGraphTraversalUtil.getJanusGraphVertex(traverser);
-
         if (useMultiQuery) {
-            result = vertexStepBatchFetcher.fetchData(getTraversal(), vertexToFetchDataFor);
+            result = vertexStepBatchFetcher.fetchData(getTraversal(), traverser.get(), JanusGraphTraverserUtil.getLoops(traverser));
         } else {
-            final JanusGraphVertexQuery query = makeQuery(vertexToFetchDataFor.query());
+            final JanusGraphVertexQuery query = makeQuery(JanusGraphTraversalUtil.getJanusGraphVertex(traverser).query());
             result = (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices() : query.edges();
         }
 
@@ -138,6 +145,14 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
         }
 
         return (Iterator<E>) result.iterator();
+    }
+
+    @Override
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+        if(vertexStepBatchFetcher != null){
+            vertexStepBatchFetcher.setBatchSize(batchSize);
+        }
     }
 
     /*
@@ -218,4 +233,5 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     public void setMetrics(MutableMetrics metrics) {
         queryProfiler = new TP3ProfileWrapper(metrics);
     }
+
 }

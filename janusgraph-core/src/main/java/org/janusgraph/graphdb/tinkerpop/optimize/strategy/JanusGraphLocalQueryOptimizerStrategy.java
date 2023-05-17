@@ -63,15 +63,15 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
         int txVertexCacheSize = janusGraph.getConfiguration().getTxVertexCacheSize();
 
         applyJanusGraphVertexSteps(traversal, batchPropertyPrefetching, txVertexCacheSize);
-        applyJanusGraphPropertiesSteps(traversal);
-        inspectLocalTraversals(traversal);
+        applyJanusGraphPropertiesSteps(traversal, txVertexCacheSize);
+        inspectLocalTraversals(traversal, txVertexCacheSize);
     }
 
     private void applyJanusGraphVertexSteps(Admin<?, ?> traversal, boolean batchPropertyPrefetching, int txVertexCacheSize) {
         TraversalHelper.getStepsOfAssignableClass(VertexStep.class, traversal).forEach(originalStep -> {
             final JanusGraphVertexStep vertexStep = new JanusGraphVertexStep(originalStep);
+            vertexStep.setBatchSize(txVertexCacheSize);
             TraversalHelper.replaceStep(originalStep, vertexStep, originalStep.getTraversal());
-
 
             if (JanusGraphTraversalUtil.isEdgeReturnStep(vertexStep)) {
                 HasStepFolder.foldInHasContainer(vertexStep, originalStep.getTraversal(), originalStep.getTraversal());
@@ -91,9 +91,10 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
         });
     }
 
-    private void applyJanusGraphPropertiesSteps(Admin<?, ?> traversal) {
+    private void applyJanusGraphPropertiesSteps(Admin<?, ?> traversal, int txVertexCacheSize) {
         TraversalHelper.getStepsOfAssignableClass(PropertiesStep.class, traversal).forEach(originalStep -> {
             final JanusGraphPropertiesStep propertiesStep = new JanusGraphPropertiesStep(originalStep);
+            propertiesStep.setBatchSize(txVertexCacheSize);
             TraversalHelper.replaceStep(originalStep, propertiesStep, originalStep.getTraversal());
 
             if (propertiesStep.getReturnType().forProperties()) {
@@ -103,13 +104,14 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
         });
     }
 
-    private void inspectLocalTraversals(final Admin<?, ?> traversal) {
+    private void inspectLocalTraversals(final Admin<?, ?> traversal, int txVertexCacheSize) {
         TraversalHelper.getStepsOfClass(LocalStep.class, traversal).forEach(localStep -> {
             final Admin localTraversal = ((LocalStep<?, ?>) localStep).getLocalChildren().get(0);
             final Step localStart = localTraversal.getStartStep();
 
             if (localStart instanceof VertexStep) {
                 final JanusGraphVertexStep vertexStep = new JanusGraphVertexStep((VertexStep) localStart);
+                vertexStep.setBatchSize(txVertexCacheSize);
                 TraversalHelper.replaceStep(localStart, vertexStep, localTraversal);
 
                 if (JanusGraphTraversalUtil.isEdgeReturnStep(vertexStep)) {
@@ -124,6 +126,8 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
 
             if (localStart instanceof PropertiesStep) {
                 final JanusGraphPropertiesStep propertiesStep = new JanusGraphPropertiesStep((PropertiesStep) localStart);
+                propertiesStep.setBatchSize(txVertexCacheSize);
+
                 TraversalHelper.replaceStep(localStart, propertiesStep, localTraversal);
 
                 if (propertiesStep.getReturnType().forProperties()) {

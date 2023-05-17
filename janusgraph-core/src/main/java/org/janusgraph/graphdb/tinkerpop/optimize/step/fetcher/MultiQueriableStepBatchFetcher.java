@@ -22,9 +22,7 @@ import org.janusgraph.core.JanusGraphMultiVertexQuery;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Common logic for {@link  org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable  MultiQueriable} steps
@@ -32,15 +30,33 @@ import java.util.Set;
  */
 public abstract class MultiQueriableStepBatchFetcher<R> {
 
-    private final Set<JanusGraphVertex> verticesToPrefetch = new HashSet<>();
+    //private final Map<Integer, BatchProcessingQueue<JanusGraphVertex>> verticesToPrefetchByLoop = new HashMap<>();
 
     private Map<JanusGraphVertex, R> multiQueryResults = null;
+    private int batchSize;
+    private int currentLoops = 0;
+    private BatchProcessingQueue<JanusGraphVertex> currentLoopBatchProcessingQueue;
+    private BatchProcessingQueue<JanusGraphVertex> nextLoopBatchProcessingQueue;
 
-    public void registerFutureVertexForPrefetching(Vertex futureVertex) {
-        verticesToPrefetch.add((JanusGraphVertex) futureVertex);
+    public MultiQueriableStepBatchFetcher(int batchSize){
+        this.batchSize = batchSize;
+        this.currentLoopBatchProcessingQueue = generateNewBatchProcessingQueue();
+        this.nextLoopBatchProcessingQueue = generateNewBatchProcessingQueue();
     }
 
-    public R fetchData(final Traversal.Admin<?, ?> traversal, Vertex forVertex){
+    public void registerCurrentLoopFutureVertexForPrefetching(Vertex futureVertexTraverser, int traverserLoops) {
+        ensureCorrectLoopQueues(traverserLoops);
+        currentLoopBatchProcessingQueue.addToBatch(JanusGraphTraversalUtil.getJanusGraphVertex(futureVertexTraverser));
+    }
+
+    public void registerNextLoopFutureVertexForPrefetching(Vertex futureVertexTraverser, int traverserLoops) {
+        ensureCorrectLoopQueues(traverserLoops);
+        nextLoopBatchProcessingQueue.addToBatch(JanusGraphTraversalUtil.getJanusGraphVertex(futureVertexTraverser));
+    }
+
+    public R fetchData(final Traversal.Admin<?, ?> traversal, Vertex forVertexTraverser, int traverserLoops){
+        ensureCorrectLoopQueues(traverserLoops);
+        JanusGraphVertex forVertex = JanusGraphTraversalUtil.getJanusGraphVertex(forVertexTraverser);
         if (hasNoFetchedData(forVertex)) {
             prefetchNextBatch(traversal, forVertex);
         }
@@ -51,12 +67,10 @@ public abstract class MultiQueriableStepBatchFetcher<R> {
         return multiQueryResults == null || !multiQueryResults.containsKey(forVertex);
     }
 
-    public void prefetchNextBatch(final Traversal.Admin<?, ?> traversal, Vertex requiredFetchVertex){
-
-        verticesToPrefetch.add((JanusGraphVertex) requiredFetchVertex);
-        final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery(verticesToPrefetch);
-        verticesToPrefetch.clear();
-
+    public void prefetchNextBatch(final Traversal.Admin<?, ?> traversal, JanusGraphVertex requiredFetchVertex){
+        final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal)
+            .multiQuery(currentLoopBatchProcessingQueue.pollBatch());
+        multiQuery.addVertex(requiredFetchVertex);
         try {
             multiQueryResults = makeQueryAndExecute(multiQuery);
         } catch (JanusGraphException janusGraphException) {
@@ -67,6 +81,25 @@ public abstract class MultiQueriableStepBatchFetcher<R> {
             }
             throw janusGraphException;
         }
+    }
+
+    private void ensureCorrectLoopQueues(int loops){
+        if(loops != currentLoops){
+            currentLoopBatchProcessingQueue = loops == currentLoops + 1 ?
+                nextLoopBatchProcessingQueue : generateNewBatchProcessingQueue();
+            nextLoopBatchProcessingQueue = generateNewBatchProcessingQueue();
+            currentLoops = loops;
+        }
+    }
+
+    private BatchProcessingQueue<JanusGraphVertex> generateNewBatchProcessingQueue(){
+        return new BatchProcessingQueue<>(batchSize);
+    }
+
+    public void setBatchSize(int batchSize){
+        this.batchSize = batchSize;
+        this.currentLoopBatchProcessingQueue.setBatchSize(batchSize);
+        this.nextLoopBatchProcessingQueue.setBatchSize(batchSize);
     }
 
     protected abstract Map<JanusGraphVertex, R> makeQueryAndExecute(JanusGraphMultiVertexQuery multiQuery);

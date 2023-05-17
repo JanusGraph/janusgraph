@@ -4671,6 +4671,92 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(queryProfilerAnnotationIsPresent(t, QueryProfiler.MULTIQUERY_ANNOTATION));
     }
 
+    private void addTestAdjacentVertices(Vertex vertex, int levelVerticesAmount, int depth){
+        for (int i = 0; i < levelVerticesAmount; ++i) {
+            Vertex adjacentVertex = graph.addVertex();
+            adjacentVertex.property("foo", "bar");
+            if(depth==2){
+                adjacentVertex.property("someProp", "val");
+            }
+            vertex.addEdge("knows", adjacentVertex);
+            if(depth>0){
+                addTestAdjacentVertices(adjacentVertex, levelVerticesAmount, depth-1);
+            }
+        }
+    }
+
+    @Test
+    public void testLimitBatchSizeForRepeatStep() {
+
+        JanusGraphVertex a = graph.addVertex();
+        addTestAdjacentVertices(a,  10,4);
+
+        //TODO: below query doesn't leverage RepeatStep optimization due to being too complicated.
+        // It seems when `until` is placed before `repeat` with `emit` at the end the evaluation of the query
+        // is split into smaller branches and the multi-query optimization is applied only on those small branches
+        // instead of be applied on multiple branches (like with all other `repeat` cases).
+        // Ideally we should support below cases as well, but could be done as a separate task in case there is
+        // demand for such `repeat` usage.
+        //clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        //graph.traversal().V(a).until(__.in().has("someProp", "val")).repeat(__.out("knows")).emit(__.in().has("someProp", "val")).count().profile().next();
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics repeatUntilProfile = graph.traversal().V(a).repeat(__.out("knows")).until(__.in().has("someProp", "val")).count().profile().next();
+        System.out.println(repeatUntilProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics untilRepeatProfile = graph.traversal().V(a).until(__.in().has("someProp", "val")).repeat(__.out("knows")).count().profile().next();
+        System.out.println(untilRepeatProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics emitRepeatProfile = graph.traversal().V(a).emit().repeat(__.out("knows")).count().profile().next();
+        System.out.println(emitRepeatProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics repeatEmitProfile = graph.traversal().V(a).repeat(__.out("knows")).emit().count().profile().next();
+        System.out.println(repeatEmitProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics repeatNonTrueEmitProfile = graph.traversal().V(a).repeat(__.out("knows")).emit(__.in().has("someProp", "val")).count().profile().next();
+        System.out.println(repeatNonTrueEmitProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics nonTrueEmitRepeatProfile = graph.traversal().V(a).emit(__.in().has("someProp", "val")).repeat(__.out("knows")).count().profile().next();
+        System.out.println(nonTrueEmitRepeatProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics untilRepeatNonEmptyEmitProfile = graph.traversal().V(a).until(__.in().has("someProp", "val")).repeat(__.out("knows")).emit(__.in().has("someProp", "val")).count().profile().next();
+        System.out.println(untilRepeatNonEmptyEmitProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics untilNonEmptyEmitRepeatProfile = graph.traversal().V(a).until(__.in().has("someProp", "val")).emit(__.in().has("someProp", "val")).repeat(__.out("knows")).count().profile().next();
+        System.out.println(untilNonEmptyEmitRepeatProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics nonEmptyEmitRepeatUntilProfile = graph.traversal().V(a).emit(__.in().has("someProp", "val")).repeat(__.out("knows")).until(__.in().has("someProp", "val")).count().profile().next();
+        System.out.println(nonEmptyEmitRepeatUntilProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics repeatNonEmptyEmitUntilProfile = graph.traversal().V(a).repeat(__.out("knows")).emit(__.in().has("someProp", "val")).until(__.in().has("someProp", "val")).count().profile().next();
+        System.out.println(repeatNonEmptyEmitUntilProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics untilRepeatEmitProfile = graph.traversal().V(a).until(__.in().has("someProp", "val")).repeat(__.out("knows")).emit().count().profile().next();
+        System.out.println(untilRepeatEmitProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics untilEmitRepeatProfile = graph.traversal().V(a).until(__.in().has("someProp", "val")).emit().repeat(__.out("knows")).count().profile().next();
+        System.out.println(untilEmitRepeatProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics emitRepeatUntilProfile = graph.traversal().V(a).emit().repeat(__.out("knows")).until(__.in().has("someProp", "val")).count().profile().next();
+        System.out.println(emitRepeatUntilProfile);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        TraversalMetrics repeatEmitUntilProfile = graph.traversal().V(a).repeat(__.out("knows")).emit().until(__.in().has("someProp", "val")).count().profile().next();
+        System.out.println(repeatEmitUntilProfile);
+    }
+
     @Test
     public void testLimitBatchSizeForMultiQuery() {
         int numV = 100;

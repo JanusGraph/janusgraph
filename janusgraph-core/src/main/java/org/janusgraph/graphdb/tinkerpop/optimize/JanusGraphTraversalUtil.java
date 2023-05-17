@@ -14,43 +14,41 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.PathProcessor;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.ProfileStep;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.olap.computer.FulgoraElementTraversal;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
-import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
-import org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.PathProcessor;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.BranchStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ProfileStep;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.olap.computer.FulgoraElementTraversal;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -149,27 +147,67 @@ public class JanusGraphTraversalUtil {
      * @param multiQueriable The MultiQuery compatible step whose MultiQueryStep positions shall be searched.
      * @return The step before which the MultiQueryStep is located or expected.
      */
-    public static List<Step> getAllMultiQueryPositionsForMultiQueriable(Step<?, ?> multiQueriable) {
-        List<Step> multiQueryStepLocations = new ArrayList<>();
-        Queue<Step> rawLocations = new LinkedList<>();
+    public static MultiQueryPositions getAllMultiQueryPositionsForMultiQueriable(Step<?, ?> multiQueriable) {
+        MultiQueryPositions multiQueryPositions = new MultiQueryPositions();
         Step currentStep = multiQueriable;
 
-        do {
-            rawLocations.add(currentStep);
-            currentStep = currentStep.getTraversal().getParent().asStep();
-        } while (currentStep instanceof RepeatStep);
-
-        while (!rawLocations.isEmpty()) {
-            currentStep = rawLocations.poll();
-            Optional<Step> positionInLocalTraversal = getLocalMultiQueryPositionForStep(currentStep);
-            if (positionInLocalTraversal.isPresent()) {
-                multiQueryStepLocations.add(positionInLocalTraversal.get());
+        if(isRepeatChildTraversalStartStep(currentStep)){
+            Traversal.Admin<?,?> traversal = currentStep.getTraversal();
+            RepeatStep<?> parentStep = (RepeatStep<?>) traversal.getParent().asStep();
+            Optional<Step> optionalRepeatEndMultiQueryPosition = getEndMultiQueryPosition(parentStep.getRepeatTraversal());
+            if(optionalRepeatEndMultiQueryPosition.isPresent()){
+                multiQueryPositions.nextLoopMultiQueryStepLocation = optionalRepeatEndMultiQueryPosition.get();
+            }
+            if(traversal == parentStep.getRepeatTraversal() ||
+                parentStep.emitFirst && traversal == parentStep.getEmitTraversal() ||
+                parentStep.untilFirst && traversal == parentStep.getUntilTraversal()){
+                currentStep = currentStep.getTraversal().getParent().asStep();
             } else {
-                rawLocations.add(currentStep.getTraversal().getParent().asStep());
+                return multiQueryPositions;
             }
         }
 
-        return multiQueryStepLocations;
+        while (!(currentStep instanceof EmptyStep)){
+            Optional<Step> positionInLocalTraversal = getLocalMultiQueryPositionForStep(currentStep);
+            if (positionInLocalTraversal.isPresent()) {
+                multiQueryPositions.currentLoopMultiQueryStepLocations.add(positionInLocalTraversal.get());
+                if(isRepeatChildTraversalStartStep(currentStep)){
+                    currentStep = currentStep.getTraversal().getParent().asStep();
+                } else {
+                    break;
+                }
+            } else if(isStartStep(currentStep)) {
+                currentStep = currentStep.getTraversal().getParent().asStep();
+            } else {
+                break;
+            }
+        }
+
+        return multiQueryPositions;
+    }
+
+    /**
+     * Returns multi query position for the end of the traversal.
+     * This can be useful in case by the end of the traversal, vertices should be registered for prefetching
+     * in some other places.
+     */
+    public static Optional<Step> getEndMultiQueryPosition(Traversal.Admin repeatTraversal){
+        if(repeatTraversal == null){
+            return Optional.empty();
+        }
+        Step currentStep = repeatTraversal.getEndStep();
+        Step previousStep = currentStep.getPreviousStep();
+        while (previousStep instanceof SideEffectStep || previousStep instanceof ProfileStep) {
+            currentStep = previousStep;
+            previousStep = previousStep.getPreviousStep();
+        }
+        if(previousStep instanceof NoOpBarrierStep){
+            currentStep = previousStep;
+        }
+        if(currentStep instanceof EmptyStep || currentStep instanceof StartStep){
+            return Optional.empty();
+        }
+        return Optional.of(currentStep);
     }
 
     /**
@@ -199,6 +237,32 @@ public class JanusGraphTraversalUtil {
         } else {
             return Optional.of(currentStep);
         }
+    }
+
+    /**
+     * Checks if the provided step is the start step of a RepeatStep (i.e. the step is the start of `repeat`, `emit`,
+     * or `until` traversals) skipping any `IdentityStep`, `NoOpBarrierStep`, `SideEffectStep`, `ProfileStep`, and
+     * `JanusGraphMultiQueryStep` steps at the beginning.
+     * @param step The MultiQuery compatible step.
+     * @return `true` if the step can be considered as the start of any RepeatStep traversals. `false` otherwise.
+     */
+    public static boolean isRepeatChildTraversalStartStep(Step<?, ?> step){
+        return step.getTraversal().getParent().asStep() instanceof RepeatStep && isStartStep(step);
+    }
+
+    /**
+     * Checks if the provided step is the start step of its Traversal skipping any `IdentityStep`, `NoOpBarrierStep`,
+     * `SideEffectStep`, `ProfileStep`, and `JanusGraphMultiQueryStep` steps at the beginning.
+     * @param step Step to check.
+     * @return `true` if the step can be considered as the start of its traversal. `false` otherwise.
+     */
+    public static boolean isStartStep(Step<?, ?> step){
+        Step<?,?> startStep = step;
+        do {
+            startStep = startStep.getPreviousStep();
+        } while (startStep instanceof JanusGraphMultiQueryStep || startStep instanceof NoOpBarrierStep ||
+            startStep instanceof IdentityStep || startStep instanceof SideEffectStep || startStep instanceof ProfileStep);
+        return startStep instanceof EmptyStep || startStep instanceof StartStep;
     }
 
     /**
