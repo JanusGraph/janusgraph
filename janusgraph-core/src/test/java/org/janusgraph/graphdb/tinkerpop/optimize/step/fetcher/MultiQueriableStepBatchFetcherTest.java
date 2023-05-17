@@ -53,7 +53,7 @@ public class MultiQueriableStepBatchFetcherTest {
     public void testTraversalInterruptedExceptionIsThrownDuringInterruptedMultiQuery(){
         JanusGraphException causeException = new JanusGraphException(new InterruptedException());
         MultiQueriableStepBatchErrorFetcher fetcher = new MultiQueriableStepBatchErrorFetcher(causeException);
-        TraversalInterruptedException resultingException = Assertions.assertThrows(TraversalInterruptedException.class, () -> fetcher.fetchData(traversal, mockVertex));
+        TraversalInterruptedException resultingException = Assertions.assertThrows(TraversalInterruptedException.class, () -> fetcher.fetchData(traversal, mockVertex, 0));
         Assertions.assertEquals(causeException, resultingException.getCause());
     }
 
@@ -61,7 +61,7 @@ public class MultiQueriableStepBatchFetcherTest {
     public void testJanusGraphExceptionIsNotLostDuringMultiQuery(){
         JanusGraphException causeException = new JanusGraphException(new RuntimeException());
         MultiQueriableStepBatchErrorFetcher fetcher = new MultiQueriableStepBatchErrorFetcher(causeException);
-        JanusGraphException resultingException = Assertions.assertThrows(JanusGraphException.class, () -> fetcher.fetchData(traversal, mockVertex));
+        JanusGraphException resultingException = Assertions.assertThrows(JanusGraphException.class, () -> fetcher.fetchData(traversal, mockVertex, 0));
         Assertions.assertEquals(causeException, resultingException);
     }
 
@@ -69,7 +69,7 @@ public class MultiQueriableStepBatchFetcherTest {
     public void testRuntimeExceptionIsNotLostDuringMultiQuery(){
         RuntimeException causeException = new RuntimeException();
         MultiQueriableStepBatchErrorFetcher fetcher = new MultiQueriableStepBatchErrorFetcher(causeException);
-        RuntimeException resultingException = Assertions.assertThrows(RuntimeException.class, () -> fetcher.fetchData(traversal, mockVertex));
+        RuntimeException resultingException = Assertions.assertThrows(RuntimeException.class, () -> fetcher.fetchData(traversal, mockVertex, 0));
         Assertions.assertEquals(causeException, resultingException);
     }
 
@@ -78,6 +78,7 @@ public class MultiQueriableStepBatchFetcherTest {
         private final RuntimeException exceptionToThrow;
 
         private MultiQueriableStepBatchErrorFetcher(RuntimeException exceptionToThrow) {
+            super(0);
             this.exceptionToThrow = exceptionToThrow;
         }
 

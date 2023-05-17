@@ -14,6 +14,8 @@
 
 package org.janusgraph;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
@@ -37,6 +39,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.AverageTime)
@@ -66,13 +69,15 @@ public class CQLMultiQueryBenchmark {
         mgmt.buildIndex("nameIndex", Vertex.class).addKey(name).buildCompositeIndex();
         mgmt.commit();
 
-        Vertex v = graph.addVertex("name", "outer");
+        Vertex mostInnerSingleVertex = graph.addVertex("name", "mostInner");
+        Vertex mostOuter = graph.addVertex("name", "outer");
         for (int i = 0; i < fanoutFactor; i++) {
             Vertex otherV = graph.addVertex("name", "middle");
-            v.addEdge("connects", otherV);
+            mostOuter.addEdge("connects", otherV);
             for (int j = 0; j < fanoutFactor; j++) {
                 Vertex innerV = graph.addVertex("name", "inner");
                 otherV.addEdge("connects", innerV);
+                innerV.addEdge("connects", mostInnerSingleVertex);
             }
             graph.tx().commit();
         }
@@ -100,4 +105,98 @@ public class CQLMultiQueryBenchmark {
         tx.rollback();
         return names;
     }
+
+    @Benchmark
+    public List<Map<String, Object>> getIdToOutVerticesProjection() {
+        JanusGraphTransaction tx = graph.buildTransaction()
+            .start();
+        List<Map<String, Object>> idNameMap = tx.traversal().V().has("name", "middle")
+            .project("a", "b").by(__.id()).by(__.out("connects")).toList();
+        tx.rollback();
+        return idNameMap;
+    }
+
+    @Benchmark
+    public List<Vertex> getAllElementsTraversedFromOuterVertex() {
+        JanusGraphTransaction tx = graph.buildTransaction()
+            .start();
+        List<Vertex> result = tx.traversal().V().has("name", "outer")
+            .repeat(__.out("connects")).emit().toList();
+        tx.rollback();
+        return result;
+    }
+
+    @Benchmark
+    public List<Vertex> getElementsWithUsingRepeatUntilSteps() {
+        JanusGraphTransaction tx = graph.buildTransaction()
+            .start();
+        List<Vertex> result = tx.traversal().V().has("name", "outer")
+            .repeat(__.out("connects")).until(__.not(__.out("connects"))).toList();
+        tx.rollback();
+        return result;
+    }
+
+    @Benchmark
+    public List<Vertex> getElementsWithUsingEmitRepeatSteps() {
+        JanusGraphTransaction tx = graph.buildTransaction()
+            .start();
+        List<Vertex> result = tx.traversal().V().has("name", "outer")
+            .emit(__.in("connects")).repeat(__.out("connects")).toList();
+        tx.rollback();
+        return result;
+    }
+
+    @Benchmark
+    public List<Vertex> getVerticesFilteredByAndStep() {
+        JanusGraphTransaction tx = graph.buildTransaction()
+            .start();
+        List<Vertex> result = tx.traversal().V().has("name", "middle")
+            .and(__.out("connects").count().is(P.gte(fanoutFactor)), __.hasId(P.neq(0))).toList();
+        tx.rollback();
+        return result;
+    }
+
+    @Benchmark
+    public List<Vertex> getVerticesWithCoalesceUsage() {
+        JanusGraphTransaction tx = graph.buildTransaction()
+            .start();
+        List<Vertex> result = tx.traversal().V().has("name", "middle")
+            .coalesce(__.out("connects"), __.identity()).toList();
+        tx.rollback();
+        return result;
+    }
+
+    @Benchmark
+    public List<Vertex> getVerticesWithDoubleUnion() {
+        JanusGraphTransaction tx = graph.buildTransaction()
+            .start();
+        List<Vertex> result = tx.traversal().V().has("name", "middle")
+            .union(__.union(__.out("connects"), __.identity()), __.identity()).toList();
+        tx.rollback();
+        return result;
+    }
+
+    @Benchmark
+    public List<Vertex> getVerticesFromMultiNestedRepeatStepStartingFromSingleVertex() {
+        JanusGraphTransaction tx = graph.buildTransaction()
+            .start();
+        List<Vertex> result = tx.traversal().V().has("name", "mostInner")
+            .emit().repeat(__.repeat(__.in("connects")).until(__.identity().loops().is(P.gt(0))))
+            .until(__.identity().loops().is(P.gt(2)))
+            .toList();
+        tx.rollback();
+        return result;
+    }
+
+    @Benchmark
+    public List<Long> getAdjacentVerticesLocalCounts() {
+        JanusGraphTransaction tx = graph.buildTransaction()
+            .start();
+        List<Long> result = tx.traversal().V().has("name", "inner")
+            .local(__.in("connects").count())
+            .toList();
+        tx.rollback();
+        return result;
+    }
+
 }

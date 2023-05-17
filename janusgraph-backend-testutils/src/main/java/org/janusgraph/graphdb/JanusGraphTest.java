@@ -24,6 +24,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.TextP;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -130,6 +131,7 @@ import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphEdgeVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
@@ -179,6 +181,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -203,6 +206,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMITED_BATCH;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMITED_BATCH_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
@@ -210,6 +214,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPEAT_STEP_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
@@ -4673,6 +4678,224 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testLimitBatchSizeForMultiQueryRepeatStep() {
+        final int barrierSize = 50;
+        final int limit = 135;
+        final int levelVerticesAmount = 3;
+        final int depth = 6;
+
+        final JanusGraphVertex a = graph.addVertex();
+        a.property("depth", Integer.MAX_VALUE);
+        a.property("localAddedVertexNumber", 1);
+        a.property("levelVertexNumber", 1);
+        a.property("parentNumber", -1);
+        Map<Integer, Integer> levelToNumberOfVertices = new HashMap<>();
+        addTestAdjacentVertices(a,  levelVerticesAmount, depth, levelToNumberOfVertices);
+        graph.tx().commit();
+
+        TraversalMetrics profile;
+
+        // repeat until with outer barrier steps
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.barrier(barrierSize).out("knows").barrier(barrierSize)).until(__.out("knows").has("depth", "3")).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile);
+
+        // repeat until with local barrier step
+        profile = testLimitedBatch(() -> graph.traversal().V(a).repeat(__.barrier(barrierSize).out("knows").barrier(barrierSize)).until(__.barrier(barrierSize).out("knows").has("depth", "3")).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile);
+
+        // repeat emit. Test early abort with limit
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.out("knows").barrier(barrierSize)).emit(__.out("knows")).limit(limit).count());
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile);
+
+        // repeat emit with unlimited barrier steps (unlimited batches)
+        profile = testLimitedBatch(() -> graph.traversal().V(a).repeat(__.out("knows")).emit(__.out("knows").hasId(P.neq(-100L))).count(),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(LIMITED_BATCH_SIZE), Integer.MAX_VALUE);
+        assertTrue(countBackendQueriesOfSize(s -> s > barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, Integer.MAX_VALUE, profile);
+
+        // until repeat
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).until(__.out("knows").has("depth", "3")).repeat(__.out("knows").barrier(barrierSize)).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile);
+
+        // emit repeat
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).emit().repeat(__.out("knows").barrier(barrierSize)).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile);
+
+        // repeat emit
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.out("knows").barrier(barrierSize)).emit().count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile);
+
+        // repeat emit(predicate)
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.out("knows").barrier(barrierSize)).emit(__.out("knows").has("depth", "3")).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile);
+
+        // emit(predicate) repeat
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).emit(__.in("knows").has("depth", "3")).repeat(__.out("knows").barrier(barrierSize)).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 2);
+
+        // until repeat emit(predicate).
+        // This case is using batches per iteration and not batches per loop
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).until(__.in("knows").has("depth", "3")).repeat(__.out("knows").barrier(barrierSize)).emit(__.in("knows").has("depth", "3")).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertEquals(0, countBackendQueriesOfSize(s -> s > barrierSize * levelVerticesAmount, profile.getMetrics()));
+        assertTrue(countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()) > ((int) Math.pow(levelVerticesAmount, depth)));
+
+        // until emit(predicate) repeat
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).until(__.in("knows").has("depth", "3")).emit(__.in("knows").has("depth", "3")).repeat(__.out("knows").barrier(barrierSize)).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 2);
+
+        // emit(predicate) repeat until
+        // This case is using batches per iteration and not batches per loop
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).emit(__.in("knows").has("depth", "3")).repeat(__.out("knows").barrier(barrierSize)).until(__.in("knows").has("depth", "3")).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertEquals(0, countBackendQueriesOfSize(s -> s > barrierSize * levelVerticesAmount, profile.getMetrics()));
+        assertTrue(countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()) > ((int) Math.pow(levelVerticesAmount, depth)));
+
+        // repeat emit(predicate) until
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.out("knows").barrier(barrierSize)).emit(__.in("knows").has("depth", "3")).until(__.in("knows").has("depth", "3")).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 2);
+
+        // until repeat emit
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).until(__.in("knows").has("depth", "3")).repeat(__.out("knows").barrier(barrierSize)).emit().count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 2);
+
+        // until emit repeat
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).until(__.in("knows").has("depth", "3")).emit().repeat(__.out("knows").barrier(barrierSize)).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 2);
+
+        // emit repeat until
+        // This case is using batches per iteration and not batches per loop
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).emit().repeat(__.out("knows").barrier(barrierSize)).until(__.in("knows").has("depth", "3")).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertEquals(0, countBackendQueriesOfSize(s -> s > barrierSize * levelVerticesAmount, profile.getMetrics()));
+        assertTrue(countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()) > ((int) Math.pow(levelVerticesAmount, depth)));
+
+        // repeat emit until
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.out("knows").barrier(barrierSize)).emit().until(__.in("knows").has("depth", "3")).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 2);
+
+        // MultiQueriable inside multi-query compatible parent which is inside repeat step
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.union(__.out("knows"), __.<Vertex>where(__.in("knows")).none()).barrier(barrierSize)).emit().count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertEquals(0, countBackendQueriesOfSize(s -> s > barrierSize * levelVerticesAmount, profile.getMetrics()));
+        assertTrue(countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()) <= 2);
+        assertTrue(countBackendQueriesOfSize(levelVerticesAmount * levelVerticesAmount, profile.getMetrics()) <= 2);
+        assertEquals(2, countBackendQueriesOfSize((long) Math.pow(levelVerticesAmount, 3), profile.getMetrics()));
+
+        // repeat start step of union
+        profile = testLimitedBatch(() -> graph.traversal().V(a).out("knows").barrier(barrierSize).union(__.repeat(__.out("knows").barrier(barrierSize)).emit(), __.identity()).count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 2);
+
+        // Multi-nested repeat tests
+
+        // double nested repeat
+        profile = testLimitedBatch(() -> graph.traversal().V(a).repeat(__.repeat(__.barrier(barrierSize).out("knows").barrier(barrierSize))).emit().count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 2);
+
+        // repeat in until
+        profile = testLimitedBatch(() -> graph.traversal().V(a).repeat(__.barrier(barrierSize).out("knows").barrier(barrierSize)).until(__.out("knows").has("depth", "3")).emit().count());
+        assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 2);
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        Vertex[] middleVertices = graph.traversal().V(a).repeat(__.out("knows")).times(depth/2+1).toList().toArray(new Vertex[0]);;
+
+        // Repeat step mode: CLOSEST_REPEAT_PARENT. multi-nested `repeat` start steps. Early drop.
+        profile = testLimitedBatch(() -> graph.traversal().V((Object[]) middleVertices).barrier(barrierSize).repeat(__.barrier(barrierSize).union(__.repeat(__.out("knows").barrier(barrierSize)).until(__.identity())).barrier(barrierSize)).until(__.identity()).limit(1),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(REPEAT_STEP_BATCH_MODE), MultiQueryStrategyRepeatStepMode.CLOSEST_REPEAT_PARENT.getConfigName());
+        assertEquals(1,countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()));
+        assertEquals(0,countBackendQueriesOfSize(s -> s > levelVerticesAmount, profile.getMetrics()));
+
+        // Repeat step mode: ALL_REPEAT_PARENTS. multi-nested `repeat` start steps. Early drop.
+        profile = testLimitedBatch(() -> graph.traversal().V((Object[]) middleVertices).barrier(barrierSize).repeat(__.barrier(barrierSize).union(__.repeat(__.out("knows").barrier(barrierSize)).until(__.identity())).barrier(barrierSize)).until(__.identity()).limit(1),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(REPEAT_STEP_BATCH_MODE), MultiQueryStrategyRepeatStepMode.ALL_REPEAT_PARENTS.getConfigName());
+        assertEquals(1,countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()));
+        assertEquals(0,countBackendQueriesOfSize(s -> s < barrierSize * levelVerticesAmount, profile.getMetrics()));
+
+        // Repeat step mode: STARTS_ONLY_OF_ALL_REPEAT_PARENTS. multi-nested `repeat` start steps. Early drop.
+        profile = testLimitedBatch(() -> graph.traversal().V((Object[]) middleVertices).barrier(barrierSize).repeat(__.barrier(barrierSize).union(__.repeat(__.out("knows").barrier(barrierSize)).until(__.identity())).barrier(barrierSize)).until(__.identity()).limit(1),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(REPEAT_STEP_BATCH_MODE), MultiQueryStrategyRepeatStepMode.STARTS_ONLY_OF_ALL_REPEAT_PARENTS.getConfigName());
+        assertEquals(1,countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()));
+        assertEquals(0,countBackendQueriesOfSize(s -> s < barrierSize * levelVerticesAmount, profile.getMetrics()));
+
+        // Repeat step mode: ALL_REPEAT_PARENTS. multi-nested `repeat` start steps. Most outer repeat step next iteration registering new vertices.
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize)
+                .repeat(__.<Vertex>barrier(1)
+                    .repeat(__.out("knows").barrier(barrierSize)).until(__.identity().loops().is(P.gt(0))).barrier(barrierSize)
+                ).until(__.identity().loops().is(P.gt(1))),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(REPEAT_STEP_BATCH_MODE), MultiQueryStrategyRepeatStepMode.ALL_REPEAT_PARENTS.getConfigName());
+        assertEquals(1,countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()));
+        assertEquals(1,countBackendQueriesOfSize(levelVerticesAmount*levelVerticesAmount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(s -> s > levelVerticesAmount*levelVerticesAmount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(s -> s < levelVerticesAmount, profile.getMetrics()));
+
+        // Repeat step mode: STARTS_ONLY_OF_ALL_REPEAT_PARENTS. multi-nested `repeat` start steps. Most outer repeat step next iteration not registering new vertices.
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize)
+                .repeat(__.<Vertex>barrier(1)
+                    .repeat(__.out("knows").barrier(barrierSize)).until(__.identity().loops().is(P.gt(0))).barrier(barrierSize)
+                ).until(__.identity().loops().is(P.gt(1))),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(REPEAT_STEP_BATCH_MODE), MultiQueryStrategyRepeatStepMode.STARTS_ONLY_OF_ALL_REPEAT_PARENTS.getConfigName());
+        assertEquals(1+levelVerticesAmount,countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(s -> s > levelVerticesAmount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(s -> s < levelVerticesAmount, profile.getMetrics()));
+    }
+
+    private void assertRepeatBatchSizeByLoop(int depth, int levelVerticesAmount, int barrierSize, TraversalMetrics profile){
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 1);
+    }
+
+    private void assertRepeatBatchSizeByLoop(int depth, int levelVerticesAmount, int barrierSize, TraversalMetrics profile, int uniqueBatchRequestsAmount){
+        int calculatedMaxReturnSize;
+        try{
+            calculatedMaxReturnSize = Math.multiplyExact(levelVerticesAmount, barrierSize);
+        } catch (Exception e){
+            calculatedMaxReturnSize = Integer.MAX_VALUE;
+        }
+        final int maxReturnSize = calculatedMaxReturnSize;
+        int currentReturnSize = 1;
+        int currentLoop = 0;
+        while (currentReturnSize < maxReturnSize && currentLoop <= depth){
+            assertTrue(countBackendQueriesOfSize(currentReturnSize, profile.getMetrics()) <= uniqueBatchRequestsAmount * 2);
+            currentReturnSize*=levelVerticesAmount;
+            ++currentLoop;
+        }
+        assertEquals(0, countBackendQueriesOfSize(s -> s > maxReturnSize, profile.getMetrics()));
+    }
+
+    private void addTestAdjacentVertices(Vertex vertex, int levelVerticesAmount, int depth, Map<Integer, Integer> levelToNumberOfVertices){
+        if(depth<0){
+            return;
+        }
+        int addedVertices = 0;
+        Integer parentNumber = vertex.value("levelVertexNumber");
+        for (int i = 0; i < levelVerticesAmount; ++i) {
+            Vertex adjacentVertex = graph.addVertex();
+            adjacentVertex.property("foo", "bar");
+            adjacentVertex.property("depth", depth);
+            adjacentVertex.property("localAddedVertexNumber", ++addedVertices);
+            levelToNumberOfVertices.put(depth, levelToNumberOfVertices.getOrDefault(depth, 0) + 1);
+            adjacentVertex.property("levelVertexNumber", levelToNumberOfVertices.get(depth));
+            adjacentVertex.property("parentNumber", parentNumber);
+            vertex.addEdge("knows", adjacentVertex);
+            addTestAdjacentVertices(adjacentVertex, levelVerticesAmount, depth-1, levelToNumberOfVertices);
+        }
+    }
+
+    @Test
     public void testLimitBatchSizeForMultiQuery() {
         int numV = 100;
         JanusGraphVertex a = graph.addVertex();
@@ -4689,69 +4912,172 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         int barrierSize = 27;
         int limit = 40;
 
+        TraversalMetrics profile;
+
         // test batching for `out()`
-        Supplier<GraphTraversal<?, ?>> traversal = () -> graph.traversal().V(bs).barrier(barrierSize).out();
-        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
-        TraversalMetrics profile = traversal.get().profile().next();
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).out());
         assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
         assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
 
         // test early abort with limit for `out()`
-        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).out().limit(limit);
-        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
-        profile = traversal.get().profile().next();
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).out().limit(limit));
         assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
 
         // test batching for `values()`
-        traversal = () -> graph.traversal().V(cs).barrier(barrierSize).values("foo");
-        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
-        profile = traversal.get().profile().next();
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo"));
         assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
         assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
 
         // test early abort with limit for `values()`
-        traversal = () -> graph.traversal().V(cs).barrier(barrierSize).values("foo").limit(limit);
-        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
-        profile = traversal.get().profile().next();
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo").limit(limit));
         assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
 
         // test batching with unlimited batch size
-        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).out();
-        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
-        profile = traversal.get().profile().next();
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).out(), option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
         assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
         assertEquals(0, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
         assertEquals(1, countBackendQueriesOfSize(bs.length * 2, profile.getMetrics()));
 
         // test nested VertexStep with unlimited batch size
-        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).where(__.out());
-        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
-        profile = traversal.get().profile().next();
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).where(__.out()), option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
         assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
         assertEquals(0, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
         assertEquals(1, countBackendQueriesOfSize(bs.length * 2, profile.getMetrics()));
 
         // test nested VertexStep with non-nested barrier
-        traversal = () -> graph.traversal().V(bs).barrier(barrierSize).where(__.out());
-        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
-        profile = traversal.get().profile().next();
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).where(__.out()));
         assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
         assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
 
+        // multi-query compatible parents usage
+
         // test batching with repeat step
-        traversal = () -> graph.traversal().V(a).repeat(__.barrier(barrierSize).out()).times(2);
-        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
-        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
-        profile = traversal.get().profile().next();
+        profile = testLimitedBatch(() -> graph.traversal().V(a).repeat(__.barrier(barrierSize).out()).times(2));
         assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
         assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
+
+        // test batching for `out` step in `project` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).project("a", "b").by(__.id()).by(__.out("knows")));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `choose` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).choose(__.hasId(P.gte(0L)), __.out("knows"), __.identity()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `coalesce` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).coalesce(__.out("knows"), __.identity()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `and` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).and(__.out("knows"), __.hasId(P.gte(0))));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `or` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).or(__.out("knows"), __.hasId(P.gte(0))));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `sideEffect` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).sideEffect(__.out("knows").sideEffect(Traverser::get)));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `map` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).map(__.out("knows")));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `where` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).where(__.out("knows")));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `filter` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).filter(__.out("knows")));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `optional` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).optional(__.out("knows")));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `not` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).not(__.out("knows")));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `union` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).union(__.identity(), __.out("knows")));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `local` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).local(__.out("knows")));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `group` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).group().by(__.out("knows").count()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `out` step in `groupCount` parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).groupCount().by(__.out("knows")));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        testLimitBatchSizeForMultiQueryOfConnectiveSteps(bs, barrierSize, limit);
+    }
+
+    private void testLimitBatchSizeForMultiQueryOfConnectiveSteps(JanusGraphVertex[] bs, int barrierSize, int limit){
+        TraversalMetrics profile;
+
+        // test batching for `out()` inside `and()`
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).and(__.out("knows").count().is(P.gte(0)), __.inE("knows").count().is(P.gte(0))));
+        assertEquals((int) Math.ceil((double) bs.length / barrierSize) * 2, countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `and()` limited
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).and(__.out("knows").count().is(P.gte(0)), __.inE("knows").count().is(P.gte(0))).limit(limit));
+        assertEquals((int) Math.ceil((double) Math.min(bs.length, limit) / barrierSize) * 2, countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `and()` with second filter not being executed due to first filter is false
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).and(__.out("knows").count().is(P.gte(1000000)), __.inE("knows").count().is(P.gte(0))));
+        assertEquals((int) Math.ceil((double) bs.length / barrierSize), countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `and()` limited with second filter not being executed due to first filter is false
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).and(__.out("knows").count().is(P.gte(1000000)), __.inE("knows").count().is(P.gte(0))).limit(limit));
+        assertEquals((int) Math.ceil((double) bs.length / barrierSize), countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `or()`
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).or(__.out("knows").count().is(P.gte(1000000)), __.inE("knows").count().is(P.gte(0))));
+        assertEquals((int) Math.ceil((double) bs.length / barrierSize) * 2, countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `or()` limited
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).or(__.out("knows").count().is(P.gte(1000000)), __.inE("knows").count().is(P.gte(0))).limit(limit));
+        assertEquals((int) Math.ceil((double) Math.min(bs.length, limit) / barrierSize) * 2, countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `or()` with second filter not being executed due to first filter is true
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).or(__.out("knows").count().is(P.gte(0)), __.inE("knows").count().is(P.gte(0))));
+        assertEquals((int) Math.ceil((double) bs.length / barrierSize), countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `out()` inside `or()` limited with second filter not being executed due to first filter is true
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).or(__.out("knows").count().is(P.gte(0)), __.inE("knows").count().is(P.gte(0))).limit(limit));
+        assertEquals((int) Math.ceil((double) Math.min(bs.length, limit) / barrierSize), countOptimizationQueries(profile.getMetrics()));
+    }
+
+    private TraversalMetrics testLimitedBatch(Supplier<GraphTraversal<?, ?>> traversal, Object... settings){
+        assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        if(settings.length == 0){
+            clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
+        } else {
+            clopen(settings);
+        }
+        return traversal.get().profile().next();
     }
 
     private void assertEqualResultWithAndWithoutLimitBatchSize(Supplier<GraphTraversal<?, ?>> traversal) {
@@ -4767,14 +5093,28 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     private long countBackendQueriesOfSize(long size, Collection<? extends Metrics> metrics) {
+        return countBackendQueriesOfSize(querySize -> querySize == size, metrics);
+    }
+
+    private long countBackendQueriesOfSize(Predicate<Long> sizePredicate, Collection<? extends Metrics> metrics) {
         long count = metrics.stream()
             .filter(m -> m.getName().equals("backend-query"))
-            .map(m -> m.getCounts())
+            .map(Metrics::getCounts)
             .flatMap(c -> c.values().stream())
-            .filter(s -> s == size)
+            .filter(sizePredicate)
             .count();
         long nestedCount = metrics.stream()
-            .mapToLong(m -> countBackendQueriesOfSize(size, m.getNested()))
+            .mapToLong(m -> countBackendQueriesOfSize(sizePredicate, m.getNested()))
+            .sum();
+        return count + nestedCount;
+    }
+
+    private long countOptimizationQueries(Collection<? extends Metrics> metrics) {
+        long count = metrics.stream()
+            .filter(m -> m.getName().equals("optimization"))
+            .count();
+        long nestedCount = metrics.stream()
+            .mapToLong(m -> countOptimizationQueries(m.getNested()))
             .sum();
         return count + nestedCount;
     }

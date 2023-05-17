@@ -58,6 +58,7 @@ import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.util.StringUtils;
@@ -255,7 +256,6 @@ public class GraphDatabaseConfiguration {
                     "on large graphs. Recommended for production use of JanusGraph.",
             ConfigOption.Type.MASKABLE, false);
 
-
     public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<>(QUERY_NS,"fast-property",
             "Whether to pre-fetch all properties on first singular vertex property access. This can eliminate backend calls on subsequent " +
                     "property access for the same vertex at the expense of retrieving all properties at once. This can be " +
@@ -273,25 +273,6 @@ public class GraphDatabaseConfiguration {
                     "usually a large number. Default value is Integer.MAX_VALUE which effectively disables this behavior. " +
                     "This option does not take effect when smart-limit is enabled.",
             ConfigOption.Type.MASKABLE, Integer.MAX_VALUE);
-
-    public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<>(QUERY_NS,"batch",
-            "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
-                    "performance improvement if there is a non-trivial latency to the backend.",
-            ConfigOption.Type.MASKABLE, true);
-
-    public static final ConfigOption<Boolean> LIMITED_BATCH = new ConfigOption<>(QUERY_NS,"limited-batch",
-            "Configure a maximum batch size for queries against the storage backend. This can be used to ensure " +
-                    "responsiveness if batches tend to grow very large. The used batch size is equivalent to the " +
-                    "barrier size of a preceding barrier() step. If a step has no preceding barrier(), the default barrier of TinkerPop " +
-                    "will be inserted. This option only takes effect if query.batch is enabled.",
-            ConfigOption.Type.MASKABLE, true);
-
-    public static final ConfigOption<Integer> LIMITED_BATCH_SIZE = new ConfigOption<>(QUERY_NS,"limited-batch-size",
-        "Default batch size (barrier() step size) for queries. This size is applied only for cases where `"
-        + LazyBarrierStrategy.class.getSimpleName()+"` strategy didn't apply `barrier` step and where user didn't apply " +
-            "barrier step either. This option is used only when `"+LIMITED_BATCH.toStringWithoutRoot()+"` is `true`. " +
-            "Notice, value `"+Integer.MAX_VALUE+"` is considered to be unlimited.",
-        ConfigOption.Type.MASKABLE, 2500);
 
     public static final ConfigOption<String> INDEX_SELECT_STRATEGY = new ConfigOption<>(QUERY_NS, "index-select-strategy",
             String.format("Name of the index selection strategy or full class name. Following shorthands can be used: <br>" +
@@ -312,6 +293,45 @@ public class GraphDatabaseConfiguration {
                     "Because these vertex properties will be loaded into the transaction-level cache of recently-used vertices when the condition is evaluated this can " +
                     "lead to significant performance improvement if there are many edges to adjacent vertices and there is a non-trivial latency to the backend.",
             ConfigOption.Type.MASKABLE, false);
+
+    // ################ BATCH QUERY CONFIGURATION #######################
+
+    public static final ConfigNamespace QUERY_BATCH_NS = new ConfigNamespace(QUERY_NS,"batch",
+        "Configuration options to configure batch queries optimization behavior");
+
+    public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<>(QUERY_BATCH_NS,"enabled",
+        "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
+            "performance improvement if there is a non-trivial latency to the backend. If `false` then all other configuration options under `" +
+            QUERY_BATCH_NS.toStringWithoutRoot()+"` namespace are ignored.",
+        ConfigOption.Type.MASKABLE, true);
+
+    public static final ConfigOption<Boolean> LIMITED_BATCH = new ConfigOption<>(QUERY_BATCH_NS,"limited",
+        "Configure a maximum batch size for queries against the storage backend. This can be used to ensure " +
+            "responsiveness if batches tend to grow very large. The used batch size is equivalent to the " +
+            "barrier size of a preceding `barrier()` step. If a step has no preceding `barrier()`, the default barrier of TinkerPop " +
+            "will be inserted. This option only takes effect if `"+USE_MULTIQUERY.toStringWithoutRoot()+"` is `true`.",
+        ConfigOption.Type.MASKABLE, true);
+
+    public static final ConfigOption<Integer> LIMITED_BATCH_SIZE = new ConfigOption<>(QUERY_BATCH_NS,"limited-size",
+        "Default batch size (barrier() step size) for queries. This size is applied only for cases where `"
+            + LazyBarrierStrategy.class.getSimpleName()+"` strategy didn't apply `barrier` step and where user didn't apply " +
+            "barrier step either. This option is used only when `"+LIMITED_BATCH.toStringWithoutRoot()+"` is `true`. " +
+            "Notice, value `"+Integer.MAX_VALUE+"` is considered to be unlimited.",
+        ConfigOption.Type.MASKABLE, 2500);
+
+    public static final ConfigOption<String> REPEAT_STEP_BATCH_MODE = new ConfigOption<>(QUERY_BATCH_NS,"repeat-step-mode",
+        String.format("Batch mode for `repeat` step. Used only when "+USE_MULTIQUERY.toStringWithoutRoot()+" is `true`.<br>" +
+                "These modes are controlling how the child steps with batch support are behaving if they placed to the start " +
+                "of the `repeat`, `emit`, or `until` traversals.<br>" +
+                "Supported modes:<br>" +
+                "- `%s` Child start steps are receiving vertices for batching from the closest `repeat` step parent only.<br>" +
+                "- `%s` Child start steps are receiving vertices for batching from all `repeat` step parents.<br>" +
+                "- `%s` Child start steps are receiving vertices for batching from the closest `repeat` step parent (both for the parent start and for next iterations) " +
+                "and also from all `repeat` step parents for the parent start.",
+            MultiQueryStrategyRepeatStepMode.CLOSEST_REPEAT_PARENT.getConfigName(),
+            MultiQueryStrategyRepeatStepMode.ALL_REPEAT_PARENTS.getConfigName(),
+            MultiQueryStrategyRepeatStepMode.STARTS_ONLY_OF_ALL_REPEAT_PARENTS.getConfigName()),
+        ConfigOption.Type.MASKABLE, MultiQueryStrategyRepeatStepMode.ALL_REPEAT_PARENTS.getConfigName());
 
     // ################ SCHEMA #######################
     // ################################################
@@ -1275,6 +1295,7 @@ public class GraphDatabaseConfiguration {
     private Boolean useMultiQuery;
     private boolean limitedBatch;
     private int limitedBatchSize;
+    private MultiQueryStrategyRepeatStepMode repeatStepMode;
     private boolean optimizerBackendAccess;
     private IndexSelectionStrategy indexSelectionStrategy;
     private Boolean batchPropertyPrefetching;
@@ -1383,6 +1404,10 @@ public class GraphDatabaseConfiguration {
 
     public int limitedBatchSize() {
         return limitedBatchSize;
+    }
+
+    public MultiQueryStrategyRepeatStepMode repeatStepMode() {
+        return repeatStepMode;
     }
 
     public boolean optimizerBackendAccess() {
@@ -1523,6 +1548,8 @@ public class GraphDatabaseConfiguration {
         useMultiQuery = configuration.get(USE_MULTIQUERY);
         limitedBatch = configuration.get(LIMITED_BATCH);
         limitedBatchSize = configuration.get(LIMITED_BATCH_SIZE);
+        repeatStepMode = selectExactConfig(REPEAT_STEP_BATCH_MODE, MultiQueryStrategyRepeatStepMode.values());
+
         indexSelectionStrategy = Backend.getImplementationClass(configuration, configuration.get(INDEX_SELECT_STRATEGY),
             REGISTERED_INDEX_SELECTION_STRATEGIES);
         optimizerBackendAccess = configuration.get(OPTIMIZER_BACKEND_ACCESS);
@@ -1542,6 +1569,12 @@ public class GraphDatabaseConfiguration {
         unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
 
         configureMetrics();
+    }
+
+    private <T extends ConfigName> T selectExactConfig(ConfigOption<String> configOption, T ... configs){
+        final String configName = configuration.get(configOption);
+        T resultConfig = Arrays.stream(configs).filter(config -> config.getConfigName().equals(configName)).findAny().orElse(null);
+        return Preconditions.checkNotNull(resultConfig, configName+" is not recognized as one of the supported values of `"+configOption.toStringWithoutRoot()+"`");
     }
 
     private void configureMetrics() {

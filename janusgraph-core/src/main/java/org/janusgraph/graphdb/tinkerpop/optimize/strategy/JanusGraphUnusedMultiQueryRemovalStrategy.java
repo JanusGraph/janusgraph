@@ -73,7 +73,10 @@ public class JanusGraphUnusedMultiQueryRemovalStrategy extends AbstractTraversal
     private List<JanusGraphMultiQueryStep> findUnusedMultiQuerySteps(final Traversal.Admin<?, ?> traversal){
         List<JanusGraphMultiQueryStep> unusedMultiQuerySteps = new ArrayList<>();
         traversal.getSteps().forEach(step -> {
-            if(step instanceof JanusGraphMultiQueryStep && ((JanusGraphMultiQueryStep) step).getClientSteps().isEmpty()){
+            if(step instanceof JanusGraphMultiQueryStep
+                && ((JanusGraphMultiQueryStep) step).isSameLoopClientStepsEmpty()
+                && ((JanusGraphMultiQueryStep) step).isNextLoopClientStepsEmpty()
+                && ((JanusGraphMultiQueryStep) step).isFirstLoopClientStepsEmpty()){
                 unusedMultiQuerySteps.add((JanusGraphMultiQueryStep) step);
             }
         });

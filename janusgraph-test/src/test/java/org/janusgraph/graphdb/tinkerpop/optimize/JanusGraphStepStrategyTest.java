@@ -19,6 +19,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -43,6 +44,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -57,6 +59,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOp
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMultiQueryStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphStepStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphUnusedMultiQueryRemovalStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -79,6 +82,8 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.not;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.properties;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.values;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPEAT_STEP_BATCH_MODE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
@@ -291,16 +296,32 @@ public class JanusGraphStepStrategyTest {
     }
 
     private static Stream<Arguments> generateMultiQueryTestParameters() {
-        final StandardJanusGraph graph = (StandardJanusGraph) StorageSetup.getInMemoryGraphWithMultiQuery();
-        final GraphTraversalSource g = graph.traversal();
-        // create a basic schema so that order pushdown can be tested as this optimization requires a JanusGraph
-        // transaction registered against a non-EmptyGraph
-        final JanusGraphManagement mgmt = graph.openManagement();
-        mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.makePropertyKey("lang").dataType(String.class).make();
-        mgmt.makePropertyKey("weight").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
-        mgmt.makeEdgeLabel("knows").make();
-        mgmt.commit();
+        final StandardJanusGraph generalGraph = (StandardJanusGraph) StorageSetup.getInMemoryGraphWithMultiQuery();
+        final StandardJanusGraph graphWithRepeatClosestParent = (StandardJanusGraph) JanusGraphFactory.open(
+            StorageSetup.getInMemoryConfiguration().set(USE_MULTIQUERY, true)
+                .set(REPEAT_STEP_BATCH_MODE, MultiQueryStrategyRepeatStepMode.CLOSEST_REPEAT_PARENT.getConfigName()));
+        final StandardJanusGraph graphWithRepeatAllParents = (StandardJanusGraph) JanusGraphFactory.open(
+            StorageSetup.getInMemoryConfiguration().set(USE_MULTIQUERY, true)
+                .set(REPEAT_STEP_BATCH_MODE, MultiQueryStrategyRepeatStepMode.ALL_REPEAT_PARENTS.getConfigName()));
+        final StandardJanusGraph graphWithRepeatStartsOnlyOfAllParents = (StandardJanusGraph) JanusGraphFactory.open(
+            StorageSetup.getInMemoryConfiguration().set(USE_MULTIQUERY, true)
+                .set(REPEAT_STEP_BATCH_MODE, MultiQueryStrategyRepeatStepMode.STARTS_ONLY_OF_ALL_REPEAT_PARENTS.getConfigName()));
+
+        for(StandardJanusGraph graph : Arrays.asList(generalGraph, graphWithRepeatClosestParent, graphWithRepeatAllParents, graphWithRepeatStartsOnlyOfAllParents)){
+            // create a basic schema so that order pushdown can be tested as this optimization requires a JanusGraph
+            // transaction registered against a non-EmptyGraph
+            final JanusGraphManagement mgmt = graph.openManagement();
+            mgmt.makePropertyKey("name").dataType(String.class).make();
+            mgmt.makePropertyKey("lang").dataType(String.class).make();
+            mgmt.makePropertyKey("weight").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+            mgmt.makeEdgeLabel("knows").make();
+            mgmt.commit();
+        }
+
+        final GraphTraversalSource g = generalGraph.traversal();
+        final GraphTraversalSource gRepeatClosestParent = graphWithRepeatClosestParent.traversal();
+        final GraphTraversalSource gRepeatAllParents = graphWithRepeatAllParents.traversal();
+        final GraphTraversalSource gRepeatStartsOnlyOfAllParents = graphWithRepeatStartsOnlyOfAllParents.traversal();
 
         // String constant for expected JanusGraphMultiQueryStep
         final String MQ_STEP = JanusGraphMultiQueryStep.class.getSimpleName();
@@ -327,7 +348,7 @@ public class JanusGraphStepStrategyTest {
                 g_V().is(MQ_STEP).barrier(defaultBarrierSize).outE().is(MQ_STEP).barrier(defaultBarrierSize).filter(__.inE("knows").has("weight", 0)), otherStrategies),
             // An additional JanusGraphMultiQueryStep for repeat goes before the RepeatEndStep allowing it to feed its starts to the next iteration
             arguments(g.V().outE("knows").inV().repeat(__.outE("knows").inV().has("weight", 0)).times(10),
-                g_V().is(MQ_STEP).barrier(defaultBarrierSize).outE("knows").inV().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.is(MQ_STEP).barrier(defaultBarrierSize).outE("knows").inV().has("weight", 0)).times(10), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).outE("knows").inV().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.outE("knows").inV().has("weight", 0).is(MQ_STEP).barrier(defaultBarrierSize)).times(10), otherStrategies),
             // Choose does not have a child traversal of JanusGraphVertexStep so won't benefit from JanusGraphMultiQueryStep(ChooseStep)
             arguments(g.V().choose(has("weight", lt(3)), __.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1))),
                 g_V().is(MQ_STEP).barrier(defaultBarrierSize).choose(has("weight", lt(3)), __.union(__.inE("knows").has("weight", 0),__.inE("knows").has("weight", 1))), otherStrategies),
@@ -340,9 +361,9 @@ public class JanusGraphStepStrategyTest {
             // There are 'sideEffect' and 'as' steps preceding the JanusGraphVertexStep
             arguments(g.V().choose(has("weight", 0),__.as("true").sideEffect(i -> {}).inE("knows"),__.as("false").sideEffect(i -> {}).inE("knows")),
                 g_V().is(MQ_STEP).barrier(defaultBarrierSize).choose(has("weight", 0),__.as("true").sideEffect(i -> {}).inE("knows"),__.as("false").sideEffect(i -> {}).inE("knows")), otherStrategies),
-            // 'local' is not MultiQueryCompatible (at the moment)
-            arguments(g.V().and(__.inE("knows"), __.inE("knows")),
-                g_V().and(__.is(MQ_STEP).barrier(defaultBarrierSize).inE("knows"), __.is(MQ_STEP).barrier(defaultBarrierSize).inE("knows")), otherStrategies),
+            // Only the most outer eligible `JanusGraphMultiQueryStep` should be used for MultiQueryCompatible start steps
+            arguments(g.V().and(__.inE("knows"), __.outE("knows")),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).and(__.inE("knows"), __.outE("knows")), otherStrategies),
             // `JanusGraphMultiQueryStep` should be used for filter step when at least one child is registered as a client of `JanusGraphMultiQueryStep`.
             arguments(g.V().where(__.out("knows").count().is(P.gte(5))),
                 g_V().is(MQ_STEP).barrier(defaultBarrierSize).where(__.out("knows").count().is(P.gte(5))), otherStrategies),
@@ -351,7 +372,58 @@ public class JanusGraphStepStrategyTest {
                 g_V().where(__.count().is(P.gte(5))), otherStrategies),
             // Should include barrier steps with the default configured size by `LIMITED_BATCH_SIZE` option
             arguments(g.V().out().repeat(__.out()).emit(),
-                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.is(MQ_STEP).barrier(defaultBarrierSize).out()).emit(), otherStrategies),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize)).emit(), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the beginning of repeat child traversals when `emit` is used.
+            arguments(g.V().out().emit().repeat(__.out()),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).emit().repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize)), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the beginning of repeat child traversals when non-true `emit` is used after `repeat`.
+            arguments(g.V().out().repeat(__.out()).emit(__.in("knows")),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize)).emit( __.in("knows")), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the beginning of repeat child traversals when non-true `emit` is used before `repeat`.
+            arguments(g.V().out().emit(__.in("knows")).repeat(__.out()),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).emit( __.in("knows")).repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize)), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the beginning of repeat child traversals when `until` is used after `repeat`.
+            arguments(g.V().out().repeat(__.out()).until(__.in("knows").count().is(P.gte(5))),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize)).until(__.in("knows").count().is(P.gte(5))), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the beginning of repeat child traversals when `until` is used before `repeat`.
+            arguments(g.V().out().until(__.in("knows").count().is(P.gte(5))).repeat(__.out()),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).until(__.in("knows").count().is(P.gte(5))).repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize)), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the beginning of repeat child traversals when `emit` is used before `repeat` and `until` is used after `repeat`.
+            arguments(g.V().out().emit(__.in("knows")).repeat(__.out()).until(__.in("knows").count().is(P.gte(5))),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).emit(__.in("knows")).repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize)).until(__.in("knows").count().is(P.gte(5))), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the repeat child traversals when `emit` is used after `repeat` and `until` is used after `repeat`.
+            arguments(g.V().out().repeat(__.out()).emit(__.in("knows")).until(__.in("knows").count().is(P.gte(5))),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize)).emit(__.in("knows")).until(__.in("knows").count().is(P.gte(5))), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the beginning of repeat child traversals when `emit` is used after `repeat` and `until` is used before `repeat`.
+            arguments(g.V().out().until(__.in("knows").count().is(P.gte(5))).repeat(__.out()).emit(__.in("knows")),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).until(__.in("knows").count().is(P.gte(5))).repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize)).emit(__.in("knows")), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the repeat child traversals when `emit` is used before `repeat` and `until` is used before `repeat`.
+            arguments(g.V().out().until(__.in("knows").count().is(P.gte(5))).emit(__.in("knows")).repeat(__.out()),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).until(__.in("knows").count().is(P.gte(5))).emit(__.in("knows")).repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize)), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the beginning of repeat child traversals, but should use it for any other steps after the fist step.
+            arguments(g.V().out().until(__.in("knows").in("knows").count().is(P.gte(5))).repeat(__.out().out()).emit(__.in("knows").in("knows")),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).until(__.in("knows").is(MQ_STEP).barrier(defaultBarrierSize).in("knows").count().is(P.gte(5))).repeat(__.out().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize)).emit(__.in("knows").is(MQ_STEP).barrier(defaultBarrierSize).in("knows")), otherStrategies),
+            // Should not use `JanusGraphMultiQueryStep` at the end of repeat child traversal and before repeat step if none of repeat child starts are MultiQueriable steps
+            arguments(g.V().out().until(__.map(Traverser::get).in("knows").count().is(P.gte(5))).repeat(__.map(Traverser::get).out()).emit(__.map(Traverser::get).in("knows")),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().until(__.map(Traverser::get).is(MQ_STEP).barrier(defaultBarrierSize).in("knows").count().is(P.gte(5))).repeat(__.map(Traverser::get).is(MQ_STEP).barrier(defaultBarrierSize).out()).emit(__.map(Traverser::get).is(MQ_STEP).barrier(defaultBarrierSize).in("knows")), otherStrategies),
+            // Needs one JanusGraphMultiQueryStep before executing `and` step with `MultiQueriable` steps
+            arguments(g.V().and(__.inE("knows"), __.inE("knows")),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).and(__.inE("knows"), __.inE("knows")), otherStrategies),
+            // Needs one JanusGraphMultiQueryStep before executing `or` step with `MultiQueriable` steps
+            arguments(g.V().or(__.inE("knows"), __.inE("knows")),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).or(__.inE("knows"), __.inE("knows")), otherStrategies),
+            // Should use start of the last outer parent step after the first repeat step as JanusGraphMultiQueryStep.
+            arguments(g.V().union(__.repeat(__.out("knows")).emit()),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).union(__.repeat(__.out("knows").is(MQ_STEP).barrier(defaultBarrierSize)).emit()), otherStrategies),
+            // Repeat step mode: CLOSEST_REPEAT_PARENT. Should use start of the closest outer parent step after the first repeat step as JanusGraphMultiQueryStep, but not the last outer start step of the most outer repeat step.
+            arguments(gRepeatClosestParent.V().repeat(__.union(__.repeat(__.out("knows")).emit())).emit(),
+                ((GraphTraversal<Vertex, Vertex>) g_V()).repeat(__.is(MQ_STEP).barrier(defaultBarrierSize).union(__.repeat(__.out("knows").is(MQ_STEP).barrier(defaultBarrierSize)).emit())).emit(), otherStrategies),
+            // Repeat step mode: ALL_REPEAT_PARENTS. Should use starts and ends of all parent repeat steps as JanusGraphMultiQueryStep
+            arguments(gRepeatAllParents.V().repeat(__.union(__.repeat(__.out("knows")).emit())).emit(),
+                ((GraphTraversal<Vertex, Vertex>) g_V()).is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.is(MQ_STEP).barrier(defaultBarrierSize).union(__.repeat(__.out("knows").is(MQ_STEP).barrier(defaultBarrierSize)).emit()).is(MQ_STEP).barrier(defaultBarrierSize)).emit(), otherStrategies),
+            // Repeat step mode: STARTS_ONLY_OF_ALL_REPEAT_PARENTS. Should use starts of all parent repeat steps as JanusGraphMultiQueryStep
+            arguments(gRepeatStartsOnlyOfAllParents.V().repeat(__.union(__.repeat(__.out("knows")).emit())).emit(),
+                ((GraphTraversal<Vertex, Vertex>) g_V()).is(MQ_STEP).barrier(defaultBarrierSize).repeat(__.is(MQ_STEP).barrier(defaultBarrierSize).union(__.repeat(__.out("knows").is(MQ_STEP).barrier(defaultBarrierSize)).emit())).emit(), otherStrategies),
         });
     }
 }
