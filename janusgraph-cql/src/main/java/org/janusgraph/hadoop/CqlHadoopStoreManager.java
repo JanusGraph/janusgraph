@@ -14,7 +14,7 @@
 
 package org.janusgraph.hadoop;
 
-import com.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.janusgraph.hadoop.formats.cql.CqlBinaryInputFormat;

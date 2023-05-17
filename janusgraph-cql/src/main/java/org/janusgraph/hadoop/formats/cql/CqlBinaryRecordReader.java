@@ -14,7 +14,7 @@
 
 package org.janusgraph.hadoop.formats.cql;
 
-import com.datastax.driver.core.Row;
+import org.janusgraph.shaded.datastax.driver.core.Row;
 import org.apache.cassandra.hadoop.cql3.CqlRecordReader;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;

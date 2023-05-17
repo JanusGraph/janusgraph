@@ -14,7 +14,7 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import com.datastax.oss.driver.api.core.cql.Row;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.collect.AbstractIterator;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;

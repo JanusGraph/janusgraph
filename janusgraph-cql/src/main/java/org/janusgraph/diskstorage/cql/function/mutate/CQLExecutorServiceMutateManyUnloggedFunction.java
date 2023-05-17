@@ -14,8 +14,8 @@
 
 package org.janusgraph.diskstorage.cql.function.mutate;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.vavr.collection.Iterator;
 import io.vavr.collection.Seq;
 import io.vavr.concurrent.Future;

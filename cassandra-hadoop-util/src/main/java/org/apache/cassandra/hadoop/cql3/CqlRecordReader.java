@@ -17,19 +17,19 @@
  */
 package org.apache.cassandra.hadoop.cql3;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.ColumnMetadata;
-import com.datastax.driver.core.LocalDate;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.Token;
-import com.datastax.driver.core.TupleValue;
-import com.datastax.driver.core.TypeCodec;
-import com.datastax.driver.core.UDTValue;
+import org.janusgraph.shaded.datastax.driver.core.Cluster;
+import org.janusgraph.shaded.datastax.driver.core.ColumnDefinitions;
+import org.janusgraph.shaded.datastax.driver.core.ColumnMetadata;
+import org.janusgraph.shaded.datastax.driver.core.LocalDate;
+import org.janusgraph.shaded.datastax.driver.core.Metadata;
+import org.janusgraph.shaded.datastax.driver.core.ResultSet;
+import org.janusgraph.shaded.datastax.driver.core.Row;
+import org.janusgraph.shaded.datastax.driver.core.Session;
+import org.janusgraph.shaded.datastax.driver.core.TableMetadata;
+import org.janusgraph.shaded.datastax.driver.core.Token;
+import org.janusgraph.shaded.datastax.driver.core.TupleValue;
+import org.janusgraph.shaded.datastax.driver.core.TypeCodec;
+import org.janusgraph.shaded.datastax.driver.core.UDTValue;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;

@@ -14,12 +14,12 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlIdentifier;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import org.janusgraph.shaded.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import io.vavr.Tuple;
 import io.vavr.collection.Array;
 import io.vavr.collection.HashMap;
@@ -58,9 +58,9 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.truncate;
-import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createKeyspace;
-import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.dropKeyspace;
+import static org.janusgraph.shaded.datastax.oss.driver.api.querybuilder.QueryBuilder.truncate;
+import static org.janusgraph.shaded.datastax.oss.driver.api.querybuilder.SchemaBuilder.createKeyspace;
+import static org.janusgraph.shaded.datastax.oss.driver.api.querybuilder.SchemaBuilder.dropKeyspace;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;

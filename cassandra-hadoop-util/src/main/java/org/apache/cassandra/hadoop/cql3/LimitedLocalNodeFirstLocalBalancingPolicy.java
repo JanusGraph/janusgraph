@@ -17,11 +17,11 @@
  */
 package org.apache.cassandra.hadoop.cql3;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.HostDistance;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.policies.LoadBalancingPolicy;
+import org.janusgraph.shaded.datastax.driver.core.Cluster;
+import org.janusgraph.shaded.datastax.driver.core.Host;
+import org.janusgraph.shaded.datastax.driver.core.HostDistance;
+import org.janusgraph.shaded.datastax.driver.core.Statement;
+import org.janusgraph.shaded.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;

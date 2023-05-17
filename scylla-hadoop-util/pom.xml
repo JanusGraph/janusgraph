@@ -23,34 +23,16 @@
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>com.datastax.cassandra</groupId>
-                    <artifactId>cassandra-driver-core</artifactId>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-shaded-datastax-java-driver</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
 
         <dependency>
-            <groupId>com.scylladb</groupId>
-            <artifactId>scylla-driver-core</artifactId>
-            <version>3.11.2.4</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.github.jnr</groupId>
-                    <artifactId>jnr-ffi</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.github.jnr</groupId>
-                    <artifactId>jnr-posix</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.dropwizard.metrics</groupId>
-                    <artifactId>metrics-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-handler</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-shaded-scylladb-java-driver</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

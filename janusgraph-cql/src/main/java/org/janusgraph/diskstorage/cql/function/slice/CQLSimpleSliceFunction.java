@@ -14,9 +14,9 @@
 
 package org.janusgraph.diskstorage.cql.function.slice;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.PreparedStatement;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.PermanentBackendException;

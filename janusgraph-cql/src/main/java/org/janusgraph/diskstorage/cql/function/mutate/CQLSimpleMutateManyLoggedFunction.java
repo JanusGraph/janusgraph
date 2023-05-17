@@ -14,8 +14,8 @@
 
 package org.janusgraph.diskstorage.cql.function.mutate;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.BatchStatement;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore;

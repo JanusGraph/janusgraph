@@ -57,14 +57,16 @@
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>com.datastax.oss</groupId>
-                    <artifactId>java-driver-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.datastax.oss</groupId>
-                    <artifactId>java-driver-query-builder</artifactId>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-shaded-datastax-java-driver</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-shaded-scylladb-java-driver</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -80,61 +82,6 @@
                 <exclusion>
                     <groupId>javax.annotation</groupId>
                     <artifactId>javax.annotation-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>com.scylladb</groupId>
-            <artifactId>java-driver-core</artifactId>
-            <version>${scylla-driver.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.json</groupId>
-                    <artifactId>json</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.esri.geometry</groupId>
-                    <artifactId>esri-geometry-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.tinkerpop</groupId>
-                    <artifactId>gremlin-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.tinkerpop</groupId>
-                    <artifactId>tinkergraph-gremlin</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-handler</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.ow2.asm</groupId>
-                    <artifactId>asm-commons</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.scylladb</groupId>
-            <artifactId>java-driver-query-builder</artifactId>
-            <version>${scylla-driver.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.json</groupId>
-                    <artifactId>json</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.tinkerpop</groupId>
-                    <artifactId>gremlin-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.tinkerpop</groupId>
-                    <artifactId>tinkergraph-gremlin</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-handler</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -156,12 +103,8 @@
             <type>test-jar</type>
             <exclusions>
                 <exclusion>
-                    <groupId>com.datastax.oss</groupId>
-                    <artifactId>java-driver-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.datastax.oss</groupId>
-                    <artifactId>java-driver-query-builder</artifactId>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-shaded-datastax-java-driver</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

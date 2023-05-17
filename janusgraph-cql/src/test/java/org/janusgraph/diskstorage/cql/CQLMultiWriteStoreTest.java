@@ -17,7 +17,7 @@ package org.janusgraph.diskstorage.cql;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.datastax.oss.driver.internal.core.session.DefaultSession;
+import org.janusgraph.shaded.datastax.oss.driver.internal.core.session.DefaultSession;
 import org.apache.commons.lang.UnhandledException;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.BackendException;

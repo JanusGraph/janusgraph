@@ -14,11 +14,11 @@
 
 package org.janusgraph.diskstorage.cql.function.slice;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.internal.core.cql.ResultSets;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.PreparedStatement;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.cql.Row;
+import org.janusgraph.shaded.datastax.oss.driver.internal.core.cql.ResultSets;
 import io.vavr.Tuple3;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.EntryList;

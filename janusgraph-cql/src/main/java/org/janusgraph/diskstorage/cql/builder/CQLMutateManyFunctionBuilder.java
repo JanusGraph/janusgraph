@@ -14,7 +14,7 @@
 
 package org.janusgraph.diskstorage.cql.builder;
 
-import com.datastax.oss.driver.api.core.CqlSession;
+import org.janusgraph.shaded.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.Configuration;
