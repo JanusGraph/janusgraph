@@ -39,7 +39,10 @@ For more details information, please see [here](janusgraph-dist/README.md#buildi
 
 ## Building Docker Image for JanusGraph Server
 
-We moved the docker build into an external repo: https://github.com/JanusGraph/janusgraph-docker.
+We moved the docker build back into the main repo, see `janusgraph-dist/docker`. You can use the default command to build the distribution archive to also build the docker images.
+```
+mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
+```
 
 ## Building on Eclipse IDE
 Note that this has only been tested on Eclipse Neon.2 Release (4.6.2) with m2e (1.7.0.20160603-1933) and m2e-wtp (1.3.1.20160831-1005) plugin.

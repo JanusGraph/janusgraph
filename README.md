@@ -6,6 +6,7 @@ distributed across a multi-machine cluster. JanusGraph is a transactional databa
 can support thousands of concurrent users, complex traversals, and analytic graph queries.
 
 [![Downloads][downloads-shield]][downloads-link]
+[![Docker pulls][docker-pulls-img]][docker-hub-url]
 [![Maven][maven-shield]][maven-link]
 [![Javadoc][javadoc-shield]][javadoc-link]
 [![GitHub Workflow Status][actions-shield]][actions-link]
@@ -30,6 +31,8 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [downloads-link]: https://github.com/JanusGraph/janusgraph/releases
 [codecov-shield]:https://codecov.io/gh/JanusGraph/janusgraph/branch/master/graph/badge.svg
 [codecov-link]:https://codecov.io/gh/JanusGraph/janusgraph
+[docker-pulls-img]: https://img.shields.io/docker/pulls/janusgraph/janusgraph.svg
+[docker-hub-url]: https://hub.docker.com/r/janusgraph/janusgraph
 
 ## Learn More
 
