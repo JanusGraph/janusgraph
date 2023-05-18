@@ -26,6 +26,8 @@
 
         <packname.standard>janusgraph-${project.version}</packname.standard>
         <packname.full>janusgraph-full-${project.version}</packname.full>
+        <docker.baseimage>eclipse-temurin:11-jre</docker.baseimage>
+        <docker.tag-suffix></docker.tag-suffix>
 
         <!-- Variables for integration testing on release-candidate archive files -->
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
@@ -280,7 +282,7 @@
                             <arguments>
                                 <!-- Classpath -->
                                 <argument>-classpath</argument>
-                                <classpath />
+                                <classpath/>
                                 <!-- Main Classname -->
                                 <mainClass>org.janusgraph.util.system.ConfigurationFileFilter</mainClass>
                                 <!-- Input directory (processed recursively) -->
@@ -457,6 +459,9 @@
                 <test.zipfile.path>${project.build.directory}/${packname.standard}.zip</test.zipfile.path>
                 <test.excluded.groups>FULL_TESTS</test.excluded.groups>
                 <build.full>none</build.full>
+                <packname.full>janusgraph-java-11-full-${project.version}</packname.full>
+                <docker.baseimage>eclipse-temurin:11-jre</docker.baseimage>
+                <docker.tag-suffix>-java-11</docker.tag-suffix>
             </properties>
         </profile>
         <profile>
@@ -473,35 +478,35 @@
 
             <build>
                 <plugins>
-                        <plugin>
-                            <artifactId>maven-jar-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>pack-test-jar</id>
-                                    <phase>package</phase>
-                                    <goals>
-                                        <goal>test-jar</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                        </plugin>
+                    <plugin>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>pack-test-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>test-jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
 
-                        <plugin>
-                            <artifactId>maven-compiler-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>compile-tests</id>
-                                    <phase>test-compile</phase>
-                                    <goals>
-                                        <goal>testCompile</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                        </plugin>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>compile-tests</id>
+                                <phase>test-compile</phase>
+                                <goals>
+                                    <goal>testCompile</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
 
-                        <plugin>
-                            <artifactId>maven-resources-plugin</artifactId>
-                            <executions>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
                             <execution>
                                 <id>filter-release-resources</id>
                                 <phase>process-resources</phase>
@@ -522,54 +527,54 @@
                                     </resources>
                                 </configuration>
                             </execution>
-                                <execution>
-                                    <id>filter-expect-scripts</id>
-                                    <phase>process-test-resources</phase>
-                                    <goals>
-                                        <goal>copy-resources</goal>
-                                    </goals>
-                                    <configuration>
-                                        <resources>
-                                            <resource>
-                                                <directory>${top.level.basedir}/janusgraph-dist/src/test/expect</directory>
-                                                <filtering>true</filtering>
-                                            </resource>
-                                        </resources>
-                                        <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
-                                    </configuration>
-                                </execution>
-                                <execution>
-                                    <id>filter-test-resources</id>
-                                    <phase>process-test-resources</phase>
-                                    <goals>
-                                        <goal>copy-resources</goal>
-                                    </goals>
-                                    <configuration>
-                                        <resources>
-                                            <resource>
-                                                <directory>${top.level.basedir}/janusgraph-dist/src/test/resources</directory>
-                                                <filtering>true</filtering>
-                                            </resource>
-                                        </resources>
-                                        <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
-                                    </configuration>
-                                </execution>
-                                <execution>
-                                    <id>copy-test-cfiles</id>
-                                    <phase>process-test-resources</phase>
-                                    <goals>
-                                        <goal>copy-resources</goal>
-                                    </goals>
-                                    <configuration>
-                                        <resources>
-                                            <resource>
-                                                <directory>${assembly.cfilter.out.dir}</directory>
-                                                <filtering>false</filtering>
-                                            </resource>
-                                        </resources>
-                                        <outputDirectory>${project.build.directory}</outputDirectory>
-                                    </configuration>
-                                </execution>
+                            <execution>
+                                <id>filter-expect-scripts</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <resources>
+                                        <resource>
+                                            <directory>${top.level.basedir}/janusgraph-dist/src/test/expect</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>filter-test-resources</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <resources>
+                                        <resource>
+                                            <directory>${top.level.basedir}/janusgraph-dist/src/test/resources</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-test-cfiles</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <resources>
+                                        <resource>
+                                            <directory>${assembly.cfilter.out.dir}</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                </configuration>
+                            </execution>
                             <execution>
                                 <id>copy-compat-test-config</id>
                                 <phase>process-resources</phase>
@@ -589,77 +594,77 @@
                                     </resources>
                                 </configuration>
                             </execution>
-                            </executions>
-                        </plugin>
+                        </executions>
+                    </plugin>
 
-                        <plugin>
-                            <artifactId>maven-failsafe-plugin</artifactId>
-                            <configuration>
-                                <forkCount>1</forkCount>
-                                <reuseForks>false</reuseForks>
-                                <testClassesDirectory>${top.level.basedir}/janusgraph-dist/target/test-classes</testClassesDirectory>
-                            </configuration>
-                            <executions>
-                                <execution>
-                                    <id>integration-test</id>
-                                    <phase>integration-test</phase>
-                                    <goals>
-                                        <goal>integration-test</goal>
-                                    </goals>
-                                    <configuration>
-                                        <skip>${skipDefaultDistroIT}</skip>
-                                        <failIfNoTests>false</failIfNoTests>
-                                        <excludedGroups>${test.excluded.groups}</excludedGroups>
-                                        <excludes>
-                                            <exclude>**/*HBase*IT.java</exclude>
-                                            <exclude>**/*CompatIT.java</exclude>
-                                        </excludes>
-                                    </configuration>
-                                </execution>
-                                <execution>
-                                    <id>hbase-integration-test</id>
-                                    <phase>integration-test</phase>
-                                    <goals>
-                                        <goal>integration-test</goal>
-                                    </goals>
-                                    <configuration>
-                                        <argLine>-Dtest.hbase.parentdir=${top.level.basedir}/janusgraph-hbase-parent/</argLine>
-                                        <reportNameSuffix>hbase</reportNameSuffix>
-                                        <failIfNoTests>false</failIfNoTests>
-                                        <includes>
-                                            <include>**/*HBase*IT.java</include>
-                                        </includes>
-                                    </configuration>
-                                </execution>
-                                <!-- Commented until the first 0.9/1.0 release
-                                <execution>
-                                    <id>version-compat-integration-test</id>
-                                    <phase>integration-test</phase>
-                                    <goals>
-                                        <goal>integration-test</goal>
-                                    </goals>
-                                    <configuration>
-                                        <reportNameSuffix>compat</reportNameSuffix>
-                                        <failIfNoTests>false</failIfNoTests>
-                                        <skip>${skipCompatITs}</skip>
-                                        <includes>
-                                            <include>**/*CompatIT.java</include>
-                                        </includes>
-                                    </configuration>
-                                </execution>
-                                -->
-                                <execution>
-                                    <id>verify</id>
-                                    <phase>verify</phase>
-                                    <goals>
-                                        <goal>verify</goal>
-                                    </goals>
-                                    <configuration>
-                                        <failIfNoTests>true</failIfNoTests>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <testClassesDirectory>${top.level.basedir}/janusgraph-dist/target/test-classes</testClassesDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>integration-test</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${skipDefaultDistroIT}</skip>
+                                    <failIfNoTests>false</failIfNoTests>
+                                    <excludedGroups>${test.excluded.groups}</excludedGroups>
+                                    <excludes>
+                                        <exclude>**/*HBase*IT.java</exclude>
+                                        <exclude>**/*CompatIT.java</exclude>
+                                    </excludes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>hbase-integration-test</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                                <configuration>
+                                    <argLine>-Dtest.hbase.parentdir=${top.level.basedir}/janusgraph-hbase-parent/</argLine>
+                                    <reportNameSuffix>hbase</reportNameSuffix>
+                                    <failIfNoTests>false</failIfNoTests>
+                                    <includes>
+                                        <include>**/*HBase*IT.java</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                            <!-- Commented until the first 0.9/1.0 release
+                            <execution>
+                                <id>version-compat-integration-test</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                                <configuration>
+                                    <reportNameSuffix>compat</reportNameSuffix>
+                                    <failIfNoTests>false</failIfNoTests>
+                                    <skip>${skipCompatITs}</skip>
+                                    <includes>
+                                        <include>**/*CompatIT.java</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                            -->
+                            <execution>
+                                <id>verify</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>verify</goal>
+                                </goals>
+                                <configuration>
+                                    <failIfNoTests>true</failIfNoTests>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <executions>
@@ -732,6 +737,64 @@
                                     <descriptors>
                                         <descriptor>${assembly.descriptor.dir}/javadocs.xml</descriptor>
                                     </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>docker-build</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>./docker/build-and-push-image.sh</executable>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                    <arguments>
+                                        <argument>${project.version}</argument>
+                                        <argument>${docker.baseimage}</argument>
+                                        <argument>${packname.standard}</argument>
+                                        <argument>${docker.tag-suffix}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>docker-test</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${skipTests}</skip>
+                                    <executable>./docker/test-image.sh</executable>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                    <arguments>
+                                        <argument>docker.io/janusgraph/janusgraph:${project.version}${docker.tag-suffix}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>docker-deploy</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>./docker/build-and-push-image.sh</executable>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                    <arguments>
+                                        <argument>${project.version}</argument>
+                                        <argument>${docker.baseimage}</argument>
+                                        <argument>${packname.standard}</argument>
+                                        <argument>${docker.tag-suffix}</argument>
+                                        <argument>push</argument>
+                                    </arguments>
                                 </configuration>
                             </execution>
                         </executions>

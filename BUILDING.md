@@ -39,46 +39,9 @@ For more details information, please see [here](janusgraph-dist/README.md#buildi
 
 ## Building Docker Image for JanusGraph Server
 
-In order to build Docker image for JanusGraph Server, a
-distribution archive is needed. If you wish to build an image from source
-refer to `To build the distribution archive` section to build the distribution
-archive first. You can also use an [official release](https://github.com/JanusGraph/janusgraph/releases) to avoid building.
-To do so check out the release tag you wish to build, example: `git checkout v0.2.0`. Then create target
-directory that houses the distribution zip with `mkdir janusgraph-dist/target`.
-The [downloaded release](https://github.com/JanusGraph/janusgraph/releases)
-is then placed in the recently created target directory. Note that if the
-tag is not found you can run `git fetch --all --tags --prune` and then rerun the checkout command.
-
-Once the distribution is in place use the following command
-to build and run Docker images with JanusGraph Server, configured
-to run the BerkeleyJE backend and Elasticsearch (requires [Docker Compose](https://docs.docker.com/compose/)):
-
-```bash
-mvn docker:build -Pjanusgraph-docker -pl janusgraph-dist
-docker-compose -f janusgraph-dist/docker-compose.yml up
+We moved the docker build back into the main repo, see `janusgraph-dist/docker`. You can use the default command to build the distribution archive to also build the docker images.
 ```
-
-If you are building the Docker image behind a proxy please set an environment variable for either http_proxy or https_proxy accordingly.
-
-Note the above `docker-compose` call launches containers in the foreground and is convenient for monitoring logs but add "-d" to instead run in the background.
-
-To connect to the server in the same container on the console:
-
-```bash
-docker exec -i -t janusgraph /var/janusgraph/bin/gremlin.sh
-```
-
-Then you can interact with the graph on the console through the `:remote` interface:
-
-```groovy
-gremlin> :remote connect tinkerpop.server conf/remote.yaml
-==>Configured localhost/127.0.0.1:8182
-gremlin> :remote console
-==>All scripts will now be sent to Gremlin Server - [localhost/127.0.0.1:8182] - type ':remote console' to return to local mode
-gremlin> GraphOfTheGodsFactory.load(graph)
-==>null
-gremlin> g = graph.traversal()
-==>graphtraversalsource[standardjanusgraph[berkeleyje:db/berkeley], standard]
+mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
 ```
 
 ## Building on Eclipse IDE
