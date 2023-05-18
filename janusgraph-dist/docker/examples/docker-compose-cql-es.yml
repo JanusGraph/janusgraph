@@ -1,0 +1,63 @@
+# Copyright 2023 JanusGraph Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: "3"
+
+services:
+  janusgraph:
+    image: docker.io/janusgraph/janusgraph:latest
+    container_name: jce-janusgraph
+    environment:
+      JANUS_PROPS_TEMPLATE: cql-es
+      janusgraph.storage.hostname: jce-cassandra
+      janusgraph.index.search.hostname: jce-elastic
+    ports:
+      - "8182:8182"
+    networks:
+      - jce-network
+    healthcheck:
+      test: ["CMD", "bin/gremlin.sh", "-e", "scripts/remote-connect.groovy"]
+      interval: 10s
+      timeout: 30s
+      retries: 3
+
+  cassandra:
+    image: cassandra:3
+    container_name: jce-cassandra
+    ports:
+      - "9042:9042"
+      - "9160:9160"
+    networks:
+      - jce-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.6.0
+    container_name: jce-elastic
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "http.host=0.0.0.0"
+      - "network.host=0.0.0.0"
+      - "transport.host=127.0.0.1"
+      - "cluster.name=docker-cluster"
+      - "xpack.security.enabled=false"
+      - "discovery.zen.minimum_master_nodes=1"
+    ports:
+      - "9200:9200"
+    networks:
+      - jce-network
+
+networks:
+  jce-network:
+volumes:
+  janusgraph-default-data:
