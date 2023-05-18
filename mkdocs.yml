@@ -127,6 +127,7 @@ nav:
   - Operations:
     - JanusGraph Server: operations/server.md
     - Deployment Scenarios: operations/deployment.md
+    - JanusGraph Container: operations/container.md
     - ConfiguredGraphFactory: operations/configured-graph-factory.md
     - Dynamic Graphs: operations/dynamic-graphs.md
     - Batch Processing: operations/batch-processing.md

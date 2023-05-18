@@ -2,14 +2,13 @@
 
 ## Building zip archives
 
-Run `mvn clean install -Pjanusgraph-release -Dgpg.skip=true
--DskipTests=true`.  This command can be run from either the root of
-the JanusGraph repository (the parent of the janusgraph-dist directory) or the
-janusgraph-dist directory.  Running from the root of the repository is
-recommended.  Running from janusgraph-dist requires that JanusGraph's jars be
-available on either Sonatype, Maven Central, or your local Maven
-repository (~/.m2/repository/) depending on whether you're building a
-SNAPSHOT or a release tag.
+Run `mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true -Pjava-11`.  
+This command can be run from either the root of the JanusGraph repository 
+(the parent of the janusgraph-dist directory) or the janusgraph-dist directory.
+Running from the root of the repository is recommended.  Running from 
+janusgraph-dist requires that JanusGraph's jars be available on either 
+Sonatype, Maven Central, or your local Maven repository (~/.m2/repository/)
+depending on whether you're building a SNAPSHOT or a release tag.
 
 This command writes one archive:
 
