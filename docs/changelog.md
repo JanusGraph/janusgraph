@@ -72,7 +72,7 @@ compile "org.janusgraph:janusgraph-core:1.0.0"
 * Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.6.0
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
-* Apache TinkerPop 3.6.2
+* Apache TinkerPop 3.6.4
 * Java 8, 11
 
 !!! note
