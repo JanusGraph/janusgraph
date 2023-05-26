@@ -47,8 +47,6 @@ import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.cql.function.slice.AsyncCQLSliceFunction;
 import org.janusgraph.diskstorage.cql.function.slice.CQLSliceFunction;
-import org.janusgraph.diskstorage.util.CompletableFutureUtil;
-import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
@@ -58,6 +56,8 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
 import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.CompletableFutureUtil;
+import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,8 +65,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
@@ -120,15 +118,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     public static final String LIMIT_BINDING = "maxRows";
 
     public static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> {
-        // Unwrap any ExecutionExceptions to get to the real cause:
-        while (cause instanceof ExecutionException || cause instanceof CompletionException) {
-            Throwable t = cause.getCause();
-            if (t == null) {
-                break;
-            } else {
-                cause = t;
-            }
-        }
+        cause = CompletableFutureUtil.unwrapExecutionException(cause);
         if(cause instanceof InterruptedException || cause.getCause() instanceof InterruptedException){
             Thread.currentThread().interrupt();
             return new PermanentBackendException(cause instanceof InterruptedException ? cause : cause.getCause());

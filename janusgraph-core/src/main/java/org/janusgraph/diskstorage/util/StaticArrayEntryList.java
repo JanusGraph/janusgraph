@@ -426,25 +426,29 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
         executorService.execute(() -> {
 
-            if(!chunkedJobDefinition.getProcessingLock().tryLock() || chunkedJobDefinition.getResult().isDone()){
+            Queue<Iterator<E>> chunksQueue = chunkedJobDefinition.getDataChunks();
+
+            if(!chunkedJobDefinition.getProcessingLock().tryLock()){
                 return;
             }
 
-            Queue<Iterator<E>> chunksQueue = chunkedJobDefinition.getDataChunks();
-            Iterator<E> elements = chunksQueue.isEmpty() ? Collections.emptyIterator() : chunksQueue.remove();
-
-            EntryListComputationContext context = chunkedJobDefinition.getProcessedDataContext();
-
-            if(context == null){
-                if(chunkedJobDefinition.isLastChunkRetrieved() && chunksQueue.isEmpty() && !elements.hasNext()){
-                    chunkedJobDefinition.complete(EMPTY_LIST);
+            try {
+                if(chunkedJobDefinition.getResult().isDone()){
                     return;
                 }
-                context = generateComputationContext();
-                chunkedJobDefinition.setProcessedDataContext(context);
-            }
 
-            try {
+                Iterator<E> elements = chunksQueue.isEmpty() ? Collections.emptyIterator() : chunksQueue.remove();
+
+                EntryListComputationContext context = chunkedJobDefinition.getProcessedDataContext();
+
+                if(context == null){
+                    if(chunkedJobDefinition.isLastChunkRetrieved() && chunksQueue.isEmpty() && !elements.hasNext()){
+                        chunkedJobDefinition.complete(EMPTY_LIST);
+                        return;
+                    }
+                    context = generateComputationContext();
+                    chunkedJobDefinition.setProcessedDataContext(context);
+                }
 
                 do {
                     if(elements.hasNext()){
@@ -457,11 +461,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
                 } while (true);
 
                 if(chunkedJobDefinition.isLastChunkRetrieved() && chunksQueue.isEmpty()){
-                    if(context.metadataSchema == null){
-                        chunkedJobDefinition.complete(EMPTY_LIST);
-                    } else {
-                        chunkedJobDefinition.complete(convert(context));
-                    }
+                    chunkedJobDefinition.complete(context.metadataSchema == null ? EMPTY_LIST : convert(context));
                 }
 
             } catch (Throwable throwable){

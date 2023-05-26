@@ -123,9 +123,7 @@ public class QueryBackPressureBuilderTest {
         }
     }
 
-    public static class CustomQueryBackPressureNoArgs extends PassAllQueryBackPressure{
-        public CustomQueryBackPressureNoArgs() {super();}
-    }
+    public static class CustomQueryBackPressureNoArgs extends PassAllQueryBackPressure{}
 
     public static class CustomQueryBackPressureWrongArgs extends PassAllQueryBackPressure{
         public CustomQueryBackPressureWrongArgs(String wrongArg) {}

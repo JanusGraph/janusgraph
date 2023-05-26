@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.util.backpressure;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -23,6 +22,7 @@ import java.util.concurrent.Executors;
 
 import static org.janusgraph.util.system.ExecuteUtil.gracefulExecutorServiceShutdown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QueryBackPressureTest {
 
@@ -47,6 +47,7 @@ public class QueryBackPressureTest {
         }
         assertEquals(0, semaphore.availablePermits());
         semaphore.close();
+        assertTrue(semaphore.hadWarningLogged());
     }
 
     @Test
@@ -107,7 +108,7 @@ public class QueryBackPressureTest {
         }
         // Sleep for 2 seconds and check that no acquires are happened due to `backPressure` being exhausted
         Thread.sleep(2000);
-        Assertions.assertEquals(acquiresThreads, acquiresCountDownLatch.getCount());
+        assertEquals(acquiresThreads, acquiresCountDownLatch.getCount());
 
         for(int i=0;i<acquiresThreads;i++){
             releaseExecutorService.execute(backPressure::releaseAfterQuery);

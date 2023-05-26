@@ -20,20 +20,43 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 
 public class CompletableFutureUtil {
+
+    private CompletableFutureUtil(){}
+
+    /**
+     * If possible, returns the first root cause exception which is not `ExecutionException` and not `CompletionException`.
+     * Notice, that during the traversal process any suppressed parent's exceptions are added to the child exception.
+     * Thus, this function not only searches for the root cause exception but also modifies it's suppressed exceptions list
+     * to include all suppressed parent's exceptions.
+     */
+    public static Throwable unwrapExecutionException(Throwable e){
+        // Unwrap any ExecutionExceptions to get to the real cause:
+        Throwable rootException = e;
+        while (rootException.getCause() != null && (rootException instanceof ExecutionException || rootException instanceof CompletionException)){
+            Throwable cause = rootException.getCause();
+            for(Throwable suppressedException : rootException.getSuppressed()){
+                cause.addSuppressed(suppressedException);
+            }
+            rootException = cause;
+        }
+        return rootException;
+    }
 
     public static <T> T get(CompletableFuture<T> future){
         try {
             return future.get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new JanusGraphException(e);
         } catch (Throwable e) {
-            if(e.getCause() instanceof InterruptedException){
-                throw new JanusGraphException(e.getCause());
+            Throwable rootException = unwrapExecutionException(e);
+            if(rootException instanceof InterruptedException){
+                Thread.currentThread().interrupt();
+            } else if(rootException.getCause() instanceof InterruptedException){
+                rootException = rootException.getCause();
             }
-            throw new JanusGraphException(e);
+            throw new JanusGraphException(rootException);
         }
     }
 
