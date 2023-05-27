@@ -74,8 +74,12 @@ public class ChunkedJobDefinition<T, C, R> {
         this.lastChunkRetrieved = true;
     }
 
-    public ReentrantLock getProcessingLock() {
-        return processingLock;
+    public boolean tryLockProcessing() {
+        return processingLock.tryLock();
+    }
+
+    public void unlockProcessing() {
+        processingLock.unlock();
     }
 
     public C getProcessedDataContext() {

@@ -86,8 +86,8 @@ public class AsyncCQLSliceFunction implements CQLSliceFunction{
     }
 
     /**
-     * This method is non-blocking because it's executed in CQL IO thread.
-     * Any computation heavy operation is executed in `executorService`.
+     * This method must be non-blocking because it's executed in CQL IO thread.
+     * Any computation heavy operation must be executed via `executorService`.
      */
     private void acceptDataChunk(final AsyncResultSet resultSet, final Throwable exception,
                                  final ChunkedJobDefinition<Iterator<Tuple3<StaticBuffer, StaticBuffer, Row>>, EntryListComputationContext, EntryList> chunkedJobDefinition) {

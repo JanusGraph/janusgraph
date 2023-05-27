@@ -428,7 +428,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
             Queue<Iterator<E>> chunksQueue = chunkedJobDefinition.getDataChunks();
 
-            if(!chunkedJobDefinition.getProcessingLock().tryLock()){
+            if(!chunkedJobDefinition.tryLockProcessing()){
                 return;
             }
 
@@ -468,7 +468,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
                 chunkedJobDefinition.getResult().completeExceptionally(throwable);
                 return;
             } finally {
-                chunkedJobDefinition.getProcessingLock().unlock();
+                chunkedJobDefinition.unlockProcessing();
             }
 
             if(!chunksQueue.isEmpty() || chunkedJobDefinition.isLastChunkRetrieved() && !chunkedJobDefinition.getResult().isDone()){
