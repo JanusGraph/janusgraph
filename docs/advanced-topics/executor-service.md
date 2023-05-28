@@ -38,10 +38,8 @@ are typically those configuration options which are provided via configurations 
 
 ## Cassandra backend ExecutorService
 
-Cassandra backend has multi-key queries support. Thus, `storage.parallel-backend-executor-service` is ignored and not 
-in use when Cassandra backend is in use.  
-Nevertheless, Cassandra backend doesn't use `storage.parallel-backend-executor-service` for IO operations it has its 
-own internal ExecutorService for queries deserialization processing.  
+Although Cassandra backend doesn't use `storage.parallel-backend-executor-service` due to having multi-key queries support, it 
+has its own internal ExecutorService for queries deserialization processing.  
 Usually it's not recommended to configure this executor service because it's considered to be optimal by default.  
 In case when the default executor service doesn't fit user's use-case for any reason, the configuration options under 
 `storage.cql.executor-service` can be used to modify it.  
