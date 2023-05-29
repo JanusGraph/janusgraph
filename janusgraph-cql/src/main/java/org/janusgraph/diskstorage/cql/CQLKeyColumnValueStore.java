@@ -16,12 +16,11 @@ package org.janusgraph.diskstorage.cql;
 
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
@@ -34,8 +33,6 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.datastax.oss.driver.api.querybuilder.schema.compaction.CompactionStrategy;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
-import io.vavr.Tuple;
-import io.vavr.Tuple3;
 import io.vavr.collection.Array;
 import io.vavr.collection.Iterator;
 import io.vavr.control.Try;
@@ -48,8 +45,7 @@ import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.cql.function.slice.CQLExecutorServiceSliceFunction;
-import org.janusgraph.diskstorage.cql.function.slice.CQLSimpleSliceFunction;
+import org.janusgraph.diskstorage.cql.function.slice.AsyncCQLSliceFunction;
 import org.janusgraph.diskstorage.cql.function.slice.CQLSliceFunction;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -60,15 +56,15 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
 import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.util.RecordIterator;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.CompletableFutureUtil;
+import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
 
-import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
+import java.util.NoSuchElementException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
@@ -122,14 +118,13 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     public static final String LIMIT_BINDING = "maxRows";
 
     public static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> {
-        // Unwrap any ExecutionExceptions to get to the real cause:
-        while (cause instanceof ExecutionException) {
-            Throwable t = ((ExecutionException) cause).getCause();
-            if (t == null) {
-                break;
-            } else {
-                cause = t;
-            }
+        cause = CompletableFutureUtil.unwrapExecutionException(cause);
+        if(cause instanceof InterruptedException || cause.getCause() instanceof InterruptedException){
+            Thread.currentThread().interrupt();
+            return new PermanentBackendException(cause instanceof InterruptedException ? cause : cause.getCause());
+        }
+        if(cause instanceof BackendException){
+            return (BackendException) cause;
         }
         return Match(cause).of(
             Case($(instanceOf(QueryValidationException.class)), PermanentBackendException::new),
@@ -166,6 +161,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private final PreparedStatement insertColumnWithTTL;
 
     private final CQLSliceFunction cqlSliceFunction;
+    private final QueryBackPressure queryBackPressure;
 
     /**
      * Creates an instance of the {@link KeyColumnValueStore} that stores the data in a CQL backed table.
@@ -247,13 +243,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             this.insertColumnWithTTL = null;
         }
 
-        Optional<ExecutorService> executorService = this.storeManager.getExecutorService();
-
-        if(executorService.isPresent()){
-            cqlSliceFunction = new CQLExecutorServiceSliceFunction(session, getSlice, getter, executorService.get());
-        } else {
-            cqlSliceFunction = new CQLSimpleSliceFunction(session, getSlice, getter);
-        }
+        ExecutorService executorService = storeManager.getExecutorService();
+        queryBackPressure = storeManager.getQueriesBackPressure();
+        cqlSliceFunction = new AsyncCQLSliceFunction(session, getSlice, getter, executorService, queryBackPressure);
 
         // @formatter:on
     }
@@ -388,39 +380,23 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws BackendException {
-        return cqlSliceFunction.getSlice(query, txh);
+        try {
+            return cqlSliceFunction.getSlice(query, txh).get();
+        } catch (Throwable throwable){
+            throw EXCEPTION_MAPPER.apply(throwable);
+        }
     }
 
     @Override
     public Map<StaticBuffer, EntryList> getSlice(final List<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh) throws BackendException {
-        throw new UnsupportedOperationException("The CQL backend does not support multi-key queries");
-    }
-
-    public static class CQLResultSetIterator implements RecordIterator<Tuple3<StaticBuffer, StaticBuffer, Row>> {
-
-        private java.util.Iterator<Row> resultSetIterator;
-
-        public CQLResultSetIterator(ResultSet rs) {
-            resultSetIterator = rs.iterator();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return resultSetIterator.hasNext();
-        }
-
-        @Override
-        public Tuple3<StaticBuffer, StaticBuffer, Row> next() {
-            Row nextRow = resultSetIterator.next();
-            return nextRow == null
-                ? null
-                : Tuple.of(StaticArrayBuffer.of(nextRow.getByteBuffer(COLUMN_COLUMN_NAME)),
-                           StaticArrayBuffer.of(nextRow.getByteBuffer(VALUE_COLUMN_NAME)), nextRow);
-        }
-
-        @Override
-        public void close() throws IOException {
-            // NOP
+        try {
+            Map<StaticBuffer, CompletableFuture<EntryList>> futureResult = new HashMap<>(keys.size());
+            for(StaticBuffer key : keys){
+                futureResult.put(key, cqlSliceFunction.getSlice(new KeySliceQuery(key, query), txh));
+            }
+            return CompletableFutureUtil.unwrap(futureResult);
+        } catch (Throwable e) {
+            throw EXCEPTION_MAPPER.apply(e);
         }
     }
 
@@ -515,36 +491,63 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     /**
-     * This class provides a paging implementation that sits on top of the DSE Cassandra driver. The driver already
-     * has its own built in paging support but this has limitations when doing a full scan of the key ring due
-     * to how driver paging metadata is stored. The driver stores a full history of a given query's paging metadata
-     * which can lead to OOM issues on non-trivially sized data sets. This class overcomes this by forcing the internal
-     * metadata which isn't needed anymore to be deleted to be free for GC.
+     * This class provides a paging implementation that sits on top of the DSE Cassandra driver.
      */
     private class CQLPagingIterator implements Iterator<Row> {
 
-        private final List<ExecutionInfo> dseStoredExecutionInfos;
-        private final java.util.Iterator<Row> currentPageIterator;
+        private java.util.Iterator<Row> currentPageIterator = Collections.emptyIterator();
+
+        private CompletableFuture<AsyncResultSet> futureResultSet;
+        private AsyncResultSet currentAsyncResultSet;
 
         public CQLPagingIterator(BoundStatement boundStatement) {
-            ResultSet currentResultSet = session.execute(boundStatement);
-            currentPageIterator = currentResultSet.iterator();
-            this.dseStoredExecutionInfos = currentResultSet.getExecutionInfos();
+            queryBackPressure.acquireBeforeQuery();
+            try{
+                futureResultSet = session.executeAsync(boundStatement)
+                    .whenComplete((asyncResultSet, throwable) -> queryBackPressure.releaseAfterQuery()).toCompletableFuture();
+            } catch (RuntimeException e){
+                queryBackPressure.releaseAfterQuery();
+                throw e;
+            }
         }
 
         @Override
         public boolean hasNext() {
-            return currentPageIterator.hasNext();
+            if(currentPageIterator.hasNext()){
+                return true;
+            }
+
+            if(currentAsyncResultSet == null){
+                currentAsyncResultSet = CompletableFutureUtil.get(futureResultSet);
+                currentPageIterator = currentAsyncResultSet.currentPage().iterator();
+                if(currentPageIterator.hasNext()){
+                    return true;
+                }
+            }
+
+            if(currentAsyncResultSet.hasMorePages()){
+                queryBackPressure.acquireBeforeQuery();
+                try{
+                    futureResultSet = currentAsyncResultSet.fetchNextPage()
+                        .whenComplete((asyncResultSet, throwable) -> queryBackPressure.releaseAfterQuery()).toCompletableFuture();
+                } catch (RuntimeException e){
+                    queryBackPressure.releaseAfterQuery();
+                    throw e;
+                }
+                currentAsyncResultSet = CompletableFutureUtil.get(futureResultSet);
+                currentPageIterator = currentAsyncResultSet.currentPage().iterator();
+                return hasNext();
+            }
+
+            return false;
         }
 
         @Override
         public Row next() {
-            if(dseStoredExecutionInfos.size()>1){
-                ExecutionInfo lastExecutionInfo = dseStoredExecutionInfos.get(dseStoredExecutionInfos.size()-1);
-                dseStoredExecutionInfos.clear();
-                dseStoredExecutionInfos.add(lastExecutionInfo);
+            if(hasNext()){
+                return currentPageIterator.next();
             }
-            return currentPageIterator.next();
+            throw new NoSuchElementException();
         }
     }
 }

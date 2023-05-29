@@ -18,6 +18,10 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ExecutorServiceBuilder;
+import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
+import org.janusgraph.diskstorage.util.backpressure.builder.QueryBackPressureBuilder;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 
@@ -199,6 +203,38 @@ public interface CQLConfigOptions {
             "The maximum number of requests that can be executed concurrently on a connection.",
             ConfigOption.Type.MASKABLE,
             1024);
+
+    ConfigOption<Integer> BACK_PRESSURE_LIMIT = new ConfigOption<>(
+        CQL_NS,
+        "back-pressure-limit",
+        "The maximum number of concurrent requests which are allowed to be processed by CQL driver. " +
+            "If no value is provided or the value is set to `0` then the value will be calculated based on CQL driver " +
+            "session provided parameters by using formula ["+DefaultDriverOption.CONNECTION_MAX_REQUESTS.getPath()+" * "
+            +DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE.getPath()+" * available_nodes_amount]. " +
+            "It's not recommended to use any value which is above this limit because it may result in CQL driver overload " +
+            "but it's suggested to have a lower value to keep the driver healthy under pressure. In situations when remote " +
+            "nodes connections are in use then the bigger value might be relevant as well to improve parallelism.",
+        ConfigOption.Type.MASKABLE,
+        Integer.class);
+
+    ConfigOption<String> BACK_PRESSURE_CLASS = new ConfigOption<>(
+        CQL_NS,
+        "back-pressure-class",
+        "The implementation of `QueryBackPressure` to use. " +
+            "The full name of the class which extends `"+ QueryBackPressure.class.getSimpleName()+"` which has either " +
+            "a public constructor with `"+ Configuration.class.getSimpleName()+" janusGraphConfiguration` and `"+
+            Integer.class.getSimpleName()+" backPressureLimit` arguments (preferred constructor) or a public constructor with `"+
+            Configuration.class.getSimpleName()+" janusGraphConfiguration` argument (second preferred constructor) or "+
+            "a public parameterless constructor. Other accepted options are:<br> `"+
+            QueryBackPressureBuilder.SEMAPHORE_QUERY_BACK_PRESSURE_CLASS+"` - fair semaphore based back pressure implementation of `"
+            +BACK_PRESSURE_LIMIT.getName()+"` limit size (preferred implementation);<br> `"
+            +QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS+"` - fair semaphore based back pressure " +
+            "implementation of `"+BACK_PRESSURE_LIMIT.getName()+"` limit size with protected releasing logic (meant to be used for testing);<br> `"
+            +QueryBackPressureBuilder.PASS_ALL_QUERY_BACK_PRESSURE_CLASS+"` - turned off back pressure (it is recommended to tune " +
+            "CQL driver for the ongoing workload when this implementation is used);",
+        ConfigOption.Type.MASKABLE,
+        String.class,
+        QueryBackPressureBuilder.SEMAPHORE_QUERY_BACK_PRESSURE_CLASS);
 
     ConfigOption<Long> HEARTBEAT_INTERVAL = new ConfigOption<>(
         CQL_NS,
@@ -601,27 +637,14 @@ public interface CQLConfigOptions {
     ConfigNamespace EXECUTOR_SERVICE = new ConfigNamespace(
         CQL_NS,
         "executor-service",
-        "Configuration options for CQL executor service which is used to process CQL queries.");
-
-    ConfigOption<Boolean> EXECUTOR_SERVICE_ENABLED = new ConfigOption<>(
-        EXECUTOR_SERVICE,
-        "enabled",
-        "Whether to use CQL executor service to process queries or not. If not used, the parallelism will be " +
-            "controlled internally by the CQL driver via `"+MAX_REQUESTS_PER_CONNECTION.toStringWithoutRoot()+"` parameter " +
-            "which may be preferable in production environments. " +
-            "Disabling executor service reduces overhead of thread pool but might be more difficult to tune.",
-        ConfigOption.Type.LOCAL,
-        Boolean.class,
-        false);
+        "Configuration options for CQL executor service which is used to process deserialization of CQL queries.");
 
     ConfigOption<Integer> EXECUTOR_SERVICE_CORE_POOL_SIZE = new ConfigOption<>(
         EXECUTOR_SERVICE,
         GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE.getName(),
-        "Core pool size for executor service. May be ignored if custom executor service is used " +
-            "(depending on the implementation of the executor service).",
+        GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE.getDescription(),
         ConfigOption.Type.LOCAL,
-        Integer.class,
-        10);
+        Integer.class);
 
     ConfigOption<Integer> EXECUTOR_SERVICE_MAX_POOL_SIZE = new ConfigOption<>(
         EXECUTOR_SERVICE,
@@ -645,7 +668,7 @@ public interface CQLConfigOptions {
         GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CLASS.getDescription(),
         ConfigOption.Type.LOCAL,
         String.class,
-        "fixed");
+        ExecutorServiceBuilder.FIXED_THREAD_POOL_CLASS);
 
     ConfigOption<Long> EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME = new ConfigOption<>(
         EXECUTOR_SERVICE,

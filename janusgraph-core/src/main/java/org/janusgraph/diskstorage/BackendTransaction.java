@@ -318,8 +318,17 @@ public class BackendTransaction implements LoggableTransaction {
                 final AtomicInteger failureCount = new AtomicInteger(0);
                 EntryList[] resultArray = new EntryList[keys.size()];
                 for (int i = 0; i < keys.size(); i++) {
-                    threadPool.execute(new SliceQueryRunner(new KeySliceQuery(keys.get(i), query),
-                            doneSignal, failureCount, resultArray, i));
+                    final int pos = i;
+                    threadPool.execute(() -> {
+                        try {
+                            resultArray[pos] = edgeStoreQuery(new KeySliceQuery(keys.get(pos), query));
+                        } catch (Exception e) {
+                            failureCount.incrementAndGet();
+                            log.warn("Individual query in multi-transaction failed: ", e);
+                        } finally {
+                            doneSignal.countDown();
+                        }
+                    });
                 }
                 try {
                     doneSignal.await();
@@ -335,38 +344,6 @@ public class BackendTransaction implements LoggableTransaction {
                 }
             }
             return results;
-        }
-    }
-
-    private class SliceQueryRunner implements Runnable {
-
-        final KeySliceQuery kq;
-        final CountDownLatch doneSignal;
-        final AtomicInteger failureCount;
-        final Object[] resultArray;
-        final int resultPosition;
-
-        private SliceQueryRunner(KeySliceQuery kq, CountDownLatch doneSignal, AtomicInteger failureCount,
-                                 Object[] resultArray, int resultPosition) {
-            this.kq = kq;
-            this.doneSignal = doneSignal;
-            this.failureCount = failureCount;
-            this.resultArray = resultArray;
-            this.resultPosition = resultPosition;
-        }
-
-        @Override
-        public void run() {
-            try {
-                List<Entry> result;
-                result = edgeStoreQuery(kq);
-                resultArray[resultPosition] = result;
-            } catch (Exception e) {
-                failureCount.incrementAndGet();
-                log.warn("Individual query in multi-transaction failed: ", e);
-            } finally {
-                doneSignal.countDown();
-            }
         }
     }
 

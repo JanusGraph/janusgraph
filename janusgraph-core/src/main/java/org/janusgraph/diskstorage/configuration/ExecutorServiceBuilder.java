@@ -149,7 +149,7 @@ public class ExecutorServiceBuilder {
     }
 
     private static int toPoolSize(Integer poolSize){
-        return poolSize != null ? poolSize :
+        return poolSize != null && poolSize != -1 ? poolSize :
             Runtime.getRuntime().availableProcessors() * THREAD_POOL_SIZE_SCALE_FACTOR;
     }
 }

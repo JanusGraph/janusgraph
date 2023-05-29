@@ -560,7 +560,7 @@ public class GraphDatabaseConfiguration {
         "core-pool-size",
         "Core pool size for executor service. May be ignored if custom executor service is used " +
             "(depending on the implementation of the executor service)."+
-            "If not set the core pool size will be equal to number of processors multiplied by "
+            "If not set or set to -1 the core pool size will be equal to number of processors multiplied by "
             +ExecutorServiceBuilder.THREAD_POOL_SIZE_SCALE_FACTOR+".",
         ConfigOption.Type.LOCAL,
         Integer.class);
@@ -596,7 +596,7 @@ public class GraphDatabaseConfiguration {
             +PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE.getName()+"`; `cached` - cached thread pool;",
         ConfigOption.Type.LOCAL,
         String.class,
-        "fixed");
+        ExecutorServiceBuilder.FIXED_THREAD_POOL_CLASS);
 
     public static final ConfigOption<Long> PARALLEL_BACKEND_EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME = new ConfigOption<>(
         PARALLEL_BACKEND_EXECUTOR_SERVICE,

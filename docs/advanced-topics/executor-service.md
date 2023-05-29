@@ -1,18 +1,27 @@
-# Backend ExecutorService
+# ExecutorService
 
-By default JanusGraph uses `ExecutorService` to process some queries in parallel 
-(see `storage.parallel-backend-ops` configuration option).  
+## Backend ExecutorService
+
+By default, JanusGraph uses `ExecutorService` to process some queries in parallel for storage backend implementations 
+which don't support multi-key queries (see `storage.parallel-backend-ops` configuration option). 
+
+!!! info
+    Officially supported backends: `Cassandra`, `HBase`, `ScyllaDB`, `Bigtable` have multi-key queries support. Thus, 
+    these backend implementations ignore `storage.parallel-backend-ops` configuration and instead use multi-key queries.  
+    `BerkeleyDB` and `in-memory` storage backends don't have multi-key queries support. Thus, backend-ops executor 
+    service can be used for such storage backends.
+
 JanusGraph allows to configure the executor service which is used via configuration options 
 provided in `storage.parallel-backend-executor-service` configuration section.
 
-Currently JanusGraph has the next ExecutorService implementations which can be used (controlled via 
+Currently, JanusGraph has the following ExecutorService implementations which can be used (controlled via 
 `storage.parallel-backend-executor-service.class`):
 
 * `fixed` - fixed thread pool size;
 * `cached` - cached thread pool size;
 * Custom ExecutorService;
 
-## Custom ExecutorService
+#### Custom ExecutorService
 
 To use custom `ExecutorService` the configuration option `storage.parallel-backend-executor-service.class` must be 
 provided which must be the full class name of the `ExecutorService` implementation class.
@@ -27,21 +36,19 @@ use any of the configuration options provided in `ExecutorServiceConfiguration` 
 convenient to use the provided configurations. The configuration options provided in `ExecutorServiceConfiguration` 
 are typically those configuration options which are provided via configurations from `storage.parallel-backend-executor-service`.
 
-# Cassandra backend ExecutorService
+## Cassandra backend ExecutorService
 
-Apart from the general executor service mentioned in the previous section, Cassandra backend uses an additional 
-`ExecutorService` to process CQL queries by default (see `storage.cql.executor-service.enabled` configuration option).  
+Although Cassandra backend doesn't use `storage.parallel-backend-executor-service` due to having multi-key queries support, it 
+has its own internal ExecutorService for queries deserialization processing.  
+Usually it's not recommended to configure this executor service because it's considered to be optimal by default.  
+In case when the default executor service doesn't fit user's use-case for any reason, the configuration options under 
+`storage.cql.executor-service` can be used to modify it.  
 The rules by which the Cassandra backend `ExecutorService` is built are the 
 same as the rules which are used to build parallel backend queries `ExecutorService` (described above). 
 The only difference is that the configuration for Cassandra backend `ExecutorService` are provided via configuration 
-options under `storage.cql.executor-service`.  
-Disabling CQL executor service reduces overhead of thread pool but requires the user to tune maximum throughput thoroughly.  
-With disabled CQL executor service the parallelism will be controlled internally by the CQL driver via the next properties: 
-`storage.cql.max-requests-per-connection`, `storage.cql.local-max-connections-per-host`, `storage.cql.remote-max-connections-per-host`. 
-
-!!! info
-    It is recommended to disable CQL executor service in a production environment and properly configure maximum throughput. 
-    CQL executor service does not provide any benefits other than limiting the amount of parallel requests per JanusGraph instance.
+options under `storage.cql.executor-service`.
 
 !!! warning
-    Improper tuning of maximum throughput might result in failures under heavy workloads.
+    By default, `storage.cql.executor-service` is configured to have a core pool size of number of processors multiplied 
+    by 2. It's recommended to always use the default value unless there is a reason to artificially limit parallelism for 
+    CQL slice query deserialization.

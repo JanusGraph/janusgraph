@@ -264,15 +264,15 @@ Notice that `janusgraph-cql` and `janusgraph-scylla` are mutually exclusive. Use
 provide both dependencies in the same classpath. See [ScyllaDB Storage Backend documentation](storage-backend/scylladb.md) for more
 information about how to make `scylla` `storage.backend` options available.
 
-##### Disable CQL ExecutorService by default
+##### CQL ExecutorService purpose change
 
-Previously CQL ExecutorService was enabled by default mostly for historical reasons.  
-CQL ExecutorService managed by JanusGraph adds additional overhead without bringing any usefulness other than 
-limiting amount of parallel queries which can (and should) be controlled via the underlying CQL driver.  
-
-In case previous behaviour is desired then `storage.cql.executor-service.enabled` configuration option should be set to `true`, 
-but it's recommended to tune CQL queries parallelism using CQL driver configuration options (like `storage.cql.max-requests-per-connection`, 
-`storage.cql.local-max-connections-per-host`) and / or `storage.parallel-backend-ops.*` configuration options.  
+Previously CQL ExecutorService was used to control parallelism of both CQL IO operations and results deserialization. 
+Starting from JanusGraph 1.0.0 CQL ExecutorService is now used for CQL results deserialization only. All CQL IO operations 
+are now using internal async approach.  
+The default pool size is now set to have a value of `number of cores multiplied by 2`. This ExecutorService is now 
+mandatory and cannot be disabled. The default ExecutorService core pool size is not recommended to be changed as 
+the default value is considered to be optimal unless users want to artificially limit parallelism of CQL results deserialization 
+jobs.
 
 ##### Removal of deprecated classes/methods/functionalities
 

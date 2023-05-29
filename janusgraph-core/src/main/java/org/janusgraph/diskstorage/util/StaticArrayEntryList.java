@@ -26,9 +26,12 @@ import org.janusgraph.util.encoding.StringEncoding;
 import java.nio.ByteBuffer;
 import java.util.AbstractList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.concurrent.ExecutorService;
 
 import static org.janusgraph.diskstorage.util.ArrayUtil.growSpace;
 
@@ -398,11 +401,142 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     private static <E,D> EntryList of(Iterator<E> elements, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> dataHandler) {
         Preconditions.checkArgument(elements!=null && getter!=null && dataHandler!=null);
         if (!elements.hasNext()) return EMPTY_LIST;
+
+        EntryListComputationContext context = generateComputationContext();
+        applyElementsComputation(elements, getter, dataHandler, context);
+        return convert(context);
+    }
+
+    public static EntryListComputationContext generateComputationContext(){
         long[] limitAndValuePos = new long[10];
-        byte[] data = new byte[limitAndValuePos.length*15];
-        EntryMetaData[] metadataSchema = null;
-        int pos=0;
-        int offset=0;
+        return new EntryListComputationContext(limitAndValuePos, new byte[limitAndValuePos.length*15], null, 0, 0);
+    }
+
+    public static <E> void supplyEntryList(ChunkedJobDefinition<Iterator<E>, EntryListComputationContext, EntryList> chunkedJobDefinition,
+                                           StaticArrayEntry.GetColVal<E,StaticBuffer> getter,
+                                           ExecutorService executorService) {
+        supplyEntryList(chunkedJobDefinition, getter, StaticArrayEntry.StaticBufferHandler.INSTANCE, executorService);
+    }
+
+    /**
+     * Non-blocking method which adds data chunks processing job to the provided `executorService` and returns immediately.
+     */
+    private static <E,D> void supplyEntryList(ChunkedJobDefinition<Iterator<E>, EntryListComputationContext, EntryList> chunkedJobDefinition,
+                                              StaticArrayEntry.GetColVal<E,D> getter,
+                                              StaticArrayEntry.DataHandler<D> dataHandler,
+                                              ExecutorService executorService){
+        assert chunkedJobDefinition !=null && getter!=null && dataHandler!=null;
+
+        executorService.execute(() -> {
+
+            Queue<Iterator<E>> chunksQueue = chunkedJobDefinition.getDataChunks();
+
+            // In case another thread is already processing data chunks, we don't need to do anything.
+            // Thus, we just drop. Even if that another thread is already finishing the processing logic
+            // and didn't have a chance to process out page yet - it's still OK to drop here because
+            // we know that after that thread releases the processing lock it will check for any non-processed
+            // chunks of data and will trigger the processing again if necessary.
+            if(!chunkedJobDefinition.tryLockProcessing()){
+                return;
+            }
+
+            try {
+                // after we acquired the processing lock we need to ensure that the result wasn't finished
+                // by any other thread already.
+                if(chunkedJobDefinition.getResult().isDone()){
+                    return;
+                }
+
+                Iterator<E> elements = chunksQueue.isEmpty() ? Collections.emptyIterator() : chunksQueue.remove();
+
+                EntryListComputationContext context = chunkedJobDefinition.getProcessedDataContext();
+
+                if(context == null){
+                    // In case it's the first page (`context == null`) and there are no any elements
+                    // then we don't need to waste resources generating the context. We know that the final result will
+                    // be `EMPTY_LIST`. Thus, we complete the result with `EMPTY_LIST` without generating the context
+                    // information.
+                    if(chunkedJobDefinition.isLastChunkRetrieved() && chunksQueue.isEmpty() && !elements.hasNext()){
+                        chunkedJobDefinition.complete(EMPTY_LIST);
+                        return;
+                    }
+                    context = generateComputationContext();
+                    chunkedJobDefinition.setProcessedDataContext(context);
+                }
+
+                // compute all the available chunks of data one by one
+                do {
+                    if(elements.hasNext()){
+                        applyElementsComputation(elements, getter, dataHandler, context);
+                    }
+                    if(chunksQueue.isEmpty()){
+                        break;
+                    }
+                    elements = chunksQueue.remove();
+                } while (true);
+
+                // If we processed the last chunk of data then we must complete the result with the final computation.
+                if(chunkedJobDefinition.isLastChunkRetrieved() && chunksQueue.isEmpty()){
+                    // Usually `context.metadataSchema == null` never happens because it means that there were
+                    // multiple pages where all pages didn't have any elements. In most cases we will have only one
+                    // page with no elements, but there are some storage backends which may actually return multiple
+                    // pages with no data. In such case, as there were no any data for multiple pages, it means that
+                    // the result is `EMPTY_LIST`.
+                    // In case there was any data processed (i.e. `context.metadataSchema != null`) then we must
+                    // retrieve the final result via `convert(context)`.
+                    chunkedJobDefinition.complete(context.metadataSchema == null ? EMPTY_LIST : convert(context));
+                }
+
+            } catch (Throwable throwable){
+                // This case may happen only in case there is a bug in the processing logic.
+                // It could be considered as a redundant check, but instead of losing the exception
+                // and never finish the completion (which may potentially block the consumer thread of the `result` forever),
+                // it's better to stop the processing and show the exception to the user.
+                // Ideally this case never happens, but if it does, we need to find and fix the bug in the current method.
+                chunkedJobDefinition.getResult().completeExceptionally(throwable);
+                return;
+            } finally {
+                chunkedJobDefinition.unlockProcessing();
+            }
+
+            /*
+            The below checks are necessary for the following reasons:
+
+            - In case when a new page data is added into `chunksQueue` there is no guarantee that the producer thread
+            actually triggered processing of the queue. It could be that the thread couldn't grab the lock (`chunkedJobDefinition.tryLockProcessing()`)
+            which would result in the thread to just skip the computing logic. In such case, we need to double-check that `chunksQueue` is
+            empty before leaving this thread. Otherwise, if `chunksQueue` is not empty (`!chunksQueue.isEmpty()`) the current thread needs to
+            try triggering the processing logic again.
+
+            - Notice, that the operation of adding the last page data to the `chunksQueue` and marking the last page a retrieved
+            (`chunkedJobDefinition.setLastChunkRetrieved()`) are two separate operations. Thus, it could happen that the producer
+            thread added the last page data to the `chunksQueue` but didn't have a chance yet of marking it as the last page.
+            In such situation it could potentially happen that the current consumer thread already processed the last page but didn't
+            know that it was the last page. As the current thread didn't know that it was the last page (even so, it actually was the last page)
+            the current thread couldn't finish the result (i.e. in such case current thread wouldn't call `chunkedJobDefinition.complete(...)`).
+            In case it happened that the current processing thread processed the last chunk of data but didn't have a chance to
+            finish the computation with the final result AND the producer's triggered thread skipped
+            this computation logic due to `processingLock` being held by the current thread, it will result in
+            the case when we processed all data chunks but never finish the result (i.e. we will never call `chunkedJobDefinition.complete(...)`).
+            This is a quite rare situation which may happen only if the producer's triggered thread had much more CPU time that
+            the current processing thread.
+            Nevertheless, is case such situation happens we need to double-check it and try to trigger the computation finalization
+            whenever the last chunk is marked a retrieved but the result wasn't completed for any reason. Thus, the below
+            check `chunkedJobDefinition.isLastChunkRetrieved() && !chunkedJobDefinition.getResult().isDone()` is necessary.
+             */
+            if(!chunksQueue.isEmpty() || chunkedJobDefinition.isLastChunkRetrieved() && !chunkedJobDefinition.getResult().isDone()){
+                supplyEntryList(chunkedJobDefinition, getter, dataHandler, executorService);
+            }
+        });
+    }
+
+    private static <E,D> void applyElementsComputation(Iterator<E> elements, StaticArrayEntry.GetColVal<E,D> getter,
+                                                       StaticArrayEntry.DataHandler<D> dataHandler, EntryListComputationContext context){
+        long[] limitAndValuePos = context.limitAndValuePos;
+        byte[] data = context.data;
+        EntryMetaData[] metadataSchema = context.metadataSchema;
+        int pos=context.pos;
+        int offset=context.offset;
         while (elements.hasNext()) {
             E element = elements.next();
             if (element==null) throw new IllegalArgumentException("Unexpected null element in result set");
@@ -429,23 +563,32 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             pos++;
         }
         assert offset<=data.length;
-        if (data.length > offset + (offset >> 1)) {
+
+        context.limitAndValuePos = limitAndValuePos;
+        context.data = data;
+        context.metadataSchema = metadataSchema;
+        context.pos = pos;
+        context.offset = offset;
+    }
+
+    private static StaticArrayEntryList convert(EntryListComputationContext context){
+        if (context.data.length > context.offset + (context.offset >> 1)) {
             //  Resize to preserve memory. This happens when either of the following conditions is true:
             //  1) current memory space is 1.5x more than minimum required space
             //  2) 1.5 x minimum required space will overflow, in which case the wasted memory space is likely still considerable
-            byte[] newData = new byte[offset];
-            System.arraycopy(data,0,newData,0,offset);
-            data=newData;
+            byte[] newData = new byte[context.offset];
+            System.arraycopy(context.data,0,newData,0,context.offset);
+            context.data=newData;
         }
-        if (pos<limitAndValuePos.length) {
+        if (context.pos<context.limitAndValuePos.length) {
             //Resize so that the the array fits exactly
-            long[] newPos = new long[pos];
-            System.arraycopy(limitAndValuePos,0,newPos,0,pos);
-            limitAndValuePos=newPos;
+            long[] newPos = new long[context.pos];
+            System.arraycopy(context.limitAndValuePos,0,newPos,0,context.pos);
+            context.limitAndValuePos=newPos;
         }
-        assert offset<=data.length;
-        assert pos==limitAndValuePos.length;
-        return new StaticArrayEntryList(data,limitAndValuePos,metadataSchema);
+        assert context.offset<=context.data.length;
+        assert context.pos==context.limitAndValuePos.length;
+        return new StaticArrayEntryList(context.data,context.limitAndValuePos,context.metadataSchema);
     }
 
     private static byte[] ensureSpace(byte[] data, int offset, int length) {

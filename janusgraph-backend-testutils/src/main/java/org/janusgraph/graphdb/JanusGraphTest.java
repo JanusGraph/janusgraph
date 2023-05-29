@@ -209,6 +209,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
@@ -8432,6 +8433,24 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         graph1.close();
         graph2.close();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testParallelBackendOps(boolean parallelBackendOpsEnabled) {
+        clopen(option(PARALLEL_BACKEND_OPS), parallelBackendOpsEnabled);
+
+        int verticesPerLevel = 10;
+        List<Vertex> firstLevelVertices = new ArrayList<>(verticesPerLevel);
+        for(int i=0;i<verticesPerLevel;i++){
+            firstLevelVertices.add(tx.addVertex());
+        }
+        for(Vertex firstLevelVertex : firstLevelVertices){
+            Vertex secondLevelVertex = tx.addVertex();
+            firstLevelVertex.addEdge("knows", secondLevelVertex);
+        }
+        tx.commit();
+        Assertions.assertEquals(verticesPerLevel, graph.traversal().V(firstLevelVertices).out("knows").count().next());
     }
 
     private void invalidateUpdatedVertexProperty(StandardJanusGraph graph, Object vertexIdUpdated, String propertyNameUpdated, Object previousPropertyValue, Object newPropertyValue){
