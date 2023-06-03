@@ -41,7 +41,7 @@ public class ModificationDeserializer {
     public static InternalRelation parseRelation(TransactionLogHeader.Modification modification, StandardJanusGraphTx tx) {
         Change state = modification.state;
         assert state.isProper();
-        long outVertexId = modification.outVertexId;
+        Object outVertexId = modification.outVertexId;
         Entry relEntry = modification.relationEntry;
         InternalVertex outVertex = tx.getInternalVertex(outVertexId);
         //Special relation parsing, compare to {@link RelationConstructor}

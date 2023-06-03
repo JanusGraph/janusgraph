@@ -189,6 +189,8 @@ import static org.apache.tinkerpop.gremlin.structure.Direction.BOTH;
 import static org.apache.tinkerpop.gremlin.structure.Direction.IN;
 import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ADJUST_LIMIT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_STALE_CONFIG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.AUTO_TYPE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
@@ -4919,15 +4921,23 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     @Test
     public void simpleLogTest() throws InterruptedException {
-        simpleLogTest(false);
+        if (getStoreFeatures().isKeyOrdered()) {
+            simpleLogTest(false, false);
+        } else {
+            simpleLogTest(false, true);
+        }
     }
 
     @Test
     public void simpleLogTestWithFailure() throws InterruptedException {
-        simpleLogTest(true);
+        if (getStoreFeatures().isKeyOrdered()) {
+            simpleLogTest(true, false);
+        } else {
+            simpleLogTest(true, true);
+        }
     }
 
-    public void simpleLogTest(final boolean withLogFailure) throws InterruptedException {
+    private void simpleLogTest(final boolean withLogFailure, final boolean useStringId) throws InterruptedException {
         final String userLogName = "test";
         final Serializer serializer = graph.getDataSerializer();
         final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
@@ -4941,13 +4951,20 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 option(LOG_SEND_DELAY, USER_LOG), Duration.ofMillis(100),
                 option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG), Duration.ofMillis(50),
                 option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofMillis(250),
-                option(MAX_COMMIT_TIME), Duration.ofSeconds(1)
+                option(MAX_COMMIT_TIME), Duration.ofSeconds(1),
+                option(ALLOW_CUSTOM_VERTEX_ID_TYPES), useStringId,
+                option(ALLOW_SETTING_VERTEX_ID), useStringId
         );
         final String instanceId = graph.getConfiguration().getUniqueGraphId();
 
         PropertyKey weight = tx.makePropertyKey("weight").dataType(Float.class).cardinality(Cardinality.SINGLE).make();
         EdgeLabel knows = tx.makeEdgeLabel("knows").make();
-        JanusGraphVertex n1 = tx.addVertex("weight", 10.5);
+        JanusGraphVertex n1;
+        if (useStringId) {
+            n1 = tx.addVertex(T.id, "n1", "weight", 10.5);
+        } else {
+            n1 = tx.addVertex("weight", 10.5);
+        }
         tx.addProperties(knows, weight);
         newTx();
 
@@ -4955,13 +4972,23 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         //Transaction with custom user log name
         txTimes[0] = times.getTime();
         JanusGraphTransaction tx2 = graph.buildTransaction().logIdentifier(userLogName).start();
-        JanusGraphVertex v1 = tx2.addVertex("weight", 111.1);
+        JanusGraphVertex v1;
+        if (useStringId) {
+            v1 = tx2.addVertex(T.id, "v1", "weight", 111.1);
+        } else {
+            v1 = tx2.addVertex("weight", 111.1);
+        }
         v1.addEdge("knows", v1);
         tx2.commit();
         final Object v1id = getId(v1);
         txTimes[1] = times.getTime();
         tx2 = graph.buildTransaction().logIdentifier(userLogName).start();
-        JanusGraphVertex v2 = tx2.addVertex("weight", 222.2);
+        JanusGraphVertex v2;
+        if (useStringId) {
+            v2 = tx2.addVertex(T.id, "v2", "weight", 222.2);
+        } else {
+            v2 = tx2.addVertex("weight", 222.2);
+        }
         v2.addEdge("knows", getV(tx2, v1id));
         tx2.commit();
         final Object v2id = getId(v2);
