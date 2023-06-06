@@ -91,10 +91,10 @@ public class InMemoryGraphTest extends JanusGraphTest {
     public void testDisableDefaultSchemaMaker () {}
 
     @Override @Test @Disabled
-    public void simpleLogTest() {}
+    public void simpleLogTest(boolean useStringId) {}
 
     @Override @Test @Disabled
-    public void simpleLogTestWithFailure() {}
+    public void simpleLogTestWithFailure(boolean useStringId) {}
 
     @Override @Test @Disabled
     public void testIndexUpdatesWithReindexAndRemove() {}

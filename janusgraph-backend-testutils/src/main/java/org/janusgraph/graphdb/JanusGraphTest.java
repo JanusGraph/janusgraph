@@ -4919,22 +4919,18 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
      ==================================================================================*/
 
 
-    @Test
-    public void simpleLogTest() throws InterruptedException {
-        if (getStoreFeatures().isKeyOrdered()) {
-            simpleLogTest(false, false);
-        } else {
-            simpleLogTest(false, true);
-        }
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void simpleLogTest(boolean useStringId) throws InterruptedException {
+        if(useStringId && getStoreFeatures().isKeyOrdered()) return;
+        simpleLogTest(false, useStringId);
     }
 
-    @Test
-    public void simpleLogTestWithFailure() throws InterruptedException {
-        if (getStoreFeatures().isKeyOrdered()) {
-            simpleLogTest(true, false);
-        } else {
-            simpleLogTest(true, true);
-        }
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void simpleLogTestWithFailure(boolean useStringId) throws InterruptedException {
+        if(useStringId && getStoreFeatures().isKeyOrdered()) return;
+        simpleLogTest(true, useStringId);
     }
 
     private void simpleLogTest(final boolean withLogFailure, final boolean useStringId) throws InterruptedException {
