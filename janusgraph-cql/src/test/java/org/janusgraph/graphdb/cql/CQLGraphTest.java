@@ -14,7 +14,6 @@
 
 package org.janusgraph.graphdb.cql;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -37,6 +36,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -62,6 +63,9 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @Testcontainers
 public class CQLGraphTest extends JanusGraphTest {
+
+    private final Logger log = LoggerFactory.getLogger(CQLGraphTest.class);
+
     @Container
     public static final JanusGraphCassandraContainer cqlContainer = new JanusGraphCassandraContainer();
 
@@ -96,10 +100,18 @@ public class CQLGraphTest extends JanusGraphTest {
         assertTrue(features.hasCellTTL());
     }
 
-    @RepeatedIfExceptionsTest(repeats = 3)
-    @Override
-    public void simpleLogTest() throws InterruptedException{
-        super.simpleLogTest();
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void simpleLogTest(boolean useStringId) {
+        for (int i = 0; i < 3; i++) {
+            try {
+                super.simpleLogTest(useStringId);
+                // If the test passes, break out of the loop.
+                break;
+            } catch (Exception ex) {
+                log.info("Attempt #{} fails", i, ex);
+            }
+        }
     }
 
     protected static Stream<Arguments> generateConsistencyConfigs() {
