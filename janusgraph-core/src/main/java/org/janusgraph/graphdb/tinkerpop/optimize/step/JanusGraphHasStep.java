@@ -119,10 +119,13 @@ public class JanusGraphHasStep<S extends Element> extends HasStep<S> implements 
                     }
                 },
                 new FetchQueryBuildFunction() {
+                    private String[] propertyKeys;
                     @Override
                     public <Q extends BaseVertexQuery> Q makeQuery(Q query) {
-                        if(!prefetchAllPropertiesRequired && !propertiesToFetch.isEmpty()){
-                            String[] propertyKeys = propertiesToFetch.toArray(new String[0]);
+                        if(!prefetchAllPropertiesRequired){
+                            if(propertyKeys == null){
+                                propertyKeys = propertiesToFetch.toArray(new String[0]);
+                            }
                             query.keys(propertyKeys);
                         }
                         return (Q) ((BasicVertexCentricQueryBuilder) query).profiler(queryProfiler);

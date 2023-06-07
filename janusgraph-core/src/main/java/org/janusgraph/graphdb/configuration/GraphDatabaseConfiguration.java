@@ -334,14 +334,14 @@ public class GraphDatabaseConfiguration {
                 "- `%s` Pre-fetch all vertex properties on any property access<br>" +
                 "- `%s` Pre-fetch necessary vertex properties for the whole chain of foldable `has` steps<br>" +
                 "- `%s` Prefetch the same properties as with `%s` mode, but also prefetch\n" +
-                "properties which may be needed in the next properties access step like `values`, `properties,` `valueMap`, or `elementMap`.\n" +
+                "properties which may be needed in the next properties access step like `values`, `properties,` `valueMap`, `elementMap`, or `propertyMap`.\n" +
                 "In case the next step is not one of those properties access steps then this mode behaves same as `%s`.\n" +
                 "In case the next step is one of the properties access steps with limited scope of properties, those properties will be\n" +
                 "pre-fetched together in the same multi-query.\n" +
                 "In case the next step is one of the properties access steps with unspecified scope of property keys then this mode\n" +
                 "behaves same as `%s`.<br>"+
                 "- `%s` Prefetch the same properties as with `%s`, but in case the next step is not\n" +
-                "`values`, `properties,` `valueMap`, or `elementMap` then acts like `%s`.<br>"+
+                "`values`, `properties,` `valueMap`, `elementMap`, or `propertyMap` then acts like `%s`.<br>"+
                 "- `%s` Skips `has` step batch properties pre-fetch optimization.<br>",
             MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName(),
             MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
@@ -350,7 +350,7 @@ public class GraphDatabaseConfiguration {
             MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
             MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName(),
             MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES_OR_ALL.getConfigName(),
-            MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName(),
             MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName(),
             MultiQueryHasStepStrategyMode.NONE.getConfigName()),
         ConfigOption.Type.MASKABLE, MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName());
