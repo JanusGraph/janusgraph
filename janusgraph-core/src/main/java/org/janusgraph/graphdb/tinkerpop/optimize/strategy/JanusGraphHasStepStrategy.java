@@ -45,6 +45,8 @@ public class JanusGraphHasStepStrategy extends AbstractTraversalStrategy<Travers
 
     private static final JanusGraphHasStepStrategy INSTANCE = new JanusGraphHasStepStrategy();
 
+    private static final Set<Class<? extends ProviderOptimizationStrategy>> PRIORS = Collections.singleton(JanusGraphLocalQueryOptimizerStrategy.class);
+
     private JanusGraphHasStepStrategy() {
     }
 
@@ -145,8 +147,6 @@ public class JanusGraphHasStepStrategy extends AbstractTraversalStrategy<Travers
     public static JanusGraphHasStepStrategy instance() {
         return INSTANCE;
     }
-
-    private static final Set<Class<? extends ProviderOptimizationStrategy>> PRIORS = Collections.singleton(JanusGraphLocalQueryOptimizerStrategy.class);
 
     @Override
     public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
