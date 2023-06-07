@@ -75,6 +75,11 @@ public class BenchmarkRunner {
         System.out.println("Cassandra version = " + bridge.getCassandraVersion());
 
         cqlBuilder.include("CQL.*Benchmark");
+        // CQLMultiQueryHasStepBenchmark is a long-running benchmark. Explicitly run this benchmark if necessary.
+        cqlBuilder.exclude(CQLMultiQueryHasStepBenchmark.class.getSimpleName());
+        // CQLMultiQueryPropertiesBenchmark is a long-running benchmark. Explicitly run this benchmark if necessary.
+        cqlBuilder.exclude(CQLMultiQueryPropertiesBenchmark.class.getSimpleName());
+
         transformResults(new Runner(cqlBuilder.build()).run(), outputs);
     }
 
@@ -98,9 +103,8 @@ public class BenchmarkRunner {
             }
         } else {
             builder.include(".*Benchmark");
-            builder.exclude("StaticArrayEntryListBenchmark");
-            builder.exclude("VertexCacheBenchmark");
-            builder.exclude("BackPressureBenchmark");
+            builder.exclude(StaticArrayEntryListBenchmark.class.getSimpleName());
+            builder.exclude(BackPressureBenchmark.class.getSimpleName());
             builder.exclude("CQL.*Benchmark");
         }
         Collection<RunResult> results = new Runner(builder.build()).run();

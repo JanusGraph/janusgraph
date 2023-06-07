@@ -43,7 +43,7 @@ import java.util.Set;
  */
 public class JanusGraphMultiQueryStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 
-    private static final Set<Class<? extends ProviderOptimizationStrategy>> PRIORS = new HashSet<>(Arrays.asList(JanusGraphLocalQueryOptimizerStrategy.class, JanusGraphStepStrategy.class, JanusGraphHasStepStrategy.class));
+    private static final Set<Class<? extends ProviderOptimizationStrategy>> PRIORS = new HashSet<>(Arrays.asList(JanusGraphLocalQueryOptimizerStrategy.class, JanusGraphHasStepStrategy.class, JanusGraphStepStrategy.class));
     private static final JanusGraphMultiQueryStrategy INSTANCE = new JanusGraphMultiQueryStrategy();
 
     private static final MultiQueriableStepRegistrationConsumer ATTACH_FIRST_LOOP = JanusGraphMultiQueryStep::attachFirstLoopClient;

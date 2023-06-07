@@ -58,6 +58,7 @@ import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
@@ -260,7 +261,14 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<>(QUERY_NS,"fast-property",
             "Whether to pre-fetch all properties on first singular vertex property access. This can eliminate backend calls on subsequent " +
                     "property access for the same vertex at the expense of retrieving all properties at once. This can be " +
-                    "expensive for vertices with many properties",
+                    "expensive for vertices with many properties. \n" +
+                    "This setting is applicable to direct vertex properties access " +
+                    "(like `vertex.properties(\"foo\")` but not to `vertex.properties(\"foo\",\"bar\")` because the latter case " +
+                    "is not a singular property access). \n" +
+                    "This setting is not applicable to the next Gremlin steps: `valueMap`, `propertyMap`, `elementMap`, `properties`, `values` " +
+                    "(configuration option `query.batch.properties-mode` should be used to configure their behavior).\n" +
+                    "When `true` this setting overwrites `query.batch.has-step-mode` to `"+MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName()+"` unless `"+
+                    MultiQueryHasStepStrategyMode.NONE.getConfigName()+"` mode is used.",
             ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigOption<Boolean> ADJUST_LIMIT = new ConfigOption<>(QUERY_NS,"smart-limit",
@@ -319,9 +327,9 @@ public class GraphDatabaseConfiguration {
                 "These modes are controlling how the child steps with batch support are behaving if they placed to the start " +
                 "of the `repeat`, `emit`, or `until` traversals.<br>" +
                 "Supported modes:<br>" +
-                "- `%s` Child start steps are receiving vertices for batching from the closest `repeat` step parent only.<br>" +
-                "- `%s` Child start steps are receiving vertices for batching from all `repeat` step parents.<br>" +
-                "- `%s` Child start steps are receiving vertices for batching from the closest `repeat` step parent (both for the parent start and for next iterations) " +
+                "- `%s` - Child start steps are receiving vertices for batching from the closest `repeat` step parent only.<br>" +
+                "- `%s` - Child start steps are receiving vertices for batching from all `repeat` step parents.<br>" +
+                "- `%s` - Child start steps are receiving vertices for batching from the closest `repeat` step parent (both for the parent start and for next iterations) " +
                 "and also from all `repeat` step parents for the parent start.",
             MultiQueryStrategyRepeatStepMode.CLOSEST_REPEAT_PARENT.getConfigName(),
             MultiQueryStrategyRepeatStepMode.ALL_REPEAT_PARENTS.getConfigName(),
@@ -331,18 +339,18 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> HAS_STEP_BATCH_MODE = new ConfigOption<>(QUERY_BATCH_NS,"has-step-mode",
         String.format("Properties pre-fetching mode for `has` step. Used only when "+USE_MULTIQUERY.toStringWithoutRoot()+" is `true`.<br>" +
                 "Supported modes:<br>" +
-                "- `%s` Pre-fetch all vertex properties on any property access<br>" +
-                "- `%s` Pre-fetch necessary vertex properties for the whole chain of foldable `has` steps<br>" +
-                "- `%s` Prefetch the same properties as with `%s` mode, but also prefetch\n" +
+                "- `%s` - Pre-fetch all vertex properties on any property access (fetches all vertex properties in a single slice query)<br>" +
+                "- `%s` - Pre-fetch necessary vertex properties for the whole chain of foldable `has` steps (uses a separate slice query per each required property)<br>" +
+                "- `%s` - Prefetch the same properties as with `%s` mode, but also prefetch\n" +
                 "properties which may be needed in the next properties access step like `values`, `properties,` `valueMap`, `elementMap`, or `propertyMap`.\n" +
                 "In case the next step is not one of those properties access steps then this mode behaves same as `%s`.\n" +
                 "In case the next step is one of the properties access steps with limited scope of properties, those properties will be\n" +
                 "pre-fetched together in the same multi-query.\n" +
                 "In case the next step is one of the properties access steps with unspecified scope of property keys then this mode\n" +
                 "behaves same as `%s`.<br>"+
-                "- `%s` Prefetch the same properties as with `%s`, but in case the next step is not\n" +
+                "- `%s` - Prefetch the same properties as with `%s`, but in case the next step is not\n" +
                 "`values`, `properties,` `valueMap`, `elementMap`, or `propertyMap` then acts like `%s`.<br>"+
-                "- `%s` Skips `has` step batch properties pre-fetch optimization.<br>",
+                "- `%s` - Skips `has` step batch properties pre-fetch optimization.<br>",
             MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName(),
             MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
             MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName(),
@@ -354,6 +362,19 @@ public class GraphDatabaseConfiguration {
             MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName(),
             MultiQueryHasStepStrategyMode.NONE.getConfigName()),
         ConfigOption.Type.MASKABLE, MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName());
+
+    public static final ConfigOption<String> PROPERTIES_BATCH_MODE = new ConfigOption<>(QUERY_BATCH_NS,"properties-mode",
+        String.format("Properties pre-fetching mode for `values`, `properties`, `valueMap`, `propertyMap`, `elementMap` steps. Used only when "+USE_MULTIQUERY.toStringWithoutRoot()+" is `true`.<br>" +
+                "Supported modes:<br>" +
+                "- `%s` - Pre-fetch all vertex properties on non-singular property access (fetches all vertex properties in a single slice query). " +
+                "On single property access this mode behaves the same as `%s` mode.<br>" +
+                "- `%s` - Pre-fetch necessary vertex properties only (uses a separate slice query per each required property)<br>" +
+                "- `%s` - Skips vertex properties pre-fetching optimization.<br>",
+            MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName(),
+            MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            MultiQueryPropertiesStrategyMode.NONE.getConfigName()),
+        ConfigOption.Type.MASKABLE, MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
 
     // ################ SCHEMA #######################
     // ################################################
@@ -1326,6 +1347,7 @@ public class GraphDatabaseConfiguration {
     private String metricsPrefix;
     private String unknownIndexKeyName;
     private MultiQueryHasStepStrategyMode hasStepStrategyMode;
+    private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
 
     private StoreFeatures storeFeatures = null;
 
@@ -1442,6 +1464,10 @@ public class GraphDatabaseConfiguration {
 
     public MultiQueryHasStepStrategyMode hasStepStrategyMode() {
         return hasStepStrategyMode;
+    }
+
+    public MultiQueryPropertiesStrategyMode propertiesStrategyMode() {
+        return propertiesStrategyMode;
     }
 
     public boolean adjustQueryLimit() {
@@ -1572,6 +1598,7 @@ public class GraphDatabaseConfiguration {
         limitedBatchSize = configuration.get(LIMITED_BATCH_SIZE);
         repeatStepMode = selectExactConfig(REPEAT_STEP_BATCH_MODE, MultiQueryStrategyRepeatStepMode.values());
         hasStepStrategyMode = selectExactConfig(HAS_STEP_BATCH_MODE, MultiQueryHasStepStrategyMode.values());
+        propertiesStrategyMode = selectExactConfig(PROPERTIES_BATCH_MODE, MultiQueryPropertiesStrategyMode.values());
 
         indexSelectionStrategy = Backend.getImplementationClass(configuration, configuration.get(INDEX_SELECT_STRATEGY),
             REGISTERED_INDEX_SELECTION_STRATEGIES);

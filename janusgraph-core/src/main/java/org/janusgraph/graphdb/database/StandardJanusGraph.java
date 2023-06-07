@@ -65,8 +65,9 @@ import org.janusgraph.graphdb.database.cache.KCVSCacheInvalidationService;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
 import org.janusgraph.graphdb.database.idhandling.IDHandler;
-import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphUnusedMultiQueryRemovalStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphHasStepStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphUnusedMultiQueryRemovalStrategy;
 import org.janusgraph.util.IDUtils;
 import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
@@ -90,7 +91,6 @@ import org.janusgraph.graphdb.tinkerpop.optimize.strategy.AdjacentVertexHasIdOpt
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.AdjacentVertexHasUniquePropertyOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.AdjacentVertexIsOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphIoRegistrationStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexAggStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMultiQueryStrategy;
@@ -147,12 +147,12 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                                AdjacentVertexIsOptimizerStrategy.instance(),
                                AdjacentVertexHasUniquePropertyOptimizerStrategy.instance(),
                                JanusGraphLocalQueryOptimizerStrategy.instance(),
+                               JanusGraphHasStepStrategy.instance(),
                                JanusGraphMultiQueryStrategy.instance(),
                                JanusGraphUnusedMultiQueryRemovalStrategy.instance(),
                                JanusGraphMixedIndexAggStrategy.instance(),
                                JanusGraphMixedIndexCountStrategy.instance(),
                                JanusGraphStepStrategy.instance(),
-                               JanusGraphHasStepStrategy.instance(),
                                JanusGraphIoRegistrationStrategy.instance());
 
         //Register with cache

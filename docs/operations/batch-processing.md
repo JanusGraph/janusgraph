@@ -158,7 +158,8 @@ when the query is accessing many vertices.
 Batched query processing takes into account two types of steps:
 
 1.  Batch compatible step. This is the step which will execute batch requests. Currently, the list of such steps
-    is the next: `out()`, `in()`, `both()`, `inE()`, `outE()`, `bothE()`, `has()`, `values()`, `properties()`.
+    is the next: `out()`, `in()`, `both()`, `inE()`, `outE()`, `bothE()`, `has()`, `values()`, `properties()`, `valueMap()`,
+    `propertyMap()`, `elementMap()`.
 2.  Parent step. This is a parent step which has local traversals with the same start. Such parent steps also implement the 
     interface `TraversalParent`. There are many such steps, but as for an example those could be: `and(...)`, `or(...)`, 
     `not(...)`, `order().by(...)`, `project("valueA", "valueB", "valueC").by(...).by(...).by(...)`, `union(..., ..., ...)`,
@@ -309,3 +310,23 @@ Currently, JanusGraph supports vertices registration for batch processing inside
 step, but not between those local traversals. Also, JanusGraph doesn't register start of the `match` step with any 
 of the local traversals of the `match` step. Thus, performance for `match` step might be limited. This is a temporary 
 limitation until this feature is implemented ([see issue #3788](https://github.com/JanusGraph/janusgraph/issues/3788)).
+
+#### Batch processing for properties
+
+Some of the Gremlin steps with enabled optimization may prefetch vertex properties in batches. 
+As for now, JanusGraph uses slice queries to query part of the row data. A single-slice query contains 
+the start key and the end key to define a slice of data JanusGraph is interested in.  
+As JanusGraph doesn't support multi-range slice queries right now it can either fetch a single property 
+in a single Slice query or all properties in a single slice query. Thus, users has to decide the tradeoff between 
+different properties fetching approaches and decide when they want to fetch all properties in a single slice query
+(which is usually faster but unnecessary properties might be fetched) or to fetch only requested properties in 
+separate slice query per each property (might be slightly slower but will fetch only the requested properties). 
+
+[See issue #3816](https://github.com/JanusGraph/janusgraph/issues/3816) which will allow fetching only requested 
+properties via a single slice query.  
+
+See configuration option `query.fast-property` which may be used to pre-fetch all properties on a first singular property 
+access when direct vertex properties are requested (for example `vertex.properties("foo")`).  
+See configuration option `query.batch.has-step-mode` to control properties pre-fetching behaviour for `has` step.  
+See configuration option `query.batch.properties-mode` to control properties pre-fetching behaviour for `values`, 
+`properties`, `valueMap`, `propertyMap`, and `elementMap` steps.  

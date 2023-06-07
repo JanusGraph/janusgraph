@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class JanusGraphMultiQueryStrategyTest extends OptimizerStrategyTest {
 
     @Test
-    public void testQueryIsExecutableIfJanusGraphLocalQueryOptimizerStrategyIsEnabled() {
+    public void testQueryIsExecutableIfJanusGraphMultiQueriableReplacementStrategyIsEnabled() {
         clopen(option(USE_MULTIQUERY), true);
         makeSampleGraph();
 

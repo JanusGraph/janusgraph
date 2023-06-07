@@ -20,6 +20,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.TextP;
@@ -29,8 +30,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
+import org.apache.tinkerpop.gremlin.structure.Column;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -130,8 +134,12 @@ import org.janusgraph.graphdb.relations.StandardEdge;
 import org.janusgraph.graphdb.relations.StandardVertexProperty;
 import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphElementMapStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphHasStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertyMapStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
@@ -189,6 +197,8 @@ import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.hasNot;
 import static org.apache.tinkerpop.gremlin.structure.Direction.BOTH;
 import static org.apache.tinkerpop.gremlin.structure.Direction.IN;
 import static org.apache.tinkerpop.gremlin.structure.Direction.OUT;
@@ -217,6 +227,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PROPERTIES_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PROPERTY_PREFETCHING;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPEAT_STEP_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
@@ -4923,6 +4934,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         TraversalMetrics profile;
 
         testLimitBatchSizeForHasStep(numV, barrierSize, limit, bs, cs);
+        testLimitBatchSizeForPropertySteps(numV, barrierSize, limit, cs);
 
         // test batching for `out()`
         profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).out());
@@ -4932,15 +4944,6 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test early abort with limit for `out()`
         profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).out().limit(limit));
         assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
-
-        // test batching for `values()`
-        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo"));
-        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
-        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
-
-        // test early abort with limit for `values()`
-        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo").limit(limit));
-        assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
 
         // test batching with unlimited batch size
         profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).out(), option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
@@ -5042,6 +5045,647 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
 
         testLimitBatchSizeForMultiQueryOfConnectiveSteps(bs, barrierSize, limit);
+    }
+
+    private void testLimitBatchSizeForPropertySteps(int numV, int barrierSize, int limit, JanusGraphVertex[] cs){
+        TraversalMetrics profile;
+
+        // Test required properties prefetching only
+
+        // test batching for `values()`
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `values()`
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+
+        // test batching for `values()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `values()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+
+        // test batching for `properties()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).properties("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `values()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).properties("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+
+        // test batching for `valueMap()`
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `valueMap()`. Limit is going to be placed before valueMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used.
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(1, countBackendQueriesOfSize(limit, profile.getMetrics()));
+
+        // test batching for `valueMap()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `valueMap()`. Limit is going to be placed before valueMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used.
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(1, countBackendQueriesOfSize(limit, profile.getMetrics()));
+
+        // test batching for `propertyMap()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).propertyMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `propertyMap()`. Limit is going to be placed before propertyMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used.
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).propertyMap("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(1, countBackendQueriesOfSize(limit, profile.getMetrics()));
+
+        // test batching for `elementMap()`
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(6, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(2, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `elementMap()`. Limit is going to be placed before elementMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used.
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(2, countBackendQueriesOfSize(limit, profile.getMetrics()));
+
+        // test batching for `elementMap()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(6, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(2, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `elementMap()`. Limit is going to be placed before elementMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used.
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(2, countBackendQueriesOfSize(limit, profile.getMetrics()));
+
+        // Test all properties prefetching
+
+        int propertiesCount = (int) (graph.traversal().V(cs).values().count().next() / numV);
+
+        // test batching for `values()` single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `values()` multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo", "fooBar"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `values()` single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize*propertiesCount, profile.getMetrics()));
+        assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `values()` multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo", "fooBar").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals((int) Math.ceil((double) limit / barrierSize / 2), countBackendQueriesOfSize(barrierSize*propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+
+        // test batching for `values()` (enabled prefetching should not influence the query). Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `values()` (enabled prefetching should not influence the query). Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo", "fooBar"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `values()` (enabled prefetching should not influence the query). single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize*propertiesCount, profile.getMetrics()));
+        assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `values()` (enabled prefetching should not influence the query). multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo", "fooBar").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals((int) Math.ceil((double) limit / barrierSize / 2), countBackendQueriesOfSize(barrierSize*propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+
+        // test batching for `properties()` (enabled prefetching should not influence the query). Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).properties("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `properties()` (enabled prefetching should not influence the query). Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).properties("foo", "fooBar"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `values()` (enabled prefetching should not influence the query). Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).properties("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize*propertiesCount, profile.getMetrics()));
+        assertEquals((int) Math.ceil((double) limit / barrierSize), countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `values()` (enabled prefetching should not influence the query). Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).properties("foo", "fooBar").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals((int) Math.ceil((double) limit / barrierSize / 2), countBackendQueriesOfSize(barrierSize*propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+
+        // test batching for `valueMap()`. Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `valueMap()`. Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo", "fooBar"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+
+        // test early abort with limit for `valueMap()`. Limit is going to be placed before valueMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used. Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(1, countBackendQueriesOfSize(limit, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(limit*propertiesCount, profile.getMetrics()));
+
+        // test early abort with limit for `valueMap()`. Limit is going to be placed before valueMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used. Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo", "fooBar").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(limit, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(limit*propertiesCount, profile.getMetrics()));
+
+        // test batching for `valueMap()` (enabled prefetching should not influence the query). Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+
+        // test batching for `valueMap()` (enabled prefetching should not influence the query). Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo", "fooBar"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+
+        // test early abort with limit for `valueMap()`. Limit is going to be placed before valueMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used. Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(1, countBackendQueriesOfSize(limit, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(limit*propertiesCount, profile.getMetrics()));
+
+        // test early abort with limit for `valueMap()`. Limit is going to be placed before valueMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used. Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo", "fooBar").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(limit, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(limit*propertiesCount, profile.getMetrics()));
+
+        // test batching for `propertyMap()` (enabled prefetching should not influence the query). Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).propertyMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+
+        // test batching for `propertyMap()` (enabled prefetching should not influence the query). Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).propertyMap("foo", "fooBar"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+
+        // test early abort with limit for `propertyMap()`. Limit is going to be placed before propertyMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used. Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).propertyMap("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(1, countBackendQueriesOfSize(limit, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(limit*propertiesCount, profile.getMetrics()));
+
+        // test early abort with limit for `propertyMap()`. Limit is going to be placed before propertyMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used. Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).propertyMap("foo", "fooBar").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(limit, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(limit*propertiesCount, profile.getMetrics()));
+
+        // test batching for `elementMap()`. Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(6, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(2, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+
+        // test batching for `elementMap()`. Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo", "fooBar"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+
+        // test early abort with limit for `elementMap()`. Limit is going to be placed before elementMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used. Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(limit*propertiesCount, profile.getMetrics()));
+        assertEquals(2, countBackendQueriesOfSize(limit, profile.getMetrics()));
+
+        // test early abort with limit for `elementMap()`. Limit is going to be placed before elementMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used. Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo", "fooBar").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(1, countBackendQueriesOfSize(limit*propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(limit, profile.getMetrics()));
+
+        // test batching for `elementMap()` (enabled prefetching should not influence the query). Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(6, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(2, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test batching for `elementMap()` (enabled prefetching should not influence the query). Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo", "fooBar"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // test early abort with limit for `elementMap()`. Limit is going to be placed before elementMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used. Single property
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(limit*propertiesCount, profile.getMetrics()));
+        assertEquals(2, countBackendQueriesOfSize(limit, profile.getMetrics()));
+
+        // test early abort with limit for `elementMap()`. Limit is going to be placed before elementMap.
+        // Thus, `barrier(barrierSize)` is ignored and instead the default barrier(2500) is used. Multiple properties
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo", "fooBar").limit(limit),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertEquals(1, countBackendQueriesOfSize(limit*propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(limit, profile.getMetrics()));
+
+        // Should prefetch all properties with mode REQUIRED_PROPERTIES_ONLY and disabled PROPERTY_PREFETCHING when all properties are needed
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap(),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+
+        // Should prefetch all properties with mode REQUIRED_PROPERTIES_ONLY and enabled PROPERTY_PREFETCHING when all properties are needed
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap(),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+
+        // Test disabled properties preFetching mode
+
+        // test no batching used for `values()`
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.NONE.getConfigName());
+        assertEquals(100, countBackendQueriesOfSize(s -> true, profile.getMetrics()));
+        assertNull(getLastStepMetrics(profile, JanusGraphPropertiesStep.class).getAnnotation("multi"));
+
+        // test no batching used for `values()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.NONE.getConfigName());
+        assertEquals(100, countOptimizationQueries(profile.getMetrics()));
+        assertNull(getLastStepMetrics(profile, JanusGraphPropertiesStep.class).getAnnotation("multi"));
+
+        // test no batching used for `properties()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).properties("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.NONE.getConfigName());
+        assertEquals(100, countBackendQueriesOfSize(s -> true, profile.getMetrics()));
+        assertNull(getLastStepMetrics(profile, JanusGraphPropertiesStep.class).getAnnotation("multi"));
+
+        // test no batching used for `properties()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).properties("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.NONE.getConfigName());
+        assertEquals(100, countOptimizationQueries(profile.getMetrics()));
+        assertNull(getLastStepMetrics(profile, JanusGraphPropertiesStep.class).getAnnotation("multi"));
+
+        // test no batching used for `valueMap()`
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.NONE.getConfigName());
+        assertNull(getLastStepMetrics(profile, JanusGraphPropertyMapStep.class).getAnnotation("multi"));
+
+        // test no batching used for `valueMap()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.NONE.getConfigName());
+        assertNull(getLastStepMetrics(profile, JanusGraphPropertyMapStep.class).getAnnotation("multi"));
+
+        // test no batching used for `propertyMap()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).propertyMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.NONE.getConfigName());
+        assertNull(getLastStepMetrics(profile, JanusGraphPropertyMapStep.class).getAnnotation("multi"));
+
+        // test no batching used for `propertyMap()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).propertyMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.NONE.getConfigName());
+        assertNull(getLastStepMetrics(profile, JanusGraphPropertyMapStep.class).getAnnotation("multi"));
+
+        // test no batching used for `elementMap()`
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.NONE.getConfigName());
+        assertNull(getLastStepMetrics(profile, JanusGraphElementMapStep.class).getAnnotation("multi"));
+
+        // test no batching used for `elementMap()` (enabled prefetching should not influence the query)
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).elementMap("foo"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.NONE.getConfigName());
+        assertNull(getLastStepMetrics(profile, JanusGraphElementMapStep.class).getAnnotation("multi"));
+
+        // Test valueMap labels and ids prefetching
+
+        // Should prefetch ids
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap().with(WithOptions.tokens, WithOptions.ids),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // Should prefetch labels
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap().with(WithOptions.tokens, WithOptions.labels),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // Should prefetch ids and labels
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap().with(WithOptions.tokens, WithOptions.ids | WithOptions.labels),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).valueMap().with(WithOptions.tokens, WithOptions.all),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * propertiesCount, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * propertiesCount, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+
+        // Should prefetch vertex properties in batches when Subgraph property strategy is used
+        profile = testLimitedBatch(() -> graph.traversal().withStrategies(
+                    SubgraphStrategy.create(new MapConfiguration(Collections.singletonMap(SubgraphStrategy.VERTEX_PROPERTIES, hasNot("fooBar"))))
+                ).V(cs).barrier(barrierSize).propertyMap("foo").select(Column.values).unfold().unfold(),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
     }
 
     private void testLimitBatchSizeForHasStep(int numV, int barrierSize, int limit, JanusGraphVertex[] bs, JanusGraphVertex[] cs){

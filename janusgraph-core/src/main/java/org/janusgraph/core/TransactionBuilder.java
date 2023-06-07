@@ -16,6 +16,7 @@ package org.janusgraph.core;
 
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 
 import java.time.Instant;
 
@@ -68,7 +69,7 @@ public interface TransactionBuilder {
     TransactionBuilder propertyPrefetching(boolean enabled);
 
     /**
-     * Enable or disable multi-query, i.e. query.batch
+     * Enable or disable multi-query, i.e. `query.batch.enabled`
      *
      * @param enabled
      * @return Object containing properties that will enable/disable multi-query
@@ -151,11 +152,20 @@ public interface TransactionBuilder {
     /**
      * Sets `has` step strategy mode.
      * <p>
-     * Doesn't have any effect if multi-query was disabled via config `query.batch`.
+     * Doesn't have any effect if multi-query was disabled via config `query.batch.enabled = false`.
      *
      * @return Object with the set `has` step strategy mode settings
      */
     TransactionBuilder setHasStepStrategyMode(MultiQueryHasStepStrategyMode hasStepStrategyMode);
+
+    /**
+     * Sets properties strategy mode.
+     * <p>
+     * Doesn't have any effect if multi-query was disabled via config `query.batch.enabled = false`.
+     *
+     * @return Object with the set properties strategy mode settings
+     */
+    TransactionBuilder setPropertiesStrategyMode(MultiQueryPropertiesStrategyMode propertiesStrategyMode);
 
     /**
      * Sets the group name for this transaction which provides a way for gathering
