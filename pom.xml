@@ -117,7 +117,7 @@
         <protoc.version>3.15.3</protoc.version>
         <gson.version>2.10.1</gson.version>
         <jmh.version>1.21</jmh.version>
-        <graalvm-nativeimage.version>22.3.1</graalvm-nativeimage.version>
+        <graalvm-nativeimage.version>22.3.2</graalvm-nativeimage.version>
     </properties>
     <modules>
         <module>janusgraph-grpc</module>
