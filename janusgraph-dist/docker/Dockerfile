@@ -30,7 +30,7 @@ COPY target/${BUILD_PATH}.zip /opt/${BUILD_PATH}.zip
 
 RUN apt update -y && apt install -y gpg unzip curl && \
     curl -fSL https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_${TARGETARCH} -o yq && \
-    unzip ${BUILD_PATH}.zip && \
+    unzip -q ${BUILD_PATH}.zip && \
     mv ${BUILD_PATH} /opt/janusgraph && \
     rm -rf ${JANUS_HOME}/elasticsearch && \
     rm -rf ${JANUS_HOME}/javadocs && \
