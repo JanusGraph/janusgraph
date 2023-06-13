@@ -60,12 +60,34 @@ public class CompletableFutureUtil {
         }
     }
 
+    //
     public static <K,V> Map<K,V> unwrap(Map<K,CompletableFuture<V>> futureMap) throws Throwable{
         Map<K, V> resultMap = new HashMap<>(futureMap.size());
         Throwable firstException = null;
         for(Map.Entry<K, CompletableFuture<V>> entry : futureMap.entrySet()){
             try{
                 resultMap.put(entry.getKey(), entry.getValue().get());
+            } catch (Throwable throwable){
+                if(firstException == null){
+                    firstException = throwable;
+                } else {
+                    firstException.addSuppressed(throwable);
+                }
+            }
+        }
+
+        if(firstException != null){
+            throw firstException;
+        }
+        return resultMap;
+    }
+
+    public static <K,V,R> Map<K,Map<V, R>> unwrapMapOfMaps(Map<K, Map<V, CompletableFuture<R>>> futureMap) throws Throwable{
+        Map<K, Map<V, R>> resultMap = new HashMap<>(futureMap.size());
+        Throwable firstException = null;
+        for(Map.Entry<K, Map<V, CompletableFuture<R>>> entry : futureMap.entrySet()){
+            try{
+                resultMap.put(entry.getKey(), unwrap(entry.getValue()));
             } catch (Throwable throwable){
                 if(firstException == null){
                     firstException = throwable;

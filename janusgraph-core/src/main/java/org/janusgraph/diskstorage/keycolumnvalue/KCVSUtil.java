@@ -22,6 +22,7 @@ import org.janusgraph.diskstorage.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +107,7 @@ public class KCVSUtil {
     }
 
 
-    public static Map<StaticBuffer,EntryList> emptyResults(List<StaticBuffer> keys) {
+    public static Map<StaticBuffer,EntryList> emptyResults(Collection<StaticBuffer> keys) {
         final Map<StaticBuffer,EntryList> result = new HashMap<>(keys.size());
         for (StaticBuffer key : keys) {
             result.put(key,EntryList.EMPTY_LIST);

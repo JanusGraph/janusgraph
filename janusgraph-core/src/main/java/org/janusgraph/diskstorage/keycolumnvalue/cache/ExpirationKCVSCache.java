@@ -17,17 +17,22 @@ package org.janusgraph.diskstorage.keycolumnvalue.cache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.tuple.Pair;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.KeysQueriesGroup;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiKeysQueryGroups;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.CacheMetricsAction;
+import org.janusgraph.graphdb.util.MultiSliceQueriesGroupingUtil;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,33 +111,141 @@ public class ExpirationKCVSCache extends KCVSCache {
     @Override
     public Map<StaticBuffer,EntryList> getSlice(final List<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh) throws BackendException {
         final Map<StaticBuffer,EntryList> results = new HashMap<>(keys.size());
-        final List<StaticBuffer> remainingKeys = new ArrayList<>(keys.size());
-        KeySliceQuery[] ksqs = new KeySliceQuery[keys.size()];
         incActionBy(keys.size(), CacheMetricsAction.RETRIEVAL,txh);
-        //Find all cached queries
-        for (int i=0;i<keys.size();i++) {
-            final StaticBuffer key = keys.get(i);
-            ksqs[i] = new KeySliceQuery(key,query);
-            EntryList result = null;
-            if (!isExpired(ksqs[i])) result = cache.getIfPresent(ksqs[i]);
-            else ksqs[i]=null;
-            if (result!=null) results.put(key,result);
-            else remainingKeys.add(key);
-        }
+        Pair<List<StaticBuffer>, Map<StaticBuffer, KeySliceQuery>> misses = fillResultAndReturnMisses(results, query, keys);
+        final List<StaticBuffer> remainingKeys = misses.getKey();
+        final Map<StaticBuffer, KeySliceQuery> keySliceQueries = misses.getValue();
+
         //Request remaining ones from backend
         if (!remainingKeys.isEmpty()) {
             incActionBy(remainingKeys.size(), CacheMetricsAction.MISS,txh);
             Map<StaticBuffer,EntryList> subresults = store.getSlice(remainingKeys, query, unwrapTx(txh));
-            for (int i=0;i<keys.size();i++) {
-                StaticBuffer key = keys.get(i);
-                EntryList subresult = subresults.get(key);
-                if (subresult!=null) {
-                    results.put(key,subresult);
-                    if (ksqs[i]!=null) cache.put(ksqs[i],subresult);
+            subresults.forEach((key, subresult) -> {
+                KeySliceQuery ksqs = keySliceQueries.get(key);
+                if(ksqs != null){
+                    cache.put(ksqs,subresult);
+                }
+                results.put(key,subresult);
+            });
+        }
+        return results;
+    }
+
+    @Override
+    public Map<SliceQuery, Map<StaticBuffer, EntryList>> getMultiSlices(final MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiKeysQueryGroups,
+                                                                        final StoreTransaction txh) throws BackendException {
+        Map<SliceQuery, Map<StaticBuffer, EntryList>> result = new HashMap<>(multiKeysQueryGroups.getMultiQueryContext().getTotalAmountOfQueries());
+        Map<SliceQuery, Map<StaticBuffer, KeySliceQuery>> remainingKeysPerQuery = new HashMap<>(multiKeysQueryGroups.getMultiQueryContext().getTotalAmountOfQueries());
+
+        List<KeysQueriesGroup<StaticBuffer, SliceQuery>> allQueryGroups = multiKeysQueryGroups.getQueryGroups();
+        List<Pair<SliceQuery, List<StaticBuffer>>> updatedQueryGroups = new ArrayList<>();
+
+        for(KeysQueriesGroup<StaticBuffer, SliceQuery> keyQueriesGroup : allQueryGroups){
+            List<StaticBuffer> currentKeys = keyQueriesGroup.getKeysGroup();
+            List<SliceQuery> currentQueries = keyQueriesGroup.getQueries();
+            if(currentKeys.isEmpty() || currentQueries.isEmpty()){
+                continue;
+            }
+
+            incActionBy(currentKeys.size()*currentQueries.size(), CacheMetricsAction.RETRIEVAL,txh);
+            List<SliceQuery> remainingCurrentGroupQueries = new ArrayList<>(currentQueries.size());
+
+            for(SliceQuery query : currentQueries){
+                Map<StaticBuffer, EntryList> currentQueryResult = result.computeIfAbsent(query, q -> new HashMap<>(currentKeys.size()));
+                Pair<List<StaticBuffer>, Map<StaticBuffer, KeySliceQuery>> misses = fillResultAndReturnMisses(currentQueryResult, query, currentKeys);
+                final List<StaticBuffer> remainingCurrentGroupKeys = misses.getKey();
+                remainingKeysPerQuery.put(query, misses.getValue());
+                if(remainingCurrentGroupKeys.size() == currentKeys.size()){
+                    remainingCurrentGroupQueries.add(query);
+                } else if(!remainingCurrentGroupKeys.isEmpty()){
+                    updatedQueryGroups.add(Pair.of(query, remainingCurrentGroupKeys));
+                }
+            }
+
+            if(remainingCurrentGroupQueries.size() != currentQueries.size()){
+                keyQueriesGroup.setQueries(remainingCurrentGroupQueries);
+            }
+        }
+
+        // move queries with updated groups to new existing or new groups.
+        MultiSliceQueriesGroupingUtil.moveQueriesToNewLeafNode(updatedQueryGroups,
+            multiKeysQueryGroups.getMultiQueryContext().getAllKeysArr(),
+            multiKeysQueryGroups.getMultiQueryContext().getGroupingRootTreeNode(),
+            allQueryGroups);
+
+        allQueryGroups = filterEmptyGroups(allQueryGroups);
+        multiKeysQueryGroups.setQueryGroups(allQueryGroups);
+
+        //Request remaining ones from backend
+        if(!allQueryGroups.isEmpty()){
+            Map<SliceQuery, Map<StaticBuffer, EntryList>> subresults = store.getMultiSlices(multiKeysQueryGroups, unwrapTx(txh));
+            subresults.forEach((sliceQuery, sliceQueryResultsPerKey) -> {
+
+                if(!sliceQueryResultsPerKey.isEmpty()){
+                    incActionBy(sliceQueryResultsPerKey.size(), CacheMetricsAction.MISS,txh);
+                }
+
+                // populate cache with new results for any key with non-expired keySliceQuery
+                Map<StaticBuffer, KeySliceQuery> queryKeySliceQueriesPerVertexKey = remainingKeysPerQuery.get(sliceQuery);
+                if(queryKeySliceQueriesPerVertexKey != null){
+                    sliceQueryResultsPerKey.forEach((key, keyResult) -> {
+                        KeySliceQuery ksqs = queryKeySliceQueriesPerVertexKey.get(key);
+                        if(ksqs != null){
+                            cache.put(ksqs,keyResult);
+                        }
+                    });
+                }
+
+                // add requested results into a final resulting map
+                Map<StaticBuffer, EntryList> currentSliceQueryResults = result.get(sliceQuery);
+                if(currentSliceQueryResults == null){
+                    currentSliceQueryResults = sliceQueryResultsPerKey;
+                    result.put(sliceQuery, currentSliceQueryResults);
+                } else {
+                    currentSliceQueryResults.putAll(sliceQueryResultsPerKey);
+                }
+            });
+        }
+
+        return result;
+    }
+
+    private List<KeysQueriesGroup<StaticBuffer, SliceQuery>> filterEmptyGroups(List<KeysQueriesGroup<StaticBuffer, SliceQuery>> originalGroups){
+        List<KeysQueriesGroup<StaticBuffer, SliceQuery>> filteredGroups = new ArrayList<>(originalGroups.size());
+        for(KeysQueriesGroup<StaticBuffer, SliceQuery> group : originalGroups){
+            if(!group.getKeysGroup().isEmpty() && !group.getQueries().isEmpty()){
+                filteredGroups.add(group);
+            }
+        }
+        return filteredGroups;
+    }
+
+
+    /**
+     * Fills the result with non-expired cached data. Returns any keys which are missed as well as their optional `KeySliceQuery` in case it's not expired.
+     * If `KeySliceQuery` is currently considered to be expired then `null` will be returned for respective `StaticBuffer`.
+     * This method doesn't execute any slice queries to the storage backend.
+     */
+    private Pair<List<StaticBuffer>, Map<StaticBuffer, KeySliceQuery>> fillResultAndReturnMisses(final Map<StaticBuffer,EntryList> results, final SliceQuery query, final Collection<StaticBuffer> keys){
+        final Map<StaticBuffer, KeySliceQuery> keySliceQueries = new HashMap<>(keys.size());
+        final List<StaticBuffer> remainingKeys = new ArrayList<>(keys.size());
+        //Find all cached queries
+        for (StaticBuffer key : keys) {
+            KeySliceQuery ksqs = new KeySliceQuery(key,query);
+            if (isExpired(ksqs)){
+                remainingKeys.add(key);
+                keySliceQueries.put(key, null);
+            } else {
+                EntryList result = cache.getIfPresent(ksqs);
+                if (result == null){
+                    remainingKeys.add(key);
+                    keySliceQueries.put(key, ksqs);
+                } else {
+                    results.put(key, result);
                 }
             }
         }
-        return results;
+        return Pair.of(remainingKeys, keySliceQueries);
     }
 
     @Override
@@ -242,8 +355,5 @@ public class ExpirationKCVSCache extends KCVSCache {
             this.interrupt();
         }
     }
-
-
-
 
 }

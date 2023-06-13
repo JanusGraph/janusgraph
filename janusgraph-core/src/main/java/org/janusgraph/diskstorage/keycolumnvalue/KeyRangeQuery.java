@@ -80,8 +80,7 @@ public class KeyRangeQuery extends SliceQuery {
     @Override
     public boolean equals(Object other) {
         if (this==other) return true;
-        else if (other==null) return false;
-        else if (!getClass().isInstance(other)) return false;
+        if (!(other instanceof KeyRangeQuery)) return false;
         KeyRangeQuery oth = (KeyRangeQuery)other;
         return keyStart.equals(oth.keyStart) && keyEnd.equals(oth.keyEnd) && super.equals(oth);
     }

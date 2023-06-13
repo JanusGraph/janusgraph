@@ -24,6 +24,8 @@ import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.KeysQueriesGroup;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiKeysQueryGroups;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
@@ -308,43 +310,81 @@ public class BackendTransaction implements LoggableTransaction {
                 }
             });
         } else {
-            final Map<StaticBuffer,EntryList> results = new HashMap<>(keys.size());
-            if (threadPool == null || keys.size() < MIN_TASKS_TO_PARALLELIZE) {
-                for (StaticBuffer key : keys) {
-                    results.put(key,edgeStoreQuery(new KeySliceQuery(key, query)));
+            return multiThreadedEdgeStoreMultiQuery(keys, query);
+        }
+    }
+
+    public Map<SliceQuery, Map<StaticBuffer, EntryList>> edgeStoreMultiQuery(final MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiSliceQueriesWithKeys) {
+        if (storeFeatures.hasMultiQuery()) {
+            return executeRead(new Callable<Map<SliceQuery, Map<StaticBuffer, EntryList>>>() {
+                @Override
+                public Map<SliceQuery, Map<StaticBuffer, EntryList>> call() throws Exception {
+                    return cacheEnabled?edgeStore.getMultiSlices(multiSliceQueriesWithKeys, storeTx):
+                        edgeStore.getMultiSlicesNoCache(multiSliceQueriesWithKeys, storeTx);
                 }
-            } else {
-                final CountDownLatch doneSignal = new CountDownLatch(keys.size());
-                final AtomicInteger failureCount = new AtomicInteger(0);
-                EntryList[] resultArray = new EntryList[keys.size()];
-                for (int i = 0; i < keys.size(); i++) {
-                    final int pos = i;
-                    threadPool.execute(() -> {
-                        try {
-                            resultArray[pos] = edgeStoreQuery(new KeySliceQuery(keys.get(pos), query));
-                        } catch (Exception e) {
-                            failureCount.incrementAndGet();
-                            log.warn("Individual query in multi-transaction failed: ", e);
-                        } finally {
-                            doneSignal.countDown();
-                        }
-                    });
+
+                @Override
+                public String toString() {
+                    return "MultiEdgeStoreQuery";
                 }
-                try {
-                    doneSignal.await();
-                } catch (InterruptedException e) {
-                    throw new JanusGraphException("Interrupted while waiting for multi-query to complete", e);
-                }
-                if (failureCount.get() > 0) {
-                    throw new JanusGraphException("Could not successfully complete multi-query. " + failureCount.get() + " individual queries failed.");
-                }
-                for (int i=0;i<keys.size();i++) {
-                    assert resultArray[i]!=null;
-                    results.put(keys.get(i),resultArray[i]);
+            });
+        } else {
+            final Map<SliceQuery, Map<StaticBuffer, EntryList>> results = new HashMap<>();
+            for(KeysQueriesGroup<StaticBuffer, SliceQuery> queriesForKeysPair : multiSliceQueriesWithKeys.getQueryGroups()){
+                List<StaticBuffer> keys = queriesForKeysPair.getKeysGroup();
+                for(SliceQuery query : queriesForKeysPair.getQueries()){
+                    Map<StaticBuffer, EntryList> sliceResult = multiThreadedEdgeStoreMultiQuery(keys, query);
+                    results.put(query, sliceResult);
                 }
             }
             return results;
         }
+    }
+
+    /**
+     * This method uses `threadPool` to execute a slice query for each key in parallel.
+     * Notice, however, that it is recommended to send all these keys in balk for execution directly to the storage
+     * implementation if the storage has multiQuery (`storeFeatures.hasMultiQuery()`) support because many
+     * storage backends can leverage optimized execution for multiple keys (asynchronous or grouped execution) and
+     * thus, don't require a separate thread for each SliceQuery + key pair execution.
+     */
+    private Map<StaticBuffer,EntryList> multiThreadedEdgeStoreMultiQuery(final List<StaticBuffer> keys, final SliceQuery query){
+        final Map<StaticBuffer,EntryList> results = new HashMap<>(keys.size());
+        if (threadPool == null || keys.size() < MIN_TASKS_TO_PARALLELIZE) {
+            for (StaticBuffer key : keys) {
+                results.put(key,edgeStoreQuery(new KeySliceQuery(key, query)));
+            }
+        } else {
+            final CountDownLatch doneSignal = new CountDownLatch(keys.size());
+            final AtomicInteger failureCount = new AtomicInteger(0);
+            EntryList[] resultArray = new EntryList[keys.size()];
+            for (int i = 0; i < keys.size(); i++) {
+                final int pos = i;
+                threadPool.execute(() -> {
+                    try {
+                        resultArray[pos] = edgeStoreQuery(new KeySliceQuery(keys.get(pos), query));
+                    } catch (Exception e) {
+                        failureCount.incrementAndGet();
+                        log.warn("Individual query in multi-transaction failed: ", e);
+                    } finally {
+                        doneSignal.countDown();
+                    }
+                });
+            }
+            try {
+                doneSignal.await();
+            } catch (InterruptedException e) {
+                throw new JanusGraphException("Interrupted while waiting for multi-query to complete", e);
+            }
+            if (failureCount.get() > 0) {
+                throw new JanusGraphException("Could not successfully complete multi-query. " + failureCount.get() + " individual queries failed.");
+            }
+            for (int i=0;i<keys.size();i++) {
+                assert resultArray[i]!=null;
+                results.put(keys.get(i),resultArray[i]);
+            }
+        }
+        return results;
     }
 
     public KeyIterator edgeStoreKeys(final SliceQuery sliceQuery) {

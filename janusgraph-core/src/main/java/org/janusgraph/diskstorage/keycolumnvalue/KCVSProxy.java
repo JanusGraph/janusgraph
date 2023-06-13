@@ -86,4 +86,9 @@ public class KCVSProxy implements KeyColumnValueStore {
     public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
         return store.getSlice(keys, query, unwrapTx(txh));
     }
+
+    @Override
+    public Map<SliceQuery, Map<StaticBuffer, EntryList>> getMultiSlices(MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiKeysQueryGroups, StoreTransaction txh) throws BackendException {
+        return store.getMultiSlices(multiKeysQueryGroups, unwrapTx(txh));
+    }
 }

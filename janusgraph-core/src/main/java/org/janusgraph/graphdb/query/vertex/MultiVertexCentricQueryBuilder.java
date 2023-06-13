@@ -111,11 +111,16 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
         profiler.setAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION,true);
         profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,vertices.size());
         if (!bq.isEmpty()) {
-            for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
-                Collection<InternalVertex> adjVertices = getResolvedAdjVertices();
-                //Overwrite with more accurate size accounting for partitioned vertices
-                profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,adjVertices.size());
-                tx.executeMultiQuery(adjVertices, sq.getBackendQuery(), sq.getProfiler());
+            Collection<InternalVertex> adjVertices = getResolvedAdjVertices();
+            //Overwrite with more accurate size accounting for partitioned vertices
+            profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,adjVertices.size());
+            if(bq.getQueries().size() == 1){
+                BackendQueryHolder<SliceQuery> query = bq.getQueries().get(0);
+                // if it's just a single query - there is no need to group any queries together.
+                // Thus, we can execute `executeMultiQuery` instead of `executeMultiSliceMultiQuery`
+                tx.executeMultiQuery(adjVertices, query.getBackendQuery(), query.getProfiler());
+            } else {
+                tx.executeMultiSliceMultiQuery(adjVertices, bq.getQueries(), profiler);
             }
             for (InternalVertex v : vertices) {
                 result.put(v, resultConstructor.getResult(v, bq));

@@ -66,8 +66,7 @@ public class KeySliceQuery extends SliceQuery {
     @Override
     public boolean equals(Object other) {
         if (this==other) return true;
-        else if (other==null) return false;
-        else if (!getClass().isInstance(other)) return false;
+        if (!(other instanceof KeySliceQuery)) return false;
         KeySliceQuery oth = (KeySliceQuery)other;
         return key.equals(oth.key) && super.equals(oth);
     }
