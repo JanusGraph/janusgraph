@@ -75,7 +75,7 @@
         <!-- align with org.apache.hbase:hbase -->
         <jackson1.version>1.9.13</jackson1.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
-        <jackson2.version>2.14.2</jackson2.version>
+        <jackson2.version>2.15.2</jackson2.version>
         <lucene-solr.version>8.11.0</lucene-solr.version>
         <!-- When this version updated please also update sha512 -->
         <elasticsearch.version>7.14.0</elasticsearch.version>
