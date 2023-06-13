@@ -314,6 +314,20 @@ mandatory and cannot be disabled. The default ExecutorService core pool size is 
 the default value is considered to be optimal unless users want to artificially limit parallelism of CQL results deserialization 
 jobs.
 
+##### A new multi-query method added into `KeyColumnValueStore` (affects storage adapters implementations only)
+
+A new method `Map<SliceQuery, Map<StaticBuffer, EntryList>> getMultiSlices(MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiKeysQueryGroups, StoreTransaction txh)` 
+is added into `KeyColumnValueStore` which is now preferred for multi-queries (batch queries) with multiple slice queries.  
+In case a multi-query executes more than one Slice query per multi-query execution then those Slice queries will be 
+grouped per same key sets and the new `getMultiSlices` query will be executed with groups of different `SliceQuery` for the same sets of keys.  
+
+Notice, if the storage doesn't have multiQuery feature enabled - the method won't be used. Hence, it's not necessary to implement it.  
+
+In case storage backend has multiQuery feature enabled, then it is highly recommended to overwrite the default (non-optimized) implementation 
+and optimize this method execution to execute all the slice queries for all the requested keys in the shortest time possible 
+(for example, by using asynchronous programming, slice queries grouping, multi-threaded execution, or any other technique which 
+is efficient for the respective storage adapter).  
+
 ##### Removal of deprecated classes/methods/functionalities
 
 ###### Methods

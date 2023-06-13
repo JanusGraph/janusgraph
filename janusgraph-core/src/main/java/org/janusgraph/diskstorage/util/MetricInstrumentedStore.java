@@ -26,6 +26,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiKeysQueryGroups;
 import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
@@ -123,6 +124,20 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
 
             for (final EntryList result : results.values()) {
                 recordSliceMetrics(txh, result);
+            }
+            return results;
+        });
+    }
+
+    @Override
+    public Map<SliceQuery, Map<StaticBuffer, EntryList>> getMultiSlices(MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiKeysQueryGroups, StoreTransaction txh) throws BackendException {
+        return runWithMetrics(txh, metricsStoreName, M_GET_SLICE, () -> {
+            final Map<SliceQuery, Map<StaticBuffer, EntryList>> results = backend.getMultiSlices(multiKeysQueryGroups, txh);
+
+            for (final Map<StaticBuffer, EntryList> queryResults : results.values()) {
+                for (final EntryList result : queryResults.values()) {
+                    recordSliceMetrics(txh, result);
+                }
             }
             return results;
         });

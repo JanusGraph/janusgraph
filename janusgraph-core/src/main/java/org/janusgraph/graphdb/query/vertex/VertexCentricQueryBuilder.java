@@ -28,6 +28,7 @@ import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.QueryProcessor;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -72,8 +73,9 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
     protected<Q> Q execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
         if (bq.isEmpty()) return resultConstructor.emptyResult();
-        if (returnType==RelationCategory.PROPERTY && hasSingleType() && !hasQueryOnlyLoaded()
-                && tx.getConfiguration().hasPropertyPrefetching()) {
+        boolean prefetchAllVertexProperties = returnType==RelationCategory.PROPERTY && hasSingleType() && !hasQueryOnlyLoaded()
+            && tx.getConfiguration().hasPropertyPrefetching();
+        if (prefetchAllVertexProperties) {
             //Preload properties
             vertex.query().properties().iterator().hasNext();
         }
@@ -83,11 +85,24 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
             profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION,true);
             profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,vertices.size());
             if (vertices.size()>1) {
-                for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
-                    tx.executeMultiQuery(vertices, sq.getBackendQuery(),sq.getProfiler());
+                if(bq.getQueries().size() == 1){
+                    BackendQueryHolder<SliceQuery> query = bq.getQueries().get(0);
+                    // if it's just a single query - there is no need to group any queries together.
+                    // Thus, we can execute `executeMultiQuery` instead of `executeMultiSliceMultiQuery`
+                    tx.executeMultiQuery(vertices, query.getBackendQuery(),query.getProfiler());
+                } else {
+                    tx.executeMultiSliceMultiQuery(vertices, bq.getQueries(), profiler);
                 }
             }
-        } else profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,1);
+        } else {
+            profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,1);
+            // in case there are more than 1 slice query expected for the provided vertex
+            // then it still makes sense to pre-fetch vertex data via multi-slice query (all queries in parallel)
+            // instead of executing each separate query sequentially
+            if(!prefetchAllVertexProperties && bq.getQueries().size() > 1){
+                tx.executeMultiSliceMultiQuery(Collections.singletonList(vertex), bq.getQueries(), profiler);
+            }
+        }
         return resultConstructor.getResult(vertex,bq);
     }
 

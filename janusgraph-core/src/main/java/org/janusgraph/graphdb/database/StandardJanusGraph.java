@@ -49,6 +49,9 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.KeysQueriesGroup;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiKeysQueryGroups;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiQueriesByKeysGroupsContext;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
@@ -68,6 +71,7 @@ import org.janusgraph.graphdb.database.idhandling.IDHandler;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphHasStepStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOptimizerStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphUnusedMultiQueryRemovalStrategy;
+import org.janusgraph.graphdb.util.MultiSliceQueriesGroupingUtil;
 import org.janusgraph.util.IDUtils;
 import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
@@ -565,6 +569,51 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         final List<EntryList> resultList = new ArrayList<>(result.size());
         for (StaticBuffer v : vertexIds) resultList.add(result.get(v));
         return resultList;
+    }
+
+    private StaticBuffer[] convertVertexIds(Object[] vertexIds){
+        StaticBuffer[] convertedIds = new StaticBuffer[vertexIds.length];
+        for(int i=0;i<vertexIds.length;i++){
+            IDUtils.checkId(vertexIds[i]);
+            convertedIds[i] = idManager.getKey(vertexIds[i]);
+        }
+        return convertedIds;
+    }
+
+    public Map<SliceQuery, Map<Object, EntryList>> edgeMultiQuery(MultiKeysQueryGroups<Object, SliceQuery> groupedMultiSliceQueries, BackendTransaction tx) {
+        assert groupedMultiSliceQueries != null && !groupedMultiSliceQueries.getQueryGroups().isEmpty();
+
+        Object[] vertexIds = groupedMultiSliceQueries.getMultiQueryContext().getAllKeysArr();
+        StaticBuffer[] vertexKeys = convertVertexIds(vertexIds);
+        Map<Object, StaticBuffer> vertexIdToKey = new HashMap<>(vertexKeys.length);
+        Map<StaticBuffer, Object> keyToVertexId = new HashMap<>(vertexKeys.length);
+        for(int i=0; i<vertexIds.length; i++){
+            vertexIdToKey.put(vertexIds[i], vertexKeys[i]);
+            keyToVertexId.put(vertexKeys[i], vertexIds[i]);
+        }
+
+        List<KeysQueriesGroup<StaticBuffer, SliceQuery>> groupedMultiSliceQueriesWithKeys = new ArrayList<>(groupedMultiSliceQueries.getQueryGroups().size());
+
+        for(KeysQueriesGroup<Object, SliceQuery> queriesToVertexIdsPaid : groupedMultiSliceQueries.getQueryGroups()){
+            List<StaticBuffer> keys = new ArrayList<>(queriesToVertexIdsPaid.getKeysGroup().size());
+            for (Object vertexIdsAsObject : queriesToVertexIdsPaid.getKeysGroup()) {
+                keys.add(vertexIdToKey.get(vertexIdsAsObject));
+            }
+            groupedMultiSliceQueriesWithKeys.add(new KeysQueriesGroup<>(keys, queriesToVertexIdsPaid.getQueries()));
+        }
+
+        MultiSliceQueriesGroupingUtil.replaceCurrentLeafNodeWithUpdatedTypeLeafNodes(groupedMultiSliceQueries.getMultiQueryContext().getAllLeafParents(), vertexIdToKey);
+        final Map<SliceQuery, Map<StaticBuffer, EntryList>> resultWithKeys = tx.edgeStoreMultiQuery(
+            new MultiKeysQueryGroups<>(groupedMultiSliceQueriesWithKeys, new MultiQueriesByKeysGroupsContext<>(vertexKeys, groupedMultiSliceQueries.getMultiQueryContext())));
+
+        final Map<SliceQuery, Map<Object, EntryList>> resultWithVertexIds = new HashMap<>(resultWithKeys.size());
+        resultWithKeys.forEach((sliceQuery, keyToResultMap) -> {
+            Map<Object, EntryList> vertexIdToResultMap = new HashMap<>(keyToResultMap.size());
+            keyToResultMap.forEach((key, result) -> vertexIdToResultMap.put(keyToVertexId.get(key), result));
+            resultWithVertexIds.put(sliceQuery, vertexIdToResultMap);
+        });
+
+        return resultWithVertexIds;
     }
 
     private ModifiableConfiguration getGlobalSystemConfig(Backend backend) {

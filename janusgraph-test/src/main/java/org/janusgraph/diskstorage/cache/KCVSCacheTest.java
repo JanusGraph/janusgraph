@@ -25,6 +25,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiKeysQueryGroups;
 import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
@@ -208,6 +209,12 @@ public abstract class KCVSCacheTest {
         public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
             getSliceCounter.incrementAndGet();
             return store.getSlice(keys,query,txh);
+        }
+
+        @Override
+        public Map<SliceQuery, Map<StaticBuffer, EntryList>> getMultiSlices(MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiKeysQueryGroups, StoreTransaction txh) throws BackendException {
+            multiKeysQueryGroups.getQueryGroups().forEach(group -> getSliceCounter.addAndGet(group.getQueries().size()));
+            return store.getMultiSlices(multiKeysQueryGroups,txh);
         }
 
         @Override

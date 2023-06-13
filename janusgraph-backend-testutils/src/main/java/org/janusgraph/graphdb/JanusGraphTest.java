@@ -197,7 +197,6 @@ import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.hasNot;
 import static org.apache.tinkerpop.gremlin.structure.Direction.BOTH;
 import static org.apache.tinkerpop.gremlin.structure.Direction.IN;
@@ -5817,8 +5816,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             option(PROPERTY_PREFETCHING), false,
             option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
         // `foo` and `fooBar` properties are prefetched separately
-        assertEquals(6, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
-        assertEquals(2, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
 
         // test batching for 3 `has()` steps of required properties only
         profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).has("foo", "bar").has("fooBar", "Bar").has("barFoo", "Foo"),
@@ -5826,8 +5825,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             option(PROPERTY_PREFETCHING), false,
             option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
         // `foo`, `fooBar`, and `barFoo` properties are prefetched separately
-        assertEquals(9, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
-        assertEquals(3, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 3, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 3, profile.getMetrics()));
 
         // test `has()` step `REQUIRED_AND_NEXT_PROPERTIES` mode with not following any properties steps
         profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).has("foo", "bar").has("fooBar", "Bar"),
@@ -5835,8 +5834,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             option(PROPERTY_PREFETCHING), false,
             option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName());
         // `foo` and `fooBar` properties are prefetched separately
-        assertEquals(6, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
-        assertEquals(2, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 2, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 2, profile.getMetrics()));
 
         // test `has()` step `REQUIRED_AND_NEXT_PROPERTIES` mode with following valueMap step
         profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).has("foo", "bar").has("fooBar", "Bar").valueMap("barFoo"),
@@ -5844,8 +5843,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             option(PROPERTY_PREFETCHING), false,
             option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName());
         // `foo`, `fooBar`, and `barFoo` properties are prefetched separately
-        assertEquals(9, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
-        assertEquals(3, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 3, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 3, profile.getMetrics()));
 
         // test `has()` step `REQUIRED_AND_NEXT_PROPERTIES` mode with following properties step
         profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).has("foo", "bar").has("fooBar", "Bar").properties("barFoo"),
@@ -5853,8 +5852,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             option(PROPERTY_PREFETCHING), false,
             option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName());
         // `foo`, `fooBar`, and `barFoo` properties are prefetched separately
-        assertEquals(9, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
-        assertEquals(3, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 3, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 3, profile.getMetrics()));
 
         // test `has()` step `REQUIRED_AND_NEXT_PROPERTIES` mode with following values step
         profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).has("foo", "bar").has("fooBar", "Bar").values("barFoo"),
@@ -5862,8 +5861,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             option(PROPERTY_PREFETCHING), false,
             option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName());
         // `foo`, `fooBar`, and `barFoo` properties are prefetched separately
-        assertEquals(9, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
-        assertEquals(3, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 3, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 3, profile.getMetrics()));
 
         // test `has()` step `REQUIRED_AND_NEXT_PROPERTIES` mode with following elementMap step
         profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).has("foo", "bar").has("fooBar", "Bar").elementMap("barFoo"),
@@ -5871,8 +5870,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             option(PROPERTY_PREFETCHING), false,
             option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES.getConfigName());
         // `foo`, `fooBar`, and `barFoo` properties are prefetched separately
-        assertEquals(9, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
-        assertEquals(3, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 3, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 3, profile.getMetrics()));
 
         // test `has()` step `REQUIRED_AND_NEXT_PROPERTIES` mode with following valueMap step (all properties)
         profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).has("foo", "bar").has("fooBar", "Bar").valueMap(),
@@ -5974,8 +5973,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             option(PROPERTY_PREFETCHING), false,
             option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_AND_NEXT_PROPERTIES_OR_ALL.getConfigName());
         // `foo`, `fooBar`, and `barFoo` properties are prefetched separately
-        assertEquals(9, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
-        assertEquals(3, countBackendQueriesOfSize(numV - 3 * barrierSize, profile.getMetrics()));
+        assertEquals(3, countBackendQueriesOfSize(barrierSize * 3, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize) * 3, profile.getMetrics()));
 
         // test `has()` step `REQUIRED_AND_NEXT_PROPERTIES_OR_ALL` mode with not following values step
         profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).has("foo", "bar").has("fooBar", "Bar")
@@ -6091,6 +6090,70 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test batching for `out()` inside `or()` limited with second filter not being executed due to first filter is true
         profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).or(__.out("knows").count().is(P.gte(0)), __.inE("knows").count().is(P.gte(0))).limit(limit));
         assertEquals((int) Math.ceil((double) Math.min(bs.length, limit) / barrierSize), countOptimizationQueries(profile.getMetrics()));
+    }
+
+    @Test
+    public void testMultiSliceDBCachedRequests(){
+        clopen(option(DB_CACHE), false);
+        mgmt.makeVertexLabel("testVertex").make();
+        finishSchema();
+        int numV = 100;
+        JanusGraphVertex a = graph.addVertex();
+        JanusGraphVertex[] bs = new JanusGraphVertex[numV];
+        JanusGraphVertex[] cs = new JanusGraphVertex[numV];
+        for (int i = 0; i < numV; ++i) {
+            bs[i] = graph.addVertex();
+            cs[i] = graph.addVertex("testVertex");
+            cs[i].property("foo", "bar");
+            cs[i].property("fooBar", "Bar");
+            cs[i].property("barFoo", "Foo");
+            a.addEdge("knows", bs[i]);
+            bs[i].addEdge("knows", cs[i]);
+        }
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true,
+            option(DB_CACHE), true, option(DB_CACHE_TIME), 1000000L,
+            option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(numV, graph.traversal().V(cs).values("foo").toList().size());
+        graph.tx().rollback();
+        assertEquals(numV, graph.traversal().V(cs).values("foo").toList().size());
+        graph.tx().rollback();
+        assertEquals(numV * 2, graph.traversal().V(cs).values("foo", "fooBar").toList().size());
+        graph.tx().rollback();
+        assertEquals(numV * 2, graph.traversal().V(cs).values("foo", "fooBar").toList().size());
+        graph.tx().rollback();
+        assertEquals(numV * 3, graph.traversal().V(cs).values("foo", "barFoo", "fooBar").toList().size());
+        graph.tx().rollback();
+        assertEquals(numV * 3, graph.traversal().V(cs).values("foo", "barFoo", "fooBar").toList().size());
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true,
+            option(DB_CACHE), true, option(DB_CACHE_TIME), 1000000L,
+            option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(numV, graph.traversal().V(cs).values("foo").toList().size());
+        graph.tx().rollback();
+        assertEquals(numV * 3, graph.traversal().V(cs).values("foo", "barFoo", "fooBar").toList().size());
+        graph.tx().rollback();
+
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true,
+            option(DB_CACHE), true, option(DB_CACHE_TIME), 1000000L,
+            option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, graph.traversal().V(cs[1], cs[5], cs[10]).values("foo").toList().size());
+        graph.tx().rollback();
+        assertEquals(3, graph.traversal().V(cs[1], cs[7], cs[10]).values("foo").toList().size());
+        graph.tx().rollback();
+        assertEquals(6, graph.traversal().V(cs[1], cs[6], cs[8]).values("foo", "fooBar").toList().size());
+        graph.tx().rollback();
+        assertEquals(6, graph.traversal().V(cs[1], cs[7], cs[10]).values("foo", "fooBar").toList().size());
+        graph.tx().rollback();
+        assertEquals(9, graph.traversal().V(cs[1], cs[5], cs[10]).values("foo", "barFoo", "fooBar").toList().size());
+        graph.tx().rollback();
+        assertEquals(numV * 3, graph.traversal().V(cs).values("foo", "barFoo", "fooBar").toList().size());
+        graph.tx().rollback();
+        assertEquals(numV * 2, graph.traversal().V(cs).values("foo", "fooBar").toList().size());
+        assertEquals(numV * 3, graph.traversal().V().values("foo", "barFoo", "fooBar").toList().size());
     }
 
     private TraversalMetrics testLimitedBatch(Supplier<GraphTraversal<?, ?>> traversal, Object... settings){
@@ -7791,7 +7854,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         }};
         mMultiLabels.getAnnotations().remove("percentDur");
         assertEquals(annotations, mMultiLabels.getAnnotations());
-        assertEquals(3, mMultiLabels.getNested().size());
+        assertEquals(4, mMultiLabels.getNested().size());
         Metrics friendMetrics = (Metrics) mMultiLabels.getNested().toArray()[1];
         assertEquals("OR-query", friendMetrics.getName());
         // FIXME: assertTrue(friendMetrics.getDuration(TimeUnit.MICROSECONDS) > 0);
@@ -7810,6 +7873,14 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             put("query", "friend-no-index:SliceQuery[0x7180,0x7181)"); // no vertex-centric index found
         }};
         assertEquals(annotations, friendNoIndexMetrics.getAnnotations());
+        Metrics backendQueryMetrics = (Metrics) mMultiLabels.getNested().toArray()[3];
+        assertEquals("backend-query", backendQueryMetrics.getName());
+        Map<String, Object> annotatnions = backendQueryMetrics.getAnnotations();
+        assertEquals(3, annotatnions.size());
+        assertEquals("true", annotatnions.get("multiSlices"));
+        assertEquals(2, annotatnions.get("queriesAmount"));
+        assertTrue(annotatnions.get("queries").equals("[2069:byTime:SliceQuery[0xB0E0FF7FFFFF9B,0xB0E0FF7FFFFF9C), friend-no-index:SliceQuery[0x7180,0x7181)]") ||
+            annotatnions.get("queries").equals("[friend-no-index:SliceQuery[0x7180,0x7181), 2069:byTime:SliceQuery[0xB0E0FF7FFFFF9B,0xB0E0FF7FFFFF9C)]"));
     }
 
     @Test

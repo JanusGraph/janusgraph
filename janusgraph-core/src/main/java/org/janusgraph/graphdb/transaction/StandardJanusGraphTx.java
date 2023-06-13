@@ -49,6 +49,7 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.indexing.IndexTransaction;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiKeysQueryGroups;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.database.EdgeSerializer;
@@ -67,6 +68,7 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.internal.RelationCategory;
+import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.MetricsQueryExecutor;
 import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.query.QueryExecutor;
@@ -132,6 +134,7 @@ import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
 import org.janusgraph.graphdb.util.IndexHelper;
+import org.janusgraph.graphdb.util.MultiSliceQueriesGroupingUtil;
 import org.janusgraph.graphdb.util.ProfiledIterator;
 import org.janusgraph.graphdb.util.SubqueryIterator;
 import org.janusgraph.graphdb.util.VertexCentricEdgeIterable;
@@ -1255,6 +1258,16 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     pos++;
                 }
             }
+        }
+    }
+
+    public void executeMultiSliceMultiQuery(final Collection<InternalVertex> vertices, final List<BackendQueryHolder<SliceQuery>> queries, QueryProfiler profiler) {
+        MultiKeysQueryGroups<Object, SliceQuery> groupedMultiSliceQueries = MultiSliceQueriesGroupingUtil.toMultiKeysQueryGroups(vertices, queries);
+        if (!groupedMultiSliceQueries.getQueryGroups().isEmpty()) {
+            Map<SliceQuery, Map<Object, EntryList>> allResults = QueryProfiler.profile(profiler, groupedMultiSliceQueries, true, q -> graph.edgeMultiQuery(q, txHandle));
+            Map<Object, JanusGraphVertex> vertexIdToVertexMap = vertices.stream().collect(Collectors.toMap(JanusGraphElement::id, v -> v));
+            allResults.forEach((sliceQuery, resultsPerQuery) -> resultsPerQuery.forEach((vertexId, vertexSliceResult) ->
+                ((CacheVertex) vertexIdToVertexMap.get(vertexId)).loadRelations(sliceQuery, query -> vertexSliceResult)));
         }
     }
 

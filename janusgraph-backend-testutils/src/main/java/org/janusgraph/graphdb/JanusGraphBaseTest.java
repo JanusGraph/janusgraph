@@ -616,7 +616,7 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         int subQueryCounter = 0;
         for (SimpleQueryProfiler subProfiler : profiler) {
             assertNotNull(subProfiler);
-            if (subProfiler.getGroupName().equals(QueryProfiler.OPTIMIZATION)) continue;
+            if (subProfiler.getGroupName().equals(QueryProfiler.OPTIMIZATION) || Boolean.TRUE.equals(subProfiler.getAnnotation(QueryProfiler.MULTI_SLICES_ANNOTATION))) continue;
             if (subQuerySpecs.length == 2) { //0=>fitted, 1=>ordered
                 assertEquals(subQuerySpecs[0], subProfiler.getAnnotation(QueryProfiler.FITTED_ANNOTATION));
                 assertEquals(subQuerySpecs[1], subProfiler.getAnnotation(QueryProfiler.ORDERED_ANNOTATION));
