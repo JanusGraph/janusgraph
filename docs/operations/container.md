@@ -293,12 +293,13 @@ Following folder are created with these user rights:
 
 Here's the policy we follow for tagging our container images:
 
-| Tag            | Support level | Docker base image      |
-|:--------------|:-------------|------------------------|
-| latest         | <ul><li>latest JanusGraph release</li><li>no breaking changes guarantees</li></ul> | eclipse-temurin:11-jre |
-| x.x            | <ul><li>newest patch-level version of JanusGraph</li><li>expect breaking changes</li></ul> | eclipse-temurin:8-jre  |
-| x.x.x          | <ul><li>defined JanusGraph version</li><li>breaking changes are only in this repo</li></ul> | eclipse-temurin:8-jre  |
-| x.x.x-revision | <ul><li>defined JanusGraph version</li><li>defined commit in JanusGraph repo</li></ul> | eclipse-temurin:8-jre  |
+| Tag                     | Config                                   | Support level                  | Docker base image      |
+| :---------------------- | :--------------------------------------- | ------------------------------ | ---------------------- |
+| latest                  | latest JanusGraph release                | no breaking changes guarantees | eclipse-temurin:11-jre |
+| x.x                     | newest patch-level version of JanusGraph | expect breaking changes        | eclipse-temurin:11-jre |
+| x.x.x, x.x.x-revision   | defined JanusGraph version               | static tag                     | eclipse-temurin:11-jre |
+| x.x.x-SNAPSHOT          | latest snapshot build                    | expect breaking changes        | eclipse-temurin:11-jre |
+| x.x.x-SNAPSHOT-revision | latest snapshot build                    | static tag                     | eclipse-temurin:11-jre |
 
 
 [JG]: https://janusgraph.org/
