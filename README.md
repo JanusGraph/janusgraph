@@ -64,11 +64,6 @@ tools:
 
 * Discord for interactive discussions and questions about JanusGraph: [Join the server](https://discord.gg/5n4fjv4QAf)
 
-* Chat rooms on Gitter:
-
-  * [Our main chat room](https://gitter.im/JanusGraph/janusgraph) for all general discussions and questions about JanusGraph
-  * [janusgraph-dev](https://gitter.im/janusgraph/janusgraph-dev) for discussions about the internal implementation of JanusGraph
-
 * Stack Overflow: see the
   [`janusgraph`](https://stackoverflow.com/questions/tagged/janusgraph) tag
 
