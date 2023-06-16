@@ -28,8 +28,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.IsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.ElementMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertyMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -52,9 +54,11 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphElementMapStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphHasStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertyMapStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphHasStepStrategy;
@@ -162,7 +166,7 @@ public class JanusGraphStepStrategyTest {
             }
         });
         TraversalHelper.getStepsOfAssignableClassRecursively(PropertiesStep.class, traversal).forEach(vertexStep -> {
-            JanusGraphPropertiesStep janusGraphPropertiesStep = new JanusGraphPropertiesStep<>(vertexStep);
+            JanusGraphPropertiesStep janusGraphPropertiesStep = new JanusGraphPropertiesStep<>(vertexStep, true, true);
             TraversalHelper.replaceStep(vertexStep, janusGraphPropertiesStep, vertexStep.getTraversal());
         });
         TraversalHelper.getStepsOfAssignableClassRecursively(IsStep.class, traversal).forEach(isStep -> {
@@ -174,6 +178,14 @@ public class JanusGraphStepStrategyTest {
         TraversalHelper.getStepsOfAssignableClassRecursively(HasStep.class, traversal).forEach(hasStep -> {
             JanusGraphHasStep janusGraphHasStep = new JanusGraphHasStep<>(hasStep);
             TraversalHelper.replaceStep(hasStep, janusGraphHasStep, hasStep.getTraversal());
+        });
+        TraversalHelper.getStepsOfAssignableClassRecursively(PropertyMapStep.class, traversal).forEach(propertyMapStep -> {
+            JanusGraphPropertyMapStep janusGraphPropertyMapStep = new JanusGraphPropertyMapStep<>(propertyMapStep, true, true);
+            TraversalHelper.replaceStep(propertyMapStep, janusGraphPropertyMapStep, propertyMapStep.getTraversal());
+        });
+        TraversalHelper.getStepsOfAssignableClassRecursively(ElementMapStep.class, traversal).forEach(elementMapStep -> {
+            JanusGraphElementMapStep janusGraphElementMapStep = new JanusGraphElementMapStep<>(elementMapStep, true, true);
+            TraversalHelper.replaceStep(elementMapStep, janusGraphElementMapStep, elementMapStep.getTraversal());
         });
     }
 
@@ -333,7 +345,7 @@ public class JanusGraphStepStrategyTest {
         // String constant for expected JanusGraphMultiQueryStep
         final String MQ_STEP = JanusGraphMultiQueryStep.class.getSimpleName();
 
-        List<TraversalStrategy.ProviderOptimizationStrategy> otherStrategies = new ArrayList<>(2);
+        List<TraversalStrategy.ProviderOptimizationStrategy> otherStrategies = new ArrayList<>(4);
         otherStrategies.add(JanusGraphLocalQueryOptimizerStrategy.instance());
         otherStrategies.add(JanusGraphHasStepStrategy.instance());
         otherStrategies.add(JanusGraphMultiQueryStrategy.instance());
@@ -438,6 +450,21 @@ public class JanusGraphStepStrategyTest {
             // Need `JanusGraphMultiQuerySteps` before `has` step which is used after other steps
             arguments(g.V().out().has("weight", 0),
                 g_V().is(MQ_STEP).barrier(defaultBarrierSize).out().is(MQ_STEP).barrier(defaultBarrierSize).has("weight", 0), otherStrategies),
+            // Need `JanusGraphMultiQuerySteps` before `valueMap` step which is used after other steps
+            arguments(g.V().valueMap("weight"),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).valueMap("weight"), otherStrategies),
+            // Need `JanusGraphMultiQuerySteps` before `propertyMap` step which is used after other steps
+            arguments(g.V().propertyMap("weight"),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).propertyMap("weight"), otherStrategies),
+            // Need `JanusGraphMultiQuerySteps` before `elementMap` step which is used after other steps
+            arguments(g.V().elementMap("weight"),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).elementMap("weight"), otherStrategies),
+            // Need `JanusGraphMultiQuerySteps` before `values` step which is used after other steps
+            arguments(g.V().values("weight"),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).values("weight"), otherStrategies),
+            // Need `JanusGraphMultiQuerySteps` before `properties` step which is used after other steps
+            arguments(g.V().properties("weight"),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).properties("weight"), otherStrategies),
         });
     }
 }

@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.transaction;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 
 /**
  * Provides configuration options for {@link org.janusgraph.core.JanusGraphTransaction}.
@@ -198,8 +199,13 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
     boolean isSkipDBCacheRead();
 
     /**
-     * @return Has step strategy mode used for the transaction. Can be configured via config `query.has-step-batch-mode`.
+     * @return Has step strategy mode used for the transaction. Can be configured via config `query.batch.has-step-mode`.
      */
     MultiQueryHasStepStrategyMode getHasStepStrategyMode();
+
+    /**
+     * @return Properties strategy mode used for the transaction. Can be configured via config `query.batch.properties-mode`.
+     */
+    MultiQueryPropertiesStrategyMode getPropertiesStrategyMode();
 
 }

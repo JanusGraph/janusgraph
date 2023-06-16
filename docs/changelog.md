@@ -189,6 +189,12 @@ GraphBinary is now used as the default MessageSerializer.hb
 use `query.batch.has-step-mode = none` as replacement for `query.batch-property-prefetch = false` or use
 `query.batch.has-step-mode = all_properties` as replacement for `query.batch-property-prefetch = true`.
 
+`query.fast-property` has no influence on `values`, `properties`, `valueMap`, `propertyMap`, `elementMap` anymore when 
+`query.batch.enabled` is `true`. By default, those steps are configured to fetch only required properties 
+(with separate query per property), but the behaviour can be changed with the configuration `query.batch.properties-mode`. 
+In case previous behavior is desired, use `query.batch.properties-mode = required_properties_only` for `query.fast-property = false` 
+or use `query.batch.properties-mode = all_properties` for `query.fast-property = true`. 
+
 [Batch processing](https://docs.janusgraph.org/operations/batch-processing/) allows JanusGraph to fetch a batch of
 vertices from the storage backend together instead of requesting each vertex individually which leads to a high number
 of backend queries.

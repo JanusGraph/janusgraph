@@ -29,6 +29,7 @@ import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 
 import java.time.Instant;
 
@@ -88,6 +89,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private MultiQueryHasStepStrategyMode hasStepStrategyMode;
 
+    private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
+
     private final boolean forceIndexUsage;
 
     private final ModifiableConfiguration writableCustomOptions;
@@ -111,6 +114,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.multiQuery = graphConfig.useMultiQuery();
         this.hasStepStrategyMode = graphConfig.hasStepStrategyMode();
+        this.propertiesStrategyMode = graphConfig.propertiesStrategyMode();
         this.writableCustomOptions = writableCustomOptions;
         if(customOptions == null){
             this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
@@ -234,6 +238,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public TransactionBuilder setPropertiesStrategyMode(MultiQueryPropertiesStrategyMode propertiesStrategyMode) {
+        this.propertiesStrategyMode = propertiesStrategyMode;
+        return this;
+    }
+
+    @Override
     public void setCommitTime(Instant time) {
         throw new UnsupportedOperationException("Use setCommitTime(long,TimeUnit)");
     }
@@ -279,7 +289,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 propertyPrefetching, multiQuery, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, restrictedPartitions, groupName,
-                defaultSchemaMaker, hasDisabledSchemaConstraints, skipDBCacheRead, hasStepStrategyMode, customOptions);
+                defaultSchemaMaker, hasDisabledSchemaConstraints, skipDBCacheRead, hasStepStrategyMode, propertiesStrategyMode,
+                customOptions);
         return graph.newTransaction(immutable);
     }
 
@@ -402,6 +413,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public MultiQueryPropertiesStrategyMode getPropertiesStrategyMode() {
+        return propertiesStrategyMode;
+    }
+
+    @Override
     public String getGroupName() {
         return groupName;
     }
@@ -461,27 +477,29 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final DefaultSchemaMaker defaultSchemaMaker;
         private boolean hasDisabledSchemaConstraints = true;
         private MultiQueryHasStepStrategyMode hasStepStrategyMode;
+        private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
 
         private final BaseTransactionConfig handleConfig;
 
         public ImmutableTxCfg(boolean isReadOnly,
-                boolean hasEnabledBatchLoading,
-                boolean hasAssignIDsImmediately,
-                boolean hasPreloadedData,
-                boolean hasForceIndexUsage,
-                boolean hasVerifyExternalVertexExistence,
-                boolean hasVerifyInternalVertexExistence,
-                boolean hasAcquireLocks, boolean hasVerifyUniqueness,
-                boolean hasPropertyPrefetching, boolean useMultiQuery, boolean isSingleThreaded,
-                boolean isThreadBound, TimestampProvider times, Instant commitTime,
-                long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
-                int[] restrictedPartitions,
-                String groupName,
-                DefaultSchemaMaker defaultSchemaMaker,
-                boolean hasDisabledSchemaConstraints,
-                boolean skipDBCacheRead,
-                MultiQueryHasStepStrategyMode hasStepStrategyMode,
-                Configuration customOptions) {
+                              boolean hasEnabledBatchLoading,
+                              boolean hasAssignIDsImmediately,
+                              boolean hasPreloadedData,
+                              boolean hasForceIndexUsage,
+                              boolean hasVerifyExternalVertexExistence,
+                              boolean hasVerifyInternalVertexExistence,
+                              boolean hasAcquireLocks, boolean hasVerifyUniqueness,
+                              boolean hasPropertyPrefetching, boolean useMultiQuery, boolean isSingleThreaded,
+                              boolean isThreadBound, TimestampProvider times, Instant commitTime,
+                              long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
+                              int[] restrictedPartitions,
+                              String groupName,
+                              DefaultSchemaMaker defaultSchemaMaker,
+                              boolean hasDisabledSchemaConstraints,
+                              boolean skipDBCacheRead,
+                              MultiQueryHasStepStrategyMode hasStepStrategyMode,
+                              MultiQueryPropertiesStrategyMode propertiesStrategyMode,
+                              Configuration customOptions) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
             this.hasAssignIDsImmediately = hasAssignIDsImmediately;
@@ -504,6 +522,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.hasDisabledSchemaConstraints = hasDisabledSchemaConstraints;
             this.skipDBCacheRead = skipDBCacheRead;
             this.hasStepStrategyMode = hasStepStrategyMode;
+            this.propertiesStrategyMode = propertiesStrategyMode;
             this.handleConfig = new StandardBaseTransactionConfig.Builder()
                     .commitTime(commitTime)
                     .timestampProvider(times)
@@ -624,6 +643,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public MultiQueryHasStepStrategyMode getHasStepStrategyMode() {
             return hasStepStrategyMode;
+        }
+
+        @Override
+        public MultiQueryPropertiesStrategyMode getPropertiesStrategyMode() {
+            return propertiesStrategyMode;
         }
 
         @Override
