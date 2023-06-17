@@ -158,6 +158,8 @@ Any outstanding pull requests that will need to be re-targeted at future milesto
 
 Before any artifacts can be generated and vote can be made the version number will need to be updated in the pom.xml files.
 
+Make sure the latest support release version in `.github/workflows/docker-release.yml` is correct.
+
 #### Update configuration reference documentation
 
 ```Shell
