@@ -22,7 +22,7 @@ on:
 
 jobs:
   commit-publish:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write

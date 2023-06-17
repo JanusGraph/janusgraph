@@ -86,13 +86,13 @@ CMD [ "janusgraph" ]
 ARG CREATED=test
 ARG REVISION=test
 
-LABEL org.opencontainers.image.title="JanusGraph Docker Image" \
-      org.opencontainers.image.description="Official JanusGraph Docker image" \
-      org.opencontainers.image.url="https://janusgraph.org/" \
-      org.opencontainers.image.documentation="https://docs.janusgraph.org/v1.0/" \
-      org.opencontainers.image.revision="${REVISION}" \
-      org.opencontainers.image.source="https://github.com/JanusGraph/janusgraph-docker/" \
-      org.opencontainers.image.vendor="JanusGraph" \
-      org.opencontainers.image.version="${JANUS_VERSION}" \
-      org.opencontainers.image.created="${CREATED}" \
-      org.opencontainers.image.license="Apache-2.0"
+LABEL org.opencontainers.image.title="JanusGraph Docker Image"
+LABEL org.opencontainers.image.description="Official JanusGraph Docker image"
+LABEL org.opencontainers.image.url="https://janusgraph.org/"
+LABEL org.opencontainers.image.documentation="https://docs.janusgraph.org/v1.0/"
+LABEL org.opencontainers.image.revision="${REVISION}"
+LABEL org.opencontainers.image.source="https://github.com/JanusGraph/janusgraph-docker/"
+LABEL org.opencontainers.image.vendor="JanusGraph"
+LABEL org.opencontainers.image.version="${JANUS_VERSION}"
+LABEL org.opencontainers.image.created="${CREATED}"
+LABEL org.opencontainers.image.license="Apache-2.0"
