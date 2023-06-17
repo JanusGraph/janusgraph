@@ -38,7 +38,7 @@ env:
 
 jobs:
   build-all:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -55,7 +55,7 @@ jobs:
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
 
   tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build-all
     strategy:
       fail-fast: false
@@ -154,7 +154,7 @@ jobs:
           name: codecov-cql-${{ matrix.name }}
 
   full-tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: "github.event_name == 'push' && contains(github.event.head_commit.message, '[cql-tests]') || github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[cql-tests]')"
     needs: build-all
     strategy:

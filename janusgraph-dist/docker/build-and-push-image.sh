@@ -58,18 +58,14 @@ fi
 if [[ $MULTI_PLATFORM == "true" ]]; then
     ARGS="${ARGS} --platform ${PLATFORMS}"
 fi
-if [[ $LATEST == "true" ]] && [[ $TAG_SUFFIX == "" ]]; then
-    TAGS+=('latest')
-fi
-if [[ $JANUS_VERSION == *-* ]]; then
-    echo "no full release"
+if [[ $JANUS_VERSION == *"${REVISION}"* ]]; then
+    TAGS+=("${JANUS_VERSION}${TAG_SUFFIX}")
 else
-    MINOR_VERSION=$(echo "${JANUS_VERSION}" | grep -Eo '[0-9]+\.[0-9]+' | head -1)
-    echo "full release ${MINOR_VERSION}"
-    TAGS+=("${MINOR_VERSION}${TAG_SUFFIX}")
+    TAGS+=("${JANUS_VERSION}-${REVISION}${TAG_SUFFIX}")
+    if [[ $PUSH == "no-push" ]]; then
+        TAGS+=("${JANUS_VERSION}${TAG_SUFFIX}")
+    fi
 fi
-TAGS+=("${JANUS_VERSION}${TAG_SUFFIX}")
-TAGS+=("${JANUS_VERSION}-${REVISION}${TAG_SUFFIX}")
 for BUILD_ARG in "${BUILD_ARGS[@]}"
 do
     ARGS="${ARGS} --build-arg ${BUILD_ARG}"
