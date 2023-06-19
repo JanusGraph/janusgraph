@@ -4910,6 +4910,80 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testLimitBatchSizeForMultiQueryMultiCardinalityProperties() {
+        JanusGraphVertex[] cs = setupDataForMultiQueryMultiCardinalityProperties();
+        int barrierSize = 27;
+        // test batching for `values()`
+        TraversalMetrics profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo", "setProperty", "listProperty"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize + barrierSize * 4 + barrierSize * 4, profile.getMetrics()));
+        int lastBatch = cs.length - 3 * barrierSize;
+        assertEquals(1, countBackendQueriesOfSize(lastBatch + lastBatch * 4 + lastBatch * 4, profile.getMetrics()));
+    }
+
+    @Test
+    public void testMultiQueryPropertiesWithLimit() {
+        JanusGraphVertex[] cs = setupDataForMultiQueryMultiCardinalityProperties();
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(PROPERTY_PREFETCHING), false);
+        verityMultiQueryPropertiesWithLimit(cs);
+    }
+
+    protected void verityMultiQueryPropertiesWithLimit(JanusGraphVertex[] cs){
+        cs = graph.traversal().V(cs).toList().toArray(new JanusGraphVertex[0]);
+
+        for(String[] keys : Arrays.asList(new String[]{"foo", "fooBar", "barFoo"}, new String[]{"foo"}, new String[]{"fooBar"}, new String[]{"barFoo"})){
+
+            Map<JanusGraphVertex, Iterable<JanusGraphVertexProperty>> properties = graph.multiQuery(cs[0], cs[1], cs[3]).limit(1).keys(keys).properties();
+            Map<JanusGraphVertex, Map<String, Object>> deserializedProperties = new HashMap<>();
+
+            Assertions.assertEquals(3, properties.size());
+
+            properties.forEach((janusGraphVertex, janusGraphVertexProperties) -> {
+                Map<String, Object> props = new HashMap<>();
+                janusGraphVertexProperties.forEach(janusGraphVertexProperty -> {
+                    ((ArrayList) props.computeIfAbsent(janusGraphVertexProperty.key(), k -> new ArrayList<>())).add(janusGraphVertexProperty.value());
+                });
+                deserializedProperties.put(janusGraphVertex, props);
+            });
+
+            for(Map<String, Object> vertexProps : deserializedProperties.values()){
+                int numOfValues = 0;
+                for(Object val : vertexProps.values()){
+                    numOfValues+= ((List) val).size();
+                }
+                Assertions.assertEquals(1, numOfValues);
+            }
+        }
+    }
+
+    protected JanusGraphVertex[] setupDataForMultiQueryMultiCardinalityProperties(){
+        mgmt.makeVertexLabel("testVertex").make();
+        mgmt.makePropertyKey("setProperty").cardinality(Cardinality.SET).dataType(String.class).make();
+        mgmt.makePropertyKey("listProperty").cardinality(Cardinality.LIST).dataType(String.class).make();
+        finishSchema();
+        int numV = 100;
+        JanusGraphVertex[] cs = new JanusGraphVertex[numV];
+        for (int i = 0; i < numV; ++i) {
+            cs[i] = graph.addVertex("testVertex");
+            cs[i].property("foo", "bar");
+            cs[i].property("fooBar", "Bar");
+            cs[i].property("barFoo", "Foo");
+            cs[i].property(VertexProperty.Cardinality.set, "setProperty", "setValue1");
+            cs[i].property(VertexProperty.Cardinality.set, "setProperty", "setValue2");
+            cs[i].property(VertexProperty.Cardinality.set, "setProperty", "setValue3");
+            cs[i].property(VertexProperty.Cardinality.set, "setProperty", "setValue4");
+            cs[i].property(VertexProperty.Cardinality.list, "listProperty", "listValue1");
+            cs[i].property(VertexProperty.Cardinality.list, "listProperty", "listValue2");
+            cs[i].property(VertexProperty.Cardinality.list, "listProperty", "listValue3");
+            cs[i].property(VertexProperty.Cardinality.list, "listProperty", "listValue4");
+        }
+        return cs;
+    }
+
+    @Test
     public void testLimitBatchSizeForMultiQuery() {
         mgmt.makeVertexLabel("testVertex").make();
         finishSchema();
@@ -6156,7 +6230,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(numV * 3, graph.traversal().V().values("foo", "barFoo", "fooBar").toList().size());
     }
 
-    private TraversalMetrics testLimitedBatch(Supplier<GraphTraversal<?, ?>> traversal, Object... settings){
+    protected TraversalMetrics testLimitedBatch(Supplier<GraphTraversal<?, ?>> traversal, Object... settings){
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
         if(settings.length == 0){
             clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true,
@@ -6179,7 +6253,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(resultLimitedBatch, resultNoMultiQuery);
     }
 
-    private long countBackendQueriesOfSize(long size, Collection<? extends Metrics> metrics) {
+    protected long countBackendQueriesOfSize(long size, Collection<? extends Metrics> metrics) {
         return countBackendQueriesOfSize(querySize -> querySize == size, metrics);
     }
 

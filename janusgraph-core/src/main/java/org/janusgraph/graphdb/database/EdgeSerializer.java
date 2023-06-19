@@ -43,8 +43,11 @@ import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.relations.EdgeDirection;
 import org.janusgraph.graphdb.relations.RelationCache;
+import org.janusgraph.graphdb.types.TypeDefinitionCategory;
+import org.janusgraph.graphdb.types.TypeDefinitionMap;
 import org.janusgraph.graphdb.types.TypeInspector;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
 import org.janusgraph.util.datastructures.Interval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -396,7 +399,6 @@ public class EdgeSerializer implements RelationReader {
         Preconditions.checkNotNull(dir);
         Preconditions.checkArgument(type.isUnidirected(Direction.BOTH) || type.isUnidirected(dir));
 
-
         StaticBuffer sliceStart = null, sliceEnd = null;
         RelationCategory rt = type.isPropertyKey() ? RelationCategory.PROPERTY : RelationCategory.EDGE;
         if (dir == Direction.BOTH) {
@@ -500,7 +502,20 @@ public class EdgeSerializer implements RelationReader {
                 sliceEnd = BufferUtil.nextBiggerBuffer(sliceStart);
             }
         }
-        return new SliceQuery(sliceStart, sliceEnd, type.name());
+        return new SliceQuery(sliceStart, sliceEnd, type.name()).setDirectColumnByStartOnlyAllowed(isDirectColumnByStartOnlyAllowed(type));
+    }
+
+    public static boolean isDirectColumnByStartOnlyAllowed(InternalRelationType type){
+        if(type instanceof PropertyKeyVertex){
+            TypeDefinitionMap definitionMap = ((PropertyKeyVertex) type).getDefinition();
+            if(definitionMap != null){
+                Multiplicity multiplicity = (Multiplicity)definitionMap.get(TypeDefinitionCategory.MULTIPLICITY);
+                if(multiplicity != null){
+                    return Cardinality.SINGLE.equals(multiplicity.getCardinality());
+                }
+            }
+        }
+        return false;
     }
 
     public static class TypedInterval {

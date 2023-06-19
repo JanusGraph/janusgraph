@@ -752,4 +752,24 @@ public interface CQLConfigOptions {
         "Path to file with DataStax configuration.",
         ConfigOption.Type.LOCAL,
         String.class);
+
+    ConfigOption<Boolean> SLICE_GROUPING_ALLOWED = new ConfigOption<>(
+        CQL_NS,
+        "slice-grouping-allowed",
+        "If `true` this allows multiple Slice queries which are allowed to be performed as non-range " +
+            "queries (i.e. direct equality operation) to be grouped together into a single CQL query via `IN` operator. " +
+            "Notice, currently only operations to fetch properties with Cardinality.SINGLE are allowed to be performed as non-range queries " +
+            "(edges fetching or properties with Cardinality SET or LIST won't be grouped together).\n" +
+            "If this option if `false` then each Slice query will be executed in a separate asynchronous CQL query even when " +
+            "grouping is allowed.",
+        ConfigOption.Type.MASKABLE,
+        true);
+
+    ConfigOption<Integer> SLICE_GROUPING_LIMIT = new ConfigOption<>(
+        CQL_NS,
+        "slice-grouping-limit",
+        "Maximum amount of grouped together slice queries into a single CQL query.\n" +
+            "This option is used only when `"+SLICE_GROUPING_ALLOWED.toStringWithoutRoot()+"` is `true`.",
+        ConfigOption.Type.MASKABLE,
+        100);
 }

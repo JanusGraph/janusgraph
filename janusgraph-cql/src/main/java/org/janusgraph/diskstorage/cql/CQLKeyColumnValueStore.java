@@ -45,11 +45,12 @@ import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.cql.function.slice.AsyncCQLMultiColumnFunction;
 import org.janusgraph.diskstorage.cql.function.slice.AsyncCQLSliceFunction;
-import org.janusgraph.diskstorage.cql.function.slice.CQLSliceFunction;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyMultiColumnQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
@@ -59,8 +60,12 @@ import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.CompletableFutureUtil;
+import org.janusgraph.diskstorage.util.EntryArrayList;
 import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -69,6 +74,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.deleteFrom;
@@ -89,6 +95,8 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYP
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.GC_GRACE_SECONDS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SLICE_GROUPING_ALLOWED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SLICE_GROUPING_LIMIT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SPECULATIVE_RETRY;
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TIMESTAMPS;
@@ -162,7 +170,11 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private final PreparedStatement insertColumn;
     private final PreparedStatement insertColumnWithTTL;
 
-    private final CQLSliceFunction cqlSliceFunction;
+    private final AsyncCQLSliceFunction cqlSliceFunction;
+    private final AsyncCQLMultiColumnFunction cqlMultiColumnFunction;
+    private final boolean sliceGroupingAllowed;
+    private final int sliceGroupingLimit;
+
     private final QueryBackPressure queryBackPressure;
 
     /**
@@ -196,6 +208,17 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             )
             .limit(bindMarker(LIMIT_BINDING));
         PreparedStatement getSlice = this.session.prepare(addTTLFunction(addTimestampFunction(getSliceSelect)).build());
+
+        // @formatter:off
+        final Select getMultiColumnSelect = selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
+            .column(COLUMN_COLUMN_NAME)
+            .column(VALUE_COLUMN_NAME)
+            .where(
+                Relation.column(KEY_COLUMN_NAME).isEqualTo(bindMarker(KEY_BINDING)),
+                Relation.column(COLUMN_COLUMN_NAME).in(bindMarker(COLUMN_BINDING))
+            )
+            .limit(bindMarker(LIMIT_BINDING));
+        PreparedStatement getMultiColumn = this.session.prepare(addTTLFunction(addTimestampFunction(getMultiColumnSelect)).build());
 
         if (this.storeManager.getFeatures().hasOrderedScan()) {
             final Select getKeysRangedSelect = selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
@@ -248,6 +271,16 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         ExecutorService executorService = storeManager.getExecutorService();
         queryBackPressure = storeManager.getQueriesBackPressure();
         cqlSliceFunction = new AsyncCQLSliceFunction(session, getSlice, getter, executorService, queryBackPressure);
+
+        if(configuration.get(SLICE_GROUPING_ALLOWED)){
+            cqlMultiColumnFunction = new AsyncCQLMultiColumnFunction(session, getMultiColumn, getter, executorService, queryBackPressure);
+            sliceGroupingAllowed = true;
+        } else {
+            cqlMultiColumnFunction = null;
+            sliceGroupingAllowed = false;
+        }
+
+        sliceGroupingLimit = configuration.get(SLICE_GROUPING_LIMIT);
 
         // @formatter:on
     }
@@ -383,7 +416,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws BackendException {
         try {
-            return cqlSliceFunction.getSlice(query, txh).get();
+            return cqlSliceFunction.execute(query, txh).get();
         } catch (Throwable throwable){
             throw EXCEPTION_MAPPER.apply(throwable);
         }
@@ -394,7 +427,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         try {
             Map<StaticBuffer, CompletableFuture<EntryList>> futureResult = new HashMap<>(keys.size());
             for(StaticBuffer key : keys){
-                futureResult.put(key, cqlSliceFunction.getSlice(new KeySliceQuery(key, query), txh));
+                futureResult.put(key, cqlSliceFunction.execute(new KeySliceQuery(key, query), txh));
             }
             return CompletableFutureUtil.unwrap(futureResult);
         } catch (Throwable e) {
@@ -404,27 +437,104 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     // This implementation is better optimized than `KeyColumnValueStoreUtil.getMultiRangeSliceNonOptimized(this, multiSliceQueriesForKeys, txh);`
     // because it sends all slice queries in parallel instead of using blocking calls to
-    // `getSlice(final Collection<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh)`
+    // `getSlice(final Collection<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh)`.
+    // Moreover, if `sliceGroupingAllowed` is `true` it may also group some of the Slice queries together and perform
+    // IN operator instead of multiple range queries.
     @Override
-    public Map<SliceQuery, Map<StaticBuffer, EntryList>> getMultiSlices(MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiKeysQueryGroups, StoreTransaction txh) throws BackendException {
+    public Map<SliceQuery, Map<StaticBuffer, EntryList>> getMultiSlices(final MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiSliceQueriesForKeys, StoreTransaction txh) throws BackendException {
         try {
-            Map<SliceQuery, Map<StaticBuffer, CompletableFuture<EntryList>>> futureResult = new HashMap<>(multiKeysQueryGroups.getMultiQueryContext().getTotalAmountOfQueries());
-            for(KeysQueriesGroup<StaticBuffer, SliceQuery> queriesForKeysPair : multiKeysQueryGroups.getQueryGroups()){
-                List<StaticBuffer> keys = queriesForKeysPair.getKeysGroup();
-                //TODO: instead of using a separate query for the same keys it would be great to chain all slice queries for the same
-                // key into a single CQL query. This could result in a better performance, but it's not yet possible
-                // because CQL doesn't have `OR` operator and batching multiple CQL `select` queries isn't possible right now.
-                // See issue: https://github.com/JanusGraph/janusgraph/issues/3816
-                for(SliceQuery query : queriesForKeysPair.getQueries()){
-                    Map<StaticBuffer, CompletableFuture<EntryList>> futureQueryResult = futureResult.computeIfAbsent(query, sliceQuery -> new HashMap<>(keys.size()));
-                    for(StaticBuffer key : keys){
-                        futureQueryResult.put(key, cqlSliceFunction.getSlice(new KeySliceQuery(key, query), txh));
-                    }
-                }
+            final Map<SliceQuery, Map<StaticBuffer, CompletableFuture<EntryList>>> futureResult = new HashMap<>(multiSliceQueriesForKeys.getMultiQueryContext().getTotalAmountOfQueries());
+            if(sliceGroupingAllowed){
+                fillMultiSlicesWithGrouping(futureResult, multiSliceQueriesForKeys, txh);
+            } else {
+                fillMultiSlicesWithoutGrouping(futureResult, multiSliceQueriesForKeys, txh);
             }
             return CompletableFutureUtil.unwrapMapOfMaps(futureResult);
         } catch (Throwable e) {
             throw EXCEPTION_MAPPER.apply(e);
+        }
+    }
+
+    private void fillMultiSlicesWithoutGrouping(final Map<SliceQuery, Map<StaticBuffer, CompletableFuture<EntryList>>> futureResult,
+                                                final MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiSliceQueriesForKeys,
+                                                final StoreTransaction txh){
+        for(KeysQueriesGroup<StaticBuffer, SliceQuery> queryGroup : multiSliceQueriesForKeys.getQueryGroups()){
+            executeRangeQueries(futureResult, queryGroup.getKeysGroup(), queryGroup.getQueries(), txh);
+        }
+    }
+
+    private void executeRangeQueries(final Map<SliceQuery, Map<StaticBuffer, CompletableFuture<EntryList>>> futureResult,
+                                     Collection<StaticBuffer> keys,
+                                     Collection<SliceQuery> queries,
+                                     final StoreTransaction txh){
+        for(SliceQuery query : queries){
+            Map<StaticBuffer, CompletableFuture<EntryList>> futureQueryResult = futureResult.computeIfAbsent(query, sliceQuery -> new HashMap<>(keys.size()));
+            for(StaticBuffer key : keys){
+                futureQueryResult.put(key, cqlSliceFunction.execute(new KeySliceQuery(key, query), txh));
+            }
+        }
+    }
+
+    private void fillMultiSlicesWithGrouping(final Map<SliceQuery, Map<StaticBuffer, CompletableFuture<EntryList>>> futureResult,
+                                             final MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiSliceQueriesForKeys,
+                                             final StoreTransaction txh){
+        for(KeysQueriesGroup<StaticBuffer, SliceQuery> queryGroup : multiSliceQueriesForKeys.getQueryGroups()){
+            Collection<StaticBuffer> keys = queryGroup.getKeysGroup();
+
+            Map<Integer, List<SliceQuery>> directEqualityGroupedQueriesByLimit = new HashMap<>();
+            List<SliceQuery> separateRangeQueries = new ArrayList<>();
+            for(SliceQuery query : queryGroup.getQueries()){
+                if(query.isDirectColumnByStartOnlyAllowed()){
+                    List<SliceQuery> directEqualityQueries = directEqualityGroupedQueriesByLimit.get(query.getLimit());
+                    if(directEqualityQueries == null){
+                        directEqualityQueries = new ArrayList<>(multiSliceQueriesForKeys.getQueryGroups().size());
+                        directEqualityQueries.add(query);
+                        directEqualityGroupedQueriesByLimit.put(query.getLimit(), directEqualityQueries);
+                    } else if(directEqualityQueries.size() < sliceGroupingLimit && (!query.hasLimit() || directEqualityQueries.size() < query.getLimit())){
+                        // We cannot group more than `query.getLimit()` queries together.
+                        // Even so it seems that it makes sense to group them together because we don't need
+                        // more column values than limit - we are still obliged to compute the result because
+                        // any separate SliceQuery can be cached into a tx-cache or db-cache with incomplete result
+                        // which may result in the wrong results for future calls of the cached Slice queries.
+                        // Thus, we add a query into the group only if it doesn't have any limit set OR the total
+                        // amount of grouped together direct equality queries is <= than the limit requested.
+                        // I.e. in other words, we must ensure that the limit won't influence the final result.
+                        directEqualityQueries.add(query);
+                    } else {
+                        // In this case we couldn't group a query. Thus, we should execute this query separately.
+                        separateRangeQueries.add(query);
+                    }
+                } else {
+                    // We cannot group range queries together. Thus, they are executed separately.
+                    separateRangeQueries.add(query);
+                }
+            }
+
+            // execute grouped queries
+            for(Map.Entry<Integer, List<SliceQuery>> sliceQueriesGroup : directEqualityGroupedQueriesByLimit.entrySet()){
+                List<ByteBuffer> queryStarts = sliceQueriesGroup.getValue().stream().map(q -> q.getSliceStart().asByteBuffer()).collect(Collectors.toList());
+                for(StaticBuffer key : keys){
+                    CompletableFuture<EntryList> multiColumnResult = cqlMultiColumnFunction.execute(new KeyMultiColumnQuery(key.asByteBuffer(), queryStarts, sliceQueriesGroup.getKey()), txh);
+                    Map<SliceQuery, CompletableFuture<EntryList>> queryKeyFutureResult = new HashMap<>(sliceQueriesGroup.getValue().size());
+                    for(SliceQuery query : sliceQueriesGroup.getValue()){
+                        CompletableFuture<EntryList> futureQueryKeyResult = new CompletableFuture<>();
+                        queryKeyFutureResult.put(query, futureQueryKeyResult);
+                        futureResult.computeIfAbsent(query, sliceQuery -> new HashMap<>(keys.size())).put(key, futureQueryKeyResult);
+                    }
+                    multiColumnResult.whenComplete((entries, throwable) -> {
+                        if (throwable == null){
+                            Map<StaticBuffer, EntryList> columnToFilteredResult = new HashMap<>(sliceQueriesGroup.getValue().size());
+                            entries.forEach(entry -> columnToFilteredResult.computeIfAbsent(entry.getColumn(), column -> new EntryArrayList()).add(entry));
+                            queryKeyFutureResult.forEach((query, futureQueryResult) -> futureQueryResult.complete(columnToFilteredResult.getOrDefault(query.getSliceStart(), EntryList.EMPTY_LIST)));
+                        } else {
+                            queryKeyFutureResult.values().forEach(futureQueryResult -> futureQueryResult.completeExceptionally(throwable));
+                        }
+                    });
+                }
+            }
+
+            // execute non-grouped queries
+            executeRangeQueries(futureResult, keys, separateRangeQueries, txh);
         }
     }
 

@@ -42,6 +42,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     private final StaticBuffer sliceStart;
     private final StaticBuffer sliceEnd;
     private String type;
+    private boolean directColumnByStartOnlyAllowed;
 
     public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, final String type) {
         this(sliceStart, sliceEnd);
@@ -76,6 +77,15 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
      */
     public StaticBuffer getSliceEnd() {
         return sliceEnd;
+    }
+
+    public SliceQuery setDirectColumnByStartOnlyAllowed(boolean allowed){
+        this.directColumnByStartOnlyAllowed = allowed;
+        return this;
+    }
+
+    public boolean isDirectColumnByStartOnlyAllowed() {
+        return directColumnByStartOnlyAllowed;
     }
 
     @Override

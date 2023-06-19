@@ -17,10 +17,13 @@ package org.janusgraph.graphdb.cql;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.diskstorage.PermanentBackendException;
@@ -30,6 +33,8 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.util.backpressure.SemaphoreQueryBackPressure;
 import org.janusgraph.diskstorage.util.backpressure.builder.QueryBackPressureBuilder;
 import org.janusgraph.graphdb.JanusGraphTest;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,7 +46,11 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
 
@@ -52,8 +61,13 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SI
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_CONNECTIONS_PER_HOST;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.MAX_REQUESTS_PER_CONNECTION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECTIONS_PER_HOST;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SLICE_GROUPING_ALLOWED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SLICE_GROUPING_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ASSIGN_TIMESTAMP;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMITED_BATCH;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PROPERTIES_BATCH_MODE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PROPERTY_PREFETCHING;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -206,6 +220,96 @@ public class CQLGraphTest extends JanusGraphTest {
         assertSingleTxAdditionAndCount(10, 20);
         assertTrue(CustomQueryBackPressure.acquireIsUsed);
         assertTrue(CustomQueryBackPressure.releaseIsUsed);
+    }
+
+    @Override @Test @Disabled("Use Parametrized test instead")
+    public void testLimitBatchSizeForMultiQueryMultiCardinalityProperties(){
+       // ignored. Used testLimitBatchSizeForMultiQueryMultiCardinalityProperties(boolean sliceGroupingAllowed) instead
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testLimitBatchSizeForMultiQueryMultiCardinalityProperties(boolean sliceGroupingAllowed){
+        JanusGraphVertex[] cs = setupDataForMultiQueryMultiCardinalityProperties();
+        int barrierSize = 27;
+        // test batching for `values()`
+        TraversalMetrics profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).values("foo", "setProperty", "listProperty"),
+            option(USE_MULTIQUERY), true,
+            option(LIMITED_BATCH), true,
+            option(PROPERTY_PREFETCHING), false,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            option(SLICE_GROUPING_ALLOWED), sliceGroupingAllowed);
+        assertEquals(3, countBackendQueriesOfSize(barrierSize + barrierSize * 4 + barrierSize * 4, profile.getMetrics()));
+        int lastBatch = cs.length - 3 * barrierSize;
+        assertEquals(1, countBackendQueriesOfSize(lastBatch + lastBatch * 4 + lastBatch * 4, profile.getMetrics()));
+    }
+
+    @Override @Test @Disabled("Use Parametrized test instead")
+    public void testMultiQueryPropertiesWithLimit() {
+        // ignored. Used testMultiQueryPropertiesWithLimit(boolean sliceGroupingAllowed) instead
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testMultiQueryPropertiesWithLimit(boolean sliceGroupingAllowed) {
+        JanusGraphVertex[] cs = setupDataForMultiQueryMultiCardinalityProperties();
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(PROPERTY_PREFETCHING), false,
+            option(SLICE_GROUPING_ALLOWED), sliceGroupingAllowed);
+        verityMultiQueryPropertiesWithLimit(cs);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3, 10, 100, 1000, Integer.MAX_VALUE})
+    public void testMultiQuerySliceGroupingLimit(int sliceGroupingLimit) {
+        clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(PROPERTY_PREFETCHING), false,
+            option(SLICE_GROUPING_ALLOWED), true, option(SLICE_GROUPING_LIMIT), sliceGroupingLimit);
+
+        mgmt.makeVertexLabel("testVertex").make();
+        finishSchema();
+        int numV = 100;
+        int propsCount = sliceGroupingLimit > 100 ? 100 : sliceGroupingLimit*3;
+        if(propsCount == 0){
+            propsCount = 1;
+        }
+
+        JanusGraphVertex[] cs = new JanusGraphVertex[numV];
+        for (int i = 0; i < numV; ++i) {
+            cs[i] = graph.addVertex("testVertex");
+            for(int j=0; j<propsCount;j++){
+                cs[i].property("foo"+j, "bar"+j);
+            }
+        }
+        newTx();
+
+        cs = graph.traversal().V(cs).toList().toArray(new JanusGraphVertex[0]);
+
+        String[] keys = new String[propsCount];
+        for(int j=0; j<propsCount;j++){
+            keys[j] = "foo"+j;
+        }
+
+        for(Integer limit : Arrays.asList(1, 2, 3, 5, 10, 15, 100, 150, 1000, 2000, Integer.MAX_VALUE-100)){
+            Map<JanusGraphVertex, Iterable<JanusGraphVertexProperty>> properties = graph.multiQuery(cs[0], cs[1], cs[3]).limit(limit).keys(keys).properties();
+            Map<JanusGraphVertex, Map<String, Object>> deserializedProperties = new HashMap<>();
+
+            Assertions.assertEquals(3, properties.size());
+
+            properties.forEach((janusGraphVertex, janusGraphVertexProperties) -> {
+                Map<String, Object> props = new HashMap<>();
+                janusGraphVertexProperties.forEach(janusGraphVertexProperty -> {
+                    ((ArrayList) props.computeIfAbsent(janusGraphVertexProperty.key(), k -> new ArrayList<>())).add(janusGraphVertexProperty.value());
+                });
+                deserializedProperties.put(janusGraphVertex, props);
+            });
+
+            for(Map<String, Object> vertexProps : deserializedProperties.values()){
+                int numOfValues = 0;
+                for(Object val : vertexProps.values()){
+                    numOfValues+= ((List) val).size();
+                }
+                Assertions.assertEquals(Math.min(propsCount, limit), numOfValues);
+            }
+        }
     }
 
     private void assertSingleTxAdditionAndCount(int indexedVerticesCount, int adjacentVerticesCount){
