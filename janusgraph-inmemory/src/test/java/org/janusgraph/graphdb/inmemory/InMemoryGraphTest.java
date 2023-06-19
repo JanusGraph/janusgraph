@@ -61,7 +61,13 @@ public class InMemoryGraphTest extends JanusGraphTest {
     public void testLimitBatchSizeForMultiQueryRepeatStep() {}
 
     @Override @Test @Disabled
+    public void testLimitBatchSizeForMultiQueryMultiCardinalityProperties() {}
+
+    @Override @Test @Disabled
     public void testLimitBatchSizeForMultiQuery() {}
+
+    @Override @Test @Disabled
+    public void testMultiQueryPropertiesWithLimit() {}
 
     @Override @Test @Disabled
     public void testMultiSliceDBCachedRequests(){}

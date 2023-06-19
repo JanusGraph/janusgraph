@@ -16,6 +16,7 @@ package org.janusgraph;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphTransaction;
@@ -50,6 +51,9 @@ public class CQLMultiQueryMultiSlicesBenchmark {
     @Param({"5000", "50000"})
     int verticesAmount;
 
+    @Param({"true", "false"})
+    boolean propertyCardinalitySingle;
+
     JanusGraph graph;
 
     public WriteConfiguration getConfiguration() {
@@ -71,7 +75,8 @@ public class CQLMultiQueryMultiSlicesBenchmark {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
 
         for(int i=0;i<propertiesAmount;i++){
-            mgmt.makePropertyKey("prop"+i).dataType(String.class).make();
+            mgmt.makePropertyKey("prop"+i).dataType(String.class)
+                .cardinality(propertyCardinalitySingle ? Cardinality.SINGLE : Cardinality.LIST).make();
         }
 
         mgmt.buildIndex("nameIndex", Vertex.class).addKey(name).buildCompositeIndex();
