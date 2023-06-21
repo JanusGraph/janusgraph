@@ -560,16 +560,6 @@
                 <version>${tinkerpop.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.google.inject</groupId>
-                <artifactId>guice</artifactId>
-                <version>5.1.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.inject.extensions</groupId>
-                <artifactId>guice-servlet</artifactId>
-                <version>5.1.0</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>hadoop-gremlin</artifactId>
                 <version>${tinkerpop.version}</version>
