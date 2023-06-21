@@ -16,12 +16,6 @@ on:
   pull_request_target:
     types: ["labeled", "closed"]
 
-permissions:
-  actions: write
-  pull-requests: write
-  contents: write
-  repository-projects: write
-
 jobs:
   backport:
     name: Backport PR
@@ -37,14 +31,14 @@ jobs:
       - name: Backport Action
         uses: sqren/backport-github-action@v8.9.7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.ACCESS_TOKEN }}
           auto_backport_label_prefix: backport/
           add_original_reviewers: true
 
       - name: Info log
         if: ${{ success() }}
         run: cat ~/.backport/backport.info.log
-        
+
       - name: Debug log
         if: ${{ failure() }}
-        run: cat ~/.backport/backport.debug.log   
+        run: cat ~/.backport/backport.debug.log
