@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.script.Bindings;
@@ -211,6 +212,27 @@ public abstract class AbstractConfiguredGraphFactoryTest {
         RuntimeException graph1 = assertThrows(RuntimeException.class, () -> ConfiguredGraphFactory.create(graphName));
         assertEquals("Please create a template Configuration using the " +
             "ConfigurationManagementGraph#createTemplateConfiguration API.", graph1.getMessage());
+    }
+
+    @Test
+    public void updateConfigurationShouldNotUpdateUserProvidedMap() throws Exception {
+        final MapConfiguration graphConfig = getGraphConfig();
+        final String graphName = graphConfig.getString(GRAPH_NAME.toStringWithoutRoot());
+
+        try {
+            ConfiguredGraphFactory.createConfiguration(graphConfig);
+            final StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.open(graphName);
+            assertNotNull(graph);
+
+            final Map<String, Object> map = new HashMap<>();
+            ConfiguredGraphFactory.updateConfiguration(graphName, new MapConfiguration(map));
+
+            // Map should not contain the "graph.graphname" property added in ConfiguredGraphFactory.updateConfiguration
+            assertTrue(map.isEmpty());
+        } finally {
+            ConfiguredGraphFactory.removeConfiguration(graphName);
+            ConfiguredGraphFactory.close(graphName);
+        }
     }
 
     @Test
