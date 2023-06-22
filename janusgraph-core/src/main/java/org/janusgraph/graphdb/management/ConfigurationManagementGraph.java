@@ -161,13 +161,17 @@ public class ConfigurationManagementGraph {
      * graphName has been closed and reopened on every JanusGraph Node.
      */
     public void updateConfiguration(final String graphName, final Configuration config) {
-        final Map<Object, Object> map = ConfigurationConverter.getMap(config);
+        final Map<Object, Object> map;
         if (config.containsKey(PROPERTY_GRAPH_NAME)) {
+            map = ConfigurationConverter.getMap(config);
+
             final String graphNameOnConfig = (String) map.get(PROPERTY_GRAPH_NAME);
             Preconditions.checkArgument(graphName.equals(graphNameOnConfig),
                                         "Supplied graphName %s does not match property value supplied on config: %s.",
                                         graphName, graphNameOnConfig);
         } else {
+            // Make a copy of the map to avoid updating the user-provided Configuration
+            map = new HashMap<>(ConfigurationConverter.getMap(config));
             map.put(PROPERTY_GRAPH_NAME, graphName);
         }
         log.warn("Configuration {} is only guaranteed to take effect when graph {} has been closed and reopened on all Janus Graph Nodes.",
