@@ -20,7 +20,6 @@ import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +56,7 @@ public interface KeyColumnValueStore {
      * Retrieves the list of entries (i.e. column-value pairs) as specified by the given {@link SliceQuery} for all
      * of the given keys together.
      *
-     * @param keys  Collection of keys
+     * @param keys  List of keys
      * @param query Slicequery specifying matching entries
      * @param txh   Transaction
      * @return The result of the query for each of the given keys as a map from the key to the list of result entries.
@@ -89,7 +88,7 @@ public interface KeyColumnValueStore {
      * @throws org.janusgraph.diskstorage.BackendException
      */
     default Map<SliceQuery, Map<StaticBuffer, EntryList>> getMultiSlices(MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiKeysQueryGroups, StoreTransaction txh) throws BackendException{
-        Map<SliceQuery, Map<StaticBuffer, EntryList>> result = new HashMap<>();
+        Map<SliceQuery, Map<StaticBuffer, EntryList>> result = new java.util.HashMap<>();
         for(KeysQueriesGroup<StaticBuffer, SliceQuery> queriesForKeysPair : multiKeysQueryGroups.getQueryGroups()){
             List<StaticBuffer> keys = queriesForKeysPair.getKeysGroup();
             for(SliceQuery query : queriesForKeysPair.getQueries()){

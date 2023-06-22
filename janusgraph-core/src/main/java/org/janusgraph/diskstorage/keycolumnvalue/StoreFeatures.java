@@ -18,8 +18,6 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 
-import java.util.List;
-
 /**
  * Describes features supported by a storage backend.
  *
@@ -58,7 +56,7 @@ public interface StoreFeatures {
     /**
      * Whether this storage backend supports query operations on multiple keys
      * via
-     * {@link KeyColumnValueStore#getSlice(List, SliceQuery, StoreTransaction)} and {@link KeyColumnValueStore#getMultiSlices(MultiKeysQueryGroups, StoreTransaction)}
+     * {@link KeyColumnValueStore#getSlice(java.util.List, SliceQuery, StoreTransaction)} and {@link KeyColumnValueStore#getMultiSlices(MultiKeysQueryGroups, StoreTransaction)}
      */
     boolean hasMultiQuery();
 

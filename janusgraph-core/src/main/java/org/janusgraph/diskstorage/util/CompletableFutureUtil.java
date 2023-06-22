@@ -60,7 +60,6 @@ public class CompletableFutureUtil {
         }
     }
 
-    //
     public static <K,V> Map<K,V> unwrap(Map<K,CompletableFuture<V>> futureMap) throws Throwable{
         Map<K, V> resultMap = new HashMap<>(futureMap.size());
         Throwable firstException = null;

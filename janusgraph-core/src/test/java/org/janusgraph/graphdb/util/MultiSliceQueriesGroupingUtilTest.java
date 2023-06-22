@@ -358,7 +358,7 @@ public class MultiSliceQueriesGroupingUtilTest {
     public void testReplaceCurrentLeafNodeWithUpdatedTypeLeafNodesEmptyList() {
         List<TreeNode> allLeafParents = Collections.emptyList();
         Map<Object, Object> oldToNewKeysMap = new HashMap<>();
-        MultiSliceQueriesGroupingUtil.replaceCurrentLeafNodeWithUpdatedTypeLeafNodes(allLeafParents, oldToNewKeysMap);
+        replaceCurrentLeafNodeWithUpdatedTypeLeafNodes(allLeafParents, oldToNewKeysMap);
         assertTrue(allLeafParents.isEmpty());
         assertTrue(oldToNewKeysMap.isEmpty());
     }

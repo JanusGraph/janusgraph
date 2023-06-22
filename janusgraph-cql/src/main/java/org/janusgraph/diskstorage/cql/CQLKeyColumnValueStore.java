@@ -61,7 +61,6 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.CompletableFutureUtil;
 import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -411,7 +410,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         try {
             Map<SliceQuery, Map<StaticBuffer, CompletableFuture<EntryList>>> futureResult = new HashMap<>(multiKeysQueryGroups.getMultiQueryContext().getTotalAmountOfQueries());
             for(KeysQueriesGroup<StaticBuffer, SliceQuery> queriesForKeysPair : multiKeysQueryGroups.getQueryGroups()){
-                Collection<StaticBuffer> keys = queriesForKeysPair.getKeysGroup();
+                List<StaticBuffer> keys = queriesForKeysPair.getKeysGroup();
                 //TODO: instead of using a separate query for the same keys it would be great to chain all slice queries for the same
                 // key into a single CQL query. This could result in a better performance, but it's not yet possible
                 // because CQL doesn't have `OR` operator and batching multiple CQL `select` queries isn't possible right now.
