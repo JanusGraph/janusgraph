@@ -654,6 +654,8 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
                 return LongSerializer.INSTANCE;
             case VISIBILITY:
                 return ASCIIStringSerializer.INSTANCE;
+            case ROW_KEY:
+                return StaticBufferSerializer.INSTANCE;
             default: throw new AssertionError("Unexpected meta data: " + meta);
         }
     }
@@ -733,6 +735,40 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         @Override
         public String read(byte[] data, int startPos) {
             return StringEncoding.readAsciiString(data,startPos);
+        }
+    }
+
+    private enum StaticBufferSerializer implements MetaDataSerializer<StaticBuffer> {
+
+        INSTANCE;
+
+        private static final StaticBuffer EMPTY_STATIC_BUFFER = StaticArrayBuffer.of(new byte[0]);
+
+        @Override
+        public int getByteLength(StaticBuffer value) {
+            return value.length() + 4;
+        }
+
+        @Override
+        public void write(byte[] data, int startPos, StaticBuffer value) {
+            int length = value.length();
+            StaticArrayBuffer.putInt(data, startPos, length);
+            if(length > 0){
+                startPos+=4;
+                for(int i=0; i<length; i++){
+                    data[startPos++] = value.getByte(i);
+                }
+            }
+        }
+
+        @Override
+        public StaticBuffer read(byte[] data, int startPos) {
+            int bufSize = StaticArrayBuffer.getInt(data, startPos);
+            if(bufSize == 0){
+                return EMPTY_STATIC_BUFFER;
+            }
+            startPos+=4;
+            return new StaticArrayBuffer(data, startPos, startPos+bufSize);
         }
     }
 

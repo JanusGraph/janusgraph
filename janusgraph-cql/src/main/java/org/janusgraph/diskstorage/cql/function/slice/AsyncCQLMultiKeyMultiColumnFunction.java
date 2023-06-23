@@ -19,21 +19,29 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import org.janusgraph.diskstorage.cql.CQLColValGetter;
 import org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyMultiColumnQuery;
+import org.janusgraph.diskstorage.cql.query.MultiKeysMultiColumnQuery;
 import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 
-public class AsyncCQLMultiColumnFunction extends AsyncCQLFunction<KeyMultiColumnQuery>{
-    public AsyncCQLMultiColumnFunction(CqlSession session, PreparedStatement getSlice, CQLColValGetter getter, ExecutorService executorService, QueryBackPressure queryBackPressure) {
+public class AsyncCQLMultiKeyMultiColumnFunction extends AsyncCQLFunction<MultiKeysMultiColumnQuery>{
+    public AsyncCQLMultiKeyMultiColumnFunction(CqlSession session, PreparedStatement getSlice, CQLColValGetter getter, ExecutorService executorService, QueryBackPressure queryBackPressure) {
         super(session, getSlice, getter, executorService, queryBackPressure);
     }
 
     @Override
-    BoundStatementBuilder bindMarkers(KeyMultiColumnQuery query, BoundStatementBuilder statementBuilder) {
-        return statementBuilder.setByteBuffer(CQLKeyColumnValueStore.KEY_BINDING, query.getKey())
+    BoundStatementBuilder bindMarkers(MultiKeysMultiColumnQuery query, BoundStatementBuilder statementBuilder) {
+        return statementBuilder
+            .setList(CQLKeyColumnValueStore.KEY_BINDING, query.getKeys(), ByteBuffer.class)
             .setList(CQLKeyColumnValueStore.COLUMN_BINDING, query.getColumns(), ByteBuffer.class)
-            .setInt(CQLKeyColumnValueStore.LIMIT_BINDING, query.getLimit());
+            .setInt(CQLKeyColumnValueStore.LIMIT_BINDING, query.getLimit())
+            .setRoutingToken(query.getRoutingToken())
+            // usually routing key isn't needed when routingToken is specified,
+            // but in some cases different driver implementations (like ScyllaDB)
+            // or load balancing strategies may rely on routing key instead.
+            // Thus, we also set routing key here to any of the keys because we
+            // are sure they all need to be executed on the same node (or shard).
+            .setRoutingKey(query.getKeys().get(0));
     }
 }

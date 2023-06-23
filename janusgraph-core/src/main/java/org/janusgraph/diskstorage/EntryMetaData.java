@@ -29,7 +29,8 @@ public enum EntryMetaData {
 
     TTL(Integer.class, false, data -> data instanceof Integer && ((Integer) data) >= 0L),
     VISIBILITY(String.class, true, data -> data instanceof String && StringEncoding.isAsciiString((String) data)),
-    TIMESTAMP(Long.class, false, data -> data instanceof Long);
+    TIMESTAMP(Long.class, false, data -> data instanceof Long),
+    ROW_KEY(StaticBuffer.class, false, data -> data instanceof StaticBuffer);
 
     public static final java.util.Map<EntryMetaData,Object> EMPTY_METADATA = Collections.emptyMap();
 

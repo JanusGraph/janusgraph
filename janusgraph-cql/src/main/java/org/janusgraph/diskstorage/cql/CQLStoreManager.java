@@ -234,15 +234,15 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             .build());
     }
 
-    ExecutorService getExecutorService() {
+    public ExecutorService getExecutorService() {
         return executorService;
     }
 
-    CqlSession getSession() {
+    public CqlSession getSession() {
         return this.session;
     }
 
-    String getKeyspaceName() {
+    public String getKeyspaceName() {
         return this.keyspace;
     }
 

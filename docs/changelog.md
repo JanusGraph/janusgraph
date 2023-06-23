@@ -328,6 +328,33 @@ and optimize this method execution to execute all the slice queries for all the 
 (for example, by using asynchronous programming, slice queries grouping, multi-threaded execution, or any other technique which 
 is efficient for the respective storage adapter).  
 
+##### Added possibility to group multiple slice queries together via CQL storage backend
+
+Starting from JanusGraph 1.0.0 CQL storage implementation now groups queries which fetch properties with `Cardinality.SINGLE` together
+into the same CQL query. The behaviour can be disabled by setting configuration `storage.cql.grouping.slice-allowed = false`. 
+
+CQL storage implementation has also ability to group queries of different partition keys together if they belong to the same 
+token range or same replicas set (grouping strategy is available via `storage.cql.grouping.keys-class` configuration option). 
+This behaviour is disabled by default, but can be enabled via `storage.cql.grouping.keys-allowed = true`. 
+Please note that enabling the key grouping feature can increase the return size of related queries. 
+This is due to each row in a CQL query, which encompasses grouped keys, needing to return its specific key. 
+Moreover, it could potentially lead to less balanced load on the storage cluster. However, it reduces the amount of CQL 
+queries sent which may positively influence throughput in some cases as well as pricing point of some Serverless deployments. 
+We recommend to benchmark each use-case before enabling keys grouping (`storage.cql.grouping.keys-allowed`).
+
+Notice, keys grouping (`storage.cql.grouping.keys-allowed`) can be used only with storage backends which support `PER PARTITION LIMIT`. 
+As such, this feature can't be used with Amazon Keyspaces because it doesn't support `PER PARTITION LIMIT`.
+
+Different storage backends may also have restriction set on maximum keys which can be provided via `IN` operator (which is needed for grouping). 
+It is required to ensure that `storage.cql.grouping.keys-limit` or `storage.cql.grouping.slice-limit` is less than or equal to the 
+restriction provided via the storage backend.
+On ScyllaDB it's possible to configure this restriction using [max-partition-key-restrictions-per-query](https://enterprise.docs.scylladb.com/branch-2022.2/faq.html#how-can-i-change-the-maximum-number-of-in-restrictions) 
+configuration option (default to `100`).
+On AstraDB side it is needed to be asked on AstraDB side to be changed via `partition_keys_in_select_failure_threshold` and `in_select_cartesian_product_failure_threshold` threshold 
+configurations (https://docs.datastax.com/en/astra-serverless/docs/plan/planning.html#_cassandra_yaml) which are set to `20` and `25` by default.
+
+See additional properties to control grouping configurations under the namespace `storage.cql.grouping`.
+
 ##### Removal of deprecated classes/methods/functionalities
 
 ###### Methods
