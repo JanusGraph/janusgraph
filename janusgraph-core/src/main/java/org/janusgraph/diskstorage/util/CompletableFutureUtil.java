@@ -18,7 +18,9 @@ import org.janusgraph.core.JanusGraphException;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -63,14 +65,17 @@ public class CompletableFutureUtil {
     public static <K,V> Map<K,V> unwrap(Map<K,CompletableFuture<V>> futureMap) throws Throwable{
         Map<K, V> resultMap = new HashMap<>(futureMap.size());
         Throwable firstException = null;
+        Set<Throwable> uniqueExceptions = null;
         for(Map.Entry<K, CompletableFuture<V>> entry : futureMap.entrySet()){
             try{
                 resultMap.put(entry.getKey(), entry.getValue().get());
             } catch (Throwable throwable){
+                Throwable rootException = unwrapExecutionException(throwable);
                 if(firstException == null){
-                    firstException = throwable;
-                } else {
-                    firstException.addSuppressed(throwable);
+                    firstException = rootException;
+                    uniqueExceptions = new HashSet<>(1);
+                } else if(firstException != rootException && uniqueExceptions.add(rootException)){
+                    firstException.addSuppressed(rootException);
                 }
             }
         }
@@ -84,14 +89,17 @@ public class CompletableFutureUtil {
     public static <K,V,R> Map<K,Map<V, R>> unwrapMapOfMaps(Map<K, Map<V, CompletableFuture<R>>> futureMap) throws Throwable{
         Map<K, Map<V, R>> resultMap = new HashMap<>(futureMap.size());
         Throwable firstException = null;
+        Set<Throwable> uniqueExceptions = null;
         for(Map.Entry<K, Map<V, CompletableFuture<R>>> entry : futureMap.entrySet()){
             try{
                 resultMap.put(entry.getKey(), unwrap(entry.getValue()));
             } catch (Throwable throwable){
+                Throwable rootException = unwrapExecutionException(throwable);
                 if(firstException == null){
-                    firstException = throwable;
-                } else {
-                    firstException.addSuppressed(throwable);
+                    firstException = rootException;
+                    uniqueExceptions = new HashSet<>(1);
+                } else if(firstException != rootException && uniqueExceptions.add(rootException)){
+                    firstException.addSuppressed(rootException);
                 }
             }
         }
@@ -104,14 +112,17 @@ public class CompletableFutureUtil {
 
     public static <V> void awaitAll(Collection<CompletableFuture<V>> futureCollection) throws Throwable{
         Throwable firstException = null;
+        Set<Throwable> uniqueExceptions = null;
         for(CompletableFuture<V> future : futureCollection){
             try{
                 future.get();
             } catch (Throwable throwable){
+                Throwable rootException = unwrapExecutionException(throwable);
                 if(firstException == null){
-                    firstException = throwable;
-                } else {
-                    firstException.addSuppressed(throwable);
+                    firstException = rootException;
+                    uniqueExceptions = new HashSet<>(1);
+                } else if(firstException != rootException && uniqueExceptions.add(rootException)){
+                    firstException.addSuppressed(rootException);
                 }
             }
         }

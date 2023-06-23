@@ -19,21 +19,22 @@ import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import org.janusgraph.diskstorage.cql.CQLColValGetter;
 import org.janusgraph.diskstorage.cql.CQLKeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.cql.query.SingleKeyMultiColumnQuery;
 import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 
-public class AsyncCQLSliceFunction extends AsyncCQLFunction<KeySliceQuery>{
-    public AsyncCQLSliceFunction(CqlSession session, PreparedStatement getSlice, CQLColValGetter getter, ExecutorService executorService, QueryBackPressure queryBackPressure) {
+public class AsyncCQLSingleKeyMultiColumnFunction extends AsyncCQLFunction<SingleKeyMultiColumnQuery>{
+    public AsyncCQLSingleKeyMultiColumnFunction(CqlSession session, PreparedStatement getSlice, CQLColValGetter getter, ExecutorService executorService, QueryBackPressure queryBackPressure) {
         super(session, getSlice, getter, executorService, queryBackPressure);
     }
 
     @Override
-    BoundStatementBuilder bindMarkers(KeySliceQuery query, BoundStatementBuilder statementBuilder) {
-        return statementBuilder.setByteBuffer(CQLKeyColumnValueStore.KEY_BINDING, query.getKey().asByteBuffer())
-            .setByteBuffer(CQLKeyColumnValueStore.SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
-            .setByteBuffer(CQLKeyColumnValueStore.SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
-            .setInt(CQLKeyColumnValueStore.LIMIT_BINDING, query.getLimit());
+    BoundStatementBuilder bindMarkers(SingleKeyMultiColumnQuery query, BoundStatementBuilder statementBuilder) {
+        return statementBuilder.setByteBuffer(CQLKeyColumnValueStore.KEY_BINDING, query.getKey())
+            .setList(CQLKeyColumnValueStore.COLUMN_BINDING, query.getColumns(), ByteBuffer.class)
+            .setInt(CQLKeyColumnValueStore.LIMIT_BINDING, query.getLimit())
+            .setRoutingKey(query.getKey());
     }
 }

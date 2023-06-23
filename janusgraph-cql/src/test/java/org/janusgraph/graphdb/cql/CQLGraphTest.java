@@ -17,9 +17,11 @@ package org.janusgraph.graphdb.cql;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
@@ -31,6 +33,7 @@ import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.cql.strategy.GroupedExecutionStrategyBuilder;
 import org.janusgraph.diskstorage.util.backpressure.SemaphoreQueryBackPressure;
 import org.janusgraph.diskstorage.util.backpressure.builder.QueryBackPressureBuilder;
 import org.janusgraph.graphdb.JanusGraphTest;
@@ -54,12 +57,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BACK_PRESSURE_CLASS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BACK_PRESSURE_LIMIT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYS_GROUPING_ALLOWED;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYS_GROUPING_CLASS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYS_GROUPING_LIMIT;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYS_GROUPING_MIN;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_CONNECTIONS_PER_HOST;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.MAX_REQUESTS_PER_CONNECTION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECTIONS_PER_HOST;
@@ -104,6 +112,109 @@ public class CQLGraphTest extends JanusGraphTest {
             arguments(1000, QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS),
             arguments(1500, QueryBackPressureBuilder.SEMAPHORE_RELEASE_PROTECTED_QUERY_BACK_PRESSURE_CLASS),
         });
+    }
+
+    protected static Stream<Arguments> generateGroupingConfigs() {
+
+        // We should always disable keys grouping option for cases when CQL storage backend doesn't support PER PARTITION LIMIT.
+        boolean keysGroupingAllowed = JanusGraphCassandraContainer.supportsPerPartitionLimit();
+        List<Arguments> argumentsList = new ArrayList<>();
+        if(keysGroupingAllowed){
+            argumentsList.add(
+                arguments(1, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                    option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                    option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_LIMIT), 100,
+                    option(KEYS_GROUPING_MIN), 2})
+            );
+            argumentsList.add(
+                arguments(100, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                    option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                    option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_LIMIT), 100,
+                    option(KEYS_GROUPING_MIN), 2})
+            );
+            argumentsList.add(
+                arguments(2000, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                    option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                    option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_LIMIT), 100,
+                    option(KEYS_GROUPING_MIN), 2})
+            );
+            argumentsList.add(
+                arguments(1, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                    option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                    option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_LIMIT), 100,
+                    option(KEYS_GROUPING_MIN), 200})
+            );
+            argumentsList.add(
+                arguments(100, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                    option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                    option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_LIMIT), 100,
+                    option(KEYS_GROUPING_MIN), 200})
+            );
+            argumentsList.add(
+                arguments(2000, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                    option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                    option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_LIMIT), 100,
+                    option(KEYS_GROUPING_MIN), 200})
+            );
+            argumentsList.add(
+                arguments(1, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                    option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                    option(SLICE_GROUPING_ALLOWED), false, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_LIMIT), 100,
+                    option(KEYS_GROUPING_MIN), 2})
+            );
+            argumentsList.add(
+                arguments(100, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                    option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                    option(SLICE_GROUPING_ALLOWED), false, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_LIMIT), 100,
+                    option(KEYS_GROUPING_MIN), 2})
+            );
+            argumentsList.add(
+                arguments(2000, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                    option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                    option(SLICE_GROUPING_ALLOWED), false, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_LIMIT), 100,
+                    option(KEYS_GROUPING_MIN), 2})
+            );
+        }
+
+        argumentsList.add(
+            arguments(1, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), false, option(KEYS_GROUPING_LIMIT), 100,
+                option(KEYS_GROUPING_MIN), 2})
+        );
+        argumentsList.add(
+            arguments(100, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), false, option(KEYS_GROUPING_LIMIT), 100,
+                option(KEYS_GROUPING_MIN), 2})
+        );
+        argumentsList.add(
+            arguments(2000, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), false, option(KEYS_GROUPING_LIMIT), 100,
+                option(KEYS_GROUPING_MIN), 2})
+        );
+
+        argumentsList.add(
+            arguments(1, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                option(SLICE_GROUPING_ALLOWED), false, option(KEYS_GROUPING_ALLOWED), false, option(KEYS_GROUPING_LIMIT), 100,
+                option(KEYS_GROUPING_MIN), 2})
+        );
+        argumentsList.add(
+            arguments(100, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                option(SLICE_GROUPING_ALLOWED), false, option(KEYS_GROUPING_ALLOWED), false, option(KEYS_GROUPING_LIMIT), 100,
+                option(KEYS_GROUPING_MIN), 2})
+        );
+        argumentsList.add(
+            arguments(2000, new Object[]{option(USE_MULTIQUERY), true, option(PROPERTY_PREFETCHING), false, option(LIMITED_BATCH), true,
+                option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                option(SLICE_GROUPING_ALLOWED), false, option(KEYS_GROUPING_ALLOWED), false, option(KEYS_GROUPING_LIMIT), 100,
+                option(KEYS_GROUPING_MIN), 2})
+        );
+
+        return argumentsList.stream();
     }
 
     @Override
@@ -188,11 +299,11 @@ public class CQLGraphTest extends JanusGraphTest {
 
         GraphTraversalSource g = graph.traversal();
         JanusGraphException ex = assertThrows(JanusGraphException.class,
-                () -> g.V().has("name", testName).hasNext());
+            () -> g.V().has("name", testName).hasNext());
         assertEquals(-1, ExceptionUtils.indexOfType(ex, TemporaryBackendException.class),
-                "Query should not produce a TemporaryBackendException");
+            "Query should not produce a TemporaryBackendException");
         assertNotEquals(-1, ExceptionUtils.indexOfType(ex, PermanentBackendException.class),
-                "Query should produce a PermanentBackendException");
+            "Query should produce a PermanentBackendException");
     }
 
     @ParameterizedTest
@@ -232,7 +343,7 @@ public class CQLGraphTest extends JanusGraphTest {
 
     @Override @Test @Disabled("Use Parametrized test instead")
     public void testLimitBatchSizeForMultiQueryMultiCardinalityProperties(){
-       // ignored. Used testLimitBatchSizeForMultiQueryMultiCardinalityProperties(boolean sliceGroupingAllowed) instead
+        // ignored. Used testLimitBatchSizeForMultiQueryMultiCardinalityProperties(boolean sliceGroupingAllowed) instead
     }
 
     @ParameterizedTest
@@ -250,6 +361,75 @@ public class CQLGraphTest extends JanusGraphTest {
         assertEquals(3, countBackendQueriesOfSize(barrierSize + barrierSize * 4 + barrierSize * 4, profile.getMetrics()));
         int lastBatch = cs.length - 3 * barrierSize;
         assertEquals(1, countBackendQueriesOfSize(lastBatch + lastBatch * 4 + lastBatch * 4, profile.getMetrics()));
+    }
+
+    @MethodSource("generateGroupingConfigs")
+    @ParameterizedTest
+    public void testBatchWithCQLGrouping(int elementsAmount, Object[] configuration){
+
+        mgmt.makeVertexLabel("testVertex").make();
+        mgmt.makePropertyKey("singleProperty1").cardinality(Cardinality.SINGLE).dataType(String.class).make();
+        mgmt.makePropertyKey("singleProperty2").cardinality(Cardinality.SINGLE).dataType(String.class).make();
+        mgmt.makePropertyKey("singleProperty3").cardinality(Cardinality.SINGLE).dataType(String.class).make();
+        mgmt.makePropertyKey("setProperty").cardinality(Cardinality.SET).dataType(String.class).make();
+        mgmt.makePropertyKey("listProperty").cardinality(Cardinality.LIST).dataType(String.class).make();
+        finishSchema();
+        JanusGraphVertex[] cs = new JanusGraphVertex[elementsAmount];
+        for (int i = 0; i < elementsAmount; ++i) {
+            cs[i] = graph.addVertex("testVertex");
+            cs[i].property("singleProperty1", "single value1 "+i);
+            cs[i].property("singleProperty2", "single value1 "+i);
+            cs[i].property("singleProperty3", "single value1 "+i);
+            cs[i].property(VertexProperty.Cardinality.set, "setProperty", "setValue1");
+            cs[i].property(VertexProperty.Cardinality.set, "setProperty", "setValue2");
+            cs[i].property(VertexProperty.Cardinality.set, "setProperty", "setValue3");
+            cs[i].property(VertexProperty.Cardinality.set, "setProperty", "setValue4");
+            cs[i].property(VertexProperty.Cardinality.list, "listProperty", "listValue1");
+            cs[i].property(VertexProperty.Cardinality.list, "listProperty", "listValue2");
+            cs[i].property(VertexProperty.Cardinality.list, "listProperty", "listValue3");
+            cs[i].property(VertexProperty.Cardinality.list, "listProperty", "listValue4");
+        }
+
+        newTx();
+
+        clopen(configuration);
+
+        // test batching for `values()`
+        TraversalMetrics profile = testGroupingBatch(() -> graph.traversal().V(cs).barrier(elementsAmount).values("singleProperty1", "singleProperty2", "singleProperty3", "setProperty", "listProperty"), configuration);
+        assertEquals(1, countBackendQueriesOfSize(elementsAmount * 11, profile.getMetrics()));
+    }
+
+    protected TraversalMetrics testGroupingBatch(Supplier<GraphTraversal<?, ?>> traversal, Object... settings){
+        clopen(settings);
+        final List<?> resultWithConfiguredOptions = traversal.get().toList();
+        if(JanusGraphCassandraContainer.supportsPerPartitionLimit()){
+            clopen(option(USE_MULTIQUERY), true, option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_CLASS), GroupedExecutionStrategyBuilder.REPLICAS_AWARE);
+            final List<?> resultWithKeysEnabledSliceEnabledReplicasAware = traversal.get().toList();
+            assertEquals(resultWithKeysEnabledSliceEnabledReplicasAware, resultWithConfiguredOptions);
+            clopen(option(USE_MULTIQUERY), true, option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                option(SLICE_GROUPING_ALLOWED), false, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_CLASS), GroupedExecutionStrategyBuilder.REPLICAS_AWARE);
+            final List<?> resultWithKeysEnabledSliceDisabledReplicasAware = traversal.get().toList();
+            assertEquals(resultWithKeysEnabledSliceDisabledReplicasAware, resultWithConfiguredOptions);
+            clopen(option(USE_MULTIQUERY), true, option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_CLASS), GroupedExecutionStrategyBuilder.TOKEN_RANGE_AWARE);
+            final List<?> resultWithKeysEnabledSliceEnabledTokenRangeAware = traversal.get().toList();
+            assertEquals(resultWithKeysEnabledSliceEnabledTokenRangeAware, resultWithConfiguredOptions);
+            clopen(option(USE_MULTIQUERY), true, option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+                option(SLICE_GROUPING_ALLOWED), false, option(KEYS_GROUPING_ALLOWED), true, option(KEYS_GROUPING_CLASS), GroupedExecutionStrategyBuilder.TOKEN_RANGE_AWARE);
+            final List<?> resultWithKeysEnabledSliceDisabledTokenRangeAware = traversal.get().toList();
+            assertEquals(resultWithKeysEnabledSliceDisabledTokenRangeAware, resultWithConfiguredOptions);
+        }
+        clopen(option(USE_MULTIQUERY), true, option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            option(SLICE_GROUPING_ALLOWED), true, option(KEYS_GROUPING_ALLOWED), false);
+        final List<?> resultWithKeysDisabledSliceEnabled = traversal.get().toList();
+        assertEquals(resultWithKeysDisabledSliceEnabled, resultWithConfiguredOptions);
+        clopen(option(USE_MULTIQUERY), true, option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
+            option(SLICE_GROUPING_ALLOWED), false, option(KEYS_GROUPING_ALLOWED), false);
+        final List<?> resultWithKeysDisabledSliceDisabled = traversal.get().toList();
+        assertEquals(resultWithKeysDisabledSliceDisabled, resultWithConfiguredOptions);
+        clopen(settings);
+        return traversal.get().profile().next();
     }
 
     @Override @Test @Disabled("Use Parametrized test instead")

@@ -102,8 +102,45 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
             property;
     }
 
-    private boolean isScylla(){
+    private static boolean isScylla(){
         return getCassandraImage().contains("scylla");
+    }
+
+    public static boolean supportsPerPartitionLimit(){
+        if(isScylla()){
+            return true;
+        }
+
+        // Cassandra < 3.11 doesn't support PER PARTITION LIMIT.
+
+        String version = getVersion();
+        int majorVersionEnd = version.indexOf(".");
+        if(majorVersionEnd < 1){
+            return false;
+        }
+        String majorVersionStr = version.substring(0, majorVersionEnd);
+        try{
+            if(Integer.parseInt(majorVersionStr) > 3){
+                return true;
+            }
+        } catch (Throwable t){
+            return false;
+        }
+        int minorVersionEnd = version.indexOf(".", majorVersionEnd+1);
+        if(minorVersionEnd == -1){
+            return false;
+        }
+        String minorVersionStr = version.substring(majorVersionEnd+1, minorVersionEnd);
+
+        try{
+            if(Integer.parseInt(minorVersionStr) >= 11){
+                return true;
+            }
+        } catch (Throwable t){
+            return false;
+        }
+
+        return false;
     }
 
     private String getConfigPrefix() {
@@ -130,7 +167,7 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
 
         if (useDynamicConfig()) {
             String commandArguments = isScylla() ?
-                "--skip-wait-for-gossip-to-settle 0 --memory 2G --smp 1 --developer-mode 1" :
+                "--skip-wait-for-gossip-to-settle 0 --memory 2G --smp 1 --developer-mode 1 --max-partition-key-restrictions-per-query "+Integer.MAX_VALUE :
                 "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false";
             withCommand(commandArguments);
             switch (getPartitioner()){

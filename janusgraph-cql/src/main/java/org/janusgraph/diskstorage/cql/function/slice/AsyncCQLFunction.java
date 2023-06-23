@@ -69,7 +69,6 @@ public abstract class AsyncCQLFunction<Q> implements CQLSliceFunction<Q>{
 
         queryBackPressure.acquireBeforeQuery();
 
-
         try{
             this.session.executeAsync(bindMarkers(query, this.getSlice.boundStatementBuilder())
                     .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()).build())

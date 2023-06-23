@@ -12,34 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.diskstorage.keycolumnvalue;
+package org.janusgraph.diskstorage.cql.query;
 
+import com.datastax.oss.driver.api.core.metadata.token.Token;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
 
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class KeyMultiColumnQuery extends BaseQuery {
-    private final ByteBuffer key;
-    private final List<ByteBuffer> columns;
+public class MultiKeysSingleSliceQuery extends BaseQuery {
+    private final Token routingToken;
+    private final List<ByteBuffer> keys;
+    private final SliceQuery query;
 
-    public KeyMultiColumnQuery(ByteBuffer key, List<ByteBuffer> columns, int limit) {
+    public MultiKeysSingleSliceQuery(Token routingToken, List<ByteBuffer> keys, SliceQuery query, int limit) {
         super(limit);
-        this.key = key;
-        this.columns = columns;
+        this.routingToken = routingToken;
+        this.keys = keys;
+        this.query = query;
     }
 
-    public ByteBuffer getKey() {
-        return key;
+    public List<ByteBuffer> getKeys() {
+        return keys;
     }
 
-    public List<ByteBuffer> getColumns() {
-        return columns;
+    public SliceQuery getQuery() {
+        return query;
     }
 
     @Override
-    public KeyMultiColumnQuery setLimit(final int limit) {
+    public MultiKeysSingleSliceQuery setLimit(final int limit) {
         super.setLimit(limit);
         return this;
+    }
+
+    public Token getRoutingToken() {
+        return routingToken;
     }
 }
