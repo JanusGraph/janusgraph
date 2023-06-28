@@ -73,7 +73,7 @@ public class ConfigurationManagementGraphServerTest extends AbstractGremlinServe
             "org.janusgraph.util.system.ConfigurationUtil.loadMapConfiguration(map));" +
             "org.janusgraph.core.ConfiguredGraphFactory.create(\"newGraph\")");
 
-        Thread.sleep(1000,0);
+        Thread.sleep(3000,0);
 
         //assert newGraph is indeed bound
         assertEquals(0, client.submit("newGraph.vertices().size()").all().get().get(0).getInt());
