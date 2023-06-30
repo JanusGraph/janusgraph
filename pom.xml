@@ -930,7 +930,7 @@
                 -->
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>31.1-jre</version>
+                <version>32.1.0-jre</version>
             </dependency>
             <dependency>
                 <groupId>com.google.errorprone</groupId>
