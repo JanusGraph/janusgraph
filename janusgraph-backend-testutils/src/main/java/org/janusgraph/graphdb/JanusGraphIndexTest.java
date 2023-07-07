@@ -1420,14 +1420,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                                                                          int expectedCompositeQueries,
                                                                          int expectedMixedQueries) {
         final PropertyKey name = makeKey("name", String.class);
-        final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("composite", Vertex.class)
-            .addKey(name).unique().buildCompositeIndex();
-        compositeNameIndex.name();
+        mgmt.buildIndex("composite", Vertex.class).addKey(name).unique().buildCompositeIndex();
 
         final PropertyKey prop = makeKey("prop", String.class);
-        final JanusGraphIndex mixedIndex = mgmt.buildIndex("mixed", Vertex.class)
-            .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
-        mixedIndex.name();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+
         finishSchema();
         Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph ->
             graph.traversal().with(hint.toStringWithoutRoot(), hintValue).V().has("name", "value").has("prop");
@@ -1442,7 +1439,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             Arguments.of(GraphDatabaseConfiguration.PREFERRED_INDEXES, new String[] {"composite"}, 1, 0),
             Arguments.of(GraphDatabaseConfiguration.SUPPRESSED_INDEXES, new String[] {"mixed"}, 1, 0),
             Arguments.of(GraphDatabaseConfiguration.SUPPRESSED_INDEXES, new String[] {"composite"}, 0, 1),
-            Arguments.of(GraphDatabaseConfiguration.SUPPRESSED_INDEXES, new String[] {"composite,mixed"}, 0, 0)
+            Arguments.of(GraphDatabaseConfiguration.SUPPRESSED_INDEXES, new String[] {"composite","mixed"}, 0, 0)
         );
     }
 
@@ -1452,14 +1449,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                                                                                  int expectedCompositeQueries,
                                                                                  int expectedMixedQueries) {
         final PropertyKey name = makeKey("name", String.class);
-        final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("composite", Vertex.class)
-            .addKey(name).unique().buildCompositeIndex();
-        compositeNameIndex.name();
+        mgmt.buildIndex("composite", Vertex.class).addKey(name).unique().buildCompositeIndex();
 
         final PropertyKey prop = makeKey("prop", String.class);
-        final JanusGraphIndex mixedIndex = mgmt.buildIndex("mixed", Vertex.class)
-            .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
-        mixedIndex.name();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+
         finishSchema();
         Function<Graph, GraphTraversal<Vertex,Long>> traversal = graph ->
             graph.traversal().with(hint.toStringWithoutRoot(), hintValue).V().has("name", "value").has("prop").count();
@@ -1470,6 +1464,32 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     private static Stream<Arguments> testIndexSelectStrategyWithHintsForCount_UniqueCompositeA_MixedB() {
         return testIndexSelectStrategyWithHints_UniqueCompositeA_MixedB();
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    public void testIndexSelectStrategyWithOverriddenSelectivities_CompositeA_CompositeB(
+        ConfigOption<?> hint, String[] hintValue, int expectedAQueries, int expectedBQueries) {
+        final PropertyKey name = makeKey("name", String.class);
+        mgmt.buildIndex("indexA", Vertex.class).addKey(name).buildCompositeIndex();
+        final PropertyKey prop = makeKey("prop", String.class);
+        mgmt.buildIndex("indexB", Vertex.class).addKey(prop).buildCompositeIndex();
+
+        finishSchema();
+        Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph ->
+            graph.traversal().with(hint.toStringWithoutRoot(), hintValue).V()
+                .has("name", "value")
+                .has("prop", "value");
+
+        assertEquals(expectedAQueries, getIndexSelectResultNum(traversal, "indexA"));
+        assertEquals(expectedBQueries, getIndexSelectResultNum(traversal, "indexB"));
+    }
+
+    private static Stream<Arguments> testIndexSelectStrategyWithOverriddenSelectivities_CompositeA_CompositeB() {
+        return Stream.of(
+            Arguments.of(GraphDatabaseConfiguration.OVERRIDE_SELECTIVITY, new String[] {"name=0.1","prop=0.01"}, 0, 1),
+            Arguments.of(GraphDatabaseConfiguration.OVERRIDE_SELECTIVITY, new String[] {"name=0.01","prop=0.1"}, 1, 0)
+        );
     }
 
     private <S,E> long getIndexSelectResultNum(Function<Graph, GraphTraversal<S,E>> traversal, String backend, Object... settings) {

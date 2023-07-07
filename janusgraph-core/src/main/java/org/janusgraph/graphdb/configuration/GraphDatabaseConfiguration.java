@@ -246,13 +246,18 @@ public class GraphDatabaseConfiguration {
             "Hints for index selection strategies");
 
     public static final ConfigOption<String[]> PREFERRED_INDEXES = new ConfigOption<>(INDEX_SELECTION_NS,
-        "preferred-indexes", "List of indexes to be preferred over others. Each step that is eligible" +
-        "to use use one of the provided indexes is forced to do so, even if the index selector would normally prefer" +
-        "another index.", ConfigOption.Type.HINT, new String[0]);
+        "preferred-indexes", "List of indexes to be preferred over others. Each step that is eligible " +
+        "to use use one or more of the provided indexes is forced to do so, even if the index selector would normally " +
+        "prefer another index.", ConfigOption.Type.HINT, new String[0]);
 
     public static final ConfigOption<String[]> SUPPRESSED_INDEXES = new ConfigOption<>(INDEX_SELECTION_NS,
-        "suppressed-indexes", "List of indexes to be ignored by a query. Every index provided here" +
-        "will not be considered during index selection phase.", ConfigOption.Type.HINT, new String[0]);
+        "suppressed-indexes", "List of indexes to be ignored by a query. Every index provided here " +
+        "will not be considered during index selection phase. Overrides " + PREFERRED_INDEXES.getName() + ".",
+        ConfigOption.Type.HINT, new String[0]);
+
+    public static final ConfigOption<String[]> OVERRIDE_SELECTIVITY = new ConfigOption<>(INDEX_SELECTION_NS,
+        "override-selectivity", "List of key=value pairs of property names and provided selectivities used to " +
+        "overrule the estimation given by the selectivity estimator.", ConfigOption.Type.HINT, new String[0]);
 
     // ################ Query Processing #######################
     // ################################################

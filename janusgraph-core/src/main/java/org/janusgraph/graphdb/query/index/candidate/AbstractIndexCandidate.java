@@ -24,6 +24,7 @@ import org.janusgraph.graphdb.query.index.IndexSelectionUtil;
 import org.janusgraph.graphdb.query.index.IndexSelectivityEstimator;
 import org.janusgraph.graphdb.types.IndexType;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -48,13 +49,13 @@ public abstract class AbstractIndexCandidate<I extends IndexType, E extends Janu
         return subCover;
     }
 
-    public double estimateSelectivity() {
+    public double estimateSelectivity(Map<String, Double> userDefinedSelectivities) {
         return IndexSelectivityEstimator.independentIntersection(subCover,
-            c -> IndexSelectivityEstimator.estimateSelectivity(c, index));
+            c -> IndexSelectivityEstimator.estimateSelectivity(c, index, userDefinedSelectivities));
     }
 
-    public double estimateCost(boolean ignoreOrder) {
-        double cost = estimateSelectivity() * IndexSelectionUtil.costFactor(index);
+    public double estimateCost(boolean ignoreOrder, Map<String, Double> userDefinedSelectivities) {
+        double cost = estimateSelectivity(userDefinedSelectivities) * IndexSelectionUtil.costFactor(index);
         return ignoreOrder ? cost : cost * CostBasedIndexSelector.MANUAL_ORDER_PENALTY;
     }
 

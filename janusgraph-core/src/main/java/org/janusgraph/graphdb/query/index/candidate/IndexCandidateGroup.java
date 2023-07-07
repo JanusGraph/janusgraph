@@ -66,22 +66,22 @@ public class IndexCandidateGroup<E extends JanusGraphElement> {
         return coveredClauses;
     }
 
-    public double estimateTotalCost(Set<Condition<E>> allClauses) {
+    public double estimateTotalCost(Set<Condition<E>> allClauses, Map<String, Double> userDefinedSelectivities) {
         double indexQueryCost = 0;
 
         for (AbstractIndexCandidate<?,E> c : indexCandidates) {
-            indexQueryCost += c.estimateCost(true);
+            indexQueryCost += c.estimateCost(true, userDefinedSelectivities);
         }
 
         double estimatedIndexSelectivity = IndexSelectivityEstimator.independentIntersection(coveredClauses,
-            c -> IndexSelectivityEstimator.estimateSelectivity(c, indexByClause.get(c)));
+            c -> IndexSelectivityEstimator.estimateSelectivity(c, indexByClause.get(c), userDefinedSelectivities));
 
         Set<Condition<E>> uncoveredClauses = new HashSet<>(allClauses);
         uncoveredClauses.removeAll(coveredClauses);
         double manualFilterPenalty = estimatedIndexSelectivity * uncoveredClauses.size() * CostBasedIndexSelector.MANUAL_FILTER_PENALTY;
 
         double estimatedTotalSelectivity = IndexSelectivityEstimator.independentIntersection(coveredClauses,
-            c -> IndexSelectivityEstimator.estimateSelectivity(c, indexByClause.get(c)));
+            c -> IndexSelectivityEstimator.estimateSelectivity(c, indexByClause.get(c), userDefinedSelectivities));
 
         boolean supportsOrders = orders.isEmpty() || (!indexCandidates.isEmpty() && indexCandidates.get(0).supportsOrders());
         double orderPenalty = supportsOrders ? 0 : estimatedTotalSelectivity * CostBasedIndexSelector.MANUAL_ORDER_PENALTY;

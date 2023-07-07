@@ -30,8 +30,10 @@ import org.janusgraph.graphdb.types.IndexType;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -44,12 +46,17 @@ public class CostBasedIndexSelector {
                                                                                     OrderList orders,
                                                                                     IndexSerializer serializer,
                                                                                     Configuration hints) {
+        String[] suppressedIndexes = hints.get(GraphDatabaseConfiguration.SUPPRESSED_INDEXES);
+        String[] preferredIndexes = hints.get(GraphDatabaseConfiguration.PREFERRED_INDEXES);
+        Map<String, Double> userDefinedSelectivities =
+            parseUserDefinedSelectivities(hints.get(GraphDatabaseConfiguration.OVERRIDE_SELECTIVITY));
+
         Set<IndexType> rawCandidates = IndexSelectionUtil.getMatchingIndexes(conditions, resultType, serializer);
         final Set<AbstractIndexCandidate<?,E>> remainingCandidates = new HashSet<>(rawCandidates.size());
         final Set<Condition<E>> allCoverableClauses = new HashSet<>();
         final JointIndexQuery jointQuery = new JointIndexQuery();
 
-        removeSuppressedIndexes(rawCandidates, hints.get(GraphDatabaseConfiguration.SUPPRESSED_INDEXES));
+        removeSuppressedIndexes(rawCandidates, suppressedIndexes);
 
         // validate, enrich index candidates
         for (final IndexType index : rawCandidates) {
@@ -61,7 +68,7 @@ public class CostBasedIndexSelector {
 
         IndexCandidateGroup<E> bestGroup = new IndexCandidateGroup<>(Collections.emptyList(), orders);
 
-        selectPreferredIndexes(bestGroup, remainingCandidates, hints.get(GraphDatabaseConfiguration.PREFERRED_INDEXES));
+        selectPreferredIndexes(bestGroup, remainingCandidates, preferredIndexes);
 
         // select indexes in a greedy fashion
         while (true) {
@@ -72,14 +79,14 @@ public class CostBasedIndexSelector {
                 List<AbstractIndexCandidate<?,E>> extendedCandidates = new ArrayList<>(bestGroup.getIndexCandidates());
                 extendedCandidates.add(newCandidate);
                 // build new group of index candidates and compare it to the best group found so far
-                double newCost = new IndexCandidateGroup<>(extendedCandidates, orders).estimateTotalCost(allCoverableClauses);
+                double newCost = new IndexCandidateGroup<>(extendedCandidates, orders).estimateTotalCost(allCoverableClauses, userDefinedSelectivities);
                 if (newCost < lowestNewCost) {
                     lowestNewCost = newCost;
                     bestNewCandidate = newCandidate;
                 }
             }
 
-            if (bestNewCandidate != null && lowestNewCost < bestGroup.estimateTotalCost(allCoverableClauses)) {
+            if (bestNewCandidate != null && lowestNewCost < bestGroup.estimateTotalCost(allCoverableClauses, userDefinedSelectivities)) {
                 bestGroup.addCandidate(bestNewCandidate);
                 remainingCandidates.remove(bestNewCandidate);
             } else {
@@ -113,5 +120,19 @@ public class CostBasedIndexSelector {
             index.ifPresent(bestGroup::addCandidate);
             index.ifPresent(remainingCandidates::remove);
         }
+    }
+
+    private static Map<String, Double> parseUserDefinedSelectivities(String[] configuration) {
+        Map<String, Double> parsedSelectivities = new HashMap<>(configuration.length);
+        for (String selectivityHint : configuration) {
+            int lastEqualSignPosition = selectivityHint.lastIndexOf('=');
+            String key = selectivityHint.substring(0, lastEqualSignPosition);
+            String value = selectivityHint.substring(lastEqualSignPosition + 1);
+            try {
+                parsedSelectivities.put(key, Double.parseDouble(value));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return parsedSelectivities;
     }
 }
