@@ -164,6 +164,7 @@ nav:
     - JanusGraph Data model: advanced-topics/data-model.md
     - JanusGraph Bus: advanced-topics/janusgraph-bus.md
     - ExecutorService: advanced-topics/executor-service.md
+    - Permanent stale index inconsistency: advanced-topics/stale-index.md
     - Technical Limitations: advanced-topics/technical-limitations.md
     - Snapshot Releases: advanced-topics/commit-releases.md
   - Common Questions: common-questions.md
