@@ -107,9 +107,9 @@
         <scylladb.version>5.1.4</scylladb.version>
         <testcontainers.version>1.18.3</testcontainers.version>
         <easymock.version>5.1.0</easymock.version>
-        <protobuf.version>3.22.3</protobuf.version>
+        <protobuf.version>3.23.4</protobuf.version>
         <grpc.version>1.56.1</grpc.version>
-        <protoc.version>3.15.3</protoc.version>
+        <protoc.version>3.23.4</protoc.version>
         <gson.version>2.10.1</gson.version>
         <jmh.version>1.33</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
@@ -930,7 +930,7 @@
                 -->
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>31.1-jre</version>
+                <version>32.1.2-jre</version>
             </dependency>
             <dependency>
                 <groupId>com.google.errorprone</groupId>
