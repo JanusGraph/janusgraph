@@ -586,7 +586,7 @@
                             </execution>
                         </executions>
                     </plugin>
-
+<!--
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
@@ -645,7 +645,7 @@
                             </execution>
                         </executions>
                     </plugin>
-
+                -->
 
                     <!-- gpg must follow assembly.
                          Both plugins run in the package phase, so only <plugin> ordering
