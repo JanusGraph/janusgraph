@@ -59,6 +59,7 @@ Full-text search is case-insensitive.
 -   `textContainsFuzzy`: is true if (at least) one word inside the text
     string is similar to the query String (based on Levenshtein edit
     distance)
+- `textContainsPhrase`:  is true if the text string does contain the sequence of words in the query string
 
 ```groovy
 import static org.janusgraph.core.attribute.Text.*
