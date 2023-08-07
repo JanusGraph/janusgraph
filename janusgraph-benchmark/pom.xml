@@ -14,7 +14,7 @@
 
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <jmh.version>1.36</jmh.version>
+        <jmh.version>1.37</jmh.version>
         <uberjar.name>benchmarks</uberjar.name>
     </properties>
 
