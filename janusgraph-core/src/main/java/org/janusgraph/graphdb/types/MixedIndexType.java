@@ -14,7 +14,10 @@
 
 package org.janusgraph.graphdb.types;
 
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.query.condition.Condition;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -27,4 +30,5 @@ public interface MixedIndexType extends IndexType {
 
     String getStoreName();
 
+    <E extends JanusGraphElement> boolean coversAll(Condition<E> condition, IndexSerializer indexInfo);
 }

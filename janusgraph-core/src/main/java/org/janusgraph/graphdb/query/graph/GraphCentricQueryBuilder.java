@@ -36,11 +36,11 @@ import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.query.QueryProcessor;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
-import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
-import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.CostBasedIndexSelector;
+import org.janusgraph.graphdb.query.index.SelectedIndexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.util.CloseableIteratorUtils;
@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -106,11 +105,11 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
      */
     private int hardMaxLimit;
     /**
-     * Selection service for the best combination of indexes to be queried
+     * Hints provided to a traversal using with()
      */
-    private IndexSelectionStrategy indexSelector;
+    private Configuration hints;
 
-    public GraphCentricQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer, IndexSelectionStrategy indexSelector) {
+    public GraphCentricQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(serializer);
         Configuration customOptions = tx.getConfiguration().getCustomOptions();
@@ -119,7 +118,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         hardMaxLimit = customOptions.has(HARD_MAX_LIMIT) ? customOptions.get(HARD_MAX_LIMIT) : graphConfigs.getHardMaxLimit();
         this.tx = tx;
         this.serializer = serializer;
-        this.indexSelector = indexSelector;
+        this.hints = Configuration.EMPTY;
     }
 
     public void disableSmartLimit() {
@@ -216,6 +215,12 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return this;
     }
 
+    @Override
+    public GraphCentricQueryBuilder withHints(Configuration hints) {
+        this.hints = hints;
+        return this;
+    }
+
     /* ---------------------------------------------------------------
      * Query Execution
 	 * ---------------------------------------------------------------
@@ -268,20 +273,20 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         }
         //Prepare constraints
         final MultiCondition<JanusGraphElement> conditions;
-        if (this.globalConstraints.size() == 1 && this.globalConstraints.get(0).size() == 1) {
-            conditions = QueryUtil.constraints2QNF(tx, globalConstraints.get(0).get(0));
+        if (globalConstraints.size() == 1) {
+            List<List<PredicateCondition<String, JanusGraphElement>>> singleGlobalConstraint = globalConstraints.get(0);
+            if (singleGlobalConstraint.size() == 1) {
+                conditions = QueryUtil.constraints2QNF(tx, singleGlobalConstraint.get(0));
+            } else {
+                conditions = constructOrCondition(singleGlobalConstraint);
+            }
             if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
         } else {
-            if (this.globalConstraints.size() == 1) {
-                conditions = constructOrCondition(this.globalConstraints.get(0));
-                if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
-            } else {
-                conditions = new And<>();
-                for (List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraint : this.globalConstraints) {
-                    Or<JanusGraphElement> or = constructOrCondition(globalConstraint);
-                    if (or == null) return GraphCentricQuery.emptyQuery(resultType);
-                    conditions.add(or);
-                }
+            conditions = new And<>();
+            for (List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraint : globalConstraints) {
+                Or<JanusGraphElement> or = constructOrCondition(globalConstraint);
+                if (or == null) return GraphCentricQuery.emptyQuery(resultType);
+                conditions.add(or);
             }
         }
 
@@ -289,9 +294,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         orders.makeImmutable();
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
-        final Set<Condition> coveredClauses = new HashSet<>();
-        final IndexSelectionStrategy.SelectedIndexQuery selectedIndex = indexSelector.selectIndices(
-            resultType, conditions, coveredClauses, orders, serializer);
+        final SelectedIndexQuery<?> selectedIndex = CostBasedIndexSelector.selectIndices(
+            resultType, conditions, orders, serializer, hints);
+        final Set<?> coveredClauses = selectedIndex.getCoveredClauses();
 
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {

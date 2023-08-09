@@ -62,7 +62,11 @@ public class ConfigOption<O> extends ConfigElement {
         /**
          * These options can ONLY be provided through a local configuration file
          */
-        LOCAL
+        LOCAL,
+        /**
+         * These options can be supplied by local configuration files or as traversal hints
+         */
+        HINT
     }
 
     private static final Logger log =

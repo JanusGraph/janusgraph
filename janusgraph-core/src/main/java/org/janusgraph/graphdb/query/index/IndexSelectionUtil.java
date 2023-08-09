@@ -18,11 +18,14 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.RelationType;
+import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.ConditionUtil;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
+import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.IndexType;
@@ -43,9 +46,9 @@ public class IndexSelectionUtil {
         return true;
     }
 
-    private static Iterable<IndexType> getKeyIndexesForCondition(Condition<JanusGraphElement> condition) {
+    private static <E extends JanusGraphElement> Iterable<IndexType> getKeyIndexesForCondition(Condition<E> condition) {
         if (condition instanceof PredicateCondition) {
-            final RelationType type = ((PredicateCondition<RelationType, JanusGraphElement>) condition).getKey();
+            final RelationType type = ((PredicateCondition<RelationType, E>) condition).getKey();
             Preconditions.checkArgument(type != null && type.isPropertyKey());
             return ((InternalRelationType) type).getKeyIndexes();
         }
@@ -56,7 +59,20 @@ public class IndexSelectionUtil {
         return getMatchingIndexes(conditions, i -> true);
     }
 
-    public static Set<IndexType> getMatchingIndexes(MultiCondition<JanusGraphElement> conditions, Predicate<IndexType> filter) {
+    //Compile all indexes that cover at least one of the query conditions
+    public static <E extends JanusGraphElement> Set<IndexType> getMatchingIndexes(final MultiCondition<E> conditions,
+                                                                                  final ElementCategory resultType,
+                                                                                  final IndexSerializer serializer) {
+        return getMatchingIndexes(conditions, indexType -> {
+            if (indexType.getElement() != resultType) return false;
+            if (conditions instanceof Or && indexType.isMixedIndex()) {
+                return serializer.features((MixedIndexType) indexType).supportNotQueryNormalForm();
+            }
+            return true;
+        });
+    }
+
+    public static <E extends JanusGraphElement> Set<IndexType> getMatchingIndexes(MultiCondition<E> conditions, Predicate<IndexType> filter) {
         if (conditions == null || filter == null) {
             return Collections.emptySet();
         }
@@ -102,5 +118,10 @@ public class IndexSelectionUtil {
             }
         }
         return true;
+    }
+
+    public static double costFactor(IndexType index) {
+        // prefer composite indexes over mixed indexes
+        return index.isCompositeIndex() ? 0.5 : 1;
     }
 }

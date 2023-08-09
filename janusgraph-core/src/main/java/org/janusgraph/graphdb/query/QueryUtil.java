@@ -35,13 +35,13 @@ import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.util.datastructures.Pair;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -339,26 +339,67 @@ public class QueryUtil {
         if (!conditions.contains(pc)) conditions.add(pc);
     }
 
-
-    public static Map.Entry<RelationType,Collection> extractOrCondition(Or<JanusGraphRelation> condition) {
-        RelationType masterType = null;
+    /**
+     *
+     * @param condition The OR condition from which the equality predicate values are extracted.
+     * @param requiredKeyType An optional key that must match the predicate's key. In case of null, no key is enforced.
+     * @return
+     * @param <E> The JanusGraph entity type on which the condition operates.
+     */
+    public static <E extends JanusGraphElement> Pair<RelationType, Collection<Object>> extractEqualPredicateValuesNestedInOrCondition(
+        Or<E> condition,
+        RelationType requiredKeyType
+    ) {
         final List<Object> values = new ArrayList<>();
-        for (final Condition c : condition.getChildren()) {
-            if (!(c instanceof PredicateCondition)) return null;
-            final PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)c;
-            if (atom.getPredicate()!=Cmp.EQUAL) return null;
-            final Object value = atom.getValue();
-            if (value==null) return null;
-            final RelationType type = atom.getKey();
-            if (masterType==null) masterType=type;
-            else if (!masterType.equals(type)) return null;
-            values.add(value);
+        for (final Condition<E> c : condition.getChildren()) {
+            final PredicateCondition<RelationType, JanusGraphRelation> extracted = extractEqualityPredicate(c, requiredKeyType);
+            if (extracted != null) {
+                if (requiredKeyType == null) requiredKeyType = extracted.getKey();
+                values.add(extracted.getValue());
+            } else {
+                return null;
+            }
         }
-        if (masterType==null) return null;
+        if (requiredKeyType == null) return null;
         assert !values.isEmpty();
-        return new AbstractMap.SimpleImmutableEntry(masterType,values);
+        return new Pair<>(requiredKeyType, values);
     }
 
+    /**
+     * Tries to extract a PredicateCondition with EQUAL predicate from the entered condition.
+     * @param c The condition to extract an equality predicate from.
+     * @param requiredKeyType An optional key that must match the predicate's key. In case of null, no key is enforced.
+     * @return The PredicateCondition which was extracted from the entered condition. null if one of the checks fails.
+     * @param <E> The JanusGraph entity type on which the condition operates.
+     */
+    private static <E extends JanusGraphElement> PredicateCondition<RelationType, JanusGraphRelation> extractEqualityPredicate(
+        Condition<E> c,
+        RelationType requiredKeyType
+    ) {
+        if (!(c instanceof PredicateCondition)) return null;
+        final PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition<RelationType, JanusGraphRelation>) c;
+        if (atom.getPredicate() != Cmp.EQUAL || atom.getValue() == null) return null;
+        if (requiredKeyType != null && !atom.getKey().equals(requiredKeyType)) return null;
+        return atom;
+    }
+
+    public static <E extends JanusGraphElement> Pair<Condition<E>, Collection<Object>> getEqualityConditionValues(
+        Condition<E> condition, RelationType requiredKeyType) {
+        for (final Condition<E> c : condition.getChildren()) {
+            if (c instanceof Or) {
+                final Pair<RelationType, Collection<Object>> orEqual = QueryUtil.extractEqualPredicateValuesNestedInOrCondition((Or<E>) c, requiredKeyType);
+                if (orEqual != null && !orEqual.getValue().isEmpty()) {
+                    return new Pair<>(c, orEqual.getValue());
+                }
+            } else if (c instanceof PredicateCondition) {
+                final PredicateCondition<RelationType, JanusGraphRelation> extracted = extractEqualityPredicate(c, requiredKeyType);
+                if (extracted != null) {
+                    return new Pair<>(c, Collections.singletonList(extracted.getValue()));
+                }
+            }
+        }
+        return null;
+    }
 
     public static <R> List<R> processIntersectingRetrievals(List<IndexCall<R>> retrievals, final int limit) {
         Preconditions.checkArgument(!retrievals.isEmpty());

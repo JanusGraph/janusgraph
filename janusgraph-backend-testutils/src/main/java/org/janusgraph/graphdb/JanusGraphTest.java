@@ -6959,7 +6959,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 ElementCategory.PROPERTY, 2 * numV / (4 * 5), new boolean[]{true, sorted}, prop2.name());
         evaluateQuery(tx.query().has("weight", Cmp.EQUAL, 0.0).has("text", Cmp.EQUAL, strings[0])
                 .has("time", Cmp.EQUAL, 0),
-                ElementCategory.PROPERTY, 2, new boolean[]{true, sorted}, prop2.name(), prop1.name());
+                ElementCategory.PROPERTY, 2, new boolean[]{false, sorted}, prop2.name());
         evaluateQuery(tx.query().has("weight", Cmp.EQUAL, 1.5),
                 ElementCategory.PROPERTY, 2 * numV / 10, new boolean[]{false, sorted});
 
@@ -6971,7 +6971,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 ElementCategory.VERTEX, 0, new boolean[]{true, sorted}, vertex12.name());
         evaluateQuery(tx.query().has("text", Cmp.EQUAL, strings[2]).has(LABEL_NAME, "person")
                 .has("time", Cmp.EQUAL, 2),
-                ElementCategory.VERTEX, 1, new boolean[]{true, sorted}, vertex12.name(), vertex1.name());
+                ElementCategory.VERTEX, 1, new boolean[]{false, sorted}, vertex1.name());
         evaluateQuery(tx.query().has("time", Cmp.EQUAL, 51).has("name", Cmp.EQUAL, "v51")
                 .has(LABEL_NAME, "organization"),
                 ElementCategory.VERTEX, 1, new boolean[]{true, sorted}, vertex2.name());
@@ -7027,7 +7027,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 ElementCategory.PROPERTY, 2 * numV / (4 * 5), new boolean[]{true, sorted}, prop2.name());
         evaluateQuery(tx.query().has("weight", Cmp.EQUAL, 0.0).has("text", Cmp.EQUAL, strings[0])
                 .has("time", Cmp.EQUAL, 0),
-                ElementCategory.PROPERTY, 2, new boolean[]{true, sorted}, prop2.name(), prop1.name());
+                ElementCategory.PROPERTY, 2, new boolean[]{false, sorted}, prop2.name());
         evaluateQuery(tx.query().has("weight", Cmp.EQUAL, 1.5),
                 ElementCategory.PROPERTY, 2 * numV / 10, new boolean[]{false, sorted});
 
@@ -7039,7 +7039,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 ElementCategory.VERTEX, 0, new boolean[]{true, sorted}, vertex12.name());
         evaluateQuery(tx.query().has("text", Cmp.EQUAL, strings[2]).has(LABEL_NAME, "person")
                 .has("time", Cmp.EQUAL, 2),
-                ElementCategory.VERTEX, 1, new boolean[]{true, sorted}, vertex12.name(), vertex1.name());
+                ElementCategory.VERTEX, 1, new boolean[]{false, sorted}, vertex1.name());
         evaluateQuery(tx.query().has("time", Cmp.EQUAL, 51).has("name", Cmp.EQUAL, "v51")
                 .has(LABEL_NAME, "organization"),
                 ElementCategory.VERTEX, 1, new boolean[]{true, sorted}, vertex2.name());

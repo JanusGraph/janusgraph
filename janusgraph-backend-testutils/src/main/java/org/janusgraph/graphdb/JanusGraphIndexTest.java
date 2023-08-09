@@ -64,6 +64,7 @@ import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
@@ -84,9 +85,6 @@ import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
-import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
-import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
-import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
@@ -103,6 +101,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,15 +120,16 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_SELECT_STRATEGY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
@@ -136,7 +137,6 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_WRITE_WAITTIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_LOG_TRANSACTIONS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
-import static org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy.INDEX_SELECT_BRUTE_FORCE_THRESHOLD;
 import static org.janusgraph.testutil.JanusGraphAssert.assertBackendHit;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.janusgraph.testutil.JanusGraphAssert.assertEmpty;
@@ -1364,17 +1364,20 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         annotations = new HashMap() {{
             put("condition", "(name = bob AND prop = val AND desc textContains coding)");
             put("orders", "[]");
-            put("isFitted", "true");
+            put("isFitted", "false");
             put("isOrdered", "true");
-            put("query", String.format("[mixed:[(%s = bob AND %s = val)]:mixed, mi:[(%s textContains coding)]:mi]", nameKey, propKey, descKey));
+            put("query", String.format("[(%s = bob AND %s = val)]:mixed", nameKey, propKey));
+            put("index", "mixed");
+            put("index_impl", "search");
         }};
         assertEquals(annotations, nested.getAnnotations());
     }
 
     @Test
-    public void testIndexSelectStrategy() {
+    public void testIndexSelectStrategyWithIndexes_CompositeA_MixedAB() {
         final PropertyKey name = makeKey("name", String.class);
-        final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("composite", Vertex.class).addKey(name).buildCompositeIndex();
+        final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("composite", Vertex.class)
+            .addKey(name).buildCompositeIndex();
         compositeNameIndex.name();
 
         final PropertyKey prop = makeKey("prop", String.class);
@@ -1383,41 +1386,125 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
         mixedIndex.name();
         finishSchema();
+        Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph ->
+            graph.traversal().V().has("name", "value").has("prop", "value");
 
-        // best combination is to pick up only 1 index (mixed index), however, greedy based approximate algorithm
-        // picks up 2 indexes (composite index + mixed index)
-
-        // use default config
-        assertEquals(1, getIndexSelectResultNum());
-
-        // use full class name
-        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY),
-            ThresholdBasedIndexSelectionStrategy.class.getName()));
-
-        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 10,
-            option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.NAME));
-
-        assertEquals(2, getIndexSelectResultNum(option(INDEX_SELECT_BRUTE_FORCE_THRESHOLD), 0,
-            option(INDEX_SELECT_STRATEGY), ThresholdBasedIndexSelectionStrategy.NAME));
-
-        assertEquals(1, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY), BruteForceIndexSelectionStrategy.NAME));
-
-        assertEquals(2, getIndexSelectResultNum(option(INDEX_SELECT_STRATEGY), ApproximateIndexSelectionStrategy.NAME));
+        // best combination is to pick up only 1 index (mixed index)
+        assertEquals(0, getIndexSelectResultNum(traversal, "composite"));
+        assertEquals(1, getIndexSelectResultNum(traversal, "mixed"));
     }
 
-    private long getIndexSelectResultNum(Object... settings) {
+    @Test
+    public void testIndexSelectStrategyWithIndexes_UniqueCompositeA_MixedB() {
+        final PropertyKey name = makeKey("name", String.class);
+        final JanusGraphIndex compositeNameIndex = mgmt.buildIndex("composite", Vertex.class)
+            .addKey(name).unique().buildCompositeIndex();
+        compositeNameIndex.name();
+
+        final PropertyKey prop = makeKey("prop", String.class);
+        final JanusGraphIndex mixedIndex = mgmt.buildIndex("mixed", Vertex.class)
+            .addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+        mixedIndex.name();
+        finishSchema();
+        Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph ->
+            graph.traversal().V().has("name", "value").has("prop");
+
+        // best combination is to pick up only 1 index (unique composite index) and check the second condition without an index lookup
+        assertEquals(1, getIndexSelectResultNum(traversal, "composite"));
+        assertEquals(0, getIndexSelectResultNum(traversal, "mixed"));
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    public void testIndexSelectStrategyWithHints_UniqueCompositeA_MixedB(ConfigOption<?> hint, String[] hintValue,
+                                                                         int expectedCompositeQueries,
+                                                                         int expectedMixedQueries) {
+        final PropertyKey name = makeKey("name", String.class);
+        mgmt.buildIndex("composite", Vertex.class).addKey(name).unique().buildCompositeIndex();
+
+        final PropertyKey prop = makeKey("prop", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+
+        finishSchema();
+        Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph ->
+            graph.traversal().with(hint.toStringWithoutRoot(), hintValue).V().has("name", "value").has("prop");
+
+        assertEquals(expectedCompositeQueries, getIndexSelectResultNum(traversal, "composite"));
+        assertEquals(expectedMixedQueries, getIndexSelectResultNum(traversal, "mixed"));
+    }
+
+    private static Stream<Arguments> testIndexSelectStrategyWithHints_UniqueCompositeA_MixedB() {
+        return Stream.of(
+            Arguments.of(GraphDatabaseConfiguration.PREFERRED_INDEXES, new String[] {"mixed"}, 1, 1),
+            Arguments.of(GraphDatabaseConfiguration.PREFERRED_INDEXES, new String[] {"composite"}, 1, 0),
+            Arguments.of(GraphDatabaseConfiguration.SUPPRESSED_INDEXES, new String[] {"mixed"}, 1, 0),
+            Arguments.of(GraphDatabaseConfiguration.SUPPRESSED_INDEXES, new String[] {"composite"}, 0, 1),
+            Arguments.of(GraphDatabaseConfiguration.SUPPRESSED_INDEXES, new String[] {"composite","mixed"}, 0, 0)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    public void testIndexSelectStrategyWithHintsForCount_UniqueCompositeA_MixedB(ConfigOption<?> hint, String[] hintValue,
+                                                                                 int expectedCompositeQueries,
+                                                                                 int expectedMixedQueries) {
+        final PropertyKey name = makeKey("name", String.class);
+        mgmt.buildIndex("composite", Vertex.class).addKey(name).unique().buildCompositeIndex();
+
+        final PropertyKey prop = makeKey("prop", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(prop, Mapping.STRING.asParameter()).buildMixedIndex(INDEX);
+
+        finishSchema();
+        Function<Graph, GraphTraversal<Vertex,Long>> traversal = graph ->
+            graph.traversal().with(hint.toStringWithoutRoot(), hintValue).V().has("name", "value").has("prop").count();
+
+        assertEquals(expectedCompositeQueries, getIndexSelectResultNum(traversal, "composite"));
+        assertEquals(expectedMixedQueries, getIndexSelectResultNum(traversal, "mixed"));
+    }
+
+    private static Stream<Arguments> testIndexSelectStrategyWithHintsForCount_UniqueCompositeA_MixedB() {
+        return testIndexSelectStrategyWithHints_UniqueCompositeA_MixedB();
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    public void testIndexSelectStrategyWithOverriddenSelectivities_CompositeA_CompositeB(
+        ConfigOption<?> hint, String[] hintValue, int expectedAQueries, int expectedBQueries) {
+        final PropertyKey name = makeKey("name", String.class);
+        mgmt.buildIndex("indexA", Vertex.class).addKey(name).buildCompositeIndex();
+        final PropertyKey prop = makeKey("prop", String.class);
+        mgmt.buildIndex("indexB", Vertex.class).addKey(prop).buildCompositeIndex();
+
+        finishSchema();
+        Function<Graph, GraphTraversal<Vertex,Vertex>> traversal = graph ->
+            graph.traversal().with(hint.toStringWithoutRoot(), hintValue).V()
+                .has("name", "value")
+                .has("prop", "value");
+
+        assertEquals(expectedAQueries, getIndexSelectResultNum(traversal, "indexA"));
+        assertEquals(expectedBQueries, getIndexSelectResultNum(traversal, "indexB"));
+    }
+
+    private static Stream<Arguments> testIndexSelectStrategyWithOverriddenSelectivities_CompositeA_CompositeB() {
+        return Stream.of(
+            Arguments.of(GraphDatabaseConfiguration.OVERRIDE_SELECTIVITY, new String[] {"name=0.1","prop=0.01"}, 0, 1),
+            Arguments.of(GraphDatabaseConfiguration.OVERRIDE_SELECTIVITY, new String[] {"name=0.01","prop=0.1"}, 1, 0)
+        );
+    }
+
+    private <S,E> long getIndexSelectResultNum(Function<Graph, GraphTraversal<S,E>> traversal, String backend, Object... settings) {
         clopen(settings);
-        GraphTraversalSource g = graph.traversal();
-        Metrics metrics = g.V().has("name", "value")
-            .has("prop", "value").profile().next().getMetrics(0);
-        return getBackendQueriesNum(metrics);
+        Metrics metrics = traversal.apply(graph).profile().next().getMetrics(0);
+        return getBackendQueriesNum(metrics, backend);
     }
 
-    private long getBackendQueriesNum(Metrics metrics) {
-        if (metrics.getName().equals(QueryProfiler.BACKEND_QUERY)) return 1;
+    private long getBackendQueriesNum(Metrics metrics, String backend) {
+        if (metrics.getName().equals(QueryProfiler.BACKEND_QUERY)) {
+            return metrics.getAnnotation("query").toString().startsWith(backend) ? 1 : 0;
+        }
         int sum = 0;
         for (Metrics subMetrics : metrics.getNested()) {
-           sum += getBackendQueriesNum(subMetrics);
+           sum += getBackendQueriesNum(subMetrics, backend);
         }
         return sum;
     }
@@ -1488,9 +1575,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[2]).has("weight", Cmp.EQUAL, 2.5).has("flag"), ElementCategory.VERTEX,
                 numV / divisor, new boolean[]{false, true}, mixed.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[3]).has("name", Cmp.EQUAL, strings[3]).has("weight", Cmp.EQUAL, 3.5), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{true, true}, mixed.name(), composite.name());
+                numV / divisor, new boolean[]{false, true}, composite.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[3]).has("name", Cmp.EQUAL, strings[3]).has("weight", Cmp.EQUAL, 3.5).has("flag"), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{false, true}, mixed.name(), composite.name());
+                numV / divisor, new boolean[]{false, true}, composite.name());
 
         clopen();
 
@@ -1510,9 +1597,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[2]).has("weight", Cmp.EQUAL, 2.5).has("flag"), ElementCategory.VERTEX,
                 numV / divisor, new boolean[]{false, true}, mixed.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[3]).has("name", Cmp.EQUAL, strings[3]).has("weight", Cmp.EQUAL, 3.5), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{true, true}, mixed.name(), composite.name());
+                numV / divisor, new boolean[]{false, true}, composite.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strings[3]).has("name", Cmp.EQUAL, strings[3]).has("weight", Cmp.EQUAL, 3.5).has("flag"), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{false, true}, mixed.name(), composite.name());
+                numV / divisor, new boolean[]{false, true}, composite.name());
 
     }
 

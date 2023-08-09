@@ -86,7 +86,6 @@ import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.query.QueryUtil;
-import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.relations.EdgeDirection;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
@@ -188,9 +187,6 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     //Shutdown hook
     private volatile ShutdownThread shutdownHook;
 
-    //Index selection
-    private final IndexSelectionStrategy indexSelector;
-
     //Gremlin Script Engine
     private final GremlinScriptEngine scriptEngine;
 
@@ -223,7 +219,6 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
         this.times = configuration.getTimestampProvider();
-        this.indexSelector = getConfiguration().getIndexSelectionStrategy();
 
         if (configuration.hasScriptEval()) {
             log.info("Gremlin script evaluation is enabled");
@@ -398,10 +393,6 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     public IndexSerializer getIndexSerializer() {
         return indexSerializer;
-    }
-
-    public IndexSelectionStrategy getIndexSelector() {
-        return indexSelector;
     }
 
     public Backend getBackend() {

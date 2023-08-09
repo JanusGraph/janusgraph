@@ -185,11 +185,17 @@ and Elasticsearch.
 
 ## Global Configuration
 
-JanusGraph distinguishes between local and global configuration options.
+JanusGraph distinguishes between hint, local and global configuration options.
+Hint configuration options apply to an individual traversal.
 Local configuration options apply to an individual JanusGraph instance.
 Global configuration options apply to all instances in a cluster. More
-specifically, JanusGraph distinguishes the following five scopes for
+specifically, JanusGraph distinguishes the following six scopes for
 configuration options:
+
+-   **HINT**: These options apply to traversals and can be provided either using
+    a `.with()` modifier on the traversal source or in an instance's configuration
+    in which case the hint applies to all traversals executed on the particular
+    instance.
 
 -   **LOCAL**: These options only apply to an individual JanusGraph
     instance and are specified in the configuration provided when
@@ -248,3 +254,14 @@ changes take effect immediately for all instances. To change
 
 Refer to the full list of configuration options in [Configuration Reference](configuration-reference.md) for more information including the configuration
 scope of each option.
+
+### Providing hints for traversals
+
+Hints are configuration options at a traversal level. To provide a hint for a
+traversal, use the `.with()` modifier on the traversal source as follows:
+
+```groovy
+g.with("hint.index-selection.preferred-indexes", ["myPreferredIndex"])
+    .V().has("key", "value")
+```
+

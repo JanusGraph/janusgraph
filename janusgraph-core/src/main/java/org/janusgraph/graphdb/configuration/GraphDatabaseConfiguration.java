@@ -54,10 +54,6 @@ import org.janusgraph.graphdb.database.cache.StandardSchemaCache;
 import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.database.serialize.StandardSerializer;
-import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
-import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
-import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
-import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
@@ -219,25 +215,49 @@ public class GraphDatabaseConfiguration {
     // ################################################
 
     public static final ConfigNamespace TRANSACTION_NS = new ConfigNamespace(ROOT_NS,"tx",
-            "Configuration options for transaction handling");
+        "Configuration options for transaction handling");
 
     public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<>(TRANSACTION_NS,"log-tx",
-            "Whether transaction mutations should be logged to JanusGraph's write-ahead transaction log which can be used for recovery of partially failed transactions",
-            ConfigOption.Type.GLOBAL, false);
+        "Whether transaction mutations should be logged to JanusGraph's write-ahead transaction log which can be used for recovery of partially failed transactions",
+        ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<>(TRANSACTION_NS,"max-commit-time",
-            "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
-                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
-                    "Must be longer than the maximum allowed write time.",
-            ConfigOption.Type.GLOBAL, Duration.ofSeconds(10));
+        "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
+            "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
+            "Must be longer than the maximum allowed write time.",
+        ConfigOption.Type.GLOBAL, Duration.ofSeconds(10));
 
 
     public static final ConfigNamespace TRANSACTION_RECOVERY_NS = new ConfigNamespace(TRANSACTION_NS,"recovery",
-            "Configuration options for transaction recovery processes");
+        "Configuration options for transaction recovery processes");
 
     public static final ConfigOption<Boolean> VERBOSE_TX_RECOVERY = new ConfigOption<>(TRANSACTION_RECOVERY_NS,"verbose",
-            "Whether the transaction recovery system should print recovered transactions and other activity to standard output",
-            ConfigOption.Type.MASKABLE, false);
+        "Whether the transaction recovery system should print recovered transactions and other activity to standard output",
+        ConfigOption.Type.MASKABLE, false);
+
+
+    // ############# Traversal Hints ##################
+    // ################################################
+
+    public static final ConfigNamespace HINT_NS = new ConfigNamespace(ROOT_NS,"hint",
+            "Configuration options for traversal hints");
+
+    public static final ConfigNamespace INDEX_SELECTION_NS = new ConfigNamespace(HINT_NS, "index-selection",
+            "Hints for index selection strategies");
+
+    public static final ConfigOption<String[]> PREFERRED_INDEXES = new ConfigOption<>(INDEX_SELECTION_NS,
+        "preferred-indexes", "List of indexes to be preferred over others. Each step that is eligible " +
+        "to use use one or more of the provided indexes is forced to do so, even if the index selector would normally " +
+        "prefer another index.", ConfigOption.Type.HINT, new String[0]);
+
+    public static final ConfigOption<String[]> SUPPRESSED_INDEXES = new ConfigOption<>(INDEX_SELECTION_NS,
+        "suppressed-indexes", "List of indexes to be ignored by a query. Every index provided here " +
+        "will not be considered during index selection phase. Overrides " + PREFERRED_INDEXES.getName() + ".",
+        ConfigOption.Type.HINT, new String[0]);
+
+    public static final ConfigOption<String[]> OVERRIDE_SELECTIVITY = new ConfigOption<>(INDEX_SELECTION_NS,
+        "override-selectivity", "List of key=value pairs of property names and provided selectivities used to " +
+        "overrule the estimation given by the selectivity estimator.", ConfigOption.Type.HINT, new String[0]);
 
     // ################ Query Processing #######################
     // ################################################
@@ -282,15 +302,6 @@ public class GraphDatabaseConfiguration {
                     "usually a large number. Default value is Integer.MAX_VALUE which effectively disables this behavior. " +
                     "This option does not take effect when smart-limit is enabled.",
             ConfigOption.Type.MASKABLE, Integer.MAX_VALUE);
-
-    public static final ConfigOption<String> INDEX_SELECT_STRATEGY = new ConfigOption<>(QUERY_NS, "index-select-strategy",
-            String.format("Name of the index selection strategy or full class name. Following shorthands can be used: <br>" +
-                    "- `%s` (Try all combinations of index candidates and pick up optimal one)<br>" +
-                    "- `%s` (Use greedy algorithm to pick up approximately optimal index candidate)<br>" +
-                    "- `%s` (Use index-select-threshold to pick up either `%s` or `%s` strategy on runtime)",
-                    BruteForceIndexSelectionStrategy.NAME, ApproximateIndexSelectionStrategy.NAME, ThresholdBasedIndexSelectionStrategy.NAME,
-                    ApproximateIndexSelectionStrategy.NAME, ThresholdBasedIndexSelectionStrategy.NAME),
-            ConfigOption.Type.MASKABLE, ThresholdBasedIndexSelectionStrategy.NAME);
 
     public static final ConfigOption<Boolean> OPTIMIZER_BACKEND_ACCESS = new ConfigOption<>(QUERY_NS, "optimizer-backend-access",
             "Whether the optimizer should be allowed to fire backend queries during the optimization phase. Allowing these " +
@@ -1311,12 +1322,6 @@ public class GraphDatabaseConfiguration {
     public static final String SYSTEM_CONFIGURATION_IDENTIFIER = "configuration";
     public static final String USER_CONFIGURATION_IDENTIFIER = "userconfig";
 
-    private static final Map<String, String> REGISTERED_INDEX_SELECTION_STRATEGIES = new HashMap() {{
-        put(ThresholdBasedIndexSelectionStrategy.NAME, ThresholdBasedIndexSelectionStrategy.class.getName());
-        put(BruteForceIndexSelectionStrategy.NAME, BruteForceIndexSelectionStrategy.class.getName());
-        put(ApproximateIndexSelectionStrategy.NAME, ApproximateIndexSelectionStrategy.class.getName());
-    }};
-
     private final Configuration configuration;
     private final ReadConfiguration configurationAtOpen;
     private String uniqueGraphId;
@@ -1340,7 +1345,6 @@ public class GraphDatabaseConfiguration {
     private int limitedBatchSize;
     private MultiQueryStrategyRepeatStepMode repeatStepMode;
     private boolean optimizerBackendAccess;
-    private IndexSelectionStrategy indexSelectionStrategy;
     private boolean allowVertexIdSetting;
     private boolean allowCustomVertexIdType;
     private boolean logTransactions;
@@ -1456,10 +1460,6 @@ public class GraphDatabaseConfiguration {
 
     public boolean optimizerBackendAccess() {
         return optimizerBackendAccess;
-    }
-
-    public IndexSelectionStrategy getIndexSelectionStrategy() {
-        return indexSelectionStrategy;
     }
 
     public MultiQueryHasStepStrategyMode hasStepStrategyMode() {
@@ -1600,8 +1600,6 @@ public class GraphDatabaseConfiguration {
         hasStepStrategyMode = selectExactConfig(HAS_STEP_BATCH_MODE, MultiQueryHasStepStrategyMode.values());
         propertiesStrategyMode = selectExactConfig(PROPERTIES_BATCH_MODE, MultiQueryPropertiesStrategyMode.values());
 
-        indexSelectionStrategy = Backend.getImplementationClass(configuration, configuration.get(INDEX_SELECT_STRATEGY),
-            REGISTERED_INDEX_SELECTION_STRATEGIES);
         optimizerBackendAccess = configuration.get(OPTIMIZER_BACKEND_ACCESS);
 
         adjustQueryLimit = configuration.get(ADJUST_LIMIT);
