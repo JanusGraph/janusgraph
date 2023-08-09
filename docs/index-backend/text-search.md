@@ -59,6 +59,7 @@ Full-text search is case-insensitive.
 -   `textContainsFuzzy`: is true if (at least) one word inside the text
     string is similar to the query String (based on Levenshtein edit
     distance)
+-   `textContainsPhrase`: is true if the text string does contain the sequence of words in the query string
 
 ```groovy
 import static org.janusgraph.core.attribute.Text.*
@@ -66,6 +67,7 @@ g.V().has('booksummary', textContains('unicorns'))
 g.V().has('booksummary', textContainsPrefix('uni'))
 g.V().has('booksummary', textContainsRegex('.*corn.*'))
 g.V().has('booksummary', textContainsFuzzy('unicorn'))
+g.V().has('booksummary', textContainsPhrase('unicorn horn'))
 ```
 
 The Elasticsearch backend extends this functionality and includes support for negations
