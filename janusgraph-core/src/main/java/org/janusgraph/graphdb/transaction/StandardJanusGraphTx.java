@@ -1568,7 +1568,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         }
         try {
             if (hasModifications()) {
-                graph.commit(addedRelations.getAll(), deletedRelations.values(), this);
+                graph.commit(addedRelations.getAllUnsafe(), deletedRelations.values(), this);
             } else {
                 txHandle.commit();
             }

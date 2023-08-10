@@ -62,7 +62,7 @@ public class SimpleAddedRelations implements AddedRelationsContainer {
     }
 
     @Override
-    public Collection<InternalRelation> getAll() {
+    public Collection<InternalRelation> getAllUnsafe() {
         return Collections.unmodifiableCollection(new AbstractCollection<InternalRelation>() {
             @Override
             @Nonnull

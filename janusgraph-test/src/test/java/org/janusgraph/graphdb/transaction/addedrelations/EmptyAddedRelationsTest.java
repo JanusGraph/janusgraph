@@ -41,8 +41,8 @@ public class EmptyAddedRelationsTest {
     }
 
     @Test
-    public void getAllReturnsEmpty() {
-        assertTrue(EmptyAddedRelations.getInstance().getAll().isEmpty());
+    public void getAllUnsafeReturnsEmpty() {
+        assertTrue(EmptyAddedRelations.getInstance().getAllUnsafe().isEmpty());
     }
 
     @Test
