@@ -39,7 +39,7 @@ public interface AddedRelationsContainer {
      * of the transaction after there are no additional changes. Otherwise the behavior is non deterministic.
      * @return
      */
-    Collection<InternalRelation> getAll();
+    Collection<InternalRelation> getAllUnsafe();
 
     /**
      * Clears the container which releases allocated memory.
@@ -69,7 +69,7 @@ public interface AddedRelationsContainer {
         }
 
         @Override
-        public Collection<InternalRelation> getAll() {
+        public Collection<InternalRelation> getAllUnsafe() {
             return Collections.emptyList();
         }
 
