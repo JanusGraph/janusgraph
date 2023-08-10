@@ -52,7 +52,7 @@ public class EmptyAddedRelations implements AddedRelationsContainer {
     }
 
     @Override
-    public Collection<InternalRelation> getAll() {
+    public Collection<InternalRelation> getAllUnsafe() {
         return Collections.emptyList();
     }
 
