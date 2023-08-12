@@ -46,7 +46,7 @@ public class JanusGraphSettingsUtilsTest {
 
         Optional<Settings.SerializerSettings> graphBinary = settings.serializers
             .stream()
-            .filter(it -> it.className.equals("org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1") &&
+            .filter(it -> it.className.equals("org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1") &&
                 it.config.get("ioRegistries") != null).findFirst();
 
         assertTrue(graphBinary.isPresent());
@@ -59,7 +59,7 @@ public class JanusGraphSettingsUtilsTest {
 
         Optional<Settings.SerializerSettings> graphBinary = settings.serializers
             .stream()
-            .filter(it -> it.className.equals("org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1"))
+            .filter(it -> it.className.equals("org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1"))
             .skip(1).findFirst();
 
         assertTrue(graphBinary.isPresent());
@@ -72,7 +72,7 @@ public class JanusGraphSettingsUtilsTest {
 
         Optional<Settings.SerializerSettings> graphson = settings.serializers
             .stream()
-            .filter(it -> it.className.equals("org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0") &&
+            .filter(it -> it.className.equals("org.apache.tinkerpop.gremlin.util.ser.GraphSONMessageSerializerV3") &&
                 it.config.get("ioRegistries") != null).findFirst();
 
         assertTrue(graphson.isPresent());

@@ -16,7 +16,7 @@ package org.janusgraph.graphdb.tinkerpop.gremlin.server.io;
 
 import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
-import org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0;
+import org.apache.tinkerpop.gremlin.util.ser.GraphSONMessageSerializerV3;
 import org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
@@ -27,7 +27,7 @@ public class JanusGraphSONModuleIT extends JanusGraphSerializerBaseIT {
     @Override
     protected GraphTraversalSource traversal() {
         Cluster cluster = Cluster.build("localhost").port(8182)
-            .serializer(new GraphSONMessageSerializerV3d0(GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.instance())))
+            .serializer(new GraphSONMessageSerializerV3(GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.instance())))
             .create();
         return AnonymousTraversalSource.traversal().withRemote(DriverRemoteConnection.using(cluster));
     }

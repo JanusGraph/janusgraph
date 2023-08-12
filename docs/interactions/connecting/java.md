@@ -60,7 +60,7 @@ To get started with JanusGraph in Java:
         hosts: [localhost]
         port: 8182
         serializer: { 
-            className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1,
+            className: org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1,
             config: { ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] }}
         ```
 
