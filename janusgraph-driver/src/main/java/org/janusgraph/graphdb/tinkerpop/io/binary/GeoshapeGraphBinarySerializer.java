@@ -14,10 +14,10 @@
 
 package org.janusgraph.graphdb.tinkerpop.io.binary;
 
-import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.structure.io.Buffer;
 import org.apache.tinkerpop.gremlin.structure.io.binary.GraphBinaryReader;
 import org.apache.tinkerpop.gremlin.structure.io.binary.GraphBinaryWriter;
+import org.apache.tinkerpop.gremlin.util.ser.SerializationException;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.graphdb.tinkerpop.io.binary.geoshape.BoxSerializer;
 import org.janusgraph.graphdb.tinkerpop.io.binary.geoshape.CircleSerializer;

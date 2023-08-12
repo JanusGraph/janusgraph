@@ -72,7 +72,7 @@ compile "org.janusgraph:janusgraph-core:1.0.0"
 * Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.6.0
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
-* Apache TinkerPop 3.6.4
+* Apache TinkerPop 3.7.0
 * Java 8, 11
 
 !!! note
@@ -104,6 +104,15 @@ For more information on features and bug fixes in 1.0.0, see the GitHub mileston
 * [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v1.0.0/janusgraph-full-1.0.0.zip)
 
 #### Upgrade Instructions
+
+##### Upgrade TinkerPop from 3.5.x to 3.7.0 (breaking)
+
+Some packages under `gremlin-driver` are moved to `gremlin-util` module. This means you need to change
+some classnames of serializers, e.g. from `org.apache.tinkerpop.gremlin.driver.ser.*` to `org.apache.tinkerpop.gremlin.util.ser.*`.
+See [this](https://tinkerpop.apache.org/docs/current/upgrade/#_creation_of_new_gremlin_util_module) for more detail.
+
+GraphSON serializers are renamed, e.g. from `org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0` to `org.apache.tinkerpop.gremlin.util.ser.GraphSONMessageSerializerV3`.
+See [this](https://tinkerpop.apache.org/docs/current/upgrade/#_serializer_renaming) for more detail.
 
 ##### String vertex ID support
 
@@ -739,6 +748,10 @@ after the keyword `serializers`. This will add the support on the server site.
 !!! note 
     The java driver is the only driver that currently supports GraphBinary, 
     see [Connecting to JanusGraph using Java](interactions/connecting/java.md).
+
+!!! note
+    Version 1.0.0 moves everything under `org.apache.tinkerpop.gremlin.driver.ser` package to
+    `org.apache.tinkerpop.gremlin.util.ser` package.
 
 !!! note
     Version 1.0.0 adds a breaking change to GraphBinary for Geoshape serialization,

@@ -55,16 +55,16 @@ public class JanusGraphSettingsUtils {
 
         addSerializerWithRegistry(
             serializers,
-            org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1.class.getCanonicalName()
+            org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1.class.getCanonicalName()
         );
         addSerializerWithResultToString(
             serializers,
-            org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1.class.getCanonicalName()
+            org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1.class.getCanonicalName()
         );
 
         addSerializerWithRegistry(
             serializers,
-            org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0.class.getCanonicalName()
+            org.apache.tinkerpop.gremlin.util.ser.GraphSONMessageSerializerV3.class.getCanonicalName()
         );
 
         settings.serializers = serializers;

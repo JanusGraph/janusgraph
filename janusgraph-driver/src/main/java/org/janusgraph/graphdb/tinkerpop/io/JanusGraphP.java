@@ -15,12 +15,11 @@
 package org.janusgraph.graphdb.tinkerpop.io;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-
-import java.util.function.BiPredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
 
 public class JanusGraphP extends P<Object> {
-    public JanusGraphP(BiPredicate<Object, Object> biPredicate, Object value) {
-        super(biPredicate, value);
+    public JanusGraphP(PBiPredicate<Object, Object> pbiPredicate, Object value) {
+        super(pbiPredicate, value);
     }
 
     public boolean equals(final Object other) {

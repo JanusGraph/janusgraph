@@ -14,10 +14,11 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.apache.tinkerpop.gremlin.driver.Tokens;
-import org.apache.tinkerpop.gremlin.driver.message.RequestMessage;
-import org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0;
-import org.apache.tinkerpop.gremlin.driver.ser.SerializationException;
+import io.netty.buffer.ByteBufAllocator;
+import org.apache.tinkerpop.gremlin.util.Tokens;
+import org.apache.tinkerpop.gremlin.util.message.RequestMessage;
+import org.apache.tinkerpop.gremlin.util.ser.GraphSONMessageSerializerV3;
+import org.apache.tinkerpop.gremlin.util.ser.SerializationException;
 import org.apache.tinkerpop.gremlin.process.traversal.Bytecode;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
@@ -28,13 +29,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.tinkerpop.gremlin.driver.ser.AbstractMessageSerializer.TOKEN_IO_REGISTRIES;
+import static org.apache.tinkerpop.gremlin.util.ser.AbstractMessageSerializer.TOKEN_IO_REGISTRIES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class JanusGraphIoRegistryTest {
     @Test
     public void testTokenIoRegistyInConfig() throws SerializationException {
-        final GraphSONMessageSerializerV3d0 serializer = new GraphSONMessageSerializerV3d0();
+        final GraphSONMessageSerializerV3 serializer = new GraphSONMessageSerializerV3();
         final Map<String,Object> config = new HashMap<>();
         config.put(TOKEN_IO_REGISTRIES, Collections.singletonList(JanusGraphIoRegistry.class.getName()));
         serializer.configure(config, Collections.emptyMap());
@@ -44,7 +45,7 @@ public class JanusGraphIoRegistryTest {
 
         String serializedMessage = serializer.serializeRequestAsString(
             RequestMessage.build(Tokens.OPS_BYTECODE).processor("traversal")
-            .addArg(Tokens.ARGS_GREMLIN, expectedBytecode).create());
+            .addArg(Tokens.ARGS_GREMLIN, expectedBytecode).create(), ByteBufAllocator.DEFAULT);
 
         RequestMessage requestMessage1 = serializer.deserializeRequest(serializedMessage);
         Bytecode result = (Bytecode)requestMessage1.getArgs().get(Tokens.ARGS_GREMLIN);

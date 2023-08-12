@@ -128,7 +128,7 @@ username: admin
 password: password
 connectionPool: { enableSsl: true }
 serializer: 
-    className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1
+    className: org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1
     config: 
         ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry]
 ```

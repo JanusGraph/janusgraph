@@ -14,20 +14,19 @@
 
 package org.janusgraph.graphdb.query;
 
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
 import org.janusgraph.core.attribute.Cmp;
 
-import java.util.function.BiPredicate;
-
 /**
- * A special kind of {@link BiPredicate} which marks all the predicates that are natively supported by
+ * A special kind of {@link PBiPredicate} which marks all the predicates that are natively supported by
  * JanusGraph and known to the query optimizer. Contains some custom methods that JanusGraph needs for
  * query answering and evaluation.
  * <p>
- * This class contains a subclass used to convert Tinkerpop's {@link BiPredicate} implementations to the corresponding JanusGraph predicates.
+ * This class contains a subclass used to convert Tinkerpop's {@link PBiPredicate} implementations to the corresponding JanusGraph predicates.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
+public interface JanusGraphPredicate extends PBiPredicate<Object, Object> {
 
     /**
      * Whether the given condition is a valid condition for this predicate.

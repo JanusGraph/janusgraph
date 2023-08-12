@@ -614,6 +614,7 @@ public abstract class OLAPTest extends JanusGraphBaseTest {
         final JanusGraphComputer computer = graph.compute();
         computer.resultMode(JanusGraphComputer.ResultMode.NONE);
         computer.workers(4);
+        computer.vertexProperties(__.properties("dummy"));
         computer.program(PageRankVertexProgram.build().iterations(10).vertexCount(numV).dampingFactor(alpha).create(graph));
         computer.mapReduce(PageRankMapReduce.build().create());
         ComputerResult result = computer.submit().get();
