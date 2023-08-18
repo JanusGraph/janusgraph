@@ -204,6 +204,9 @@ use `query.batch.has-step-mode = none` as replacement for `query.batch-property-
 In case previous behavior is desired, use `query.batch.properties-mode = required_properties_only` for `query.fast-property = false` 
 or use `query.batch.properties-mode = all_properties` for `query.fast-property = true`. 
 
+`label` step now uses pre-fetching strategy by default. Use `query.batch.label-step-mode = none` to disable pre-fetching 
+optimization for `label` step.
+
 [Batch processing](https://docs.janusgraph.org/operations/batch-processing/) allows JanusGraph to fetch a batch of
 vertices from the storage backend together instead of requesting each vertex individually which leads to a high number
 of backend queries.

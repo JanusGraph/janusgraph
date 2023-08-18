@@ -139,6 +139,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphHasStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertyMapStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryLabelStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -217,6 +218,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HAS_STEP_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LABEL_STEP_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMITED_BATCH;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMITED_BATCH_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
@@ -5008,6 +5010,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         testLimitBatchSizeForHasStep(numV, barrierSize, limit, bs, cs);
         testLimitBatchSizeForPropertySteps(numV, barrierSize, limit, cs);
+        testLimitBatchSizeForLabelStep(numV, barrierSize, limit, bs, cs);
 
         // test batching for `out()`
         profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).out());
@@ -6164,6 +6167,45 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // test batching for `out()` inside `or()` limited with second filter not being executed due to first filter is true
         profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).or(__.out("knows").count().is(P.gte(0)), __.inE("knows").count().is(P.gte(0))).limit(limit));
         assertEquals((int) Math.ceil((double) Math.min(bs.length, limit) / barrierSize), countOptimizationQueries(profile.getMetrics()));
+    }
+
+    private void testLimitBatchSizeForLabelStep(int numV, int barrierSize, int limit, JanusGraphVertex[] bs, JanusGraphVertex[] cs) {
+
+        TraversalMetrics profile;
+
+        // test batching for `label()`
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).label(),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true,
+            option(LABEL_STEP_BATCH_MODE), MultiQueryLabelStepStrategyMode.ALL.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize), profile.getMetrics()));
+
+        // test batching for `label()` with default labels
+        profile = testLimitedBatch(() -> graph.traversal().V(bs).barrier(barrierSize).label(),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true,
+            option(LABEL_STEP_BATCH_MODE), MultiQueryLabelStepStrategyMode.ALL.getConfigName());
+        assertEquals( Math.ceil(bs.length / (double) barrierSize), countOptimizationQueries(profile.getMetrics()));
+
+        // test batching for `label()` in a parent step
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).union(__.label()),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true,
+            option(LABEL_STEP_BATCH_MODE), MultiQueryLabelStepStrategyMode.ALL.getConfigName());
+        assertEquals(3, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(1, countBackendQueriesOfSize((numV - 3 * barrierSize), profile.getMetrics()));
+
+        // test batching for `label()` with `limit`. In this case TinkerPop optimizes the usage by moving limit before
+        // `label` step.
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).label().limit(limit),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true,
+            option(LABEL_STEP_BATCH_MODE), MultiQueryLabelStepStrategyMode.ALL.getConfigName());
+        assertEquals(1, countBackendQueriesOfSize(limit, profile.getMetrics()));
+
+        // test disabled batching for `label()`
+        profile = testLimitedBatch(() -> graph.traversal().V(cs).barrier(barrierSize).label(),
+            option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true,
+            option(LABEL_STEP_BATCH_MODE), MultiQueryLabelStepStrategyMode.NONE.getConfigName());
+        assertEquals(0, countBackendQueriesOfSize(barrierSize, profile.getMetrics()));
+        assertEquals(0, countOptimizationQueries(profile.getMetrics()));
     }
 
     @Test

@@ -159,7 +159,7 @@ Batched query processing takes into account two types of steps:
 
 1.  Batch compatible step. This is the step which will execute batch requests. Currently, the list of such steps
     is the next: `out()`, `in()`, `both()`, `inE()`, `outE()`, `bothE()`, `has()`, `values()`, `properties()`, `valueMap()`,
-    `propertyMap()`, `elementMap()`.
+    `propertyMap()`, `elementMap()`, `label()`.
 2.  Parent step. This is a parent step which has local traversals with the same start. Such parent steps also implement the 
     interface `TraversalParent`. There are many such steps, but as for an example those could be: `and(...)`, `or(...)`, 
     `not(...)`, `order().by(...)`, `project("valueA", "valueB", "valueC").by(...).by(...).by(...)`, `union(..., ..., ...)`,
@@ -330,3 +330,4 @@ access when direct vertex properties are requested (for example `vertex.properti
 See configuration option `query.batch.has-step-mode` to control properties pre-fetching behaviour for `has` step.  
 See configuration option `query.batch.properties-mode` to control properties pre-fetching behaviour for `values`, 
 `properties`, `valueMap`, `propertyMap`, and `elementMap` steps.  
+See configuration option `query.batch.label-step-mode` to control labels pre-fetching behaviour for `label` step.  

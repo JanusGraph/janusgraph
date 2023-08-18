@@ -58,6 +58,7 @@ import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryLabelStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
@@ -375,6 +376,15 @@ public class GraphDatabaseConfiguration {
             MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName(),
             MultiQueryPropertiesStrategyMode.NONE.getConfigName()),
         ConfigOption.Type.MASKABLE, MultiQueryPropertiesStrategyMode.REQUIRED_PROPERTIES_ONLY.getConfigName());
+
+    public static final ConfigOption<String> LABEL_STEP_BATCH_MODE = new ConfigOption<>(QUERY_BATCH_NS,"label-step-mode",
+        String.format("Labels pre-fetching mode for `label()` step. Used only when `"+USE_MULTIQUERY.toStringWithoutRoot()+"` is `true`.<br>" +
+                "Supported modes:<br>" +
+                "- `%s` - Pre-fetch labels for all vertices in a batch.<br>" +
+                "- `%s` - Skips vertex labels pre-fetching optimization.<br>",
+            MultiQueryLabelStepStrategyMode.ALL.getConfigName(),
+            MultiQueryLabelStepStrategyMode.NONE.getConfigName()),
+        ConfigOption.Type.MASKABLE, MultiQueryLabelStepStrategyMode.ALL.getConfigName());
 
     // ################ SCHEMA #######################
     // ################################################
@@ -1348,6 +1358,7 @@ public class GraphDatabaseConfiguration {
     private String unknownIndexKeyName;
     private MultiQueryHasStepStrategyMode hasStepStrategyMode;
     private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
+    private MultiQueryLabelStepStrategyMode labelStepStrategyMode;
 
     private StoreFeatures storeFeatures = null;
 
@@ -1468,6 +1479,10 @@ public class GraphDatabaseConfiguration {
 
     public MultiQueryPropertiesStrategyMode propertiesStrategyMode() {
         return propertiesStrategyMode;
+    }
+
+    public MultiQueryLabelStepStrategyMode labelStepStrategyMode() {
+        return labelStepStrategyMode;
     }
 
     public boolean adjustQueryLimit() {
@@ -1599,6 +1614,7 @@ public class GraphDatabaseConfiguration {
         repeatStepMode = selectExactConfig(REPEAT_STEP_BATCH_MODE, MultiQueryStrategyRepeatStepMode.values());
         hasStepStrategyMode = selectExactConfig(HAS_STEP_BATCH_MODE, MultiQueryHasStepStrategyMode.values());
         propertiesStrategyMode = selectExactConfig(PROPERTIES_BATCH_MODE, MultiQueryPropertiesStrategyMode.values());
+        labelStepStrategyMode = selectExactConfig(LABEL_STEP_BATCH_MODE, MultiQueryLabelStepStrategyMode.values());
 
         indexSelectionStrategy = Backend.getImplementationClass(configuration, configuration.get(INDEX_SELECT_STRATEGY),
             REGISTERED_INDEX_SELECTION_STRATEGIES);
