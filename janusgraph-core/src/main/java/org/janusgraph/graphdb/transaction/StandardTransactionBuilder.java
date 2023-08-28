@@ -29,6 +29,7 @@ import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryLabelStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 
 import java.time.Instant;
@@ -90,6 +91,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     private MultiQueryHasStepStrategyMode hasStepStrategyMode;
 
     private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
+    private MultiQueryLabelStepStrategyMode labelStepStrategyMode;
 
     private final boolean forceIndexUsage;
 
@@ -115,6 +117,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.multiQuery = graphConfig.useMultiQuery();
         this.hasStepStrategyMode = graphConfig.hasStepStrategyMode();
         this.propertiesStrategyMode = graphConfig.propertiesStrategyMode();
+        this.labelStepStrategyMode = graphConfig.labelStepStrategyMode();
         this.writableCustomOptions = writableCustomOptions;
         if(customOptions == null){
             this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
@@ -244,6 +247,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public TransactionBuilder setLabelsStepStrategyMode(MultiQueryLabelStepStrategyMode labelStepStrategyMode) {
+        this.labelStepStrategyMode = labelStepStrategyMode;
+        return this;
+    }
+
+    @Override
     public void setCommitTime(Instant time) {
         throw new UnsupportedOperationException("Use setCommitTime(long,TimeUnit)");
     }
@@ -290,7 +299,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, restrictedPartitions, groupName,
                 defaultSchemaMaker, hasDisabledSchemaConstraints, skipDBCacheRead, hasStepStrategyMode, propertiesStrategyMode,
-                customOptions);
+                labelStepStrategyMode, customOptions);
         return graph.newTransaction(immutable);
     }
 
@@ -418,6 +427,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public MultiQueryLabelStepStrategyMode getLabelStepStrategyMode() {
+        return labelStepStrategyMode;
+    }
+
+    @Override
     public String getGroupName() {
         return groupName;
     }
@@ -478,6 +492,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private boolean hasDisabledSchemaConstraints = true;
         private MultiQueryHasStepStrategyMode hasStepStrategyMode;
         private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
+        private MultiQueryLabelStepStrategyMode labelStepStrategyMode;
 
         private final BaseTransactionConfig handleConfig;
 
@@ -499,6 +514,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                               boolean skipDBCacheRead,
                               MultiQueryHasStepStrategyMode hasStepStrategyMode,
                               MultiQueryPropertiesStrategyMode propertiesStrategyMode,
+                              MultiQueryLabelStepStrategyMode labelStepStrategyMode,
                               Configuration customOptions) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
@@ -523,6 +539,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.skipDBCacheRead = skipDBCacheRead;
             this.hasStepStrategyMode = hasStepStrategyMode;
             this.propertiesStrategyMode = propertiesStrategyMode;
+            this.labelStepStrategyMode = labelStepStrategyMode;
             this.handleConfig = new StandardBaseTransactionConfig.Builder()
                     .commitTime(commitTime)
                     .timestampProvider(times)
@@ -648,6 +665,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public MultiQueryPropertiesStrategyMode getPropertiesStrategyMode() {
             return propertiesStrategyMode;
+        }
+
+        @Override
+        public MultiQueryLabelStepStrategyMode getLabelStepStrategyMode() {
+            return labelStepStrategyMode;
         }
 
         @Override

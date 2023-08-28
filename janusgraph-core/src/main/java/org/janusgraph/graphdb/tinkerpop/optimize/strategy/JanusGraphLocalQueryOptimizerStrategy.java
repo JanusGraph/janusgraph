@@ -20,6 +20,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ElementMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.LabelStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertyMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -31,6 +32,7 @@ import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphElementMapStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphLabelStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertyMapStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
@@ -67,20 +69,24 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
 
         final Optional<StandardJanusGraphTx> tx = JanusGraphTraversalUtil.getJanusGraphTx(traversal);
         final MultiQueryPropertiesStrategyMode propertiesStrategyMode;
+        final MultiQueryLabelStepStrategyMode labelStepStrategyMode;
         final int txVertexCacheSize;
 
         if(tx.isPresent()){
             TransactionConfiguration txConfig = tx.get().getConfiguration();
             txVertexCacheSize = txConfig.getVertexCacheSize();
             propertiesStrategyMode = txConfig.getPropertiesStrategyMode();
+            labelStepStrategyMode = txConfig.getLabelStepStrategyMode();
         } else {
             GraphDatabaseConfiguration graphConfig = janusGraph.getConfiguration();
             txVertexCacheSize = graphConfig.getTxVertexCacheSize();
             propertiesStrategyMode = graphConfig.propertiesStrategyMode();
+            labelStepStrategyMode = graphConfig.labelStepStrategyMode();
         }
 
         applyJanusGraphVertexSteps(traversal);
         applyJanusGraphPropertiesSteps(traversal, txVertexCacheSize, propertiesStrategyMode);
+        applyJanusGraphLabelSteps(traversal, labelStepStrategyMode);
         inspectLocalTraversals(traversal, txVertexCacheSize, propertiesStrategyMode);
     }
 
@@ -181,6 +187,19 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
                 HasStepFolder.foldInRange(propertiesStep, JanusGraphTraversalUtil.getNextNonIdentityStep(propertiesStep), localTraversal, null);
                 unfoldLocalTraversal(traversal, localStep, localTraversal, propertiesStep);
             }
+        });
+    }
+
+    private void applyJanusGraphLabelSteps(Traversal.Admin<?, ?> traversal, MultiQueryLabelStepStrategyMode labelStepStrategyMode){
+        if(MultiQueryLabelStepStrategyMode.NONE.equals(labelStepStrategyMode)){
+            return;
+        }
+        TraversalHelper.getStepsOfAssignableClass(LabelStep.class, traversal).forEach(originalStep -> {
+            if(originalStep instanceof JanusGraphLabelStep){
+                return;
+            }
+            final JanusGraphLabelStep janusGraphLabelStep = new JanusGraphLabelStep(originalStep);
+            TraversalHelper.replaceStep(originalStep, janusGraphLabelStep, originalStep.getTraversal());
         });
     }
 

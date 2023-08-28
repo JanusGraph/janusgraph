@@ -198,4 +198,13 @@ public class CQLMultiQueryBenchmark {
         tx.rollback();
         return result;
     }
+
+    @Benchmark
+    public List<String> getLabels() {
+        JanusGraphTransaction tx = graph.buildTransaction()
+            .start();
+        List<String> result = tx.traversal().V().has("name", "inner").label().toList();
+        tx.rollback();
+        return result;
+    }
 }
