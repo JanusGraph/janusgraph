@@ -1228,6 +1228,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         // satisfied by two graph-centric queries, one is mixed index query and the other one is full scan
         newTx();
         assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).count().next());
+        assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).order().by("age").count().next());
         assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).toList().size());
         Metrics mMixedOr = tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20))
             .profile().next().getMetrics(0);
