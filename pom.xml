@@ -108,7 +108,7 @@
         <testcontainers.version>1.18.3</testcontainers.version>
         <easymock.version>5.1.0</easymock.version>
         <protobuf.version>3.24.2</protobuf.version>
-        <grpc.version>1.57.1</grpc.version>
+        <grpc.version>1.57.2</grpc.version>
         <protoc.version>3.23.4</protoc.version>
         <gson.version>2.10.1</gson.version>
         <jcabi.version>1.2.1</jcabi.version>
