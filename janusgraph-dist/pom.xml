@@ -26,7 +26,7 @@
 
         <packname.standard>janusgraph-${project.version}</packname.standard>
         <packname.full>janusgraph-full-${project.version}</packname.full>
-        <docker.baseimage>eclipse-temurin:11-jre</docker.baseimage>
+        <docker.baseimage>eclipse-temurin:17-jre</docker.baseimage>
         <docker.tag-suffix></docker.tag-suffix>
 
         <!-- Variables for integration testing on release-candidate archive files -->
@@ -317,15 +317,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>java-11</id>
-            <properties>
-                <packname.standard>janusgraph-java-11-${project.version}</packname.standard>
-                <packname.full>janusgraph-java-11-full-${project.version}</packname.full>
-                <docker.baseimage>eclipse-temurin:11-jre</docker.baseimage>
-                <docker.tag-suffix>-java-11</docker.tag-suffix>
-            </properties>
-        </profile>
         <profile>
             <id>janusgraph-release</id>
             <dependencies>

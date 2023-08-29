@@ -31,8 +31,6 @@ jobs:
       matrix:
         include:
           - args: ""
-            java: 8
-          - args: "-Pjava-11"
-            java: 11
+            java: 17
     steps:
       - run: 'echo "No build required"'

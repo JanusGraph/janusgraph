@@ -112,7 +112,7 @@ if [[ -z "$JAVA_OPTIONS_FILE" ]]; then
   if [[ $jver == "1.8" ]]; then                
     JAVA_OPTIONS_FILE="$JANUSGRAPH_CONF/jvm-8.options"
   else
-    JAVA_OPTIONS_FILE="$JANUSGRAPH_CONF/jvm-11.options"
+    JAVA_OPTIONS_FILE="$JANUSGRAPH_CONF/jvm.options"
   fi
 fi
 if [[ -f "$JAVA_OPTIONS_FILE" ]]; then
