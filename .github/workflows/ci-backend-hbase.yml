@@ -51,7 +51,7 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v3
         with:
-          java-version: 8
+          java-version: 17
           distribution: zulu
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
@@ -66,30 +66,15 @@ jobs:
           - module: hbase
             args: "-Dtest=\"**/diskstorage/hbase/*\""
             name: hbase2-diskstorage
-            java: 8
+            java: 17
           - module: hbase
             args: "-Dtest=\"**/graphdb/hbase/*\""
             name: hbase2-graphdb
-            java: 8
+            java: 17
           - module: hbase
             args: "-Dtest=\"**/hadoop/*\""
             name: hbase2-hadoop
-            java: 8
-          - module: hbase
-            install-args: "-Pjava-11"
-            args: "-Dtest=\"**/diskstorage/hbase/*\""
-            name: hbase2-diskstorage
-            java: 11
-          - module: hbase
-            install-args: "-Pjava-11"
-            args: "-Dtest=\"**/graphdb/hbase/*\""
-            name: hbase2-graphdb
-            java: 11
-          - module: hbase
-            install-args: "-Pjava-11"
-            args: "-Dtest=\"**/hadoop/*\""
-            name: hbase2-hadoop
-            java: 11
+            java: 17
     steps:
       - uses: actions/checkout@v3
         with:

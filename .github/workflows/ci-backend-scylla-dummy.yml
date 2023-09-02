@@ -51,7 +51,7 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v3
         with:
-          java-version: 8
+          java-version: 17
           distribution: zulu
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
@@ -66,56 +66,26 @@ jobs:
           - module: scylla
             args: "-Pscylla-murmur -Dtest=\"**/diskstorage/cql/*\""
             name: murmur-diskstorage
-            java: 8
+            java: 17
           - module: scylla
             args: "-Pscylla-murmur -Dtest=\"**/graphdb/cql/*\""
             name: murmur-graphdb
-            java: 8
+            java: 17
           - module: scylla
             args: "-Pscylla-murmur -Dtest=\"**/hadoop/*\""
             name: murmur-hadoop
-            java: 8
+            java: 17
           - module: scylla
             args: "-Pscylla-murmur -Dtest=\"**/core/cql/*\""
             name: murmur-core
-            java: 8
+            java: 17
           - module: scylla
             args: "-Pscylla-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
             name: murmur-ssl
-            java: 8
+            java: 17
           - module: scylla
             args: "-Pscylla-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
             name: murmur-client-auth
-            java: 8
-          - module: scylla
-            args: "-Pscylla-murmur -Dtest=\"**/diskstorage/cql/*\""
-            name: murmur-diskstorage
-            install-args: "-Pjava-11"
-            java: 11
-          - module: scylla
-            args: "-Pscylla-murmur -Dtest=\"**/graphdb/cql/*\""
-            name: murmur-graphdb
-            install-args: "-Pjava-11"
-            java: 11
-          - module: scylla
-            args: "-Pscylla-murmur -Dtest=\"**/hadoop/*\""
-            name: murmur-hadoop
-            install-args: "-Pjava-11"
-            java: 11
-          - module: scylla
-            args: "-Pscylla-murmur -Dtest=\"**/core/cql/*\""
-            name: murmur-core
-            install-args: "-Pjava-11"
-            java: 11
-          - module: scylla
-            args: "-Pscylla-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-ssl
-            install-args: "-Pjava-11"
-            java: 11
-          - module: scylla
-            args: "-Pscylla-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-client-auth
-            install-args: "-Pjava-11"
-            java: 11
+            java: 17
     steps:
       - run: 'echo "No build required"'

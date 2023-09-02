@@ -57,9 +57,10 @@
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.7.0</tinkerpop.version>
-        <junit-platform.version>1.9.3</junit-platform.version>
-        <junit.version>5.9.3</junit.version>
-        <mockito.version>4.11.0</mockito.version>
+        <junit-platform.version>1.10.0</junit-platform.version>
+        <junit.version>5.10.0</junit.version>
+        <mockito.version>5.5.0</mockito.version>
+        <mockito-inline.version>5.2.0</mockito-inline.version>
         <jamm.version>0.3.3</jamm.version>
         <metrics.version>4.2.19</metrics.version>
         <slf4j.version>1.7.36</slf4j.version>
@@ -93,8 +94,9 @@
         <test.skip.tp>true</test.skip.tp>
         <top.level.basedir>${basedir}</top.level.basedir>
         <maven.javadoc.version>3.5.0</maven.javadoc.version>
-        <compiler.source>1.8</compiler.source>
-        <compiler.target>1.8</compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra.version>3.11.10</cassandra.version>
@@ -360,8 +362,6 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.11.0</version>
                     <configuration>
-                        <source>${compiler.source}</source>
-                        <target>${compiler.target}</target>
                         <compilerArguments>
                             <Xmaxerrs>500</Xmaxerrs>
                         </compilerArguments>
@@ -913,7 +913,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-inline</artifactId>
-                <version>${mockito.version}</version>
+                <version>${mockito-inline.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
@@ -1436,14 +1436,6 @@
 
     <profiles>
         <profile>
-            <id>java-11</id>
-            <properties>
-                <compiler.source>11</compiler.source>
-                <compiler.target>11</compiler.target>
-            </properties>
-        </profile>
-
-        <profile>
             <id>janusgraph-release</id>
             <!--
               Sign artifacts artifacts only during release:perform
@@ -1479,6 +1471,7 @@
                                 <configuration>
                                     <!-- Quiet mode still shows warnings and errors -->
                                     <quiet>true</quiet>
+                                    <doclint>none</doclint>
                                 </configuration>
                             </execution>
                         </executions>

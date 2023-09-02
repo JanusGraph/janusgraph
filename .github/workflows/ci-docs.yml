@@ -38,7 +38,7 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v3
         with:
-          java-version: 8
+          java-version: 17
           distribution: zulu
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
@@ -56,9 +56,9 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v3
         with:
-          java-version: 11
+          java-version: 17
           distribution: zulu
-      - run: mvn clean install -Pjava-11 -pl janusgraph-doc ${{ env.BUILD_MAVEN_OPTS }}
+      - run: mvn clean install -pl janusgraph-doc ${{ env.BUILD_MAVEN_OPTS }}
       - run: git diff  --exit-code docs/configs/janusgraph-cfg.md
       - run: docker build -t doc-site:mkdocs -f docs.Dockerfile .
       - run: docker run --rm -v $PWD:/mkdocs doc-site:mkdocs mkdocs build
