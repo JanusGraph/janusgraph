@@ -111,7 +111,7 @@
         <grpc.version>1.57.2</grpc.version>
         <protoc.version>3.23.4</protoc.version>
         <gson.version>2.10.1</gson.version>
-        <jcabi.version>1.2.1</jcabi.version>
+        <jcabi.version>2.1.0</jcabi.version>
         <jmh.version>1.33</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
         <jetty.version>9.4.51.v20230217</jetty.version>
