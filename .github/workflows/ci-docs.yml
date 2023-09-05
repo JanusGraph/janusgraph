@@ -27,7 +27,7 @@ jobs:
   build-all:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/cache@v3
         with:
           path: ~/.m2/repository
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: build-all
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/cache@v3
         with:
           path: ~/.m2/repository
@@ -71,7 +71,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     needs: build-doc
     steps: 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false

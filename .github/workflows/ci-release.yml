@@ -43,7 +43,7 @@ jobs:
   build-all:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/cache@v3
         with:
           path: ~/.m2/repository
@@ -69,7 +69,7 @@ jobs:
           - args: "-Pjava-11"
             java: 11
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/cache@v3
         with:
           path: ~/.m2/repository
@@ -110,7 +110,7 @@ jobs:
             install-args: "-Dhbase.profile -Phbase2"
             args: "-Dtest.skip.tp=false -DskipTests=true"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/cache@v3
         with:
           path: ~/.m2/repository
