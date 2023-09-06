@@ -20,6 +20,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -127,7 +128,8 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         }
     }
 
-    @Test
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/1459
+    @RepeatedIfExceptionsTest(repeats = 3)
     public void testIdCounts() {
         makeVertexIndexedUniqueKey("uid", Integer.class);
         mgmt.setConsistency(mgmt.getGraphIndex("uid"), ConsistencyModifier.LOCK);

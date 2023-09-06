@@ -33,6 +33,7 @@ public class CQLIndexManagementIT extends AbstractIndexManagementIT {
         return cql.getConfiguration(getClass().getSimpleName().toLowerCase()).getConfiguration();
     }
 
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/3132
     @RepeatedIfExceptionsTest(repeats = 3)
     @Override
     public void testRepairRelationIndex() throws ExecutionException, InterruptedException, BackendException {
