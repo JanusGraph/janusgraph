@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.cql;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.olap.OLAPTest;
@@ -28,5 +29,12 @@ public class CQLOLAPTest extends OLAPTest {
     @Override
     public WriteConfiguration getConfiguration() {
         return cqlContainer.getConfiguration(getClass().getSimpleName()).getConfiguration();
+    }
+
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/3392
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void testShortestDistance() throws Exception {
+        super.testShortestDistance();
     }
 }

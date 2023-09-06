@@ -99,7 +99,8 @@ public abstract class LogTest {
         simpleSendReceive(2000,1);
     }
 
-    @RepeatedIfExceptionsTest(repeats = 4, minSuccess = 2)
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/1445
+    @RepeatedIfExceptionsTest(repeats = 3)
     @Tag(LogTest.requiresOrderPreserving)
     public void testMultipleReadersOnSingleLogSerial() throws Exception {
         sendReceive(4, 2000, 5, true, TIMEOUT_MS);

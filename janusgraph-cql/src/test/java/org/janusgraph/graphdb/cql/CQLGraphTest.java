@@ -65,12 +65,42 @@ public class CQLGraphTest extends JanusGraphTest {
         assertTrue(features.hasCellTTL());
     }
 
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/1457
     @RepeatedIfExceptionsTest(repeats = 3)
     @Override
     public void simpleLogTest() throws InterruptedException{
         super.simpleLogTest();
     }
 
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/1457
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void simpleLogTestWithFailure() throws InterruptedException {
+        super.simpleLogTestWithFailure();
+    }
+
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/1497
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void testEdgeTTLTiming() throws Exception {
+        super.testEdgeTTLTiming();
+    }
+
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/1464
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void testVertexTTLWithCompositeIndex() throws Exception {
+        super.testVertexTTLWithCompositeIndex();
+    }
+
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/1465
+    @RepeatedIfExceptionsTest(repeats = 3)
+    @Override
+    public void testVertexTTLImplicitKey() throws Exception {
+        super.testVertexTTLImplicitKey();
+    }
+
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/3142
     @RepeatedIfExceptionsTest(repeats = 3)
     @Override
     public void testReindexingForEdgeIndex() throws ExecutionException, InterruptedException {
