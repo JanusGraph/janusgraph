@@ -14,14 +14,11 @@
 
 package org.janusgraph.diskstorage.es;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.junit.jupiter.api.Disabled;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.util.concurrent.ExecutionException;
 
 @Testcontainers
 public class CQLElasticsearchTest extends ElasticsearchJanusGraphIndexTest {
@@ -37,10 +34,4 @@ public class CQLElasticsearchTest extends ElasticsearchJanusGraphIndexTest {
     @Override
     @Disabled("CQL seems to not clear storage correctly")
     public void testClearStorage() {}
-
-    @RepeatedIfExceptionsTest(repeats = 3)
-    @Override
-    public void testIndexUpdatesWithoutReindex() throws InterruptedException, ExecutionException {
-        super.testIndexUpdatesWithoutReindex();
-    }
 }
