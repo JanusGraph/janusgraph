@@ -113,7 +113,7 @@
         <testcontainers.version>1.19.0</testcontainers.version>
         <easymock.version>5.2.0</easymock.version>
         <protobuf.version>3.22.3</protobuf.version>
-        <grpc.version>1.57.2</grpc.version>
+        <grpc.version>1.58.0</grpc.version>
         <protoc.version>3.15.3</protoc.version>
         <gson.version>2.10.1</gson.version>
         <jmh.version>1.21</jmh.version>
