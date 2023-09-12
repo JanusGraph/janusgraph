@@ -40,7 +40,7 @@ jobs:
           java-version: '8.0.372+7'
           java-package: jdk
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Login to DockerHub
