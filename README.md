@@ -53,7 +53,7 @@ tools:
 * [Gremlin-Visualizer](https://github.com/prabushitha/gremlin-visualizer)
 * [G.V() - Gremlin IDE](https://gdotv.com)
 * [KeyLines by Cambridge Intelligence](https://cambridge-intelligence.com/keylines/janusgraph/)
-* [Linkurious](https://doc.linkurio.us/ogma/latest/tutorials/janusgraph/)
+* [Ogma by Linkurious](https://doc.linkurious.com/ogma/latest/tutorials/janusgraph/)
 * [ReGraph by Cambridge Intelligence](https://cambridge-intelligence.com/regraph/)
 * [Tom Sawyer Perspectives](https://www.tomsawyer.com/perspectives/)
 
@@ -107,7 +107,7 @@ tools:
 
     * janusgraph-announce+subscribe (at) lists.lfaidata.foundation
     * janusgraph-announce+unsubscribe (at) lists.lfaidata.foundation
-    
+
 ## Contributing
 
 Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information, including
