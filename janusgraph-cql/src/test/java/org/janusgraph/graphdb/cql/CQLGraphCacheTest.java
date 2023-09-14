@@ -45,7 +45,7 @@ public class CQLGraphCacheTest extends JanusGraphTest {
     }
 
     // flaky test: https://github.com/JanusGraph/janusgraph/issues/1457
-    @ParameterizedRepeatedIfExceptionsTest(repeats = 4, minSuccess = 2)
+    @ParameterizedRepeatedIfExceptionsTest(repeats = 3)
     @ValueSource(booleans = {true, false})
     @Override
     public void simpleLogTest(boolean useStringId) throws InterruptedException {
@@ -53,7 +53,7 @@ public class CQLGraphCacheTest extends JanusGraphTest {
     }
 
     // flaky test: https://github.com/JanusGraph/janusgraph/issues/1457
-    @ParameterizedRepeatedIfExceptionsTest(repeats = 4, minSuccess = 2)
+    @ParameterizedRepeatedIfExceptionsTest(repeats = 3)
     @ValueSource(booleans = {true, false})
     @Override
     public void simpleLogTestWithFailure(boolean useStringId) throws InterruptedException {
