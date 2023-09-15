@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.es;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
@@ -25,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.File;
-import java.util.concurrent.ExecutionException;
 
 import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 
@@ -41,13 +39,6 @@ public class BerkeleyElasticsearchTest extends ElasticsearchJanusGraphIndexTest 
         return getBerkeleyJEConfiguration();
     }
 
-    // flaky test: https://github.com/JanusGraph/janusgraph/issues/3960
-    @RepeatedIfExceptionsTest(repeats = 3)
-    @Override
-    public void indexShouldNotExistAfterDeletion() throws Exception {
-        super.indexShouldNotExistAfterDeletion();
-    }
-
     /**
      * Test {@link org.janusgraph.example.GraphOfTheGodsFactory#create(String)}.
      */
@@ -60,19 +51,5 @@ public class BerkeleyElasticsearchTest extends ElasticsearchJanusGraphIndexTest 
         GraphOfTheGodsFactory.load(gotg);
         JanusGraphIndexTest.assertGraphOfTheGods(gotg);
         gotg.close();
-    }
-
-    // flaky test: https://github.com/JanusGraph/janusgraph/issues/3651
-    @RepeatedIfExceptionsTest(repeats = 3)
-    @Override
-    public void testDisableAndDiscardManuallyAndDropEnabledIndex() throws Exception {
-        super.testDisableAndDiscardManuallyAndDropEnabledIndex();
-    }
-
-    // flaky test: https://github.com/JanusGraph/janusgraph/issues/3931
-    @RepeatedIfExceptionsTest(repeats = 3)
-    @Override
-    public void testDiscardAndDropRegisteredIndex() throws ExecutionException, InterruptedException {
-        super.testDiscardAndDropRegisteredIndex();
     }
 }
