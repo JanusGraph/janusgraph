@@ -50,6 +50,7 @@ tools:
   plugin for Apache TinkerPop
 * [Graphexp](https://github.com/bricaud/graphexp)
 * [Graph Explorer](https://github.com/invanalabs/graph-explorer)
+* [Graphlytic](https://graphlytic.com/)
 * [Gremlin-Visualizer](https://github.com/prabushitha/gremlin-visualizer)
 * [G.V() - Gremlin IDE](https://gdotv.com)
 * [KeyLines by Cambridge Intelligence](https://cambridge-intelligence.com/keylines/janusgraph/)
