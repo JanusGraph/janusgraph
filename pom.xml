@@ -118,7 +118,7 @@
         <log4j2.version>2.20.0</log4j2.version>
         <graalvm-nativeimage.version>23.1.0</graalvm-nativeimage.version>
         <caffeine.version>2.9.3</caffeine.version>
-        <checker-qual.version>3.36.0</checker-qual.version>
+        <checker-qual.version>3.39.0</checker-qual.version>
     </properties>
     <modules>
         <module>janusgraph-grpc</module>
