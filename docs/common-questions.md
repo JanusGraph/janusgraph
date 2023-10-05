@@ -54,7 +54,7 @@ is to allow ghost vertices temporarily and clearing them out in regular
 time intervals.
 
 Another option is to detect them at read-time using the option
-`checkInternalVertexExistence()` documented in [Transaction Configuration](interactions/transactions.md#transaction-configuration).
+`checkInternalVertexExistence()` documented in [Transaction Configuration](basics/transactions.md#transaction-configuration).
 
 ## Debug-level Logging Slows Execution
 

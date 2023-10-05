@@ -80,7 +80,7 @@ JanusGraph.
 ### Limited Mixed Index Support
 
 Mixed indexes only support a subset of the data types that JanusGraph
-supports. See [Mixed Index Data Types](../interactions/search-predicates.md#data-type-support) for a current
+supports. See [Mixed Index Data Types](../basics/search-predicates.md#data-type-support) for a current
 listing. Also, mixed indexes do not currently support property keys with
 SET or LIST cardinality.
 

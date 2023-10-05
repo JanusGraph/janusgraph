@@ -218,7 +218,7 @@ g.V().or(__.has('name', textContains('hercules')), __.has('age', inside(20, 50))
 ```
 
 Mixed indexes support full-text search, range search, geo search and
-others. Refer to [Search Predicates and Data Types](../../interactions/search-predicates.md) for a list of predicates
+others. Refer to [Search Predicates and Data Types](../../basics/search-predicates.md) for a list of predicates
 supported by a particular indexing backend.
 
 !!! note

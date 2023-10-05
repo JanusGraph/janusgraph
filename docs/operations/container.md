@@ -69,7 +69,7 @@ When the container is started it will execute files with the extension
 Gremlin Console.
 These scripts are only executed after the JanusGraph Server instance was
 started.
-So, they can [connect to it](../interactions/connecting/index.md) and execute Gremlin traversals.
+So, they can [connect to it](../basics/connecting/index.md) and execute Gremlin traversals.
 
 For example, to add a vertex to the graph, create a file
 `/docker-entrypoint-initdb.d/add-vertex.groovy` with the following content:

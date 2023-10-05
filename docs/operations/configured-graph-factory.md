@@ -453,7 +453,7 @@ It is recommended to use a sessioned connection when creating a
 Configured Graph Factory template. If a sessioned connection is not used
 the Configured Graph Factory Template creation must be sent to the
 server as a single line using semi-colons. See details on sessions can
-be found in [Connecting to Gremlin Server](../interactions/connecting/index.md).
+be found in [Connecting to Gremlin Server](../basics/connecting/index.md).
 
 ```groovy
 gremlin> :remote connect tinkerpop.server conf/remote.yaml session

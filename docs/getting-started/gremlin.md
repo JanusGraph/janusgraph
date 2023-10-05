@@ -39,7 +39,7 @@ information on Gremlin, refer to the following resources:
 - [Gremlin for SQL developers](http://sql2gremlin.com): Learn Gremlin
     using typical patterns found when querying data with SQL.
 
-In addition to these resources, [Connecting to JanusGraph](../interactions/connecting/index.md) explains how Gremlin
+In addition to these resources, [Connecting to JanusGraph](../basics/connecting/index.md) explains how Gremlin
 can be used in different programming languages to query a JanusGraph
 Server.
 
@@ -163,7 +163,7 @@ traversal above is correct.
 !!! note
     The Gremlin overview presented in this section focused on the
     Gremlin-Groovy language implementation used in the Gremlin Console.
-    Refer to [Connecting to JanusGraph](../interactions/connecting/index.md) for information about connecting to
+    Refer to [Connecting to JanusGraph](../basics/connecting/index.md) for information about connecting to
     JanusGraph with other languages than Groovy and independent of the
     Gremlin Console.
 

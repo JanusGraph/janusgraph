@@ -175,7 +175,7 @@ The following strategies can be used to mitigate this issue:
 
 **Existence checks**  
 Configure transactions to (double) check for the existence of vertices
-prior to returning them. Please see [Transaction Configuration](../interactions/transactions.md#transaction-configuration) for more
+prior to returning them. Please see [Transaction Configuration](../basics/transactions.md#transaction-configuration) for more
 information and note that this can significantly decrease performance.
 Note, that this does not fix the inconsistencies but hides some of them
 from the user.
