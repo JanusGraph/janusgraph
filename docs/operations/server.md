@@ -9,7 +9,7 @@ against one or more JanusGraph instances hosted within it. This section
 will describe how to use the WebSocket configuration, as well as
 describe how to configure JanusGraph Server to handle HTTP endpoint
 interactions. For information about how to connect to a JanusGraph
-Server from different languages refer to [Connecting to JanusGraph](../interactions/connecting/index.md).
+Server from different languages refer to [Connecting to JanusGraph](../basics/connecting/index.md).
 
 ## Starting a JanusGraph Server
 

@@ -750,7 +750,7 @@ after the keyword `serializers`. This will add the support on the server site.
 ```
 !!! note 
     The java driver is the only driver that currently supports GraphBinary, 
-    see [Connecting to JanusGraph using Java](interactions/connecting/java.md).
+    see [Connecting to JanusGraph using Java](basics/connecting/java.md).
 
 !!! note
     Version 1.0.0 moves everything under `org.apache.tinkerpop.gremlin.driver.ser` package to
