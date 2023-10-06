@@ -27,7 +27,6 @@ import com.sleepycat.je.OperationResult;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Put;
 import com.sleepycat.je.ReadOptions;
-import com.sleepycat.je.ThreadInterruptedException;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.WriteOptions;
 import org.janusgraph.diskstorage.BackendException;
@@ -49,10 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-
-import static org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager.convertThreadInterruptedException;
 
 public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
@@ -64,13 +60,13 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     public static Function<Integer, Integer> ttlConverter = ttl -> (int) Math.max(1, Duration.of(ttl, ChronoUnit.SECONDS).toHours());
 
 
-    private final AtomicReference<Database> db = new AtomicReference<>();
+    private final Database db;
     private final String name;
     private final BerkeleyJEStoreManager manager;
     private boolean isOpen;
 
     public BerkeleyJEKeyValueStore(String n, Database data, BerkeleyJEStoreManager m) {
-        db.set(data);
+        db = data;
         name = n;
         manager = m;
         isOpen = true;
@@ -78,7 +74,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
     public DatabaseConfig getConfiguration() throws BackendException {
         try {
-            return db.get().getConfig();
+            return db.getConfig();
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
         }
@@ -96,7 +92,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
     private Cursor openCursor(StoreTransaction txh) throws BackendException {
         Preconditions.checkArgument(txh!=null);
-        return ((BerkeleyJETx) txh).openCursor(db.get());
+        return ((BerkeleyJETx) txh).openCursor(db);
     }
 
     private static void closeCursor(StoreTransaction txh, Cursor cursor) {
@@ -104,16 +100,10 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         ((BerkeleyJETx) txh).closeCursor(cursor);
     }
 
-    void reopen(final Database db) {
-        this.db.set(db);
-    }
-
     @Override
     public synchronized void close() throws BackendException {
         try {
-            if (isOpen) db.get().close();
-        } catch (ThreadInterruptedException ignored) {
-            // environment will be closed
+            if(isOpen) db.close();
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
         }
@@ -130,7 +120,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
             log.trace("db={}, op=get, tx={}", name, txh);
 
-            OperationResult result = db.get().get(tx, databaseKey, data, Get.SEARCH, getReadOptions(txh));
+            OperationResult result = db.get(tx, databaseKey, data, Get.SEARCH, getReadOptions(txh));
 
             if (result != null) {
                 return getBuffer(data);
@@ -163,7 +153,6 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         final DatabaseEntry foundKey = keyStart.as(ENTRY_FACTORY);
         final DatabaseEntry foundData = new DatabaseEntry();
         final Cursor cursor = openCursor(txh);
-        final ReadOptions readOptions = getReadOptions(txh);
 
         return new RecordIterator<KeyValueEntry>() {
             private OperationStatus status;
@@ -193,9 +182,9 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
                 }
                 while (!selector.reachedLimit()) {
                     if (status == null) {
-                        status = get(Get.SEARCH_GTE, readOptions);
+                        status = cursor.get(foundKey, foundData, Get.SEARCH_GTE, getReadOptions(txh)) == null ? OperationStatus.NOTFOUND : OperationStatus.SUCCESS;
                     } else {
-                        status = get(Get.NEXT, readOptions);
+                        status = cursor.get(foundKey, foundData, Get.NEXT, getReadOptions(txh)) == null ? OperationStatus.NOTFOUND : OperationStatus.SUCCESS;
                     }
                     if (status != OperationStatus.SUCCESS) {
                         break;
@@ -212,16 +201,6 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
                     }
                 }
                 return null;
-            }
-
-            private OperationStatus get(Get get, ReadOptions readOptions) {
-                try {
-                    return cursor.get(foundKey, foundData, get, readOptions) == null
-                        ? OperationStatus.NOTFOUND
-                        : OperationStatus.SUCCESS;
-                } catch (ThreadInterruptedException e) {
-                    throw convertThreadInterruptedException(e);
-                }
             }
 
             @Override
@@ -258,17 +237,13 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
             int convertedTtl = ttlConverter.apply(ttl);
             writeOptions.setTTL(convertedTtl, TimeUnit.HOURS);
         }
-        try {
-            if (allowOverwrite) {
-                OperationResult result = db.get().put(tx, key.as(ENTRY_FACTORY), value.as(ENTRY_FACTORY), Put.OVERWRITE, writeOptions);
-                EnvironmentFailureException.assertState(result != null);
-                status = OperationStatus.SUCCESS;
-            } else {
-                OperationResult result = db.get().put(tx, key.as(ENTRY_FACTORY), value.as(ENTRY_FACTORY), Put.NO_OVERWRITE, writeOptions);
-                status = result == null ? OperationStatus.KEYEXIST : OperationStatus.SUCCESS;
-            }
-        } catch (ThreadInterruptedException e) {
-            throw convertThreadInterruptedException(e);
+        if (allowOverwrite) {
+            OperationResult result = db.put(tx, key.as(ENTRY_FACTORY), value.as(ENTRY_FACTORY), Put.OVERWRITE, writeOptions);
+            EnvironmentFailureException.assertState(result != null);
+            status = OperationStatus.SUCCESS;
+        } else {
+            OperationResult result = db.put(tx, key.as(ENTRY_FACTORY), value.as(ENTRY_FACTORY), Put.NO_OVERWRITE, writeOptions);
+            status = result == null ? OperationStatus.KEYEXIST : OperationStatus.SUCCESS;
         }
 
         if (status != OperationStatus.SUCCESS) {
@@ -282,12 +257,10 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         Transaction tx = getTransaction(txh);
         try {
             log.trace("db={}, op=delete, tx={}", name, txh);
-            OperationStatus status = db.get().delete(tx, key.as(ENTRY_FACTORY));
+            OperationStatus status = db.delete(tx, key.as(ENTRY_FACTORY));
             if (status != OperationStatus.SUCCESS && status != OperationStatus.NOTFOUND) {
                 throw new PermanentBackendException("Could not remove: " + status);
             }
-        } catch (ThreadInterruptedException e) {
-            throw convertThreadInterruptedException(e);
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
         }

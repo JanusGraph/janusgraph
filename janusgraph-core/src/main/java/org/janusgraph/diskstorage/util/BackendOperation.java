@@ -21,7 +21,6 @@ import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,8 +75,6 @@ public class BackendOperation {
                     lastException = storeEx;
                 } else if (e instanceof BackendException) {
                     throw (BackendException)e;
-                } else if (e instanceof TraversalInterruptedException) {
-                    throw (TraversalInterruptedException)e;
                 } else {
                     throw new PermanentBackendException("Permanent exception while executing backend operation "+exe.toString(),e);
                 }
