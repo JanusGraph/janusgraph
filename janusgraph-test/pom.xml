@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>0.6.4-SNAPSHOT</version>
+        <version>0.6.4</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-test</artifactId>
