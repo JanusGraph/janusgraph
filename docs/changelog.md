@@ -121,6 +121,18 @@ to this change, JanusGraph automatically casts IDs of string type to long type i
 auto conversion is disabled. If you have a vertex with ID 1234, `g.V("1234")` would no longer help you
 find the vertex - you would have to do `g.V(1234)` now.
 
+##### Allow removal of global config
+
+Users could now remove global config keys by setting its value to null as follows:
+
+```groovy
+mgmt = graph.openManagement()
+mgmt.set("<config_key>", null)
+mgmt.commit()
+```
+
+Note that you cannot use the above command to drop an external index backend if it has mixed indexes.
+
 ##### New index management
 
 The index management has received an overhaul which enables proper index removal.
