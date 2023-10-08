@@ -93,8 +93,9 @@
         <test.skip.tp>true</test.skip.tp>
         <top.level.basedir>${basedir}</top.level.basedir>
         <maven.javadoc.version>3.5.0</maven.javadoc.version>
-        <compiler.source>1.8</compiler.source>
-        <compiler.target>1.8</compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.release>11</maven.compiler.release>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <cassandra.version>3.11.10</cassandra.version>
@@ -360,8 +361,6 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.11.0</version>
                     <configuration>
-                        <source>${compiler.source}</source>
-                        <target>${compiler.target}</target>
                         <compilerArguments>
                             <Xmaxerrs>500</Xmaxerrs>
                         </compilerArguments>
@@ -1430,14 +1429,6 @@
     </dependencies>
 
     <profiles>
-        <profile>
-            <id>java-11</id>
-            <properties>
-                <compiler.source>11</compiler.source>
-                <compiler.target>11</compiler.target>
-            </properties>
-        </profile>
-
         <profile>
             <id>janusgraph-release</id>
             <!--

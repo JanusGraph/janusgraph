@@ -108,12 +108,7 @@ COLLECTED_JAVA_OPTIONS_FILE=""
 
 # Read user-defined JVM options from jvm.options file
 if [[ -z "$JAVA_OPTIONS_FILE" ]]; then
-  jver=$($JAVA -version 2>&1 | grep 'version' 2>&1 | awk -F\" '{ split($2,a,"."); print a[1]"."a[2]}')
-  if [[ $jver == "1.8" ]]; then                
-    JAVA_OPTIONS_FILE="$JANUSGRAPH_CONF/jvm-8.options"
-  else
-    JAVA_OPTIONS_FILE="$JANUSGRAPH_CONF/jvm-11.options"
-  fi
+  JAVA_OPTIONS_FILE="$JANUSGRAPH_CONF/jvm.options"
 fi
 if [[ -f "$JAVA_OPTIONS_FILE" ]]; then
   for opt in "$(grep '^-' $JAVA_OPTIONS_FILE)"

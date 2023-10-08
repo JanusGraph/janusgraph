@@ -56,7 +56,7 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v3
         with:
-          java-version: "8.0.382+5"
+          java-version: "11.0.21+9"
           distribution: zulu
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
@@ -69,11 +69,8 @@ jobs:
       matrix:
         include:
           - args: ""
-            java: 8
+            java: "11.0.21+9"
             tag_suffix: ""
-          - args: "-Pjava-11"
-            java: 11
-            tag_suffix: "-java-11"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v3
@@ -82,11 +79,6 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-      - uses: actions/setup-java@v3
-        if: "matrix.java == 8"
-        with:
-          java-version: "8.0.382+5"
-          distribution: zulu
       - uses: actions/setup-java@v3
         if: "matrix.java == 11"
         with:
@@ -126,45 +118,23 @@ jobs:
         include:
           - module: inmemory
             args: "-Dtest.skip.tp=false -DskipTests=true"
-            java: 8
-          - module: berkeleyje
-            args: "-Dtest.skip.tp=false -DskipTests=true"
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-byteordered -Dtest.skip.tp=false -DskipTests=true"
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-murmur -Dtest.skip.tp=false -DskipTests=true"
-            java: 8
-          - module: hbase
-            args: "-Dtest.skip.tp=false -DskipTests=true"
-            java: 8
-          - module: inmemory
-            install-args: "-Pjava-11"
-            args: "-Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: berkeleyje
-            install-args: "-Pjava-11"
             args: "-Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: cql
-            install-args: "-Pjava-11"
             args: "-Pcassandra3-byteordered -Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: cql
-            install-args: "-Pjava-11"
             args: "-Pcassandra3-murmur -Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: cql
-            install-args: "-Pjava-11"
             args: "-Pcassandra4-byteordered -Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: cql
-            install-args: "-Pjava-11"
             args: "-Pcassandra4-murmur -Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: hbase
-            install-args: "-Pjava-11"
             args: "-Dtest.skip.tp=false -DskipTests=true"
             java: 11
     steps:

@@ -42,36 +42,17 @@ jobs:
       matrix:
         include:
           - module: driver
-            java: 8
-          - module: server
-            java: 8
-          - module: test
-            java: 8
-          - module: inmemory
-            args: "-Dtest.skip.tp=false"
-            java: 8
-          - module: berkeleyje
-            java: 8
-          - module: lucene
-            java: 8
-          - module: driver
-            install-args: "-Pjava-11"
             java: 11
           - module: server
-            install-args: "-Pjava-11"
             java: 11
           - module: test
-            install-args: "-Pjava-11"
             java: 11
           - module: inmemory
-            install-args: "-Pjava-11"
             args: "-Dtest.skip.tp=false"
             java: 11
           - module: berkeleyje
-            install-args: "-Pjava-11"
             java: 11
           - module: lucene
-            install-args: "-Pjava-11"
             java: 11
     steps:
       - run: 'echo "No build required"'

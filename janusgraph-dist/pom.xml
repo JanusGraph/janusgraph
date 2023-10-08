@@ -346,15 +346,6 @@
 
     <profiles>
         <profile>
-            <id>java-11</id>
-            <properties>
-                <packname.standard>janusgraph-java-11-${project.version}</packname.standard>
-                <packname.full>janusgraph-java-11-full-${project.version}</packname.full>
-                <docker.baseimage>eclipse-temurin:11-jre</docker.baseimage>
-                <docker.tag-suffix>-java-11</docker.tag-suffix>
-            </properties>
-        </profile>
-        <profile>
             <id>use-scylla</id>
             <properties>
                 <cql-module>janusgraph-scylla</cql-module>
