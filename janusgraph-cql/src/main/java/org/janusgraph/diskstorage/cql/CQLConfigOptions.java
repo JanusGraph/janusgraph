@@ -764,7 +764,7 @@ public interface CQLConfigOptions {
         "(https://enterprise.docs.scylladb.com/branch-2022.2/faq.html#how-can-i-change-the-maximum-number-of-in-restrictions). " +
         "For AstraDB this limit is set to 20 and usually it's fixed. However, you can ask customer support for a possibility to change " +
         "the default threshold to your desired configuration via `partition_keys_in_select_failure_threshold` " +
-        "and `in_select_cartesian_product_failure_threshold` threshold configurations (https://docs.datastax.com/en/astra-serverless/docs/plan/planning.html#_cassandra_yaml).\n" +
+        "and `in_select_cartesian_product_failure_threshold` threshold configurations (https://docs.datastax.com/en/astra-serverless/docs/plan/planning.html#_cassandra_yaml).<br>" +
         "Ensure that your storage backend allows more IN selectors than the one set via this configuration.";
 
     ConfigOption<Boolean> SLICE_GROUPING_ALLOWED = new ConfigOption<>(
@@ -773,7 +773,7 @@ public interface CQLConfigOptions {
         "If `true` this allows multiple Slice queries which are allowed to be performed as non-range " +
             "queries (i.e. direct equality operation) to be grouped together into a single CQL query via `IN` operator. " +
             "Notice, currently only operations to fetch properties with Cardinality.SINGLE are allowed to be performed as non-range queries " +
-            "(edges fetching or properties with Cardinality SET or LIST won't be grouped together).\n" +
+            "(edges fetching or properties with Cardinality SET or LIST won't be grouped together).<br>" +
             "If this option is `false` then each Slice query will be executed in a separate asynchronous CQL query even when " +
             "grouping is allowed.",
         ConfigOption.Type.MASKABLE,
@@ -782,8 +782,8 @@ public interface CQLConfigOptions {
     ConfigOption<Integer> SLICE_GROUPING_LIMIT = new ConfigOption<>(
         CQL_GROUPING_NS,
         "slice-limit",
-        "Maximum amount of grouped together slice queries into a single CQL query.\n" + MAX_IN_CONFIG_MSG +
-            "\nThis option is used only when `"+SLICE_GROUPING_ALLOWED.toStringWithoutRoot()+"` is `true`.",
+        "Maximum amount of grouped together slice queries into a single CQL query.<br>" + MAX_IN_CONFIG_MSG +
+            "<br>This option is used only when `"+SLICE_GROUPING_ALLOWED.toStringWithoutRoot()+"` is `true`.",
         ConfigOption.Type.MASKABLE,
         20);
 
@@ -791,14 +791,14 @@ public interface CQLConfigOptions {
         CQL_GROUPING_NS,
         "keys-allowed",
         "If `true` this allows multiple partition keys to be grouped together into a single CQL query via `IN` operator based on the keys grouping strategy provided " +
-            "(usually grouping is done by same token-ranges or same replica sets, but may also involve shard ids for custom implementations).\n" +
-            "Notice, that any CQL query grouped with more than 1 key will require to return a row key for any column fetched.\n" +
-            "This option is useful when less amount of CQL queries is desired to be sent for read requests in expense of fetching more data (partition key per each fetched value).\n" +
+            "(usually grouping is done by same token-ranges or same replica sets, but may also involve shard ids for custom implementations).<br>" +
+            "Notice, that any CQL query grouped with more than 1 key will require to return a row key for any column fetched.<br>" +
+            "This option is useful when less amount of CQL queries is desired to be sent for read requests in expense of fetching more data (partition key per each fetched value).<br>" +
             "Notice, different storage backends may have different way of executing multi-partition `IN` queries " +
             "(including, but not limited to how the checksum queries are sent for different consistency levels, processing node CPU usage, disk access pattern, etc.). Thus, a proper " +
-            "benchmarking is needed to determine if keys grouping is useful or not per case by case scenario.\n" +
-            "This option can be enabled only for storage backends which support `PER PARTITION LIMIT`. As such, this feature can't be used with Amazon Keyspaces because it doesn't support `PER PARTITION LIMIT`.\n" +
-            "If this option is `false` then each partition key will be executed in a separate asynchronous CQL query even when multiple keys from the same token range are queried.\n" +
+            "benchmarking is needed to determine if keys grouping is useful or not per case by case scenario.<br>" +
+            "This option can be enabled only for storage backends which support `PER PARTITION LIMIT`. As such, this feature can't be used with Amazon Keyspaces because it doesn't support `PER PARTITION LIMIT`.<br>" +
+            "If this option is `false` then each partition key will be executed in a separate asynchronous CQL query even when multiple keys from the same token range are queried.<br>" +
             "Notice, the default grouping strategy does not take shards into account. Thus, this might be inefficient with ScyllaDB storage backend. " +
             "ScyllaDB specific keys grouping strategy should be implemented after the resolution of the [ticket #232](https://github.com/scylladb/java-driver/issues/232).",
         ConfigOption.Type.MASKABLE,
@@ -809,13 +809,13 @@ public interface CQLConfigOptions {
         "keys-class",
         "Full class path of the keys grouping execution strategy. The class should implement " +
             "`org.janusgraph.diskstorage.cql.strategy.GroupedExecutionStrategy` interface and have a public constructor " +
-            "with two arguments `org.janusgraph.diskstorage.configuration.Configuration` and `org.janusgraph.diskstorage.cql.CQLStoreManager`.\n" +
-            "Shortcuts available:\n" +
-            "- `"+GroupedExecutionStrategyBuilder.TOKEN_RANGE_AWARE +"` - groups partition keys which belong to the same token range. Notice, this strategy does not take shards into account. Thus, this might be inefficient with ScyllaDB storage backend.\n" +
-            "- `"+GroupedExecutionStrategyBuilder.REPLICAS_AWARE +"` - groups partition keys which belong to the same replica sets (same nodes). Notice, this strategy does not take shards into account. Thus, this might be inefficient with ScyllaDB storage backend.\n" +
-            "\nUsually `"+GroupedExecutionStrategyBuilder.TOKEN_RANGE_AWARE+"` grouping strategy provides more smaller groups where each group contain keys which are stored close to each other on a disk and may cause less disk seeks in some cases. " +
+            "with two arguments `org.janusgraph.diskstorage.configuration.Configuration` and `org.janusgraph.diskstorage.cql.CQLStoreManager`.<br>" +
+            "Shortcuts available:<br>" +
+            "- `"+GroupedExecutionStrategyBuilder.TOKEN_RANGE_AWARE +"` - groups partition keys which belong to the same token range. Notice, this strategy does not take shards into account. Thus, this might be inefficient with ScyllaDB storage backend.<br>" +
+            "- `"+GroupedExecutionStrategyBuilder.REPLICAS_AWARE +"` - groups partition keys which belong to the same replica sets (same nodes). Notice, this strategy does not take shards into account. Thus, this might be inefficient with ScyllaDB storage backend.<br>" +
+            "<br>Usually `"+GroupedExecutionStrategyBuilder.TOKEN_RANGE_AWARE+"` grouping strategy provides more smaller groups where each group contain keys which are stored close to each other on a disk and may cause less disk seeks in some cases. " +
             "However `"+GroupedExecutionStrategyBuilder.REPLICAS_AWARE+"` grouping strategy groups keys per replica set which usually means fewer bigger groups to be used (i.e. less CQL requests)." +
-            "\nThis option takes effect only when `"+KEYS_GROUPING_ALLOWED.toStringWithoutRoot()+"` is `true`.",
+            "<br>This option takes effect only when `"+KEYS_GROUPING_ALLOWED.toStringWithoutRoot()+"` is `true`.",
         ConfigOption.Type.MASKABLE,
         GroupedExecutionStrategyBuilder.REPLICAS_AWARE);
 
@@ -823,9 +823,9 @@ public interface CQLConfigOptions {
         CQL_GROUPING_NS,
         "keys-limit",
         "Maximum amount of the keys which can be grouped together into a single CQL query. " +
-            "If more keys are queried, they are going to be grouped into separate CQL queries.\n"
+            "If more keys are queried, they are going to be grouped into separate CQL queries.<br>"
             + MAX_IN_CONFIG_MSG +
-            "\nThis option takes effect only when `"+KEYS_GROUPING_ALLOWED.toStringWithoutRoot()+"` is `true`.",
+            "<br>This option takes effect only when `"+KEYS_GROUPING_ALLOWED.toStringWithoutRoot()+"` is `true`.",
         ConfigOption.Type.MASKABLE,
         20);
 
@@ -833,10 +833,10 @@ public interface CQLConfigOptions {
         CQL_GROUPING_NS,
         "keys-min",
         "Minimum amount of keys to consider for grouping. Grouping will be skipped for any multi-key query " +
-            "which has less than this amount of keys (i.e. a separate CQL query will be executed for each key in such case).\n" +
+            "which has less than this amount of keys (i.e. a separate CQL query will be executed for each key in such case).<br>" +
             "Usually this configuration should always be set to `2`. It is useful to increase the value only in cases when queries " +
             "with more keys should not be grouped, but be performed separately to increase parallelism in expense of the network overhead." +
-            "\nThis option takes effect only when `"+KEYS_GROUPING_ALLOWED.toStringWithoutRoot()+"` is `true`.",
+            "<br>This option takes effect only when `"+KEYS_GROUPING_ALLOWED.toStringWithoutRoot()+"` is `true`.",
         ConfigOption.Type.MASKABLE,
         2);
 }

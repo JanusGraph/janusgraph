@@ -262,12 +262,12 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<>(QUERY_NS,"fast-property",
             "Whether to pre-fetch all properties on first singular vertex property access. This can eliminate backend calls on subsequent " +
                     "property access for the same vertex at the expense of retrieving all properties at once. This can be " +
-                    "expensive for vertices with many properties. \n" +
+                    "expensive for vertices with many properties. <br>" +
                     "This setting is applicable to direct vertex properties access " +
                     "(like `vertex.properties(\"foo\")` but not to `vertex.properties(\"foo\",\"bar\")` because the latter case " +
-                    "is not a singular property access). \n" +
+                    "is not a singular property access). <br>" +
                     "This setting is not applicable to the next Gremlin steps: `valueMap`, `propertyMap`, `elementMap`, `properties`, `values` " +
-                    "(configuration option `query.batch.properties-mode` should be used to configure their behavior).\n" +
+                    "(configuration option `query.batch.properties-mode` should be used to configure their behavior).<br>" +
                     "When `true` this setting overwrites `query.batch.has-step-mode` to `"+MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName()+"` unless `"+
                     MultiQueryHasStepStrategyMode.NONE.getConfigName()+"` mode is used.",
             ConfigOption.Type.MASKABLE, true);
@@ -342,14 +342,14 @@ public class GraphDatabaseConfiguration {
                 "Supported modes:<br>" +
                 "- `%s` - Pre-fetch all vertex properties on any property access (fetches all vertex properties in a single slice query)<br>" +
                 "- `%s` - Pre-fetch necessary vertex properties for the whole chain of foldable `has` steps (uses a separate slice query per each required property)<br>" +
-                "- `%s` - Prefetch the same properties as with `%s` mode, but also prefetch\n" +
-                "properties which may be needed in the next properties access step like `values`, `properties,` `valueMap`, `elementMap`, or `propertyMap`.\n" +
-                "In case the next step is not one of those properties access steps then this mode behaves same as `%s`.\n" +
-                "In case the next step is one of the properties access steps with limited scope of properties, those properties will be\n" +
-                "pre-fetched together in the same multi-query.\n" +
-                "In case the next step is one of the properties access steps with unspecified scope of property keys then this mode\n" +
+                "- `%s` - Prefetch the same properties as with `%s` mode, but also prefetch<br>" +
+                "properties which may be needed in the next properties access step like `values`, `properties,` `valueMap`, `elementMap`, or `propertyMap`.<br>" +
+                "In case the next step is not one of those properties access steps then this mode behaves same as `%s`.<br>" +
+                "In case the next step is one of the properties access steps with limited scope of properties, those properties will be<br>" +
+                "pre-fetched together in the same multi-query.<br>" +
+                "In case the next step is one of the properties access steps with unspecified scope of property keys then this mode<br>" +
                 "behaves same as `%s`.<br>"+
-                "- `%s` - Prefetch the same properties as with `%s`, but in case the next step is not\n" +
+                "- `%s` - Prefetch the same properties as with `%s`, but in case the next step is not<br>" +
                 "`values`, `properties,` `valueMap`, `elementMap`, or `propertyMap` then acts like `%s`.<br>"+
                 "- `%s` - Skips `has` step batch properties pre-fetch optimization.<br>",
             MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName(),
