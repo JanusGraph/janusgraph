@@ -79,8 +79,20 @@ compile "org.janusgraph:janusgraph-scylla:1.0.0"
     The manual process described below is temporary and should be replaced by automated process after the issue
     [janusgraph/janusgraph#3580](https://github.com/JanusGraph/janusgraph/issues/3580) is resolved.
 
-In case `scylla` storage option is needed to be used in JanusGraph distribution then it's necessary to replace the next libraries 
-in `lib` directory (all libraries can be downloaded via Maven Central Repository). 
+In case `scylla` storage option is needed to be used in JanusGraph distribution then it's necessary to replace the next 
+DataStax provided CQL driver with Scylla provided CQL driver.
+The default JanusGraph distribution builds contain only DataStax drivers, but not Scylla drivers because they are conflicting. 
+However, it's possible to build the same distribution build but with Scylla drivers enabled instead. 
+To do this, you can use the following command inside the JanusGraph repository:
+```groovy tab='Bash'
+mvn clean install -Pjanusgraph-release -Puse-scylla -DskipTests=true --batch-mode --also-make -Dgpg.skip=true
+```
+
+This command will generate distribution builds (both normal and full distribution build) in the 
+following directory: `janusgraph-dist/target/`.   
+
+Otherwise, if you can't build distribution on your own, you can use the JanusGraph provided distribution and replace 
+the following libraries in `lib` directory (all libraries can be downloaded via Maven Central Repository). 
 - `org.janusgraph:janusgraph-cql` with `org.janusgraph:janusgraph-scylla`
 - `org.janusgraph:cassandra-hadoop-util` with `org.janusgraph:scylla-hadoop-util`
 - `com.datastax.oss:java-driver-core` with `com.scylladb:java-driver-core`

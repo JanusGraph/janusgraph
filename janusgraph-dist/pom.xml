@@ -38,6 +38,9 @@
         <skipDefaultDistroIT>${it.skip}</skipDefaultDistroIT>
 
         <doc.dir>${project.parent.basedir}/docs</doc.dir>
+
+        <cql-module>janusgraph-cql</cql-module>
+        <cql-hadoop-module>cassandra-hadoop-util</cql-hadoop-module>
     </properties>
 
     <dependencies>
@@ -45,7 +48,32 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>janusgraph-all</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>janusgraph-cql</artifactId>
+                    <groupId>${project.groupId}</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>cassandra-hadoop-util</artifactId>
+                    <groupId>${project.groupId}</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
+        <!-- Either "janusgraph-cql" or "janusgraph-scylla" -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${cql-module}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Either "cassandra-hadoop-util" or "scylla-hadoop-util" -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${cql-hadoop-module}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
@@ -324,6 +352,13 @@
                 <packname.full>janusgraph-java-11-full-${project.version}</packname.full>
                 <docker.baseimage>eclipse-temurin:11-jre</docker.baseimage>
                 <docker.tag-suffix>-java-11</docker.tag-suffix>
+            </properties>
+        </profile>
+        <profile>
+            <id>use-scylla</id>
+            <properties>
+                <cql-module>janusgraph-scylla</cql-module>
+                <cql-hadoop-module>scylla-hadoop-util</cql-hadoop-module>
             </properties>
         </profile>
         <profile>
