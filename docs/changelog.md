@@ -114,17 +114,59 @@ See [this](https://tinkerpop.apache.org/docs/current/upgrade/#_creation_of_new_g
 GraphSON serializers are renamed, e.g. from `org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0` to `org.apache.tinkerpop.gremlin.util.ser.GraphSONMessageSerializerV3`.
 See [this](https://tinkerpop.apache.org/docs/current/upgrade/#_serializer_renaming) for more detail.
 
-##### String vertex ID support
+##### String vertex ID support (breaking change)
 
 Users now can use custom string vertex ids. See [Custom Vertex ID](advanced-topics/custom-vertex-id.md) documentation. Prior
 to this change, JanusGraph automatically casts IDs of string type to long type if possible. Now this
 auto conversion is disabled. If you have a vertex with ID 1234, `g.V("1234")` would no longer help you
 find the vertex - you would have to do `g.V(1234)` now.
 
+This feature brings about a breaking change to GraphBinary serializer. As such, users who use [GraphBinary](https://tinkerpop.apache.org/docs/3.7.0/dev/io/#graphbinary)
+serialization format must update JanusGraph server and all clients at once, since the change is backward
+incompatible.
+
+!!! warning
+    Even if you don't enable string vertex id feature, you are still impacted as long as you
+    use GraphBinary serializer.
+
+##### Upgrade of log4j to version 2
+
+This change requires a new log4j configuration. You can find an example configuration in `conf/log4j2-server.xml`. As a result of the changed configuration format,
+we clean up all configurations. This could lead to unexpected new log lines. Please open an issue, if you see any unwanted log line.
+
+!!! note
+    Log4j is only used for standalone server deployments and JanusGraph testing.
+
+##### Removal of cassandra-all dependency
+
+JanusGraph had a dependency on cassandra-all only for some Hadoop-related classes. We moved these few classes into
+a new module cassandra-hadoop-util to reduce the dependencies of JanusGraph. If you are running embedded JanusGraph with
+Cassandra, you have to exclude the `cassandra-hadoop-util` from `janusgraph-cql`.
+
+##### Drop support for HBase 1
+
+We are dropping support for HBase 1.
+
+##### Drop support for Solr 7
+
+We are dropping support for Solr 7.
+
+##### Drop support for Gryo MessageSerializer
+
+Support for Gryo MessageSerializer [has been dropped in TinkerPop 3.6.0](https://tinkerpop.apache.org/docs/3.6.1/upgrade/#_removed_gryo_messageserializers)
+and we therefore also no longer support it in JanusGraph.
+GraphBinary is now used as the default MessageSerializer.
+
+##### Remove support for old serialization format of JanusGraph predicates
+
+We are dropping support for old serialization format of JanusGraph predicates. The old predicates serialization format is only used by client older than 0.6.
+The change only affects GraphSON.
+
 ##### New index management
 
 The index management has received an overhaul which enables proper index removal.
-The schema action `REMOVE_INDEX` is no longer available and has been replaced by `DISCARD_INDEX`.
+The schema action `REMOVE_INDEX` is no longer available and has been replaced by `DISCARD_INDEX`. See
+[Index Lifecycle](schema/index-management/index-lifecycle.md) documentation for more details.
 
 ##### `totals` for direct index queries now applies provided offset and limit
 
@@ -160,34 +202,6 @@ JanusGraph now officially supports Java 11 in addition to Java 8. We encourage e
 
 !!! note
     The pre-packaged distribution now requires Java 11.
-
-##### Upgrade of log4j to version 2
-
-This change requires a new log4j configuration. You can find an example configuration in `conf/log4j2-server.xml`. As a result of the changed configuration format,
-we clean up all configurations. This could lead to unexpected new log lines. Please open an issue, if you see any unwanted log line.
-
-!!! note
-    Log4j is only used for standalone server deployments and JanusGraph testing.
-
-##### Removal of cassandra-all dependency
-
-JanusGraph had a dependency on cassandra-all only for some Hadoop-related classes. We moved these few classes into
-a new module cassandra-hadoop-util to reduce the dependencies of JanusGraph. If you are running JanusGraph with
-an embeded Cassandra, you have to exclude the `cassandra-hadoop-util` from `janusgraph-cql`.
-
-##### Drop support for HBase 1
-
-We are dropping support for HBase 1.
-
-##### Drop support for Solr 7
-
-We are dropping support for Solr 7.
-
-##### Drop support for Gryo MessageSerializer
-
-Support for Gryo MessageSerializer [has been dropped in TinkerPop 3.6.0](https://tinkerpop.apache.org/docs/3.6.1/upgrade/#_removed_gryo_messageserializers)
-and we therefore also no longer support it in JanusGraph.
-GraphBinary is now used as the default MessageSerializer.hb
 
 ##### Batch Processing enabled by default. Configuration changes.
 
@@ -251,22 +265,7 @@ deep, it could result for some vertices to be re-fetched again which would mean 
 In such situations `closest_repeat_parent` mode might be more preferable than `all_repeat_parents`.  
 With `closest_repeat_parent` mode vertices for batch registration will be received from the start of the closest 
 `repeat` step as well as the end of the closest `repeat` step (for the next iteration). Any other parent `repeat` steps 
-will be ignored. 
-
-##### Breaking change for Geoshape GraphBinary serialization
-
-Support for the [GraphBinary](http://tinkerpop.apache.org/docs/3.6.1/dev/io/#graphbinary) serialization format was
-added in JanusGraph 0.6.0. This also included support to serialize Geoshapes via GraphBinary. The implementation of the
-Geoshape serializer was unfortunately closely tied to the Java library `Spatial4j` that we are using to implement
-Geoshapes in Java. This made it very complicated to add support for GraphBinary in other languages than Java. To make
-it easier to support GraphBinary in non-Java environments like .NET, we have completely reimplemented the GraphBinary
-serialization of Geoshapes in this version.
-
-This is a breaking change for users who have already adopted GraphBinary and who are using Geoshapes. It is necessary
-to update JanusGraph Server and all (Java) clients that use GraphBinary at the same time since JanusGraph Server with
-an older version will not be able to read a Geoshape created by a client that is already on version 1.0.0 and vice
-versa.
-Users who do not use GraphBinary yet or who are not using Geoshapes are not affected by this change.
+will be ignored.
 
 ##### ConfiguredGraphFactory now creates separate indices per graph in Elasticsearch
 
@@ -278,11 +277,6 @@ CQL keyspace name for example.
 
 Users who don't want to use this feature can simply continue providing the index name via `index.[X].index-name` in the
 template configuration.
-
-##### Remove support for old serialization format of JanusGraph predicates
-
-We are dropping support for old serialization format of JanusGraph predicates. The old predicates serialization format is only used by client older than 0.6.
-The change only affects GraphSON.
 
 ##### Mixed index aggregation optimization
 
@@ -397,7 +391,7 @@ See additional properties to control grouping configurations under the namespace
 * RemovableRelationIterator class
 * ImmutableConfiguration class
 
-### Version 0.6.4 (Release Date: ???)
+### Version 0.6.4 (Release Date: October 14, 2023)
 
 ```xml tab='Maven'
 <dependency>
@@ -419,7 +413,7 @@ compile "org.janusgraph:janusgraph-core:0.6.4"
 * Elasticsearch 6.0.1, 6.6.0, 7.14.0
 * Apache Lucene 8.9.0
 * Apache Solr 7.7.2, 8.11.0
-* Apache TinkerPop 3.5.5
+* Apache TinkerPop 3.5.7
 * Java 1.8
 
 #### Changes
