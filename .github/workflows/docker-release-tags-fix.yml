@@ -15,7 +15,8 @@
 name: Apply docker tags to the official JanusGraph release v0.6.4
 
 on:
-  push:
+  release:
+    types: [released,edited]
 
 env:
   LATEST_RELEASE: 0.6
