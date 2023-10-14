@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph-examples</artifactId>
-        <version>0.6.4</version>
+        <version>0.6.5-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>example-tinkergraph</artifactId>
