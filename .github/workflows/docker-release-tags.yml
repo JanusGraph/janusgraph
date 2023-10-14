@@ -26,6 +26,12 @@ jobs:
     runs-on: ubuntu-22.04
     if: "!contains(github.event.release.tag_name, '-') && !github.event.release.prerelease"
     steps:
+      - uses: actions/checkout@v4
+      - name: GET DOCKER TOKEN
+        run: |
+          curl  -u ${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }} -s -o test.json "https://auth.docker.io/token?service=registry.docker.io&scope=repository:janusgraph/janusgraph:pull,push"
+          TOKEN=$(cat test.json | jq -r '.token')
+          echo "DOCKER_SHORT_TOKEN=${TOKEN}" >> $GITHUB_ENV
       - name: EXTRACT VERSION
         run: |
           MINOR_VERSION=$(echo "${{ github.event.release.tag_name }}" | grep -Eo '[0-9]+\.[0-9]+' | head -1)
@@ -49,7 +55,7 @@ jobs:
           registry: index.docker.io
           repository: janusgraph/janusgraph
           target: ${{ env.PATCH_VERSION }}-${{ env.REVISION }}
-          token: ${{ secrets.DOCKERHUB_TOKEN }}
+          token: "${{ env.DOCKER_SHORT_TOKEN }}"
           tags: |
             ${{ env.PATCH_VERSION }}
             ${{ env.MINOR_VERSION }}
@@ -69,6 +75,6 @@ jobs:
           registry: index.docker.io
           repository: janusgraph/janusgraph
           target: ${{ env.PATCH_VERSION }}-${{ env.REVISION }}
-          token: ${{ secrets.DOCKERHUB_TOKEN }}
+          token: ${{ env.DOCKER_SHORT_TOKEN }}
           tags: |
             latest
