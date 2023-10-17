@@ -68,8 +68,10 @@ jobs:
         include:
           - args: ""
             java: 8
+            tag_suffix: ""
           - args: "-Pjava-11"
             java: 11
+            tag_suffix: "-java-11"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v3
@@ -95,6 +97,22 @@ jobs:
         with:
           name: distribution-builds
           path: janusgraph-dist/target/janusgraph-*.zip
+      - name: Set JanusGraph version environment variable
+        run: |
+          export JG_VER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)-$(git rev-parse --short HEAD)"
+          echo "JG_VER=${JG_VER}" >> $GITHUB_ENV
+      - name: Run Trivy vulnerability scanner
+        if: github.repository == 'janusgraph/janusgraph'
+        uses: aquasecurity/trivy-action@0.12.0
+        with:
+          image-ref: 'ghcr.io/janusgraph/janusgraph:${{ env.JG_VER }}${{ matrix.tag_suffix }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: github.repository == 'janusgraph/janusgraph'
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
 
   tp-tests:
     runs-on: ubuntu-22.04
