@@ -267,6 +267,8 @@ With `closest_repeat_parent` mode vertices for batch registration will be receiv
 `repeat` step as well as the end of the closest `repeat` step (for the next iteration). Any other parent `repeat` steps 
 will be ignored.
 
+See detailed `repeat` step batch processing explanation [here](https://medium.com/@porunov/janusgraph-1-0-0-batch-queries-multi-query-14abc8f66d93#b09f).
+
 ##### ConfiguredGraphFactory now creates separate indices per graph in Elasticsearch
 
 If the ConfiguredGraphFactory is used together with Elasticsearch as the index backend, then the same Elasticsearch

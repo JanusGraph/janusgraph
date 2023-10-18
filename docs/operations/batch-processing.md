@@ -304,6 +304,8 @@ Thus, JanusGraph provides a configuration option `query.batch.repeat-step-mode` 
    (for the first iterations), the `and` step input (for the first iterations), and from the `out("knows")` output 
    (for the next iterations).
 
+See `repeat` step batch processing explanation [here](https://medium.com/@porunov/janusgraph-1-0-0-batch-queries-multi-query-14abc8f66d93#b09f).
+
 #### Batch processing for `match` step
 
 Currently, JanusGraph supports vertices registration for batch processing inside individual local traversals of the `match` 
