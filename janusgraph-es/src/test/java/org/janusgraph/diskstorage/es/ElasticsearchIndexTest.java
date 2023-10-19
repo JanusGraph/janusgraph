@@ -230,6 +230,8 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
 
         switch (JanusGraphElasticsearchContainer.getEsMajorVersion().value){
             case 8:
+                assertTrue(message.contains("document_parsing_exception"));
+                break;
             case 7:
             case 6:
                 assertTrue(message.contains("mapper_parsing_exception"));

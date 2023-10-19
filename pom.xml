@@ -74,8 +74,7 @@
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.15.3</jackson2.version>
         <lucene-solr.version>8.11.2</lucene-solr.version>
-        <!-- When this version updated please also update sha512 -->
-        <elasticsearch.version>8.6.0</elasticsearch.version>
+        <elasticsearch.version>8.10.4</elasticsearch.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <zookeeper.version>3.8.1</zookeeper.version>
