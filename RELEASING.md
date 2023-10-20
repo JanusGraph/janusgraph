@@ -187,6 +187,7 @@ Update version-sensitive files in the root and documentation sources in the `doc
 
 * `docs/changelog.md` - Add / finalize release section
 * `mkdocs.yml` - Update `latest_version` and check all others package versions. 
+* `.github/workflows/docker-release-tags.yml` - if you are publishing **latest** minor of major release you should also update `LATEST_RELEASE` in the file (ignoring patch version). This is temporary until the process is automated (see [issue #3905](https://github.com/JanusGraph/janusgraph/issues/3905)).
 
 You may also need to update the following files in the main repo for any new or updated dependencies:
 
@@ -342,6 +343,15 @@ Log into Sonatype and select the [staging repository](https://oss.sonatype.org/#
 Once the release is selected click `Release`.  
 The staging directory should be automatically deleted after the release is completed.  
 The release artifacts will be synched over to Maven Central in about 2 hours.  
+
+### Create a new branch if needed
+
+In case the release was happening in `master` branch (which is used for `latest` minor or major version), 
+you need to create a new branch in the format `v${major_version}.${minor_version}` (the patch version is ignored).
+Also, if it's a new major release, ensure the branch is protected by going to [Branch protection rules](https://github.com/JanusGraph/janusgraph/settings/branches) 
+and creating the same protection rules as were used for `master` branch.
+This step is necessary to ensure that the next commit (snapshot restoration commit) triggers documentation build process 
+and the new branch name will be added into the documentation's dropdown menu as the latest release. 
 
 ### Update from pre-release to release
 
