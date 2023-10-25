@@ -361,7 +361,7 @@ and the new branch name will be added into the documentation's dropdown menu as 
 
 Restore the `<scm>` to `<tag>HEAD</tag>` in the root `pom.xml` file.
 Also update `snapshot_version` in the `mkdocs.yml`.
-If you had created a new branch, ensure you also update `targetBranchChoices` in the `.backportrc.json`.
+If you had created a new branch, ensure you also update `targetBranchChoices` in the `.backportrc.json` and `labels` in `.github/dependabot.yml`.
 These changes can be pushed with a CTR commit.
 
 ### Update from pre-release to release
