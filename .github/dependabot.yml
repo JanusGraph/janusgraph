@@ -11,7 +11,7 @@ updates:
       patterns:
         - "junit*"
   labels:
-    - "backport/v0.6"
+    - "backport/v1.0"
     - "dependencies"
     - "java"
 
@@ -22,5 +22,5 @@ updates:
     time: "11:00"
   open-pull-requests-limit: 10
   labels:
-    - "backport/v0.6"
+    - "backport/v1.0"
     - "dependencies"
