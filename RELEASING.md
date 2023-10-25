@@ -353,11 +353,6 @@ and creating the same protection rules as were used for `master` branch.
 This step is necessary to ensure that the next commit (snapshot restoration commit) triggers documentation build process 
 and the new branch name will be added into the documentation's dropdown menu as the latest release. 
 
-### Update from pre-release to release
-
-Edit the release on GitHub and uncheck the box for pre-release.  
-Verify that on the release page that the release is now labeled "Latest Release".
-
 ### Prepare the next snapshot release
 
 ```Shell
@@ -366,7 +361,13 @@ Verify that on the release page that the release is now labeled "Latest Release"
 
 Restore the `<scm>` to `<tag>HEAD</tag>` in the root `pom.xml` file.
 Also update `snapshot_version` in the `mkdocs.yml`.
+If you had created a new branch, ensure you also update `targetBranchChoices` in the `.backportrc.json`.
 These changes can be pushed with a CTR commit.
+
+### Update from pre-release to release
+
+Edit the release on GitHub and uncheck the box for pre-release.
+Verify that on the release page that the release is now labeled "Latest Release".
 
 ### Announce the new release
 
