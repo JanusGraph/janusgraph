@@ -65,6 +65,13 @@ public interface CQLConfigOptions {
             ConfigOption.Type.MASKABLE,
             CQLStoreManager.CONSISTENCY_QUORUM);
 
+    ConfigOption<Integer> INIT_WAIT_TIME = new ConfigOption<>(
+            CQL_NS,
+            "init-wait-time",
+            "Number of milliseconds to sleep after creating each keyspace/table, only needed if table creation " +
+            "is asynchronous, e.g. Amazon Keyspace",
+            ConfigOption.Type.LOCAL, Integer.class);
+
     ConfigOption<Boolean> ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS =
         new ConfigOption<>(CQL_NS, "only-use-local-consistency-for-system-operations",
             "True to prevent any system queries from using QUORUM consistency " +
