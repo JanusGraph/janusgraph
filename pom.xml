@@ -59,7 +59,7 @@
         <tinkerpop.version>3.7.0</tinkerpop.version>
         <avro.version>1.11.3</avro.version>
         <junit-platform.version>1.10.0</junit-platform.version>
-        <junit.version>5.10.0</junit.version>
+        <junit.version>5.10.1</junit.version>
         <mockito.version>4.11.0</mockito.version>
         <jamm.version>0.3.3</jamm.version>
         <metrics.version>4.2.21</metrics.version>
