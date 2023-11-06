@@ -28,6 +28,7 @@ import io.vavr.collection.HashMap;
 import io.vavr.collection.Iterator;
 import io.vavr.collection.Seq;
 import io.vavr.concurrent.Future;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.PermanentBackendException;
@@ -70,6 +71,7 @@ import static io.vavr.API.Match;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BACK_PRESSURE_CLASS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BACK_PRESSURE_LIMIT;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.INIT_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.NETWORK_TOPOLOGY_REPLICATION_STRATEGY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.REPLICATION_FACTOR;
@@ -232,6 +234,14 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             .ifNotExists()
             .withReplicationOptions(replication)
             .build());
+
+        if (configuration.has(INIT_WAIT_TIME) && configuration.get(INIT_WAIT_TIME) > 0) {
+            try {
+                Thread.sleep(configuration.get(INIT_WAIT_TIME));
+            } catch (InterruptedException e) {
+                throw new JanusGraphException("Interrupted while waiting for keyspace initialization to complete", e);
+            }
+        }
     }
 
     public ExecutorService getExecutorService() {

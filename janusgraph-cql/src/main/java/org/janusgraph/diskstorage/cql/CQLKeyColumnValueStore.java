@@ -37,6 +37,7 @@ import io.vavr.collection.Array;
 import io.vavr.collection.Iterator;
 import io.vavr.control.Try;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -86,6 +87,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYP
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.GC_GRACE_SECONDS;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.INIT_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.SPECULATIVE_RETRY;
 import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TIMESTAMPS;
@@ -187,6 +189,13 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
         if(shouldInitializeTable()) {
             initializeTable(this.session, this.storeManager.getKeyspaceName(), tableName, configuration);
+            if (configuration.has(INIT_WAIT_TIME) && configuration.get(INIT_WAIT_TIME) > 0) {
+                try {
+                    Thread.sleep(configuration.get(INIT_WAIT_TIME));
+                } catch (InterruptedException e) {
+                    throw new JanusGraphException("Interrupted while waiting for table initialization to complete", e);
+                }
+            }
         }
 
         if (this.storeManager.getFeatures().hasOrderedScan()) {

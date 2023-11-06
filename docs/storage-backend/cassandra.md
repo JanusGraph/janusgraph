@@ -334,6 +334,11 @@ storage.password=<your-service-password>
 storage.cql.keyspace=janusgraph
 storage.cql.local-datacenter=<your-datacenter, e.g. ap-east-1>
 
+# Wait for 30 seconds after each table creation, since
+# Amazon Keyspace creates tables asynchronously. Remember to
+# remove this option from config file after the creation of the graph.
+storage.cql.init-wait-time=30000
+
 # SSL related settings
 storage.cql.ssl.enabled=true
 storage.cql.ssl.truststore.location=<your-trust-store-location>
@@ -380,9 +385,11 @@ would likely see error message like
     At the same time, you should be able to see the same table getting created on Amazon Keyspaces console UI.
     The creation process typically takes a few seconds. Once the creation is done, you could open
     the graph again, and the error will be gone. Unfortunately, you would *have to* follow the same process
-    for all tables. Alternatively, you could create the tables on AWS manually, if you are familiar with
-    JanusGraph. Typically nine tables are needed: `edgestore`, `edgestore_lock_`, `graphindex`, `graphindex_lock_`,
-    `janusgraph_ids`, `	system_properties`, `system_properties_lock_`, `systemlog`, and `txlog`.
+    for all tables. To address this problem, you could set `storage.cql.init-wait-time=30000` in your config 
+    file to wait for 30 seconds (or any other duration you feel suitable) after creating each table. You should
+    remove this config after the creation of the graph. Alternatively, you could create the tables on AWS manually,
+    if you are familiar with JanusGraph. Typically nine tables are needed: `edgestore`, `edgestore_lock_`,
+    `graphindex`, `graphindex_lock_`, `janusgraph_ids`, `	system_properties`, `system_properties_lock_`, `systemlog`, and `txlog`.
 
 ## Deploying on Amazon EC2
 
