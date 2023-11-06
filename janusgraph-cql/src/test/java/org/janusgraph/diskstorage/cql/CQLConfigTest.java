@@ -65,6 +65,7 @@ import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_C
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_SHUTDOWN_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.FILE_CONFIGURATION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.HEARTBEAT_TIMEOUT;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.INIT_WAIT_TIME;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.METADATA_SCHEMA_ENABLED;
@@ -201,6 +202,14 @@ public class CQLConfigTest {
         JanusGraphManagement mgmt = graph.openManagement();
         assertEquals(JanusGraphConstants.STORAGE_VERSION, (mgmt.get("graph.storage-version")));
         mgmt.rollback();
+    }
+
+    @Test
+    public void testInitWaitTime() {
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(INIT_WAIT_TIME), 5000);
+        graph = (StandardJanusGraph) JanusGraphFactory.open(wc);
+        assertTrue(graph.isOpen());
     }
 
     private String getCurrentPartitionerName() {
