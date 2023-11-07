@@ -103,7 +103,7 @@ jobs:
           echo "JG_VER=${JG_VER}" >> $GITHUB_ENV
       - name: Run Trivy vulnerability scanner
         if: github.repository == 'janusgraph/janusgraph'
-        uses: aquasecurity/trivy-action@0.12.0
+        uses: aquasecurity/trivy-action@0.14.0
         with:
           image-ref: 'ghcr.io/janusgraph/janusgraph:${{ env.JG_VER }}${{ matrix.tag_suffix }}'
           format: 'sarif'
