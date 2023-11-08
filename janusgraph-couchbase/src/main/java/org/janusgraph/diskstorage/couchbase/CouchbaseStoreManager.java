@@ -72,6 +72,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static org.janusgraph.diskstorage.couchbase.CouchbaseConfigOptions.CLUSTER_CONNECT_STRING;
+import static org.janusgraph.diskstorage.couchbase.CouchbaseConfigOptions.CLUSTER_PARALLELISM;
 import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_CONNECT_BUCKET;
 import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_CONNECT_PASSWORD;
 import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_CONNECT_USERNAME;
@@ -95,6 +96,8 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
     private final String bucketName;
     private final Cluster cluster;
     private final String defaultScopeName;
+
+    private final int parallelism;
     private static final ConcurrentHashMap<String, Collection> openStoreDbs = new ConcurrentHashMap<String, Collection>();
     public static final int PORT_DEFAULT = 8091;  // Not used. Just for the parent constructor.
     private static final CouchbaseColumnConverter columnConverter = CouchbaseColumnConverter.INSTANCE;
@@ -108,6 +111,7 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
         String connectString = configuration.get(CLUSTER_CONNECT_STRING);
         String user = configuration.get(CLUSTER_CONNECT_USERNAME);
         String password = configuration.get(CLUSTER_CONNECT_PASSWORD);
+        String parallelism = configuration.get(CLUSTER_PARALLELISM);
         this.bucketName = configuration.get(CLUSTER_CONNECT_BUCKET);
 
         defaultScopeName = configuration.get(CLUSTER_DEFAULT_SCOPE);
@@ -120,6 +124,9 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
         }
         if (password == null || password.isEmpty()) {
             throw new PermanentBackendException("Couchbase connect password is not specified");
+        }
+        if (parallelism == null || parallelism.isEmpty()) {
+            throw new PermanentBackendException("Couchbase slice query parallelism is not specified");
         }
 
         // open the db or connect to the cluster
@@ -147,6 +154,13 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
 
         String clusterConnectString = configuration.get(CLUSTER_CONNECT_STRING);
         log.info("Couchbase connect string: {}", clusterConnectString);
+
+        try {
+            this.parallelism = Integer.parseInt(parallelism);
+            log.info("Using {} for parallel slice fetching", this.parallelism);
+        } catch (NumberFormatException nfe) {
+            throw new PermanentBackendException("Unable to parse cluster-parallelism setting", nfe);
+        }
 
         /*features = new StandardStoreFeatures.Builder()
                     .orderedScan(true)
@@ -271,7 +285,7 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
 
             log.debug("Opened database collection {}", name);
 
-            CouchbaseKeyColumnValueStore store = new CouchbaseKeyColumnValueStore(this, name, bucketName, defaultScopeName, cluster);
+            CouchbaseKeyColumnValueStore store = new CouchbaseKeyColumnValueStore(this, name, bucketName, defaultScopeName, cluster, parallelism);
             stores.put(name, store);
             return store;
         } catch (Exception e) {

@@ -42,6 +42,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.MultiKeysQueryGroups;
 import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
@@ -58,6 +59,9 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 import static com.couchbase.client.java.query.QueryOptions.queryOptions;
@@ -74,11 +78,15 @@ public class CouchbaseKeyColumnValueStore implements KeyColumnValueStore {
     private final String table;
     private Collection storeDb;
 
+    private int parallelism;
+    private ForkJoinPool sliceQueryExecutionPool;
+
     CouchbaseKeyColumnValueStore(CouchbaseStoreManager storeManager,
                                  String table,
                                  String bucketName,
                                  String scopeName,
-                                 Cluster cluster) {
+                                 Cluster cluster,
+                                 int parallelism) {
         this.storeManager = storeManager;
         this.bucketName = bucketName;
         this.scopeName = scopeName;
@@ -86,6 +94,11 @@ public class CouchbaseKeyColumnValueStore implements KeyColumnValueStore {
         this.table = table;
         this.collectionName = table;
         this.entryGetter = new CouchbaseGetter(storeManager.getMetaDataSchema(this.table));
+        this.parallelism = parallelism;
+
+        if (parallelism > 1) {
+            sliceQueryExecutionPool = new ForkJoinPool(parallelism + 1 /* adding one additional thread for the main task */);
+        }
     }
 
     protected void open(Bucket bucket, String scopeName) throws PermanentBackendException {
@@ -159,6 +172,39 @@ public class CouchbaseKeyColumnValueStore implements KeyColumnValueStore {
                 key -> key,
                 key -> rows.getOrDefault(key, EntryList.EMPTY_LIST)
         ));
+    }
+
+    @Override
+    public Map<SliceQuery, Map<StaticBuffer, EntryList>> getMultiSlices(MultiKeysQueryGroups<StaticBuffer, SliceQuery> multiKeysQueryGroups, StoreTransaction txh) throws BackendException {
+        if (parallelism > 1) {
+            final CompletableFuture<Map<SliceQuery, Map<StaticBuffer, EntryList>>> future = new CompletableFuture<>();
+            sliceQueryExecutionPool.execute(() -> {
+               future.complete(
+                   multiKeysQueryGroups.getQueryGroups().stream()
+                       .parallel()
+                       .flatMap(queriesForKeysPair -> {
+                           List<StaticBuffer> keys = queriesForKeysPair.getKeysGroup();
+                           return queriesForKeysPair.getQueries().stream()
+                               .parallel()
+                               .map(query -> {
+                                   try {
+                                       return new Object[] {query, getSlice(keys, query, txh)};
+                                   } catch (BackendException e) {
+                                       throw new RuntimeException(e);
+                                   }
+                               });
+                       })
+                       .collect(Collectors.toMap(sliceResult -> (SliceQuery) sliceResult[0], sliceResult -> (Map<StaticBuffer, EntryList>)sliceResult[1]))
+               );
+            });
+            try {
+                return future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return KeyColumnValueStore.super.getMultiSlices(multiKeysQueryGroups, txh);
+        }
     }
 
     @Override

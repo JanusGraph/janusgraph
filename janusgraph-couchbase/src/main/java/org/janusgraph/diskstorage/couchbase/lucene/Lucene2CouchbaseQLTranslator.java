@@ -157,7 +157,7 @@ public abstract class Lucene2CouchbaseQLTranslator {
                 });
 
         return SearchQuery.disjuncts(phrases.stream()
-                .map(phrase -> SearchQuery.phrase(phrase.toArray(String[]::new)).field(field.get()))
+                .map(phrase -> SearchQuery.phrase(phrase.stream().toArray(String[]::new)).field(field.get()))
                 .toArray(SearchQuery[]::new));
     }
 

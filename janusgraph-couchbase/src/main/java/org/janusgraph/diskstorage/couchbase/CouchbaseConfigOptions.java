@@ -94,9 +94,15 @@ public interface CouchbaseConfigOptions {
     ConfigOption<String> GET_RANGE_MODE = new ConfigOption<>(
         CB_NS,
         "get-range-mode",
-        "The mod of executing CB getRange, either `iterator` or `list`",
+        "The mode of executing CB getRange, either `iterator` or `list`",
         ConfigOption.Type.LOCAL,
         "list"
     );
 
+    ConfigOption<String> CLUSTER_PARALLELISM = new ConfigOption<>(
+        CB_NS,
+        "cluster-parallelism",
+        "Number of parallel threads in which multi-slice queries are executed",
+        ConfigOption.Type.LOCAL,
+        "1");
 }
