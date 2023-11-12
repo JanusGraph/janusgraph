@@ -79,9 +79,73 @@ the optional index backend.
 
 Instead of connecting to the JanusGraph Server from an application it is
 also possible to embed JanusGraph as a library inside a JVM based
-application. While this reduces the administrative overhead, it makes it
+application. While this reduces the administrative and network overhead, it makes it
 impossible to scale JanusGraph independently of the application.
 Embedded JanusGraph can be deployed as a variation of any of the other
 scenarios. JanusGraph just moves from the server(s) directly into the
 application as its now just used as a library instead of an independent
-service.
+service. You would need to introduce `janusgraph-core` dependency to your
+project, as well as the modules needed for your selected backends. For example,
+if you have a Maven project and you use Cassandra and Lucene as your backends,
+You should add the following dependencies into your `pom.xml`:
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-core</artifactId>
+        <version>${janusgraph.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-cql</artifactId>
+        <version>${janusgraph.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-lucene</artifactId>
+        <version>${janusgraph.version}</version>
+    </dependency>
+</dependencies>
+```
+
+Then you could start a JanusGraph instance in your application code, similar to 
+what you do in gremlin console:
+
+```java
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.schema.JanusGraphManagement;
+
+public class MyGraphApp {
+    public static void main(String[] args) {
+        JanusGraph graph = JanusGraphFactory.open("/path/to/your/config/file");
+        JanusGraphManagement mgmt = graph.openManagement();
+        mgmt.printSchema();
+        mgmt.commit();
+        graph.close();
+    }
+}
+```
+
+#### Gremlin Parser
+
+JanusGraph server could accept adhoc gremlin queries in plain string format, while
+embedded JanusGraph requires you to write Java code for any query. You could develop
+your own DSL (domain specific language) on top of JanusGraph to expose the graph query
+capabilities to end users. Alternatively, you could leverage the built-in Gremlin parser
+to take any gremlin query in plain string format, parse them and execute them in your
+application with JanusGraph embedded. To leverage gremlin parser, check out
+[graph.script-eval](../configs/configuration-reference.md#graphscript-eval). Once you
+turn on the script evaluation option, you could then evaluate gremlin queries using
+`JanusGraph::eval` method:
+
+```groovy
+graph.eval(/* gremlin script */ "g.V().count().next()",                 /* commit */ false);
+graph.eval(/* gremlin script */ "g.addV().next();g.V().count().next()", /* commit */ true)
+```
+
+As shown above, you could pass in a single gremlin query or a gremlin script in
+plain string format. Optionally, you could commit or rollback the script after
+the execution. This is useful when you want to prevent end users from updating the
+graph.
