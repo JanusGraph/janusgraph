@@ -60,4 +60,6 @@ log.user.send-batch-size = 100
 ```
 
 ## Configuration Namespaces and Options
-{!configs/janusgraph-cfg.md!}
+{%
+    include "configs/janusgraph-cfg.md"
+%}
