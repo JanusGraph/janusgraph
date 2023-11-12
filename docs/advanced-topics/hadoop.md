@@ -36,7 +36,7 @@ computations of various OLAP queries may be persisted on the Hadoop file
 system.
 
 For configuring a single node Hadoop cluster, please refer to official
-[Apache Hadoop Docs](https://hadoop.apache.org/docs/r{{hadoop2_version }}/hadoop-project-dist/hadoop-common/SingleCluster.html)
+[Apache Hadoop Docs](https://hadoop.apache.org/docs/r{{ hadoop2_version }}/hadoop-project-dist/hadoop-common/SingleCluster.html)
 
 Once you have a Hadoop cluster up and running, we will need to specify
 the Hadoop configuration files in the `CLASSPATH`. The below document
@@ -252,7 +252,6 @@ gremlin> g.E().count()
 
 Other Vertex Programs
 ---------------------
-
 Apache TinkerPop provides various vertex programs. A vertex program runs
 on each vertex until either a termination criteria is attained or a
 fixed number of iterations has been reached. Due to the parallel nature
