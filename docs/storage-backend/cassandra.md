@@ -219,7 +219,7 @@ answering, its GC behavior under load is less predictable.
 Cassandra Specific Configuration
 --------------------------------
 
-Refer to [Configuration Reference](../../basics/configuration-reference/) for a complete listing of all Cassandra
+Refer to [Configuration Reference](../basics/configuration-reference.md) for a complete listing of all Cassandra
 specific configuration options in addition to the general JanusGraph
 configuration options.
 
