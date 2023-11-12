@@ -19,25 +19,27 @@ $ docker run --name janusgraph-default janusgraph/janusgraph:latest
 The above command launches a JanusGraph Server instance. We name the container so that we can link a second container to it.
 The server may need a few seconds to start up so be patient and wait for the corresponding log messages to appear.
 
-??? note "Example log"
-    ```
-    SLF4J: Class path contains multiple SLF4J bindings.
-    SLF4J: Found binding in [jar:file:/opt/janusgraph/lib/slf4j-log4j12-1.7.12.jar!/org/slf4j/impl/StaticLoggerBinder.class]
-    SLF4J: Found binding in [jar:file:/opt/janusgraph/lib/logback-classic-1.1.3.jar!/org/slf4j/impl/StaticLoggerBinder.class]
-    SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
-    SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
-    0    [main] INFO  com.jcabi.manifests.Manifests  - 110 attributes loaded from 283 stream(s) in 130ms, 110 saved, 3770 ignored: ["Agent-Class", "Ant-Version", "Archiver-Version", "Automatic-Module-Name", "Bnd-LastModified", "Boot-Class-Path", "Branch", "Build-Date", "Build-Host", "Build-Id", "Build-Java-Version", "Build-Jdk", "Build-Job", "Build-Number", "Build-Timestamp", "Build-Version", "Built-At", "Built-By", "Built-Date", "Built-OS", "Built-On", "Built-Status", "Bundle-ActivationPolicy", "Bundle-Activator", "Bundle-BuddyPolicy", "Bundle-Category", "Bundle-ClassPath", "Bundle-ContactAddress", "Bundle-Description", "Bundle-DocURL", "Bundle-License", "Bundle-ManifestVersion", "Bundle-Name", "Bundle-NativeCode", "Bundle-RequiredExecutionEnvironment", "Bundle-SymbolicName", "Bundle-Vendor", "Bundle-Version", "Can-Redefine-Classes", "Change", "Class-Path", "Created-By", "DSTAMP", "DynamicImport-Package", "Eclipse-BuddyPolicy", "Eclipse-ExtensibleAPI", "Embed-Dependency", "Embed-Transitive", "Export-Package", "Extension-Name", "Extension-name", "Fragment-Host", "Gradle-Version", "Gremlin-Lib-Paths", "Gremlin-Plugin-Dependencies", "Gremlin-Plugin-Paths", "Ignore-Package", "Implementation-Build", "Implementation-Build-Date", "Implementation-Title", "Implementation-URL", "Implementation-Vendor", "Implementation-Vendor-Id", "Implementation-Version", "Import-Package", "Include-Resource", "JCabi-Build", "JCabi-Date", "JCabi-Version", "Java-Vendor", "Java-Version", "Main-Class", "Manifest-Version", "Maven-Version", "Module-Email", "Module-Origin", "Module-Owner", "Module-Source", "Originally-Created-By", "Os-Arch", "Os-Name", "Os-Version", "Package", "Premain-Class", "Private-Package", "Provide-Capability", "Require-Bundle", "Require-Capability", "Scm-Connection", "Scm-Revision", "Scm-Url", "Specification-Title", "Specification-Vendor", "Specification-Version", "TODAY", "TSTAMP", "Time-Zone-Database-Version", "Tool", "X-Compile-Elasticsearch-Snapshot", "X-Compile-Elasticsearch-Version", "X-Compile-Lucene-Version", "X-Compile-Source-JDK", "X-Compile-Target-JDK", "hash", "implementation-version", "mode", "package", "service", "url", "version"]
-    1    [main] INFO  org.apache.tinkerpop.gremlin.server.GremlinServer  - 3.4.1
-             \,,,/
-             (o o)
-    -----oOOo-(3)-oOOo-----
+/// details | Example log
+    type: note
+```
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/opt/janusgraph/lib/slf4j-log4j12-1.7.12.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/opt/janusgraph/lib/logback-classic-1.1.3.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+0    [main] INFO  com.jcabi.manifests.Manifests  - 110 attributes loaded from 283 stream(s) in 130ms, 110 saved, 3770 ignored: ["Agent-Class", "Ant-Version", "Archiver-Version", "Automatic-Module-Name", "Bnd-LastModified", "Boot-Class-Path", "Branch", "Build-Date", "Build-Host", "Build-Id", "Build-Java-Version", "Build-Jdk", "Build-Job", "Build-Number", "Build-Timestamp", "Build-Version", "Built-At", "Built-By", "Built-Date", "Built-OS", "Built-On", "Built-Status", "Bundle-ActivationPolicy", "Bundle-Activator", "Bundle-BuddyPolicy", "Bundle-Category", "Bundle-ClassPath", "Bundle-ContactAddress", "Bundle-Description", "Bundle-DocURL", "Bundle-License", "Bundle-ManifestVersion", "Bundle-Name", "Bundle-NativeCode", "Bundle-RequiredExecutionEnvironment", "Bundle-SymbolicName", "Bundle-Vendor", "Bundle-Version", "Can-Redefine-Classes", "Change", "Class-Path", "Created-By", "DSTAMP", "DynamicImport-Package", "Eclipse-BuddyPolicy", "Eclipse-ExtensibleAPI", "Embed-Dependency", "Embed-Transitive", "Export-Package", "Extension-Name", "Extension-name", "Fragment-Host", "Gradle-Version", "Gremlin-Lib-Paths", "Gremlin-Plugin-Dependencies", "Gremlin-Plugin-Paths", "Ignore-Package", "Implementation-Build", "Implementation-Build-Date", "Implementation-Title", "Implementation-URL", "Implementation-Vendor", "Implementation-Vendor-Id", "Implementation-Version", "Import-Package", "Include-Resource", "JCabi-Build", "JCabi-Date", "JCabi-Version", "Java-Vendor", "Java-Version", "Main-Class", "Manifest-Version", "Maven-Version", "Module-Email", "Module-Origin", "Module-Owner", "Module-Source", "Originally-Created-By", "Os-Arch", "Os-Name", "Os-Version", "Package", "Premain-Class", "Private-Package", "Provide-Capability", "Require-Bundle", "Require-Capability", "Scm-Connection", "Scm-Revision", "Scm-Url", "Specification-Title", "Specification-Vendor", "Specification-Version", "TODAY", "TSTAMP", "Time-Zone-Database-Version", "Tool", "X-Compile-Elasticsearch-Snapshot", "X-Compile-Elasticsearch-Version", "X-Compile-Lucene-Version", "X-Compile-Source-JDK", "X-Compile-Target-JDK", "hash", "implementation-version", "mode", "package", "service", "url", "version"]
+1    [main] INFO  org.apache.tinkerpop.gremlin.server.GremlinServer  - 3.4.1
+            \,,,/
+            (o o)
+-----oOOo-(3)-oOOo-----
 
-    100  [main] INFO  org.apache.tinkerpop.gremlin.server.GremlinServer  - Configuring Gremlin Server from /etc/opt/janusgraph/gremlin-server.yaml
-    ...
-    ...
-    3965 [gremlin-server-boss-1] INFO  org.apache.tinkerpop.gremlin.server.GremlinServer  - Gremlin Server configured with worker thread pool of 1, gremlin pool of 8 and boss thread pool of 1.
-    3965 [gremlin-server-boss-1] INFO  org.apache.tinkerpop.gremlin.server.GremlinServer  - Channel started at port 8182.
-    ```
+100  [main] INFO  org.apache.tinkerpop.gremlin.server.GremlinServer  - Configuring Gremlin Server from /etc/opt/janusgraph/gremlin-server.yaml
+...
+...
+3965 [gremlin-server-boss-1] INFO  org.apache.tinkerpop.gremlin.server.GremlinServer  - Gremlin Server configured with worker thread pool of 1, gremlin pool of 8 and boss thread pool of 1.
+3965 [gremlin-server-boss-1] INFO  org.apache.tinkerpop.gremlin.server.GremlinServer  - Channel started at port 8182.
+```
+///
 
 We can now instruct Docker to start a second container for the client and link it to the already running server. Here we
 use Gremlin Console (`gremlin.sh`) as the client.
