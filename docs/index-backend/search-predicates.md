@@ -127,15 +127,20 @@ Geoshape.geoshape(Geoshape.getGeometryCollectionBuilder()
 
 In addition, when importing a graph via GraphSON the geometry may be represented by GeoJSON:
 
-```json tab="string"
+/// tab | string
+```json
 "37.97, 23.72"
 ```
+///
 
-```json tab="list"
+/// tab | list
+```json
 [37.97, 23.72]
 ```
+///
 
-```json tab="GeoJSON feature"
+/// tab | GeoJSON feature
+```json
 {
   "type": "Feature",
   "geometry": {
@@ -147,13 +152,16 @@ In addition, when importing a graph via GraphSON the geometry may be represented
   }
 }
 ```
+///
 
-```json tab="GeoJSON geometry"
+/// tab | GeoJSON geometry
+```json
 {
   "type": "Point",
   "coordinates": [125.6, 10.1]
 }
 ```
+///
 
 [GeoJSON](http://geojson.org/) may be specified as Point, Circle, LineString or Polygon. Polygons must be closed.
 Note that unlike the JanusGraph API GeoJSON specifies coordinates as lng lat.
