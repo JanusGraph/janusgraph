@@ -19,17 +19,21 @@ under the same group id `org.janusgraph`, but with different artifact id format.
 Official JanusGraph releases have the next format for artifact id: `MAJOR.MINOR.PATCH`.  
 Dependencies example:
 
-```xml tab='Maven'
+/// tab | Maven
+```xml
 <dependency>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph-core</artifactId>
-    <version>0.6.2</version>
+    <version>1.0.0</version>
 </dependency>
 ```
+///
 
-```groovy tab='Gradle'
-compile "org.janusgraph:janusgraph-core:0.6.2"
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:1.0.0"
 ```
+///
 
 Artifact id for commit releases have the next format: `FOLLOWING_VERSION-DATE-TIME.COMMIT`.  
 
@@ -41,17 +45,21 @@ It has `MAJOR.MINOR.PATCH` format.
 
 Dependencies example:
 
-```xml tab='Maven'
+/// tab | Maven
+```xml
 <dependency>
     <groupId>org.janusgraph</groupId>
     <artifactId>janusgraph-core</artifactId>
     <version>0.6.3-20230104-164606.a49366e</version>
 </dependency>
 ```
+///
 
-```groovy tab='Gradle'
+/// tab | Gradle
+```groovy
 compile "org.janusgraph:janusgraph-core:0.6.3-20230104-164606.a49366e"
 ```
+///
 
 ## JanusGraph distribution builds
 
