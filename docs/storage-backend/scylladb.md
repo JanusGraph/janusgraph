@@ -40,7 +40,8 @@ with `org.janusgraph:janusgraph-scylla` if JanusGraph is used in Embedded Mode.
 In case `janusgraph-all` dependency is used instead of explicit JanusGraph dependencies then the replacement to
 `org.janusgraph:janusgraph-scylla` can be done like below.
 
-```xml tab='Maven'
+/// tab | Maven
+```xml
 <dependencies>
     <!-- Exclude `janusgraph-cql` from `janusgraph-all` -->
     <dependency>
@@ -63,8 +64,9 @@ In case `janusgraph-all` dependency is used instead of explicit JanusGraph depen
     </dependency>
 </dependencies>
 ```
-
-```groovy tab='Gradle'
+///
+/// tab | Gradle
+```groovy
 /* Exclude `janusgraph-cql` from `janusgraph-all` */
 compile("org.janusgraph:janusgraph-all:1.0.0") {
     exclude group: 'org.janusgraph', module: 'janusgraph-cql'
@@ -72,6 +74,7 @@ compile("org.janusgraph:janusgraph-all:1.0.0") {
 /* Include `janusgraph-scylla` */
 compile "org.janusgraph:janusgraph-scylla:1.0.0"
 ```
+///
 
 #### Using Scylla driver in JanusGraph Server provided via the standard distribution builds
 
@@ -84,9 +87,12 @@ DataStax provided CQL driver with Scylla provided CQL driver.
 The default JanusGraph distribution builds contain only DataStax drivers, but not Scylla drivers because they are conflicting. 
 However, it's possible to build the same distribution build but with Scylla drivers enabled instead. 
 To do this, you can use the following command inside the JanusGraph repository:
-```groovy tab='Bash'
+
+/// tab | Bash
+```bash
 mvn clean install -Pjanusgraph-release -Puse-scylla -DskipTests=true --batch-mode --also-make -Dgpg.skip=true
 ```
+///
 
 This command will generate distribution builds (both normal and full distribution build) in the 
 following directory: `janusgraph-dist/target/`.   
