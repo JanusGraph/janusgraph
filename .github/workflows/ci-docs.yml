@@ -21,7 +21,7 @@ on:
       - 'dependabot/**'
 
 env:
-  STRUCTOR_VERSION: v1.11.2
+  STRUCTOR_VERSION: v1.13.2
   BUILD_MAVEN_OPTS: "-DskipTests=true --batch-mode --also-make"
   VERIFY_MAVEN_OPTS: "-Pcoverage"
 
@@ -87,9 +87,9 @@ jobs:
             --menu.js-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs/theme/structor-menu.js.gotmpl" 
             --exp-branch=master --debug
       - run: sudo chown -R $(id -u):$(id -g) .
-      - uses: JamesIves/github-pages-deploy-action@4.0.0-beta-01
+      - uses: JamesIves/github-pages-deploy-action@v4
         with:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          REPOSITORY_NAME: JanusGraph/docs.janusgraph.org
-          BRANCH: master
-          FOLDER: site
+          token: ${{ secrets.ACCESS_TOKEN }}
+          repository-nam: JanusGraph/docs.janusgraph.org
+          branch: master
+          folder: site
