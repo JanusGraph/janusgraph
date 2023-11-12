@@ -42,19 +42,21 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 
 ### Version 0.5.3 (Release Date: December 24, 2020)
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.5.3</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.5.3</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.5.3"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.5.3"
+```
+///
 
 **Tested Compatibility:**
 
@@ -74,19 +76,21 @@ For more information on features and bug fixes in 0.5.3, see the GitHub mileston
 
 ### Version 0.5.2 (Release Date: May 3, 2020)
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.5.2</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.5.2</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.5.2"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.5.2"
+```
+///
 
 **Tested Compatibility:**
 
@@ -116,19 +120,21 @@ than `50000` indexes are used per index store.
 
 ### Version 0.5.1 (Release Date: March 25, 2020)
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.5.1</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.5.1</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.5.1"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.5.1"
+```
+///
 
 **Tested Compatibility:**
 
@@ -163,19 +169,21 @@ configuration as a second parameter (`./bin/gremlin-server.sh ./conf/gremlin-ser
 
 ### Version 0.5.0 (Release Date: March 10, 2020)
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.5.0</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.5.0</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.5.0"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.5.0"
+```
+///
 
 **Tested Compatibility:**
 
@@ -243,19 +251,21 @@ If you are using `janusgraph.sh` to start your instance, the default logging has
 
 ### Version 0.4.1 (Release Date: January 14, 2020)
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.4.1</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.4.1</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.4.1"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.4.1"
+```
+///
 
 **Tested Compatibility:**
 
@@ -285,19 +295,21 @@ for each call (only for the first query which defines a property) if the `Vertex
 ### Version 0.4.0 (Release Date: July 1, 2019)
 Legacy documentation: <https://old-docs.janusgraph.org/0.4.0/index.html>
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.4.0</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.4.0</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.4.0"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.4.0"
+```
+///
 
 **Tested Compatibility:**
 
@@ -344,19 +356,21 @@ If the config distributed by JanusGraph is used for an existing Solr installatio
 
 ### Version 0.3.3 (Release Date: January 11, 2020)
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.3.3</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.3.3</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.3.3"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.3.3"
+```
+///
 
 **Tested Compatibility:**
 
@@ -377,19 +391,21 @@ For more information on features and bug fixes in 0.3.3, see the GitHub mileston
 ### Version 0.3.2 (Release Date: June 16, 2019)
 Legacy documentation: <https://old-docs.janusgraph.org/0.3.2/index.html>
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.3.2</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.3.2</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.3.2"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.3.2"
+```
+///
 
 **Tested Compatibility:**
 
@@ -410,19 +426,21 @@ For more information on features and bug fixes in 0.3.2, see the GitHub mileston
 ### Version 0.3.1 (Release Date: October 2, 2018)
 Legacy documentation: <https://old-docs.janusgraph.org/0.3.1/index.html>
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.3.1</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.3.1</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.3.1"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.3.1"
+```
+///
 
 **Tested Compatibility:**
 
@@ -443,19 +461,21 @@ For more information on features and bug fixes in 0.3.1, see the GitHub mileston
 ### Version 0.3.0 (Release Date: July 31, 2018)
 Legacy documentation: <https://old-docs.janusgraph.org/0.3.0/index.html>
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.3.0</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.3.0</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.3.0"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.3.0"
+```
+///
 
 **Tested Compatibility:**
 
@@ -525,19 +545,21 @@ Once the storage version has been set you should remove `graph.allow-upgrade=tru
 ### Version 0.2.3 (Release Date: May 21, 2019)
 Legacy documentation: <https://old-docs.janusgraph.org/0.2.3/index.html>
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.2.3</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.2.3</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.2.3"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.2.3"
+```
+///
 
 **Tested Compatibility:**
 
@@ -559,19 +581,21 @@ milestone:
 ### Version 0.2.2 (Release Date: October 9, 2018)
 Legacy documentation: <https://old-docs.janusgraph.org/0.2.2/index.html>
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.2.2</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.2.2</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.2.2"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.2.2"
+```
+///
 
 **Tested Compatibility:**
 
@@ -593,19 +617,21 @@ milestone:
 ### Version 0.2.1 (Release Date: July 9, 2018)
 Legacy documentation: <https://old-docs.janusgraph.org/0.2.1/index.html>
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.2.1</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.2.1</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.2.1"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.2.1"
+```
+///
 
 **Tested Compatibility:**
 
@@ -638,19 +664,21 @@ is FIXED, a new graph needs to be created to make any change of the
 ### Version 0.2.0 (Release Date: October 11, 2017)
 Legacy documentation: <https://old-docs.janusgraph.org/0.2.0/index.html>
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.2.0</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.2.0</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.2.0"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.2.0"
+```
+///
 
 **Tested Compatibility:**
 
@@ -745,19 +773,21 @@ the previous sections and migrate to the `REST_CLIENT`.
 ### Version 0.1.1 (Release Date: May 11, 2017)
 Documentation: <https://old-docs.janusgraph.org/0.1.1/index.html>
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.1.1</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.1.1</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.1.1"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.1.1"
+```
+///
 
 **Tested Compatibility:**
 
@@ -779,19 +809,21 @@ milestone:
 ### Version 0.1.0 (Release Date: April 11, 2017)
 Documentation: <https://old-docs.janusgraph.org/0.1.0/index.html>
 
-=== "Maven"
-    ```xml
-    <dependency>
-        <groupId>org.janusgraph</groupId>
-        <artifactId>janusgraph-core</artifactId>
-        <version>0.1.0</version>
-    </dependency>
-    ```
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>0.1.0</version>
+</dependency>
+```
+///
 
-=== "Gradle"
-    ```groovy
-    compile "org.janusgraph:janusgraph-core:0.1.0"
-    ```
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:0.1.0"
+```
+///
 
 **Tested Compatibility:**
 
