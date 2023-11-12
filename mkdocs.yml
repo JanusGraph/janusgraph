@@ -21,8 +21,9 @@ repo_url: 'https://github.com/janusgraph/janusgraph'
 copyright: 'Copyright &copy; 2020 JanusGraph Authors. All rights reserved.<br> The Linux Foundation has registered trademarks and uses trademarks. For a list of<br> trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage</a> page.<br> Cassandra, Groovy, HBase, Hadoop, Lucene, Solr, and TinkerPop are trademarks of the Apache Software Foundation.<br> Berkeley DB and Berkeley DB Java Edition are trademarks of Oracle.'
 
 plugins:
-    - search
-    - markdownextradata
+  - search
+  - macros
+  - include-markdown
 
 theme:
     language: 'en'
@@ -42,25 +43,35 @@ extra_css:
 
 extra:
   social:
-    - type: github-alt
+    - icon: fontawesome/brands/github
       link: https://github.com/janusgraph
-    - type: twitter
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/5n4fjv4QAf
+    - icon: fontawesome/brands/x-twitter
       link: https://twitter.com/janusgraph
-    - type: envelope
-      link: https://groups.google.com/group/janusgraph-users
-    - type: envelope
-      link: https://groups.google.com/group/janusgraph-dev
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/janusgraph
+    - icon: fontawesome/solid/envelope
+      link: https://lists.lfaidata.foundation/g/janusgraph-users
+    - icon: fontawesome/solid/envelope
+      link: https://lists.lfaidata.foundation/g/janusgraph-dev
+  latest_version: 0.4.1
+  snapshot_version: 0.4.2-SNAPSHOT
+  tinkerpop_version: 3.4.4
+  hadoop2_version: 2.7.7
+  jamm_version: 0.3.0
 
 markdown_extensions:
-    - pymdownx.superfences
-    - pymdownx.tabbed
-    - pymdownx.snippets
-    - pymdownx.details
-    - markdown.extensions.admonition
-    - markdown_include.include:
-        base_path: docs
-    - markdown.extensions.codehilite:
-          linenums: True
+  - pymdownx.superfences
+  - pymdownx.blocks.details
+  - pymdownx.blocks.tab:
+      alternate_style: true
+  - markdown.extensions.admonition
+  - markdown.extensions.codehilite:
+      linenums: True
+  - codehilite
+  - attr_list
+  - def_list
 
 nav:
     - Introduction: index.md
@@ -124,10 +135,3 @@ nav:
     - Development: development.md
     - Appendices: appendices.md
     - Changelog: changelog.md
-
-extra:
-    latest_version: 0.4.1
-    snapshot_version: 0.4.2-SNAPSHOT
-    tinkerpop_version: 3.4.4
-    hadoop2_version: 2.7.7
-    jamm_version: 0.3.0

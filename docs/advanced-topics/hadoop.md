@@ -36,7 +36,7 @@ computations of various OLAP queries may be persisted on the Hadoop file
 system.
 
 For configuring a single node Hadoop cluster, please refer to official
-[Apache Hadoop Docs](https://hadoop.apache.org/docs/r{{hadoop2_version }}/hadoop-project-dist/hadoop-common/SingleCluster.html)
+[Apache Hadoop Docs](https://hadoop.apache.org/docs/r{{ hadoop2_version }}/hadoop-project-dist/hadoop-common/SingleCluster.html)
 
 Once you have a Hadoop cluster up and running, we will need to specify
 the Hadoop configuration files in the `CLASSPATH`. The below document
