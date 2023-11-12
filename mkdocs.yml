@@ -22,7 +22,8 @@ copyright: 'Copyright &copy; 2023 JanusGraph Authors. All rights reserved.<br> T
 
 plugins:
   - search
-  - markdownextradata
+  - macros
+  - include-markdown
   - redirects:
       redirect_maps:
         basics/common-questions.md: common-questions.md
@@ -90,12 +91,10 @@ extra:
 
 markdown_extensions:
   - pymdownx.superfences
-  - pymdownx.tabbed
-  - pymdownx.snippets
-  - pymdownx.details
+  - pymdownx.blocks.details
+  - pymdownx.blocks.tab:
+      alternate_style: true
   - markdown.extensions.admonition
-  - markdown_include.include:
-      base_path: docs
   - markdown.extensions.codehilite:
       linenums: True
   - codehilite
@@ -180,5 +179,4 @@ extra:
   latest_version: 1.0.0
   snapshot_version: 1.1.0-SNAPSHOT
   tinkerpop_version: 3.7.0
-  hadoop_version: 3.3.4
-  jamm_version: 0.3.3
+  hadoop_version: 3.3.5
