@@ -65,8 +65,9 @@ plugins:
 theme:
   language: 'en'
   name: 'material'
-  feature:
-    tabs: false
+  features:
+    - navigation.footer
+    - navigation.tabs
   palette:
     primary: 'green'
     accent: 'teal'
@@ -80,14 +81,22 @@ extra_css:
 
 extra:
   social:
-    - type: github-alt
+    - icon: fontawesome/brands/github
       link: https://github.com/janusgraph
-    - type: twitter
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/5n4fjv4QAf
+    - icon: fontawesome/brands/x-twitter
       link: https://twitter.com/janusgraph
-    - type: envelope
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/janusgraph
+    - icon: fontawesome/solid/envelope
       link: https://lists.lfaidata.foundation/g/janusgraph-users
-    - type: envelope
+    - icon: fontawesome/solid/envelope
       link: https://lists.lfaidata.foundation/g/janusgraph-dev
+  latest_version: 1.0.0
+  snapshot_version: 1.1.0-SNAPSHOT
+  tinkerpop_version: 3.7.0
+  hadoop_version: 3.3.5
 
 markdown_extensions:
   - pymdownx.superfences
@@ -174,9 +183,3 @@ nav:
   - Common Questions: common-questions.md
   - Development: development.md
   - Changelog: changelog.md
-
-extra:
-  latest_version: 1.0.0
-  snapshot_version: 1.1.0-SNAPSHOT
-  tinkerpop_version: 3.7.0
-  hadoop_version: 3.3.5
