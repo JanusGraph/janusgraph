@@ -67,7 +67,7 @@ theme:
   name: 'material'
   features:
     - navigation.footer
-    - navigation.tabs
+    - navigation.sections
   palette:
     primary: 'green'
     accent: 'teal'
@@ -76,8 +76,9 @@ theme:
   favicon: 'favicon.ico'
 
 extra_css:
-  - 'theme/structor-menu.css'
   - 'theme/extra.css'
+extra_javascript:
+  - 'theme/js/structor-menu.js'
 
 extra:
   social:
