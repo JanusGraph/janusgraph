@@ -28,6 +28,7 @@ on:
     - 'docs/**'
     - '.github/workflows/ci-docs.yml'
     - 'requirements.txt'
+    - 'mkdocs.yml'
     - 'docs.Dockerfile'
     - '*.md'
 
