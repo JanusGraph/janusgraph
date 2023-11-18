@@ -26,20 +26,22 @@ plugins:
   - include-markdown
 
 theme:
-    language: 'en'
-    name: 'material'
-    feature:
-        tabs: false
-    palette:
-        primary: 'green'
-        accent: 'teal'
-    font: false
-    logo: 'janusgraph-logomark.svg'
-    favicon: 'favicon.ico'
+  language: 'en'
+  name: 'material'
+  features:
+    - navigation.footer
+    - navigation.sections
+  palette:
+    primary: 'green'
+    accent: 'teal'
+  font: false
+  logo: 'janusgraph-logomark.svg'
+  favicon: 'favicon.ico'
 
 extra_css:
-    - 'theme/structor-menu.css'
-    - 'theme/extra.css'
+  - 'theme/extra.css'
+extra_javascript:
+  - 'theme/js/structor-menu.js'
 
 extra:
   social:
