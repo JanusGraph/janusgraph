@@ -69,7 +69,7 @@
         <httpcomponents.httpcore.version>4.4.16</httpcomponents.httpcore.version>
         <hadoop.version>3.3.5</hadoop.version>
         <hbase2.version>2.5.3-hadoop3</hbase2.version>
-        <htrace.version>4.2.0-incubating</htrace.version>
+        <htrace.version>4.1.5</htrace.version>
         <bigtable.version>1.24.0</bigtable.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.15.3</jackson2.version>
@@ -1392,8 +1392,13 @@
                 <version>6.5.1</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.htrace</groupId>
-                <artifactId>htrace-core4</artifactId>
+                <groupId>org.apache.hbase.thirdparty</groupId>
+                <artifactId>hbase-noop-htrace</artifactId>
+                <version>${htrace.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hbase.thirdparty</groupId>
+                <artifactId>hbase-noop-htrace</artifactId>
                 <version>${htrace.version}</version>
             </dependency>
             <dependency>
