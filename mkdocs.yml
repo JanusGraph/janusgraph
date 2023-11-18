@@ -43,14 +43,18 @@ extra_css:
 
 extra:
   social:
-    - type: github-alt
+    - icon: fontawesome/brands/github
       link: https://github.com/janusgraph
-    - type: twitter
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/5n4fjv4QAf
+    - icon: fontawesome/brands/x-twitter
       link: https://twitter.com/janusgraph
-    - type: envelope
-      link: https://groups.google.com/group/janusgraph-users
-    - type: envelope
-      link: https://groups.google.com/group/janusgraph-dev
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/janusgraph
+    - icon: fontawesome/solid/envelope
+      link: https://lists.lfaidata.foundation/g/janusgraph-users
+    - icon: fontawesome/solid/envelope
+      link: https://lists.lfaidata.foundation/g/janusgraph-dev
   latest_version: 0.5.3
   snapshot_version: 0.5.4-SNAPSHOT
   tinkerpop_version: 3.4.6
