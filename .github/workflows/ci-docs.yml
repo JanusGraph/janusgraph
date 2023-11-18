@@ -90,6 +90,7 @@ jobs:
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
           token: ${{ secrets.ACCESS_TOKEN }}
-          repository-nam: JanusGraph/docs.janusgraph.org
+          repository-name: JanusGraph/docs.janusgraph.org
           branch: master
           folder: site
+          force: false
