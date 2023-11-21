@@ -67,8 +67,8 @@
         <logback.version>1.2.11</logback.version>
         <httpcomponents.httpclient.version>4.5.14</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.16</httpcomponents.httpcore.version>
-        <hadoop.version>3.3.5</hadoop.version>
-        <hbase2.version>2.5.3-hadoop3</hbase2.version>
+        <hadoop.version>3.3.6</hadoop.version>
+        <hbase2.version>2.5.6-hadoop3</hbase2.version>
         <htrace.version>4.1.5</htrace.version>
         <bigtable.version>1.24.0</bigtable.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
@@ -77,8 +77,8 @@
         <elasticsearch.version>8.10.4</elasticsearch.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
-        <zookeeper.version>3.8.1</zookeeper.version>
-        <netty4.version>4.1.100.Final</netty4.version>
+        <zookeeper.version>3.9.1</zookeeper.version>
+        <netty4.version>4.1.101.Final</netty4.version>
         <jna.version>5.13.0</jna.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -119,6 +119,7 @@
         <graalvm-nativeimage.version>23.1.1</graalvm-nativeimage.version>
         <caffeine.version>2.9.3</caffeine.version>
         <checker-qual.version>3.39.0</checker-qual.version>
+        <curator.version>5.5.0</curator.version>
     </properties>
     <modules>
         <module>janusgraph-grpc</module>
@@ -1290,6 +1291,18 @@
                         <groupId>ch.qos.reload4j</groupId>
                         <artifactId>reload4j</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.curator</groupId>
+                        <artifactId>curator-framework</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.curator</groupId>
+                        <artifactId>curator-recipes</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.curator</groupId>
+                        <artifactId>curator-client</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -1304,6 +1317,18 @@
                     <exclusion>
                         <groupId>ch.qos.reload4j</groupId>
                         <artifactId>reload4j</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.curator</groupId>
+                        <artifactId>curator-framework</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.curator</groupId>
+                        <artifactId>curator-recipes</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.curator</groupId>
+                        <artifactId>curator-client</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -1374,12 +1399,28 @@
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-framework</artifactId>
-                <version>4.2.0</version>
+                <version>${curator.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-recipes</artifactId>
-                <version>4.2.0</version>
+                <version>${curator.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-client</artifactId>
+                <version>${curator.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-transport-native-epoll</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-native-epoll</artifactId>
+                <version>${netty4.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.woodstox</groupId>
@@ -1390,11 +1431,6 @@
                 <groupId>com.fasterxml.woodstox</groupId>
                 <artifactId>woodstox-core</artifactId>
                 <version>6.5.1</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hbase.thirdparty</groupId>
-                <artifactId>hbase-noop-htrace</artifactId>
-                <version>${htrace.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hbase.thirdparty</groupId>
