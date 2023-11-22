@@ -9,7 +9,7 @@ updates:
   groups:
     junit:
       patterns:
-        - "junit*"
+        - "org.junit.*"
   labels:
     - "backport/v1.0"
     - "dependencies"
