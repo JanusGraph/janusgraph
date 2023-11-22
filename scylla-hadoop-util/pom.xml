@@ -32,7 +32,7 @@
         <dependency>
             <groupId>com.scylladb</groupId>
             <artifactId>scylla-driver-core</artifactId>
-            <version>3.11.2.4</version>
+            <version>3.11.5.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.github.jnr</groupId>
