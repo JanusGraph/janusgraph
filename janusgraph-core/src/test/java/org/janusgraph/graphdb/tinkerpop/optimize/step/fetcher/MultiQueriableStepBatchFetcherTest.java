@@ -30,6 +30,8 @@ import org.mockito.Mockito;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.anyCollection;
+
 public class MultiQueriableStepBatchFetcherTest {
 
     private Vertex mockVertex;
@@ -46,7 +48,7 @@ public class MultiQueriableStepBatchFetcherTest {
         Mockito.doReturn(traversal).when(traversal).asAdmin();
         Mockito.doReturn(Optional.of(tx)).when(traversal).getGraph();
         Mockito.doReturn(true).when(tx).isOpen();
-        Mockito.doReturn(multiQuery).when(tx).multiQuery();
+        Mockito.doReturn(multiQuery).when(tx).multiQuery(anyCollection());
     }
 
     @Test
