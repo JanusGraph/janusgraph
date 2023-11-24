@@ -124,13 +124,11 @@ public class CompletableFutureUtilTest {
             otherFuture.completeExceptionally(new IllegalArgumentException());
             futureMap.put(new Object(), otherFuture);
         }
-        ExecutionException executionException = Assertions.assertThrows(ExecutionException.class, () -> unwrap(futureMap));
-        Assertions.assertTrue(executionException.getCause() instanceof IllegalStateException);
-        Throwable[] suppressedExceptions = executionException.getSuppressed();
+        IllegalStateException exception = Assertions.assertThrows(IllegalStateException.class, () -> unwrap(futureMap));
+        Throwable[] suppressedExceptions = exception.getSuppressed();
         Assertions.assertEquals(10, suppressedExceptions.length);
         for(int i=0; i<10; i++){
-            Assertions.assertTrue(suppressedExceptions[i] instanceof ExecutionException &&
-                suppressedExceptions[i].getCause() instanceof IllegalArgumentException);
+            Assertions.assertTrue(suppressedExceptions[i] instanceof IllegalArgumentException);
         }
     }
 
@@ -154,13 +152,11 @@ public class CompletableFutureUtilTest {
             otherFuture.completeExceptionally(new IllegalArgumentException());
             futureList.add(otherFuture);
         }
-        ExecutionException executionException = Assertions.assertThrows(ExecutionException.class, () -> awaitAll(futureList));
-        Assertions.assertTrue(executionException.getCause() instanceof IllegalStateException);
-        Throwable[] suppressedExceptions = executionException.getSuppressed();
+        IllegalStateException exception = Assertions.assertThrows(IllegalStateException.class, () -> awaitAll(futureList));
+        Throwable[] suppressedExceptions = exception.getSuppressed();
         Assertions.assertEquals(10, suppressedExceptions.length);
         for(int i=0; i<10; i++){
-            Assertions.assertTrue(suppressedExceptions[i] instanceof ExecutionException &&
-                suppressedExceptions[i].getCause() instanceof IllegalArgumentException);
+            Assertions.assertTrue(suppressedExceptions[i] instanceof IllegalArgumentException);
         }
     }
 
