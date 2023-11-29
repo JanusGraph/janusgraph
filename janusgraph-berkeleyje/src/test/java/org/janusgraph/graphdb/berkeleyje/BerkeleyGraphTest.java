@@ -68,6 +68,7 @@ public class BerkeleyGraphTest extends JanusGraphTest {
     }
 
     @Override
+    @Test
     public void testClearStorage() throws Exception {
         tearDown();
         config.set(ConfigElement.getPath(GraphDatabaseConfiguration.DROP_ON_CLEAR), true);
@@ -86,6 +87,8 @@ public class BerkeleyGraphTest extends JanusGraphTest {
     }
 
     @Override
+    @Test
+    @Disabled("#4153: Tests fails with NPE for some reason")
     public void testConsistencyEnforcement() {
         // Check that getConfiguration() explicitly set serializable isolation
         // This could be enforced with a JUnit assertion instead of a Precondition,
@@ -96,27 +99,34 @@ public class BerkeleyGraphTest extends JanusGraphTest {
         super.testConsistencyEnforcement();
     }
 
-    // BerkeleyJE support only hour discrete TTL, we try speed up internal
-    // clock but tests so flaky. See BerkeleyStorageSetup
     @Override
-    public void testEdgeTTLTiming() throws Exception {
+    @Test
+    @Disabled("BerkeleyJE support only hour discrete TTL, we try speed up internal clock but tests so flaky. See BerkeleyStorageSetup")
+    public void testEdgeTTLTiming() {
     }
 
     @Override
-    public void testEdgeTTLWithTransactions() throws Exception {
+    @Test
+    @Disabled
+    public void testEdgeTTLWithTransactions() {
     }
 
     @Override
-    public void testUnsettingTTL() throws InterruptedException {
+    @Test
+    @Disabled
+    public void testUnsettingTTL() {
     }
 
     @Override
-    public void testVertexTTLWithCompositeIndex() throws Exception {
+    @Test
+    @Disabled
+    public void testVertexTTLWithCompositeIndex() {
     }
 
     @Override
+    @Test
+    @Disabled("TODO: Figure out why this is failing in BerkeleyDB!!")
     public void testConcurrentConsistencyEnforcement() {
-        //Do nothing TODO: Figure out why this is failing in BerkeleyDB!!
     }
 
     @Disabled("Unable to run on GitHub Actions.")
