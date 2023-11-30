@@ -82,6 +82,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - module: core
+            java: 8
           - module: driver
             java: 8
           - module: server
@@ -95,6 +97,9 @@ jobs:
             java: 8
           - module: lucene
             java: 8
+          - module: core
+            install-args: "-Pjava-11"
+            java: 11
           - module: driver
             install-args: "-Pjava-11"
             java: 11
