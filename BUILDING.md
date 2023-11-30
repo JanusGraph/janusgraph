@@ -2,8 +2,8 @@
 
 Required:
 
-* Java 8
-* Maven 3
+* Java 11
+* Maven 4
 
 To build without executing tests:
 

@@ -45,7 +45,7 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v3
         with:
-          java-version: 8
+          java-version: 11
           distribution: zulu
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
@@ -69,7 +69,7 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v3
         with:
-          java-version: 8
+          java-version: 11
           distribution: zulu
       - run: mvn clean install -Pjanusgraph-benchmark ${{ env.BUILD_MAVEN_OPTS }} -Dgpg.skip=true
       - run: mvn verify --projects janusgraph-benchmark

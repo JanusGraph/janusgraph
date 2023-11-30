@@ -17,22 +17,22 @@ name: CI Backend CQL
 on:
   pull_request:
     paths-ignore:
-    - 'docs/**'
-    - '.github/workflows/ci-docs.yml'
-    - '.github/ISSUE_TEMPLATE/**'
-    - 'requirements.txt'
-    - 'mkdocs.yml'
-    - 'docs.Dockerfile'
-    - '*.md'
+      - 'docs/**'
+      - '.github/workflows/ci-docs.yml'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'requirements.txt'
+      - 'mkdocs.yml'
+      - 'docs.Dockerfile'
+      - '*.md'
   push:
     paths-ignore:
-    - 'docs/**'
-    - '.github/workflows/ci-docs.yml'
-    - '.github/ISSUE_TEMPLATE/**'
-    - 'requirements.txt'
-    - 'mkdocs.yml'
-    - 'docs.Dockerfile'
-    - '*.md'
+      - 'docs/**'
+      - '.github/workflows/ci-docs.yml'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'requirements.txt'
+      - 'mkdocs.yml'
+      - 'docs.Dockerfile'
+      - '*.md'
     branches-ignore:
       - 'dependabot/**'
 
@@ -53,7 +53,7 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v3
         with:
-          java-version: 8
+          java-version: 11
           distribution: zulu
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
@@ -68,164 +68,90 @@ jobs:
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/diskstorage/cql/*\""
             name: byteordered-diskstorage
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-murmur -Dtest=\"**/diskstorage/cql/*\""
-            name: murmur-diskstorage
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-byteordered -Dtest=\"**/graphdb/cql/*\""
-            name: byteordered-graphdb
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-murmur -Dtest=\"**/graphdb/cql/*\""
-            name: murmur-graphdb
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-murmur -Dtest=\"**/hadoop/*\""
-            name: murmur-hadoop
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-byteordered -Dtest=\"**/core/cql/*\""
-            name: byteordered-core
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-murmur -Dtest=\"**/core/cql/*\""
-            name: murmur-core
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-ssl
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-client-auth
-            java: 8
-          - module: cql
-            args: "-Pscylladb -Dtest=\"**/diskstorage/cql/*\""
-            name: scylladb-diskstorage
-            java: 8
-          - module: cql
-            args: "-Pscylladb -Dtest=\"**/graphdb/cql/*\""
-            name: scylladb-graphdb
-            java: 8
-          - module: cql
-            args: "-Pscylladb -Dtest=\"**/hadoop/*\""
-            name: scylladb-hadoop
-            java: 8
-          - module: cql
-            args: "-Pscylladb -Dtest=\"**/core/cql/*\""
-            name: scylladb-core
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-byteordered -Dtest=\"**/diskstorage/cql/*\""
-            name: byteordered-diskstorage
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/diskstorage/cql/*\""
             name: murmur-diskstorage
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/graphdb/cql/*\""
             name: byteordered-graphdb
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/graphdb/cql/*\""
             name: murmur-graphdb
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/hadoop/*\""
             name: murmur-hadoop
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/core/cql/*\""
             name: byteordered-core
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/core/cql/*\""
             name: murmur-core
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
             name: murmur-ssl
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
             name: murmur-client-auth
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pscylladb -Dtest=\"**/diskstorage/cql/*\""
             name: scylladb-diskstorage
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pscylladb -Dtest=\"**/graphdb/cql/*\""
             name: scylladb-graphdb
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pscylladb -Dtest=\"**/hadoop/*\""
             name: scylladb-hadoop
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pscylladb -Dtest=\"**/core/cql/*\""
             name: scylladb-core
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-byteordered -Dtest=\"**/diskstorage/cql/*\""
             name: byteordered-diskstorage
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur -Dtest=\"**/diskstorage/cql/*\""
             name: murmur-diskstorage
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-byteordered -Dtest=\"**/graphdb/cql/*\""
             name: byteordered-graphdb
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur -Dtest=\"**/graphdb/cql/*\""
             name: murmur-graphdb
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur -Dtest=\"**/hadoop/*\""
             name: murmur-hadoop
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-byteordered -Dtest=\"**/core/cql/*\""
             name: byteordered-core
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur -Dtest=\"**/core/cql/*\""
             name: murmur-core
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
             name: murmur-ssl
-            install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
             name: murmur-client-auth
-            install-args: "-Pjava-11"
             java: 11
     steps:
       - uses: actions/checkout@v4
@@ -288,7 +214,7 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v3
         with:
-          java-version: 8
+          java-version: 11
           distribution: zulu
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} -Dcassandra.docker.version='3.0.18' ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.args }}
