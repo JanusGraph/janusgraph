@@ -54,7 +54,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           java-version: "8.0.382+5"
           distribution: zulu
@@ -82,12 +82,12 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         if: "matrix.java == 8"
         with:
           java-version: "8.0.382+5"
           distribution: zulu
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         if: "matrix.java == 11"
         with:
           java-version: "11.0.20+1"
@@ -175,12 +175,12 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         if: "matrix.java == 8"
         with:
           java-version: "8.0.382+5"
           distribution: zulu
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         if: "matrix.java == 11"
         with:
           java-version: "11.0.20+1"
