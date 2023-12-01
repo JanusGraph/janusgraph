@@ -125,4 +125,4 @@ if [ -n "$SCRIPT_DEBUG" ]; then
 fi
 
 # Start the JVM, execute the application, and return its exit code
-exec $JAVA $JAVA_OPTIONS $MAIN_CLASS "$@"
+exec $JAVA "$JAVA_OPTIONS" $MAIN_CLASS "$@"
