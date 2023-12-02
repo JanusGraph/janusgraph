@@ -36,7 +36,7 @@ while [ -h "${SCRIPT_NAME}" ]; do
 done
 BIN="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 # Set $CFG to $BIN/../conf
-cd -P $BIN/../conf
+cd -P "$BIN/../conf"
 CFG=$(pwd)
 # Set $LIB to $BIN/../lib
 cd -P $BIN/../lib
