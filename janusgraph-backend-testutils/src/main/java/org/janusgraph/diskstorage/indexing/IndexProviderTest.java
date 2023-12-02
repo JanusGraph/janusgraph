@@ -228,13 +228,16 @@ public abstract class IndexProviderTest {
             true);
         final Multimap<String, Object> doc3 = getDocument("Hello Bob, are you there?", -500, 10.1, Geoshape.point(47.0, 10.0), Geoshape.box(46.9, 9.9, 47.1, 10.1), Arrays.asList("7", "8", "9"), Sets.newHashSet("7", "8"), Instant.ofEpochSecond(3),
             false);
+        final Multimap<String, Object> doc4 = getDocument("foo.com bar/test", -1001, 2, Geoshape.point(0, 0.0), Geoshape.box(46.6, 0, 46.9, 0.1), Arrays.asList("10", "11", "12"), Sets.newHashSet("9", "10"), Instant.ofEpochSecond(0),
+            false);
 
         for (final String store : stores) {
             initialize(store);
 
             add(store, "doc1", doc1, true);
             add(store, "doc2", doc2, true);
-            add(store, "doc3", doc3, false);
+            add(store, "doc3", doc3, true);
+            add(store, "doc4", doc4, false);
 
         }
 
@@ -262,23 +265,24 @@ public abstract class IndexProviderTest {
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "worl"))).count());
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "Tomorrow world"))).count());
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "WorLD HELLO"))).count());
+            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "foo.com"))).count());
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_FUZZY, "boby"))).count());
 
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.GREATER_THAN, "A"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.GREATER_THAN, "A"))).count());
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.GREATER_THAN, "z"))).count());
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.GREATER_THAN, "world"))).count());
 
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.GREATER_THAN_EQUAL, "A"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.GREATER_THAN_EQUAL, "A"))).count());
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.GREATER_THAN_EQUAL, "z"))).count());
             assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.GREATER_THAN_EQUAL, "world"))).count());
 
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.LESS_THAN, "A"))).count());
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.LESS_THAN, "z"))).count());
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.LESS_THAN, "world"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.LESS_THAN, "z"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.LESS_THAN, "world"))).count());
 
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.LESS_THAN_EQUAL, "A"))).count());
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.LESS_THAN_EQUAL, "z"))).count());
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.LESS_THAN_EQUAL, "world"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.LESS_THAN_EQUAL, "z"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Cmp.LESS_THAN_EQUAL, "world"))).count());
 
             //Ordering
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderTimeDesc))
@@ -357,25 +361,25 @@ public abstract class IndexProviderTest {
             //String
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "Tomorrow is the world"))).count());
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "world"))).count());
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.NOT_EQUAL, "bob"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.NOT_EQUAL, "bob"))).count());
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Text.PREFIX, "Tomorrow"))).count());
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Text.PREFIX, "wor"))).count());
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Text.FUZZY, "Tomorow is the world"))).count());
 
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.GREATER_THAN, "A"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.GREATER_THAN, "A"))).count());
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.GREATER_THAN, "z"))).count());
-            assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.GREATER_THAN, "Hello world"))).count());
+            assertEquals(2, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.GREATER_THAN, "Hello world"))).count());
 
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.GREATER_THAN_EQUAL, "A"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.GREATER_THAN_EQUAL, "A"))).count());
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.GREATER_THAN_EQUAL, "z"))).count());
-            assertEquals(2, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.GREATER_THAN_EQUAL, "Hello world"))).count());
+            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.GREATER_THAN_EQUAL, "Hello world"))).count());
 
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.LESS_THAN, "A"))).count());
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.LESS_THAN, "z"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.LESS_THAN, "z"))).count());
             assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.LESS_THAN, "Hello world"))).count());
 
             assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.LESS_THAN_EQUAL, "A"))).count());
-            assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.LESS_THAN_EQUAL, "z"))).count());
+            assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.LESS_THAN_EQUAL, "z"))).count());
             assertEquals(2, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.LESS_THAN_EQUAL, "Hello world"))).count());
 
             try {
@@ -413,8 +417,7 @@ public abstract class IndexProviderTest {
             assertEquals(2, result.size());
 
             result = tx.queryStream(new IndexQuery(store, Not.of(PredicateCondition.of(TEXT, Text.CONTAINS, "world")))).collect(Collectors.toList());
-            assertEquals(1, result.size());
-            assertEquals("doc3", result.get(0));
+            assertEquals(ImmutableSet.of("doc3", "doc4"), ImmutableSet.copyOf(result));
 
             result = tx.queryStream(new IndexQuery(store, And.of(PredicateCondition.of(TIME, Cmp.EQUAL, -500), Not.of(PredicateCondition.of(TEXT, Text.CONTAINS, "world"))))).collect(Collectors.toList());
             assertEquals(1, result.size());
@@ -449,8 +452,8 @@ public abstract class IndexProviderTest {
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
 
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.WITHIN, Geoshape.box(46.5, -0.5, 50.5, 10.5)))).collect(Collectors.toList());
-            assertEquals(3,result.size());
-            assertEquals(ImmutableSet.of("doc1", "doc2", "doc3"), ImmutableSet.copyOf(result));
+            assertEquals(4, result.size());
+            assertEquals(ImmutableSet.of("doc1", "doc2", "doc3", "doc4"), ImmutableSet.copyOf(result));
 
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 200.00)))).collect(Collectors.toList());
             assertEquals(2, result.size());
@@ -471,8 +474,8 @@ public abstract class IndexProviderTest {
 
                 result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.DISJOINT, Geoshape.polygon(Arrays.asList(new double[][]
                         {{-5.0,47.0},{5.0,47.0},{5.0,50.0},{-5.0,50.0},{-5.0,47.0}}))))).collect(Collectors.toList());
-                assertEquals(1, result.size());
-                assertEquals(ImmutableSet.of("doc3"), ImmutableSet.copyOf(result));
+                assertEquals(2, result.size());
+                assertEquals(ImmutableSet.of("doc3", "doc4"), ImmutableSet.copyOf(result));
             }
 
             if (indexFeatures.supportsGeoContains()) {
@@ -486,8 +489,8 @@ public abstract class IndexProviderTest {
             assertEquals(ImmutableSet.of("doc1","doc2"), ImmutableSet.copyOf(result));
 
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.INTERSECT, Geoshape.circle(48.5, 0.5, 200.00)))).collect(Collectors.toList());
-            assertEquals(2, result.size());
-            assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
+            assertEquals(3, result.size());
+            assertEquals(ImmutableSet.of("doc1", "doc2", "doc4"), ImmutableSet.copyOf(result));
 
             result = tx.queryStream(new IndexQuery(store, PredicateCondition.of(BOUNDARY, Geo.INTERSECT, Geoshape.polygon(Arrays.asList(new double[][] {{-1.0,48.0},{2.0,48.0},{2.0,49.0},{-1.0,49.0},{-1.0,48.0}}))))).collect(Collectors.toList());
             assertEquals(2, result.size());
@@ -516,13 +519,13 @@ public abstract class IndexProviderTest {
                 assertEquals(2, tx.queryStream(new RawQuery(store,"text:\"world\"",NO_PARAS)).count());
                 assertEquals(2, tx.queryStream(new RawQuery(store,"time:[1000 TO 1020]",NO_PARAS)).count());
                 assertEquals(2, tx.queryStream(new RawQuery(store,"time:[1000 TO *]",NO_PARAS)).count());
-                assertEquals(3, tx.queryStream(new RawQuery(store,"time:[* TO *]",NO_PARAS)).count());
+                assertEquals(4, tx.queryStream(new RawQuery(store,"time:[* TO *]",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"weight:[5.1 TO 8.3]",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"weight:5.2",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"text:world AND time:1001",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store,"name:\"Hello world\"",NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store, "boolean:true", NO_PARAS)).count());
-                assertEquals(2, tx.queryStream(new RawQuery(store, "boolean:false", NO_PARAS)).count());
+                assertEquals(3, tx.queryStream(new RawQuery(store, "boolean:false", NO_PARAS)).count());
                 assertEquals(2, tx.queryStream(new RawQuery(store, "date:{1970-01-01T00:00:01Z TO 1970-01-01T00:00:03Z]", NO_PARAS)).count());
                 assertEquals(3, tx.queryStream(new RawQuery(store, "date:[1970-01-01T00:00:01Z TO *]", NO_PARAS)).count());
                 assertEquals(1, tx.queryStream(new RawQuery(store, "date:\"1970-01-01T00:00:02Z\"", NO_PARAS)).count());
@@ -558,9 +561,9 @@ public abstract class IndexProviderTest {
             assertEquals("doc3", tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.EQUAL, Instant.ofEpochSecond(3)))).findFirst().get());
             assertEquals("doc3", tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.GREATER_THAN, Instant.ofEpochSecond(2)))).findFirst().get());
             assertEquals(ImmutableSet.of("doc2", "doc3"), tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.GREATER_THAN_EQUAL, Instant.ofEpochSecond(2)))).collect(Collectors.toSet()));
-            assertEquals(ImmutableSet.of("doc1"), tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.LESS_THAN, Instant.ofEpochSecond(2)))).collect(Collectors.toSet()));
-            assertEquals(ImmutableSet.of("doc1", "doc2"), tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.LESS_THAN_EQUAL, Instant.ofEpochSecond(2)))).collect(Collectors.toSet()));
-            assertEquals(ImmutableSet.of("doc1", "doc3"), tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.NOT_EQUAL, Instant.ofEpochSecond(2)))).collect(Collectors.toSet()));
+            assertEquals(ImmutableSet.of("doc1", "doc4"), tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.LESS_THAN, Instant.ofEpochSecond(2)))).collect(Collectors.toSet()));
+            assertEquals(ImmutableSet.of("doc1", "doc2", "doc4"), tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.LESS_THAN_EQUAL, Instant.ofEpochSecond(2)))).collect(Collectors.toSet()));
+            assertEquals(ImmutableSet.of("doc1", "doc3", "doc4"), tx.queryStream(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.NOT_EQUAL, Instant.ofEpochSecond(2)))).collect(Collectors.toSet()));
 
 
             //Update some data
