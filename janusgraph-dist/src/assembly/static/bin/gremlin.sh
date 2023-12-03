@@ -36,26 +36,26 @@ while [ -h "${SCRIPT_NAME}" ]; do
 done
 BIN="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 # Set $CFG to $BIN/../conf
-cd -P $BIN/../conf
+cd -P "$BIN/../conf"
 CFG=$(pwd)
-# Set $LIB to $BIN/../lib
-cd -P $BIN/../lib
+# Set $LIB to "$BIN/../lib"
+cd -P "$BIN/../lib"
 LIB=$(pwd)
 # Set $LIB to $BIN/../ext
-cd -P $BIN/../ext
+cd -P "$BIN/../ext"
 EXT=$(pwd)
 # Initialize classpath to $CFG
 CP="$CFG"
 # Add the slf4j-log4j12 binding
-CP="$CP":$(find -L $LIB -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+CP="$CP":$(find -L "$LIB" -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
 # Add the jars in $BIN/../lib that start with "janusgraph"
-CP="$CP":$(find -L $LIB -name 'janusgraph*.jar' | sort | tr '\n' ':')
+CP="$CP":$(find -L "$LIB" -name 'janusgraph*.jar' | sort | tr '\n' ':')
 # Add the remaining jars in $BIN/../lib.
-CP="$CP":$(find -L $LIB -name '*.jar' \
+CP="$CP":$(find -L "$LIB" -name '*.jar' \
                 \! -name 'janusgraph*' \
                 \! -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
 # Add the jars in $BIN/../ext (at any subdirectory depth)
-CP="$CP":$(find -L $EXT -name '*.jar' | sort | tr '\n' ':')
+CP="$CP":$(find -L "$EXT" -name '*.jar' | sort | tr '\n' ':')
 
 cd ..
 SYSTEM_EXT_DIR="`pwd`/ext"
@@ -125,4 +125,4 @@ if [ -n "$SCRIPT_DEBUG" ]; then
 fi
 
 # Start the JVM, execute the application, and return its exit code
-exec $JAVA $JAVA_OPTIONS $MAIN_CLASS "$@"
+exec $JAVA "$JAVA_OPTIONS" $MAIN_CLASS "$@"
