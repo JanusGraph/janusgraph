@@ -224,6 +224,11 @@ public class ExpirationKCVSRedisCache extends KCVSCache {
     }
 
     @Override
+    public void forceClearExpiredCache() {
+
+    }
+
+    @Override
     public void close() throws BackendException {
         cleanupThread.stopThread();
         super.close();
