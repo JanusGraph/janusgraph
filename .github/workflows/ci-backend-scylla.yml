@@ -67,19 +67,19 @@ jobs:
         include:
           - module: scylla
             args: "-Pscylla-murmur -Dtest=\"**/diskstorage/cql/*\""
-            name: murmur-diskstorage
+            name: murmur-diskstorage-java8
             java: 8
           - module: scylla
             args: "-Pscylla-murmur -Dtest=\"**/graphdb/cql/*\""
-            name: murmur-graphdb
+            name: murmur-graphdb-java8
             java: 8
           - module: scylla
             args: "-Pscylla-murmur -Dtest=\"**/hadoop/*\""
-            name: murmur-hadoop
+            name: murmur-hadoop-java8
             java: 8
           - module: scylla
             args: "-Pscylla-murmur -Dtest=\"**/core/cql/*\""
-            name: murmur-core
+            name: murmur-core-java8
             java: 8
         # FIXME: this test is failing due to problems with ScyllaDB startup for Testcontainers. Issue: https://github.com/JanusGraph/janusgraph/issues/3595
         #  - module: scylla
@@ -139,9 +139,9 @@ jobs:
           distribution: zulu
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.install-args }} ${{ matrix.args }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: jacoco-reports
+          name: jacoco-reports-${{ matrix.module }}-${{ matrix.name }}
           path: target/jacoco-combined.exec
       - uses: codecov/codecov-action@v4
         env:
