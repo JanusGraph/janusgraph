@@ -95,10 +95,14 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y expect
       - run: mvn clean install -Pjanusgraph-release ${{ env.BUILD_MAVEN_OPTS }} -Dgpg.skip=true ${{ matrix.args }}
       - run: mvn verify -pl janusgraph-dist -Pjanusgraph-release -Dgpg.skip=true ${{ matrix.args }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: distribution-builds
-          path: janusgraph-dist/target/janusgraph-*.zip
+          name: distribution-build-full-java-${{ matrix.java }}
+          path: janusgraph-dist/target/janusgraph-full-*.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distribution-build-core-java-${{ matrix.java }}
+          path: janusgraph-dist/target/janusgraph-[!full]*.zip
       - name: Set JanusGraph version environment variable
         run: |
           export JG_VER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)-$(git rev-parse --short HEAD)"
