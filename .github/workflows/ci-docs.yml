@@ -62,29 +62,29 @@ jobs:
       - run: git diff  --exit-code docs/configs/janusgraph-cfg.md
       - run: docker build -t doc-site:mkdocs -f docs.Dockerfile .
       - run: docker run --rm -v $PWD:/mkdocs doc-site:mkdocs mkdocs build
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: github.ref != 'refs/heads/master'
         with:
-          name: distribution-builds
+          name: distribution-doc-builds
           path: site
 
   deploy-doc:
     runs-on: ubuntu-22.04
     if: github.ref == 'refs/heads/master'
     needs: build-doc
-    steps: 
+    steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
       - run: mkdir ./bin
       - run: curl -sfL https://raw.githubusercontent.com/traefik/structor/master/godownloader.sh | bash -s -- -b ./bin ${STRUCTOR_VERSION}
-      - run: sudo ./bin/structor -o janusgraph -r janusgraph 
-            --force-edit-url 
-            --rqts-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/requirements.txt" 
-            --dockerfile-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs.Dockerfile" 
-            --dockerfile-name="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs.Dockerfile" 
-            --menu.js-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs/theme/structor-menu.js.gotmpl" 
+      - run: sudo ./bin/structor -o janusgraph -r janusgraph
+            --force-edit-url
+            --rqts-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/requirements.txt"
+            --dockerfile-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs.Dockerfile"
+            --dockerfile-name="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs.Dockerfile"
+            --menu.js-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs/theme/structor-menu.js.gotmpl"
             --exp-branch=master --debug
       - run: sudo chown -R $(id -u):$(id -g) .
       - uses: JamesIves/github-pages-deploy-action@v4

@@ -67,15 +67,15 @@ jobs:
         include:
           - module: hbase
             args: "-Dtest=\"**/diskstorage/hbase/*\""
-            name: hbase2-diskstorage
+            name: hbase2-diskstorage-java8
             java: 8
           - module: hbase
             args: "-Dtest=\"**/graphdb/hbase/*\""
-            name: hbase2-graphdb
+            name: hbase2-graphdb-java8
             java: 8
           - module: hbase
             args: "-Dtest=\"**/hadoop/*\""
-            name: hbase2-hadoop
+            name: hbase2-hadoop-java8
             java: 8
           - module: hbase
             install-args: "-Pjava-11"
@@ -108,9 +108,9 @@ jobs:
           distribution: zulu
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.install-args }} ${{ matrix.args }} -Dhbase.docker.uid=$(id -u) -Dhbase.docker.gid=$(id -g)
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: jacoco-reports
+          name: jacoco-reports-${{ matrix.module }}-${{ matrix.name }}
           path: target/jacoco-combined.exec
       - uses: codecov/codecov-action@v3
         with:

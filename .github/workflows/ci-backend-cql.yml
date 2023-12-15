@@ -67,99 +67,99 @@ jobs:
         include:
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/diskstorage/cql/*\""
-            name: byteordered-diskstorage
+            name: cassandra3-byteordered-diskstorage-java8
             java: 8
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/diskstorage/cql/*\""
-            name: murmur-diskstorage
+            name: cassandra3-murmur-diskstorage-java8
             java: 8
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/graphdb/cql/*\""
-            name: byteordered-graphdb
+            name: cassandra3-byteordered-graphdb-java8
             java: 8
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/graphdb/cql/*\""
-            name: murmur-graphdb
+            name: cassandra3-murmur-graphdb-java8
             java: 8
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/hadoop/*\""
-            name: murmur-hadoop
+            name: cassandra3-murmur-hadoop-java8
             java: 8
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/core/cql/*\""
-            name: byteordered-core
+            name: cassandra3-byteordered-core-java8
             java: 8
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/core/cql/*\""
-            name: murmur-core
+            name: cassandra3-murmur-core-java8
             java: 8
           - module: cql
             args: "-Pcassandra3-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-ssl
+            name: cassandra3-murmur-ssl-java8
             java: 8
           - module: cql
             args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-client-auth
+            name: cassandra3-murmur-client-auth-java8
             java: 8
           - module: cql
             args: "-Pscylladb -Dtest=\"**/diskstorage/cql/*\""
-            name: scylladb-diskstorage
+            name: cassandra3-scylladb-diskstorage-java8
             java: 8
           - module: cql
             args: "-Pscylladb -Dtest=\"**/graphdb/cql/*\""
-            name: scylladb-graphdb
+            name: cassandra3-scylladb-graphdb-java8
             java: 8
           - module: cql
             args: "-Pscylladb -Dtest=\"**/hadoop/*\""
-            name: scylladb-hadoop
+            name: cassandra3-scylladb-hadoop-java8
             java: 8
           - module: cql
             args: "-Pscylladb -Dtest=\"**/core/cql/*\""
-            name: scylladb-core
+            name: cassandra3-scylladb-core-java8
             java: 8
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/diskstorage/cql/*\""
-            name: byteordered-diskstorage
+            name: cassandra3-byteordered-diskstorage
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/diskstorage/cql/*\""
-            name: murmur-diskstorage
+            name: cassandra3-murmur-diskstorage
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/graphdb/cql/*\""
-            name: byteordered-graphdb
+            name: cassandra3-byteordered-graphdb
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/graphdb/cql/*\""
-            name: murmur-graphdb
+            name: cassandra3-murmur-graphdb
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/hadoop/*\""
-            name: murmur-hadoop
+            name: cassandra3-murmur-hadoop
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-byteordered -Dtest=\"**/core/cql/*\""
-            name: byteordered-core
+            name: cassandra3-byteordered-core
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur -Dtest=\"**/core/cql/*\""
-            name: murmur-core
+            name: cassandra3-murmur-core
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-ssl
+            name: cassandra3-murmur-ssl
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-client-auth
+            name: cassandra3-murmur-client-auth
             install-args: "-Pjava-11"
             java: 11
           - module: cql
@@ -184,47 +184,47 @@ jobs:
             java: 11
           - module: cql
             args: "-Pcassandra4-byteordered -Dtest=\"**/diskstorage/cql/*\""
-            name: byteordered-diskstorage
+            name: cassandra4-byteordered-diskstorage
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur -Dtest=\"**/diskstorage/cql/*\""
-            name: murmur-diskstorage
+            name: cassandra4-murmur-diskstorage
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-byteordered -Dtest=\"**/graphdb/cql/*\""
-            name: byteordered-graphdb
+            name: cassandra4-byteordered-graphdb
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur -Dtest=\"**/graphdb/cql/*\""
-            name: murmur-graphdb
+            name: cassandra4-murmur-graphdb
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur -Dtest=\"**/hadoop/*\""
-            name: murmur-hadoop
+            name: cassandra4-murmur-hadoop
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-byteordered -Dtest=\"**/core/cql/*\""
-            name: byteordered-core
+            name: cassandra4-byteordered-core
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur -Dtest=\"**/core/cql/*\""
-            name: murmur-core
+            name: cassandra4-murmur-core
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-ssl
+            name: cassandra4-murmur-ssl
             install-args: "-Pjava-11"
             java: 11
           - module: cql
             args: "-Pcassandra4-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
-            name: murmur-client-auth
+            name: cassandra4-murmur-client-auth
             install-args: "-Pjava-11"
             java: 11
     steps:
@@ -243,9 +243,9 @@ jobs:
           distribution: zulu
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.install-args }} ${{ matrix.args }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: jacoco-reports
+          name: jacoco-reports-${{ matrix.module }}-${{ matrix.name }}
           path: target/jacoco-combined.exec
       - uses: codecov/codecov-action@v3
         with:
