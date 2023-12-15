@@ -62,7 +62,7 @@ jobs:
       - run: git diff  --exit-code docs/configs/janusgraph-cfg.md
       - run: docker build -t doc-site:mkdocs -f docs.Dockerfile .
       - run: docker run --rm -v $PWD:/mkdocs doc-site:mkdocs mkdocs build
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: github.ref != 'refs/heads/master'
         with:
           name: distribution-builds
