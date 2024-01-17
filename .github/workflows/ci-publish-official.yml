@@ -112,7 +112,7 @@ jobs:
           artifactErrorsFailBuild: true
           draft: true
           tag: "${{ env.RELEASE_TAG }}"
-          artifacts: "KEYS,${{ env.JG_DOC_DIST_NAME }}.zip.asc,${{ env.JG_DOC_DIST_NAME }}.zip,janusgraph-dist/target/${{ env.JG_DIST_NAME }}.zip.asc,janusgraph-dist/target/${{ env.JG_DIST_NAME }}.zip,janusgraph-dist/target/${{ env.JG_FULL_DIST_NAME }}.zip.asc,janusgraph-dist/target/${{ env.JG_FULL_DIST_NAME }}.zip"
+          artifacts: "KEYS,${{ env.JG_DOC_DIST_NAME }}.zip.asc,${{ env.JG_DOC_DIST_NAME }}.zip,janusgraph-dist/target/${{ env.JG_DIST_NAME }}.zip.asc,janusgraph-dist/target/${{ env.JG_DIST_NAME }}.zip,janusgraph-dist/target/${{ env.JG_FULL_DIST_NAME }}.zip.asc,janusgraph-dist/target/${{ env.JG_FULL_DIST_NAME }}.zip,target/bom.json,target/bom.xml"
           name: "${{ env.JG_VER }}"
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
