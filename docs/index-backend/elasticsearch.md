@@ -106,7 +106,7 @@ JanusGraph only uses default values for `index-name` and
 `health-request-timeout`. See [Configuration Reference](../configs/configuration-reference.md) for descriptions of
 these options and their accepted values.
 
--   `index.[X].elasticsearch.index-name`
+-   `index.[X].index-name`
 -   `index.[X].elasticsearch.health-request-timeout`
 
 ### REST Client Options
