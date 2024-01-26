@@ -41,7 +41,7 @@ jobs:
           echo "PATCH_VERSION=${PATCH_VERSION}" >> $GITHUB_ENV
           echo "REVISION=${REVISION}" >> $GITHUB_ENV
       - name: Run minor tag for ghcr.io
-        uses: shrink/actions-docker-registry-tag@v3
+        uses: shrink/actions-docker-registry-tag@v4
         with:
           registry: ghcr.io
           repository: janusgraph/janusgraph
@@ -50,7 +50,7 @@ jobs:
             ${{ env.PATCH_VERSION }}
             ${{ env.MINOR_VERSION }}
       - name: Run minor tag for docker.io
-        uses: shrink/actions-docker-registry-tag@v3
+        uses: shrink/actions-docker-registry-tag@v4
         with:
           registry: index.docker.io
           repository: janusgraph/janusgraph
@@ -61,7 +61,7 @@ jobs:
             ${{ env.MINOR_VERSION }}
       - name: Run latest tag for ghcr.io
         if: "env.MINOR_VERSION == '${{ env.LATEST_RELEASE }}'"
-        uses: shrink/actions-docker-registry-tag@v3
+        uses: shrink/actions-docker-registry-tag@v4
         with:
           registry: ghcr.io
           repository: janusgraph/janusgraph
@@ -70,7 +70,7 @@ jobs:
             latest
       - name: Run latest tag for docker.io
         if: "env.MINOR_VERSION == '${{ env.LATEST_RELEASE }}'"
-        uses: shrink/actions-docker-registry-tag@v3
+        uses: shrink/actions-docker-registry-tag@v4
         with:
           registry: index.docker.io
           repository: janusgraph/janusgraph
