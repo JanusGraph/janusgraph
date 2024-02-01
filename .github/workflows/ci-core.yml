@@ -139,6 +139,6 @@ jobs:
         with:
           name: jacoco-reports
           path: target/jacoco-combined.exec
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           name: codecov-core-${{ matrix.module }}-java-${{ matrix.java }}
