@@ -342,9 +342,6 @@ on how to increase the refresh interval and its impact on write
 performance. Note, that a higher refresh interval means that it takes a
 longer time for graph mutations to be available in the index.
 
-For additional suggestions on how to increase write performance in
-Elasticsearch with detailed instructions, please read [this blog post](http://blog.bugsense.com/post/35580279634/indexing-bigdata-with-elasticsearch).
-
 ### Further Reading
 
 -   Please refer to the [Elasticsearch homepage](https://www.elastic.co)
