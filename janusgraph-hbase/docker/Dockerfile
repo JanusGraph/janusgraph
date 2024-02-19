@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:buster-20220822 as builder
+FROM debian:buster as builder
 
 ARG HBASE_VERSION=2.5.0
-ARG HBASE_DIST="http://archive.apache.org/dist/hbase"
+ARG HBASE_DIST="https://archive.apache.org/dist/hbase"
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl
 
-RUN curl -SL ${HBASE_DIST}/${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz | tar -x -z && mv hbase-${HBASE_VERSION} /opt/hbase
+RUN curl -SL ${HBASE_DIST}/${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz | tar -x -z
+RUN mv hbase-${HBASE_VERSION} /opt/hbase
 WORKDIR /opt/hbase
 RUN rm -rf ./docs ./LEGAL ./*.txt ./*/*.cmd
 
