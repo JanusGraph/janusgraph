@@ -317,7 +317,7 @@ public class CouchbaseKeyColumnValueStore implements KeyColumnValueStore {
         select.append(where);
 
         try {
-            LOGGER.info("Couchbase Query: {}", select.toString());
+            LOGGER.debug("Couchbase Query: {}", select.toString());
             //logger.info("   and parameters: {}", placeholderValues.toString());
 
             return cluster.query(select.toString(), qOptions);
