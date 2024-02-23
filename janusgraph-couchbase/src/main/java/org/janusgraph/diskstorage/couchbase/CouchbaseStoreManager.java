@@ -73,10 +73,10 @@ import java.util.stream.Collectors;
 
 import static org.janusgraph.diskstorage.couchbase.CouchbaseConfigOptions.CLUSTER_CONNECT_STRING;
 import static org.janusgraph.diskstorage.couchbase.CouchbaseConfigOptions.CLUSTER_PARALLELISM;
-import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_CONNECT_BUCKET;
-import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_CONNECT_PASSWORD;
-import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_CONNECT_USERNAME;
-import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_DEFAULT_SCOPE;
+import static org.janusgraph.diskstorage.couchbase.CouchbaseConfigOptions.CLUSTER_CONNECT_BUCKET;
+import static org.janusgraph.diskstorage.couchbase.CouchbaseConfigOptions.CLUSTER_CONNECT_PASSWORD;
+import static org.janusgraph.diskstorage.couchbase.CouchbaseConfigOptions.CLUSTER_CONNECT_USERNAME;
+import static org.janusgraph.diskstorage.couchbase.CouchbaseConfigOptions.CLUSTER_DEFAULT_SCOPE;
 
 
 /**
@@ -109,6 +109,7 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
         this.config = configuration;
         stores = new ConcurrentHashMap<>();
         String connectString = configuration.get(CLUSTER_CONNECT_STRING);
+        log.info("Connecting to {}", connectString);
         String user = configuration.get(CLUSTER_CONNECT_USERNAME);
         String password = configuration.get(CLUSTER_CONNECT_PASSWORD);
         String parallelism = configuration.get(CLUSTER_PARALLELISM);

@@ -144,6 +144,20 @@ Configuration for Elasticsearch fixed circle processor which is used for BKD Geo
 | index.[X].bkd-circle-processor.fixed.bounding-box-fallback | Allows to return bounding box for the circle which cannot be converted to proper shape with the specified error distance. In case `false` is set for this configuration an exception will be thrown whenever circle cannot be converted to another shape following error distance. | Boolean | true | MASKABLE |
 | index.[X].bkd-circle-processor.fixed.error-distance | The difference between the resulting inscribed distance from center to side and the circle’s radius. Specified in meters. | Double | 10.0 | MASKABLE |
 
+### index.[X].cb
+Couchbase index configuration
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| index.[X].cb.cluster-connect-bucket | Bucket in the Couchbase cluster | String | default | LOCAL |
+| index.[X].cb.cluster-connect-password | Password to the Couchbase cluster | String | password | LOCAL |
+| index.[X].cb.cluster-connect-string | Connect string to the Couchbase cluster | String | couchbase://localhost | LOCAL |
+| index.[X].cb.cluster-connect-username | Username to the Couchbase cluster | String | Administrator | LOCAL |
+| index.[X].cb.cluster-default-fuziness | Default FTS fuziness | Integer | 2 | LOCAL |
+| index.[X].cb.cluster-default-scope | Default Scope  | String | _default | LOCAL |
+| index.[X].cb.version | The version of the Couchbase cluster. | Integer | 703 | LOCAL |
+
 ### index.[X].elasticsearch
 Elasticsearch index configuration
 
@@ -460,6 +474,23 @@ Notice, for compatibility reasons, it's allowed to use `-` character instead of 
 See information about value constraints in the official [sleepycat documentation](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#LOCK_TIMEOUT).
 Notice, this option can be specified as `storage.berkeleyje.ext.je.lock.timeout` which will be treated the same as this configuration option. | String | (no default value) | MASKABLE |
 
+### storage.cb
+Couchbase storage backend options
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| storage.cb.cluster-connect-bucket | Bucket in the Couchbase cluster | String | default | LOCAL |
+| storage.cb.cluster-connect-password | Password to the Couchbase cluster | String | password | LOCAL |
+| storage.cb.cluster-connect-string | Connect string to the Couchbase cluster | String | couchbase://localhost | LOCAL |
+| storage.cb.cluster-connect-username | Username to the Couchbase cluster | String | Administrator | LOCAL |
+| storage.cb.cluster-default-collection | Default Collection | String | _default | LOCAL |
+| storage.cb.cluster-default-scope | Default Scope  | String | _default | LOCAL |
+| storage.cb.cluster-parallelism | Number of parallel threads in which multi-slice queries are executed | String | 1 | LOCAL |
+| storage.cb.get-range-mode | The mode of executing CB getRange, either `iterator` or `list` | String | list | LOCAL |
+| storage.cb.isolation-level | Options are serializable, read_committed_no_write, read_committed_with_write | String | serializable | LOCAL |
+| storage.cb.version | The version of the Couchbase cluster. | Integer | 703 | LOCAL |
+
 ### storage.cql
 CQL storage backend options
 
@@ -618,16 +649,16 @@ Configuration options for SSL Truststore.
 HBase storage options
 
 
-| Name | Description | Datatype | Default Value       | Mutability |
-| ---- | ---- | ---- |---------------------| ---- |
-| storage.hbase.compression-algorithm | An HBase Compression.Algorithm enum string which will be applied to newly created column families. The compression algorithm must be installed and available on the HBase cluster.  JanusGraph cannot install and configure new compression algorithms on the HBase cluster by itself. | String | GZ                  | MASKABLE |
-| storage.hbase.region-count | The number of initial regions set when creating JanusGraph's HBase table | Integer | (no default value)  | MASKABLE |
-| storage.hbase.regions-per-server | The number of regions per regionserver to set when creating JanusGraph's HBase table | Integer | (no default value)  | MASKABLE |
-| storage.hbase.short-cf-names | Whether to shorten the names of JanusGraph's column families to one-character mnemonics to conserve storage space | Boolean | true                | FIXED |
-| storage.hbase.skip-schema-check | Assume that JanusGraph's HBase table and column families already exist. When this is true, JanusGraph will not check for the existence of its table/CFs, nor will it attempt to create them under any circumstances.  This is useful when running JanusGraph without HBase admin privileges. | Boolean | false               | MASKABLE |
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| storage.hbase.compression-algorithm | An HBase Compression.Algorithm enum string which will be applied to newly created column families. The compression algorithm must be installed and available on the HBase cluster.  JanusGraph cannot install and configure new compression algorithms on the HBase cluster by itself. | String | GZ | MASKABLE |
+| storage.hbase.region-count | The number of initial regions set when creating JanusGraph's HBase table | Integer | (no default value) | MASKABLE |
+| storage.hbase.regions-per-server | The number of regions per regionserver to set when creating JanusGraph's HBase table | Integer | (no default value) | MASKABLE |
+| storage.hbase.short-cf-names | Whether to shorten the names of JanusGraph's column families to one-character mnemonics to conserve storage space | Boolean | true | FIXED |
+| storage.hbase.skip-schema-check | Assume that JanusGraph's HBase table and column families already exist. When this is true, JanusGraph will not check for the existence of its table/CFs, nor will it attempt to create them under any circumstances.  This is useful when running JanusGraph without HBase admin privileges. | Boolean | false | MASKABLE |
 | storage.hbase.snapshot-name | The name of an existing HBase snapshot to be used by HBaseSnapshotInputFormat | String | janusgraph-snapshot | LOCAL |
-| storage.hbase.snapshot-restore-dir | The temporary directory to be used by HBaseSnapshotInputFormat to restore a snapshot. This directory should be on the same File System as the HBase root dir. | String | /tmp                | LOCAL |
-| storage.hbase.table | The name of the table JanusGraph will use.  When storage.hbase.skip-schema-check is false, JanusGraph will automatically create this table if it does not already exist. If this configuration option is not provided but graph.graphname is, the table will be set to that value. | String | janusgraph          | LOCAL |
+| storage.hbase.snapshot-restore-dir | The temporary directory to be used by HBaseSnapshotInputFormat to restore a snapshot. This directory should be on the same File System as the HBase root dir. | String | /var/folders/9r/nv_glvys3kgcw706nvfkvgf40000gr/T/ | LOCAL |
+| storage.hbase.table | The name of the table JanusGraph will use.  When storage.hbase.skip-schema-check is false, JanusGraph will automatically create this table if it does not already exist. If this configuration option is not provided but graph.graphname is, the table will be set to that value. | String | janusgraph | LOCAL |
 
 ### storage.lock
 Options for locking on eventually-consistent stores

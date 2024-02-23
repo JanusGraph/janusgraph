@@ -18,9 +18,11 @@ package org.janusgraph.diskstorage.couchbase;
 
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
 
+@PreInitializeConfigOptions
 public interface CouchbaseIndexConfigOptions {
 
     /*****************************************************************

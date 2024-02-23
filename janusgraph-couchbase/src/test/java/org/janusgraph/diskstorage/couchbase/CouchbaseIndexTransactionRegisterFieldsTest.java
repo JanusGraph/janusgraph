@@ -48,6 +48,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({
@@ -111,11 +112,16 @@ class CouchbaseIndexTransactionRegisterFieldsTest {
             Map<String, Object> params = si.params();
             Assert.assertNotNull(params);
             List<Map<String, Object>> keyProps = (List<Map<String, Object>>) pullMapKeys(params, "mapping/types/__scope__.test_store/properties/columns/properties/test_key/fields");
+            AtomicBoolean found = new AtomicBoolean(false);
             keyProps.stream()
                     .filter(kp -> "test_key".equals(kp.get("name")))
-                    .findFirst().ifPresentOrElse(kp -> {
+                    .findFirst().ifPresent(kp -> {
                         Assert.assertEquals(expectedFtsType, kp.get("type"));
-                    }, RuntimeException::new);
+                        found.set(true);
+                    });
+            if (!found.get()) {
+                throw new RuntimeException();
+            }
             return true;
         }));
     }
