@@ -26,10 +26,8 @@ import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.transaction.RelationConstructor;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -62,8 +60,7 @@ public class CacheEdge extends AbstractEdge {
         if (startVertex.hasAddedRelations() && startVertex.hasRemovedRelations()) {
             //Test whether this relation has been replaced
             final long id = super.longId();
-            final Iterable<InternalRelation> added = startVertex.getAddedRelations(
-                internalRelation -> (internalRelation instanceof StandardEdge) && ((StandardEdge) internalRelation).getPreviousID() == id);
+            final Iterable<InternalRelation> added = startVertex.findPreviousRelation(id);
             assert Iterables.size(added) <= 1 || (isLoop() && Iterables.size(added) == 2);
             it = Iterables.getFirst(added, null);
         }
@@ -88,8 +85,7 @@ public class CacheEdge extends AbstractEdge {
         copy.remove();
 
         Long id = type.getConsistencyModifier() != ConsistencyModifier.FORK ? longId() : null;
-        StandardEdge u = (StandardEdge) tx().addEdge(id, getVertex(0), getVertex(1), edgeLabel());
-        u.setPreviousID(longId());
+        StandardEdge u = (StandardEdge) tx().addEdge(id, getVertex(0), getVertex(1), edgeLabel(), longId());
         copyProperties(u);
         return u;
     }
@@ -110,13 +106,8 @@ public class CacheEdge extends AbstractEdge {
     @Override
     public Iterable<PropertyKey> getPropertyKeysDirect() {
         RelationCache map = getPropertyMap();
-        List<PropertyKey> types = new ArrayList<>(map.numProperties());
-
-        for (LongObjectCursor<Object> entry : map) {
-            types.add(tx().getExistingPropertyKey(entry.key));
-        }
-
-        return types;
+        StandardJanusGraphTx currentTx = tx();
+        return Iterables.transform(map, entry -> currentTx.getExistingPropertyKey(entry.key));
     }
 
     @Override

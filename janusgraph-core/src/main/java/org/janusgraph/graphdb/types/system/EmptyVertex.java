@@ -56,6 +56,16 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
+    public Iterable<InternalRelation> findAddedProperty(Predicate<InternalRelation> query) {
+        throw new UnsupportedOperationException(errorName + " do not support incident edges");
+    }
+
+    @Override
+    public Iterable<InternalRelation> findPreviousRelation(long id) {
+        throw new UnsupportedOperationException(errorName + " do not support incident edges");
+    }
+
+    @Override
     public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }

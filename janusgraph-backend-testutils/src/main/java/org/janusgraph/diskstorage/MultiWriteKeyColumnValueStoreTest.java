@@ -55,6 +55,8 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
     final int bufferSize = 20;
 
+    final int numMutationsParallelThreshold = 20;
+
     protected final String storeName1 = "testStore1";
     private KCVSCache store1;
     protected final String storeName2 = "testStore2";
@@ -84,7 +86,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
     public void open() throws BackendException {
         manager = openStorageManager();
-        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, Duration.ofMillis(100), true);
+        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, numMutationsParallelThreshold, Duration.ofMillis(100), true);
         store1 = new NoKCVSCache(manager.openDatabase(storeName1));
         store2 = new NoKCVSCache(manager.openDatabase(storeName2));
 
@@ -104,7 +106,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
     public void newTx() throws BackendException {
         if (tx!=null) tx.commit();
-        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, Duration.ofMillis(100), true);
+        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, numMutationsParallelThreshold, Duration.ofMillis(100), true);
     }
 
     @Test

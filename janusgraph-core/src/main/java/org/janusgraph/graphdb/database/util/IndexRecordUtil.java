@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.database.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import org.apache.commons.lang.StringUtils;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
@@ -60,6 +61,7 @@ import org.janusgraph.util.encoding.LongEncoding;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.janusgraph.util.encoding.LongEncoding.STRING_ENCODING_MARKER;
@@ -248,18 +250,19 @@ public class IndexRecordUtil {
             values = ImmutableList.of(replaceValue);
         } else {
             values = new ArrayList<>();
-            Iterable<JanusGraphVertexProperty> props;
+            Iterator<JanusGraphVertexProperty> props;
             if (onlyLoaded ||
                 (!vertex.isNew() && IDManager.VertexIDType.PartitionedVertex.is(vertex.id()))) {
                 //going through transaction so we can query deleted vertices
                 final VertexCentricQueryBuilder qb = ((InternalVertex)vertex).tx().query(vertex);
                 qb.noPartitionRestriction().type(key);
                 if (onlyLoaded) qb.queryOnlyLoaded();
-                props = qb.properties();
+                props = qb.properties().iterator();
             } else {
-                props = vertex.query().keys(key.name()).properties();
+                props = Iterators.transform(vertex.properties(key.name()), i -> (JanusGraphVertexProperty) i);
             }
-            for (final JanusGraphVertexProperty p : props) {
+            while (props.hasNext()) {
+                JanusGraphVertexProperty p = props.next();
                 assert !onlyLoaded || p.isLoaded() || p.isRemoved();
                 assert key.dataType().equals(p.value().getClass()) : key + " -> " + p;
                 values.add(new IndexRecordEntry(p));

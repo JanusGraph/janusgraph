@@ -100,6 +100,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.NUM_MUTATIONS_PARALLEL_THRESHOLD;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CLASS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_EXECUTOR_SERVICE_CORE_POOL_SIZE;
@@ -221,6 +222,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     private final Map<String, IndexProvider> indexes;
 
     private final int bufferSize;
+    private final int numMutationsParallelThreshold;
     private final Duration maxWriteTime;
     private final Duration maxReadTime;
     private final boolean allowCustomVertexIdType;
@@ -258,6 +260,9 @@ public class Backend implements LockerProvider, AutoCloseable {
         if (!storeFeatures.hasBatchMutation()) {
             bufferSize = Integer.MAX_VALUE;
         } else bufferSize = bufferSizeTmp;
+
+        this.numMutationsParallelThreshold = configuration.get(NUM_MUTATIONS_PARALLEL_THRESHOLD);
+        Preconditions.checkArgument(numMutationsParallelThreshold > 0, "Parallel-threshold for number of mutations should be positive");
 
         maxWriteTime = configuration.get(STORAGE_WRITE_WAITTIME);
         maxReadTime = configuration.get(STORAGE_READ_WAITTIME);
@@ -477,6 +482,14 @@ public class Backend implements LockerProvider, AutoCloseable {
         return userConfig;
     }
 
+    public int getBufferSize() {
+        return this.bufferSize;
+    }
+
+    public int getNumMutationsParallelThreshold() {
+        return this.numMutationsParallelThreshold;
+    }
+
     private String getMetricsCacheName(String storeName) {
         if (!configuration.get(BASIC_METRICS)) return null;
         return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
@@ -593,7 +606,8 @@ public class Backend implements LockerProvider, AutoCloseable {
         StoreTransaction tx = storeManagerLocking.beginTransaction(configuration);
 
         // Cache
-        CacheTransaction cacheTx = new CacheTransaction(tx, storeManagerLocking, bufferSize, maxWriteTime, configuration.hasEnabledBatchLoading());
+        CacheTransaction cacheTx = new CacheTransaction(tx, storeManagerLocking, bufferSize, numMutationsParallelThreshold,
+            maxWriteTime, configuration.hasEnabledBatchLoading());
 
         // Index transactions
         final Map<String, IndexTransaction> indexTx = new HashMap<>(indexes.size());

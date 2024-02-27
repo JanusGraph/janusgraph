@@ -193,8 +193,4 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         return (Iterator)query().direction(direction).labels(edgeLabels).vertices().iterator();
 
     }
-
-
-
-
 }

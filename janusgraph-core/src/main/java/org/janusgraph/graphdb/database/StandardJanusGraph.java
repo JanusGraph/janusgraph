@@ -129,6 +129,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.script.Bindings;
 import javax.script.ScriptException;
 
@@ -141,6 +142,8 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     private static final Logger log =
             LoggerFactory.getLogger(StandardJanusGraph.class);
 
+    private static final Logger logForPrepareCommit =
+        LoggerFactory.getLogger(StandardJanusGraph.class.getName()+".prepareCommit");
 
     static {
         TraversalStrategies graphStrategies =
@@ -696,14 +699,48 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         ListMultimap<InternalVertex, InternalRelation> mutatedProperties = ArrayListMultimap.create();
         List<IndexUpdate> indexUpdates = new ArrayList<>();
 
+        long startTimeStamp = System.currentTimeMillis();
+        int totalMutations = addedRelations.size() + deletedRelations.size();
+        boolean isBigDataSetLoggingEnabled = logForPrepareCommit.isDebugEnabled() && totalMutations >= backend.getBufferSize();
+        if (isBigDataSetLoggingEnabled) {
+            logForPrepareCommit.debug("0. Prepare commit for mutations count={}", totalMutations);
+        }
+
+        if (isBigDataSetLoggingEnabled) {
+            logForPrepareCommit.debug("1. Collect deleted edges and their index updates and acquire edge locks");
+        }
         prepareCommitDeletes(deletedRelations, filter, mutator, tx, acquireLocks, mutations, mutatedProperties, indexUpdates);
+
+        if (isBigDataSetLoggingEnabled) {
+            logForPrepareCommit.debug("2. Collect added edges and their index updates and acquire edge locks");
+        }
         prepareCommitAdditions(addedRelations, filter, mutator, tx, acquireLocks, mutations, mutatedProperties, indexUpdates);
+
+        if (isBigDataSetLoggingEnabled) {
+            logForPrepareCommit.debug("3. Collect all index update for vertices");
+        }
         prepareCommitVertexIndexUpdates(mutatedProperties, indexUpdates);
+
+        if (isBigDataSetLoggingEnabled) {
+            logForPrepareCommit.debug("4. Acquire index locks (deletions first)");
+        }
         prepareCommitAcquireIndexLocks(indexUpdates, mutator, acquireLocks);
+
+        if (isBigDataSetLoggingEnabled) {
+            logForPrepareCommit.debug("5. Add relation mutations");
+        }
         prepareCommitAddRelationMutations(mutations, mutator, tx);
+
+        if (isBigDataSetLoggingEnabled) {
+            logForPrepareCommit.debug("6. Add index updates");
+        }
         boolean has2iMods = prepareCommitIndexUpdatesAndCheckIfAnyMixedIndexUsed(indexUpdates, mutator);
 
-        return new ModificationSummary(!mutations.isEmpty(),has2iMods);
+        if (isBigDataSetLoggingEnabled) {
+            long duration = System.currentTimeMillis() - startTimeStamp;
+            logForPrepareCommit.debug("7. Prepare commit is done with mutated vertex count={} in duration={}", mutations.size(), duration);
+        }
+        return new ModificationSummary(!mutations.isEmpty(), has2iMods);
     }
 
     /**
@@ -772,10 +809,14 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
      * Collect all index update for vertices
      */
     private void prepareCommitVertexIndexUpdates(final ListMultimap<InternalVertex, InternalRelation> mutatedProperties,
-                                                 final List<IndexUpdate> indexUpdates){
-        for (InternalVertex v : mutatedProperties.keySet()) {
-            indexUpdates.addAll(indexSerializer.getIndexUpdates(v,mutatedProperties.get(v)));
-        }
+                                                 final List<IndexUpdate> indexUpdates) {
+        mutatedProperties.keySet().parallelStream()
+            .map(v -> indexSerializer.getIndexUpdates(v, mutatedProperties.get(v)))
+            // Note: due to usage of parallel stream, the collector is used to synchronize insertions
+            // into `indexUpdates` for thread safety reasons.
+            // Using `forEach` directly isn't thread safe.
+            .collect(Collectors.toList())
+            .forEach(indexUpdates::addAll);
     }
 
     /**

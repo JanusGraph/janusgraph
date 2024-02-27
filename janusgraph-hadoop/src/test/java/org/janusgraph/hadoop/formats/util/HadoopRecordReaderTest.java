@@ -150,7 +150,7 @@ public class HadoopRecordReaderTest extends JanusGraphBaseTest {
         StoreTransaction tx = graph.getBackend().getStoreManager().beginTransaction(StandardBaseTransactionConfig.of(TimestampProviders.NANO));
         ExpectedValueCheckingTransaction expectedValueCheckingTransaction = new ExpectedValueCheckingTransaction(tx, tx, Duration.ofMillis(1000000));
         CacheTransaction cacheTransaction = new CacheTransaction(expectedValueCheckingTransaction,
-            (KeyColumnValueStoreManager) graph.getBackend().getStoreManager(), 64, Duration.ofMillis(100), false);
+            (KeyColumnValueStoreManager) graph.getBackend().getStoreManager(), 64, 100, Duration.ofMillis(100), false);
         SliceQuery sliceQuery =  new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(4));
         KeyIterator iterator = KCVSUtil.getKeys(kcvsCache, sliceQuery, graph.getBackend().getStoreFeatures(), 8, cacheTransaction);
         return iterator;

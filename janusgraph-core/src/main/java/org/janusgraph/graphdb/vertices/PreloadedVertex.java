@@ -76,6 +76,16 @@ public class PreloadedVertex extends CacheVertex {
     }
 
     @Override
+    public Iterable<InternalRelation> findAddedProperty(Predicate<InternalRelation> query) {
+        return Collections.EMPTY_LIST;
+    }
+
+    @Override
+    public Iterable<InternalRelation> findPreviousRelation(long id) {
+        return Collections.EMPTY_LIST;
+    }
+
+    @Override
     public VertexCentricQueryBuilder query() {
         if (super.getQueryCacheSize() > 0) return super.query().queryOnlyGivenVertex();
         else throw GraphComputer.Exceptions.adjacentVertexEdgesAndVerticesCanNotBeReadOrUpdated();

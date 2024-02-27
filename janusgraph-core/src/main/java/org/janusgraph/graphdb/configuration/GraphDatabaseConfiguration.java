@@ -604,6 +604,18 @@ public class GraphDatabaseConfiguration {
             "Size of the batch in which mutations are persisted",
             ConfigOption.Type.MASKABLE, 1024, ConfigOption.positiveInt());
 
+    /**
+     * Number of mutations in a transaction after which use parallel processing for transaction aggregations.
+     * This might give a boost in transaction commit time.
+     * Default value is 100.
+     */
+    public static final ConfigOption<Integer> NUM_MUTATIONS_PARALLEL_THRESHOLD = new ConfigOption<>(STORAGE_NS,"num-mutations-parallel-threshold",
+        "This parameter determines the minimum number of mutations a transaction must have before parallel processing is applied during aggregation. " +
+            "Leveraging parallel processing can enhance the commit times for transactions involving a large number of mutations. " +
+            "However, it is advisable not to set the threshold too low (e.g., 0 or 1) due to the overhead associated with parallelism synchronization. " +
+            "This overhead is more efficiently offset in the context of larger transactions.",
+    ConfigOption.Type.MASKABLE, 100, ConfigOption.positiveInt());
+
     public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<>(STORAGE_NS,"write-time",
             "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation " +
             "fails temporarily, JanusGraph will backoff exponentially and retry the operation until the wait time has been exhausted. ",

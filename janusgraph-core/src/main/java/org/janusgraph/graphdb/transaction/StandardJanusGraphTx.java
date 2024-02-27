@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -298,11 +299,11 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         };
 
         if (config.isSingleThreaded()) {
-            addedRelations = new SimpleAddedRelations();
+            addedRelations = new SimpleAddedRelations(false);
             newTypeCache = new HashMap<>();
             newVertexIndexEntries = new SimpleIndexCache();
         } else {
-            addedRelations = new ConcurrentAddedRelations();
+            addedRelations = new ConcurrentAddedRelations(false);
             newTypeCache = new NonBlockingHashMap<>();
             newVertexIndexEntries = new ConcurrentIndexCache();
         }
@@ -810,10 +811,10 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     }
 
     public JanusGraphEdge addEdge(JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {
-       return addEdge(null, outVertex, inVertex, label);
+       return addEdge(null, outVertex, inVertex, label, 0L);
     }
 
-    public JanusGraphEdge addEdge(Long id, JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label) {
+    public JanusGraphEdge addEdge(Long id, JanusGraphVertex outVertex, JanusGraphVertex inVertex, EdgeLabel label, Long previousId) {
         verifyWriteAccess(outVertex, inVertex);
         outVertex = ((InternalVertex) outVertex).it();
         inVertex = ((InternalVertex) inVertex).it();
@@ -840,6 +841,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             }
             long edgeId = id == null ? IDManager.getTemporaryRelationID(temporaryIds.nextID()) : id;
             StandardEdge edge = new StandardEdge(edgeId, label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
+            if (previousId > 0) edge.setPreviousID(previousId);
             if (config.hasAssignIDsImmediately() && id == null) graph.assignID(edge);
             connectRelation(edge);
             return edge;
@@ -866,18 +868,18 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     }
 
     public JanusGraphVertexProperty addProperty(JanusGraphVertex vertex, PropertyKey key, Object value) {
-        return addProperty(vertex, key, value, null);
+        return addProperty(vertex, key, value, null, 0L);
     }
 
-    public JanusGraphVertexProperty addProperty(JanusGraphVertex vertex, PropertyKey key, Object value, Long id) {
-        return addProperty(key.cardinality().convert(), vertex, key, value, id);
+    public JanusGraphVertexProperty addProperty(JanusGraphVertex vertex, PropertyKey key, Object value, Long id, Long previousId) {
+        return addProperty(key.cardinality().convert(), vertex, key, value, id, previousId);
     }
 
     public JanusGraphVertexProperty addProperty(VertexProperty.Cardinality cardinality, JanusGraphVertex vertex, PropertyKey key, Object value) {
-        return addProperty(cardinality, vertex, key, value, null);
+        return addProperty(cardinality, vertex, key, value, null, 0L);
     }
 
-    public JanusGraphVertexProperty addProperty(VertexProperty.Cardinality cardinality, JanusGraphVertex vertex, PropertyKey key, Object value, Long id) {
+    public JanusGraphVertexProperty addProperty(VertexProperty.Cardinality cardinality, JanusGraphVertex vertex, PropertyKey key, Object value, Long id, Long previousId) {
         if (key.cardinality().convert()!=cardinality && cardinality!=VertexProperty.Cardinality.single)
             throw new SchemaViolationException("Key is defined for %s cardinality which conflicts with specified: %s",key.cardinality(),cardinality);
         verifyWriteAccess(vertex);
@@ -919,6 +921,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
             long propId = id == null ? IDManager.getTemporaryRelationID(temporaryIds.nextID()) : id;
             StandardVertexProperty prop = new StandardVertexProperty(propId, key, (InternalVertex) vertex, normalizedValue, ElementLifeCycle.New);
+            if (previousId > 0) prop.setPreviousID(previousId);
             if (config.hasAssignIDsImmediately() && id == null) graph.assignID(prop);
 
             //Delete properties if the cardinality is restricted
@@ -936,10 +939,10 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     //Only delete in-memory so as to not trigger a read from the database which isn't necessary because we will overwrite blindly
                     //We need to label the new property as "upsert", so that in case property deletion happens, we not only delete this new
                     //in-memory property, but also read from database to delete the old value (if exists)
-                    ((InternalVertex) vertex).getAddedRelations(p -> p.getType().equals(key)).forEach(p -> propertyRemover.accept((JanusGraphVertexProperty) p));
+                    ((InternalVertex) vertex).getDuplicatedAddedRelation(key, normalizedValue).forEach(p -> propertyRemover.accept((JanusGraphVertexProperty) p));
                     prop.setUpsert(true);
                 } else {
-                    ((InternalVertex) vertex).query().types(key).properties().forEach(propertyRemover);
+                    vertex.properties(key.name()).forEachRemaining(p -> propertyRemover.accept((JanusGraphVertexProperty) p));
                 }
             }
 
@@ -1343,13 +1346,21 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
         @Override
         public boolean isDeleted(VertexCentricQuery query, JanusGraphRelation result) {
-            if (deletedRelations.containsKey(result.longId()) || result != ((InternalRelation) result).it()) return true;
+            if (deletedRelations.containsKey(result.longId()) || result != ((InternalRelation) result).it())
+                return true;
             //Check if this relation is replaced by an added one due to a multiplicity constraint
-            InternalRelationType type = (InternalRelationType)result.getType();
+            InternalRelationType type = (InternalRelationType) result.getType();
             InternalVertex vertex = query.getVertex();
             if (type.multiplicity().isConstrained() && vertex.hasAddedRelations()) {
                 final RelationComparator comparator = new RelationComparator(vertex);
-                return !Iterables.isEmpty(vertex.getAddedRelations(internalRelation -> comparator.compare((InternalRelation) result, internalRelation) == 0));
+                final Predicate<InternalRelation> predicate = internalRelation -> comparator.compare((InternalRelation) result, internalRelation) == 0;
+                if (result.isProperty()) {
+                    //Search only in added properties, this might be faster in case of high number of edges
+                    return !Iterables.isEmpty(vertex.findAddedProperty(predicate));
+                } else {
+                    //Search in all added relations
+                    return !Iterables.isEmpty(vertex.getAddedRelations(predicate));
+                }
             }
             return false;
         }
