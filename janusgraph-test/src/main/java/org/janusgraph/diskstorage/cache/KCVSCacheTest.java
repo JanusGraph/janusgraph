@@ -81,7 +81,7 @@ public abstract class KCVSCacheTest {
     }
 
     public CacheTransaction getCacheTx() {
-        return new CacheTransaction(getStoreTx(), storeManager, 1024, MAX_WRITE_TIME, false);
+        return new CacheTransaction(getStoreTx(), storeManager, 1024, 1024, MAX_WRITE_TIME, false);
     }
 
     @AfterEach

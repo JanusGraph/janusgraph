@@ -19,6 +19,7 @@ import org.janusgraph.graphdb.internal.InternalRelation;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 public class EmptyAddedRelations implements AddedRelationsContainer {
 
@@ -43,6 +44,26 @@ public class EmptyAddedRelations implements AddedRelationsContainer {
 
     @Override
     public Iterable<InternalRelation> getView(Predicate<InternalRelation> filter) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Iterable<InternalRelation> getViewOfProperties(Predicate<InternalRelation> filter) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<InternalRelation> getViewOfProperties(String... keys) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<InternalRelation> getViewOfProperties(String key, Object value) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Iterable<InternalRelation> getViewOfPreviousRelations(long id) {
         return Collections.emptyList();
     }
 
