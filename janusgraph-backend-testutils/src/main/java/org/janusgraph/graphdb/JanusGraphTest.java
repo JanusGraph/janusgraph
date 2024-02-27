@@ -10011,6 +10011,48 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         graph2.close();
     }
 
+    @Test
+    public void testMultiQueryDropsVertices() {
+
+        mgmt.makePropertyKey("id").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey nameProp = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("details").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("nameIndex", Vertex.class).addKey(nameProp).buildCompositeIndex();
+
+        finishSchema();
+
+        int verticesAmount = 42;
+
+        for (int i = 0; i < verticesAmount; i++) {
+            Vertex vertex = tx.addVertex("id", i);
+            vertex.property("name", "name_test");
+            vertex.property("details", "details_" + i);
+        }
+
+        clopen();
+
+        List<JanusGraphVertex> vertices = tx.traversal()
+            .V()
+            .has("name", "name_test")
+            .toList()
+            .stream()
+            .map(v -> (JanusGraphVertex) v)
+            .collect(Collectors.toList());
+
+        int actualCount = tx.multiQuery(vertices).drop();
+        clopen();
+
+        assertEquals(verticesAmount, actualCount);
+
+        int afterDropCount = tx.traversal()
+            .V()
+            .has("name", "name_test")
+            .toList()
+            .size();
+
+        assertEquals(0, afterDropCount);
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     public void testParallelBackendOps(boolean parallelBackendOpsEnabled) {

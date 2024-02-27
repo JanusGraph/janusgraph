@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
@@ -161,6 +162,12 @@ public class StandardVertex extends AbstractVertex {
     @Override
     public synchronized void remove() {
         super.remove();
+        ((StandardVertex) it()).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+    }
+
+    @Override
+    public synchronized void remove(Iterable<JanusGraphRelation> loadedRelations) {
+        super.remove(loadedRelations);
         ((StandardVertex) it()).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
     }
 
