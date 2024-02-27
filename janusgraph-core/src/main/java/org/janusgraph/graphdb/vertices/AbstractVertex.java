@@ -98,16 +98,17 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 	 */
 
     @Override
+    public synchronized void remove(Iterable<JanusGraphRelation> loadedRelations) {
+        verifyAccess();
+        for (JanusGraphRelation r : loadedRelations) {
+            r.remove();
+        }
+    }
+
+    @Override
     public synchronized void remove() {
         verifyAccess();
-//        if (isRemoved()) return; //Remove() is idempotent
-        Iterator<JanusGraphRelation> iterator = it().query().noPartitionRestriction().relations().iterator();
-        while (iterator.hasNext()) {
-            iterator.next();
-            iterator.remove();
-        }
-        //Remove all system types on the vertex
-        for (JanusGraphRelation r : it().query().noPartitionRestriction().system().relations()) {
+        for (JanusGraphRelation r : it().query().noPartitionRestriction().all().relations()) {
             r.remove();
         }
     }

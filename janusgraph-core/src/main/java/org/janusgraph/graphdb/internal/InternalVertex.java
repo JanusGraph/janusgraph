@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Predicate;
+import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.diskstorage.EntryList;
@@ -43,6 +44,12 @@ public interface InternalVertex extends JanusGraphVertex, InternalElement {
      * @param e JanusGraphRelation to be removed
      */
     void removeRelation(InternalRelation e);
+
+    /**
+     * Remove a vertex with pre-loaded relations.
+     * @param loadedRelations pre-loaded relations.
+     */
+    void remove(Iterable<JanusGraphRelation> loadedRelations);
 
     /**
      * Add a new relation to the vertex

@@ -57,7 +57,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     public MultiVertexCentricQueryBuilder(final StandardJanusGraphTx tx, Integer initialVerticesCapacity) {
         super(tx);
-        vertices = initialVerticesCapacity!=null ? new HashSet<>(initialVerticesCapacity) : new HashSet<>();
+        vertices = initialVerticesCapacity != null ? new HashSet<>(initialVerticesCapacity) : new HashSet<>();
     }
 
     @Override
@@ -74,7 +74,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     public JanusGraphMultiVertexQuery addVertex(Vertex vertex) {
         assert vertex != null;
         assert vertex instanceof InternalVertex;
-        vertices.add(((InternalVertex)vertex).it());
+        vertices.add(((InternalVertex) vertex).it());
         return this;
     }
 
@@ -104,17 +104,17 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
      * @param returnType
      * @return
      */
-    protected<Q> Map<JanusGraphVertex,Q> execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
+    protected <Q> Map<JanusGraphVertex, Q> execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
         final Map<JanusGraphVertex, Q> result = new HashMap<>(vertices.size());
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
-        profiler.setAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION,true);
-        profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,vertices.size());
+        profiler.setAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION, true);
+        profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION, vertices.size());
         if (!bq.isEmpty()) {
             Collection<InternalVertex> adjVertices = getResolvedAdjVertices();
             //Overwrite with more accurate size accounting for partitioned vertices
-            profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,adjVertices.size());
-            if(bq.getQueries().size() == 1){
+            profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION, adjVertices.size());
+            if (bq.getQueries().size() == 1) {
                 BackendQueryHolder<SliceQuery> query = bq.getQueries().get(0);
                 // if it's just a single query - there is no need to group any queries together.
                 // Thus, we can execute `executeMultiQuery` instead of `executeMultiSliceMultiQuery`
@@ -132,8 +132,8 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
         return result;
     }
 
-    private Collection<InternalVertex> getResolvedAdjVertices(){
-        if(hasQueryOnlyGivenVertex()){
+    private Collection<InternalVertex> getResolvedAdjVertices() {
+        if (hasQueryOnlyGivenVertex()) {
             return vertices;
         }
 
@@ -144,12 +144,12 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
                 break;
             }
         }
-        if(!hasPartitionedVertices){
+        if (!hasPartitionedVertices) {
             return vertices;
         }
 
-        profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION,true);
-        Set<InternalVertex> adjVertices = new HashSet<>(vertices.size()*2);
+        profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION, true);
+        Set<InternalVertex> adjVertices = new HashSet<>(vertices.size() * 2);
         for (InternalVertex v : vertices) {
             if (tx.isPartitionedVertex(v)) {
                 adjVertices.addAll(allRequiredRepresentatives(v));
@@ -162,8 +162,8 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     }
 
     public Map<JanusGraphVertex, Iterable<? extends JanusGraphRelation>> executeImplicitKeyQuery() {
-        return new HashMap<JanusGraphVertex, Iterable<? extends JanusGraphRelation>>(vertices.size()){{
-            for (InternalVertex v : vertices ) put(v,executeImplicitKeyQuery(v));
+        return new HashMap<JanusGraphVertex, Iterable<? extends JanusGraphRelation>>(vertices.size()) {{
+            for (InternalVertex v : vertices) put(v, executeImplicitKeyQuery(v));
         }};
     }
 
@@ -174,9 +174,9 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     @Override
     public Map<JanusGraphVertex, Iterable<JanusGraphVertexProperty>> properties() {
-        return (Map)(isImplicitKeyQuery(RelationCategory.PROPERTY)?
-                executeImplicitKeyQuery():
-                execute(RelationCategory.PROPERTY, new CachedRelationConstructor()));
+        return (Map) (isImplicitKeyQuery(RelationCategory.PROPERTY) ?
+            executeImplicitKeyQuery() :
+            execute(RelationCategory.PROPERTY, new CachedRelationConstructor()));
     }
 
     @Override
@@ -187,9 +187,9 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     @Override
     public Map<JanusGraphVertex, Iterable<JanusGraphRelation>> relations() {
-        return (Map)(isImplicitKeyQuery(RelationCategory.RELATION)?
-                executeImplicitKeyQuery():
-                execute(RelationCategory.RELATION, new CachedRelationConstructor()));
+        return (Map) (isImplicitKeyQuery(RelationCategory.RELATION) ?
+            executeImplicitKeyQuery() :
+            execute(RelationCategory.RELATION, new CachedRelationConstructor()));
     }
 
     @Override
@@ -202,4 +202,10 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
         return execute(RelationCategory.EDGE, new VertexIdConstructor());
     }
 
+    @Override
+    public Integer drop() {
+        Map<JanusGraphVertex, Iterable<JanusGraphRelation>> allRelations = this.noPartitionRestriction().all().relations();
+        allRelations.forEach((vertex, relations) -> ((InternalVertex) vertex).remove(relations));
+        return allRelations.size();
+    }
 }

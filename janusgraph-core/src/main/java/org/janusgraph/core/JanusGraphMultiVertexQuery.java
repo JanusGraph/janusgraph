@@ -153,4 +153,10 @@ public interface JanusGraphMultiVertexQuery<Q extends JanusGraphMultiVertexQuery
      */
     Map<JanusGraphVertex, VertexList> vertexIds();
 
+    /**
+     * Drops all vertices that match this query
+     *
+     * @return Count of dropped vertices
+     */
+    Integer drop();
 }

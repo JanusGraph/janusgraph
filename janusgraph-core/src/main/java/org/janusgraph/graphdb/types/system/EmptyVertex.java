@@ -21,6 +21,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
@@ -168,6 +169,11 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public void remove() {
+        throw new UnsupportedOperationException(errorName + " cannot be removed");
+    }
+
+    @Override
+    public void remove(Iterable<JanusGraphRelation> loadedRelations) {
         throw new UnsupportedOperationException(errorName + " cannot be removed");
     }
 

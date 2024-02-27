@@ -30,9 +30,11 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.database.EdgeSerializer;
+import org.janusgraph.graphdb.database.idhandling.IDHandler;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
@@ -98,6 +100,12 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * Whether to query for system relations only
      */
     private boolean querySystem = false;
+
+    /**
+     * Whether to query for all relations, including system.
+     */
+    private boolean queryAll = false;
+
     /**
      Whether to query only for persisted edges, i.e. ignore any modifications to the vertex made in this transaction.
      This is achieved by using the {@link SimpleVertexQueryProcessor} for execution.
@@ -160,6 +168,15 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      */
     public Q system() {
         this.querySystem = true;
+        return getThis();
+    }
+
+    /**
+     * Query all relations, including system types.
+     * @return
+     */
+    public Q all() {
+        this.queryAll = true;
         return getThis();
     }
 
@@ -500,10 +517,24 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return query;
     }
 
+    private BaseVertexCentricQuery getAllRelationsQuery() {
+        SliceQuery fullQuery = new SliceQuery(
+            IDHandler.getBounds(RelationCategory.RELATION, true)[0],
+            IDHandler.getBounds(RelationCategory.RELATION, false)[1]);
+
+        List<BackendQueryHolder<SliceQuery>> queries = Collections.singletonList(new BackendQueryHolder<>(fullQuery, true, true));
+        return new BaseVertexCentricQuery(RelationCategory.RELATION, Direction.BOTH, queries, OrderList.NO_ORDER, Query.NO_LIMIT);
+    }
+
     protected BaseVertexCentricQuery constructQueryWithoutProfile(RelationCategory returnType) {
         assert returnType != null;
         Preconditions.checkArgument(adjacentVertex==null || returnType == RelationCategory.EDGE,
                 "Vertex constraints only apply to edges");
+
+        if(queryAll) {
+            return getAllRelationsQuery();
+        }
+
         if (limit <= 0)
             return BaseVertexCentricQuery.emptyQuery();
 

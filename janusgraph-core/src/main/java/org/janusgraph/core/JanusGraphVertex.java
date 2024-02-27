@@ -122,6 +122,4 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
      * @return True, has been loaded and modified, else false.
      */
     boolean isModified();
-
-
 }
