@@ -53,12 +53,21 @@ public class JanusGraphPGraphBinarySerializerTest {
             Geo.geoDisjoint(Geoshape.circle(37.97, 23.72, 50)),
             Geo.geoContains(Geoshape.point(37.97, 23.72)),
             Text.textContains("neptune"),
+            Text.textNotContains("neptune"),
             Text.textContainsPrefix("nep"),
+            Text.textNotContainsPrefix("nep"),
             Text.textContainsRegex("nep.*"),
+            Text.textNotContainsRegex("nep.*"),
+            Text.textContainsPhrase("neptune,pluto"),
+            Text.textNotContainsPhrase("neptune,pluto"),
             Text.textPrefix("n"),
+            Text.textNotPrefix("n"),
             Text.textRegex(".*n.*"),
+            Text.textNotRegex(".*n.*"),
             Text.textContainsFuzzy("neptun"),
-            Text.textFuzzy("nepitne")
+            Text.textNotContainsFuzzy("neptun"),
+            Text.textFuzzy("nepitne"),
+            Text.textNotFuzzy("nepitne")
         );
     }
 
