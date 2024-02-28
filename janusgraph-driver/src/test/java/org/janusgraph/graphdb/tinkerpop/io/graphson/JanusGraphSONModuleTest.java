@@ -67,6 +67,7 @@ public class JanusGraphSONModuleTest {
             g.E().has("place", Geo.geoDisjoint(Geoshape.circle(37.97, 23.72, 50))),
             g.V().has("place", Geo.geoContains(Geoshape.point(37.97, 23.72))),
             g.V().has("name", Text.textContains("neptune")), g.V().has("name", Text.textContainsPrefix("nep")),
+            g.V().has("name", Text.textNotContains("neptune")), g.V().has("name", Text.textNotContainsPrefix("nep")),
             g.V().has("name", Text.textContainsRegex("nep.*")), g.V().has("name", Text.textPrefix("n")),
             g.V().has("name", Text.textRegex(".*n.*")), g.V().has("name", Text.textContainsFuzzy("neptun")),
             g.V().has("name", Text.textFuzzy("nepitne")) };
