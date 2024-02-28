@@ -248,6 +248,8 @@ jobs:
           name: jacoco-reports
           path: target/jacoco-combined.exec
       - uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           name: codecov-cql-${{ matrix.name }}-java-${{ matrix.java }}
 
