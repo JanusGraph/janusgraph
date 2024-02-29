@@ -197,7 +197,7 @@ public class JanusGraphFeatures implements Graph.Features {
         @Override
         public boolean supportsStringIds()
         {
-            return false;
+            return JanusGraphFeatures.this.graph.getConfiguration().allowCustomVertexIdType();
         }
 
         @Override
