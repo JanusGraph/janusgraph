@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -49,7 +50,10 @@ import org.janusgraph.testutil.TestGraphConfigs;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -561,4 +565,44 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
         assertEquals(0, result.getCustom(GhostVertexRemover.REMOVED_RELATION_COUNT));
         assertEquals(0, result.getCustom(GhostVertexRemover.SKIPPED_GHOST_LIMIT_COUNT));
     }
+
+    @Test
+    public void testWriteAndReadWithJanusGraphIoRegistryWithGryo(@TempDir Path tempDir) {
+        open(true, true);
+        final Path file = tempDir.resolve("testgraph_" + this.getClass().getCanonicalName() + ".kryo");
+        testWritingAndReading(file.toFile());
+    }
+
+    @Test
+    public void testWriteAndReadWithJanusGraphIoRegistryWithGraphson(@TempDir Path tempDir) {
+        open(true, true);
+        final Path file = tempDir.resolve("testgraph_" + this.getClass().getCanonicalName() + ".json");
+        testWritingAndReading(file.toFile());
+    }
+
+    private void testWritingAndReading(File f) {
+        GraphTraversalSource g = graph.traversal();
+        Vertex fromV = g.addV().property("name", f.getName()).property(T.id, "custom_id").next();
+        Vertex toV = g.addV().property(T.id, "another_vertex").next();
+        g.addE("connect").from(fromV).to(toV).next();
+        g.tx().commit();
+        assertEquals(0, f.length());
+
+        g.io(f.getAbsolutePath()).write().iterate();
+
+        assertTrue(f.length() > 0, "File " + f.getAbsolutePath() + " was expected to be not empty, but is");
+
+        open(true, true);
+        g = graph.traversal();
+        g.V().drop().iterate();
+        g.tx().commit();
+
+        g.io(f.getAbsolutePath()).read().iterate();
+
+        assertEquals(1, g.V().has("name", f.getName()).count().next());
+        assertEquals(1, g.V("custom_id").count().next());
+        assertEquals(2, g.V().count().next());
+        assertEquals("connect", g.E().label().next());
+    }
+
 }
