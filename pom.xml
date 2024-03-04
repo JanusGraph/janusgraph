@@ -84,7 +84,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <janusgraph.testdir>${project.build.directory}/janusgraph-test</janusgraph.testdir>
         <gpg.skip>false</gpg.skip>
-        <maven.gpg.version>3.0.1</maven.gpg.version>
+        <maven.gpg.version>3.1.0</maven.gpg.version>
         <perf.jvm.opts />
         <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
