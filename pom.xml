@@ -92,7 +92,7 @@
         <test.skip.default>false</test.skip.default>
         <test.skip.tp>true</test.skip.tp>
         <top.level.basedir>${basedir}</top.level.basedir>
-        <maven.javadoc.version>3.5.0</maven.javadoc.version>
+        <maven.javadoc.version>3.6.3</maven.javadoc.version>
         <compiler.source>1.8</compiler.source>
         <compiler.target>1.8</compiler.target>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
