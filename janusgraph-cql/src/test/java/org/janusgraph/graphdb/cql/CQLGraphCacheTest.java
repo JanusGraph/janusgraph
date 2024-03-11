@@ -37,13 +37,6 @@ public class CQLGraphCacheTest extends JanusGraphTest {
         return StorageSetup.addPermanentCache(cqlContainer.getConfiguration(getClass().getSimpleName()));
     }
 
-    // flaky test: https://github.com/JanusGraph/janusgraph/issues/1498
-    @RepeatedIfExceptionsTest(repeats = 3)
-    @Override
-    public void testIndexUpdatesWithReindexAndRemove() throws InterruptedException, ExecutionException {
-        super.testIndexUpdatesWithReindexAndRemove();
-    }
-
     // flaky test: https://github.com/JanusGraph/janusgraph/issues/1457
     @ParameterizedRepeatedIfExceptionsTest(repeats = 3)
     @ValueSource(booleans = {true, false})

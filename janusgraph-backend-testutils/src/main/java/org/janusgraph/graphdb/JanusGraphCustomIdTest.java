@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb;
 
 import com.google.common.base.Preconditions;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -300,7 +301,8 @@ public abstract class JanusGraphCustomIdTest extends JanusGraphBaseTest {
      * @throws ExecutionException
      * @throws InterruptedException
      */
-    @Test
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/1498
+    @RepeatedIfExceptionsTest(repeats = 3)
     public void testIndexUpdatesWithReindexAndRemove() throws ExecutionException, InterruptedException {
         ModifiableConfiguration config = getModifiableConfiguration();
         config.set(ALLOW_SETTING_VERTEX_ID, true, new String[0]);
