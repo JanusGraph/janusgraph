@@ -20,6 +20,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.commons.configuration2.MapConfiguration;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -1939,7 +1940,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         finishSchema();
     }
 
-    @Test
+    // flaky test: https://github.com/JanusGraph/janusgraph/issues/1498
+    @RepeatedIfExceptionsTest(repeats = 3)
     public void testIndexUpdatesWithReindexAndRemove() throws InterruptedException, ExecutionException {
         clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
                 option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
