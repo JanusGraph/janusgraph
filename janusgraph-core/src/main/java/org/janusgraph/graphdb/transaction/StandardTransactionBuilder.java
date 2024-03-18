@@ -88,6 +88,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean skipDBCacheRead;
 
+    private boolean isLazyLoadRelations;
+
     private MultiQueryHasStepStrategyMode hasStepStrategyMode;
 
     private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
@@ -235,6 +237,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public TransactionBuilder lazyLoadRelations() {
+        this.isLazyLoadRelations = true;
+        return this;
+    }
+
+    @Override
     public TransactionBuilder setHasStepStrategyMode(MultiQueryHasStepStrategyMode hasStepStrategyMode) {
         this.hasStepStrategyMode = hasStepStrategyMode;
         return this;
@@ -298,7 +306,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 propertyPrefetching, multiQuery, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, restrictedPartitions, groupName,
-                defaultSchemaMaker, hasDisabledSchemaConstraints, skipDBCacheRead, hasStepStrategyMode, propertiesStrategyMode,
+                defaultSchemaMaker, hasDisabledSchemaConstraints, skipDBCacheRead, isLazyLoadRelations, hasStepStrategyMode, propertiesStrategyMode,
                 labelStepStrategyMode, customOptions);
         return graph.newTransaction(immutable);
     }
@@ -417,6 +425,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public boolean isLazyLoadRelations() {
+        return isLazyLoadRelations;
+    }
+
+    @Override
     public MultiQueryHasStepStrategyMode getHasStepStrategyMode() {
         return hasStepStrategyMode;
     }
@@ -486,6 +499,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final int dirtyVertexSize;
 
         private final boolean skipDBCacheRead;
+
+        private final boolean isLazyLoadRelations;
         private final String logIdentifier;
         private final int[] restrictedPartitions;
         private final DefaultSchemaMaker defaultSchemaMaker;
@@ -512,6 +527,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                               DefaultSchemaMaker defaultSchemaMaker,
                               boolean hasDisabledSchemaConstraints,
                               boolean skipDBCacheRead,
+                              boolean isLazyLoadRelations,
                               MultiQueryHasStepStrategyMode hasStepStrategyMode,
                               MultiQueryPropertiesStrategyMode propertiesStrategyMode,
                               MultiQueryLabelStepStrategyMode labelStepStrategyMode,
@@ -537,6 +553,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.defaultSchemaMaker = defaultSchemaMaker;
             this.hasDisabledSchemaConstraints = hasDisabledSchemaConstraints;
             this.skipDBCacheRead = skipDBCacheRead;
+            this.isLazyLoadRelations = isLazyLoadRelations;
             this.hasStepStrategyMode = hasStepStrategyMode;
             this.propertiesStrategyMode = propertiesStrategyMode;
             this.labelStepStrategyMode = labelStepStrategyMode;
@@ -655,6 +672,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public boolean isSkipDBCacheRead() {
             return skipDBCacheRead;
+        }
+
+        @Override
+        public boolean isLazyLoadRelations() {
+            return isLazyLoadRelations;
         }
 
         @Override
