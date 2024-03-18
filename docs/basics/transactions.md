@@ -326,6 +326,9 @@ following aspects of a transaction to be configured:
     cache access during read operations. Doesn't have any effect if database 
     level cache was disabled via config `cache.db-cache`.
 
+-   `lazyLoadRelations()` - Set lazy-load for all properties and edges of the vertex: ids and values are deserialized upon demand.
+    When enabled, it can have a boost on large-scale read operations, if only certain types of relations are being read from the vertex.
+
 Once, the desired configuration options have been specified, the new
 transaction is started via `start()` which returns a
 `JanusGraphTransaction`.

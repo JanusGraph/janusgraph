@@ -58,4 +58,5 @@ public interface InternalElement extends JanusGraphElement {
      */
     boolean isInvisible();
 
+    Object getCompareId();
 }

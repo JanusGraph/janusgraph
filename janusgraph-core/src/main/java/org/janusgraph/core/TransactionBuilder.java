@@ -151,6 +151,15 @@ public interface TransactionBuilder {
     TransactionBuilder skipDBCacheRead();
 
     /**
+     * Set lazy-load for all properties and edges: ids and values are deserialized upon demand.
+     * <p>
+     * When enabled, it can have a boost on large scale read operations, when only certain type of relations are being read.
+     *
+     * @return Object with lazy-load setting.
+     */
+    TransactionBuilder lazyLoadRelations();
+
+    /**
      * Sets `has` step strategy mode.
      * <p>
      * Doesn't have any effect if multi-query was disabled via config `query.batch.enabled = false`.
