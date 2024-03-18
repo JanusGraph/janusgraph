@@ -83,8 +83,8 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
     }
 
     public static int compare(JanusGraphElement e1, JanusGraphElement e2) {
-        Object e1id = (e1 instanceof AbstractElement) ? ((AbstractElement) e1).getCompareId() : e1.id();
-        Object e2id = (e2 instanceof AbstractElement) ? ((AbstractElement) e2).getCompareId() : e2.id();
+        Object e1id = (e1 instanceof InternalElement) ? ((InternalElement) e1).getCompareId() : e1.id();
+        Object e2id = (e2 instanceof InternalElement) ? ((InternalElement) e2).getCompareId() : e2.id();
         return IDUtils.compare(e1id, e2id);
     }
 
@@ -104,7 +104,8 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
      * this method should be overwritten to return an id that can be used for comparison.
      * @return
      */
-    protected Object getCompareId() {
+    @Override
+    public Object getCompareId() {
         return id();
     }
 

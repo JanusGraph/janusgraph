@@ -163,7 +163,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     @Override
-    protected Object getCompareId() {
+    public Object getCompareId() {
         return longId();
     }
 

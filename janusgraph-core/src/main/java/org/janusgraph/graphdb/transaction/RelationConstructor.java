@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.transaction;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.JanusGraphLazyRelationConstructor;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.diskstorage.Entry;
@@ -41,7 +42,17 @@ public class RelationConstructor {
         return tx.getEdgeSerializer().readRelation(data, false, tx);
     }
 
-    public static Iterable<JanusGraphRelation> readRelation(final InternalVertex vertex, final Iterable<Entry> data, final StandardJanusGraphTx tx) {
+    public static InternalRelation readRelation(final InternalVertex vertex,
+                                                final Entry data,
+                                                final boolean parseHeaderOnly,
+                                                final StandardJanusGraphTx tx) {
+        RelationCache relation = tx.getEdgeSerializer().readRelation(data, parseHeaderOnly, tx);
+        return readRelation(vertex,relation,data,tx,tx);
+    }
+
+    public static Iterable<JanusGraphRelation> readRelation(final InternalVertex vertex,
+                                                            final Iterable<Entry> data,
+                                                            final StandardJanusGraphTx tx) {
         return () -> new Iterator<JanusGraphRelation>() {
 
             private final Iterator<Entry> iterator = data.iterator();
@@ -54,7 +65,12 @@ public class RelationConstructor {
 
             @Override
             public JanusGraphRelation next() {
-                current = readRelation(vertex, iterator.next(),tx);
+                Entry entry = iterator.next();
+                if (tx.getConfiguration().isLazyLoadRelations()) {
+                    current = JanusGraphLazyRelationConstructor.create(entry, vertex, tx);
+                } else {
+                    current = readRelation(vertex, entry, tx);
+                }
                 return current;
             }
 

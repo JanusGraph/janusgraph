@@ -169,14 +169,14 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     @Override
     public Map<JanusGraphVertex, Iterable<JanusGraphEdge>> edges() {
-        return (Map) execute(RelationCategory.EDGE, new RelationConstructor());
+        return (Map) execute(RelationCategory.EDGE, new CachedRelationConstructor());
     }
 
     @Override
     public Map<JanusGraphVertex, Iterable<JanusGraphVertexProperty>> properties() {
         return (Map)(isImplicitKeyQuery(RelationCategory.PROPERTY)?
                 executeImplicitKeyQuery():
-                execute(RelationCategory.PROPERTY, new RelationConstructor()));
+                execute(RelationCategory.PROPERTY, new CachedRelationConstructor()));
     }
 
     @Override
@@ -189,7 +189,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     public Map<JanusGraphVertex, Iterable<JanusGraphRelation>> relations() {
         return (Map)(isImplicitKeyQuery(RelationCategory.RELATION)?
                 executeImplicitKeyQuery():
-                execute(RelationCategory.RELATION, new RelationConstructor()));
+                execute(RelationCategory.RELATION, new CachedRelationConstructor()));
     }
 
     @Override

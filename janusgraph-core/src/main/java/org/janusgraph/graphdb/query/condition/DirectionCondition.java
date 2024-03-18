@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.query.condition;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphLazyEdge;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
@@ -40,13 +41,18 @@ public class DirectionCondition<E extends JanusGraphRelation> extends Literal<E>
 
     @Override
     public boolean evaluate(E element) {
-        if (direction==Direction.BOTH) return true;
+        if (direction == Direction.BOTH) return true;
+
+        if (element instanceof JanusGraphLazyEdge) {
+            element = (E) ((JanusGraphLazyEdge) element).loadValue();
+        }
+
         if (element instanceof CacheEdge) {
-            return direction==((CacheEdge)element).getVertexCentricDirection();
+            return direction == ((CacheEdge) element).getVertexCentricDirection();
         } else if (element instanceof JanusGraphEdge) {
-            return ((JanusGraphEdge)element).vertex(direction).equals(baseVertex);
+            return ((JanusGraphEdge) element).vertex(direction).equals(baseVertex);
         } else if (element instanceof JanusGraphVertexProperty) {
-            return direction==Direction.OUT;
+            return direction == Direction.OUT;
         }
         return false;
     }

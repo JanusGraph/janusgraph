@@ -192,6 +192,11 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
+    public Object getCompareId() {
+        return id();
+    }
+
+    @Override
     public boolean isRemoved() {
         return false;
     }

@@ -200,6 +200,12 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
     boolean isSkipDBCacheRead();
 
     /**
+     * Returns true if all properties and edges are lazy-loaded: ids and values are deserialized upon demand.
+     * When enabled, it can have a boost on large scale read operations, when only certain type of relations are being read.
+     */
+    boolean isLazyLoadRelations();
+
+    /**
      * @return Has step strategy mode used for the transaction. Can be configured via config `query.batch.has-step-mode`.
      */
     MultiQueryHasStepStrategyMode getHasStepStrategyMode();
