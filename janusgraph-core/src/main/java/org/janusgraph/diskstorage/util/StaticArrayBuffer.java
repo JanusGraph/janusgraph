@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 
 /**
@@ -29,7 +30,7 @@ import java.nio.ByteBuffer;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StaticArrayBuffer implements StaticBuffer {
+public class StaticArrayBuffer implements StaticBuffer, Serializable {
 
     private final byte[] array;
     private int offset;
