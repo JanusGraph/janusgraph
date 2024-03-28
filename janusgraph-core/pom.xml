@@ -129,7 +129,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Gremlin-Plugin-Dependencies>org.janusgraph:janusgraph-cql:${project.version};org.janusgraph:janusgraph-hadoop:${project.version}</Gremlin-Plugin-Dependencies>
+                            <Gremlin-Plugin-Dependencies>org.janusgraph:janusgraph-cql:${project.version};org.janusgraph:janusgraph-hadoop:${project.version};org.janusgraph:janusgraph-couchbase:${project.version}</Gremlin-Plugin-Dependencies>
                         </manifestEntries>
                     </archive>
                 </configuration>
