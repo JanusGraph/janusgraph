@@ -209,6 +209,12 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      */
     private VertexCache vertexCache;
 
+    /**
+     * Keeps track of relation types vertex. Used only in {@link JanusGraphLazyRelation}.
+     * Cache is thread-safe.
+     */
+    private final Map<Long, InternalRelationType> relTypeCache;
+
     //######## Data structures that keep track of new and deleted elements
     //These data structures cannot release elements, since we would loose track of what was added or deleted
     /**
@@ -320,6 +326,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     config.getVertexCacheSize(), effectiveVertexCacheSize, MIN_VERTEX_CACHE_SIZE);
         }
 
+        relTypeCache = new ConcurrentHashMap<>(30);
         vertexCache = new CaffeineVertexCache(effectiveVertexCacheSize,config.getDirtyVertexSize());
 
         indexCache = new CaffeineSubqueryCache(config.getIndexCacheWeight());
@@ -439,6 +446,15 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         return vertices;
     }
 
+    /*
+     * ------------------------------------ Relation Type Handling ------------------------------------
+     */
+
+    public InternalRelationType getOrLoadRelationTypeById(long typeId) {
+        return this.relTypeCache.computeIfAbsent(typeId, (k) ->
+            TypeUtil.getBaseType((InternalRelationType) this.getExistingRelationType(k))
+        );
+    }
 
     /*
      * ------------------------------------ Vertex Handling ------------------------------------

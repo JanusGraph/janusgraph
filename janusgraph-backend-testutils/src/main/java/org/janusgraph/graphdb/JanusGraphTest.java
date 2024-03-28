@@ -116,6 +116,7 @@ import org.janusgraph.graphdb.database.util.IndexRecordUtil;
 import org.janusgraph.graphdb.database.util.StaleIndexRecordUtil;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
+import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.Order;
@@ -129,7 +130,6 @@ import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.index.IndexSelectionUtil;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.relations.AbstractEdge;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.relations.StandardEdge;
 import org.janusgraph.graphdb.relations.StandardVertexProperty;
@@ -425,7 +425,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     public void testUpdateEdgePropertyThenRemoveEdge() {
         initializeGraphWithVerticesAndEdges();
         // normal edge
-        AbstractEdge edge = (AbstractEdge) graph.traversal().E().has("_e", 1).next();
+        InternalElement edge = (InternalElement) graph.traversal().E().has("_e", 1).next();
         assertTrue(ElementLifeCycle.isLoaded(edge.getLifeCycle()));
         Object id = edge.id();
 
@@ -452,7 +452,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     public void testUpdateForkEdgePropertyThenRemoveEdge() {
         initializeGraphWithVerticesAndEdges();
         // fork edge
-        AbstractEdge edge = (AbstractEdge) graph.traversal().E().has("_e", 2).next();
+        InternalElement edge = (InternalElement) graph.traversal().E().has("_e", 2).next();
         assertTrue(ElementLifeCycle.isLoaded(edge.getLifeCycle()));
         Object id = edge.id();
 
@@ -483,7 +483,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     @Test
     public void testUpdateForkEdgePropertyThenFindEdgeById() {
         initializeGraphWithVerticesAndEdges();
-        AbstractEdge edge = (AbstractEdge) graph.traversal().E().has("_e", 2).next();
+        InternalElement edge = (InternalElement) graph.traversal().E().has("_e", 2).next();
         Object id = edge.id();
 
         edge.property("_e", -2);

@@ -66,10 +66,6 @@ public class PreloadedVertex extends CacheVertex {
         super.addToQueryCache(query, entries);
     }
 
-    public EntryList getFromCache(final SliceQuery query) {
-        return queryCache.get(query);
-    }
-
     @Override
     public Iterable<InternalRelation> getAddedRelations(Predicate<InternalRelation> query) {
         return Collections.EMPTY_LIST;

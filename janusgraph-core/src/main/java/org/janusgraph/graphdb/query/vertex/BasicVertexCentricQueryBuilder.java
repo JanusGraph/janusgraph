@@ -27,6 +27,7 @@ import org.janusgraph.core.RelationType;
 import org.janusgraph.core.VertexList;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
@@ -53,6 +54,7 @@ import org.janusgraph.graphdb.relations.StandardVertexProperty;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.graphdb.types.system.SystemRelationType;
+import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.util.datastructures.Interval;
 import org.janusgraph.util.datastructures.PointInterval;
 import org.janusgraph.util.datastructures.RangeInterval;
@@ -259,6 +261,20 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
     }
 
+    protected class CachedRelationConstructor implements ResultConstructor<Iterable<? extends JanusGraphRelation>> {
+
+        @Override
+        public Iterable<? extends JanusGraphRelation> getResult(InternalVertex v, BaseVertexCentricQuery bq) {
+            return loadRelationsFromCache(v,bq);
+        }
+
+        @Override
+        public Iterable<? extends JanusGraphRelation> emptyResult() {
+            return Collections.emptyList();
+        }
+
+    }
+
     protected class VertexConstructor implements ResultConstructor<Iterable<JanusGraphVertex>> {
 
         @Override
@@ -324,6 +340,46 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             } else vertex = tx.getCanonicalVertex(vertex);
         }
         return executeIndividualRelations(vertex,baseQuery);
+    }
+
+    /**
+     * Takes advantage of query result being cached in CachedVertex.
+     * Deserializes properties only on access.
+     * @param vertex
+     * @param baseQuery
+     * @return
+     */
+    protected Iterable<JanusGraphRelation> loadRelationsFromCache(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+        Iterable<JanusGraphRelation> merge = null;
+        if (vertex instanceof CacheVertex && !isPartitionedVertex(vertex) && vertex.isLoaded()) {
+            CacheVertex cacheVertex = (CacheVertex) vertex;
+            boolean hasNotCachedQueries = baseQuery.getQueries().stream()
+                .anyMatch(q -> cacheVertex.getFromCache(q.getBackendQuery()) == null || !q.isFitted());
+            if (hasNotCachedQueries) {
+                //Fall back to default path
+                Iterable<JanusGraphRelation> iterable = executeRelations(vertex, baseQuery);
+                merge = iterable;
+            } else {
+                //Note: we optimize fetching relation from Vertex, if the query is already cached to avoid constructing a new query
+                for (BackendQueryHolder<SliceQuery> bqSubQuery : baseQuery.getQueries()) {
+                    EntryList entryList = cacheVertex.getFromCache(bqSubQuery.getBackendQuery());
+                    Preconditions.checkArgument(entryList != null, "Missing EntryList for Lazy load");
+                    Iterable<JanusGraphRelation> iterable = org.janusgraph.graphdb.transaction.RelationConstructor.readRelation(vertex,
+                        entryList, tx);
+
+                    if (merge == null) {
+                        merge = iterable;
+                    } else {
+                        merge = ResultMergeSortIterator.mergeSort(merge, iterable, (Comparator) orders, false);
+                    }
+                }
+            }
+        } else {
+            //Fall back to default path
+            Iterable<JanusGraphRelation> iterable = executeRelations(vertex, baseQuery);
+            merge = iterable;
+        }
+        return merge;
     }
 
     private Iterable<JanusGraphRelation> executeIndividualRelations(InternalVertex vertex,
