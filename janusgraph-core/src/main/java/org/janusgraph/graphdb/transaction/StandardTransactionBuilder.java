@@ -88,7 +88,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean skipDBCacheRead;
 
-    private boolean isLazyLoadRelations;
+    private boolean isLazyLoadRelations = true;
 
     private MultiQueryHasStepStrategyMode hasStepStrategyMode;
 
@@ -239,6 +239,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public TransactionBuilder lazyLoadRelations() {
         this.isLazyLoadRelations = true;
+        return this;
+    }
+
+    @Override
+    public TransactionBuilder noLazyLoadRelations() {
+        this.isLazyLoadRelations = false;
         return this;
     }
 

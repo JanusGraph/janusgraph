@@ -14,15 +14,9 @@
 
 package org.janusgraph.graphdb.inmemory;
 
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.database.LazyLoadGraphTest;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.Assert.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -35,19 +29,5 @@ public class InMemoryLazyLoadGraphTest extends InMemoryGraphTest {
         features = graph.getConfiguration().getStoreFeatures();
         tx = graph.buildTransaction().start();
         mgmt = graph.openManagement();
-    }
-
-    @Override @Test
-    public void testPropertyIdAccessInDifferentTransaction() {
-        JanusGraphVertex v1 = graph.addVertex();
-        Object expectedId = v1.property("name", "foo").id();
-        graph.tx().commit();
-
-        VertexProperty p = getOnlyElement(v1.properties("name"));
-
-        // access property id in new transaction
-        graph.tx().commit();
-        Exception exception = assertThrows(IllegalStateException.class, p::id);
-        assertEquals(exception.getMessage(), "Any lazy load operation is not supported when transaction is already closed.");
     }
 }

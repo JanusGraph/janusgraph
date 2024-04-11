@@ -318,14 +318,14 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         v = getV(tx,v);
         assertCount(2, v.properties());
         verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L)); //1 verify vertex existence, 1 for query
-        verifyTypeCacheMetrics(3, 4);
+        verifyTypeCacheMetrics(3, 2);
         tx.commit();
 
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = getV(tx,v);
         assertCount(2, v.properties());
         verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 4L)); //1 verify vertex existence, 1 for query
-        verifyTypeCacheMetrics(3, 4);
+        verifyTypeCacheMetrics(3, 2);
         tx.commit();
 
         //Check type index lookup caching
@@ -343,7 +343,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         assertNotNull(v.value("name"));
         assertCount(1, v.query().direction(Direction.BOTH).edges());
         verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 11L)); //1 verify vertex existence, 3 for query
-        verifyTypeCacheMetrics(5, 10);
+        verifyTypeCacheMetrics(5, 9);
         tx.commit();
 
         verifyLockingOverwrite(3);

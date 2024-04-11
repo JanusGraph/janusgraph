@@ -160,6 +160,15 @@ public interface TransactionBuilder {
     TransactionBuilder lazyLoadRelations();
 
     /**
+     * Do not set lazy-load for all properties and edges.
+     * <p>
+     * When enabled, it can have a boost on large scale read operations, when only certain type of relations are being read.
+     *
+     * @return Object with lazy-load setting.
+     */
+    TransactionBuilder noLazyLoadRelations();
+
+    /**
      * Sets `has` step strategy mode.
      * <p>
      * Doesn't have any effect if multi-query was disabled via config `query.batch.enabled = false`.

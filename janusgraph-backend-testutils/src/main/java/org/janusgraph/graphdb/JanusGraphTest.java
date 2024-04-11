@@ -156,6 +156,7 @@ import org.janusgraph.testutil.JanusGraphFeature;
 import org.janusgraph.testutil.TestGraphConfigs;
 import org.janusgraph.util.IDUtils;
 import org.janusgraph.util.stats.MetricManager;
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -2644,7 +2645,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         // access property id in new transaction
         graph.tx().commit();
-        assertEquals(expectedId, p.id());
+        Exception exception = Assert.assertThrows(IllegalStateException.class, p::id);
+        assertEquals(exception.getMessage(), "Any lazy load operation is not supported when transaction is already closed.");
     }
 
     /**
@@ -6286,10 +6288,15 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
     }
 
     private void assertEqualResultWithAndWithoutLimitBatchSize(Supplier<GraphTraversal<?, ?>> traversal) {
+        boolean isLazyLoad = ((StandardJanusGraphTx) tx).getConfiguration().isLazyLoadRelations();
         clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true);
         final List<?> resultLimitedBatch = traversal.get().toList();
+        if (isLazyLoad) resultLimitedBatch.forEach(Object::hashCode);
+
         clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
         final List<?> resultUnimitedBatch = traversal.get().toList();
+        if (isLazyLoad) resultUnimitedBatch.forEach(Object::hashCode);
+
         clopen(option(USE_MULTIQUERY), false);
         final List<?> resultNoMultiQuery = traversal.get().toList();
 
