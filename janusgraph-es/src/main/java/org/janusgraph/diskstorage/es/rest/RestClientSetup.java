@@ -39,8 +39,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_PORT;
@@ -73,7 +76,13 @@ public class RestClientSetup {
         final int scrollKeepAlive = config.get(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE);
         Preconditions.checkArgument(scrollKeepAlive >= 1, "Scroll keep-alive should be greater than or equal to 1");
         final boolean useMappingTypesForES7 = config.get(ElasticSearchIndex.USE_MAPPING_FOR_ES7);
-        final RestElasticSearchClient client = getElasticSearchClient(rc, scrollKeepAlive, useMappingTypesForES7);
+        int retryLimit = config.getOrDefault(ElasticSearchIndex.RETRY_LIMIT);
+        long retryInitialWaitMs = config.getOrDefault(ElasticSearchIndex.RETRY_INITIAL_WAIT);
+        long retryMaxWaitMs = config.getOrDefault(ElasticSearchIndex.RETRY_MAX_WAIT);
+        Set<Integer> errorCodesToRetry = Arrays.stream(config.getOrDefault(ElasticSearchIndex.RETRY_ERROR_CODES))
+            .mapToInt(Integer::parseInt).boxed().collect(Collectors.toSet());
+        final RestElasticSearchClient client = getElasticSearchClient(rc, scrollKeepAlive, useMappingTypesForES7,
+            retryLimit, errorCodesToRetry, retryInitialWaitMs, retryMaxWaitMs);
         if (config.has(ElasticSearchIndex.BULK_REFRESH)) {
             client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH));
         }
@@ -104,8 +113,11 @@ public class RestClientSetup {
         return RestClient.builder(hosts);
     }
 
-    protected RestElasticSearchClient getElasticSearchClient(RestClient rc, int scrollKeepAlive, boolean useMappingTypesForES7) {
-        return new RestElasticSearchClient(rc, scrollKeepAlive, useMappingTypesForES7);
+    protected RestElasticSearchClient getElasticSearchClient(RestClient rc, int scrollKeepAlive, boolean useMappingTypesForES7,
+                                                             int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
+                                                             long retryMaxWaitMs) {
+        return new RestElasticSearchClient(rc, scrollKeepAlive, useMappingTypesForES7, retryAttemptLimit, retryOnErrorCodes,
+            retryInitialWaitMs, retryMaxWaitMs);
     }
 
     /**

@@ -47,10 +47,12 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -110,14 +112,28 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private Integer retryOnConflict;
 
     private final String retryOnConflictKey;
-    
-    public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7) {
+
+    private final int retryAttemptLimit;
+
+    private final Set<Integer> retryOnErrorCodes;
+
+    private final long retryInitialWaitMs;
+
+    private final long retryMaxWaitMs;
+
+public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7,
+                               int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
+                               long retryMaxWaitMs) {
         this.delegate = delegate;
         majorVersion = getMajorVersion();
         this.scrollKeepAlive = scrollKeepAlive+"s";
         esVersion7 = ElasticMajorVersion.SEVEN.equals(majorVersion);
         useMappingTypes = majorVersion.getValue() < 7 || (useMappingTypesForES7 && esVersion7);
         retryOnConflictKey = majorVersion.getValue() >= 7 ? "retry_on_conflict" : "_retry_on_conflict";
+        this.retryAttemptLimit = retryAttemptLimit;
+        this.retryOnErrorCodes = Collections.unmodifiableSet(retryOnErrorCodes);
+        this.retryInitialWaitMs = retryInitialWaitMs;
+        this.retryMaxWaitMs = retryMaxWaitMs;
     }
 
     @Override
@@ -546,13 +562,35 @@ public class RestElasticSearchClient implements ElasticSearchClient {
         return performRequest(new Request(method, path), requestData);
     }
 
+    private Response performRequestWithRetry(Request request) throws IOException {
+        int retryCount = 0;
+        while (true) {
+            try {
+                return delegate.performRequest(request);
+            } catch (ResponseException e) {
+                if (!retryOnErrorCodes.contains(e.getResponse().getStatusLine().getStatusCode()) || retryCount >= retryAttemptLimit) {
+                    throw e;
+                }
+                //Wait before trying again
+                long waitDurationMs = Math.min((long) (retryInitialWaitMs * Math.pow(10, retryCount)), retryMaxWaitMs);
+                log.warn("Retrying Elasticsearch request in {} ms. Attempt {} of {}", waitDurationMs, retryCount, retryAttemptLimit);
+                try {
+                    Thread.sleep(waitDurationMs);
+                } catch (InterruptedException interruptedException) {
+                    throw new RuntimeException(String.format("Thread interrupted while waiting for retry attempt %d of %d", retryCount, retryAttemptLimit), interruptedException);
+                }
+            }
+            retryCount++;
+        }
+    }
+
     private Response performRequest(Request request, byte[] requestData) throws IOException {
 
         final HttpEntity entity = requestData != null ? new ByteArrayEntity(requestData, ContentType.APPLICATION_JSON) : null;
 
         request.setEntity(entity);
 
-        final Response response = delegate.performRequest(request);
+        final Response response = performRequestWithRetry(request);
 
         if (response.getStatusLine().getStatusCode() >= 400) {
             throw new IOException("Error executing request: " + response.getStatusLine().getReasonPhrase());
