@@ -304,6 +304,26 @@ public class ElasticSearchIndex implements IndexProvider {
             "Sets the maximum socket timeout (in milliseconds).", ConfigOption.Type.MASKABLE,
             Integer.class, RestClientBuilder.DEFAULT_SOCKET_TIMEOUT_MILLIS);
 
+    public static final ConfigOption<Integer> RETRY_LIMIT =
+        new ConfigOption<>(ELASTICSEARCH_NS, "retry-limit",
+            "Sets the number of attempts for configured retryable error codes.", ConfigOption.Type.LOCAL,
+            Integer.class, 0);
+
+    public static final ConfigOption<Long> RETRY_INITIAL_WAIT =
+        new ConfigOption<>(ELASTICSEARCH_NS, "retry-initial-wait",
+            "Sets the initial retry wait time (in milliseconds) before exponential backoff.",
+            ConfigOption.Type.LOCAL, Long.class, 1L);
+
+    public static final ConfigOption<Long> RETRY_MAX_WAIT =
+        new ConfigOption<>(ELASTICSEARCH_NS, "retry-max-wait",
+            "Sets the max retry wait time (in milliseconds).", ConfigOption.Type.LOCAL,
+            Long.class, 1000L);
+
+    public static final ConfigOption<String[]> RETRY_ERROR_CODES =
+        new ConfigOption<>(ELASTICSEARCH_NS, "retry-error-codes",
+            "Comma separated list of Elasticsearch REST client ResponseException error codes to retry. " +
+                "E.g. \"408,429\"", ConfigOption.Type.LOCAL, String[].class, new String[0]);
+
     public static final int HOST_PORT_DEFAULT = 9200;
 
     /**
