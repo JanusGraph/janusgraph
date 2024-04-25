@@ -286,6 +286,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
     private boolean equalKey(StaticBuffer concat, StaticBuffer key) {
         int keyLength = getKeyLength(concat);
+        if (keyLength != key.length()) return false;
         for (int i = 0; i < keyLength; i++) if (concat.getByte(i) != key.getByte(i)) return false;
         return true;
     }
