@@ -212,6 +212,7 @@
                             <unpack>true</unpack>
                             <!-- https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.8-linux-x86_64.tar.gz.sha512 -->
                             <sha512>cd02b40e8b32e78f17bac12245326e10482214ab452b2e5d1745ddc7944e60a5b07c01c949c68625d78640bdd46806aeece4e8d620788133993055732d388443</sha512>
+                            <readTimeOut>1800000</readTimeOut>
                         </configuration>
                     </execution>
                     <execution>
@@ -226,6 +227,7 @@
                             <outputDirectory>${project.build.directory}/</outputDirectory>
                             <unpack>true</unpack>
                             <sha256>${cassandra-dist.version.sha256}</sha256>
+                            <readTimeOut>1800000</readTimeOut>
                         </configuration>
                     </execution>
                 </executions>
