@@ -15,6 +15,7 @@
 package org.janusgraph.blueprints.process;
 
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
+import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.janusgraph.blueprints.BerkeleyMultiQueryGraphProvider;
 import org.janusgraph.core.JanusGraph;
 import org.junit.runner.RunWith;
@@ -22,7 +23,7 @@ import org.junit.runner.RunWith;
 /**
 * @author Ted Wilmes (twilmes@gmail.com)
 */
-@RunWith(BerkeleyProcessStandardSuite.class)
+@RunWith(ProcessStandardSuite.class)
 @GraphProviderClass(provider = BerkeleyMultiQueryGraphProvider.class, graph = JanusGraph.class)
 public class BerkeleyMultiQueryJanusGraphProcessTest {
 }
