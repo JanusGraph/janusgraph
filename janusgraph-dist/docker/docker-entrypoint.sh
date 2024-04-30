@@ -20,7 +20,7 @@ JANUSGRAPH_SERVER_YAML="${JANUS_CONFIG_DIR}/janusgraph-server.yaml"
 # running as root; step down to run as janusgraph user
 if [ "$1" == 'janusgraph' ] && [ "$(id -u)" == "0" ]; then
   mkdir -p ${JANUS_DATA_DIR} ${JANUS_CONFIG_DIR}
-  chown -R janusgraph:janusgraph ${JANUS_DATA_DIR} ${JANUS_CONFIG_DIR}
+  chown janusgraph:janusgraph ${JANUS_DATA_DIR} ${JANUS_CONFIG_DIR}
   chmod 700 ${JANUS_DATA_DIR} ${JANUS_CONFIG_DIR}
 
   exec chroot --skip-chdir --userspec janusgraph:janusgraph / "${BASH_SOURCE}" "$@"
@@ -32,7 +32,7 @@ if [ "$1" == 'janusgraph' ]; then
   mkdir -p ${JANUS_DATA_DIR} ${JANUS_CONFIG_DIR}
   cp conf/janusgraph-${JANUS_PROPS_TEMPLATE}-server.properties ${JANUS_PROPS}
   cp conf/janusgraph-server.yaml ${JANUSGRAPH_SERVER_YAML}
-  chown -R "$(id -u):$(id -g)" ${JANUS_DATA_DIR} ${JANUS_CONFIG_DIR}
+  chown "$(id -u):$(id -g)" ${JANUS_DATA_DIR} ${JANUS_CONFIG_DIR}
   chmod 700 ${JANUS_DATA_DIR} ${JANUS_CONFIG_DIR}
   chmod -R 600 ${JANUS_CONFIG_DIR}/*
 
