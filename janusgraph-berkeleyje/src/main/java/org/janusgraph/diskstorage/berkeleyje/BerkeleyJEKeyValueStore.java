@@ -27,11 +27,14 @@ import com.sleepycat.je.OperationResult;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Put;
 import com.sleepycat.je.ReadOptions;
+import com.sleepycat.je.ThreadInterruptedException;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.WriteOptions;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KVQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeySelector;
@@ -60,10 +63,10 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     public static Function<Integer, Integer> ttlConverter = ttl -> (int) Math.max(1, Duration.of(ttl, ChronoUnit.SECONDS).toHours());
 
 
-    private final Database db;
+    private volatile Database db;
     private final String name;
     private final BerkeleyJEStoreManager manager;
-    private boolean isOpen;
+    private volatile boolean isOpen;
 
     public BerkeleyJEKeyValueStore(String n, Database data, BerkeleyJEStoreManager m) {
         db = data;
@@ -75,6 +78,11 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     public DatabaseConfig getConfiguration() throws BackendException {
         try {
             return db.getConfig();
+        } catch (ThreadInterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw (TraversalInterruptedException) new TraversalInterruptedException().initCause(e);
+        } catch (EnvironmentFailureException e) {
+            throw new TemporaryBackendException(e);
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
         }
@@ -95,15 +103,24 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         return ((BerkeleyJETx) txh).openCursor(db);
     }
 
-    private static void closeCursor(StoreTransaction txh, Cursor cursor) {
+    private static void closeCursor(StoreTransaction txh, Cursor cursor) throws BackendException {
         Preconditions.checkArgument(txh!=null);
         ((BerkeleyJETx) txh).closeCursor(cursor);
+    }
+
+    public void reopen(final Database db) {
+        this.db = db;
     }
 
     @Override
     public synchronized void close() throws BackendException {
         try {
             if(isOpen) db.close();
+        } catch (ThreadInterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw (TraversalInterruptedException) new TraversalInterruptedException().initCause(e);
+        } catch (EnvironmentFailureException e) {
+            throw new TemporaryBackendException(e);
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
         }
@@ -127,6 +144,11 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
             } else {
                 return null;
             }
+        } catch (ThreadInterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw (TraversalInterruptedException) new TraversalInterruptedException().initCause(e);
+        } catch (EnvironmentFailureException e) {
+            throw new TemporaryBackendException(e);
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
         }
@@ -161,7 +183,11 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
             @Override
             public boolean hasNext() {
                 if (current == null) {
-                    current = getNextEntry();
+                    try {
+                        current = getNextEntry();
+                    } catch (BackendException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 return current != null;
             }
@@ -176,16 +202,26 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
                 return next;
             }
 
-            private KeyValueEntry getNextEntry() {
+            private KeyValueEntry getNextEntry() throws BackendException {
                 if (status != null && status != OperationStatus.SUCCESS) {
                     return null;
                 }
                 while (!selector.reachedLimit()) {
-                    if (status == null) {
-                        status = cursor.get(foundKey, foundData, Get.SEARCH_GTE, getReadOptions(txh)) == null ? OperationStatus.NOTFOUND : OperationStatus.SUCCESS;
-                    } else {
-                        status = cursor.get(foundKey, foundData, Get.NEXT, getReadOptions(txh)) == null ? OperationStatus.NOTFOUND : OperationStatus.SUCCESS;
+                    try {
+                        if (status == null) {
+                            status = cursor.get(foundKey, foundData, Get.SEARCH_GTE, getReadOptions(txh)) == null ? OperationStatus.NOTFOUND : OperationStatus.SUCCESS;
+                        } else {
+                            status = cursor.get(foundKey, foundData, Get.NEXT, getReadOptions(txh)) == null ? OperationStatus.NOTFOUND : OperationStatus.SUCCESS;
+                        }
+                    } catch (ThreadInterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw (TraversalInterruptedException) new TraversalInterruptedException().initCause(e);
+                    } catch (EnvironmentFailureException e) {
+                        throw new TemporaryBackendException(e);
+                    } catch (DatabaseException e) {
+                        throw new PermanentBackendException(e);
                     }
+
                     if (status != OperationStatus.SUCCESS) {
                         break;
                     }
@@ -205,7 +241,11 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
             @Override
             public void close() {
-                closeCursor(txh, cursor);
+                try {
+                    closeCursor(txh, cursor);
+                } catch (BackendException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             @Override
@@ -237,13 +277,22 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
             int convertedTtl = ttlConverter.apply(ttl);
             writeOptions.setTTL(convertedTtl, TimeUnit.HOURS);
         }
-        if (allowOverwrite) {
-            OperationResult result = db.put(tx, key.as(ENTRY_FACTORY), value.as(ENTRY_FACTORY), Put.OVERWRITE, writeOptions);
-            EnvironmentFailureException.assertState(result != null);
-            status = OperationStatus.SUCCESS;
-        } else {
-            OperationResult result = db.put(tx, key.as(ENTRY_FACTORY), value.as(ENTRY_FACTORY), Put.NO_OVERWRITE, writeOptions);
-            status = result == null ? OperationStatus.KEYEXIST : OperationStatus.SUCCESS;
+        try {
+            if (allowOverwrite) {
+                OperationResult result = db.put(tx, key.as(ENTRY_FACTORY), value.as(ENTRY_FACTORY), Put.OVERWRITE, writeOptions);
+                EnvironmentFailureException.assertState(result != null);
+                status = OperationStatus.SUCCESS;
+            } else {
+                OperationResult result = db.put(tx, key.as(ENTRY_FACTORY), value.as(ENTRY_FACTORY), Put.NO_OVERWRITE, writeOptions);
+                status = result == null ? OperationStatus.KEYEXIST : OperationStatus.SUCCESS;
+            }
+        } catch (ThreadInterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw (TraversalInterruptedException) new TraversalInterruptedException().initCause(e);
+        } catch (EnvironmentFailureException e) {
+            throw new TemporaryBackendException(e);
+        } catch (DatabaseException e) {
+            throw new PermanentBackendException(e);
         }
 
         if (status != OperationStatus.SUCCESS) {
@@ -261,6 +310,11 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
             if (status != OperationStatus.SUCCESS && status != OperationStatus.NOTFOUND) {
                 throw new PermanentBackendException("Could not remove: " + status);
             }
+        } catch (ThreadInterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw (TraversalInterruptedException) new TraversalInterruptedException().initCause(e);
+        } catch (EnvironmentFailureException e) {
+            throw new TemporaryBackendException(e);
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
         }
