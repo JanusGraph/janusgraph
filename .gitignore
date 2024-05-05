@@ -47,3 +47,5 @@ janusgraph-*/pom.xml.versionsBackup
 
 *.hprof
 .factorypath
+
+janusgraph-benchmark/benchmark.json

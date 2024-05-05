@@ -22,6 +22,7 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.cql.CQLConfigOptions;
@@ -71,33 +72,27 @@ public class CQLMultiQueryDropBenchmark {
     public void setUp() throws Exception {
         graph = JanusGraphFactory.open(getConfiguration());
 
-        boolean alreadyAdded = true;
         JanusGraphManagement mgmt = graph.openManagement();
-        if (!mgmt.containsPropertyKey("id")) {
-            mgmt.makePropertyKey("id").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            PropertyKey nameProp = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.makePropertyKey("details").dataType(String.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.buildIndex("nameIndex", Vertex.class).addKey(nameProp).buildCompositeIndex();
-
-            alreadyAdded = false;
-        }
+        mgmt.makePropertyKey("id").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey nameProp = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("details").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("nameIndex", Vertex.class).addKey(nameProp).buildCompositeIndex();
 
         mgmt.commit();
 
-        if (!alreadyAdded) {
-            addVertices();
-        }
+        addVertices();
     }
 
     @TearDown
-    public void tearDown() {
-        graph.close();
+    public void tearDown() throws BackendException {
+        JanusGraphFactory.drop(graph);
     }
+
     @Benchmark
     public Integer dropVertices() {
 
         JanusGraphTransaction tx = graph.buildTransaction().start();
-        Integer dropCount = 0;
+        Integer dropCount;
         if (isMultiDrop) {
 
             List<JanusGraphVertex> vertices = tx.traversal()
