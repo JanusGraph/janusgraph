@@ -27,6 +27,7 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.cql.CQLConfigOptions;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryDropStepStrategyMode;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -65,6 +66,7 @@ public class CQLMultiQueryDropBenchmark {
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"cql");
         config.set(CQLConfigOptions.LOCAL_DATACENTER, "dc1");
         config.set(GraphDatabaseConfiguration.USE_MULTIQUERY, true);
+        config.set(GraphDatabaseConfiguration.DROP_STEP_BATCH_MODE, MultiQueryDropStepStrategyMode.NONE.getConfigName());
         return config.getConfiguration();
     }
 
@@ -103,7 +105,7 @@ public class CQLMultiQueryDropBenchmark {
                 .map(v -> (JanusGraphVertex) v)
                 .collect(Collectors.toList());
 
-            dropCount = tx.multiQuery(vertices).drop();
+            dropCount = tx.multiQuery(vertices).drop().size();
         } else {
             dropCount = tx.traversal()
                 .V()
@@ -112,6 +114,27 @@ public class CQLMultiQueryDropBenchmark {
                 .toList()
                 .size();
         }
+
+        tx.rollback();
+        return dropCount;
+    }
+
+    @Benchmark
+    public Integer dropVerticesGremlinQuery() {
+
+        JanusGraphTransaction tx;
+        if (isMultiDrop) {
+            tx = graph.buildTransaction().setDropStepStrategyMode(MultiQueryDropStepStrategyMode.ALL).start();
+        } else {
+            tx = graph.buildTransaction().setDropStepStrategyMode(MultiQueryDropStepStrategyMode.NONE).start();
+        }
+
+        Integer dropCount = tx.traversal()
+            .V()
+            .has("name", "name_test")
+            .drop()
+            .toList()
+            .size();
 
         tx.rollback();
         return dropCount;

@@ -50,4 +50,5 @@ public class InMemoryLazyLoadGraphTest extends InMemoryGraphTest {
         Exception exception = assertThrows(IllegalStateException.class, p::id);
         assertEquals(exception.getMessage(), "Any lazy load operation is not supported when transaction is already closed.");
     }
+
 }
