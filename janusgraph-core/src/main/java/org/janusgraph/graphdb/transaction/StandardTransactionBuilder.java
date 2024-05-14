@@ -28,6 +28,7 @@ import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryDropStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryLabelStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
@@ -91,9 +92,9 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     private boolean isLazyLoadRelations;
 
     private MultiQueryHasStepStrategyMode hasStepStrategyMode;
-
     private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
     private MultiQueryLabelStepStrategyMode labelStepStrategyMode;
+    private MultiQueryDropStepStrategyMode dropStepStrategyMode;
 
     private final boolean forceIndexUsage;
 
@@ -120,6 +121,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.hasStepStrategyMode = graphConfig.hasStepStrategyMode();
         this.propertiesStrategyMode = graphConfig.propertiesStrategyMode();
         this.labelStepStrategyMode = graphConfig.labelStepStrategyMode();
+        this.dropStepStrategyMode = graphConfig.dropStepStrategyMode();
         this.writableCustomOptions = writableCustomOptions;
         if(customOptions == null){
             this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
@@ -261,6 +263,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public TransactionBuilder setDropStepStrategyMode(MultiQueryDropStepStrategyMode dropStepStrategyMode) {
+        this.dropStepStrategyMode = dropStepStrategyMode;
+        return this;
+    }
+
+    @Override
     public void setCommitTime(Instant time) {
         throw new UnsupportedOperationException("Use setCommitTime(long,TimeUnit)");
     }
@@ -307,7 +315,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, restrictedPartitions, groupName,
                 defaultSchemaMaker, hasDisabledSchemaConstraints, skipDBCacheRead, isLazyLoadRelations, hasStepStrategyMode, propertiesStrategyMode,
-                labelStepStrategyMode, customOptions);
+                labelStepStrategyMode, dropStepStrategyMode, customOptions);
         return graph.newTransaction(immutable);
     }
 
@@ -445,6 +453,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public MultiQueryDropStepStrategyMode getDropStepStrategyMode() {
+        return dropStepStrategyMode;
+    }
+
+    @Override
     public String getGroupName() {
         return groupName;
     }
@@ -508,6 +521,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private MultiQueryHasStepStrategyMode hasStepStrategyMode;
         private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
         private MultiQueryLabelStepStrategyMode labelStepStrategyMode;
+        private MultiQueryDropStepStrategyMode dropStepStrategyMode;
 
         private final BaseTransactionConfig handleConfig;
 
@@ -531,6 +545,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                               MultiQueryHasStepStrategyMode hasStepStrategyMode,
                               MultiQueryPropertiesStrategyMode propertiesStrategyMode,
                               MultiQueryLabelStepStrategyMode labelStepStrategyMode,
+                              MultiQueryDropStepStrategyMode dropStepStrategyMode,
                               Configuration customOptions) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
@@ -557,6 +572,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.hasStepStrategyMode = hasStepStrategyMode;
             this.propertiesStrategyMode = propertiesStrategyMode;
             this.labelStepStrategyMode = labelStepStrategyMode;
+            this.dropStepStrategyMode = dropStepStrategyMode;
             this.handleConfig = new StandardBaseTransactionConfig.Builder()
                     .commitTime(commitTime)
                     .timestampProvider(times)
@@ -692,6 +708,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public MultiQueryLabelStepStrategyMode getLabelStepStrategyMode() {
             return labelStepStrategyMode;
+        }
+
+        @Override
+        public MultiQueryDropStepStrategyMode getDropStepStrategyMode() {
+            return dropStepStrategyMode;
         }
 
         @Override

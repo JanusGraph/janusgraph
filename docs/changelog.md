@@ -128,6 +128,32 @@ Example: `storage.berkeleyje.ext.je.lock.timeout=5000 ms`
 For simplicity JSON schema initialization options has been added into JanusGraph.
 See [documentation](./schema/schema-init-strategies.md) to learn more about JSON schema initialization process.
 
+##### Batched Queries Enhancement: Introduction of `JanusGraphNoOpBarrierVertexOnlyStep`
+
+In previous versions, when a query that could benefit from batch-query optimization (multi-query) was executed without
+a user-defined barrier step, JanusGraph would inject a `NoOpBarrierStep` by default. This approach allowed batching
+for edges and properties, which do not gain advantages from multi-query optimization.
+
+Starting with JanusGraph 1.1.0, this behavior has been improved. The system now injects a
+`JanusGraphNoOpBarrierVertexOnlyStep` instead of the standard `NoOpBarrierStep` when no barrier steps are detected.
+This change ensures that batching is applied exclusively to vertices, which do benefit from batch queries,
+while excluding edges and properties from the batching process.
+
+If a user explicitly defines a `.barrier()` step in the query, the system will continue to use the `NoOpBarrierStep` as expected.
+
+##### Batch Query Optimizations Now Support Traversals Containing the `drop()` Step
+
+Starting with JanusGraph 1.1.0, batch optimizations for vertex removal have been introduced in the `drop()` step and
+are enabled by default. Previously, any batch optimization would be skipped for queries containing at least one
+`drop()` step. However, with this update, such queries are now eligible for batch query optimization (multi-query).
+
+Please note that the `LazyBarrierStrategy` (a TinkerPop strategy) is disabled for any query that includes at least one `drop()` step.
+
+To disable the `drop()` step optimization and maintain the previous behavior, users can set the following configuration:
+```
+query.batch.drop-step-mode=none
+```
+
 ### Version 1.0.1 (Release Date: ???)
 
 /// tab | Maven

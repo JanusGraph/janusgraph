@@ -18,6 +18,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.ElementMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LabelStep;
@@ -31,6 +32,7 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphDropStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphElementMapStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphLabelStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
@@ -70,6 +72,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
         final Optional<StandardJanusGraphTx> tx = JanusGraphTraversalUtil.getJanusGraphTx(traversal);
         final MultiQueryPropertiesStrategyMode propertiesStrategyMode;
         final MultiQueryLabelStepStrategyMode labelStepStrategyMode;
+        final MultiQueryDropStepStrategyMode dropStepStrategyMode;
         final int txVertexCacheSize;
 
         if(tx.isPresent()){
@@ -77,16 +80,19 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
             txVertexCacheSize = txConfig.getVertexCacheSize();
             propertiesStrategyMode = txConfig.getPropertiesStrategyMode();
             labelStepStrategyMode = txConfig.getLabelStepStrategyMode();
+            dropStepStrategyMode = txConfig.getDropStepStrategyMode();
         } else {
             GraphDatabaseConfiguration graphConfig = janusGraph.getConfiguration();
             txVertexCacheSize = graphConfig.getTxVertexCacheSize();
             propertiesStrategyMode = graphConfig.propertiesStrategyMode();
             labelStepStrategyMode = graphConfig.labelStepStrategyMode();
+            dropStepStrategyMode = graphConfig.dropStepStrategyMode();
         }
 
         applyJanusGraphVertexSteps(traversal);
         applyJanusGraphPropertiesSteps(traversal, txVertexCacheSize, propertiesStrategyMode);
         applyJanusGraphLabelSteps(traversal, labelStepStrategyMode);
+        applyJanusGraphDropSteps(traversal, dropStepStrategyMode);
         inspectLocalTraversals(traversal, txVertexCacheSize, propertiesStrategyMode);
     }
 
@@ -200,6 +206,19 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
             }
             final JanusGraphLabelStep janusGraphLabelStep = new JanusGraphLabelStep(originalStep);
             TraversalHelper.replaceStep(originalStep, janusGraphLabelStep, originalStep.getTraversal());
+        });
+    }
+
+    private void applyJanusGraphDropSteps(Traversal.Admin<?, ?> traversal, MultiQueryDropStepStrategyMode dropStepStrategyMode){
+        if(MultiQueryDropStepStrategyMode.NONE.equals(dropStepStrategyMode)){
+            return;
+        }
+        TraversalHelper.getStepsOfAssignableClass(DropStep.class, traversal).forEach(originalStep -> {
+            if(originalStep instanceof JanusGraphDropStep){
+                return;
+            }
+            final JanusGraphDropStep janusGraphDropStep = new JanusGraphDropStep(originalStep);
+            TraversalHelper.replaceStep(originalStep, janusGraphDropStep, originalStep.getTraversal());
         });
     }
 

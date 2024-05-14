@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategy;
@@ -60,6 +61,7 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.SchemaViolationException;
+import org.janusgraph.core.Transaction;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.VertexList;
 import org.janusgraph.core.attribute.Cmp;
@@ -138,10 +140,12 @@ import org.janusgraph.graphdb.relations.StandardEdge;
 import org.janusgraph.graphdb.relations.StandardVertexProperty;
 import org.janusgraph.graphdb.serializer.SpecialInt;
 import org.janusgraph.graphdb.serializer.SpecialIntSerializer;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphDropStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphElementMapStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphHasStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertyMapStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryDropStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryLabelStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
@@ -220,6 +224,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CU
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_TIME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_STEP_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HARD_MAX_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HAS_STEP_BATCH_MODE;
@@ -10074,11 +10079,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         int verticesAmount = 42;
 
-        for (int i = 0; i < verticesAmount; i++) {
-            Vertex vertex = tx.addVertex("id", i);
-            vertex.property("name", "name_test");
-            vertex.property("details", "details_" + i);
-        }
+        addVerticesForDropTest(verticesAmount, tx);
 
         clopen();
 
@@ -10090,18 +10091,159 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             .map(v -> (JanusGraphVertex) v)
             .collect(Collectors.toList());
 
-        int actualCount = tx.multiQuery(vertices).drop();
+        int actualCount = tx.multiQuery(vertices).drop().size();
         clopen();
 
         assertEquals(verticesAmount, actualCount);
 
-        int afterDropCount = tx.traversal()
-            .V()
-            .has("name", "name_test")
-            .toList()
-            .size();
+        long afterDropCount = getVerticesForDropTestCount(tx.traversal());
 
         assertEquals(0, afterDropCount);
+    }
+
+    @Test
+    public void testMultiQueryDropsStrategyModes() {
+
+        mgmt.makePropertyKey("id").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey nameProp = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("details").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("nameIndex", Vertex.class).addKey(nameProp).buildCompositeIndex();
+
+        finishSchema();
+
+        long verticesAmount = 42;
+
+        // Mode: NONE
+
+        addVerticesForDropTest(verticesAmount);
+        graph.tx().commit();
+        clopen(option(DROP_STEP_BATCH_MODE), MultiQueryDropStepStrategyMode.NONE.getConfigName());
+        assertEquals(verticesAmount, getVerticesForDropTestCount());
+        TraversalMetrics profileT = graph.traversal().V().drop().profile().next();
+        assertTrue(profileT.getMetrics().stream().anyMatch(metrics -> metrics.getName().equals(DropStep.class.getSimpleName())));
+        graph.tx().commit();
+        assertEquals(0, getVerticesForDropTestCount());
+
+        // Mode: ALL
+
+        addVerticesForDropTest(verticesAmount);
+        graph.tx().commit();
+        clopen(option(DROP_STEP_BATCH_MODE), MultiQueryDropStepStrategyMode.ALL.getConfigName());
+        assertEquals(verticesAmount, getVerticesForDropTestCount());
+        profileT = graph.traversal().V().drop().profile().next();
+        assertEquals("true", profileT.getMetrics().stream().filter(metrics -> metrics.getName().equals(JanusGraphDropStep.class.getSimpleName())).findAny().get().getAnnotation("multi"));
+        graph.tx().commit();
+        assertEquals(0, getVerticesForDropTestCount());
+
+        // `limit` with `drop` step.
+
+        addVerticesForDropTest(verticesAmount);
+        graph.tx().commit();
+        clopen(option(DROP_STEP_BATCH_MODE), MultiQueryDropStepStrategyMode.NONE.getConfigName());
+        assertEquals(verticesAmount, getVerticesForDropTestCount());
+        int limitSize = 2;
+        profileT = graph.traversal().V().limit(limitSize).drop().profile().next();
+        assertTrue(profileT.getMetrics().stream().anyMatch(metrics -> metrics.getName().equals(DropStep.class.getSimpleName())));
+        graph.tx().commit();
+        long afterDropCount = getVerticesForDropTestCount();
+        assertEquals(verticesAmount-limitSize, afterDropCount);
+        graph.traversal().V().drop().iterate();
+        graph.tx().commit();
+        addVerticesForDropTest(verticesAmount);
+        graph.tx().commit();
+        clopen(option(DROP_STEP_BATCH_MODE), MultiQueryDropStepStrategyMode.ALL.getConfigName());
+        assertEquals(verticesAmount, getVerticesForDropTestCount());
+        profileT = graph.traversal().V().limit(limitSize).drop().profile().next();
+        assertEquals("true", profileT.getMetrics().stream().filter(metrics -> metrics.getName().equals(JanusGraphDropStep.class.getSimpleName())).findAny().get().getAnnotation("multi"));
+        graph.tx().commit();
+        afterDropCount = getVerticesForDropTestCount();
+        assertEquals(verticesAmount-limitSize, afterDropCount);
+    }
+
+    @Test
+    public void testMetaPropertiesDrop(){
+        mgmt.makePropertyKey("id").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey nameProp = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("details").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("nameIndex", Vertex.class).addKey(nameProp).buildCompositeIndex();
+
+        finishSchema();
+
+        long verticesAmount = 42;
+
+        for (int i = 0; i < verticesAmount; i++) {
+            Vertex vertex = tx.addVertex("id", i);
+            VertexProperty<String> property = vertex.property("name", "name_test");
+            property.property("details", "details_" + i);
+        }
+        graph.tx().commit();
+
+        clopen(option(DROP_STEP_BATCH_MODE), MultiQueryDropStepStrategyMode.ALL.getConfigName());
+
+        assertEquals(verticesAmount, graph.traversal().V().properties("name").properties("details").count().next());
+
+        graph.traversal().V().properties("name").properties("details").drop().hasNext();
+
+        assertEquals(0, graph.traversal().V().properties("name").properties("details").count().next());
+
+        graph.tx().commit();
+
+        assertEquals(0, graph.traversal().V().properties("name").properties("details").count().next());
+        assertEquals(verticesAmount, graph.traversal().V().has("name").count().next());
+    }
+
+    @Test
+    public void testEdgePropertiesDrop(){
+        mgmt.makePropertyKey("id").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel("relate").make();
+
+        finishSchema();
+
+        long verticesAmount = 42;
+
+        for (int i = 0; i < verticesAmount; i++) {
+            Vertex vertex = tx.addVertex("id", i);
+            Vertex vertex2 = tx.addVertex("id", i+verticesAmount);
+            vertex.addEdge("relate", vertex2).property("name", "name_"+i);
+        }
+
+        graph.tx().commit();
+
+        clopen(option(DROP_STEP_BATCH_MODE), MultiQueryDropStepStrategyMode.ALL.getConfigName());
+
+        assertEquals(verticesAmount, graph.traversal().E().properties("name").count().next());
+
+        graph.traversal().E().properties("name").drop().hasNext();
+
+        assertEquals(0, graph.traversal().E().properties("name").count().next());
+
+        graph.tx().commit();
+
+        assertEquals(0, graph.traversal().E().properties("name").count().next());
+        assertEquals(verticesAmount, graph.traversal().E().count().next());
+    }
+
+    private void addVerticesForDropTest(long verticesAmount){
+        addVerticesForDropTest(verticesAmount, graph);
+    }
+
+    private long getVerticesForDropTestCount(){
+        return getVerticesForDropTestCount(graph.traversal());
+    }
+
+    private void addVerticesForDropTest(long verticesAmount, Transaction tx){
+        for (int i = 0; i < verticesAmount; i++) {
+            Vertex vertex = tx.addVertex("id", i);
+            vertex.property("name", "name_test");
+            vertex.property("details", "details_" + i);
+        }
+    }
+
+    private long getVerticesForDropTestCount(GraphTraversalSource g){
+        return g.V()
+            .has("name", "name_test")
+            .count().next();
     }
 
     @ParameterizedTest

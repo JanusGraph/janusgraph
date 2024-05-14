@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphNoOpBarrierVertexOnlyStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
@@ -85,7 +86,7 @@ public class JanusGraphMultiQueryStrategyTest extends OptimizerStrategyTest {
         makeSampleGraph();
 
         final GraphTraversal<?,?> traversalWithoutExplicitBarrier = g.V(sv[0]).outE().inV();
-        assertNumStep(numV, 1, traversalWithoutExplicitBarrier, NoOpBarrierStep.class);
+        assertNumStep(numV, 1, traversalWithoutExplicitBarrier, JanusGraphNoOpBarrierVertexOnlyStep.class);
 
         final GraphTraversal<?,?> traversalWithExplicitBarrier = g.V(sv[0]).barrier(1).outE().inV();
         assertNumStep(numV, 1, traversalWithExplicitBarrier, NoOpBarrierStep.class);
@@ -96,11 +97,11 @@ public class JanusGraphMultiQueryStrategyTest extends OptimizerStrategyTest {
         clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), false);
         makeSampleGraph();
 
-        final GraphTraversal<?,?> traversalWithoutExplicitBarrier = g.V(sv[0]).outE().inV();
-        assertNumStep(numV, 0, traversalWithoutExplicitBarrier, NoOpBarrierStep.class);
+        assertNumStep(numV, 0, g.V(sv[0]).outE().inV(), JanusGraphNoOpBarrierVertexOnlyStep.class);
+        assertNumStep(numV, 0, g.V(sv[0]).outE().inV(), NoOpBarrierStep.class);
 
-        final GraphTraversal<?,?> traversalWithExplicitBarrier = g.V(sv[0]).barrier(1).outE().inV();
-        assertNumStep(numV, 1, traversalWithExplicitBarrier, NoOpBarrierStep.class);
+        assertNumStep(numV, 1, g.V(sv[0]).barrier(1).outE().inV(), NoOpBarrierStep.class);
+        assertNumStep(numV, 0, g.V(sv[0]).barrier(1).outE().inV(), JanusGraphNoOpBarrierVertexOnlyStep.class);
     }
 
     @Test
@@ -176,8 +177,8 @@ public class JanusGraphMultiQueryStrategyTest extends OptimizerStrategyTest {
         makeSampleGraph();
 
         TraversalMetrics traversalMetricsWithStrategy = graph.traversal()
-            .V().id()
-            .choose(__.is(P.gte(5000L)), __.constant(12345L), __.identity())
+            .V()
+            .choose(__.id().is(P.gte(5000L)), __.constant(12345L), __.id())
             .limit(3).profile().next();
 
         Long graphStepTraversalsCount = traversalMetricsWithStrategy.getMetrics().stream().filter(metrics -> metrics.getName().startsWith(JanusGraphStep.class.getSimpleName()))
@@ -188,8 +189,8 @@ public class JanusGraphMultiQueryStrategyTest extends OptimizerStrategyTest {
         assertTrue(graphStepTraversalsCount < 5L);
 
         TraversalMetrics traversalMetricsWithoutStrategy = graph.traversal().withoutStrategies(JanusGraphUnusedMultiQueryRemovalStrategy.class)
-            .V().id()
-            .choose(__.is(P.gte(5000L)), __.constant(12345L), __.identity())
+            .V()
+            .choose(__.id().is(P.gte(5000L)), __.constant(12345L), __.id())
             .limit(3).profile().next();
 
         graphStepTraversalsCount = traversalMetricsWithoutStrategy.getMetrics().stream().filter(metrics -> metrics.getName().startsWith(JanusGraphStep.class.getSimpleName()))
