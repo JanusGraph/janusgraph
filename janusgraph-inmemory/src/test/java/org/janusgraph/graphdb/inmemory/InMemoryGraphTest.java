@@ -21,6 +21,8 @@ import org.janusgraph.graphdb.JanusGraphTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Map;
 
@@ -134,4 +136,14 @@ public class InMemoryGraphTest extends JanusGraphTest {
 
     @Override @Test @Disabled
     public void testSupportDirectCommitOfSchemaChangesForEdgeProperties() {}
+
+    @Override @Test @Disabled
+    public void testMultiQueryDropsStrategyModes() {}
+
+    @Override @Disabled @ParameterizedTest @ValueSource(booleans = {true, false})
+    public void testMetaPropertiesDrop(boolean sameValue) {}
+
+    @Override @Disabled @ParameterizedTest @ValueSource(booleans = {true, false})
+    public void testEdgePropertiesDrop(boolean sameValue) {}
+
 }

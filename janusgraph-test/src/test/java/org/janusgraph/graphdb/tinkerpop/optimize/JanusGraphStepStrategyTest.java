@@ -24,6 +24,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTrav
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.IsStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
@@ -55,6 +56,7 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphDropStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphElementMapStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphHasStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphLabelStep;
@@ -68,6 +70,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOp
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMultiQueryStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphStepStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphUnusedMultiQueryRemovalStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryDropStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -91,6 +94,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.not;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.properties;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.values;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_STEP_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPEAT_STEP_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -192,6 +196,10 @@ public class JanusGraphStepStrategyTest {
         TraversalHelper.getStepsOfAssignableClassRecursively(LabelStep.class, traversal).forEach(labelStep -> {
             JanusGraphLabelStep janusGraphLabelStep = new JanusGraphLabelStep<>(labelStep);
             TraversalHelper.replaceStep(labelStep, janusGraphLabelStep, labelStep.getTraversal());
+        });
+        TraversalHelper.getStepsOfAssignableClassRecursively(DropStep.class, traversal).forEach(dropStep -> {
+            JanusGraphDropStep janusGraphDropStep = new JanusGraphDropStep<>(dropStep);
+            TraversalHelper.replaceStep(dropStep, janusGraphDropStep, dropStep.getTraversal());
         });
     }
 
@@ -321,7 +329,9 @@ public class JanusGraphStepStrategyTest {
     }
 
     private static Stream<Arguments> generateMultiQueryTestParameters() {
-        final StandardJanusGraph generalGraph = (StandardJanusGraph) StorageSetup.getInMemoryGraphWithMultiQuery();
+        final StandardJanusGraph generalGraph = (StandardJanusGraph) JanusGraphFactory.open(
+            StorageSetup.getInMemoryConfiguration().set(USE_MULTIQUERY, true)
+                .set(DROP_STEP_BATCH_MODE, MultiQueryDropStepStrategyMode.ALL.getConfigName()));;
         final StandardJanusGraph graphWithRepeatClosestParent = (StandardJanusGraph) JanusGraphFactory.open(
             StorageSetup.getInMemoryConfiguration().set(USE_MULTIQUERY, true)
                 .set(REPEAT_STEP_BATCH_MODE, MultiQueryStrategyRepeatStepMode.CLOSEST_REPEAT_PARENT.getConfigName()));
@@ -474,6 +484,9 @@ public class JanusGraphStepStrategyTest {
             // Need `JanusGraphLabelStep` to use instead of `LabelStep`
             arguments(g.V().label(),
                 g_V().is(MQ_STEP).barrier(defaultBarrierSize).label(), otherStrategies),
+            // Need `JanusGraphDropStep` to use instead of `DropStep`
+            arguments(g.V().drop(),
+                g_V().is(MQ_STEP).barrier(defaultBarrierSize).drop(), otherStrategies),
         });
     }
 }

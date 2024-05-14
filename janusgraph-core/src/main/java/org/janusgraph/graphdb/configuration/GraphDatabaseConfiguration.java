@@ -58,6 +58,7 @@ import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryDropStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryLabelStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
@@ -385,6 +386,15 @@ public class GraphDatabaseConfiguration {
             MultiQueryLabelStepStrategyMode.ALL.getConfigName(),
             MultiQueryLabelStepStrategyMode.NONE.getConfigName()),
         ConfigOption.Type.MASKABLE, MultiQueryLabelStepStrategyMode.ALL.getConfigName());
+
+    public static final ConfigOption<String> DROP_STEP_BATCH_MODE = new ConfigOption<>(QUERY_BATCH_NS,"drop-step-mode",
+        String.format("Batching mode for `drop()` step. Used only when `"+USE_MULTIQUERY.toStringWithoutRoot()+"` is `true`.<br>" +
+                "Supported modes:<br>" +
+                "- `%s` - Drops all vertices in a batch.<br>" +
+                "- `%s` - Skips drop batching optimization.<br>",
+            MultiQueryDropStepStrategyMode.ALL.getConfigName(),
+            MultiQueryDropStepStrategyMode.NONE.getConfigName()),
+        ConfigOption.Type.MASKABLE, MultiQueryDropStepStrategyMode.ALL.getConfigName());
 
     // ################ SCHEMA #######################
     // ################################################
@@ -1371,6 +1381,7 @@ public class GraphDatabaseConfiguration {
     private MultiQueryHasStepStrategyMode hasStepStrategyMode;
     private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
     private MultiQueryLabelStepStrategyMode labelStepStrategyMode;
+    private MultiQueryDropStepStrategyMode dropStepStrategyMode;
 
     private StoreFeatures storeFeatures = null;
 
@@ -1495,6 +1506,10 @@ public class GraphDatabaseConfiguration {
 
     public MultiQueryLabelStepStrategyMode labelStepStrategyMode() {
         return labelStepStrategyMode;
+    }
+
+    public MultiQueryDropStepStrategyMode dropStepStrategyMode() {
+        return dropStepStrategyMode;
     }
 
     public boolean adjustQueryLimit() {
@@ -1627,6 +1642,7 @@ public class GraphDatabaseConfiguration {
         hasStepStrategyMode = selectExactConfig(HAS_STEP_BATCH_MODE, MultiQueryHasStepStrategyMode.values());
         propertiesStrategyMode = selectExactConfig(PROPERTIES_BATCH_MODE, MultiQueryPropertiesStrategyMode.values());
         labelStepStrategyMode = selectExactConfig(LABEL_STEP_BATCH_MODE, MultiQueryLabelStepStrategyMode.values());
+        dropStepStrategyMode = selectExactConfig(DROP_STEP_BATCH_MODE, MultiQueryDropStepStrategyMode.values());
 
         indexSelectionStrategy = Backend.getImplementationClass(configuration, configuration.get(INDEX_SELECT_STRATEGY),
             REGISTERED_INDEX_SELECTION_STRATEGIES);

@@ -20,7 +20,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -55,11 +54,7 @@ public class JanusGraphMultiQueryStrategy extends AbstractTraversalStrategy<Trav
 
     @Override
     public void apply(final Admin<?, ?> traversal) {
-        if (!traversal.getGraph().isPresent()
-            || TraversalHelper.onGraphComputer(traversal)
-            // The LazyBarrierStrategy is not allowed to run on traversals which use drop(). As a precaution,
-            // this strategy should not run on those traversals either, because it can also insert barrier().
-            || !TraversalHelper.getStepsOfAssignableClassRecursively(DropStep.class, traversal).isEmpty()) {
+        if (!traversal.getGraph().isPresent() || TraversalHelper.onGraphComputer(traversal)) {
             return;
         }
 

@@ -72,12 +72,14 @@ public class SimpleJanusGraphProperty<V> implements JanusGraphProperty<V> {
 
     @Override
     public int hashCode() {
-        return ElementHelper.hashCode(this);
+        return ElementHelper.hashCode(this) + ElementHelper.hashCode(relation);
     }
 
     @Override
     public boolean equals(Object oth) {
-        return ElementHelper.areEqual(this, oth);
+        return oth instanceof SimpleJanusGraphProperty &&
+            ElementHelper.areEqual(this, oth) &&
+            ElementHelper.areEqual(this.relation, ((SimpleJanusGraphProperty) oth).relation);
     }
 
 }

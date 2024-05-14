@@ -15,6 +15,7 @@
 package org.janusgraph.core;
 
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryDropStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryLabelStepStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
@@ -185,6 +186,15 @@ public interface TransactionBuilder {
      * @return Object with the set labels strategy mode settings
      */
     TransactionBuilder setLabelsStepStrategyMode(MultiQueryLabelStepStrategyMode labelStepStrategyMode);
+
+    /**
+     * Sets `drop` step strategy mode.
+     * <p>
+     * Doesn't have any effect if multi-query was disabled via config `query.batch.enabled = false`.
+     *
+     * @return Object with the set drop strategy mode settings
+     */
+    TransactionBuilder setDropStepStrategyMode(MultiQueryDropStepStrategyMode dropStepStrategyMode);
 
     /**
      * Sets the group name for this transaction which provides a way for gathering
