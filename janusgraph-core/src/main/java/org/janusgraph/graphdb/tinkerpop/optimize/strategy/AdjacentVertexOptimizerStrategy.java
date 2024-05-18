@@ -27,6 +27,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.NoOpBarrierVertexOnlyStep;
 
 import java.util.Collections;
 import java.util.Set;
@@ -65,7 +66,7 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
         Step<?, ?> predecessor = originalStep.getPreviousStep();
 
         // ignore in-between LazyBarrierSteps
-        if (predecessor instanceof NoOpBarrierStep) {
+        if (predecessor instanceof NoOpBarrierStep || predecessor instanceof NoOpBarrierVertexOnlyStep) {
             predecessor = predecessor.getPreviousStep();
         }
 
@@ -80,7 +81,7 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
         Step<?, ?> prePredecessor = predecessor.getPreviousStep();
 
         // ignore in-between LazyBarrierSteps
-        if (prePredecessor instanceof NoOpBarrierStep) {
+        if (prePredecessor instanceof NoOpBarrierStep || predecessor instanceof NoOpBarrierVertexOnlyStep) {
             prePredecessor = prePredecessor.getPreviousStep();
         }
 
@@ -112,7 +113,7 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
 
         Step<Edge,Vertex> e2vStep;
         // remove obsolete NoOpBarrier
-        if (originalStep.getPreviousStep() instanceof NoOpBarrierStep) {
+        if (originalStep.getPreviousStep() instanceof NoOpBarrierStep || originalStep.getPreviousStep() instanceof NoOpBarrierVertexOnlyStep) {
             traversal.removeStep(originalStep.getPreviousStep());
         }
         e2vStep = (Step<Edge, Vertex>) originalStep.getPreviousStep();
@@ -129,7 +130,7 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
 
         // remove obsolete NoOpBarrier
         Step<?,?> v2eStep = filterByAdjacentIdStep.getPreviousStep();
-        while (v2eStep instanceof NoOpBarrierStep) {
+        while (v2eStep instanceof NoOpBarrierStep || v2eStep instanceof NoOpBarrierVertexOnlyStep) {
             Step<?,?> barrierStep = v2eStep;
             v2eStep = barrierStep.getPreviousStep();
             traversal.removeStep(barrierStep);
@@ -140,7 +141,7 @@ public abstract class AdjacentVertexOptimizerStrategy<T extends FilterStep<?>>
         Traversal.Admin<?,?> traversal = originalStep.getTraversal();
 
         // remove obsolete NoOpBarrier
-        if (originalStep.getPreviousStep() instanceof NoOpBarrierStep) {
+        if (originalStep.getPreviousStep() instanceof NoOpBarrierStep || originalStep.getPreviousStep() instanceof NoOpBarrierVertexOnlyStep) {
             traversal.removeStep(originalStep.getPreviousStep());
         }
 

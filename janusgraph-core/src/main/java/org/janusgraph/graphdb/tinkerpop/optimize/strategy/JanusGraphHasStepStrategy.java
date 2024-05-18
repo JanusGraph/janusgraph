@@ -32,6 +32,7 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphHasStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.NoOpBarrierVertexOnlyStep;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 
@@ -127,7 +128,7 @@ public class JanusGraphHasStepStrategy extends AbstractTraversalStrategy<Travers
 
     private Optional<Set<String>> findNextStepNeededProperties(final HasStep originalStep){
         Step nextStep = originalStep.getNextStep();
-        while (nextStep instanceof NoOpBarrierStep || nextStep instanceof IdentityStep
+        while (nextStep instanceof NoOpBarrierStep || nextStep instanceof NoOpBarrierVertexOnlyStep || nextStep instanceof IdentityStep
             || nextStep instanceof ProfileStep || nextStep instanceof SideEffectStep
             || nextStep instanceof JanusGraphMultiQueryStep){
             nextStep = nextStep.getNextStep();

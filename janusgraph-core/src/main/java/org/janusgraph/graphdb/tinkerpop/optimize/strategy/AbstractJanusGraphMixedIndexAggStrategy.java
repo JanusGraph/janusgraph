@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.NoOpBarrierVertexOnlyStep;
 
 import java.util.Collections;
 import java.util.Set;
@@ -80,7 +81,7 @@ abstract class AbstractJanusGraphMixedIndexAggStrategy extends AbstractTraversal
     }
 
     protected boolean isEligibleToSkip(final Step currentStep) {
-        return currentStep instanceof IdentityStep || currentStep instanceof NoOpBarrierStep;
+        return currentStep instanceof IdentityStep || currentStep instanceof NoOpBarrierStep || currentStep instanceof NoOpBarrierVertexOnlyStep;
     }
 
     abstract Aggregation getAggregation(final GraphStep originalGraphStep);

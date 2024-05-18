@@ -155,7 +155,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     traversal.removeStep(currentStep);
                 }
             }
-            else if (currentStep instanceof IdentityStep || currentStep instanceof NoOpBarrierStep) {
+            else if (currentStep instanceof IdentityStep || currentStep instanceof NoOpBarrierStep || currentStep instanceof NoOpBarrierVertexOnlyStep) {
                 // do nothing, has no impact
             } else {
                 break;
@@ -188,7 +188,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             } else if (isExistsStep(currentStep)) {
                 currentStep = foldInHasFilter(traversal, (TraversalFilterStep) currentStep);
                 continue;
-            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep)) {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep || currentStep instanceof NoOpBarrierVertexOnlyStep)) {
                 break;
             }
             currentStep = currentStep.getNextStep();
@@ -209,7 +209,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             } else if (isExistsStep(currentStep)) {
                 currentStep = foldInHasFilter(traversal, (TraversalFilterStep) currentStep);
                 continue;
-            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep)) {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep || currentStep instanceof NoOpBarrierVertexOnlyStep)) {
                 break;
             }
             currentStep = currentStep.getNextStep();
@@ -225,7 +225,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 toReturn = toReturn == null ? validJanusGraphHas(containers) : toReturn && validJanusGraphHas(containers);
             } else if (isExistsStep(currentStep)) {
                 toReturn = true;
-            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep) && !(currentStep instanceof RangeGlobalStep) && !(currentStep instanceof OrderGlobalStep)) {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep || currentStep instanceof NoOpBarrierVertexOnlyStep) && !(currentStep instanceof RangeGlobalStep) && !(currentStep instanceof OrderGlobalStep)) {
                 toReturn = toReturn != null && (toReturn && defaultValue);
                 break;
             }
@@ -280,7 +280,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     traversal.removeStep(lastOrder);
                 }
                 lastOrder = (OrderGlobalStep) currentStep;
-            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof HasStep) && !(currentStep instanceof NoOpBarrierStep)) {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof HasStep) && !(currentStep instanceof NoOpBarrierStep || currentStep instanceof NoOpBarrierVertexOnlyStep)) {
                 break;
             }
             currentStep = currentStep.getNextStep();
@@ -403,7 +403,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 }
             } else if (currentStep instanceof RangeGlobalStep) {
                 return false;
-            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep)) {
+            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep || currentStep instanceof NoOpBarrierVertexOnlyStep)) {
                 break;
             }
             currentStep = currentStep.getNextStep();

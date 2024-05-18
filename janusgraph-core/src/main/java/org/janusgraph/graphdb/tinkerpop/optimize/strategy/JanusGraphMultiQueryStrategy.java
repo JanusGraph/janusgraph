@@ -29,6 +29,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.MultiQueryPositions;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.NoOpBarrierVertexOnlyStep;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Arrays;
@@ -123,11 +124,14 @@ public class JanusGraphMultiQueryStrategy extends AbstractTraversalStrategy<Trav
             if(position instanceof NoOpBarrierStep){
                 multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitedBatch,
                     ((NoOpBarrierStep) position).getMaxBarrierSize());
+            } else if(position instanceof NoOpBarrierVertexOnlyStep){
+                multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitedBatch,
+                    ((NoOpBarrierVertexOnlyStep) position).getMaxBarrierSize());
             } else {
-                NoOpBarrierStep barrier = new NoOpBarrierStep(traversal, limitedBatchSize);
+                NoOpBarrierVertexOnlyStep barrier = new NoOpBarrierVertexOnlyStep(traversal, limitedBatchSize);
                 TraversalHelper.insertBeforeStep(barrier, position, traversal);
                 position = barrier;
-                multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitedBatch, barrier);
+                multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitedBatch, barrier, barrier.getMaxBarrierSize());
             }
         } else {
             multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitedBatch);

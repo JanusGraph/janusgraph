@@ -29,6 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphPropertiesStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.NoOpBarrierVertexOnlyStep;
 
 import java.util.Iterator;
 
@@ -44,6 +45,7 @@ public class TraversalPropertiesFetchingService implements PropertiesFetchingSer
         while (step instanceof IdentityStep ||
             step instanceof ProfileStep ||
             step instanceof NoOpBarrierStep ||
+            step instanceof NoOpBarrierVertexOnlyStep ||
             step instanceof SideEffectStep){
             step = step.getNextStep();
         }

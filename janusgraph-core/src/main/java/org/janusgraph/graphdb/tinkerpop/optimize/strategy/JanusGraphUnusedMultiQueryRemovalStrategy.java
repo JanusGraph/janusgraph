@@ -14,9 +14,9 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.strategy;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
@@ -62,7 +62,7 @@ public class JanusGraphUnusedMultiQueryRemovalStrategy extends AbstractTraversal
 
         List<JanusGraphMultiQueryStep> unusedMultiQuerySteps = findUnusedMultiQuerySteps(traversal);
         unusedMultiQuerySteps.forEach(multiQueryStep -> {
-            NoOpBarrierStep generatedBarrierStep = multiQueryStep.getGeneratedBarrierStep();
+            Step generatedBarrierStep = multiQueryStep.getGeneratedBarrierStep();
             traversal.removeStep(multiQueryStep);
             if(generatedBarrierStep != null){
                 traversal.removeStep(generatedBarrierStep);

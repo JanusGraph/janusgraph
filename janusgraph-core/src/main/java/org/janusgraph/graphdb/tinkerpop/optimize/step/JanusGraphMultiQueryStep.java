@@ -14,10 +14,10 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize.step;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser.Admin;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -51,22 +51,18 @@ public final class JanusGraphMultiQueryStep extends AbstractStep<Element, Elemen
 
     private boolean initialized;
     private boolean limitBatchSize;
-    private NoOpBarrierStep generatedBarrierStep;
+    private Step generatedBarrierStep;
     private Integer relatedBarrierStepSize;
 
     public JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize) {
         this(traversal, limitBatchSize, null, null);
     }
 
-    public JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize, NoOpBarrierStep generatedBarrierStep) {
-        this(traversal, limitBatchSize, generatedBarrierStep, generatedBarrierStep.getMaxBarrierSize());
-    }
-
     public JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize, Integer relatedBarrierStepSize) {
         this(traversal, limitBatchSize, null, relatedBarrierStepSize);
     }
 
-    private JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize, NoOpBarrierStep generatedBarrierStep, Integer relatedBarrierStepSize) {
+    public JanusGraphMultiQueryStep(Traversal.Admin traversal, boolean limitBatchSize, Step generatedBarrierStep, Integer relatedBarrierStepSize) {
         super(traversal);
         this.limitBatchSize = limitBatchSize;
         this.initialized = false;
@@ -172,7 +168,7 @@ public final class JanusGraphMultiQueryStep extends AbstractStep<Element, Elemen
         return nextLoopClientSteps.isEmpty();
     }
 
-    public NoOpBarrierStep getGeneratedBarrierStep() {
+    public Step getGeneratedBarrierStep() {
         return generatedBarrierStep;
     }
 

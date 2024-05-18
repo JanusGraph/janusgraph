@@ -63,6 +63,7 @@ import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphVertexStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.NoOpBarrierVertexOnlyStep;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Arrays;
@@ -337,7 +338,7 @@ public class JanusGraphTraversalUtil {
             currentStep = previousStep;
             previousStep = previousStep.getPreviousStep();
         }
-        if(previousStep instanceof NoOpBarrierStep){
+        if(previousStep instanceof NoOpBarrierStep || previousStep instanceof NoOpBarrierVertexOnlyStep){
             return Optional.of(previousStep);
         }
         if(currentStep instanceof EmptyStep || currentStep instanceof StartStep){
@@ -355,15 +356,17 @@ public class JanusGraphTraversalUtil {
             return Optional.empty();
         }
         Step<?,?> step = optionalPosition.get();
-        if(!(step instanceof NoOpBarrierStep)){
+        if(!(step instanceof NoOpBarrierStep || step instanceof NoOpBarrierVertexOnlyStep)){
             return Optional.empty();
         }
-        NoOpBarrierStep<?> noOpBarrierStep = (NoOpBarrierStep<?>) step;
-        Step<?,?> previousStep = noOpBarrierStep.getPreviousStep();
-        if(previousStep instanceof JanusGraphMultiQueryStep && ((JanusGraphMultiQueryStep) previousStep).getGeneratedBarrierStep() == noOpBarrierStep){
+        Step<?,?> previousStep = step.getPreviousStep();
+        if(previousStep instanceof JanusGraphMultiQueryStep && ((JanusGraphMultiQueryStep) previousStep).getGeneratedBarrierStep() == step){
             return Optional.empty();
         }
-        return Optional.of(noOpBarrierStep.getMaxBarrierSize());
+        if(step instanceof NoOpBarrierStep){
+            return Optional.of(((NoOpBarrierStep) step).getMaxBarrierSize());
+        }
+        return Optional.of(((NoOpBarrierVertexOnlyStep) step).getMaxBarrierSize());
     }
 
     /**
@@ -376,7 +379,7 @@ public class JanusGraphTraversalUtil {
         Step<?,?> startStep = step;
         do {
             startStep = startStep.getPreviousStep();
-        } while (startStep instanceof JanusGraphMultiQueryStep || startStep instanceof NoOpBarrierStep ||
+        } while (startStep instanceof JanusGraphMultiQueryStep || startStep instanceof NoOpBarrierStep || startStep instanceof NoOpBarrierVertexOnlyStep ||
             startStep instanceof IdentityStep || startStep instanceof SideEffectStep || startStep instanceof ProfileStep);
         return startStep instanceof EmptyStep || startStep instanceof StartStep;
     }
