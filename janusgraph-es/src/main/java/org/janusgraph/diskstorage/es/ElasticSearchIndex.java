@@ -324,6 +324,11 @@ public class ElasticSearchIndex implements IndexProvider {
             "Comma separated list of Elasticsearch REST client ResponseException error codes to retry. " +
                 "E.g. \"408,429\"", ConfigOption.Type.LOCAL, String[].class, new String[0]);
 
+    public static final ConfigOption<Integer> BULK_CHUNK_SIZE_LIMIT_BYTES =
+        new ConfigOption<>(ELASTICSEARCH_NS, "bulk-chunk-size-limit-bytes",
+            "The total size limit in bytes of a bulk request. Mutation batches in excess of this limit will be " +
+                "chunked to this size.", ConfigOption.Type.LOCAL, Integer.class, 100_000_000);
+
     public static final int HOST_PORT_DEFAULT = 9200;
 
     /**

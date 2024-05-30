@@ -123,6 +123,9 @@ public class RestClientSetupTest {
     @Captor
     ArgumentCaptor<Set<Integer>> retryErrorCodesCaptor;
 
+    @Captor
+    ArgumentCaptor<Integer> bulkChunkSerializedLimitCaptor;
+
     @Spy
     private RestClientSetup restClientSetup = new RestClientSetup();
 
@@ -158,7 +161,7 @@ public class RestClientSetupTest {
             when(restClientSetup).getRestClientBuilder(any());
         doReturn(restElasticSearchClientMock).when(restClientSetup).
             getElasticSearchClient(any(RestClient.class), anyInt(), anyBoolean(),
-                anyInt(), anySet(), anyLong(), anyLong());
+                anyInt(), anySet(), anyLong(), anyLong(), anyInt());
 
         return restClientSetup.connect(config.restrictTo(INDEX_NAME));
     }
@@ -190,7 +193,7 @@ public class RestClientSetupTest {
         assertEquals(ElasticSearchIndex.HOST_PORT_DEFAULT, host0.getPort());
 
         verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean(),
-            anyInt(), anySet(), anyLong(), anyLong());
+            anyInt(), anySet(), anyLong(), anyLong(), anyInt());
         assertEquals(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue().intValue(),
                 scrollKACaptor.getValue().intValue());
 
@@ -218,7 +221,7 @@ public class RestClientSetupTest {
 
         verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean(),
             retryAttemptLimitCaptor.capture(), retryErrorCodesCaptor.capture(), retryInitialWaitCaptor.capture(),
-            retryMaxWaitCaptor.capture());
+            retryMaxWaitCaptor.capture(), bulkChunkSerializedLimitCaptor.capture());
         assertEquals(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue().intValue(),
                 scrollKACaptor.getValue().intValue());
 
@@ -238,6 +241,7 @@ public class RestClientSetupTest {
                 put("index." + INDEX_NAME + ".elasticsearch.retry-initial-wait", String.valueOf(RETRY_INITIAL_WAIT)).
                 put("index." + INDEX_NAME + ".elasticsearch.retry-max-wait", String.valueOf(RETRY_MAX_WAIT)).
                 put("index." + INDEX_NAME + ".elasticsearch.retry-error-codes", "408,429").
+                put("index." + INDEX_NAME + ".elasticsearch.bulk-chunk-size-limit-bytes", "1000000").
                 build());
 
         assertNotNull(hostsConfigured);
@@ -250,7 +254,7 @@ public class RestClientSetupTest {
 
         verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean(),
             retryAttemptLimitCaptor.capture(), retryErrorCodesCaptor.capture(), retryInitialWaitCaptor.capture(),
-            retryMaxWaitCaptor.capture());
+            retryMaxWaitCaptor.capture(), bulkChunkSerializedLimitCaptor.capture());
         assertEquals(ES_SCROLL_KA,
                 scrollKACaptor.getValue().intValue());
         assertEquals(RETRY_LIMIT,
@@ -261,6 +265,7 @@ public class RestClientSetupTest {
             retryInitialWaitCaptor.getValue().longValue());
         assertEquals(RETRY_MAX_WAIT,
             retryMaxWaitCaptor.getValue().longValue());
+        assertEquals(1_000_000, bulkChunkSerializedLimitCaptor.getValue().intValue());
 
         verify(restElasticSearchClientMock).setBulkRefresh(eq(ES_BULK_REFRESH));
         verify(restElasticSearchClientMock).setRetryOnConflict(eq(RETRY_ON_CONFLICT));
@@ -283,7 +288,7 @@ public class RestClientSetupTest {
         assertEquals(ElasticSearchIndex.HOST_PORT_DEFAULT, host0.getPort());
 
         verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean(),
-            anyInt(), anySet(), anyLong(), anyLong());
+            anyInt(), anySet(), anyLong(), anyLong(), anyInt());
         assertEquals(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue().intValue(),
                 scrollKACaptor.getValue().intValue());
 

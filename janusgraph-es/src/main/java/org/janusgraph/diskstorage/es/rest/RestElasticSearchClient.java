@@ -16,11 +16,15 @@ package org.janusgraph.diskstorage.es.rest;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParseException;
+import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonMappingException;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
@@ -39,16 +43,21 @@ import org.janusgraph.diskstorage.es.ElasticSearchMutation;
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
 import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
-import org.janusgraph.diskstorage.es.rest.RestBulkResponse.RestBulkItemResponse;
 import org.janusgraph.diskstorage.es.script.ESScriptResponse;
+import org.javatuples.Pair;
+import org.javatuples.Triplet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -121,9 +130,11 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private final long retryMaxWaitMs;
 
+    private final int bulkChunkSerializedLimitBytes;
+
 public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7,
                                int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
-                               long retryMaxWaitMs) {
+                               long retryMaxWaitMs, int bulkChunkSerializedLimitBytes) {
         this.delegate = delegate;
         majorVersion = getMajorVersion();
         this.scrollKeepAlive = scrollKeepAlive+"s";
@@ -134,6 +145,7 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         this.retryOnErrorCodes = Collections.unmodifiableSet(retryOnErrorCodes);
         this.retryInitialWaitMs = retryInitialWaitMs;
         this.retryMaxWaitMs = retryMaxWaitMs;
+        this.bulkChunkSerializedLimitBytes = bulkChunkSerializedLimitBytes;
     }
 
     @Override
@@ -241,7 +253,7 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
             final Response response = e.getResponse();
 
-            if(e.getResponse().getStatusLine().getStatusCode() == 404){
+            if(e.getResponse().getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND){
                 ESScriptResponse esScriptResponse = new ESScriptResponse();
                 esScriptResponse.setFound(false);
                 return esScriptResponse;
@@ -380,10 +392,11 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
     }
 
-    @Override
-    public void bulkRequest(List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException {
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        for (final ElasticSearchMutation request : requests) {
+    private class RequestBytes {
+        final byte [] requestBytes;
+        final byte [] requestSource;
+
+        private RequestBytes(final ElasticSearchMutation request) throws JsonProcessingException {
             Map<String, Object> requestData = new HashMap<>();
             if (useMappingTypes) {
                 requestData.put("_index", request.getIndex());
@@ -398,14 +411,38 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                 requestData.put(retryOnConflictKey, retryOnConflict);
             }
 
-            outputStream.write(mapWriter.writeValueAsBytes(
-                ImmutableMap.of(request.getRequestType().name().toLowerCase(), requestData))
-            );
-            outputStream.write(NEW_LINE_BYTES);
+            this.requestBytes =  mapWriter.writeValueAsBytes(ImmutableMap.of(request.getRequestType().name().toLowerCase(), requestData));
             if (request.getSource() != null) {
-                outputStream.write(mapWriter.writeValueAsBytes(request.getSource()));
+                this.requestSource = mapWriter.writeValueAsBytes(request.getSource());
+            } else {
+                this.requestSource = null;
+            }
+        }
+
+        private int getSerializedSize() {
+            int serializedSize = this.requestBytes.length;
+            serializedSize+= 1; //For follow-up NEW_LINE_BYTES
+            if (this.requestSource != null) {
+                serializedSize += this.requestSource.length;
+                serializedSize+= 1; //For follow-up NEW_LINE_BYTES
+            }
+            return serializedSize;
+        }
+
+        private void writeTo(OutputStream outputStream) throws IOException {
+            outputStream.write(this.requestBytes);
+            outputStream.write(NEW_LINE_BYTES);
+            if (this.requestSource != null) {
+                outputStream.write(requestSource);
                 outputStream.write(NEW_LINE_BYTES);
             }
+        }
+    }
+
+    private Pair<String, byte[]> buildBulkRequestInput(List<RequestBytes> requests, String ingestPipeline) throws IOException {
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        for (final RequestBytes request : requests) {
+            request.writeTo(outputStream);
         }
 
         final StringBuilder builder = new StringBuilder();
@@ -416,17 +453,107 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
             APPEND_OP.apply(builder).append("refresh=").append(bulkRefresh);
         }
         builder.insert(0, REQUEST_SEPARATOR + "_bulk");
+        return Pair.with(builder.toString(), outputStream.toByteArray());
+    }
 
-        final Response response = performRequest(REQUEST_TYPE_POST, builder.toString(), outputStream.toByteArray());
-        try (final InputStream inputStream = response.getEntity().getContent()) {
-            final RestBulkResponse bulkResponse = mapper.readValue(inputStream, RestBulkResponse.class);
-            final List<Object> errors = bulkResponse.getItems().stream()
-                .flatMap(item -> item.values().stream())
-                .filter(item -> item.getError() != null && item.getStatus() != 404)
-                .map(RestBulkItemResponse::getError).collect(Collectors.toList());
-            if (!errors.isEmpty()) {
-                errors.forEach(error -> log.error("Failed to execute ES query: {}", error));
-                throw new IOException("Failure(s) in Elasticsearch bulk request: " + errors);
+    private List<Triplet<Object, Integer, RequestBytes>> pairErrorsWithSubmittedMutation(
+        //Bulk API is documented to return bulk item responses in the same order of submission
+        //https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#bulk-api-response-body
+        //As such we only need to retry elements that failed
+        final List<Map<String, RestBulkResponse.RestBulkItemResponse>> bulkResponseItems,
+        final List<RequestBytes> submittedBulkRequestItems) {
+        final List<Triplet<Object, Integer, RequestBytes>> errors = new ArrayList<>(bulkResponseItems.size());
+        for (int itemIndex = 0; itemIndex < bulkResponseItems.size(); itemIndex++) {
+            Collection<RestBulkResponse.RestBulkItemResponse> bulkResponseItem = bulkResponseItems.get(itemIndex).values();
+            if (bulkResponseItem.size() > 1) {
+                throw new IllegalStateException("There should only be a single item per bulk reponse item entry");
+            }
+            RestBulkResponse.RestBulkItemResponse item = bulkResponseItem.iterator().next();
+            if (item.getError() != null && item.getStatus() != HttpStatus.SC_NOT_FOUND) {
+                errors.add(Triplet.with(item.getError(), item.getStatus(), submittedBulkRequestItems.get(itemIndex)));
+            }
+        }
+        return errors;
+    }
+
+    private class BulkRequestChunker implements Iterator<List<RequestBytes>> {
+        //By default, Elasticsearch writes are limited to 100mb, so chunk a given batch of requests so they stay under
+        //the specified limit
+
+        //https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#docs-bulk-api-desc
+        //There is no "correct" number of actions to perform in a single bulk request. Experiment with different
+        // settings to find the optimal size for your particular workload. Note that Elasticsearch limits the maximum
+        // size of a HTTP request to 100mb by default
+        private final PeekingIterator<RequestBytes> requestIterator;
+
+        private BulkRequestChunker(List<ElasticSearchMutation> requests) throws JsonProcessingException {
+            List<RequestBytes> serializedRequests = new ArrayList<>(requests.size());
+            for (ElasticSearchMutation request : requests) {
+                serializedRequests.add(new RequestBytes(request));
+            }
+            this.requestIterator = Iterators.peekingIterator(serializedRequests.iterator());
+        }
+
+        @Override
+        public boolean hasNext() {
+            return requestIterator.hasNext();
+        }
+
+        @Override
+        public List<RequestBytes> next() {
+            List<RequestBytes> serializedRequests = new ArrayList<>();
+            int chunkSerializedTotal = 0;
+            while (requestIterator.hasNext()) {
+                RequestBytes peeked = requestIterator.peek();
+                int requestSerializedSize = peeked.getSerializedSize();
+                if (requestSerializedSize + chunkSerializedTotal <= bulkChunkSerializedLimitBytes) {
+                    chunkSerializedTotal += requestSerializedSize;
+                    serializedRequests.add(requestIterator.next());
+                } else if (requestSerializedSize > bulkChunkSerializedLimitBytes) {
+                    //we've encountered an element we cannot send to Elasticsearch given the configured limit
+                    throw new IllegalArgumentException(String.format(
+                        "Bulk request item is larger than permitted chunk limit. Limit is %s. Serialized item size was %s",
+                        bulkChunkSerializedLimitBytes, requestSerializedSize));
+                } else {
+                    //Adding this element would exceed the limit, so return the chunk
+                    return serializedRequests;
+                }
+            }
+            //All remaining requests fit in this chunk
+            return serializedRequests;
+        }
+    }
+
+    @Override
+    public void bulkRequest(final List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException {
+        BulkRequestChunker bulkRequestChunker = new BulkRequestChunker(requests);
+        while (bulkRequestChunker.hasNext()) {
+            List<RequestBytes> bulkRequestChunk = bulkRequestChunker.next();
+            int retryCount = 0;
+            while (true) {
+                final Pair<String, byte[]> bulkRequestInput = buildBulkRequestInput(bulkRequestChunk, ingestPipeline);
+                final Response response = performRequest(REQUEST_TYPE_POST, bulkRequestInput.getValue0(), bulkRequestInput.getValue1());
+                try (final InputStream inputStream = response.getEntity().getContent()) {
+                    final RestBulkResponse bulkResponse = mapper.readValue(inputStream, RestBulkResponse.class);
+                    List<Triplet<Object, Integer, RequestBytes>> bulkItemsThatFailed = pairErrorsWithSubmittedMutation(bulkResponse.getItems(), bulkRequestChunk);
+                    if (!bulkItemsThatFailed.isEmpty()) {
+                        //Only retry the bulk request if *all* the bulk response item error codes are retry error codes
+                        final Set<Integer> errorCodes = bulkItemsThatFailed.stream().map(Triplet::getValue1).collect(Collectors.toSet());
+                        if (retryCount < retryAttemptLimit && retryOnErrorCodes.containsAll(errorCodes)) {
+                            //Build up the next request batch, of only the failed mutations
+                            bulkRequestChunk = bulkItemsThatFailed.stream().map(Triplet::getValue2).collect(Collectors.toList());
+                            performRetryWait(retryCount);
+                            retryCount++;
+                        } else {
+                            final List<Object> errorItems = bulkItemsThatFailed.stream().map(Triplet::getValue0).collect(Collectors.toList());
+                            errorItems.forEach(error -> log.error("Failed to execute ES query: {}", error));
+                            throw new IOException("Failure(s) in Elasticsearch bulk request: " + errorItems);
+                        }
+                    } else {
+                        //The entire bulk request was successful, leave the loop
+                        break;
+                    }
+                }
             }
         }
     }
@@ -571,16 +698,19 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                 if (!retryOnErrorCodes.contains(e.getResponse().getStatusLine().getStatusCode()) || retryCount >= retryAttemptLimit) {
                     throw e;
                 }
-                //Wait before trying again
-                long waitDurationMs = Math.min((long) (retryInitialWaitMs * Math.pow(10, retryCount)), retryMaxWaitMs);
-                log.warn("Retrying Elasticsearch request in {} ms. Attempt {} of {}", waitDurationMs, retryCount, retryAttemptLimit);
-                try {
-                    Thread.sleep(waitDurationMs);
-                } catch (InterruptedException interruptedException) {
-                    throw new RuntimeException(String.format("Thread interrupted while waiting for retry attempt %d of %d", retryCount, retryAttemptLimit), interruptedException);
-                }
+                performRetryWait(retryCount);
             }
             retryCount++;
+        }
+    }
+
+    private void performRetryWait(int retryCount) {
+        long waitDurationMs = Math.min((long) (retryInitialWaitMs * Math.pow(10, retryCount)), retryMaxWaitMs);
+        log.warn("Retrying Elasticsearch request in {} ms. Attempt {} of {}", waitDurationMs, retryCount, retryAttemptLimit);
+        try {
+            Thread.sleep(waitDurationMs);
+        } catch (InterruptedException interruptedException) {
+            throw new RuntimeException(String.format("Thread interrupted while waiting for retry attempt %d of %d", retryCount, retryAttemptLimit), interruptedException);
         }
     }
 

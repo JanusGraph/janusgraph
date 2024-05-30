@@ -81,8 +81,9 @@ public class RestClientSetup {
         long retryMaxWaitMs = config.getOrDefault(ElasticSearchIndex.RETRY_MAX_WAIT);
         Set<Integer> errorCodesToRetry = Arrays.stream(config.getOrDefault(ElasticSearchIndex.RETRY_ERROR_CODES))
             .mapToInt(Integer::parseInt).boxed().collect(Collectors.toSet());
+        int bulkChunkLimitBytes = config.getOrDefault(ElasticSearchIndex.BULK_CHUNK_SIZE_LIMIT_BYTES);
         final RestElasticSearchClient client = getElasticSearchClient(rc, scrollKeepAlive, useMappingTypesForES7,
-            retryLimit, errorCodesToRetry, retryInitialWaitMs, retryMaxWaitMs);
+            retryLimit, errorCodesToRetry, retryInitialWaitMs, retryMaxWaitMs, bulkChunkLimitBytes);
         if (config.has(ElasticSearchIndex.BULK_REFRESH)) {
             client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH));
         }
@@ -115,9 +116,9 @@ public class RestClientSetup {
 
     protected RestElasticSearchClient getElasticSearchClient(RestClient rc, int scrollKeepAlive, boolean useMappingTypesForES7,
                                                              int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
-                                                             long retryMaxWaitMs) {
+                                                             long retryMaxWaitMs, int bulkChunkSerializedLimit) {
         return new RestElasticSearchClient(rc, scrollKeepAlive, useMappingTypesForES7, retryAttemptLimit, retryOnErrorCodes,
-            retryInitialWaitMs, retryMaxWaitMs);
+            retryInitialWaitMs, retryMaxWaitMs, bulkChunkSerializedLimit);
     }
 
     /**
