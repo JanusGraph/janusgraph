@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.es;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphTransaction;
@@ -33,10 +34,12 @@ import org.janusgraph.diskstorage.mixed.utils.processor.NoTransformCircleProcess
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 
 import java.time.Duration;
+import java.util.stream.IntStream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
@@ -103,6 +106,57 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
 
         String expectedIndexName = INDEX_NAME.getName() + "_" + indexName.toLowerCase();
         assertFalse(esr.indexExists(expectedIndexName));
+    }
+
+    @Test
+    public void writingAnItemLargerThanPermittedChunkLimitFails() {
+        PropertyKey key = mgmt.makePropertyKey("some-field").dataType(Integer.class).make();
+        mgmt.buildIndex("bulkTooLargeWriteTestIndex", Vertex.class).addKey(key).buildMixedIndex(INDEX);
+        mgmt.buildIndex("equalityLookupIndex", Vertex.class).addKey(key).buildCompositeIndex();
+        mgmt.commit();
+
+        //Confirm we're able to successfully write initially
+        Vertex initiallyWrittenVertex = graph.traversal().addV().property(key.name(), 1).next();
+        graph.tx().commit();
+
+        //Retrieve the vertex again based on the composite index and then mixed index that, confirming it's in both
+        Vertex initialVertexEqualityLookup = graph.traversal().V().has(key.name(), P.eq(1)).next();
+        Vertex initialVertexRangeLookup = graph.traversal().V().has(key.name(), P.gt(0)).next();
+
+        Assertions.assertEquals(initiallyWrittenVertex.id(), initialVertexEqualityLookup.id(),
+            "Should have returned the same vertex");
+        Assertions.assertEquals(initiallyWrittenVertex.id(), initialVertexRangeLookup.id(),
+            "Should have returned the same vertex");
+
+        //Now write a second vertex, but with a limit that prevents the mixed index write from succeeding
+        //Writes to mixed indices are "best effort", so a "successful" write that failed to write to a mixed index
+        //is still a success. However, lookups via the mixed index's predicates will now be blind to the vertex
+        clopen(option(ElasticSearchIndex.BULK_CHUNK_SIZE_LIMIT_BYTES, INDEX), 1);
+        Vertex secondWriteAttemptVertex = graph.traversal().addV().property(key.name(), 2).next();
+        graph.tx().commit();
+        Vertex secondVertexEqualityLookup = graph.traversal().V().has(key.name(), P.eq(2)).next();
+        boolean secondVertexRangeLookup = graph.traversal().V().has(key.name(), P.gt(1)).hasNext();
+
+        Assertions.assertEquals(secondWriteAttemptVertex.id(), secondVertexEqualityLookup.id(),
+            "Should have returned the same vertex");
+        Assertions.assertFalse(secondVertexRangeLookup, "The lookup for the second vertex using the mixed index " +
+            "predicate should have failed to find it due to a silent mutation failure to the mixed index due to the " +
+            "chunk size limit");
+    }
+
+    @Test
+    //Disabled to not slow down CI/CD builds given there's nothing to assert
+    //intended for manual observation of the bulk chunking to ElasticSearch
+    @Disabled
+    public void manuallyObserveBulkWritingChunking() {
+        clopen(option(ElasticSearchIndex.BULK_CHUNK_SIZE_LIMIT_BYTES, INDEX), 100);
+        PropertyKey key = mgmt.makePropertyKey("some-field").dataType(String.class).make();
+        mgmt.buildIndex("testChunkingIndex", Vertex.class).addKey(key).buildMixedIndex(INDEX);
+        mgmt.commit();
+
+        //Write 10 vertices that will each individually be split up into their own chunks due to the limit configured
+        IntStream.range(0, 10).forEach(i -> graph.traversal().addV().property(key.name(), "foobar").toList());
+        graph.tx().commit();
     }
 
     @Override
