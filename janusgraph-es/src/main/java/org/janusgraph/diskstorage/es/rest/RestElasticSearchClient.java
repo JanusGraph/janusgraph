@@ -71,6 +71,11 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private static final String REQUEST_PARAM_BEGINNING = "?";
     private static final String REQUEST_PARAM_SEPARATOR = "&";
 
+    /**
+     * es bulk request size
+     */
+    private static final int REQUEST_SIZE = 15 * 1024 * 1024;
+
     public static final String INCLUDE_TYPE_NAME_PARAMETER = "include_type_name";
 
     private static final byte[] NEW_LINE_BYTES = "\n".getBytes(UTF8_CHARSET);
@@ -382,8 +387,22 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public void bulkRequest(List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException {
+        final StringBuilder builder = new StringBuilder();
+        if (ingestPipeline != null) {
+            APPEND_OP.apply(builder).append("pipeline=").append(ingestPipeline);
+        }
+        if (bulkRefreshEnabled) {
+            APPEND_OP.apply(builder).append("refresh=").append(bulkRefresh);
+        }
+        builder.insert(0, REQUEST_SEPARATOR + "_bulk");
+
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         for (final ElasticSearchMutation request : requests) {
+            if(outputStream.size() >= REQUEST_SIZE){
+                doBulkRequest(builder.toString(), outputStream.toByteArray());
+                outputStream.reset();
+            }
+
             Map<String, Object> requestData = new HashMap<>();
             if (useMappingTypes) {
                 requestData.put("_index", request.getIndex());
@@ -408,16 +427,13 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
             }
         }
 
-        final StringBuilder builder = new StringBuilder();
-        if (ingestPipeline != null) {
-            APPEND_OP.apply(builder).append("pipeline=").append(ingestPipeline);
+        if(outputStream.size() > 0){
+            doBulkRequest(builder.toString(), outputStream.toByteArray());
         }
-        if (bulkRefreshEnabled) {
-            APPEND_OP.apply(builder).append("refresh=").append(bulkRefresh);
-        }
-        builder.insert(0, REQUEST_SEPARATOR + "_bulk");
+    }
 
-        final Response response = performRequest(REQUEST_TYPE_POST, builder.toString(), outputStream.toByteArray());
+    private void doBulkRequest(String path, byte[] requestData) throws IOException {
+        final Response response = performRequest(REQUEST_TYPE_POST, path, requestData);
         try (final InputStream inputStream = response.getEntity().getContent()) {
             final RestBulkResponse bulkResponse = mapper.readValue(inputStream, RestBulkResponse.class);
             final List<Object> errors = bulkResponse.getItems().stream()
