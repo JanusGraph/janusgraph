@@ -18,10 +18,17 @@ Configuration options that modify JanusGraph's caching behavior
 
 | Name | Description | Datatype | Default Value | Mutability |
 | ---- | ---- | ---- | ---- | ---- |
+| cache.cache-type | Enable or disable Redis cache (redis/inmemory) | String | redis | MASKABLE |
 | cache.db-cache | Whether to enable JanusGraph's database-level cache, which is shared across all transactions. Enabling this option speeds up traversals by holding hot graph elements in memory, but also increases the likelihood of reading stale data.  Disabling it forces each transaction to independently fetch graph elements from storage before reading/writing them. | Boolean | false | MASKABLE |
 | cache.db-cache-clean-wait | How long, in milliseconds, database-level cache will keep entries after flushing them.  This option is only useful on distributed storage backends that are capable of acknowledging writes without necessarily making them immediately visible. | Integer | 50 | MASKABLE |
 | cache.db-cache-size | Size of JanusGraph's database level cache.  Values between 0 and 1 are interpreted as a percentage of VM heap, while larger values are interpreted as an absolute size in bytes. | Double | 0.3 | MASKABLE |
 | cache.db-cache-time | Default expiration time, in milliseconds, for entries in the database-level cache. Entries are evicted when they reach this age even if the cache has room to spare. Set to 0 to disable expiration (cache entries live forever or until memory pressure triggers eviction when set to 0). | Long | 10000 | MASKABLE |
+| cache.redis-cache-connectTimeout | Timeout during connecting to any Redis server. | Integer | 1000 | MASKABLE |
+| cache.redis-cache-connectionMinimumIdleSize | Minimum idle Redis connection amount. | Integer | 24 | MASKABLE |
+| cache.redis-cache-connectionPoolSize | Redis connection maximum pool size. | Integer | 64 | MASKABLE |
+| cache.redis-cache-host | Redis host name | String | localhost | MASKABLE |
+| cache.redis-cache-keepAlive | Enables TCP keepAlive for connection. | Boolean | true | MASKABLE |
+| cache.redis-cache-port | Redis host port | Integer | 6379 | MASKABLE |
 | cache.tx-cache-size | Maximum size of the transaction-level cache of recently-used vertices. | Integer | 20000 | MASKABLE |
 | cache.tx-dirty-size | Initial size of the transaction-level cache of uncommitted dirty vertices. This is a performance hint for write-heavy, performance-sensitive transactional workloads. If set, it should roughly match the median vertices modified per transaction. | Integer | (no default value) | MASKABLE |
 
