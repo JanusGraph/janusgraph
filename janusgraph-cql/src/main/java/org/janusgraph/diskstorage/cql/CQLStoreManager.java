@@ -291,7 +291,7 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
             ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
             executeWithCatching(this::clearJmxMetrics, exceptionWrapper);
             executeWithCatching(session::close, exceptionWrapper);
-            executeWithCatching(queriesBackPressure::close, exceptionWrapper);
+            if (queriesBackPressure != null) executeWithCatching(queriesBackPressure::close, exceptionWrapper);
             throwIfException(exceptionWrapper);
         } finally {
             gracefulExecutorServiceShutdown(executorService, threadPoolShutdownMaxWaitTime);
