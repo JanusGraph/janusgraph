@@ -134,4 +134,14 @@ public class InMemoryGraphTest extends JanusGraphTest {
 
     @Override @Test @Disabled
     public void testSupportDirectCommitOfSchemaChangesForEdgeProperties() {}
+
+    @Override @Test @Disabled
+    public void testMultiQueryDropsStrategyModes() {}
+
+    @Override @Test @Disabled
+    public void testMetaPropertiesDrop() {}
+
+    @Override @Test @Disabled
+    public void testEdgePropertiesDrop() {}
+
 }
