@@ -34,6 +34,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -102,6 +103,44 @@ public class RestClientBulkRequestsTest {
             //Verify that despite only calling bulkRequest() once, we had 2 calls to the underlying rest client's
             //perform request (due to the mutations being split across 2 calls)
             verify(restClientMock, times(2)).performRequest(requestCaptor.capture());
+        }
+    }
+
+    @Test
+    public void testThrowingForOverlyLargeBulkItemOnlyAfterSmallerItemsAreChunked() throws IOException {
+        int bulkLimit = 1_000_000;
+        StringBuilder overlyLargePayloadBuilder = new StringBuilder();
+        IntStream.range(0, bulkLimit * 10).forEach(value -> overlyLargePayloadBuilder.append("a"));
+        String overlyLargePayload = overlyLargePayloadBuilder.toString();
+        ElasticSearchMutation overlyLargeMutation = ElasticSearchMutation.createIndexRequest("some_index", "some_type", "some_doc_id2",
+            Collections.singletonMap("someKey", overlyLargePayload));
+        List<ElasticSearchMutation> bulkItems = Arrays.asList(
+            ElasticSearchMutation.createIndexRequest("some_index", "some_type", "some_doc_id1",
+                Collections.singletonMap("someKey", "small_payload1")),
+            overlyLargeMutation,
+            ElasticSearchMutation.createIndexRequest("some_index", "some_type", "some_doc_id3",
+                Collections.singletonMap("someKey", "small_payload2"))
+        );
+
+        try (RestElasticSearchClient restClientUnderTest = createClient(bulkLimit)) {
+            RestElasticSearchClient.BulkRequestChunker chunkerUnderTest = restClientUnderTest.new BulkRequestChunker(bulkItems);
+            int overlyLargeRequestExpectedSize = restClientUnderTest.new RequestBytes(overlyLargeMutation).getSerializedSize();
+
+            //The chunker should chunk this request first as a list of the 2 smaller items
+            List<RestElasticSearchClient.RequestBytes> smallItemsChunk = chunkerUnderTest.next();
+            Assertions.assertEquals(2, smallItemsChunk.size());
+
+            //Then the chunker should still return true for hasNext()
+            Assertions.assertTrue(chunkerUnderTest.hasNext());
+
+            //Then the next call for next() should throw to report the exceptionally large item
+            IllegalArgumentException thrownException = Assertions.assertThrows(IllegalArgumentException.class, chunkerUnderTest::next,
+                "Should have thrown due to bulk request item being too large");
+
+            String expectedExceptionMessage = String.format("Bulk request item(s) larger than permitted chunk limit. Limit is %s. Serialized item size(s) [%s]",
+                bulkLimit, overlyLargeRequestExpectedSize);
+
+            Assertions.assertEquals(expectedExceptionMessage, thrownException.getMessage());
         }
     }
 
