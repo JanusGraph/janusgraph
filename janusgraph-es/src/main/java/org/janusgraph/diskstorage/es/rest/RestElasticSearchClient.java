@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.es.rest;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
@@ -54,6 +55,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -392,11 +394,13 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
     }
 
-    private class RequestBytes {
+    @VisibleForTesting
+    class RequestBytes {
         final byte [] requestBytes;
         final byte [] requestSource;
 
-        private RequestBytes(final ElasticSearchMutation request) throws JsonProcessingException {
+        @VisibleForTesting
+        RequestBytes(final ElasticSearchMutation request) throws JsonProcessingException {
             Map<String, Object> requestData = new HashMap<>();
             if (useMappingTypes) {
                 requestData.put("_index", request.getIndex());
@@ -419,7 +423,8 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
             }
         }
 
-        private int getSerializedSize() {
+        @VisibleForTesting
+        int getSerializedSize() {
             int serializedSize = this.requestBytes.length;
             serializedSize+= 1; //For follow-up NEW_LINE_BYTES
             if (this.requestSource != null) {
@@ -445,15 +450,15 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
             request.writeTo(outputStream);
         }
 
-        final StringBuilder builder = new StringBuilder();
+        final StringBuilder bulkRequestQueryParameters = new StringBuilder();
         if (ingestPipeline != null) {
-            APPEND_OP.apply(builder).append("pipeline=").append(ingestPipeline);
+            APPEND_OP.apply(bulkRequestQueryParameters).append("pipeline=").append(ingestPipeline);
         }
         if (bulkRefreshEnabled) {
-            APPEND_OP.apply(builder).append("refresh=").append(bulkRefresh);
+            APPEND_OP.apply(bulkRequestQueryParameters).append("refresh=").append(bulkRefresh);
         }
-        builder.insert(0, REQUEST_SEPARATOR + "_bulk");
-        return Pair.with(builder.toString(), outputStream.toByteArray());
+        final String bulkRequestPath = REQUEST_SEPARATOR + "_bulk" + bulkRequestQueryParameters;
+        return Pair.with(bulkRequestPath, outputStream.toByteArray());
     }
 
     private List<Triplet<Object, Integer, RequestBytes>> pairErrorsWithSubmittedMutation(
@@ -476,7 +481,8 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         return errors;
     }
 
-    private class BulkRequestChunker implements Iterator<List<RequestBytes>> {
+    @VisibleForTesting
+    class BulkRequestChunker implements Iterator<List<RequestBytes>> {
         //By default, Elasticsearch writes are limited to 100mb, so chunk a given batch of requests so they stay under
         //the specified limit
 
@@ -485,18 +491,33 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         // settings to find the optimal size for your particular workload. Note that Elasticsearch limits the maximum
         // size of a HTTP request to 100mb by default
         private final PeekingIterator<RequestBytes> requestIterator;
+        private final int[] exceptionallyLargeRequests;
 
-        private BulkRequestChunker(List<ElasticSearchMutation> requests) throws JsonProcessingException {
+        @VisibleForTesting
+        BulkRequestChunker(List<ElasticSearchMutation> requests) throws JsonProcessingException {
             List<RequestBytes> serializedRequests = new ArrayList<>(requests.size());
+            List<Integer> requestSizesThatWereTooLarge = new ArrayList<>();
             for (ElasticSearchMutation request : requests) {
-                serializedRequests.add(new RequestBytes(request));
+                RequestBytes requestBytes = new RequestBytes(request);
+                int requestSerializedSize = requestBytes.getSerializedSize();
+                if (requestSerializedSize <= bulkChunkSerializedLimitBytes) {
+                    //Only keep items that we can actually send in memory
+                    serializedRequests.add(requestBytes);
+                } else {
+                    requestSizesThatWereTooLarge.add(requestSerializedSize);
+                }
             }
             this.requestIterator = Iterators.peekingIterator(serializedRequests.iterator());
+            //Condense request sizes that are too large into an int array to remove Boxed & List memory overhead
+            this.exceptionallyLargeRequests = requestSizesThatWereTooLarge.isEmpty() ? null :
+                requestSizesThatWereTooLarge.stream().mapToInt(Integer::intValue).toArray();
         }
 
         @Override
         public boolean hasNext() {
-            return requestIterator.hasNext();
+            //Make sure hasNext() still returns true if exceptionally large requests were attempted to be submitted
+            //This allows next() to throw after all well sized requests have been chunked for submission
+            return requestIterator.hasNext() || exceptionallyLargeRequests != null;
         }
 
         @Override
@@ -505,19 +526,20 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
             int chunkSerializedTotal = 0;
             while (requestIterator.hasNext()) {
                 RequestBytes peeked = requestIterator.peek();
-                int requestSerializedSize = peeked.getSerializedSize();
-                if (requestSerializedSize + chunkSerializedTotal <= bulkChunkSerializedLimitBytes) {
-                    chunkSerializedTotal += requestSerializedSize;
+                chunkSerializedTotal += peeked.getSerializedSize();
+                if (chunkSerializedTotal <= bulkChunkSerializedLimitBytes) {
                     serializedRequests.add(requestIterator.next());
-                } else if (requestSerializedSize > bulkChunkSerializedLimitBytes) {
-                    //we've encountered an element we cannot send to Elasticsearch given the configured limit
-                    throw new IllegalArgumentException(String.format(
-                        "Bulk request item is larger than permitted chunk limit. Limit is %s. Serialized item size was %s",
-                        bulkChunkSerializedLimitBytes, requestSerializedSize));
                 } else {
                     //Adding this element would exceed the limit, so return the chunk
                     return serializedRequests;
                 }
+            }
+            //Check if we should throw an exception for items that were exceptionally large and therefore undeliverable.
+            //This is only done after all items that could be sent have been sent
+            if (serializedRequests.isEmpty() && this.exceptionallyLargeRequests != null) {
+                throw new IllegalArgumentException(String.format(
+                    "Bulk request item(s) larger than permitted chunk limit. Limit is %s. Serialized item size(s) %s",
+                    bulkChunkSerializedLimitBytes, Arrays.toString(this.exceptionallyLargeRequests)));
             }
             //All remaining requests fit in this chunk
             return serializedRequests;

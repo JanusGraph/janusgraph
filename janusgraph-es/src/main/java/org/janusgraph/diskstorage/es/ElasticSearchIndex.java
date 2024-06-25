@@ -327,7 +327,11 @@ public class ElasticSearchIndex implements IndexProvider {
     public static final ConfigOption<Integer> BULK_CHUNK_SIZE_LIMIT_BYTES =
         new ConfigOption<>(ELASTICSEARCH_NS, "bulk-chunk-size-limit-bytes",
             "The total size limit in bytes of a bulk request. Mutation batches in excess of this limit will be " +
-                "chunked to this size.", ConfigOption.Type.LOCAL, Integer.class, 100_000_000);
+                "chunked to this size. If a single bulk item exceeds this limit an exception will be thrown after the " +
+                "smaller bulk items are submitted. Ensure that this limit is always less than or equal to the configured " +
+                "limit of `http.max_content_length` on the Elasticsearch servers. For more information, refer to the " +
+                "[Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/master/modules-network.html).",
+            ConfigOption.Type.LOCAL, Integer.class, 100_000_000);
 
     public static final int HOST_PORT_DEFAULT = 9200;
 
