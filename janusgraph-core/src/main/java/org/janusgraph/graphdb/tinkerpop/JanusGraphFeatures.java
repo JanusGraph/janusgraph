@@ -159,7 +159,11 @@ public class JanusGraphFeatures implements Graph.Features {
 
         @Override
         public VertexProperty.Cardinality getCardinality(final String key) {
-            StandardJanusGraphTx tx = (StandardJanusGraphTx)JanusGraphFeatures.this.graph.newTransaction();
+            StandardJanusGraphTx tx = (StandardJanusGraphTx)JanusGraphFeatures.this.graph.buildTransaction()
+                .dirtyVertexSize(0)
+                .vertexCacheSize(0)
+                .readOnly()
+                .start();
             try {
                 if (!tx.containsPropertyKey(key)) return tx.getConfiguration().getAutoSchemaMaker().defaultPropertyCardinality(key).convert();
                 return tx.getPropertyKey(key).cardinality().convert();
