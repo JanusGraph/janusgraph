@@ -28,6 +28,7 @@ All currently supported versions of JanusGraph are listed below.
 | JanusGraph | Storage Version | Cassandra | HBase | Bigtable | ScyllaDB | Elasticsearch | Solr | TinkerPop | Spark | Scala |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
 | 1.0.z | 2 | 3.11.z, 4.0.z | 2.5.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 5.y | 6.y, 7.y, 8.y | 8.y | 3.7.z | 3.2.z | 2.12.z |
+| 1.1.z | 2 | 3.11.z, 4.0.z | 2.5.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 5.y | 6.y, 7.y, 8.y | 8.y | 3.7.z | 3.2.z | 2.12.z |
 
 !!! info
     Even so ScyllaDB is marked as `N/A` prior version 1.0.0 it was actually supported using `cql` storage option. 
@@ -48,6 +49,82 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 | 0.6.z | 2 | 3.0.z, 3.11.z | 1.6.z, 2.2.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | N/A | 6.y, 7.y | 7.y, 8.y | 3.5.z | 3.0.z | 2.12.z |
 
 ## Release Notes
+
+### Version 1.1.0 (Release Date: ???)
+
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>1.1.0</version>
+</dependency>
+```
+///
+
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:1.1.0"
+```
+///
+
+**Tested Compatibility:**
+
+* Apache Cassandra 3.11.10, 4.0.6
+* Apache HBase 2.5.0
+* Oracle BerkeleyJE 7.5.11
+* ScyllaDB 5.1.4
+* Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.10.4
+* Apache Lucene 8.11.1
+* Apache Solr 8.11.1
+* Apache TinkerPop 3.7.3
+* Java 8, 11
+
+**Installed versions in the Pre-Packaged Distribution:**
+
+* Cassandra 4.0.6
+* Elasticsearch 7.14.0
+
+#### Changes
+
+For more information on features and bug fixes in 1.1.0, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/27?closed=1>
+
+#### Assets
+
+* [JavaDoc](https://javadoc.io/doc/org.janusgraph/janusgraph-core/1.1.0)
+* [GitHub Release](https://github.com/JanusGraph/janusgraph/releases/tag/v1.1.0)
+* [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v1.1.0/janusgraph-1.1.0.zip)
+* [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v1.1.0/janusgraph-full-1.1.0.zip)
+
+#### Upgrade Instructions
+
+##### Batched Queries Enhancement: Introduction of `JanusGraphNoOpBarrierVertexOnlyStep`
+
+In previous versions, when a query that could benefit from batch-query optimization (multi-query) was executed without 
+a user-defined barrier step, JanusGraph would inject a `NoOpBarrierStep` by default. This approach allowed batching 
+for edges and properties, which do not gain advantages from multi-query optimization.
+
+Starting with JanusGraph 1.1.0, this behavior has been improved. The system now injects a 
+`JanusGraphNoOpBarrierVertexOnlyStep` instead of the standard `NoOpBarrierStep` when no barrier steps are detected. 
+This change ensures that batching is applied exclusively to vertices, which do benefit from batch queries, 
+while excluding edges and properties from the batching process.
+
+If a user explicitly defines a `.barrier()` step in the query, the system will continue to use the `NoOpBarrierStep` as expected.
+
+##### Batch Query Optimizations Now Support Traversals Containing the `drop()` Step
+
+Starting with JanusGraph 1.1.0, batch optimizations for vertex removal have been introduced in the `drop()` step and 
+are enabled by default. Previously, any batch optimization would be skipped for queries containing at least one 
+`drop()` step. However, with this update, such queries are now eligible for batch query optimization (multi-query).
+
+Please note that the `LazyBarrierStrategy` (a TinkerPop strategy) is disabled for any query that includes at least one `drop()` step.
+
+To disable the `drop()` step optimization and maintain the previous behavior, users can set the following configuration:
+```
+query.batch.drop-step-mode=none
+```
 
 ### Version 1.0.0 (Release Date: October 21, 2023)
 

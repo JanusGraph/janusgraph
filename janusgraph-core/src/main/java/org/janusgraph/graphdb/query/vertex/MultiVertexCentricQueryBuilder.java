@@ -203,9 +203,9 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     }
 
     @Override
-    public Integer drop() {
+    public Map<JanusGraphVertex, Iterable<JanusGraphRelation>> drop() {
         Map<JanusGraphVertex, Iterable<JanusGraphRelation>> allRelations = this.noPartitionRestriction().all().relations();
         allRelations.forEach((vertex, relations) -> ((InternalVertex) vertex).remove(relations));
-        return allRelations.size();
+        return allRelations;
     }
 }

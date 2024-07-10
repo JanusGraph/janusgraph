@@ -31,17 +31,25 @@ import java.util.Map;
  */
 public abstract class MultiQueriableStepBatchFetcher<R> {
 
+    private static final TriggeredBatchConsumer<JanusGraphVertex> EMPTY_BATCH_CONSUMER = (b, t) -> {};
+
     private Map<JanusGraphVertex, R> multiQueryResults = null;
     private int batchSize;
     private int currentLoops = 0;
     private BatchProcessingQueue<JanusGraphVertex> firstLoopBatchProcessingQueue;
     private BatchProcessingQueue<JanusGraphVertex> currentLoopBatchProcessingQueue;
     private BatchProcessingQueue<JanusGraphVertex> nextLoopBatchProcessingQueue;
+    private final TriggeredBatchConsumer<JanusGraphVertex> batchConsumerBeforeQuery;
 
     public MultiQueriableStepBatchFetcher(int batchSize){
+        this(batchSize, EMPTY_BATCH_CONSUMER);
+    }
+
+    public MultiQueriableStepBatchFetcher(int batchSize, TriggeredBatchConsumer<JanusGraphVertex> batchConsumerBeforeQuery){
         this.batchSize = batchSize;
         this.currentLoopBatchProcessingQueue = generateNewBatchProcessingQueue();
         this.nextLoopBatchProcessingQueue = generateNewBatchProcessingQueue();
+        this.batchConsumerBeforeQuery = batchConsumerBeforeQuery;
     }
 
     public void registerCurrentLoopFutureVertexForPrefetching(Vertex forGeneralVertex, int traverserLoops) {
@@ -105,9 +113,10 @@ public abstract class MultiQueriableStepBatchFetcher<R> {
     }
 
     protected Map<JanusGraphVertex, R> prefetchNextBatch(final Traversal.Admin<?, ?> traversal, JanusGraphVertex requiredFetchVertex){
-        final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal)
-            .multiQuery(nextBatch());
+        Collection<JanusGraphVertex> batch = nextBatch();
+        final JanusGraphMultiVertexQuery multiQuery = JanusGraphTraversalUtil.getTx(traversal).multiQuery(batch);
         multiQuery.addVertex(requiredFetchVertex);
+        batchConsumerBeforeQuery.consume(batch, requiredFetchVertex);
         try {
             return makeQueryAndExecute(multiQuery);
         } catch (JanusGraphException janusGraphException) {

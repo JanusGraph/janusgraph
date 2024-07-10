@@ -20,7 +20,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -30,6 +29,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.MultiQueryPositions;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphNoOpBarrierVertexOnlyStep;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Arrays;
@@ -55,11 +55,7 @@ public class JanusGraphMultiQueryStrategy extends AbstractTraversalStrategy<Trav
 
     @Override
     public void apply(final Admin<?, ?> traversal) {
-        if (!traversal.getGraph().isPresent()
-            || TraversalHelper.onGraphComputer(traversal)
-            // The LazyBarrierStrategy is not allowed to run on traversals which use drop(). As a precaution,
-            // this strategy should not run on those traversals either, because it can also insert barrier().
-            || !TraversalHelper.getStepsOfAssignableClassRecursively(DropStep.class, traversal).isEmpty()) {
+        if (!traversal.getGraph().isPresent() || TraversalHelper.onGraphComputer(traversal)) {
             return;
         }
 
@@ -129,7 +125,7 @@ public class JanusGraphMultiQueryStrategy extends AbstractTraversalStrategy<Trav
                 multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitedBatch,
                     ((NoOpBarrierStep) position).getMaxBarrierSize());
             } else {
-                NoOpBarrierStep barrier = new NoOpBarrierStep(traversal, limitedBatchSize);
+                NoOpBarrierStep barrier = new JanusGraphNoOpBarrierVertexOnlyStep(traversal, limitedBatchSize);
                 TraversalHelper.insertBeforeStep(barrier, position, traversal);
                 position = barrier;
                 multiQueryStep = new JanusGraphMultiQueryStep(traversal, limitedBatch, barrier);
