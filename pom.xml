@@ -116,7 +116,7 @@
         <!-- align with org.apache.solr:solr-solrj -->
         <jetty.version>9.4.54.v20240208</jetty.version>
         <log4j2.version>2.23.1</log4j2.version>
-        <graalvm-nativeimage.version>24.0.0</graalvm-nativeimage.version>
+        <graalvm-nativeimage.version>24.0.2</graalvm-nativeimage.version>
         <caffeine.version>2.9.3</caffeine.version>
         <checker-qual.version>3.43.0</checker-qual.version>
         <curator.version>5.6.0</curator.version>
