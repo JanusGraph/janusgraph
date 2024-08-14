@@ -1153,6 +1153,28 @@ BerkeleyDB storage configured with [SHARED_CACHE](https://docs.oracle.com/cd/E17
 
 If you are using `janusgraph.sh` to start your instance, the default logging has been changed from `log` to `logs`
 
+##### In-Memory backend moved into dedicated module
+
+The built-in in-memory backend has been moved into a dedicated module.
+Users who use it for instance in tests, have to explicitly declare it as a dependency:
+
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-inmemory</artifactId>
+    <scope>test</scope>
+    <version>0.5.0</version>
+</dependency>
+```
+///
+
+/// tab | Gradle
+```groovy
+implementation 'org.janusgraph:janusgraph-inmemory:0.5.0'
+```
+///
+
 ### Version 0.4.1 (Release Date: January 14, 2020)
 
 /// tab | Maven
