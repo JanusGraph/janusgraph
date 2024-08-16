@@ -118,7 +118,7 @@
         <log4j2.version>2.23.1</log4j2.version>
         <graalvm-nativeimage.version>24.0.2</graalvm-nativeimage.version>
         <caffeine.version>2.9.3</caffeine.version>
-        <checker-qual.version>3.45.0</checker-qual.version>
+        <checker-qual.version>3.46.0</checker-qual.version>
         <curator.version>5.7.0</curator.version>
     </properties>
     <modules>
