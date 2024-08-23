@@ -927,7 +927,7 @@
             <dependency>
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
-                <version>1.14.18</version>
+                <version>1.15.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apiguardian</groupId>
