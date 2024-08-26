@@ -20,13 +20,14 @@ import org.janusgraph.graphdb.types.TypeDefinitionCategory;
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public enum ModifierType {
-    CONSISTENCY(TypeDefinitionCategory.CONSISTENCY_LEVEL),
-    TTL(TypeDefinitionCategory.TTL);
+    CONSISTENCY,
+    TTL;
 
-    private final TypeDefinitionCategory category;
+    private TypeDefinitionCategory category;
 
-    ModifierType(final TypeDefinitionCategory category) {
-        this.category = category;
+    static {
+        CONSISTENCY.category = TypeDefinitionCategory.CONSISTENCY_LEVEL;
+        TTL.category = TypeDefinitionCategory.TTL;
     }
 
     public TypeDefinitionCategory getCategory() {
