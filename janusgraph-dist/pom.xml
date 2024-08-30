@@ -252,52 +252,6 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <id>generate-janusgraph-config-table</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>org.janusgraph.util.system.ConfigurationPrinter</mainClass>
-                            <arguments>
-                                <argument>org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS</argument>
-                                <argument>${doc.dir}/configs/janusgraph-cfg.md</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>run-cfilter</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <!-- Classpath -->
-                                <argument>-classpath</argument>
-                                <classpath/>
-                                <!-- Main Classname -->
-                                <mainClass>org.janusgraph.util.system.ConfigurationFileFilter</mainClass>
-                                <!-- Input directory (processed recursively) -->
-                                <argument>${assembly.cfilter.in.dir}</argument>
-                                <!-- Output directory prefix -->
-                                <argument>${assembly.cfilter.out.dir}</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>generate-janusgraph-gremlin-imports</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
 
             <plugin>
                 <artifactId>maven-source-plugin</artifactId>
