@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.aliyun.openservices</groupId>
             <artifactId>tablestore-hbase-client</artifactId>
-            <version>1.2.0</version>
+            <version>2.0.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.netty</groupId>
@@ -27,6 +27,14 @@
                 <exclusion>
                     <groupId>ch.qos.reload4j</groupId>
                     <artifactId>reload4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jruby.jcodings</groupId>
+                    <artifactId>jcodings</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
