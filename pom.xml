@@ -124,6 +124,7 @@
     <modules>
         <module>janusgraph-grpc</module>
         <module>janusgraph-driver</module>
+        <module>janusgraph-lindorm</module>
         <module>janusgraph-core</module>
         <module>janusgraph-server</module>
         <module>janusgraph-backend-testutils</module>
