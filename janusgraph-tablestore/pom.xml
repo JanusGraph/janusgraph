@@ -33,10 +33,6 @@
                     <artifactId>slf4j-api</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>org.jruby.jcodings</groupId>
-                    <artifactId>jcodings</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>org.apache.hbase</groupId>
                     <artifactId>hbase-client</artifactId>
                 </exclusion>
