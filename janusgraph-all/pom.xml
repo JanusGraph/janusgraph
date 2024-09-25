@@ -125,6 +125,10 @@
                     <groupId>ch.qos.reload4j</groupId>
                     <artifactId>reload4j</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.jruby.jcodings</groupId>
+                    <artifactId>jcodings</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
