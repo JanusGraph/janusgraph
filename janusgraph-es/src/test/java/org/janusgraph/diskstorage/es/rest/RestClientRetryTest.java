@@ -143,8 +143,10 @@ public class RestClientRetryTest {
             when(restClientMock.performRequest(any()))
                 .thenThrow(responseException)
                 .thenThrow(expectedFinalException);
-            restClientUnderTest.bulkRequest(Collections.singletonList(
-                ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id")),
+            restClientUnderTest.bulkRequest(
+                Stream.of(
+                        ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id"))
+                    .collect(Collectors.toList()),
                 null);
             Assertions.fail("Should have thrown the expected exception after retry");
         } catch (Exception actualException) {
@@ -173,8 +175,10 @@ public class RestClientRetryTest {
                 .thenThrow(responseException);
 
 
-            restClientUnderTest.bulkRequest(Collections.singletonList(
-                    ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id")),
+            restClientUnderTest.bulkRequest(
+                Stream.of(
+                        ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id"))
+                    .collect(Collectors.toList()),
                 null);
             Assertions.fail("Should have thrown the expected exception after retry");
         } catch (Exception e) {
@@ -194,8 +198,9 @@ public class RestClientRetryTest {
             //prime the restClientMock again after it's reset after creation
             when(restClientMock.performRequest(any()))
                 .thenThrow(responseException);
-            restClientUnderTest.bulkRequest(Collections.singletonList(
-                    ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id")),
+            restClientUnderTest.bulkRequest(
+                Stream.of(ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id")).
+                    collect(Collectors.toList()),
                 null);
             Assertions.fail("Should have thrown the expected exception");
         } catch (Exception e) {

@@ -35,7 +35,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -152,10 +154,11 @@ public class RestClientBulkRequestsTest {
             //This payload is too large to send given the set limit, since it is a single item we can't split it
             IntStream.range(0, bulkLimit * 10).forEach(value -> payloadBuilder.append("a"));
             Assertions.assertThrows(IllegalArgumentException.class, () -> restClientUnderTest.bulkRequest(
-                Collections.singletonList(
-                    ElasticSearchMutation.createIndexRequest("some_index", "some_type", "some_doc_id",
-                        Collections.singletonMap("someKey", payloadBuilder.toString()))
-            ), null), "Should have thrown due to bulk request item being too large");
+                Stream.of(
+                        ElasticSearchMutation.createIndexRequest("some_index", "some_type", "some_doc_id",
+                            Collections.singletonMap("someKey", payloadBuilder.toString())))
+                    .collect(Collectors.toList()),
+                null), "Should have thrown due to bulk request item being too large");
         }
     }
 }
