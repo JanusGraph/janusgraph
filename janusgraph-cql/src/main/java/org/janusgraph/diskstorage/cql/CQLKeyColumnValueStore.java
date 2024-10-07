@@ -331,7 +331,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         int chunkLengthInKb = configuration.get(CF_COMPRESSION_BLOCK_SIZE);
 
         return createTable.withOption("compression",
-            ImmutableMap.of("sstable_compression", compressionType, "chunk_length_kb", chunkLengthInKb));
+            ImmutableMap.of("class", compressionType, "chunk_length_in_kb", chunkLengthInKb));
     }
 
     static CreateTableWithOptions compactionOptions(final CreateTableWithOptions createTable,
