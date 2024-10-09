@@ -305,7 +305,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             .orElse(true);
     }
 
-    private static void initializeTable(final CqlSession session, final String keyspaceName, final String tableName, final Configuration configuration) {
+    protected void initializeTable(final CqlSession session, final String keyspaceName, final String tableName, final Configuration configuration) {
         CreateTableWithOptions createTable = createTable(keyspaceName, tableName)
                 .ifNotExists()
                 .withPartitionKey(KEY_COLUMN_NAME, DataTypes.BLOB)
@@ -320,7 +320,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         session.execute(createTable.build());
     }
 
-    private static CreateTableWithOptions compressionOptions(final CreateTableWithOptions createTable,
+    protected CreateTableWithOptions compressionOptions(final CreateTableWithOptions createTable,
                                                              final Configuration configuration) {
         if (!configuration.get(CF_COMPRESSION)) {
             // No compression

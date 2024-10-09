@@ -313,9 +313,13 @@ public class CQLStoreManager extends DistributedStoreManager implements KeyColum
         return this.storeFeatures;
     }
 
+    protected CQLKeyColumnValueStore createKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer) {
+        return new CQLKeyColumnValueStore(storeManager, tableName,  configuration, closer);
+    }
+
     @Override
     public KeyColumnValueStore openDatabase(final String name, final Container metaData) throws BackendException {
-        return this.openStores.computeIfAbsent(name, n -> new CQLKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n)));
+        return this.openStores.computeIfAbsent(name, n -> createKeyColumnValueStore(this, n, getStorageConfig(), () -> this.openStores.remove(n)));
     }
 
     @Override

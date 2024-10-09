@@ -30,4 +30,9 @@ public class ScyllaStoreManager extends CQLStoreManager {
     public ScyllaStoreManager(Configuration configuration, CQLMutateManyFunctionBuilder mutateManyFunctionBuilder, CQLStoreFeaturesBuilder storeFeaturesBuilder, CQLSessionBuilder sessionBuilder, CQLProgrammaticConfigurationLoaderBuilder baseConfigurationLoaderBuilder) throws BackendException {
         super(configuration, mutateManyFunctionBuilder, storeFeaturesBuilder, sessionBuilder, baseConfigurationLoaderBuilder);
     }
+
+    @Override
+    protected CQLKeyColumnValueStore createKeyColumnValueStore(final CQLStoreManager storeManager, final String tableName, final Configuration configuration, final Runnable closer) {
+        return new ScyllaKeyColumnValueStore(storeManager, tableName,  configuration, closer);
+    }
 }
