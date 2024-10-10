@@ -90,8 +90,8 @@ public interface CacheInvalidationService {
      * <p>
      * `key` is the encoded key of {@link org.janusgraph.graphdb.database.index.IndexUpdate} which can be retrieved via
      * {@link IndexUpdate#getKey()}. To form the `IndexUpdate` it is possible to use
-     * {@link org.janusgraph.graphdb.database.IndexSerializer#getIndexUpdates(InternalRelation)} or
-     * {@link org.janusgraph.graphdb.database.IndexSerializer#getIndexUpdates(InternalVertex, Collection)}.
+     * {@link org.janusgraph.graphdb.database.IndexSerializer#getIndexUpdates(InternalRelation, org.janusgraph.graphdb.types.TypeInspector)} or
+     * {@link org.janusgraph.graphdb.database.IndexSerializer#getIndexUpdates(InternalVertex, Collection, org.janusgraph.graphdb.types.TypeInspector)}.
      * <p>
      * Usually updated vertices and relations (edges or properties) can be found in retrieved mutation logs which are
      * passed via {@link org.janusgraph.core.log.ChangeState} (described in `Transaction Log` documentation of JanusGraph).

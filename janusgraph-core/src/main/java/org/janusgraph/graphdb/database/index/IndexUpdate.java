@@ -64,8 +64,8 @@ public class IndexUpdate<K,E> {
         return entry;
     }
 
-    public boolean isAddition() {
-        return mutationType== IndexMutationType.ADD;
+    public boolean isUpdate() {
+        return mutationType == IndexMutationType.UPDATE;
     }
 
     public boolean isDeletion() {
@@ -81,8 +81,8 @@ public class IndexUpdate<K,E> {
     }
 
     public void setTTL(int ttl) {
-        Preconditions.checkArgument(ttl>0 && mutationType == IndexMutationType.ADD);
-        ((MetaAnnotatable)entry).setMetaData(EntryMetaData.TTL,ttl);
+        Preconditions.checkArgument(ttl > 0 && mutationType != IndexMutationType.DELETE);
+        ((MetaAnnotatable) entry).setMetaData(EntryMetaData.TTL, ttl);
     }
 
     @Override

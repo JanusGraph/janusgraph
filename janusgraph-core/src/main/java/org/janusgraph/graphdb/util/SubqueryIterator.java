@@ -23,6 +23,7 @@ import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,9 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
 
     private boolean isTimerRunning;
 
-    public SubqueryIterator(JointIndexQuery.Subquery subQuery, IndexSerializer indexSerializer, BackendTransaction tx,
+    public SubqueryIterator(JointIndexQuery.Subquery subQuery, IndexSerializer indexSerializer,
+                            BackendTransaction backendTx,
+                            StandardJanusGraphTx tx,
                             SubqueryCache indexCache, int limit,
                             Function<Object, ? extends JanusGraphElement> function, List<Object> otherResults) {
         this.subQuery = subQuery;
@@ -65,7 +68,7 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                 currentIds = new ArrayList<>();
                 profiler = QueryProfiler.startProfile(subQuery.getProfiler(), subQuery);
                 isTimerRunning = true;
-                stream = indexSerializer.query(subQuery, tx).peek(r -> currentIds.add(r));
+                stream = indexSerializer.query(subQuery, backendTx, tx).peek(r -> currentIds.add(r));
             } catch (final Exception e) {
                 throw new JanusGraphException("Could not call index", e);
             }

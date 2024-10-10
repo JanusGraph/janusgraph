@@ -75,7 +75,8 @@ public enum TypeDefinitionCategory {
     INDEX_SCHEMA_CONSTRAINT(),
     PROPERTY_KEY_EDGE(),
     CONNECTION_EDGE(RelationCategory.EDGE, String.class),
-    UPDATE_CONNECTION_EDGE();
+    UPDATE_CONNECTION_EDGE(),
+    INDEX_INLINE_KEY();
 
     public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE)));
     public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL)));
