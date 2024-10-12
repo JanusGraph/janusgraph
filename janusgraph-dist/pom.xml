@@ -38,6 +38,7 @@
         <skipDefaultDistroIT>${it.skip}</skipDefaultDistroIT>
 
         <doc.dir>${project.parent.basedir}/docs</doc.dir>
+        <docker.build.skip>false</docker.build.skip>
 
         <cql-module>janusgraph-cql</cql-module>
         <cql-hadoop-module>cassandra-hadoop-util</cql-hadoop-module>
@@ -364,6 +365,13 @@
             </properties>
         </profile>
         <profile>
+            <id>skip-docker</id>
+            <properties>
+                <docker.build.skip>true</docker.build.skip>
+                <skipTests>true</skipTests>
+            </properties>
+        </profile>
+        <profile>
             <id>janusgraph-release</id>
             <dependencies>
                 <dependency>
@@ -636,6 +644,7 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
+                                    <skip>${docker.build.skip}</skip>
                                     <executable>./docker/build-and-push-image.sh</executable>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                     <arguments>
@@ -669,6 +678,7 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
+                                    <skip>${docker.build.skip}</skip>
                                     <executable>./docker/build-and-push-image.sh</executable>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                     <arguments>

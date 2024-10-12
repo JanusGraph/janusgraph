@@ -95,7 +95,9 @@ mvn clean install -Pjanusgraph-release -Puse-scylla -DskipTests=true --batch-mod
 ///
 
 This command will generate distribution builds (both normal and full distribution build) in the 
-following directory: `janusgraph-dist/target/`.   
+following directory: `janusgraph-dist/target/` as well as build local JanusGraph Docker image.  
+If you don't have Docker installed or wish to avoid Docker image build process you can pass `-Pskip-docker` 
+(notice, all tests are automatically disabled when this flag is used).  
 
 Otherwise, if you can't build distribution on your own, you can use the JanusGraph provided distribution and replace 
 the following libraries in `lib` directory (all libraries can be downloaded via Maven Central Repository). 
