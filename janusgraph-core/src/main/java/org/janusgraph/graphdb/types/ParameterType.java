@@ -48,7 +48,7 @@ public enum ParameterType {
     TEXT_ANALYZER("text-analyzer"),
     ;
 
-    private static final String CUSTOM_PARAMETER_PREFIX = "%`custom%`";
+    public static final String CUSTOM_PARAMETER_PREFIX = "%`custom%`";
 
     private final String name;
 
