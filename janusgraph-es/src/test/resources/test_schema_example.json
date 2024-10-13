@@ -1,0 +1,232 @@
+{
+    "vertexLabels": [
+        {
+            "label": "organization"
+        },
+        {
+            "label": "device",
+            "staticVertex": false,
+            "partition": false
+        },
+        {
+            "label": "unmodifiableVertex",
+            "staticVertex": true
+        },
+        {
+            "label": "temporaryVertexForTwoHours",
+            "staticVertex": true,
+            "ttl": 7200000
+        }
+    ],
+    "edgeLabels": [
+        {
+            "label": "connects",
+            "multiplicity": "SIMPLE",
+            "unidirected": false
+        },
+        {
+            "label": "viewed",
+            "multiplicity": "MULTI",
+            "unidirected": true
+        },
+        {
+            "label": "temporaryEdgeForOneHour",
+            "ttl": 3600000
+        },
+        {
+            "label": "edgeWhichUsesLocksInEventualConsistentDBs",
+            "consistency": "LOCK"
+        },
+        {
+            "label": "edgeWhichUsesForkingInEventualConsistentDBs",
+            "consistency": "FORK"
+        }
+    ],
+    "propertyKeys": [
+        {
+            "key": "time",
+            "className": "java.lang.Long"
+        },
+        {
+            "key": "doubleProp",
+            "className": "java.lang.Double"
+        },
+        {
+            "key": "integerProp",
+            "className": "java.lang.Integer"
+        },
+        {
+            "key": "longPropCardinalityList",
+            "className": "java.lang.Long",
+            "cardinality": "LIST"
+        },
+        {
+            "key": "name",
+            "className": "java.lang.String",
+            "cardinality": "SINGLE"
+        },
+        {
+            "key": "geoshape",
+            "className": "org.janusgraph.core.attribute.Geoshape"
+        },
+        {
+            "key": "type",
+            "className": "java.lang.String",
+            "cardinality": "SET"
+        },
+        {
+            "key": "propertyWhichUsesLocksInEventualConsistentDBs",
+            "className": "java.lang.Long",
+            "cardinality": "SET",
+            "consistency": "LOCK"
+        },
+        {
+            "key": "temporaryPropertyForOneHour",
+            "className": "java.lang.Long",
+            "ttl": 3600000
+        },
+        {
+            "key": "anotherName",
+            "className": "java.lang.String"
+        }
+    ],
+    "compositeIndexes": [
+        {
+            "name": "nameCompositeIndex",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "keys": [
+                {
+                    "propertyKey": "name"
+                }
+            ]
+        },
+        {
+            "name": "timeForOrganizationsOnlyCompositeIndex",
+            "indexOnly": "organization",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "keys": [
+                {
+                    "propertyKey": "time"
+                }
+            ]
+        },
+        {
+            "name": "connectsOnlyEdgeCompositeIndex",
+            "indexOnly": "connects",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Edge",
+            "keys": [
+                {
+                    "propertyKey": "name"
+                }
+            ]
+        },
+        {
+            "name": "uniqueCompositeIndexWithLocking",
+            "indexOnly": "unmodifiableVertex",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "unique": true,
+            "consistency": "LOCK",
+            "keys": [
+                {
+                    "propertyKey": "integerProp"
+                }
+            ]
+        },
+        {
+            "name": "multiKeysCompositeIndex",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "unique": true,
+            "consistency": "LOCK",
+            "keys": [
+                {
+                    "propertyKey": "doubleProp"
+                },
+                {
+                    "propertyKey": "integerProp"
+                }
+            ]
+        }
+    ],
+    "vertexCentricEdgeIndexes": [
+        {
+            "name": "connectsTimeVertexCentricIndex",
+            "indexedEdgeLabel": "connects",
+            "direction": "BOTH",
+            "propertyKeys": [
+                "time"
+            ],
+            "order": "asc"
+        },
+        {
+            "name": "vertexCentricUnidirectedEdgeIndexWithTwoProps",
+            "indexedEdgeLabel": "viewed",
+            "direction": "OUT",
+            "propertyKeys": [
+                "time",
+                "integerProp"
+            ],
+            "order": "asc"
+        }
+    ],
+    "vertexCentricPropertyIndexes": [
+        {
+            "name": "longPropCardinalityListMetaPropertyVertexCentricIndexForTime",
+            "indexedPropertyKey": "longPropCardinalityList",
+            "propertyKeys": [
+                "time"
+            ],
+            "order": "desc"
+        }
+    ],
+    "mixedIndexes": [
+        {
+            "name": "nameMixedIndex",
+            "indexOnly": "organization",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "indexBackend": "search",
+            "keys": [
+                {
+                    "propertyKey": "name",
+                    "parameters": [
+                        {
+                            "key": "string-analyzer",
+                            "value": "standard",
+                            "parser": "string"
+                        },
+                        {
+                            "key": "mapping",
+                            "value": "org.janusgraph.core.schema.Mapping.STRING",
+                            "parser": "enum"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "typeAndAnotherNameMixedIndex",
+            "indexOnly": "unmodifiableVertex",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "indexBackend": "search",
+            "keys": [
+                {
+                    "propertyKey": "type"
+                },
+                {
+                    "propertyKey": "anotherName",
+                    "parameters": [
+                        {
+                            "key": "string-analyzer",
+                            "value": "standard",
+                            "parser": "org.janusgraph.diskstorage.es.CustomJsonStringParameterParser"
+                        },
+                        {
+                            "key": "mapping",
+                            "value": "org.janusgraph.core.schema.Mapping.STRING",
+                            "parser": "enum"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

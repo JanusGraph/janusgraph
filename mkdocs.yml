@@ -56,6 +56,7 @@ plugins:
         interactions/connecting/dotnet.md: basics/connecting/dotnet.md
         advanced-topics/bulk-loading.md: operations/bulk-loading.md
         advanced-topics/advschema.md: schema/advschema.md
+        advanced-topics/schema-init-strategies.md: schema/schema-init-strategies.md
         advanced-topics/monitoring.md: operations/monitoring.md
         advanced-topics/migrating-titan.md: operations/migrating-titan.md
         advanced-topics/migrating-thrift.md: operations/migrating-thrift.md
@@ -138,6 +139,7 @@ nav:
       - Index Lifecycle: schema/index-management/index-lifecycle.md
       - Reindexing: schema/index-management/index-reindexing.md
       - Removal: schema/index-management/index-removal.md
+    - Schema Initialization: schema/schema-init-strategies.md
   - Operations:
     - JanusGraph Server: operations/server.md
     - Deployment Scenarios: operations/deployment.md

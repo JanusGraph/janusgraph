@@ -1,0 +1,240 @@
+{
+    "vertexLabels": [
+        {
+            "label": "normalVertex"
+        },
+        {
+            "label": "partitionedVertex",
+            "partition": true
+        },
+        {
+            "label": "unmodifiableVertex",
+            "staticVertex": true
+        },
+        {
+            "label": "temporaryVertexForTwoHours",
+            "staticVertex": true,
+            "ttl": 7200000
+        }
+    ],
+    "edgeLabels": [
+        {
+            "label": "normalSimpleEdge",
+            "multiplicity": "SIMPLE",
+            "unidirected": false
+        },
+        {
+            "label": "unidirectedMultiEdge",
+            "multiplicity": "MULTI",
+            "unidirected": true
+        },
+        {
+            "label": "temporaryEdgeForOneHour",
+            "ttl": 3600000
+        },
+        {
+            "label": "edgeWhichUsesLocksInEventualConsistentDBs",
+            "consistency": "LOCK"
+        },
+        {
+            "label": "edgeWhichUsesForkingInEventualConsistentDBs",
+            "consistency": "FORK"
+        }
+    ],
+    "propertyKeys": [
+        {
+            "key": "normalProperty",
+            "className": "java.lang.Long"
+        },
+        {
+            "key": "stringProperty",
+            "className": "java.lang.String",
+            "cardinality": "SINGLE"
+        },
+        {
+            "key": "anotherStringProperty",
+            "className": "java.lang.String",
+            "cardinality": "SINGLE"
+        },
+        {
+            "key": "listProperty",
+            "className": "java.lang.Long",
+            "cardinality": "LIST"
+        },
+        {
+            "key": "geoshapeProperty",
+            "className": "org.janusgraph.core.attribute.Geoshape"
+        },
+        {
+            "key": "setProperty",
+            "className": "java.lang.String",
+            "cardinality": "SET"
+        },
+        {
+            "key": "propertyWhichUsesLocksInEventualConsistentDBs",
+            "className": "java.lang.Long",
+            "cardinality": "SET",
+            "consistency": "LOCK"
+        },
+        {
+            "key": "temporaryPropertyForOneHour",
+            "className": "java.lang.Long",
+            "ttl": 3600000
+        }
+    ],
+    "compositeIndexes": [
+        {
+            "name": "simpleCompositeIndex",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "keys": [
+                {
+                    "propertyKey": "normalProperty"
+                }
+            ]
+        },
+        {
+            "name": "indexOnlyForNormalVerticesOnListProperty",
+            "indexOnly": "normalVertex",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "keys": [
+                {
+                    "propertyKey": "listProperty"
+                }
+            ]
+        },
+        {
+            "name": "compositeIndexOnEdge",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Edge",
+            "keys": [
+                {
+                    "propertyKey": "normalProperty"
+                }
+            ]
+        },
+        {
+            "name": "uniqueCompositeIndexWithLocking",
+            "indexOnly": "unmodifiableVertex",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "unique": true,
+            "consistency": "LOCK",
+            "keys": [
+                {
+                    "propertyKey": "stringProperty"
+                }
+            ]
+        },
+        {
+            "name": "multiKeysCompositeIndex",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "keys": [
+                {
+                    "propertyKey": "normalProperty"
+                },
+                {
+                    "propertyKey": "anotherStringProperty"
+                }
+            ]
+        },
+        {
+            "name": "compositeIndexWithInlinedProperties",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "keys": [
+                {
+                    "propertyKey": "setProperty"
+                }
+            ],
+            "inlinePropertyKeys": ["normalProperty", "stringProperty", "anotherStringProperty"]
+        }
+    ],
+    "vertexCentricEdgeIndexes": [
+        {
+            "name": "vertexCentricBothDirectionsEdgeIndex",
+            "indexedEdgeLabel": "normalSimpleEdge",
+            "direction": "BOTH",
+            "propertyKeys": [
+                "normalProperty"
+            ],
+            "order": "asc"
+        },
+        {
+            "name": "vertexCentricUnidirectedEdgeIndexOnMultipleProperties",
+            "indexedEdgeLabel": "unidirectedMultiEdge",
+            "direction": "OUT",
+            "propertyKeys": [
+                "stringProperty",
+                "anotherStringProperty"
+            ],
+            "order": "desc"
+        }
+    ],
+    "vertexCentricPropertyIndexes": [
+        {
+            "name": "normalVertexCentricPropertyKey",
+            "indexedPropertyKey": "listProperty",
+            "propertyKeys": [
+                "normalProperty"
+            ],
+            "order": "asc"
+        }
+    ],
+    "mixedIndexes": [
+        {
+            "name": "simpleMixedIndexOnMultipleProperties",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "indexBackend": "search",
+            "keys": [
+                {
+                    "propertyKey": "normalProperty"
+                },
+                {
+                    "propertyKey": "geoshapeProperty"
+                }
+            ]
+        },
+        {
+            "name": "mixedIndexWithParametersOnProperties",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Vertex",
+            "indexBackend": "search",
+            "keys": [
+                {
+                    "propertyKey": "stringProperty",
+                    "parameters": [
+                        {
+                            "key": "string-analyzer",
+                            "value": "standard",
+                            "parser": "string"
+                        },
+                        {
+                            "key": "mapping",
+                            "value": "org.janusgraph.core.schema.Mapping.STRING",
+                            "parser": "enum"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "mixedIndexWithCustomParameterKeyAndParserFullClassPath",
+            "indexOnly": "unidirectedMultiEdge",
+            "typeClass": "org.apache.tinkerpop.gremlin.structure.Edge",
+            "indexBackend": "search",
+            "keys": [
+                {
+                    "propertyKey": "anotherStringProperty",
+                    "parameters": [
+                        {
+                            "key": "%`custom%`similarity",
+                            "value": "boolean",
+                            "parser": "string"
+                        },
+                        {
+                            "key": "mapping",
+                            "value": "org.janusgraph.core.schema.Mapping.TEXTSTRING",
+                            "parser": "org.janusgraph.core.schema.json.parser.EnumJsonParameterParser"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

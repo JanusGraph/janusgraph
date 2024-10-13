@@ -113,6 +113,7 @@ import org.janusgraph.util.system.TXUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -359,6 +360,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             IOUtils.closeQuietly(backend);
             IOUtils.closeQuietly(queryCache);
             IOUtils.closeQuietly(serializer);
+            if(config instanceof Closeable){
+                IOUtils.closeQuietly((Closeable)config);
+            }
         } finally {
             isOpen = false;
         }

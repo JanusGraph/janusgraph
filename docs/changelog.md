@@ -105,15 +105,14 @@ For more information on features and bug fixes in 1.1.0, see the GitHub mileston
 Inlining vertex properties into a Composite Index structure can offer significant performance and efficiency benefits.
 See [documentation](./schema/index-management/index-performance.md#inlining-vertex-properties-into-a-composite-index) on how to inline vertex properties into a composite index.
 
-**Important Notes on Compatibility**
-
-1. **Backward Incompatibility**
-   Once a JanusGraph instance adopts this new schema feature, it cannot be rolled back to a prior version of JanusGraph.
-   The changes in the schema structure are not compatible with earlier versions of the system.
-
-2. **Migration Considerations**
-   It is critical that users carefully plan their migration to this new version, as there is no automated or manual rollback process
-   to revert to an older version of JanusGraph once this feature is used.
+!!! warning
+    Important Notes on Compatibility. 
+    1. Backward Incompatibility: 
+       Once a JanusGraph instance adopts this new schema feature, it cannot be rolled back to a prior version of JanusGraph.
+       The changes in the schema structure are not compatible with earlier versions of the system.
+    2. Migration Considerations: 
+       It is critical that users carefully plan their migration to this new version, as there is no automated or manual rollback process
+       to revert to an older version of JanusGraph once this feature is used.
 
 ##### BerkeleyJE ability to overwrite arbitrary settings applied at `EnvironmentConfig` creation
 
@@ -123,6 +122,11 @@ The full list of possible setting is available inside the Java class `com.sleepy
 All configurations values should be specified as `String` and be formated the same as specified in the official sleepycat
 [documentation](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html).
 Example: `storage.berkeleyje.ext.je.lock.timeout=5000 ms`
+
+##### JSON schema initializer
+
+For simplicity JSON schema initialization options has been added into JanusGraph.
+See [documentation](./schema/schema-init-strategies.md) to learn more about JSON schema initialization process.
 
 ### Version 1.0.1 (Release Date: ???)
 
