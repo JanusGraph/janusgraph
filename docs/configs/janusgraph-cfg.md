@@ -384,6 +384,29 @@ Schema related configuration options
 | schema.default | Configures the DefaultSchemaMaker to be used by this graph. Either one of the following shorthands can be used: <br> - `default` (a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys),<br> - `tp3` (same as default, but has LIST property keys),<br> - `none` (automatic schema creation is disabled)<br> - `ignore-prop` (same as none, but simply ignore unknown properties rather than throw exceptions)<br> - or to the full package and classname of a custom/third-party implementing the interface `org.janusgraph.core.schema.DefaultSchemaMaker` | String | default | MASKABLE |
 | schema.logging | Controls whether logging is enabled for schema makers. This only takes effect if you set `schema.default` to `default` or `ignore-prop`. For `default` schema maker, warning messages will be logged before schema types are created automatically. For `ignore-prop` schema maker, warning messages will be logged before unknown properties are ignored. | Boolean | false | MASKABLE |
 
+### schema.init
+Configuration options for schema initialization on startup.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| schema.init.drop-before-startup | Drops the entire schema with graph data before JanusGraph schema initialization. Note that the schema will be dropped regardless of the selected initialization strategy, including when `schema.init.strategy` is set to `none`. | Boolean | false | LOCAL |
+| schema.init.strategy | Specifies the strategy for schema initialization before starting JanusGraph. You must provide the full class path of a class that implements the `SchemaInitStrategy` interface and has parameterless constructor.<br>The following shortcuts are also available:<br>- `none` - Skips schema initialization.<br>- `json` - Schema initialization via provided JSON file or JSON string.<br> | String | none | LOCAL |
+
+### schema.init.json
+Options for JSON schema initialization strategy.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| schema.init.json.await-index-status-timeout | Timeout for awaiting index status operation defined in milliseconds. If the status await timeouts the exception will be thrown during schema initialization process. | Long | 180000 | LOCAL |
+| schema.init.json.file | File path to JSON formated schema definition. | String | (no default value) | LOCAL |
+| schema.init.json.force-close-other-instances | Force closes other JanusGraph instances before schema initialization, regardless if they are active or not. This is a dangerous operation. This option exists to help people initialize schema who struggle with zombie JanusGraph instances. It's not recommended to be used unless you know what you are doing. Instead of this parameter, it's recommended to check `graph.unique-instance-id` and `graph.replace-instance-if-exists` options to not create zombie instances in the cluster. | Boolean | false | LOCAL |
+| schema.init.json.indices-activation | Indices activation type:<br>- `reindex_and_enable_updated_only` - Reindex process will be triggered for any updated index. After this all updated indexes will be enabled.<br>- `reindex_and_enable_non_enabled` - Reindex process will be triggered for any index which is not enabled (including previously created indices). After reindexing all indices will be enabled.<br>- `skip_activation` - Skip reindex process for any updated indexes.<br>- `force_enable_updated_only` - Force enable all updated indexes without running any reindex process (previous data may not be available for such indices).<br>- `force_enable_non_enabled` - Force enable all indexes (including previously created indices) without running any reindex process (previous data may not be available for such indices).<br> | String | reindex_and_enable_non_enabled | LOCAL |
+| schema.init.json.skip-elements | Skip creation of VertexLabel, EdgeLabel, and PropertyKey. | Boolean | false | LOCAL |
+| schema.init.json.skip-indices | Skip creation of indices. | Boolean | false | LOCAL |
+| schema.init.json.string | JSON formated schema definition string. This option takes precedence if both `file` and `string` are used. | String | (no default value) | LOCAL |
+
 ### storage
 Configuration options for the storage backend.  Some options are applicable only for certain backends.
 

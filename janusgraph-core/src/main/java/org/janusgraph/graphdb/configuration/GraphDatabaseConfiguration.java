@@ -28,7 +28,10 @@ import org.janusgraph.core.schema.DefaultSchemaMaker;
 import org.janusgraph.core.schema.DisableDefaultSchemaMaker;
 import org.janusgraph.core.schema.IgnorePropertySchemaMaker;
 import org.janusgraph.core.schema.JanusGraphDefaultSchemaMaker;
+import org.janusgraph.core.schema.SchemaInitStrategy;
+import org.janusgraph.core.schema.SchemaInitType;
 import org.janusgraph.core.schema.Tp3DefaultSchemaMaker;
+import org.janusgraph.core.schema.IndicesActivationType;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.StandardIndexProvider;
 import org.janusgraph.diskstorage.StandardStoreManager;
@@ -80,6 +83,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.management.MBeanServerFactory;
 
@@ -436,6 +440,75 @@ public class GraphDatabaseConfiguration {
             "If 'schema.constraints' is set to 'true' and 'schema.default' is not set 'none', schema constraints are automatically created "+
             "as described in the config option 'schema.default'. If 'schema.constraints' is set to 'false' which is the default, then no schema constraints are applied.",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
+
+    public static final ConfigNamespace SCHEMA_INIT = new ConfigNamespace(SCHEMA_NS,"init",
+        "Configuration options for schema initialization on startup.");
+
+    public static final ConfigOption<String> SCHEMA_INIT_STRATEGY = new ConfigOption<>(SCHEMA_INIT,"strategy",
+        String.format("Specifies the strategy for schema initialization before starting JanusGraph. You must provide the full " +
+                "class path of a class that implements the `%s` interface and has parameterless constructor.<br>" +
+                "The following shortcuts are also available:<br>" +
+                "- `%s` - Skips schema initialization.<br>" +
+                "- `%s` - Schema initialization via provided JSON file or JSON string.<br>",
+            SchemaInitStrategy.class.getSimpleName(),
+            SchemaInitType.NONE.getConfigName(),
+            SchemaInitType.JSON.getConfigName()),
+        ConfigOption.Type.LOCAL, SchemaInitType.NONE.getConfigName());
+
+    public static final ConfigOption<Boolean> SCHEMA_DROP_BEFORE_INIT = new ConfigOption<>(SCHEMA_INIT,"drop-before-startup",
+        String.format("Drops the entire schema with graph data before JanusGraph schema initialization. " +
+            "Note that the schema will be dropped regardless of the selected initialization strategy, " +
+            "including when `%s` is set to `%s`.",
+            SCHEMA_INIT_STRATEGY.toStringWithoutRoot(),
+            SchemaInitType.NONE.getConfigName()),
+        ConfigOption.Type.LOCAL, false);
+
+    public static final ConfigNamespace SCHEMA_INIT_JSON = new ConfigNamespace(SCHEMA_INIT,"json",
+        "Options for JSON schema initialization strategy.");
+
+    public static final ConfigOption<String> SCHEMA_INIT_JSON_FILE = new ConfigOption<>(SCHEMA_INIT_JSON,"file",
+        "File path to JSON formated schema definition.", ConfigOption.Type.LOCAL, String.class);
+
+    public static final ConfigOption<String> SCHEMA_INIT_JSON_STR = new ConfigOption<>(SCHEMA_INIT_JSON,"string",
+        "JSON formated schema definition string. This option takes precedence if both `file` and `string` are used.",
+        ConfigOption.Type.LOCAL, String.class);
+
+    public static final ConfigOption<Boolean> SCHEMA_INIT_JSON_SKIP_ELEMENTS = new ConfigOption<>(SCHEMA_INIT_JSON,"skip-elements",
+        "Skip creation of VertexLabel, EdgeLabel, and PropertyKey.",
+        ConfigOption.Type.LOCAL, false);
+
+    public static final ConfigOption<Boolean> SCHEMA_INIT_JSON_SKIP_INDICES = new ConfigOption<>(SCHEMA_INIT_JSON,"skip-indices",
+        "Skip creation of indices.",
+        ConfigOption.Type.LOCAL, false);
+
+    public static final ConfigOption<String> SCHEMA_INIT_JSON_INDICES_ACTIVATION_TYPE = new ConfigOption<>(SCHEMA_INIT_JSON,"indices-activation",
+        String.format("Indices activation type:<br>" +
+                "- `%s` - Reindex process will be triggered for any updated index. After this all updated indexes will be enabled.<br>" +
+                "- `%s` - Reindex process will be triggered for any index which is not enabled (including previously created indices). After reindexing all indices will be enabled.<br>" +
+                "- `%s` - Skip reindex process for any updated indexes.<br>" +
+                "- `%s` - Force enable all updated indexes without running any reindex process (previous data may not be available for such indices).<br>" +
+                "- `%s` - Force enable all indexes (including previously created indices) without running any reindex process (previous data may not be available for such indices).<br>",
+            IndicesActivationType.REINDEX_AND_ENABLE_UPDATED_ONLY.getConfigName(),
+            IndicesActivationType.REINDEX_AND_ENABLE_NON_ENABLED.getConfigName(),
+            IndicesActivationType.SKIP_ACTIVATION.getConfigName(),
+            IndicesActivationType.FORCE_ENABLE_UPDATED_ONLY.getConfigName(),
+            IndicesActivationType.FORCE_ENABLE_NON_ENABLED.getConfigName()
+        ),
+        ConfigOption.Type.LOCAL, IndicesActivationType.REINDEX_AND_ENABLE_NON_ENABLED.getConfigName());
+
+    public static final ConfigOption<Boolean> SCHEMA_INIT_JSON_FORCE_CLOSE_OTHER_INSTANCES = new ConfigOption<>(SCHEMA_INIT_JSON,"force-close-other-instances",
+        String.format("Force closes other JanusGraph instances before schema initialization, regardless if they are active or not. " +
+            "This is a dangerous operation. This option exists to help people initialize schema who struggle with zombie JanusGraph instances. " +
+            "It's not recommended to be used unless you know what you are doing. Instead of this parameter, " +
+            "it's recommended to check `%s` and `%s` options to not create zombie instances in the cluster.",
+                UNIQUE_INSTANCE_ID.toStringWithoutRoot(),
+                REPLACE_INSTANCE_IF_EXISTS.toStringWithoutRoot()
+            ),
+        ConfigOption.Type.LOCAL, false);
+
+    public static final ConfigOption<Long> SCHEMA_INIT_JSON_AWAIT_INDEX_STATUS_TIMEOUT = new ConfigOption<>(SCHEMA_INIT_JSON,"await-index-status-timeout",
+        "Timeout for awaiting index status operation defined in milliseconds. If the status await timeouts the exception will be thrown during schema initialization process.",
+        ConfigOption.Type.LOCAL, TimeUnit.MINUTES.toMillis(3));
 
     // ################ CACHE #######################
     // ################################################
@@ -1371,6 +1444,15 @@ public class GraphDatabaseConfiguration {
     private MultiQueryHasStepStrategyMode hasStepStrategyMode;
     private MultiQueryPropertiesStrategyMode propertiesStrategyMode;
     private MultiQueryLabelStepStrategyMode labelStepStrategyMode;
+    private String schemaInitStrategy;
+    private boolean dropSchemaBeforeInit;
+    private String schemaInitJsonFile;
+    private String schemaInitJsonString;
+    private boolean schemaInitJsonSkipElements;
+    private boolean schemaInitJsonSkipIndices;
+    private IndicesActivationType schemaInitJsonIndicesActivationType;
+    private boolean schemaInitJsonForceCloseOtherInstances;
+    private long schemaInitJsonIndexStatusAwaitTimeout;
 
     private StoreFeatures storeFeatures = null;
 
@@ -1585,6 +1667,42 @@ public class GraphDatabaseConfiguration {
         return ReadConfigurationConverter.getInstance().convertToBaseConfiguration(configurationAtOpen);
     }
 
+    public String getSchemaInitStrategy(){
+        return schemaInitStrategy;
+    }
+
+    public boolean isDropSchemaBeforeInit(){
+        return dropSchemaBeforeInit;
+    }
+
+    public String getSchemaInitJsonFile(){
+        return schemaInitJsonFile;
+    }
+
+    public String getSchemaInitJsonString(){
+        return schemaInitJsonString;
+    }
+
+    public boolean getSchemaInitJsonSkipElements(){
+        return schemaInitJsonSkipElements;
+    }
+
+    public boolean getSchemaInitJsonSkipIndices(){
+        return schemaInitJsonSkipIndices;
+    }
+
+    public IndicesActivationType getSchemaInitJsonIndicesActivationType(){
+        return schemaInitJsonIndicesActivationType;
+    }
+
+    public boolean getSchemaInitJsonForceCloseOtherInstances(){
+        return schemaInitJsonForceCloseOtherInstances;
+    }
+
+    public long getSchemaInitJsonIndexStatusAwaitTimeout(){
+        return schemaInitJsonIndexStatusAwaitTimeout;
+    }
+
     private void preLoadConfiguration() {
         readOnly = configuration.get(STORAGE_READONLY);
         evalScript = configuration.get(SCRIPT_EVAL_ENABLED);
@@ -1645,6 +1763,16 @@ public class GraphDatabaseConfiguration {
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
         unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
+
+        schemaInitStrategy = configuration.get(SCHEMA_INIT_STRATEGY);
+        dropSchemaBeforeInit = configuration.get(SCHEMA_DROP_BEFORE_INIT);
+        schemaInitJsonFile = configuration.has(SCHEMA_INIT_JSON_FILE) ? configuration.get(SCHEMA_INIT_JSON_FILE) : null;
+        schemaInitJsonString = configuration.has(SCHEMA_INIT_JSON_STR) ? configuration.get(SCHEMA_INIT_JSON_STR) : null;
+        schemaInitJsonSkipElements = configuration.get(SCHEMA_INIT_JSON_SKIP_ELEMENTS);
+        schemaInitJsonSkipIndices = configuration.get(SCHEMA_INIT_JSON_SKIP_INDICES);
+        schemaInitJsonIndicesActivationType = selectExactConfig(SCHEMA_INIT_JSON_INDICES_ACTIVATION_TYPE, IndicesActivationType.values());
+        schemaInitJsonForceCloseOtherInstances = configuration.get(SCHEMA_INIT_JSON_FORCE_CLOSE_OTHER_INSTANCES);
+        schemaInitJsonIndexStatusAwaitTimeout = configuration.get(SCHEMA_INIT_JSON_AWAIT_INDEX_STATUS_TIMEOUT);
 
         configureMetrics();
     }

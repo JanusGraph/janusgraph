@@ -585,6 +585,39 @@ public class ManagementSystem implements JanusGraphManagement {
         return sb.toString();
     }
 
+    public List<JanusGraphIndex> getGraphIndices(SchemaStatus withoutStatusFilter){
+        List<JanusGraphIndex> indices = filter(getGraphIndexes(Vertex.class), withoutStatusFilter);
+        indices.addAll(filter(getGraphIndexes(Edge.class), withoutStatusFilter));
+        return indices;
+    }
+
+    private List<JanusGraphIndex> filter(Iterable<JanusGraphIndex> graphIndices, SchemaStatus withoutStatusFilter){
+        List<JanusGraphIndex> indicesWithStatus = new ArrayList<>();
+        for(JanusGraphIndex graphIndex : graphIndices){
+            for(PropertyKey propertyKey : graphIndex.getFieldKeys()){
+                if(!withoutStatusFilter.equals(graphIndex.getIndexStatus(propertyKey))){
+                    indicesWithStatus.add(graphIndex);
+                    break;
+                }
+            }
+        }
+        return indicesWithStatus;
+    }
+
+    public List<RelationTypeIndex> getVertexCentricIndices(SchemaStatus withoutStatusFilter){
+        Iterable<RelationType> relationTypes = getRelationTypes(RelationType.class);
+        LinkedList<RelationTypeIndex> relationIndexes  = new LinkedList<>();
+        for (RelationType rt :relationTypes) {
+            Iterable<RelationTypeIndex> rti = getRelationIndexes(rt);
+            rti.forEach(relationTypeIndex -> {
+                if(!withoutStatusFilter.equals(relationTypeIndex.getIndexStatus())){
+                    relationIndexes.add(relationTypeIndex);
+                }
+            });
+        }
+        return relationIndexes;
+    }
+
     private String iterateIndexes(String pattern, Iterable<JanusGraphIndex> indexes) {
         StringBuilder sb = new StringBuilder();
         for (JanusGraphIndex index: indexes) {
