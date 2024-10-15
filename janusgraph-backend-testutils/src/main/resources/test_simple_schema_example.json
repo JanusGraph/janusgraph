@@ -1,0 +1,48 @@
+{
+  "vertexLabels": [
+    {
+      "label": "organization"
+    },
+    {
+      "label": "user"
+    }
+  ],
+
+  "edgeLabels": [
+    {
+      "label": "connects",
+      "multiplicity": "SIMPLE",
+      "unidirected": false
+    },
+    {
+      "label": "viewed",
+      "multiplicity": "MULTI",
+      "unidirected": true
+    }
+  ],
+
+  "propertyKeys": [
+    {
+      "key": "time",
+      "className": "java.lang.Long"
+    },
+    {
+      "key": "doubleProp",
+      "className": "java.lang.Double"
+    },
+    {
+      "key": "integerProp",
+      "className": "java.lang.Integer"
+    },
+    {
+      "key": "longPropCardinalityList",
+      "className": "java.lang.Long",
+      "cardinality": "LIST"
+    },
+    {
+      "key": "name",
+      "className": "java.lang.String",
+      "cardinality": "SINGLE"
+    }
+  ]
+}

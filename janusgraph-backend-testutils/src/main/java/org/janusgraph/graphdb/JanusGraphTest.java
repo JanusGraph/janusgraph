@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import org.apache.commons.configuration2.MapConfiguration;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.TextP;
@@ -70,6 +71,7 @@ import org.janusgraph.core.log.TransactionRecovery;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.DisableDefaultSchemaMaker;
 import org.janusgraph.core.schema.IgnorePropertySchemaMaker;
+import org.janusgraph.core.schema.IndicesActivationType;
 import org.janusgraph.core.schema.JanusGraphDefaultSchemaMaker;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -77,6 +79,7 @@ import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaAction;
+import org.janusgraph.core.schema.SchemaInitType;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.diskstorage.Backend;
@@ -169,6 +172,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -234,6 +240,10 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPEAT_STEP_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_DROP_BEFORE_INIT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_INIT_JSON_INDICES_ACTIVATION_TYPE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_INIT_JSON_STR;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_INIT_STRATEGY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENGINE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
@@ -4519,6 +4529,29 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             if (IDUtils.compare(vl.getID(i - 1), vl.getID(i)) > 0) return false;
         }
         return true;
+    }
+
+    @Test
+    public void testSimpleJsonSchemaImportFromProperty() throws IOException, BackendException {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        InputStream resourceStream = loader.getResourceAsStream("test_simple_schema_example.json");
+        String jsonSchemaExample = IOUtils.toString(resourceStream, StandardCharsets.UTF_8.name());
+
+        Map<String, Object> extraConfig = new HashMap<>();
+        extraConfig.put(SCHEMA_INIT_STRATEGY.toStringWithoutRoot(), SchemaInitType.JSON.getConfigName());
+        extraConfig.put(SCHEMA_DROP_BEFORE_INIT.toStringWithoutRoot(), true);
+        extraConfig.put(SCHEMA_INIT_JSON_STR.toStringWithoutRoot(), jsonSchemaExample);
+        extraConfig.put(SCHEMA_INIT_JSON_INDICES_ACTIVATION_TYPE.toStringWithoutRoot(), IndicesActivationType.REINDEX_AND_ENABLE_UPDATED_ONLY.getConfigName());
+        clopenNoDelimiterUsage(extraConfig, true);
+
+        assertEquals(Long.class, mgmt.getPropertyKey("time").dataType());
+        assertEquals(Double.class, mgmt.getPropertyKey("doubleProp").dataType());
+        assertEquals(Cardinality.LIST, mgmt.getPropertyKey("longPropCardinalityList").cardinality());
+        assertEquals("organization", mgmt.getVertexLabel("organization").name());
+        assertEquals(Multiplicity.SIMPLE, mgmt.getEdgeLabel("connects").multiplicity());
+        assertTrue(mgmt.getEdgeLabel("connects").isDirected());
+        assertEquals(Multiplicity.MULTI, mgmt.getEdgeLabel("viewed").multiplicity());
+        assertTrue(mgmt.getEdgeLabel("viewed").isUnidirected());
     }
 
     @Test

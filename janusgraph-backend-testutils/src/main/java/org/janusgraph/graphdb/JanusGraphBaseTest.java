@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.configuration2.MapConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -207,7 +208,7 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         return options;
     }
 
-    public void clopen(Object... settings) {
+    public void setupConfig(Object... settings){
         config = getConfiguration();
         if (mgmt!=null && mgmt.isOpen()) mgmt.rollback();
         if (null != tx && tx.isOpen()) tx.commit();
@@ -226,6 +227,10 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
             if (janusGraphManagement!=null) janusGraphManagement.commit();
             modifiableConfiguration.close();
         }
+    }
+
+    public void clopen(Object... settings) {
+        setupConfig(settings);
         if (null != graph && null != graph.tx() && graph.tx().isOpen())
             graph.tx().commit();
         if (null != graph && graph.isOpen())
@@ -234,6 +239,29 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         open(config);
     }
 
+    public void clopenNoDelimiterUsage(Map<String, Object> extraConfigs, boolean clearGraph) {
+        this.config = getConfiguration();
+        if (null != graph && null != graph.tx() && graph.tx().isOpen())
+            graph.tx().commit();
+        if (null != graph && graph.isOpen())
+            graph.close();
+        if(clearGraph) {
+            try {
+                clearGraph(config);
+            } catch (BackendException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config, BasicConfiguration.Restriction.NONE);
+        Map<String, Object> finalConfig = new HashMap<>();
+        readConfig.getAll().forEach((pathIdentifier, value) -> finalConfig.put(pathIdentifier.element.toStringWithoutRoot(), value));
+        finalConfig.putAll(extraConfigs);
+
+        graph = (StandardJanusGraph) JanusGraphFactory.open(new MapConfiguration(finalConfig));
+        features = graph.getConfiguration().getStoreFeatures();
+        tx = graph.newTransaction();
+        mgmt = graph.openManagement();
+    }
 
     public static TestConfigOption option(ConfigOption option, String... umbrella) {
         return new TestConfigOption(option,umbrella);
