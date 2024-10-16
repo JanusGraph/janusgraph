@@ -84,21 +84,6 @@
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-lindorm</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-crypto</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jruby.joni</groupId>
-                    <artifactId>joni</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-tablestore</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -109,6 +94,10 @@
                 <exclusion>
                     <groupId>ch.qos.reload4j</groupId>
                     <artifactId>reload4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpasyncclient</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -124,6 +113,10 @@
                 <exclusion>
                     <groupId>ch.qos.reload4j</groupId>
                     <artifactId>reload4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jruby.jcodings</groupId>
+                    <artifactId>jcodings</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.jruby.jcodings</groupId>

@@ -124,7 +124,6 @@
     <modules>
         <module>janusgraph-grpc</module>
         <module>janusgraph-driver</module>
-        <module>janusgraph-lindorm</module>
         <module>janusgraph-core</module>
         <module>janusgraph-server</module>
         <module>janusgraph-backend-testutils</module>
@@ -1462,10 +1461,10 @@
                 <version>2.0</version>
             </dependency>
             <dependency>
-                    <groupId>org.apache.hbase</groupId>
-                    <artifactId>hbase-client</artifactId>
-                    <version>2.5.10</version>
-                </dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-client</artifactId>
+                <version>2.5.10</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
