@@ -155,4 +155,8 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     public String getName() {
         return manager.getName();
     }
+
+    public OrderedKeyValueStoreManager getManager() {
+        return manager;
+    }
 }

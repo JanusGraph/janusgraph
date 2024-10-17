@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.berkeleyje;
 
-
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
@@ -44,6 +43,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreMa
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.janusgraph.util.system.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +87,27 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
             "The isolation level used by transactions",
             ConfigOption.Type.MASKABLE,  String.class,
             IsolationLevel.REPEATABLE_READ.toString(), disallowEmpty(String.class));
+
+    public static final ConfigNamespace BERKELEY_EXTRAS_NS =
+        new ConfigNamespace(BERKELEY_NS, "ext", "Overrides for arbitrary settings applied at `EnvironmentConfig` creation.\n" +
+            "The full list of possible setting is available inside the Java class `com.sleepycat.je.EnvironmentConfig`. " +
+            "All configurations values should be specified as `String` and be formated the same as specified in the following " +
+            "[documentation](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html).\n" +
+            "Notice, for compatibility reasons, it's allowed to use `-` character instead of `.` for config keys. All dashes will " +
+            "be replaced by dots when passing those keys to `EnvironmentConfig`.");
+
+    // This setting isn't used directly in Java, but this setting will be picked up indirectly during parsing of the
+    // subset configuration of `BERKELEY_EXTRAS_NS` namespace
+    public static final ConfigOption<String> EXT_LOCK_TIMEOUT =
+        new ConfigOption<>(BERKELEY_EXTRAS_NS, toJanusGraphConfigKey(EnvironmentConfig.LOCK_TIMEOUT),
+            String.format("Lock timeout configuration. `0` disabled lock timeout completely. " +
+                    "To set lock timeout via this configuration it's required to use " +
+                    "String formated time representation. For example: `500 ms`, `5 min`, etc. \nSee information about value " +
+                    "constraints in the official " +
+                    "[sleepycat documentation](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#LOCK_TIMEOUT).\n" +
+                    "Notice, this option can be specified as `%s` which will be treated the same as this configuration option.",
+                BERKELEY_EXTRAS_NS.toStringWithoutRoot() + "." + EnvironmentConfig.LOCK_TIMEOUT
+            ), ConfigOption.Type.MASKABLE, String.class);
 
     private final Map<String, BerkeleyJEKeyValueStore> stores;
 
@@ -132,12 +153,32 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
             }
 
             //Open the environment
+            Map<String, String> extraSettings = getSettingsFromJanusGraphConf(storageConfig);
+            extraSettings.forEach((key, value) -> envConfig.setConfigParam(toBerkeleyConfigKey(key), value));
+
+            // Open the environment
             environment = new Environment(directory, envConfig);
 
         } catch (DatabaseException e) {
             throw new PermanentBackendException("Error during BerkeleyJE initialization: ", e);
         }
+    }
 
+    public static String toBerkeleyConfigKey(String janusGraphConfigKey){
+        return janusGraphConfigKey.replace("-", ".");
+    }
+
+    public static String toJanusGraphConfigKey(String berkeleyConfigKey){
+        return berkeleyConfigKey.replace(".", "-");
+    }
+
+    static Map<String, String> getSettingsFromJanusGraphConf(Configuration config) {
+        final Map<String, String> settings = ConfigurationUtil.getSettingsFromJanusGraphConf(config, BERKELEY_EXTRAS_NS);
+        if(log.isDebugEnabled()){
+            settings.forEach((key, val) -> log.debug("[BERKELEY ext.* cfg] Set {}: {}", key, val));
+            log.debug("Loaded {} settings from the {} JanusGraph config namespace", settings.size(), BERKELEY_EXTRAS_NS);
+        }
+        return settings;
     }
 
     @Override
@@ -334,5 +375,9 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         private TransactionBegin(String msg) {
             super(msg);
         }
+    }
+
+    public Environment getEnvironment(){
+        return environment;
     }
 }
