@@ -52,9 +52,10 @@ public class IndexSerializerTest {
     public void testReindexElementNotAppliesTo() {
         Configuration config = mock(Configuration.class);
         Serializer serializer = mock(Serializer.class);
+        EdgeSerializer edgeSerializer = mock(EdgeSerializer.class);
         Map<String, ? extends IndexInformation> indexes = new HashMap<>();
 
-        IndexSerializer mockSerializer = new IndexSerializer(config, serializer, indexes, true);
+        IndexSerializer mockSerializer = new IndexSerializer(config, edgeSerializer, serializer, indexes, true);
         JanusGraphElement nonIndexableElement = mock(JanusGraphElement.class);
         MixedIndexType mit = mock(MixedIndexType.class);
         doReturn(ElementCategory.VERTEX).when(mit).getElement();
@@ -92,8 +93,9 @@ public class IndexSerializerTest {
     private IndexSerializer mockSerializer() {
         Configuration config = mock(Configuration.class);
         Serializer serializer = mock(Serializer.class);
+        EdgeSerializer edgeSerializer = mock(EdgeSerializer.class);
         Map<String, ? extends IndexInformation> indexes = new HashMap<>();
-        return spy(new IndexSerializer(config, serializer, indexes, true));
+        return spy(new IndexSerializer(config, edgeSerializer, serializer, indexes, true));
     }
 
     private JanusGraphElement mockIndexAppliesTo(MixedIndexType mit, boolean indexable) {

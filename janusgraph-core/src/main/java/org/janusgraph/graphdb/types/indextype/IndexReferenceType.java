@@ -1,4 +1,4 @@
-// Copyright 2022 JanusGraph Authors
+// Copyright 2024 JanusGraph Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,10 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.janusgraph.graphdb.database.index;
+package org.janusgraph.graphdb.types.indextype;
 
-public enum IndexMutationType {
-    ADD,
-    UPDATE,
-    DELETE
+import org.janusgraph.graphdb.types.IndexType;
+
+public class IndexReferenceType {
+
+    private final boolean isInlined;
+
+    private final IndexType indexType;
+
+    public IndexReferenceType(boolean isInlined, IndexType indexType) {
+        this.isInlined = isInlined;
+        this.indexType = indexType;
+    }
+
+    public boolean isInlined() {
+        return isInlined;
+    }
+
+    public IndexType getIndexType() {
+        return indexType;
+    }
 }

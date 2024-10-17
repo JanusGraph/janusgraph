@@ -36,6 +36,8 @@ public class JanusGraphIndexWrapper implements JanusGraphIndex {
 
     private final IndexType index;
 
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
     public JanusGraphIndexWrapper(IndexType index) {
         this.index = index;
     }
@@ -77,6 +79,15 @@ public class JanusGraphIndexWrapper implements JanusGraphIndex {
             keys[i]=fields[i].getFieldKey();
         }
         return keys;
+    }
+
+    @Override
+    public String[] getInlineFieldKeys() {
+        if (index.isMixedIndex()) {
+            return EMPTY_STRING_ARRAY;
+        } else {
+            return ((CompositeIndexType) index).getInlineFieldKeys();
+        }
     }
 
     @Override

@@ -18,6 +18,7 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.types.IndexType;
+import org.janusgraph.graphdb.types.indextype.IndexReferenceType;
 
 import java.util.Collections;
 
@@ -63,6 +64,11 @@ public abstract class EmptyRelationType extends EmptyVertex implements InternalR
 
     @Override
     public Iterable<IndexType> getKeyIndexes() {
+        return Collections.EMPTY_LIST;
+    }
+
+    @Override
+    public Iterable<IndexReferenceType> getKeyIndexesReferences(){
         return Collections.EMPTY_LIST;
     }
 

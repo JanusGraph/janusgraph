@@ -9083,6 +9083,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         IndexRecordEntry[] record = new IndexRecordEntry[]{new IndexRecordEntry(indexedProperty)};
         JanusGraphElement element = (JanusGraphElement) vertex1;
         Serializer serializer = graph.getDataSerializer();
+        EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
         boolean hashKeys = graph.getIndexSerializer().isHashKeys();
         HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
 
@@ -9092,6 +9093,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             record,
             element,
             serializer,
+            (StandardJanusGraphTx)tx,
+            edgeSerializer,
             hashKeys,
             hashLength
         );
@@ -9116,6 +9119,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             record,
             element,
             serializer,
+            (StandardJanusGraphTx)tx,
+            edgeSerializer,
             hashKeys,
             hashLength
         );
@@ -9150,6 +9155,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             record,
             element,
             serializer,
+            (StandardJanusGraphTx)tx,
+            edgeSerializer,
             hashKeys,
             hashLength
         );
@@ -9176,6 +9183,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             record,
             element,
             serializer,
+            (StandardJanusGraphTx)tx,
+            edgeSerializer,
             hashKeys,
             hashLength
         );
@@ -9218,6 +9227,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
         CompositeIndexType index = (CompositeIndexType) indexChangeVertex.asIndexType();
         Serializer serializer = graph.getDataSerializer();
+        EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
         boolean hashKeys = graph.getIndexSerializer().isHashKeys();
         HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
 
@@ -9238,6 +9248,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             record,
             element,
             serializer,
+            (StandardJanusGraphTx)tx,
+            edgeSerializer,
             hashKeys,
             hashLength
         );
@@ -9301,6 +9313,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
         CompositeIndexType index = (CompositeIndexType) indexChangeVertex.asIndexType();
         Serializer serializer = graph.getDataSerializer();
+        EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
         boolean hashKeys = graph.getIndexSerializer().isHashKeys();
         HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
         PropertyKey propertyKey = managementSystem.getPropertyKey(namePropKeyStr);
@@ -9334,6 +9347,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             record,
             element,
             serializer,
+            (StandardJanusGraphTx)tx,
+            edgeSerializer,
             hashKeys,
             hashLength
         );
@@ -9394,6 +9409,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         JanusGraphSchemaVertex indexChangeVertex = managementSystem.getSchemaVertex(janusGraphIndex);
         CompositeIndexType index = (CompositeIndexType) indexChangeVertex.asIndexType();
         Serializer serializer = graph.getDataSerializer();
+        EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
         boolean hashKeys = graph.getIndexSerializer().isHashKeys();
         HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
 
@@ -9422,6 +9438,8 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             record,
             element,
             serializer,
+            (StandardJanusGraphTx)tx,
+            edgeSerializer,
             hashKeys,
             hashLength
         );
@@ -10075,28 +10093,28 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         invalidateUpdatedVertexProperty(graph, vertexIdUpdated, propertyNameUpdated, previousPropertyValue, newPropertyValue, true);
     }
 
-    private void invalidateUpdatedVertexProperty(StandardJanusGraph graph, Object vertexIdUpdated, String propertyNameUpdated, Object previousPropertyValue, Object newPropertyValue, boolean withIndexConstraintsFilter){
-        JanusGraphTransaction tx = graph.newTransaction();
+    private void invalidateUpdatedVertexProperty(StandardJanusGraph graph, Object vertexIdUpdated, String propertyNameUpdated, Object previousPropertyValue, Object newPropertyValue, boolean withIndexConstraintsFilter) {
+        StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
         JanusGraphManagement graphMgmt = graph.openManagement();
         PropertyKey propertyKey = graphMgmt.getPropertyKey(propertyNameUpdated);
-        CacheVertex cacheVertex = new CacheVertex((StandardJanusGraphTx) tx, vertexIdUpdated, ElementLifeCycle.Loaded);
+        CacheVertex cacheVertex = new CacheVertex(tx, vertexIdUpdated, ElementLifeCycle.Loaded);
         StandardVertexProperty propertyPreviousVal = new StandardVertexProperty(propertyKey.longId(), propertyKey, cacheVertex, previousPropertyValue, ElementLifeCycle.Removed);
         StandardVertexProperty propertyNewVal = new StandardVertexProperty(propertyKey.longId(), propertyKey, cacheVertex, newPropertyValue, ElementLifeCycle.New);
         IndexSerializer indexSerializer = graph.getIndexSerializer();
 
-        Collection<IndexUpdate> indexUpdates;
-        if(withIndexConstraintsFilter){
-            indexUpdates = indexSerializer.getIndexUpdates(cacheVertex, Arrays.asList(propertyPreviousVal, propertyNewVal));
+        Stream<IndexUpdate> indexUpdates;
+        if (withIndexConstraintsFilter) {
+            indexUpdates = indexSerializer.getIndexUpdates(cacheVertex, Arrays.asList(propertyPreviousVal, propertyNewVal), tx);
         } else {
-            indexUpdates = indexSerializer.getIndexUpdatesNoConstraints(cacheVertex, Arrays.asList(propertyPreviousVal, propertyNewVal));
+            indexUpdates = indexSerializer.getIndexUpdatesNoConstraints(cacheVertex, Arrays.asList(propertyPreviousVal, propertyNewVal), tx);
         }
 
         CacheInvalidationService invalidationService = graph.getDBCacheInvalidationService();
 
-        for(IndexUpdate indexUpdate : indexUpdates){
+        indexUpdates.forEach(indexUpdate -> {
             StaticBuffer keyToInvalidate = (StaticBuffer) indexUpdate.getKey();
             invalidationService.markKeyAsExpiredInIndexStore(keyToInvalidate);
-        }
+        });
 
         invalidationService.forceClearExpiredKeysInIndexStoreCache();
         invalidationService.forceInvalidateVertexInEdgeStoreCache(vertexIdUpdated);

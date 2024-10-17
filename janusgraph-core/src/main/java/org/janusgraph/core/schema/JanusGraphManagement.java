@@ -182,6 +182,8 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
 
     void addIndexKey(final JanusGraphIndex index, final PropertyKey key, Parameter... parameters);
 
+    void addInlinePropertyKey(final JanusGraphIndex index, final PropertyKey key);
+
     /**
      * Builder for {@link JanusGraphIndex}. Allows for the configuration of a graph index prior to its construction.
      */
@@ -194,6 +196,13 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
          * @return this IndexBuilder
          */
         IndexBuilder addKey(PropertyKey key);
+
+        /**
+         * Adds the given key to inline properties of the composite key of this index
+         * @param key
+         * @return this IndexBuilder
+         */
+        IndexBuilder addInlinePropertyKey(PropertyKey key);
 
         /**
          * Adds the given key and associated parameters to the composite key of this index

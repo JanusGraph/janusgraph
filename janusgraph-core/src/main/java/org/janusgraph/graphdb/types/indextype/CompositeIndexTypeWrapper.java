@@ -37,6 +37,8 @@ public class CompositeIndexTypeWrapper extends IndexTypeWrapper implements Compo
 
     private IndexField[] fields = null;
 
+    private String[] inlineKeys = null;
+
     public CompositeIndexTypeWrapper(SchemaSource base) {
         super(base);
     }
@@ -83,9 +85,28 @@ public class CompositeIndexTypeWrapper extends IndexTypeWrapper implements Compo
     }
 
     @Override
+    public String[] getInlineFieldKeys() {
+        String[] result = inlineKeys;
+        if (result == null) {
+            List<SchemaSource.Entry> entries = base.getRelated(TypeDefinitionCategory.INDEX_INLINE_KEY, Direction.OUT);
+            int numFields = entries.size();
+            result = new String[numFields];
+            int pos = 0;
+            for (SchemaSource.Entry entry : entries) {
+                assert entry.getSchemaType() instanceof PropertyKey;
+                result[pos] = ((PropertyKey) entry.getSchemaType()).name();
+                pos++;
+            }
+            inlineKeys = result;
+        }
+        return result;
+    }
+
+    @Override
     public void resetCache() {
         super.resetCache();
         fields = null;
+        inlineKeys = null;
     }
 
     @Override
