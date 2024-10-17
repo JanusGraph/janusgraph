@@ -19,15 +19,11 @@ import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseException;
-import com.sleepycat.je.EnvironmentFailureException;
 import com.sleepycat.je.LockMode;
-import com.sleepycat.je.ThreadInterruptedException;
 import com.sleepycat.je.Transaction;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.PermanentBackendException;
-import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,36 +60,16 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
             if (!isOpen) {
                 throw new PermanentBackendException("Transaction already closed");
             }
-
-            try {
-                Cursor cursor = db.openCursor(tx, null);
-                openCursors.add(cursor);
-                return cursor;
-            } catch (ThreadInterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw (TraversalInterruptedException) new TraversalInterruptedException().initCause(e);
-            } catch (EnvironmentFailureException e) {
-                throw new TemporaryBackendException(e);
-            } catch (DatabaseException e) {
-                throw new PermanentBackendException(e);
-            }
+            Cursor cursor = db.openCursor(tx, null);
+            openCursors.add(cursor);
+            return cursor;
         }
     }
 
-    void closeCursor(Cursor cursor) throws BackendException {
+    void closeCursor(Cursor cursor) {
         synchronized (openCursors) {
-            try {
-                cursor.close();
-            } catch (ThreadInterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw (TraversalInterruptedException) new TraversalInterruptedException().initCause(e);
-            } catch (EnvironmentFailureException e) {
-                throw new TemporaryBackendException(e);
-            } catch (DatabaseException e) {
-                throw new PermanentBackendException(e);
-            } finally {
-                openCursors.remove(cursor);
-            }
+            cursor.close();
+            openCursors.remove(cursor);
         }
     }
 
@@ -122,15 +98,6 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
             closeOpenCursors();
             tx.abort();
             tx = null;
-        } catch (ThreadInterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (EnvironmentFailureException e) {
-            // Ignore to avoid issues when backend is invalid
-        } catch (IllegalStateException e) {
-            // Ignore to avoid issues when backend was closed
-            if (!e.getMessage().equals("Database was closed.") && !e.getMessage().equals("Environment is closed.")) {
-                throw e;
-            }
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
         }
@@ -147,11 +114,6 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
             closeOpenCursors();
             tx.commit();
             tx = null;
-        } catch (ThreadInterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw (TraversalInterruptedException) new TraversalInterruptedException().initCause(e);
-        } catch (EnvironmentFailureException e) {
-            throw new TemporaryBackendException(e);
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
         }
