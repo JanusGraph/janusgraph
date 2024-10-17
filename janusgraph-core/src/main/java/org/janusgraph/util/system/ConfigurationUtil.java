@@ -14,6 +14,7 @@
 
 package org.janusgraph.util.system;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.Configuration;
@@ -24,11 +25,14 @@ import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.builder.fluent.PropertiesBuilderParameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 
 import java.io.File;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -168,5 +172,35 @@ public class ConfigurationUtil {
             newParams = newParams.setListDelimiterHandler(COMMA_DELIMITER_HANDLER);
         }
         return builder.configure(newParams).getConfiguration();
+    }
+
+    public static Map<String, String> getSettingsFromJanusGraphConf(org.janusgraph.diskstorage.configuration.Configuration config, ConfigNamespace namespace) {
+
+        final Map<String, String> settings = new HashMap<>();
+
+        final Map<String,Object> configSub = config.getSubset(namespace);
+        for (Map.Entry<String,Object> entry : configSub.entrySet()) {
+            String key = entry.getKey();
+            Object val = entry.getValue();
+            if (null == val) continue;
+            if (List.class.isAssignableFrom(val.getClass())) {
+                // Pretty print lists using comma-separated values and no surrounding square braces for ES
+                List l = (List) val;
+                settings.put(key, Joiner.on(",").join(l));
+            } else if (val.getClass().isArray()) {
+                // As with Lists, but now for arrays
+                // The Object copy[] business lets us avoid repetitive primitive array type checking and casting
+                Object[] copy = new Object[Array.getLength(val)];
+                for (int i= 0; i < copy.length; i++) {
+                    copy[i] = Array.get(val, i);
+                }
+                settings.put(key, Joiner.on(",").join(copy));
+            } else {
+                // Copy anything else unmodified
+                settings.put(key, val.toString());
+            }
+        }
+
+        return settings;
     }
 }

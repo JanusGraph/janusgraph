@@ -275,5 +275,8 @@ public class ConfigOption<O> extends ConfigElement {
         return num -> num!=null && num>0;
     }
 
+    public static Predicate<Long> nonnegativeLong() {
+        return num -> num!=null && num>=0;
+    }
 
 }

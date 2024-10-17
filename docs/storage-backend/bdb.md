@@ -85,3 +85,49 @@ In order to not run out of memory, it is advised to disable transactions
 transactions enabled requires BerkeleyDB to acquire read locks on the
 data it is reading. When iterating over the entire graph, these read
 locks can easily require more memory than is available.
+
+## Additional BerkeleyDB JE configuration options
+
+It's possible to set additional BerkeleyDB JE configuration which are not 
+directly exposed by JanusGraph by leveraging `storage.berkeleyje.ext` 
+namespace. 
+
+JanusGraph iterates over all properties prefixed with
+`storage.berkeleyje.ext.`. It strips the prefix from each property key. 
+Any dash character (`-`) wil be replaced by dot character (`.`) in the 
+remainder of the stripped key. The final string will be interpreted as a parameter 
+ke for `com.sleepycat.je.EnvironmentConfig`. 
+Thus, both options `storage.berkeleyje.ext.je.lock.timeout` and 
+`storage.berkeleyje.ext.je-lock-timeout` will be treated 
+the same (as `storage.berkeleyje.ext.je.lock.timeout`). 
+The value associated with the key is not modified. 
+This allows embedding arbitrary settings in JanusGraph’s properties. Here’s an
+example configuration fragment that customizes three BerkeleyDB settings 
+using the `storage.berkeleyje.ext.` config mechanism:
+
+```properties
+storage.backend=berkeleyje
+storage.berkeleyje.ext.je.lock.timeout=5000 ms
+storage.berkeleyje.ext.je.lock.deadlockDetect=false
+storage.berkeleyje.ext.je.txn.timeout=5000 ms
+storage.berkeleyje.ext.je.log.fileMax=100000000
+```
+
+## Deadlock troubleshooting
+
+In concurrent environment deadlocks are possible when using BerkeleyDB JE storage 
+backend. 
+It may be complicated to deal with deadlocks in use-cases when multiple threads are 
+modifying same vertices (including edges creation between affected vertices). 
+More insights on this topic can be found in the GitHub issue 
+[#1623](https://github.com/JanusGraph/janusgraph/issues/1623).
+
+Some users suggest the following configuration to deal with deadlocks:
+```properties
+storage.berkeleyje.isolation-level=READ_UNCOMMITTED
+storage.berkeleyje.lock-mode=LockMode.READ_UNCOMMITTED
+storage.berkeleyje.ext.je.lock.timeout=0
+storage.lock.wait-time=5000
+ids.authority.wait-time=2000
+tx.max-commit-time=30000
+```
