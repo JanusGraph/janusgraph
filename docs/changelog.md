@@ -172,69 +172,7 @@ All configurations values should be specified as `String` and be formated the sa
 [documentation](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html).
 Example: `storage.berkeleyje.ext.je.lock.timeout=5000 ms`
 
-##### JSON schema initializer
-
-For simplicity JSON schema initialization options has been added into JanusGraph.
-See [documentation](./schema/schema-init-strategies.md) to learn more about JSON schema initialization process.
-
-##### Batched Queries Enhancement: Introduction of `JanusGraphNoOpBarrierVertexOnlyStep`
-
-In previous versions, when a query that could benefit from batch-query optimization (multi-query) was executed without
-a user-defined barrier step, JanusGraph would inject a `NoOpBarrierStep` by default. This approach allowed batching
-for edges and properties, which do not gain advantages from multi-query optimization.
-
-Starting with JanusGraph 1.1.0, this behavior has been improved. The system now injects a
-`JanusGraphNoOpBarrierVertexOnlyStep` instead of the standard `NoOpBarrierStep` when no barrier steps are detected.
-This change ensures that batching is applied exclusively to vertices, which do benefit from batch queries,
-while excluding edges and properties from the batching process.
-
-If a user explicitly defines a `.barrier()` step in the query, the system will continue to use the `NoOpBarrierStep` as expected.
-
-##### Batch Query Optimizations Now Support Traversals Containing the `drop()` Step
-
-Starting with JanusGraph 1.1.0, batch optimizations for vertex removal have been introduced in the `drop()` step and
-are enabled by default. Previously, any batch optimization would be skipped for queries containing at least one
-`drop()` step. However, with this update, such queries are now eligible for batch query optimization (multi-query).
-
-Please note that the `LazyBarrierStrategy` (a TinkerPop strategy) is disabled for any query that includes at least one `drop()` step.
-
-To disable the `drop()` step optimization and maintain the previous behavior, users can set the following configuration:
-```
-query.batch.drop-step-mode=none
-```
-
-##### Lazy Loading for Relations
-
-The new transaction configuration option is added `lazyLoadRelations()` which sets lazy-load for all properties and edges 
-of the vertex. If enabled, then ids and values are deserialized upon demand.  
-When enabled, it can lead to a performance improvement on large-scale read operations, if only certain types of relations are being read from the vertex.  
-See performance comparison in [GitHub PR #4343](https://github.com/JanusGraph/janusgraph/pull/4343/#issuecomment-2079839853).
-
-##### Text predicates support extended for remote connections
-
-The following text predicates can now be used with remote connections:
-
-* textNotContains
-* textNotContainsFuzzy
-* textNotContainsPrefix
-* textNotContainsRegex
-* textContainsPhrase
-* textNotContainsPhrase
-* textNotFuzzy
-* textNotPrefix
-* textNotRegex
-
-##### Vertex mutation optimizations
-
-The following improvements are made for adding new vertex or updating vertex properties:
-
-* Improved operations to detect vertex changes during transaction-commit from O(N) to O(1);
-* Optimizing properties search by key for newly-created vertex;
-* Optimizing previous property/edge search during vertex update;
-
-For more information see [GitHub PR #4292](https://github.com/JanusGraph/janusgraph/pull/4292)
-
-### Version 1.0.1 (Release Date: November 6, 2024)
+### Version 1.0.1 (Release Date: ???)
 
 /// tab | Maven
 ```xml
