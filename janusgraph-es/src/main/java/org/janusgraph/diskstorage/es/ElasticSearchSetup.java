@@ -14,17 +14,15 @@
 
 package org.janusgraph.diskstorage.es;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.es.rest.RestClientSetup;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -53,36 +51,12 @@ public enum ElasticSearchSetup {
     };
 
     static Map<String, Object> getSettingsFromJanusGraphConf(Configuration config) {
-
-        final Map<String, Object> settings = new HashMap<>();
-
-        int keysLoaded = 0;
-        final Map<String,Object> configSub = config.getSubset(ElasticSearchIndex.ES_CREATE_EXTRAS_NS);
-        for (Map.Entry<String,Object> entry : configSub.entrySet()) {
-            String key = entry.getKey();
-            Object val = entry.getValue();
-            if (null == val) continue;
-            if (List.class.isAssignableFrom(val.getClass())) {
-                // Pretty print lists using comma-separated values and no surrounding square braces for ES
-                List l = (List) val;
-                settings.put(key, Joiner.on(",").join(l));
-            } else if (val.getClass().isArray()) {
-                // As with Lists, but now for arrays
-                // The Object copy[] business lets us avoid repetitive primitive array type checking and casting
-                Object[] copy = new Object[Array.getLength(val)];
-                for (int i= 0; i < copy.length; i++) {
-                    copy[i] = Array.get(val, i);
-                }
-                settings.put(key, Joiner.on(",").join(copy));
-            } else {
-                // Copy anything else unmodified
-                settings.put(key, val.toString());
-            }
-            log.debug("[ES ext.* cfg] Set {}: {}", key, val);
-            keysLoaded++;
+        final Map<String, String> settings = ConfigurationUtil.getSettingsFromJanusGraphConf(config, ElasticSearchIndex.ES_CREATE_EXTRAS_NS);
+        if(log.isDebugEnabled()){
+            settings.forEach((key, val) -> log.debug("[ES ext.* cfg] Set {}: {}", key, val));
+            log.debug("Loaded {} settings from the {} JanusGraph config namespace", settings.size(), ElasticSearchIndex.ES_CREATE_EXTRAS_NS);
         }
-        log.debug("Loaded {} settings from the {} JanusGraph config namespace", keysLoaded, ElasticSearchIndex.ES_CREATE_EXTRAS_NS);
-        return settings;
+        return new HashMap<>(settings);
     }
 
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchSetup.class);
