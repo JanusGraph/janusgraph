@@ -70,6 +70,7 @@ import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.indexing.IndexInformation;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexTransaction;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJobFuture;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.example.GraphOfTheGodsFactory;
@@ -1485,6 +1486,69 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         assertEquals(name, v.value("name"));
         assertEquals(city, v.value("city"));
+    }
+
+    @Test
+    public void testIndexInlinePropertiesReindex() throws NoSuchMethodException, InterruptedException {
+        clopen(option(FORCE_INDEX_USAGE), true);
+
+        PropertyKey idKey = makeKey("id", Integer.class);
+        PropertyKey nameKey = makeKey("name", String.class);
+        PropertyKey cityKey = makeKey("city", String.class);
+
+        mgmt.buildIndex("composite", Vertex.class)
+            .addKey(cityKey)
+            .buildCompositeIndex();
+
+        finishSchema();
+
+        String city = "Chicago";
+        for (int i = 0; i < 3; i++) {
+            tx.addVertex("id", i, "name", "name" + i, "city", city);
+        }
+
+        tx.commit();
+
+        tx = graph.buildTransaction()
+            .propertyPrefetching(false) //this is important
+            .start();
+
+        Method m = VertexCentricQueryBuilder.class.getSuperclass().getDeclaredMethod("constructQuery", RelationCategory.class);
+        m.setAccessible(true);
+
+        List<Vertex> vertices = tx.traversal().V().has("city", city).toList();
+        vertices.stream()
+            .map(v -> (CacheVertex) v)
+            .forEach(v -> verifyPropertyLoaded(v, "name", false, m));
+
+        tx.commit();
+
+        //Include inlined property
+        JanusGraphIndex index = mgmt.getGraphIndex("composite");
+        nameKey = mgmt.getPropertyKey("name");
+        mgmt.addInlinePropertyKey(index, nameKey);
+        finishSchema();
+
+        //Reindex
+        index = mgmt.getGraphIndex("composite");
+        ScanJobFuture scanJobFuture = mgmt.updateIndex(index, SchemaAction.REINDEX);
+        finishSchema();
+
+        while (!scanJobFuture.isDone()) {
+            Thread.sleep(1000);
+        }
+
+        //Try query now
+        tx = graph.buildTransaction()
+            .propertyPrefetching(false) //this is important
+            .start();
+
+        List<Vertex> vertices2 = tx.traversal().V().has("city", city).toList();
+        vertices2.stream()
+            .map(v -> (CacheVertex) v)
+            .forEach(v -> verifyPropertyLoaded(v, "name", true, m));
+
+        tx.commit();
     }
 
     @Test

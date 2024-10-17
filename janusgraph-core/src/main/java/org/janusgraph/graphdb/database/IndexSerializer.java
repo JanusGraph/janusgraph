@@ -242,9 +242,9 @@ public class IndexSerializer {
     }
 
     public Stream<IndexUpdate> getIndexUpdates(InternalVertex vertex,
-                                                   Collection<InternalRelation> updatedProperties,
-                                                   IndexAppliesToFunction indexFilter,
-                                                   TypeInspector typeInspector) {
+                                               Collection<InternalRelation> updatedProperties,
+                                               IndexAppliesToFunction indexFilter,
+                                               TypeInspector typeInspector) {
 
         if (updatedProperties.isEmpty()) return Stream.empty();
         final Map<Object, IndexUpdateContainer> updates = new HashMap<>();
