@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.log.LogProcessorFramework;
 import org.janusgraph.core.log.TransactionRecovery;
+import org.janusgraph.core.schema.SchemaInitializationManager;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StandardStoreManager;
@@ -162,7 +163,7 @@ public class JanusGraphFactory {
         final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
         if (null != graphName) {
             Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-            return (JanusGraph) jgm.openGraph(graphName, gName -> new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration)));
+            return (JanusGraph) jgm.openGraph(graphName, gName -> defineSchemaAndStart(configuration));
         } else {
             if (jgm != null) {
                 log.warn("You should supply \"graph.graphname\" in your .properties file configuration if you are opening " +
@@ -173,8 +174,13 @@ public class JanusGraphFactory {
                          "\"graph.graphname\" so these graphs should be accessed dynamically by supplying a .properties file here " +
                          "or by using the ConfiguredGraphFactory.");
             }
-            return new StandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration));
+            return defineSchemaAndStart(configuration);
         }
+    }
+
+    private static JanusGraph defineSchemaAndStart(ReadConfiguration configuration) {
+        GraphDatabaseConfiguration graphDatabaseConfiguration = new GraphDatabaseConfigurationBuilder().build(configuration);
+        return SchemaInitializationManager.initializeSchemaAndStart(graphDatabaseConfiguration);
     }
 
     /**
