@@ -15,6 +15,8 @@
 package org.janusgraph.graphdb.berkeleyje;
 
 import com.google.common.base.Preconditions;
+import com.sleepycat.je.Environment;
+import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import org.janusgraph.BerkeleyStorageSetup;
 import org.janusgraph.core.JanusGraphException;
@@ -27,6 +29,7 @@ import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
 import org.janusgraph.graphdb.JanusGraphTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.jupiter.api.Disabled;
@@ -36,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.TimeUnit;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_SETTING_VERTEX_ID;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ALLOW_CUSTOM_VERTEX_ID_TYPES;
@@ -48,6 +52,12 @@ public class BerkeleyGraphTest extends JanusGraphTest {
 
     private static final Logger log =
             LoggerFactory.getLogger(BerkeleyGraphTest.class);
+
+    public EnvironmentConfig getCurrentEnvironmentConfig() {
+        BerkeleyJEStoreManager storeManager = (BerkeleyJEStoreManager) ((OrderedKeyValueStoreManagerAdapter) graph.getBackend().getStoreManager()).getManager();
+        Environment environment = storeManager.getEnvironment();
+        return environment.getConfig();
+    }
 
     @Override
     public WriteConfiguration getConfiguration() {
@@ -162,4 +172,24 @@ public class BerkeleyGraphTest extends JanusGraphTest {
             () -> clopen(option(ALLOW_SETTING_VERTEX_ID), true, option(ALLOW_CUSTOM_VERTEX_ID_TYPES), true));
         assertEquals("allow-custom-vid-types is not supported for OrderedKeyValueStore", ex.getMessage());
     }
+
+    @Test
+    public void testExposedConfigurations() throws BackendException {
+        clopen(option(BerkeleyJEStoreManager.EXT_LOCK_TIMEOUT), "4321 ms");
+        assertEquals(4321, getCurrentEnvironmentConfig().getLockTimeout(TimeUnit.MILLISECONDS));
+        close();
+        WriteConfiguration configuration = getConfiguration();
+        clearGraph(configuration);
+        configuration.set(BerkeleyJEStoreManager.BERKELEY_EXTRAS_NS.toStringWithoutRoot()+"."+EnvironmentConfig.LOCK_TIMEOUT, "12345 ms");
+        open(configuration);
+        assertEquals(12345, getCurrentEnvironmentConfig().getLockTimeout(TimeUnit.MILLISECONDS));
+        close();
+        clearGraph(configuration);
+        configuration.set(BerkeleyJEStoreManager.BERKELEY_EXTRAS_NS.toStringWithoutRoot()+"."+EnvironmentConfig.ENV_IS_TRANSACTIONAL, "true");
+        open(configuration);
+        assertTrue(getCurrentEnvironmentConfig().getTransactional());
+        close();
+        clearGraph(configuration);
+    }
+
 }

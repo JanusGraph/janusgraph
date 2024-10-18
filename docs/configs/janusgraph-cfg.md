@@ -423,6 +423,18 @@ BerkeleyDB JE configuration options
 | storage.berkeleyje.lock-mode | The BDB record lock mode used for read operations | String | LockMode.DEFAULT | MASKABLE |
 | storage.berkeleyje.shared-cache | If true, the shared cache is used for all graph instances | Boolean | true | MASKABLE |
 
+### storage.berkeleyje.ext
+Overrides for arbitrary settings applied at `EnvironmentConfig` creation.
+The full list of possible setting is available inside the Java class `com.sleepycat.je.EnvironmentConfig`. All configurations values should be specified as `String` and be formated the same as specified in the following [documentation](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html).
+Notice, for compatibility reasons, it's allowed to use `-` character instead of `.` for config keys. All dashes will be replaced by dots when passing those keys to `EnvironmentConfig`.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| storage.berkeleyje.ext.je-lock-timeout | Lock timeout configuration. `0` disabled lock timeout completely. To set lock timeout via this configuration it's required to use String formated time representation. For example: `500 ms`, `5 min`, etc. 
+See information about value constraints in the official [sleepycat documentation](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html#LOCK_TIMEOUT).
+Notice, this option can be specified as `storage.berkeleyje.ext.je.lock.timeout` which will be treated the same as this configuration option. | String | (no default value) | MASKABLE |
+
 ### storage.cql
 CQL storage backend options
 

@@ -98,6 +98,17 @@ For more information on features and bug fixes in 1.1.0, see the GitHub mileston
 * [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v1.1.0/janusgraph-1.1.0.zip)
 * [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v1.1.0/janusgraph-full-1.1.0.zip)
 
+#### Upgrade Instructions
+
+##### BerkeleyJE ability to overwrite arbitrary settings applied at `EnvironmentConfig` creation
+
+The new namespace `storage.berkeleyje.ext` now allows to set custom configurations which were not directly exposed by 
+JanusGraph.
+The full list of possible setting is available inside the Java class `com.sleepycat.je.EnvironmentConfig`.
+All configurations values should be specified as `String` and be formated the same as specified in the official sleepycat
+[documentation](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html).
+Example: `storage.berkeleyje.ext.je.lock.timeout=5000 ms`
+
 ### Version 1.0.1 (Release Date: ???)
 
 /// tab | Maven
