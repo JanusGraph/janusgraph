@@ -43,13 +43,16 @@ import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.EntryArrayList;
 import org.janusgraph.diskstorage.util.HashingUtil;
 import org.janusgraph.graphdb.database.idhandling.IDHandler;
 import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.janusgraph.graphdb.database.index.IndexMutationType;
 import org.janusgraph.graphdb.database.index.IndexRecords;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
+import org.janusgraph.graphdb.database.index.IndexUpdateContainer;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.database.util.IndexAppliesToFunction;
 import org.janusgraph.graphdb.database.util.IndexRecordUtil;
@@ -66,6 +69,7 @@ import org.janusgraph.graphdb.query.graph.IndexQueryBuilder;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.graph.MultiKeySliceQuery;
 import org.janusgraph.graphdb.query.index.IndexSelectionUtil;
+import org.janusgraph.graphdb.query.vertex.VertexWithInlineProps;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -74,6 +78,8 @@ import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
 import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.graphdb.types.TypeInspector;
+import org.janusgraph.graphdb.types.indextype.IndexReferenceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,6 +120,7 @@ public class IndexSerializer {
 
     private static final Logger log = LoggerFactory.getLogger(IndexSerializer.class);
 
+    private final EdgeSerializer edgeSerializer;
     private final Serializer serializer;
     private final Configuration configuration;
     private final Map<String, ? extends IndexInformation> mixedIndexes;
@@ -121,8 +128,13 @@ public class IndexSerializer {
     private final boolean hashKeys;
     private final HashingUtil.HashLength hashLength = HashingUtil.HashLength.SHORT;
 
-    public IndexSerializer(Configuration config, Serializer serializer, Map<String, ? extends IndexInformation> indexes, final boolean hashKeys) {
+    public IndexSerializer(Configuration config,
+                           EdgeSerializer edgeSerializer,
+                           Serializer serializer,
+                           Map<String, ? extends IndexInformation> indexes,
+                           final boolean hashKeys) {
         this.serializer = serializer;
+        this.edgeSerializer = edgeSerializer;
         this.configuration = config;
         this.mixedIndexes = indexes;
         this.hashKeys=hashKeys;
@@ -186,27 +198,27 @@ public class IndexSerializer {
                Index Updates
     ################################################### */
 
-    public Collection<IndexUpdate> getIndexUpdates(InternalRelation relation) {
-        return getIndexUpdates(relation, FULL_INDEX_APPLIES_TO_FILTER);
+    public Collection<IndexUpdate> getIndexUpdates(InternalRelation relation, TypeInspector typeInspector) {
+        return getIndexUpdates(relation, FULL_INDEX_APPLIES_TO_FILTER, typeInspector);
     }
 
-    public Collection<IndexUpdate> getIndexUpdates(InternalVertex vertex, Collection<InternalRelation> updatedProperties) {
-        return getIndexUpdates(vertex, updatedProperties, FULL_INDEX_APPLIES_TO_FILTER);
+    public Stream<IndexUpdate> getIndexUpdates(InternalVertex vertex, Collection<InternalRelation> updatedProperties, TypeInspector typeInspector) {
+        return getIndexUpdates(vertex, updatedProperties, FULL_INDEX_APPLIES_TO_FILTER, typeInspector);
     }
 
-    public Collection<IndexUpdate> getIndexUpdatesNoConstraints(InternalRelation relation) {
-        return getIndexUpdates(relation, INDEX_APPLIES_TO_NO_CONSTRAINTS_FILTER);
+    public Collection<IndexUpdate> getIndexUpdatesNoConstraints(InternalRelation relation, TypeInspector typeInspector) {
+        return getIndexUpdates(relation, INDEX_APPLIES_TO_NO_CONSTRAINTS_FILTER, typeInspector);
     }
 
-    public Collection<IndexUpdate> getIndexUpdatesNoConstraints(InternalVertex vertex, Collection<InternalRelation> updatedProperties) {
-        return getIndexUpdates(vertex, updatedProperties, INDEX_APPLIES_TO_NO_CONSTRAINTS_FILTER);
+    public Stream<IndexUpdate> getIndexUpdatesNoConstraints(InternalVertex vertex, Collection<InternalRelation> updatedProperties, TypeInspector typeInspector) {
+        return getIndexUpdates(vertex, updatedProperties, INDEX_APPLIES_TO_NO_CONSTRAINTS_FILTER, typeInspector);
     }
 
-    public Collection<IndexUpdate> getIndexUpdates(InternalRelation relation, IndexAppliesToFunction indexFilter) {
+    public Collection<IndexUpdate> getIndexUpdates(InternalRelation relation, IndexAppliesToFunction indexFilter, TypeInspector typeInspector) {
         assert relation.isNew() || relation.isRemoved();
         final Set<IndexUpdate> updates = new HashSet<>();
-        final IndexMutationType updateType = getUpdateType(relation);
-        final int ttl = updateType==IndexMutationType.ADD?StandardJanusGraph.getTTL(relation):0;
+        final IndexMutationType updateType = getUpdateType(relation, false);
+        final int ttl = updateType == IndexMutationType.DELETE ? 0: StandardJanusGraph.getTTL(relation);
         for (final PropertyKey type : relation.getPropertyKeysDirect()) {
             if (type == null) continue;
             for (final IndexType index : ((InternalRelationType) type).getKeyIndexes()) {
@@ -216,7 +228,7 @@ public class IndexSerializer {
                     final CompositeIndexType iIndex= (CompositeIndexType) index;
                     final IndexRecordEntry[] record = indexMatch(relation, iIndex);
                     if (record==null) continue;
-                    update = getCompositeIndexUpdate(iIndex, updateType, record, relation, serializer, hashKeys, hashLength);
+                    update = getCompositeIndexUpdate(iIndex, updateType, record, relation, serializer, typeInspector, edgeSerializer, hashKeys, hashLength);
                 } else {
                     assert relation.valueOrNull(type)!=null;
                     if (((MixedIndexType)index).getField(type).getStatus()== SchemaStatus.DISABLED) continue;
@@ -229,40 +241,58 @@ public class IndexSerializer {
         return updates;
     }
 
-    public Collection<IndexUpdate> getIndexUpdates(InternalVertex vertex, Collection<InternalRelation> updatedProperties, IndexAppliesToFunction indexFilter) {
-        if (updatedProperties.isEmpty()) return Collections.emptyList();
-        final Set<IndexUpdate> updates = new HashSet<>();
+    public Stream<IndexUpdate> getIndexUpdates(InternalVertex vertex,
+                                               Collection<InternalRelation> updatedProperties,
+                                               IndexAppliesToFunction indexFilter,
+                                               TypeInspector typeInspector) {
+
+        if (updatedProperties.isEmpty()) return Stream.empty();
+        final Map<Object, IndexUpdateContainer> updates = new HashMap<>();
 
         for (final InternalRelation rel : updatedProperties) {
             assert rel.isProperty();
             final JanusGraphVertexProperty p = (JanusGraphVertexProperty)rel;
             assert rel.isNew() || rel.isRemoved(); assert rel.getVertex(0).equals(vertex);
-            final IndexMutationType updateType = getUpdateType(rel);
-            for (final IndexType index : ((InternalRelationType)p.propertyKey()).getKeyIndexes()) {
-                if (!indexFilter.indexAppliesTo(index,vertex)) continue;
-                if (index.isCompositeIndex()) { //Gather composite indexes
-                    final CompositeIndexType cIndex = (CompositeIndexType)index;
-                    final IndexRecords updateRecords = indexMatches(vertex,cIndex,updateType==IndexMutationType.DELETE,p.propertyKey(),new IndexRecordEntry(p));
+
+            for (final IndexReferenceType indexRef : ((InternalRelationType) p.propertyKey()).getKeyIndexesReferences()) {
+                final IndexMutationType updateType = getUpdateType(rel, indexRef.isInlined());
+
+                if (vertex.isRemoved() && indexRef.isInlined()) continue;
+                if (!indexFilter.indexAppliesTo(indexRef.getIndexType(), vertex)) continue;
+
+                if (indexRef.getIndexType().isCompositeIndex()) { //Gather composite indexes
+                    final CompositeIndexType cIndex = (CompositeIndexType) indexRef.getIndexType();
+                    final IndexRecords updateRecords = indexMatches(vertex,cIndex, rel.isRemoved(), p.propertyKey(), new IndexRecordEntry(p));
                     for (final IndexRecordEntry[] record : updateRecords) {
-                        final IndexUpdate update = getCompositeIndexUpdate(cIndex, updateType, record, vertex, serializer, hashKeys, hashLength);
-                        final int ttl = getIndexTTL(vertex,getKeysOfRecords(record));
-                        if (ttl>0 && updateType== IndexMutationType.ADD) update.setTTL(ttl);
-                        updates.add(update);
+                        final IndexUpdate update = getCompositeIndexUpdate(cIndex, updateType, record, vertex, serializer, typeInspector, edgeSerializer, hashKeys, hashLength);
+                        final int ttl = getIndexTTL(vertex, getKeysOfRecords(record));
+                        if (ttl > 0 && updateType != IndexMutationType.DELETE) update.setTTL(ttl);
+                        if (updates.containsKey(update.getKey())) {
+                            updates.get(update.getKey()).add(update);
+                        } else {
+                            updates.put(update.getKey(), new IndexUpdateContainer(update));
+                        }
                     }
                 } else { //Update mixed indexes
-                    ParameterIndexField field = ((MixedIndexType)index).getField(p.propertyKey());
+                    ParameterIndexField field = ((MixedIndexType) indexRef.getIndexType()).getField(p.propertyKey());
                     if (field == null) {
-                        throw new SchemaViolationException(p.propertyKey() + " is not available in mixed index " + index);
+                        throw new SchemaViolationException(p.propertyKey() + " is not available in mixed index " + indexRef.getIndexType());
                     }
                     if (field.getStatus() == SchemaStatus.DISABLED) continue;
-                    final IndexUpdate update = getMixedIndexUpdate(vertex, p.propertyKey(), p.value(), (MixedIndexType) index, updateType);
-                    final int ttl = getIndexTTL(vertex,p.propertyKey());
-                    if (ttl>0 && updateType== IndexMutationType.ADD) update.setTTL(ttl);
-                    updates.add(update);
+                    final IndexUpdate update = getMixedIndexUpdate(vertex, p.propertyKey(), p.value(), (MixedIndexType) indexRef.getIndexType(), updateType);
+                    final int ttl = getIndexTTL(vertex, p.propertyKey());
+
+                    if (ttl>0 && updateType != IndexMutationType.DELETE) update.setTTL(ttl);
+                    if (updates.containsKey(update.getKey())) {
+                        updates.get(update.getKey()).add(update);
+                    } else {
+                        updates.put(update.getKey(), new IndexUpdateContainer(update));
+                    }
                 }
             }
         }
-        return updates;
+
+        return updates.values().stream().flatMap(IndexUpdateContainer::getUpdates);
     }
 
     public boolean reindexElement(JanusGraphElement element, MixedIndexType index, Map<String,Map<String,List<IndexEntry>>> documentsPerStore) {
@@ -292,7 +322,7 @@ public class IndexSerializer {
         getDocuments(documentsPerStore,index).put(element2String(elementId),new ArrayList<>());
     }
 
-    public Set<IndexUpdate<StaticBuffer,Entry>> reindexElement(JanusGraphElement element, CompositeIndexType index) {
+    public Set<IndexUpdate<StaticBuffer,Entry>> reindexElement(JanusGraphElement element, CompositeIndexType index, TypeInspector typeInspector) {
         final Set<IndexUpdate<StaticBuffer,Entry>> indexEntries = new HashSet<>();
         if (!indexAppliesTo(index,element)) {
             return indexEntries;
@@ -306,7 +336,8 @@ public class IndexSerializer {
             records = (record == null) ? Collections.emptyList() : Collections.singletonList(record);
         }
         for (final IndexRecordEntry[] record : records) {
-            indexEntries.add(getCompositeIndexUpdate(index, IndexMutationType.ADD, record, element, serializer, hashKeys, hashLength));
+            indexEntries.add(getCompositeIndexUpdate(index, IndexMutationType.ADD, record, element, serializer,
+                typeInspector, edgeSerializer, hashKeys, hashLength));
         }
         return indexEntries;
     }
@@ -315,23 +346,28 @@ public class IndexSerializer {
                 Querying
     ################################################### */
 
-    public Stream<Object> query(final JointIndexQuery.Subquery query, final BackendTransaction tx) {
+    public Stream<Object> query(final JointIndexQuery.Subquery query, final BackendTransaction tx, StandardJanusGraphTx standardJanusGraphTx) {
         final IndexType index = query.getIndex();
         if (index.isCompositeIndex()) {
+            Map<String, SliceQuery> inlineQueries = IndexRecordUtil.getInlinePropertiesQueries((CompositeIndexType) index, standardJanusGraphTx);
             final MultiKeySliceQuery sq = query.getCompositeQuery();
             final List<EntryList> rs = sq.execute(tx);
             final List<Object> results = new ArrayList<>(rs.get(0).size());
             for (final EntryList r : rs) {
                 for (final java.util.Iterator<Entry> iterator = r.reuseIterator(); iterator.hasNext(); ) {
                     final Entry entry = iterator.next();
-                    final ReadBuffer entryValue = entry.asReadBuffer();
-                    entryValue.movePositionTo(entry.getValuePosition());
-                    switch(index.getElement()) {
+                    final ReadBuffer readBuffer = entry.asReadBuffer();
+                    readBuffer.movePositionTo(entry.getValuePosition());
+                    switch (index.getElement()) {
                         case VERTEX:
-                            results.add(IDHandler.readVertexId(entryValue, true));
+                            Object vertexId = IDHandler.readVertexId(readBuffer, true);
+                            results.add(new VertexWithInlineProps(vertexId,
+                                EntryArrayList.of(IndexRecordUtil.readInlineProperties(readBuffer)),
+                                inlineQueries,
+                                standardJanusGraphTx));
                             break;
                         default:
-                            results.add(bytebuffer2RelationId(entryValue));
+                            results.add(bytebuffer2RelationId(readBuffer));
                     }
                 }
             }

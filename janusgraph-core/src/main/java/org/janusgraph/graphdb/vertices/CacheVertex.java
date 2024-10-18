@@ -48,7 +48,7 @@ public class CacheVertex extends StandardVertex {
         return queryCache.get(query);
     }
 
-    protected void addToQueryCache(final SliceQuery query, final EntryList entries) {
+    public void addToQueryCache(final SliceQuery query, final EntryList entries) {
         synchronized (queryCache) {
             //TODO: become smarter about what to cache and when (e.g. memory pressure)
             queryCache.put(query, entries);

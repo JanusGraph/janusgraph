@@ -88,6 +88,7 @@ import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.MultiVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQuery;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
+import org.janusgraph.graphdb.query.vertex.VertexWithInlineProps;
 import org.janusgraph.graphdb.relations.RelationComparator;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.relations.RelationIdentifierUtils;
@@ -456,10 +457,15 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      */
 
     public InternalRelationType getOrLoadRelationTypeById(long typeId) {
-        assert relTypeCache != null;
-        return this.relTypeCache.computeIfAbsent(typeId, (k) ->
-            TypeUtil.getBaseType((InternalRelationType) this.getExistingRelationType(k))
-        );
+        if (relTypeCache == null) {
+            return loadRelationTypeById(typeId);
+        } else {
+            return this.relTypeCache.computeIfAbsent(typeId, this::loadRelationTypeById);
+        }
+    }
+
+    private InternalRelationType loadRelationTypeById(long typeId) {
+        return TypeUtil.getBaseType((InternalRelationType) this.getExistingRelationType(typeId));
     }
 
     /*
@@ -1125,7 +1131,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         return type!=null && type.isEdgeLabel();
     }
 
-    // this is critical path we can't allow anything heavier then assertion in here
+    // this is critical path we can't allow anything heavier than assertion in here
     @Override
     public RelationType getExistingRelationType(long typeId) {
         assert idInspector.isRelationTypeId(typeId);
@@ -1502,7 +1508,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                         final JointIndexQuery.Subquery adjustedQuery = subquery.updateLimit(limit);
                         try {
                             return indexCache.get(adjustedQuery,
-                                () -> QueryProfiler.profile(subquery.getProfiler(), adjustedQuery, q -> indexSerializer.query(q, txHandle).collect(Collectors.toList())));
+                                () -> QueryProfiler.profile(subquery.getProfiler(), adjustedQuery, q -> indexSerializer.query(q, txHandle, StandardJanusGraphTx.this).collect(Collectors.toList())));
                         } catch (Exception e) {
                             throw new JanusGraphException("Could not call index", e);
                         }
@@ -1510,7 +1516,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 }
                 // Constructs an iterator which lazily streams results from 1st index, and filters by looking up in the intersection of results from all other indices (if any)
                 // NOTE NO_LIMIT is passed to processIntersectingRetrievals to prevent incomplete intersections, which could lead to missed results
-                iterator = new SubqueryIterator(indexQuery.getQuery(0), indexSerializer, txHandle, indexCache, indexQuery.getLimit(), getConversionFunction(query.getResultType()),
+                iterator = new SubqueryIterator(indexQuery.getQuery(0), indexSerializer, txHandle, StandardJanusGraphTx.this, indexCache, indexQuery.getLimit(), getConversionFunction(query.getResultType()),
                         retrievals.isEmpty() ? null: QueryUtil.processIntersectingRetrievals(retrievals, Query.NO_LIMIT));
             } else {
                 if (config.hasForceIndexUsage()) throw new JanusGraphException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
@@ -1558,7 +1564,16 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     private final Function<Object, JanusGraphVertex> vertexIDConversionFct = id -> {
         Preconditions.checkNotNull(id);
-        return getInternalVertex(id);
+        if (id instanceof VertexWithInlineProps) {
+            VertexWithInlineProps v = (VertexWithInlineProps) id;
+            InternalVertex vertex = getInternalVertex(v.getVertexId());
+            if (vertex instanceof CacheVertex) {
+                v.getInlineProperties().forEach((sq, entryList) -> ((CacheVertex) vertex).addToQueryCache(sq, entryList));
+            }
+            return vertex;
+        } else {
+            return getInternalVertex(id);
+        }
     };
 
     private final Function<Object, JanusGraphEdge> edgeIDConversionFct = id -> {

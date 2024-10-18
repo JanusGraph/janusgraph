@@ -84,6 +84,13 @@ public interface JanusGraphIndex extends Index {
     PropertyKey[] getFieldKeys();
 
     /**
+     * Returns the inlined keys of this index.
+     *
+     * @return
+     */
+    String[] getInlineFieldKeys();
+
+    /**
      * Returns the parameters associated with an indexed key of this index. Parameters modify the indexing
      * behavior of the underlying indexing backend.
      *

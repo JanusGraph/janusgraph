@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.Multiplicity;
@@ -29,6 +30,7 @@ import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.TypeDefinitionDescription;
+import org.janusgraph.graphdb.types.indextype.IndexReferenceType;
 
 import java.util.Collections;
 
@@ -105,6 +107,11 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
         return Collections.singletonList(indexDef);
     }
 
+    @Override
+    public Iterable<IndexReferenceType> getKeyIndexesReferences() {
+        return Iterables.transform(getKeyIndexes(), indexType -> new IndexReferenceType(false, indexType));
+    }
+
     private final CompositeIndexType indexDef = new CompositeIndexType() {
 
         private final IndexField[] fields = {IndexField.of(BaseKey.this)};
@@ -128,6 +135,11 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
         @Override
         public IndexField[] getFieldKeys() {
             return fields;
+        }
+
+        @Override
+        public String[] getInlineFieldKeys() {
+            return CompositeIndexType.EMPTY_INLINE_PROPS;
         }
 
         @Override

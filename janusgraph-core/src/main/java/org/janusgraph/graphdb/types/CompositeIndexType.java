@@ -23,6 +23,8 @@ import org.janusgraph.core.schema.SchemaStatus;
 */
 public interface CompositeIndexType extends IndexType {
 
+    static final String[] EMPTY_INLINE_PROPS = new String[0];
+
     /**
      * @deprecated use longId()
      * @return return index id
@@ -31,6 +33,8 @@ public interface CompositeIndexType extends IndexType {
     long getID();
 
     IndexField[] getFieldKeys();
+
+    String[] getInlineFieldKeys();
 
     SchemaStatus getStatus();
 

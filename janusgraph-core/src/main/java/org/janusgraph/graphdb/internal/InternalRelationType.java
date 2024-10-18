@@ -20,6 +20,7 @@ import org.janusgraph.core.RelationType;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.types.IndexType;
+import org.janusgraph.graphdb.types.indextype.IndexReferenceType;
 
 /**
  * Internal Type interface adding methods that should only be used by JanusGraph
@@ -51,4 +52,6 @@ public interface InternalRelationType extends RelationType, InternalVertex {
     SchemaStatus getStatus();
 
     Iterable<IndexType> getKeyIndexes();
+
+    Iterable<IndexReferenceType> getKeyIndexesReferences();
 }
