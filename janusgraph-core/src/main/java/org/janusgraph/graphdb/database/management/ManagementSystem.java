@@ -724,7 +724,32 @@ public class ManagementSystem implements JanusGraphManagement {
         if (!key.isNew()) updateIndex(index, SchemaAction.REGISTER_INDEX);
     }
 
-    private JanusGraphIndex createCompositeIndex(String indexName, ElementCategory elementCategory, boolean unique, JanusGraphSchemaType constraint, PropertyKey... keys) {
+    @Override
+    public void addInlinePropertyKey(final JanusGraphIndex index, final PropertyKey key) {
+        Preconditions.checkArgument(index != null && key != null && index instanceof JanusGraphIndexWrapper
+            && !(key instanceof BaseKey), "Need to provide valid index and key");
+        IndexType indexType = ((JanusGraphIndexWrapper) index).getBaseIndex();
+        Preconditions.checkArgument(indexType instanceof CompositeIndexType, "Can only add keys to a composite index, not %s", index.name());
+        Preconditions.checkArgument(indexType instanceof IndexTypeWrapper && key instanceof JanusGraphSchemaVertex
+            && ((IndexTypeWrapper) indexType).getSchemaBase() instanceof JanusGraphSchemaVertex);
+
+        JanusGraphSchemaVertex indexVertex = (JanusGraphSchemaVertex) ((IndexTypeWrapper) indexType).getSchemaBase();
+
+        for (IndexField field : indexType.getFieldKeys())
+            Preconditions.checkArgument(!field.getFieldKey().equals(key), "Key [%s] has already been added to index %s", key.name(), index.name());
+
+        addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_INLINE_KEY, null);
+        updateSchemaVertex(indexVertex);
+        indexType.resetCache();
+
+        if (!indexVertex.isNew()) updatedTypes.add(indexVertex);
+    }
+
+    private JanusGraphIndex createCompositeIndex(String indexName, ElementCategory elementCategory,
+                                                 boolean unique,
+                                                 JanusGraphSchemaType constraint,
+                                                 Set<PropertyKey> inlineProps,
+                                                 PropertyKey... keys) {
         checkIndexName(indexName);
         Preconditions.checkArgument(keys != null && keys.length > 0, "Need to provide keys to index [%s]", indexName);
         Preconditions.checkArgument(!unique || elementCategory == ElementCategory.VERTEX, "Unique indexes can only be created on vertices [%s]", indexName);
@@ -756,6 +781,10 @@ public class ManagementSystem implements JanusGraphManagement {
             addSchemaEdge(indexVertex, keys[i], TypeDefinitionCategory.INDEX_FIELD, paras);
         }
 
+        for(PropertyKey propertyKey: inlineProps) {
+            addSchemaEdge(indexVertex, propertyKey, TypeDefinitionCategory.INDEX_INLINE_KEY, null);
+        }
+
         Preconditions.checkArgument(constraint == null || (elementCategory.isValidConstraint(constraint) && constraint instanceof JanusGraphSchemaVertex));
         if (constraint != null) {
             addSchemaEdge(indexVertex, (JanusGraphSchemaVertex) constraint, TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT, null);
@@ -779,6 +808,8 @@ public class ManagementSystem implements JanusGraphManagement {
         private JanusGraphSchemaType constraint = null;
         private final Map<PropertyKey, Parameter[]> keys = new HashMap<>();
 
+        private final Set<PropertyKey> inlinePropKeys = new HashSet<>();
+
         private IndexBuilder(String indexName, ElementCategory elementCategory) {
             this.indexName = indexName;
             this.elementCategory = elementCategory;
@@ -795,6 +826,13 @@ public class ManagementSystem implements JanusGraphManagement {
         public JanusGraphManagement.IndexBuilder addKey(PropertyKey key, Parameter... parameters) {
             Preconditions.checkArgument(key != null && (key instanceof PropertyKeyVertex), "Key must be a user defined key: %s", key);
             keys.put(key, parameters);
+            return this;
+        }
+
+        @Override
+        public JanusGraphManagement.IndexBuilder addInlinePropertyKey(PropertyKey key) {
+            Preconditions.checkArgument(key != null && (key instanceof PropertyKeyVertex), "Key must be a user defined key: %s", key);
+            inlinePropKeys.add(key);
             return this;
         }
 
@@ -821,13 +859,14 @@ public class ManagementSystem implements JanusGraphManagement {
                 Preconditions.checkArgument(entry.getValue() == null, "Cannot specify parameters for composite index: %s", entry.getKey());
                 keyArr[pos++] = entry.getKey();
             }
-            return createCompositeIndex(indexName, elementCategory, unique, constraint, keyArr);
+            return createCompositeIndex(indexName, elementCategory, unique, constraint, inlinePropKeys, keyArr);
         }
 
         @Override
         public JanusGraphIndex buildMixedIndex(String backingIndex) {
             Preconditions.checkArgument(StringUtils.isNotBlank(backingIndex), "Need to specify backing index name");
             Preconditions.checkArgument(!unique, "An external index cannot be unique");
+            Preconditions.checkArgument(inlinePropKeys.isEmpty(), "An external index cannot contain inline properties");
 
             JanusGraphIndex index = createMixedIndex(indexName, elementCategory, constraint, backingIndex);
             for (Map.Entry<PropertyKey, Parameter[]> entry : keys.entrySet()) {

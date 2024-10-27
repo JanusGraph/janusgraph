@@ -323,6 +323,44 @@ index with label restriction is defined as unique, the uniqueness
 constraint only applies to properties on vertices or edges for the
 specified label.
 
+### Inlining vertex properties into a Composite Index
+
+Inlining vertex properties into a Composite Index structure can offer significant performance and efficiency benefits.
+
+1. **Performance Improvements**
+Faster Querying: Inlining vertex properties directly within the index allows the search engine to retrieve all relevant data from the index itself. 
+This means, queries don’t need to make additional calls to data stores to fetch full vertex information, significantly reducing lookup time.
+
+2. **Data Locality**
+In distributed storages, having inlined properties ensures that more complete data exists within individual partitions or shards.
+This reduces cross-node network calls and improves the overall query performance by ensuring data is more local to the request being processed.
+
+3. **Cost of Indexing vs. Storage Trade-off**
+While inlining properties increases the size of the index (potentially leading to more extensive index storage requirements), 
+it is often a worthwhile trade-off for performance, mainly when query speed is critical. 
+This is a typical pattern in systems optimized for read-heavy workloads.
+
+#### Usage
+In order to take advantage of the inlined properties feature, JanusGraph Transaction should be set to use `.propertyPrefetching(false)`
+
+Example:
+
+```groovy
+//Build index
+mgmt.buildIndex("composite", Vertex.class)
+    .addKey(idKey)
+    .addInlinePropertyKey(nameKey)
+    .buildCompositeIndex()
+mgmt.commit()
+
+//Query
+tx = graph.buildTransaction()
+    .propertyPrefetching(false) //this is important
+    .start()
+
+tx.traversal().V().has("id", 100).next().value("name")
+```
+
 ### Composite versus Mixed Indexes
 
 1.  Use a composite index for exact match index retrievals. Composite

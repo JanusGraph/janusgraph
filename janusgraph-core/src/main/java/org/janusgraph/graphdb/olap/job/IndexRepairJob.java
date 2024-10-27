@@ -200,7 +200,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                     while (elements.hasNext()) {
                         JanusGraphElement element = elements.next();
                         Set<IndexUpdate<StaticBuffer,Entry>> updates =
-                                indexSerializer.reindexElement(element, (CompositeIndexType) indexType);
+                                indexSerializer.reindexElement(element, (CompositeIndexType) indexType, writeTx);
                         for (IndexUpdate<StaticBuffer,Entry> update : updates) {
                             log.debug("Mutating index {}: {}", indexType, update.getEntry());
                             mutator.mutateIndex(update.getKey(), new ArrayList<Entry>(1){{add(update.getEntry());}}, KCVSCache.NO_DELETIONS);

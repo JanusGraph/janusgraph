@@ -18,6 +18,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphRelation;
@@ -30,8 +33,10 @@ import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.util.HashingUtil;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.database.IndexRecordEntry;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.idhandling.IDHandler;
@@ -47,6 +52,7 @@ import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.olap.QueryContainer;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -56,13 +62,17 @@ import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
 import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.graphdb.types.TypeInspector;
 import org.janusgraph.util.IDUtils;
 import org.janusgraph.util.encoding.LongEncoding;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static org.janusgraph.util.encoding.LongEncoding.STRING_ENCODING_MARKER;
 
@@ -166,9 +176,9 @@ public class IndexRecordUtil {
         return new StandardKeyInformation(field.getFieldKey(),field.getParameters());
     }
 
-    public static IndexMutationType getUpdateType(InternalRelation relation) {
+    public static IndexMutationType getUpdateType(InternalRelation relation, boolean isInlined) {
         assert relation.isNew() || relation.isRemoved();
-        return (relation.isNew()? IndexMutationType.ADD : IndexMutationType.DELETE);
+        return isInlined ? IndexMutationType.UPDATE : (relation.isNew() ? IndexMutationType.ADD : IndexMutationType.DELETE);
     }
 
     public static boolean indexAppliesTo(IndexType index, JanusGraphElement element) {
@@ -275,10 +285,18 @@ public class IndexRecordUtil {
     }
 
 
-    private static Entry getIndexEntry(CompositeIndexType index, IndexRecordEntry[] record, JanusGraphElement element, Serializer serializer) {
-        final DataOutput out = serializer.getDataOutput(1+8+8*record.length+4*8);
+    private static Entry getIndexEntry(CompositeIndexType index, IndexRecordEntry[] record,
+                                       JanusGraphElement element,
+                                       Serializer serializer,
+                                       TypeInspector typeInspector,
+                                       EdgeSerializer edgeSerializer) {
+
+        List<Entry> inlineProperties = getInlineProperties(element, index, typeInspector, edgeSerializer);
+        int inlinePropertiesSize = getInlinePropertiesSize(inlineProperties);
+
+        final DataOutput out = serializer.getDataOutput(1 + 8 + 8 * record.length + 4 * 8 + inlinePropertiesSize);
         out.putByte(FIRST_INDEX_COLUMN_BYTE);
-        if (index.getCardinality()!=Cardinality.SINGLE) {
+        if (index.getCardinality() != Cardinality.SINGLE) {
             if (element instanceof JanusGraphVertex) {
                 IDHandler.writeVertexId(out, element.id(), true);
             } else {
@@ -286,18 +304,19 @@ public class IndexRecordUtil {
                 assert ((JanusGraphRelation) element).longId() == ((RelationIdentifier) element.id()).getRelationId();
                 VariableLong.writePositive(out, ((JanusGraphRelation) element).longId());
             }
-            if (index.getCardinality()!=Cardinality.SET) {
+            if (index.getCardinality() != Cardinality.SET) {
                 for (final IndexRecordEntry re : record) {
                     VariableLong.writePositive(out, re.getRelationId());
                 }
             }
         }
-        final int valuePosition=out.getPosition();
+        final int valuePosition = out.getPosition();
         if (element instanceof JanusGraphVertex) {
             IDHandler.writeVertexId(out, element.id(), true);
+            writeInlineProperties(inlineProperties, out);
         } else {
             assert element instanceof JanusGraphRelation;
-            final RelationIdentifier rid = (RelationIdentifier)element.id();
+            final RelationIdentifier rid = (RelationIdentifier) element.id();
             VariableLong.writePositive(out, rid.getRelationId());
             IDHandler.writeVertexId(out, rid.getOutVertexId(), true);
             VariableLong.writePositive(out, rid.getTypeId());
@@ -305,7 +324,7 @@ public class IndexRecordUtil {
                 IDHandler.writeVertexId(out, rid.getInVertexId(), true);
             }
         }
-        return new StaticArrayEntry(out.getStaticBuffer(),valuePosition);
+        return new StaticArrayEntry(out.getStaticBuffer(), valuePosition);
     }
 
     public static StaticBuffer getIndexKey(CompositeIndexType index, IndexRecordEntry[] record, Serializer serializer, boolean hashKeys, HashingUtil.HashLength hashLength) {
@@ -339,14 +358,79 @@ public class IndexRecordUtil {
     }
 
     public static IndexUpdate<StaticBuffer, Entry> getCompositeIndexUpdate(CompositeIndexType index, IndexMutationType indexMutationType, IndexRecordEntry[] record,
-                                                                           JanusGraphElement element, Serializer serializer, boolean hashKeys, HashingUtil.HashLength hashLength){
+                                                                           JanusGraphElement element,
+                                                                           Serializer serializer,
+                                                                           TypeInspector typeInspector,
+                                                                           EdgeSerializer edgeSerializer,
+                                                                           boolean hashKeys,
+                                                                           HashingUtil.HashLength hashLength){
         return new IndexUpdate<>(index, indexMutationType,
             getIndexKey(index, record, serializer, hashKeys, hashLength),
-            getIndexEntry(index, record, element, serializer), element);
+            getIndexEntry(index, record, element, serializer, typeInspector, edgeSerializer), element);
     }
 
     public static IndexUpdate<String, IndexEntry> getMixedIndexUpdate(JanusGraphElement element, PropertyKey key, Object value,
                                                                       MixedIndexType index, IndexMutationType updateType)  {
         return new IndexUpdate<>(index, updateType, element2String(element), new IndexEntry(key2Field(index.getField(key)), value), element);
+    }
+
+    public static int getInlinePropertiesSize(List<Entry> inlineProperties) {
+        return inlineProperties.size() * Integer.BYTES * 2 + inlineProperties.stream().mapToInt(StaticBuffer::length).sum();
+    }
+
+    public static void writeInlineProperties(List<Entry> inlineProperties, DataOutput out) {
+        inlineProperties.forEach(entry -> {
+            out.putInt(entry.length());
+            out.putInt(entry.getValuePosition());
+            out.putBytes(entry);
+        });
+    }
+
+    public static Iterable<Entry> readInlineProperties(ReadBuffer readBuffer) {
+
+        return () -> new Iterator<Entry>() {
+            @Override
+            public boolean hasNext() {
+                return readBuffer.hasRemaining();
+            }
+
+            @Override
+            public Entry next() {
+                int entryDataSize = readBuffer.getInt();
+                int valuePos = readBuffer.getInt();
+                byte[] entryBytes = readBuffer.getBytes(entryDataSize);
+                return new StaticArrayEntry(entryBytes, valuePos);
+            }
+        };
+    }
+
+    public static List<Entry> getInlineProperties(JanusGraphElement element,
+                                                  CompositeIndexType index,
+                                                  TypeInspector typeInspector,
+                                                  EdgeSerializer edgeSerializer) {
+        if (element instanceof JanusGraphVertex && index.getInlineFieldKeys().length != 0 && !element.isRemoved()) {
+            Iterator<VertexProperty<Object>> props = ((JanusGraphVertex) element).properties(index.getInlineFieldKeys());
+            return IteratorUtils.list(IteratorUtils.map(props,
+                prop -> edgeSerializer.writeRelation((InternalRelation) prop, 0, typeInspector)));
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    public static Map<String, SliceQuery> getInlinePropertiesQueries(CompositeIndexType index, StandardJanusGraphTx tx) {
+        if (index.getInlineFieldKeys().length == 0) {
+            return Collections.emptyMap();
+        } else {
+
+            Map<String, SliceQuery> result = new HashMap<>(index.getInlineFieldKeys().length);
+            for(String inlineKey: index.getInlineFieldKeys()) {
+                QueryContainer qc = new QueryContainer(tx);
+                qc.addQuery().direction(Direction.OUT).keys(inlineKey).properties();
+                List<SliceQuery> sliceQueries = qc.getSliceQueries();
+                assert sliceQueries.size() == 1;
+                result.put(inlineKey, sliceQueries.get(0));
+            }
+            return result;
+        }
     }
 }

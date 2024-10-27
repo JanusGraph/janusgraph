@@ -98,6 +98,23 @@ For more information on features and bug fixes in 1.1.0, see the GitHub mileston
 * [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v1.1.0/janusgraph-1.1.0.zip)
 * [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v1.1.0/janusgraph-full-1.1.0.zip)
 
+##### Upgrade Instructions
+
+##### Inlining vertex properties into a Composite Index
+
+Inlining vertex properties into a Composite Index structure can offer significant performance and efficiency benefits.
+See [documentation](./schema/index-management/index-performance.md#inlining-vertex-properties-into-a-composite-index) on how to inline vertex properties into a composite index.
+
+**Important Notes on Compatibility**
+
+1. **Backward Incompatibility**
+   Once a JanusGraph instance adopts this new schema feature, it cannot be rolled back to a prior version of JanusGraph.
+   The changes in the schema structure are not compatible with earlier versions of the system.
+
+2. **Migration Considerations**
+   It is critical that users carefully plan their migration to this new version, as there is no automated or manual rollback process
+   to revert to an older version of JanusGraph once this feature is used.
+
 ### Version 1.0.1 (Release Date: ???)
 
 /// tab | Maven

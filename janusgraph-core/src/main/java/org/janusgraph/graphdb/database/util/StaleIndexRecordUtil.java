@@ -24,6 +24,7 @@ import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.util.HashingUtil;
+import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.database.IndexRecordEntry;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.index.IndexMutationType;
@@ -333,6 +334,7 @@ public class StaleIndexRecordUtil {
         verifyIndexIsComposite(index);
 
         Serializer serializer = graph.getDataSerializer();
+        EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
         boolean hashKeys = graph.getIndexSerializer().isHashKeys();
         HashingUtil.HashLength hashLength = graph.getIndexSerializer().getHashLength();
 
@@ -340,18 +342,20 @@ public class StaleIndexRecordUtil {
 
         CompositeIndexType compositeIndexType = (CompositeIndexType) indexSchemaVertex.asIndexType();
 
+        StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
+        BackendTransaction transaction = tx.getTxHandle();
+
         IndexUpdate<StaticBuffer, Entry> update = IndexRecordUtil.getCompositeIndexUpdate(
             compositeIndexType,
             IndexMutationType.DELETE,
             indexRecord,
             elementToRemoveFromIndex,
             serializer,
+            tx,
+            edgeSerializer,
             hashKeys,
             hashLength
         );
-
-        StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
-        BackendTransaction transaction = tx.getTxHandle();
 
         try{
             transaction.mutateIndex(update.getKey(), Collections.emptyList(), Collections.singletonList(update.getEntry()));
