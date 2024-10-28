@@ -178,9 +178,9 @@ public interface CQLConfigOptions {
     ConfigOption<String> CF_COMPRESSION_TYPE = new ConfigOption<>(
             CQL_NS,
             "compression-type",
-            "The sstable_compression value JanusGraph uses when creating column families. " +
-                    "This accepts any value allowed by Cassandra's sstable_compression option. " +
-                    "Leave this unset to disable sstable_compression on JanusGraph-created CFs.",
+            "The compression class value JanusGraph uses when creating column families. " +
+                    "This accepts any value allowed by Cassandra's compression class option. " +
+                    "Leave this unset to disable compression on JanusGraph-created CFs.",
             ConfigOption.Type.MASKABLE,
             "LZ4Compressor");
 
