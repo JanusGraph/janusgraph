@@ -56,7 +56,7 @@
     </distributionManagement>
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
-        <tinkerpop.version>3.7.2</tinkerpop.version>
+        <tinkerpop.version>3.7.3</tinkerpop.version>
         <avro.version>1.11.3</avro.version>
         <junit-platform.version>1.11.0</junit-platform.version>
         <junit.version>5.11.0</junit.version>
