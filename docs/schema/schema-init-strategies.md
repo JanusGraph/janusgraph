@@ -405,9 +405,9 @@ Following the rules above (defined in `JSON Schema Format`) an example of JSON s
 Currently, JSON schema initialization flow is simple and doesn't include any schema update or schema migration features. 
 The flow is split on multiple phases:
 
-1) Creation of simple elements: `PropertyKey`, `VertexLabel`, `EdgeLabel`.
-2) Creation of indices: Composite indexes, Vertex-centric Edge indexes, Vertex-centric Property indexes, Mixed indexes.
-3) Indexes activation phase (configured via `schema.init.json.indices-activation`).
+1. Creation of simple elements: `PropertyKey`, `VertexLabel`, `EdgeLabel`.
+2. Creation of indices: Composite indexes, Vertex-centric Edge indexes, Vertex-centric Property indexes, Mixed indexes.
+3. Indexes activation phase (configured via `schema.init.json.indices-activation`).
 
 !!! note
     Current implementation of JSON schema importer only creates elements, but it never updates them even if you change 
