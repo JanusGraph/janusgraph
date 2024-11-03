@@ -41,8 +41,10 @@ provides links to documentation, getting-started guides and release downloads.
 
 ## Visualization
 
-To visualize graphs stored in JanusGraph, you can use any of the following
-tools:
+JanusGraph has a web-based graph visualizer located in [janusgraph-visualizer](https://github.com/JanusGraph/janusgraph-visualizer) 
+repository. 
+
+In additional to the web-based graph visualizer, JanusGraph supports a range of third party graph visualizers listed below:
 
 * [Arcade Analytics](https://arcadeanalytics.com/usermanual/#arcade-analytics)
 * [Cytoscape](https://www.cytoscape.org/)
@@ -51,7 +53,7 @@ tools:
 * [Graphexp](https://github.com/bricaud/graphexp)
 * [Graph Explorer](https://github.com/invanalabs/graph-explorer)
 * [Graphlytic](https://graphlytic.com/)
-* [Gremlin-Visualizer](https://github.com/prabushitha/gremlin-visualizer)
+* [Gremlin-Visualizer](https://github.com/prabushitha/gremlin-visualizer) - the original repository on which [JanusGraph-Visualizer](https://github.com/JanusGraph/janusgraph-visualizer) is based on.
 * [G.V() - Gremlin IDE](https://gdotv.com)
 * [KeyLines by Cambridge Intelligence](https://cambridge-intelligence.com/keylines/janusgraph/)
 * [Ogma by Linkurious](https://doc.linkurious.com/ogma/latest/tutorials/janusgraph/)
