@@ -49,6 +49,54 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 
 ## Release Notes
 
+### Version 1.0.1 (Release Date: ???)
+
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>1.0.1</version>
+</dependency>
+```
+///
+
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:1.0.1"
+```
+///
+
+**Tested Compatibility:**
+
+* Apache Cassandra 3.11.10, 4.0.6
+* Apache HBase 2.5.0
+* Oracle BerkeleyJE 7.5.11
+* ScyllaDB 5.1.4
+* Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.10.4
+* Apache Lucene 8.11.1
+* Apache Solr 8.11.1
+* Apache TinkerPop 3.7.3
+* Java 8, 11
+
+**Installed versions in the Pre-Packaged Distribution:**
+
+* Cassandra 4.0.6
+* Elasticsearch 7.14.0
+
+#### Changes
+
+For more information on features and bug fixes in 1.0.1, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/28?closed=1>
+
+#### Assets
+
+* [JavaDoc](https://javadoc.io/doc/org.janusgraph/janusgraph-core/1.0.1)
+* [GitHub Release](https://github.com/JanusGraph/janusgraph/releases/tag/v1.0.1)
+* [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v1.0.1/janusgraph-1.0.1.zip)
+* [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v1.0.1/janusgraph-full-1.0.1.zip)
+
 ### Version 1.0.0 (Release Date: October 21, 2023)
 
 /// tab | Maven
