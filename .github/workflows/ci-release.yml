@@ -108,14 +108,23 @@ jobs:
           export JG_VER="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)-$(git rev-parse --short HEAD)"
           echo "JG_VER=${JG_VER}" >> $GITHUB_ENV
       - name: Run Trivy vulnerability scanner
+        id: trivy_scan_step
         if: github.repository == 'janusgraph/janusgraph'
-        uses: aquasecurity/trivy-action@0.24.0
+        # TODO: currently this step is tentative because of the rate-limiting issue.
+        # Thus, we add `continue-on-error: true` here, but we should remove it
+        # when either the issue is fixed (see: https://github.com/aquasecurity/trivy-action/issues/389)
+        # or we self-host trivy database.
+        uses: aquasecurity/trivy-action@0.28.0
+        continue-on-error: true
         with:
           image-ref: 'ghcr.io/janusgraph/janusgraph:${{ env.JG_VER }}${{ matrix.tag_suffix }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTIONS_RUNTIME_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload Trivy scan results to GitHub Security tab
-        if: github.repository == 'janusgraph/janusgraph'
+        if: github.repository == 'janusgraph/janusgraph' && success() && steps.trivy_scan_step.outcome == 'success'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
