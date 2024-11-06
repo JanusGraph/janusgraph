@@ -49,7 +49,7 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 
 ## Release Notes
 
-### Version 1.0.1 (Release Date: ???)
+### Version 1.0.1 (Release Date: November 6, 2024)
 
 /// tab | Maven
 ```xml
