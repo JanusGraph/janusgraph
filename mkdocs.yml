@@ -95,10 +95,10 @@ extra:
       link: https://lists.lfaidata.foundation/g/janusgraph-users
     - icon: fontawesome/solid/envelope
       link: https://lists.lfaidata.foundation/g/janusgraph-dev
-  latest_version: 1.0.0
+  latest_version: 1.1.0
   snapshot_version: 1.1.0-SNAPSHOT
   tinkerpop_version: 3.7.3
-  hadoop_version: 3.3.5
+  hadoop_version: 3.3.6
 
 markdown_extensions:
   - pymdownx.superfences

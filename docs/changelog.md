@@ -50,7 +50,7 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 
 ## Release Notes
 
-### Version 1.1.0 (Release Date: ???)
+### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven
 ```xml
@@ -154,7 +154,36 @@ To disable the `drop()` step optimization and maintain the previous behavior, us
 query.batch.drop-step-mode=none
 ```
 
-### Version 1.0.1 (Release Date: ???)
+##### Lazy Loading for Relations
+
+The new transaction configuration option is added `lazyLoadRelations()` which sets lazy-load for all properties and edges 
+of the vertex. If enabled, then ids and values are deserialized upon demand.  
+When enabled, it can lead to a performance improvement on large-scale read operations, if only certain types of relations are being read from the vertex.  
+See performance comparison in [GitHub PR #4343](https://github.com/JanusGraph/janusgraph/pull/4343/#issuecomment-2079839853).
+
+##### Text predicates support extended for remote connections
+
+The following text predicates can now be used with remote connections:
+
+* textNotContains
+* textNotContainsFuzzy
+* textNotContainsPrefix
+* textNotContainsRegex
+* textContainsPhrase
+* textNotContainsPhrase
+* textNotFuzzy
+* textNotPrefix
+* textNotRegex
+
+##### Vertex mutation optimizations
+
+The following improvements are made for adding new vertex or updating vertex properties:
+
+* Improved operations to detect vertex changes during transaction-commit from O(N) to O(1);
+* Optimizing properties search by key for newly-created vertex;
+* Optimizing previous property/edge search during vertex update;
+
+### Version 1.0.1 (Release Date: November 6, 2024)
 
 /// tab | Maven
 ```xml
@@ -178,10 +207,10 @@ compile "org.janusgraph:janusgraph-core:1.0.1"
 * Apache HBase 2.5.8
 * Oracle BerkeleyJE 7.5.11
 * ScyllaDB 5.1.4
-* Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.10.4
+* Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.15.3
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
-* Apache TinkerPop 3.7.0
+* Apache TinkerPop 3.7.3
 * Java 8, 11
 
 **Installed versions in the Pre-Packaged Distribution:**
