@@ -183,6 +183,8 @@ The following improvements are made for adding new vertex or updating vertex pro
 * Optimizing properties search by key for newly-created vertex;
 * Optimizing previous property/edge search during vertex update;
 
+For more information see [GitHub PR #4292](https://github.com/JanusGraph/janusgraph/pull/4292)
+
 ### Version 1.0.1 (Release Date: November 6, 2024)
 
 /// tab | Maven
