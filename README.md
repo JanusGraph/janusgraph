@@ -14,6 +14,7 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [![Mentioned in Awesome Bigtable][awesome-shield]][awesome-link]
 [![CII Best Practices][bestpractices-shield]][bestpractices-link]
 [![Codacy Badge][codacy-shield]][codacy-link]
+[![Gurubase][gurubase-shield]][gurubase-link]
 
 [actions-shield]: https://img.shields.io/github/actions/workflow/status/JanusGraph/janusgraph/ci-core.yml?branch=master
 [actions-link]: https://github.com/JanusGraph/janusgraph/actions
@@ -32,6 +33,8 @@ can support thousands of concurrent users, complex traversals, and analytic grap
 [codecov-shield]:https://codecov.io/gh/JanusGraph/janusgraph/branch/master/graph/badge.svg
 [codecov-link]:https://codecov.io/gh/JanusGraph/janusgraph
 [docker-pulls-img]: https://img.shields.io/docker/pulls/janusgraph/janusgraph.svg
+[gurubase-shield]: https://img.shields.io/badge/Gurubase-Ask%20JanusGraph%20Guru-006BFF
+[gurubase-link]: https://gurubase.io/g/janusgraph
 [docker-hub-url]: https://hub.docker.com/r/janusgraph/janusgraph
 
 ## Learn More
