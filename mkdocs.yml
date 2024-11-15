@@ -95,7 +95,7 @@ extra:
     - icon: fontawesome/solid/envelope
       link: https://lists.lfaidata.foundation/g/janusgraph-dev
   latest_version: 1.0.1
-  snapshot_version: 1.0.1-SNAPSHOT
+  snapshot_version: 1.0.2-SNAPSHOT
   tinkerpop_version: 3.7.3
   hadoop_version: 3.3.6
 
