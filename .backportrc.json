@@ -1,7 +1,7 @@
 {
     "repoOwner": "janusgraph",
     "repoName": "janusgraph",
-    "targetBranchChoices": ["v1.0"],
+    "targetBranchChoices": ["v1.1"],
     "branchLabelMapping": {
       "^backport/(.+)$": "$1"
     },
