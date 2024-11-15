@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -180,6 +181,10 @@ public interface KeyColumnValueStore {
      *             transactions or a locking-specific storage problem
      */
     void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException;
+
+    default KeyIterator getKeys(final List<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh) throws BackendException {
+        throw new NotImplementedException();
+    }
 
     /**
      * Returns a {@link KeyIterator} over all keys that fall within the key-range specified by the given query and have one or more columns matching the column-range.
