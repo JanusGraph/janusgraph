@@ -11,7 +11,7 @@ updates:
       patterns:
         - "org.junit.*"
   labels:
-    - "backport/v1.0"
+    - "backport/v1.1"
     - "dependencies"
     - "java"
 
