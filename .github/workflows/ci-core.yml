@@ -139,7 +139,7 @@ jobs:
         with:
           name: jacoco-reports-${{ matrix.module }}-java-${{ matrix.java }}
           path: target/jacoco-combined.exec
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
