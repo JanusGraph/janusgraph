@@ -22,5 +22,5 @@ updates:
     time: "11:00"
   open-pull-requests-limit: 10
   labels:
-    - "backport/v1.0"
+    - "backport/v1.1"
     - "dependencies"
