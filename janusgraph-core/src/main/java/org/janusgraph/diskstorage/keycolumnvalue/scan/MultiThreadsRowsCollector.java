@@ -61,6 +61,7 @@ class MultiThreadsRowsCollector extends RowsCollector {
     private final StoreTransaction storeTx;
     private final List<SliceQuery> queries;
     private final Predicate<StaticBuffer> keyFilter;
+    private final List<StaticBuffer> keysToScan;
     private final Configuration graphConfiguration;
     private final DataPuller[] pullThreads;
     private final BlockingQueue<SliceResult>[] dataQueues;
@@ -72,6 +73,7 @@ class MultiThreadsRowsCollector extends RowsCollector {
         StoreTransaction storeTx,
         List<SliceQuery> queries,
         Predicate<StaticBuffer> keyFilter,
+        List<StaticBuffer> keysToScan,
         BlockingQueue<Row> rowQueue,
         Configuration graphConfiguration) throws BackendException {
 
@@ -80,6 +82,7 @@ class MultiThreadsRowsCollector extends RowsCollector {
         this.storeTx = storeTx;
         this.queries = queries;
         this.keyFilter = keyFilter;
+        this.keysToScan = keysToScan;
         this.graphConfiguration = graphConfiguration;
 
         this.dataQueues = new BlockingQueue[queries.size()];
@@ -189,8 +192,14 @@ class MultiThreadsRowsCollector extends RowsCollector {
             this.graphConfiguration.get(GraphDatabaseConfiguration.PAGE_SIZE));
         dataQueues[pos] = queue;
 
-        DataPuller dp = new DataPuller(sq, queue,
-            KCVSUtil.getKeys(store,sq,storeFeatures, MAX_KEY_LENGTH,stx), keyFilter);
+        KeyIterator keyIterator;
+        if (keysToScan != null) {
+            keyIterator = store.getKeys(keysToScan, sq, stx);
+        } else {
+            keyIterator = KCVSUtil.getKeys(store, sq, storeFeatures, MAX_KEY_LENGTH, stx);
+        }
+
+        DataPuller dp = new DataPuller(sq, queue, keyIterator, keyFilter);
         pullThreads[pos] = dp;
         dp.setName("data-puller-" + pos); // setting the name for thread dumps!
         dp.start();

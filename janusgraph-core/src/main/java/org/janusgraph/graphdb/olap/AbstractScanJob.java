@@ -28,7 +28,7 @@ import org.janusgraph.graphdb.types.system.BaseKey;
 public abstract class AbstractScanJob implements ScanJob {
     protected final GraphProvider graph;
     protected StandardJanusGraphTx tx;
-    private IDManager idManager;
+    protected IDManager idManager;
 
     public AbstractScanJob(JanusGraph graph) {
         this.graph = new GraphProvider();

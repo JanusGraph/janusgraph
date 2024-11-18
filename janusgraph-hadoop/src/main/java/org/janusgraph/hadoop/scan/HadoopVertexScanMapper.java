@@ -36,7 +36,7 @@ public class HadoopVertexScanMapper extends HadoopScanMapper {
         VertexScanJob vertexScan = getVertexScanJob(scanConf);
         ModifiableConfiguration graphConf = getJanusGraphConfiguration(context);
         graph = JanusGraphFactory.open(graphConf);
-        job = VertexJobConverter.convert(graph, vertexScan);
+        job = VertexJobConverter.convert(graph, vertexScan, null);
         metrics = new HadoopContextScanMetrics(context);
         finishSetup(scanConf, graphConf);
     }
