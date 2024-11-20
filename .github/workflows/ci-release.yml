@@ -114,7 +114,7 @@ jobs:
         # Thus, we add `continue-on-error: true` here, but we should remove it
         # when either the issue is fixed (see: https://github.com/aquasecurity/trivy-action/issues/389)
         # or we self-host trivy database.
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
         continue-on-error: true
         with:
           image-ref: 'ghcr.io/janusgraph/janusgraph:${{ env.JG_VER }}${{ matrix.tag_suffix }}'
