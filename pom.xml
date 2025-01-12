@@ -67,7 +67,7 @@
         <logback.version>1.2.13</logback.version>
         <httpcomponents.httpclient.version>4.5.14</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.16</httpcomponents.httpcore.version>
-        <hadoop.version>3.3.6</hadoop.version>
+        <hadoop.version>3.4.1</hadoop.version>
         <hbase2.version>2.6.0-hadoop3</hbase2.version>
         <htrace.version>4.1.7</htrace.version>
         <bigtable.version>1.24.0</bigtable.version>
