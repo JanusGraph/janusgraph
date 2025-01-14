@@ -166,6 +166,18 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
+    public KeyIterator getKeys(final List<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh) throws BackendException {
+        return runWithMetrics(txh, metricsStoreName, M_GET_KEYS, () -> {
+            final KeyIterator ki = backend.getKeys(keys, query, txh);
+            if (txh.getConfiguration().hasGroupName()) {
+                return MetricInstrumentedIterator.of(ki, txh.getConfiguration().getGroupName(), metricsStoreName, M_GET_KEYS, M_ITERATOR);
+            } else {
+                return ki;
+            }
+        });
+    }
+
+    @Override
     public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws BackendException {
         return runWithMetrics(txh, metricsStoreName, M_GET_KEYS, () -> {
             final KeyIterator ki = backend.getKeys(query, txh);

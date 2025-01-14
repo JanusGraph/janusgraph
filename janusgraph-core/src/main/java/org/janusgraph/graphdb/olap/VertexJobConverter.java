@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -50,23 +51,31 @@ public class VertexJobConverter extends AbstractScanJob {
 
     protected final VertexScanJob job;
 
+    protected final List<Object> vertexIdsToScan;
+
     protected VertexJobConverter(JanusGraph graph, VertexScanJob job) {
+        this(graph, job, null);
+    }
+
+    protected VertexJobConverter(JanusGraph graph, VertexScanJob job, List<Object> vertexIdsToScan) {
         super(graph);
         Preconditions.checkArgument(job!=null);
         this.job = job;
+        this.vertexIdsToScan = vertexIdsToScan;
     }
 
     protected VertexJobConverter(VertexJobConverter copy) {
         super(copy);
         this.job = copy.job.clone();
+        this.vertexIdsToScan = copy.vertexIdsToScan;
     }
 
-    public static ScanJob convert(JanusGraph graph, VertexScanJob vertexJob) {
-        return new VertexJobConverter(graph,vertexJob);
+    public static ScanJob convert(JanusGraph graph, VertexScanJob vertexJob, List<Object> vertexIdsToScan) {
+        return new VertexJobConverter(graph, vertexJob, vertexIdsToScan);
     }
 
     public static ScanJob convert(VertexScanJob vertexJob) {
-        return new VertexJobConverter(null,vertexJob);
+        return new VertexJobConverter(null, vertexJob, null);
     }
 
     @Override
@@ -127,6 +136,18 @@ public class VertexJobConverter extends AbstractScanJob {
         } catch (Throwable e) {
             close();
             throw e;
+        }
+    }
+
+    @Override
+    public List<StaticBuffer> getKeysToScan() {
+        if (this.vertexIdsToScan == null) {
+            return null;
+        } else {
+            return this.vertexIdsToScan
+                .stream()
+                .map(k -> idManager.getKey(k))
+                .collect(Collectors.toList());
         }
     }
 
