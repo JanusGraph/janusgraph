@@ -19,6 +19,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import io.github.artsok.RepeatedIfExceptionsTest;
+import org.apache.commons.codec.DecoderException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -96,6 +97,8 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggSte
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.types.CompositeIndexType;
+import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
@@ -4345,5 +4348,38 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 graph.traversal().V().has(namePropKeyStr, nameValue).limit(limit).count().next()
             );
         }
+    }
+
+    @Test
+    public void testGetIndexInfo() throws DecoderException {
+
+        clopen();
+
+        mgmt.makeVertexLabel("cat").make();
+
+        makeKey("id", Integer.class);
+        final PropertyKey nameKey = makeKey("name", String.class);
+
+        String indexName = "searchByName";
+        mgmt.buildIndex(indexName, Vertex.class)
+            .addKey(nameKey)
+            .buildCompositeIndex();
+        mgmt.commit();
+
+        mgmt = graph.openManagement();
+
+        Map<String, Object> fieldValues = new HashMap<>();
+        fieldValues.put("name", "someName");
+
+        String hexString = mgmt.getIndexKey(indexName, fieldValues);
+        CompositeIndexType indexType = mgmt.getIndexInfo(hexString);
+
+        IndexField[] indexFields = new IndexField[1];
+        indexFields[0] = IndexField.of(nameKey);
+
+        assertEquals(indexName, indexType.getName());
+        assertEquals(1, indexType.getFieldKeys().length);
+        assertEquals(nameKey, indexType.getFieldKeys()[0].getFieldKey());
+        assertEquals(0, indexType.getInlineFieldKeys().length);
     }
 }
