@@ -114,6 +114,14 @@ public interface ScanJob extends Cloneable {
     List<SliceQuery> getQueries();
 
     /**
+     * Get keys to scan by the job. If stream is empty, all keys will be scanned.
+     * @return
+     */
+    default List<StaticBuffer> getKeysToScan() {
+        return null;
+    }
+
+    /**
      * A predicate that determines whether
      * {@link #process(org.janusgraph.diskstorage.StaticBuffer, java.util.Map, ScanMetrics)}
      * should be invoked for the given key.  If the predicate returns true,

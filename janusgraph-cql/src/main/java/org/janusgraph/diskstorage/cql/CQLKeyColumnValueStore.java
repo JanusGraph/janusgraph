@@ -121,12 +121,12 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     public static final Function<? super Throwable, BackendException> EXCEPTION_MAPPER = cause -> {
         cause = CompletableFutureUtil.unwrapExecutionException(cause);
-        if(cause instanceof InterruptedException || cause.getCause() instanceof InterruptedException){
+        if (cause instanceof InterruptedException || cause.getCause() instanceof InterruptedException) {
             Thread.currentThread().interrupt();
             return new PermanentBackendException(cause instanceof InterruptedException ? cause : cause.getCause());
         }
-        if(cause instanceof BackendException){
-            return (BackendException) cause;
+        if (cause instanceof BackendException || cause.getCause() instanceof BackendException) {
+            return (BackendException) (cause instanceof BackendException ? cause : cause.getCause());
         }
         return Match(cause).of(
             Case($(instanceOf(QueryValidationException.class)), PermanentBackendException::new),
@@ -477,6 +477,17 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         if (!hasLocking) {
             throw new UnsupportedOperationException(String.format("%s doesn't support locking", getClass()));
         }
+    }
+
+    @Override
+    public KeyIterator getKeys(final List<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh) throws BackendException {
+        return Try.of(() -> new CQLMapKeyIterator(new CQLSubsetIterator<>(keys, this.storeManager.getKeysSize(), (keysList) -> {
+            try {
+                return getSlice(keysList, query, txh).entrySet().iterator();
+            } catch (BackendException e) {
+                throw new RuntimeException(e);
+            }
+        }))).getOrElseThrow(EXCEPTION_MAPPER);
     }
 
     @Override

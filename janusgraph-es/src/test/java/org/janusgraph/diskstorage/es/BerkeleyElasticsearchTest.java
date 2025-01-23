@@ -21,6 +21,7 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.util.system.IOUtils;
+import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -74,5 +75,10 @@ public class BerkeleyElasticsearchTest extends ElasticsearchJanusGraphIndexTest 
     @Override
     public void testDiscardAndDropRegisteredIndex() throws ExecutionException, InterruptedException {
         super.testDiscardAndDropRegisteredIndex();
+    }
+
+    @Test
+    public void testSubsetReindex() {
+        Assert.assertThrows("Code is not implemented", ExecutionException.class, super::testSubsetReindex);
     }
 }
