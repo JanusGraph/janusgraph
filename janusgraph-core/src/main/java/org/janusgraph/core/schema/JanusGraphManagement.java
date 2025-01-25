@@ -24,7 +24,6 @@ import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJobFuture;
-import org.janusgraph.graphdb.types.CompositeIndexType;
 
 import java.time.Duration;
 import java.util.List;
@@ -500,5 +499,5 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      * @param hexString
      * @return composite index info
      */
-    CompositeIndexType getIndexInfo(String hexString) throws DecoderException;
+    CompositeIndexInfo getIndexInfo(String hexString) throws DecoderException;
 }
