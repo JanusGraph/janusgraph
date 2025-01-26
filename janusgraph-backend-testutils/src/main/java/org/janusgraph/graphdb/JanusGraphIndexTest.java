@@ -54,6 +54,7 @@ import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.log.TransactionRecovery;
+import org.janusgraph.core.schema.CompositeIndexInfo;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.Mapping;
@@ -97,7 +98,6 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggSte
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterType;
@@ -161,7 +161,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -4357,29 +4356,82 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         mgmt.makeVertexLabel("cat").make();
 
-        makeKey("id", Integer.class);
+        final PropertyKey idKey = makeKey("id", Integer.class);
         final PropertyKey nameKey = makeKey("name", String.class);
+        final PropertyKey metaKey = makeKey("meta", Object.class);
 
-        String indexName = "searchByName";
-        mgmt.buildIndex(indexName, Vertex.class)
+        String searchByNameIndex = "searchByName";
+        mgmt.buildIndex(searchByNameIndex, Vertex.class)
             .addKey(nameKey)
             .buildCompositeIndex();
+
+        String searchByMetaIndex = "searchByMeta";
+        mgmt.buildIndex(searchByMetaIndex, Vertex.class)
+            .addKey(nameKey)
+            .addKey(metaKey)
+            .buildCompositeIndex();
+
+        String inlinePropIndex = "inlineProp";
+        mgmt.buildIndex(inlinePropIndex, Vertex.class)
+            .addKey(nameKey)
+            .addKey(metaKey)
+            .addInlinePropertyKey(idKey)
+            .buildCompositeIndex();
+
         mgmt.commit();
 
         mgmt = graph.openManagement();
 
+        //Read index with single property
         Map<String, Object> fieldValues = new HashMap<>();
         fieldValues.put("name", "someName");
 
-        String hexString = mgmt.getIndexKey(indexName, fieldValues);
-        CompositeIndexType indexType = mgmt.getIndexInfo(hexString);
+        String hexString = mgmt.getIndexKey(searchByNameIndex, fieldValues);
+        CompositeIndexInfo indexInfo = mgmt.getIndexInfo(hexString);
 
         IndexField[] indexFields = new IndexField[1];
         indexFields[0] = IndexField.of(nameKey);
 
-        assertEquals(indexName, indexType.getName());
-        assertEquals(1, indexType.getFieldKeys().length);
-        assertEquals(nameKey, indexType.getFieldKeys()[0].getFieldKey());
-        assertEquals(0, indexType.getInlineFieldKeys().length);
+        assertEquals(searchByNameIndex, indexInfo.getIndexName());
+        assertEquals(1, indexInfo.getCompositeIndexType().getFieldKeys().length);
+        assertEquals("someName", indexInfo.getValues().get(nameKey));
+        assertEquals(0, indexInfo.getCompositeIndexType().getInlineFieldKeys().length);
+
+        //Read index with multi properties
+        fieldValues = new HashMap<>();
+        fieldValues.put("name", "name1");
+        fieldValues.put("meta", "hello");
+
+        hexString = mgmt.getIndexKey(searchByMetaIndex, fieldValues);
+        indexInfo = mgmt.getIndexInfo(hexString);
+
+        indexFields = new IndexField[2];
+        indexFields[0] = IndexField.of(nameKey);
+        indexFields[1] = IndexField.of(metaKey);
+
+        assertEquals(searchByMetaIndex, indexInfo.getIndexName());
+        assertEquals(2, indexInfo.getCompositeIndexType().getFieldKeys().length);
+        assertEquals("name1", indexInfo.getValues().get(nameKey));
+        assertEquals("hello", indexInfo.getValues().get(metaKey));
+        assertEquals(0, indexInfo.getCompositeIndexType().getInlineFieldKeys().length);
+
+        //Read index with inline properties
+        fieldValues = new HashMap<>();
+        fieldValues.put("name", "name2");
+        fieldValues.put("meta", "bye");
+
+        hexString = mgmt.getIndexKey(inlinePropIndex, fieldValues);
+        indexInfo = mgmt.getIndexInfo(hexString);
+
+        indexFields = new IndexField[2];
+        indexFields[0] = IndexField.of(nameKey);
+        indexFields[1] = IndexField.of(metaKey);
+
+        assertEquals(inlinePropIndex, indexInfo.getIndexName());
+        assertEquals(2, indexInfo.getCompositeIndexType().getFieldKeys().length);
+        assertEquals("name2", indexInfo.getValues().get(nameKey));
+        assertEquals("bye", indexInfo.getValues().get(metaKey));
+        assertEquals(1, indexInfo.getCompositeIndexType().getInlineFieldKeys().length);
+        assertEquals("id", indexInfo.getCompositeIndexType().getInlineFieldKeys()[0]);
     }
 }

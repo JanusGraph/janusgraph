@@ -37,6 +37,7 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.VertexLabel;
+import org.janusgraph.core.schema.CompositeIndexInfo;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.EdgeLabelMaker;
 import org.janusgraph.core.schema.Index;
@@ -566,7 +567,7 @@ public class ManagementSystem implements JanusGraphManagement {
     }
 
     @Override
-    public CompositeIndexType getIndexInfo(String hexString) throws DecoderException {
+    public CompositeIndexInfo getIndexInfo(String hexString) throws DecoderException {
         StaticArrayBuffer indexKey = StaticArrayBuffer.of(Hex.decodeHex(hexString));
         return transaction.getCompositeIndexInfo(indexKey);
     }

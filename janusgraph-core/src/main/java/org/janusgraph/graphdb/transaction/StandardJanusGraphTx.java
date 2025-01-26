@@ -40,6 +40,7 @@ import org.janusgraph.core.RelationType;
 import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.schema.CompositeIndexInfo;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.EdgeLabelMaker;
 import org.janusgraph.core.schema.JanusGraphSchemaElement;
@@ -1258,19 +1259,24 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         }
     }
 
-    public CompositeIndexType getCompositeIndexInfo(StaticArrayBuffer indexKey) {
-        long schemaVertexId = indexSerializer.getIndexIdFromKey(indexKey);
-        InternalVertex typeVertex = vertexCache.get(schemaVertexId, existingVertexRetriever);
+    public CompositeIndexInfo getCompositeIndexInfo(StaticArrayBuffer indexKey) {
 
-        Preconditions.checkNotNull(typeVertex, "Index with key [" + indexKey + "] was not found");
-        JanusGraphSchemaVertex schemaVertex = (JanusGraphSchemaVertex) typeVertex;
+        com.google.common.base.Function<Long, CompositeIndexType> compositeIndexTypeFunction = input -> {
+            long schemaVertexId = indexSerializer.getIndexIdFromKey(indexKey);
+            InternalVertex typeVertex = vertexCache.get(schemaVertexId, existingVertexRetriever);
 
-        IndexType indexType = schemaVertex.asIndexType();
-        if (indexType instanceof CompositeIndexType) {
-            return (CompositeIndexType) indexType;
-        } else {
-            throw new IllegalArgumentException("Index with key [" + indexKey + "] is not a composite index");
-        }
+            Preconditions.checkNotNull(typeVertex, "Index with key [" + indexKey + "] was not found");
+            JanusGraphSchemaVertex schemaVertex = (JanusGraphSchemaVertex) typeVertex;
+
+            IndexType indexType = schemaVertex.asIndexType();
+            if (indexType instanceof CompositeIndexType) {
+                return (CompositeIndexType) indexType;
+            } else {
+                throw new IllegalArgumentException("Index with key [" + indexKey + "] is not a composite index");
+            }
+        };
+
+        return indexSerializer.getIndexInfoFromKey(indexKey, compositeIndexTypeFunction);
     }
 
     @Override
