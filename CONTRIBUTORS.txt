@@ -21,7 +21,8 @@
 #
 #     $ git log --all --format='%aN <%cE>' | sort -u --ignore-case
 #
-# and manual cleanup.
+# and manual cleanup (note: Sebastian Good, JanusGraph logo creator, doesn't
+# show up in the git log history)
 
 # Names should be added to this file like so:
 #     Individual's name <email1>
@@ -29,71 +30,191 @@
 
 # Please keep the list sorted.
 
+Abhiram Iyenger <noreply@github.com>
 Achintha Gunasekara <achintha@me.com>
+Adam Holley <holleya@us.ibm.com>
+Alain Rodriguez <alain@uber.com>
+Alex Leventer <alex.leventer@datastax.com>
+Alex Li <noreply@github.com>
 Alexander Patrikalakis <amcp@mit.edu>
 Alexander Vieth <alex@lagoa.com>
+Alexey Ermakov <fufler@gmail.com>
+Allan Clements <noreply@github.com>
 Anderson de Andrade <adeandrade@verticalscope.com>
+Andrew Grosser <farodin91@users.noreply.github.com>
+Andrew Sheppard <andrew.sheppard@fireeye.com>
 Andy Keffalas <akeffala@nearinfinity.com>
 Austin Harris <austin.w.harris@gmail.com>
 Austin Sharp <austin.sharp@seeq.com>
+balchua <noreply@github.com>
+Beat Sager <noreply@github.com>
 Blake Eggleston <bdeggleston@gmail.com>
 Bobby Norton <bobby@thinkaurelius.com>
+Boxuan Li <liboxuan@connect.hku.hk> <liboxuanhk@gmail.com>
 Brad Anderson <brad@sankatygroup.com>
-Brennon York <?>
-Bryn Cooke <BrynCooke@gmail.com>
+Brennon York <noreply@github.com>
+Brett Kromkamp <noreply@github.com>
+Bruno Berisso <bruno.berisso@experoinc.com>
+Bryn Cooke <bryncooke@gmail.com>
+Chin Huang <chhuang@us.ibm.com>
+Chris Hupman <chupman@us.ibm.com>
 Christian Bellina <christian.bellina@ef.com>
+Christopher J Quinones <cjquinon@us.ibm.com>
+Christopher Jackson <noreply@github.com>
+Clement de Groc <clement.degroc@datadoghq.com>
 Collin Scangarella <spmva@genoprime.com>
 Cris Weber <cris.weber@gmail.com>
 Dan LaRocque <dalaro@hopcount.org>
 Daniel Kuppitz <daniel_kuppitz@hotmail.com>
 Danny Thomas <dmthomas@gmail.com>
+Darwin Yip <yip.darwin@gmail.com>
 Dave Brosius <dbrosius@mebigfatguy.com>
-David Pitera <dpitera@.us.ibm.com>
+David Clement <david.clement90@laposte.net>
+David Moles <david.moles@ucop.edu>
+David Pitera <dpitera@us.ibm.com>
 David Robinson <drobin1437@gmail.com>
-deiflaender <?>
+Davide Bolcioni <dbolcion@uber.com>
+Debasish Kanhar <noreply@github.com>
+deiflaender <noreply@github.com>
+Demai Ni <nidmgg@gmail.com>
+Den Kovalevsky <xdev.developer@gmail.com>
+dengziming <noreply@github.com>
+Dmitry Kovalev <dk.global@gmail.com>
+Dmitry Zaporozhets <elpilasgsm@gmail.com>
+Domenico Corapi <mathias.bogaert@gmail.com>
+dpitera <noreply@github.com>
 Dylan Bethune-Waddell <dylan.bethune.waddell@mail.utoronto.ca>
+Dylan Werner-Meier <noreply@github.com>
+Elvys Soares <noreply@github.com>
+Eric Cheng <noreply@github.com>
 Eric Lubow <eric@lubow.org>
 Erick Tryzelaar <erickt@lab41.org>
-Fabrice Bellingard <?>
+Evgenii Ignatev <yevgeniy.ignatyev@gmail.com>
+Fabrice Bellingard <noreply@github.com>
+Fiete Ostkamp <noreply@github.com>
+Filippo Balicchia <noreply@github.com>
+Florian Grieskamp <f.grieskamp@gmail.com>
+Florian Hockmann <fh@florian-hockmann.de>
 Frederick Haebin Na <haebin.na@gmail.com>
+G.V() - Gremlin Database Visualizer <95418630+gdotv@users.noreply.github.com>
+Ganesh Guttikonda <gguttikonda@snapfish-llc.com>
+guy9 <guy.other@gmail.com>
 Homer Strong <homer.strong@gmail.com>
+Hon <George-Hon@outlook.com>
+Hongjiang Zhang <timerzhj@hotmail.com>
+Igor Bernstein <igorbernstein@google.com>
+inho1213 <inho1213@naver.com>
+Irving Duran <iaduran@us.ibm.com>
+Israel Fruchter <fruch@scylladb.com>
+Jan Jansen <jan.jansen@gdata.de>
 janar <janar@yahoo-inc.com>
 Jason Plurad <pluradj@us.ibm.com>
 Jason Rust <jason.rust@seeq.com>
+Jean Rossier <noreply@github.com>
+Jeff Callahan <24495892+callajd@users.noreply.github.com>
+Jerry He <jerryjch@apache.org>
+jigs1993 <noreply@github.com>
 Joe Ferner <joe@fernsroth.com>
+Joel Sánchez <webmaster@kazer.es>
+Joern Kottmann <joern@apache.org>
+Jonathan Leitschuh <Jonathan.Leitschuh@gmail.com>
+Josh Soref <jsoref@users.noreply.github.com>
+Joshua Send <joshua@grakn.ai>
 Joshua Shinavier <josh@fortytwo.net>
 Justin Corpron <justin.corpron@justinc-677.glassdoor.local>
 Karthik Ramachandran <kramachandran@iqt.com>
+Kathiresan Selvaraj <kathiresan.selvaraj@datastax.com>
 Kedar Mhaswade <kedar.mhaswade@gmail.com>
+Keith Lohnes <krlohnes@us.ibm.com>
+Kim Pang Lei <noreply@github.com>
+kptfh <noreply@github.com>
+Kristen O'Leary <kaoleary@google.com>
 ksenji <ksenji@ebay.com>
 Leifur Halldor Asgeirsson <leifurhauks@gmail.com>
+Lindsay Smith <lindsaysmith@google.com>
+Lionel Fleury <lionel_fleury@hotmail.com>
+Long Tran <long.tran1@fireeye.com>
+Madhan Neethiraj <madhan@apache.org>
+Marco Scoppetta <marco@grakn.ai>
 Mark McCraw <mark.mccraw@sas.com>
 Marko A. Rodriguez <okrammarko@gmail.com>
+Mathias Bogaert <noreply@github.com>
 Matt Pouttu-Clarke <voidpointer101@gmail.com>
 Matthias Broecheler <me@matthiasb.com>
 Michael Klishin <michael@defprotocol.org>
-Mike Dias <?>
+Michal Podstawski <mpodstawski@gmail.com>
+Michal Rehak <noreply@github.com>
+Mike Beaubien <mbbeaubi@umich.edu>
+Mike Dias <noreply@github.com>
 Mike McMahon <mmcm@comcast.net>
+Mike Sager <mike@mikesager.name>
 Misha Brukman <mbrukman@google.com>
+Mladen Marović <noreply@github.com>
 MrKeyholder <fractalf@gmail.com>
+Nandan Tumu <nandan.t@live.com>
+Naresh <nareshbabuy4u@gmail.com>
+Natalia Tisseyre <noreply@github.com>
+netboy33 <noreply@github.com>
+Nicolas Trangosi <noreply@github.com>
 Nik Everett <neverett@wikimedia.org>
+Nikolai Grigoriev <ngrigoriev@newforma.com>
+Oleksandr Porunov <alex@mapped.com>
+Olivier Binda <olivier.binda@wanadoo.fr>
+Pankaj Yadav <noreply@github.com>
+Paolo Angioletti <noreply@github.com>
 Paul Kendall <paul.kendall@orionhealth.com> <pkendall64@gmail.com>
+Paul Khermouch <paul.khermouch@civitaslearning.com>
+Paul Sin <noreply@github.com>
+Pavel Ershov <owner.mad.epa@gmail.com>
 Pavel Yaskevich <pyaskevich@twitter.com> <xedin@apache.org>
 Peter Beaman <pbeaman@akiban.com>
+Peter May <Peter.May@ibm.com>
 Petter Aas <aaspet@gmail.com> <petter.aas@fronter.com>
 Pieter <pieter@pieter-HP-EliteBook-8570w.(none)>
 PommeVerte <dylan.millikin@gmail.com>
+Prakhar Agrawal <noreply@github.com>
+Prithvi Nambiar <prithvinambiar@gmail.com>
+Pylyp Mykhailov <Pylyp_Mykhailov@comcast.com>
 Rafael Fernandes <luizrafael@gmail.com>
 Ranger Tsao <cao.zhifu@gmail.com>
 Richard Doll <rdoll@care-view.com>
 Robert Dale <robdale@gmail.com>
+Robert Yokota <rayokota@gmail.com>
+Roberto Perdisci <noreply@github.com>
+rushikesh <rushikesh.sawant@gmail.com>
 Samant Maharaj <samant.maharaj@orionhealth.com>
+sandeep mishra <noreply@github.com>
+Satish Kolli <satish.kolli@gmail.com>
+Scott Dial <noreply@github.com>
+Scott McQuillan <scott.mcquillan@uk.ibm.com>
 Sebastian Good <sebastian@experoinc.com>
+Shivaa Krishnan <shkrishnan@informatica.com>
+Simeon Monov <sdmonov@us.ibm.com>
+Simon Elliston Ball <noreply@github.com>
+sjudeng <sjudeng@users.noreply.github.com>
+skarpenko <skarpenko@playtika.com>
+Solomon Duskis <sduskis@google.com>
 Solon Gordon <solon@knewton.com>
+Son Nguyen <ngocson2vn@gmail.com>
+song <noreply@github.com>
+Steffen Winandy <stewin19@gmail.com>
 Stephen Mallette <spmallette@gmail.com> <spmva@genoprime.com>
+Ted Chang <htchang@us.ibm.com>
 Ted Crossman <tedo@rockmelt.com>
 Ted Wilmes <twilmes@gmail.com>
 Tim Wu <tim@urx.com>
+Tiến Nguyễn Khắc <tien.nguyenkhac@icloud.com>
+To-om <thomas@strangebee.com>
+Toni Menzel <toni.menzel@rebaze.com>
 tsecheran <tsecheran@yahoo.com>
+Umesh Prabushitha Jayasinghe <noreply@github.com>
+Vadim Kozlov <noreply@github.com>
+Vladimir Bogomolov <vladimir.bogomoloff@gmail.com>
+wforget <noreply@github.com>
 Wytse Visser <wytsevisser@gmail.com>
+Yihong Wang <yh.wang@ibm.com>
 Yuhao Bi <byh0831@gmail.com>
+Zac Rosenbauer <noreply@github.com>
+Zhang Hongjiang <noreply@github.com>
+Zheng Wang <zhengwang1990@foxmail.com>
+Zhihua Chang <noreply@github.com>

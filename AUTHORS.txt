@@ -16,7 +16,9 @@ Aurelius
 DataStax
 Dylan Bethune-Waddell <dylan.bethune.waddell@mail.utoronto.ca>
 Expero
+G Data
 Google
+Mapped
 Orion Health
 IBM
 Rafael Fernandes <luizrafael@gmail.com>
