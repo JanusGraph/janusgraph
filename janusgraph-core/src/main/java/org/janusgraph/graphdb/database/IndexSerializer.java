@@ -26,6 +26,7 @@ import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.schema.CompositeIndexInfo;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.BackendException;
@@ -523,6 +524,14 @@ public class IndexSerializer {
 
     public long getIndexIdFromKey(StaticBuffer key) {
         return IndexRecordUtil.getIndexIdFromKey(key, hashKeys, hashLength);
+    }
+
+    public CompositeIndexInfo getIndexInfoFromKey(StaticBuffer key, Function<Long, CompositeIndexType> compositeIndexTypeFunction) {
+        return IndexRecordUtil.getIndexInfoFromKey(serializer, compositeIndexTypeFunction, key, hashKeys, hashLength);
+    }
+
+    public StaticBuffer getIndexKey(CompositeIndexType index, Map<String, Object> fieldValues) {
+        return IndexRecordUtil.getIndexKey(index, fieldValues, serializer, hashKeys, hashLength);
     }
 
     public boolean isHashKeys() {
