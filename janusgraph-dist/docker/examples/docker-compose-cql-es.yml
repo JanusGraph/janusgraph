@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version: "3"
-
 services:
   janusgraph:
-    image: docker.io/janusgraph/janusgraph:latest
+    image: janusgraph/janusgraph:latest
     container_name: jce-janusgraph
     environment:
       JANUS_PROPS_TEMPLATE: cql-es
@@ -33,7 +31,7 @@ services:
       retries: 3
 
   cassandra:
-    image: cassandra:3
+    image: cassandra:4.0.17
     container_name: jce-cassandra
     ports:
       - "9042:9042"
@@ -42,7 +40,7 @@ services:
       - jce-network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.6.0
+    image: elasticsearch:8.17.1
     container_name: jce-elastic
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
@@ -51,11 +49,28 @@ services:
       - "transport.host=127.0.0.1"
       - "cluster.name=docker-cluster"
       - "xpack.security.enabled=false"
-      - "discovery.zen.minimum_master_nodes=1"
+      - "discovery.type=single-node"
     ports:
       - "9200:9200"
     networks:
       - jce-network
+
+  janusgraph-visualizer:
+    image: janusgraph/janusgraph-visualizer:latest
+    container_name: jce-visualizer
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    networks:
+      - jce-network
+    depends_on:
+      - janusgraph
+    environment:
+      - GRAPH_URL=http://jce-janusgraph:8182
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 10s
+      retries: 3
 
 networks:
   jce-network:
