@@ -31,7 +31,7 @@ services:
       retries: 3
 
   cassandra:
-    image: cassandra:3.11.17
+    image: cassandra:4.0.17
     container_name: jce-cassandra
     ports:
       - "9042:9042"
@@ -40,7 +40,7 @@ services:
       - jce-network
 
   elasticsearch:
-    image: elasticsearch:6.8.23
+    image: elasticsearch:8.17.1
     container_name: jce-elastic
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
@@ -49,7 +49,7 @@ services:
       - "transport.host=127.0.0.1"
       - "cluster.name=docker-cluster"
       - "xpack.security.enabled=false"
-      - "discovery.zen.minimum_master_nodes=1"
+      - "discovery.type=single-node"
     ports:
       - "9200:9200"
     networks:
