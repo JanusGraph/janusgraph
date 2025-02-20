@@ -146,6 +146,7 @@
         <module>janusgraph-examples</module>
         <module>janusgraph-mixed-index-utils</module>
         <module>janusgraph-scylla</module>
+        <module>janusgraph-couchbase</module>
     </modules>
     <repositories>
         <repository>
