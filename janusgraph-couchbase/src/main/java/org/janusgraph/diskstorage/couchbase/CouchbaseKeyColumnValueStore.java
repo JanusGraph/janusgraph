@@ -113,19 +113,19 @@ public class CouchbaseKeyColumnValueStore implements KeyColumnValueStore {
                         //log.info("got {} vs existing {} ", name, cs.name());
 
                         if (cs.name().equals(collectionName)) {
-                            LOGGER.info("Using existing collection " + bucketName + "." + scopeName + "." + cs.name());
+                            LOGGER.debug("Using existing collection " + bucketName + "." + scopeName + "." + cs.name());
                             storeDb = bucket.scope(scopeName).collection(collectionName);
                             found = true;
                             break;
                         }
                     }
                     if (!found) {
-                        LOGGER.info("Creating new collection " + bucket.name() + "." + scopeName + "." + collectionName);
+                        LOGGER.debug("Creating new collection " + bucket.name() + "." + scopeName + "." + collectionName);
                         CollectionSpec collectionSpec = CollectionSpec.create(collectionName, scopeName, Duration.ZERO);
                         cm.createCollection(collectionSpec);
                         storeDb = bucket.scope(scopeName).collection(collectionName);
                         Thread.sleep(2000);
-                        LOGGER.info("Creating primary index...");
+                        LOGGER.debug("Creating primary index...");
                         //cluster.queryIndexes().createPrimaryIndex("`"+bucketName+"`.`"+defaultScopeName+"`.`"+name+"`", CreatePrimaryQueryIndexOptions.createPrimaryQueryIndexOptions().ignoreIfExists(true));
                         cluster.query("CREATE PRIMARY INDEX ON `default`:`" + bucketName + "`.`" + scopeName + "`.`" + collectionName + "`");
                         Thread.sleep(1000);
@@ -346,7 +346,7 @@ public class CouchbaseKeyColumnValueStore implements KeyColumnValueStore {
                     column.getString(CouchbaseColumn.VALUE),
                     column.getLong(CouchbaseColumn.EXPIRE),
                     column.getInt(CouchbaseColumn.TTL)));
-            LOGGER.info(i + "." + column);
+            LOGGER.debug(i + "." + column);
             i++;
 
         }
