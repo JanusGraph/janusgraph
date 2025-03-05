@@ -47,14 +47,8 @@ public abstract class ManagementTest extends JanusGraphBaseTest {
     public void testReservedNamesRejectedForPropertyKeys() {
         for (String s : ILLEGAL_USER_DEFINED_NAMES) {
             JanusGraphManagement tm = graph.openManagement();
-            try {
-                tm.makePropertyKey(s);
-                fail("Property key  \"" + s + "\" must be rejected");
-            } catch (IllegalArgumentException e) {
-                log.debug("Caught expected exception", e);
-            } finally {
-                tm.commit();
-            }
+            assertThrows(IllegalArgumentException.class, () -> tm.makePropertyKey(s));
+            tm.commit();
         }
     }
 
