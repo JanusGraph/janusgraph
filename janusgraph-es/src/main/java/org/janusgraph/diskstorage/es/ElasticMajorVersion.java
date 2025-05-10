@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.es;
 
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,7 +40,14 @@ public enum ElasticMajorVersion {
         return value;
     }
 
-    public static ElasticMajorVersion parse(final String value) {
+    public static ElasticMajorVersion parse(Map<String, Object> version) {
+        // opensearch is mostly compatible with ElasticSearch 7.10
+        if (version != null && "opensearch".equals(version.get("distribution")))
+            return ElasticMajorVersion.SEVEN;
+        return parse(version != null ? (String) version.get("number") : null);
+    }
+    
+    static ElasticMajorVersion parse(final String value) {
         final Matcher m = value != null ? PATTERN.matcher(value) : null;
         switch (m != null && m.find() ? Integer.parseInt(m.group(1)) : -1) {
             case 6:
