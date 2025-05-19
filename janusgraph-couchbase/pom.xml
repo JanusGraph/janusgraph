@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.janusgraph</groupId>
         <artifactId>janusgraph</artifactId>
-        <version>1.1.0-SNAPSHOT</version>
+        <version>1.2.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -20,7 +20,7 @@
         <jdk.version>1.8</jdk.version>
         <couchbase.core-io.version>2.3.4</couchbase.core-io.version>
         <couchbase.java-client.version>3.3.4</couchbase.java-client.version>
-        <lucene-parser.version>8.11.2</lucene-parser.version>
+        <lucene-parser.version>8.11.3</lucene-parser.version>
         <jackson-databind.version>2.10.3</jackson-databind.version>
         <dependency.plugin.version>3.2.0</dependency.plugin.version>
         <test.skip.default>false</test.skip.default>
