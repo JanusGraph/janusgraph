@@ -78,7 +78,7 @@
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <zookeeper.version>3.9.2</zookeeper.version>
-        <netty4.version>4.1.115.Final</netty4.version>
+        <netty4.version>4.2.2.Final</netty4.version>
         <jna.version>5.14.0</jna.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
