@@ -29,6 +29,8 @@ public class IndexValueConverter {
     public static Object marshall(Object value) {
         if (value instanceof Geoshape) {
             return convertGeoshape((Geoshape) value);
+        } else if (value instanceof Float) {
+            return ((Float) value).doubleValue();
         }
         return value;
     }

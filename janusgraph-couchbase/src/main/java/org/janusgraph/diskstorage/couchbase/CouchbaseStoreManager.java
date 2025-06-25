@@ -16,27 +16,32 @@
 
 package org.janusgraph.diskstorage.couchbase;
 
-import com.couchbase.client.core.deps.io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import com.couchbase.client.core.env.ConnectionStringPropertyLoader;
-import com.couchbase.client.core.env.IoConfig;
-import com.couchbase.client.core.env.NetworkResolution;
-import com.couchbase.client.core.env.SecurityConfig;
 import com.couchbase.client.core.error.CouchbaseException;
+import com.couchbase.client.core.error.DocumentNotFoundException;
+import com.couchbase.client.core.error.IndexFailureException;
+import com.couchbase.client.core.msg.kv.DurabilityLevel;
+import com.couchbase.client.core.retry.BestEffortRetryStrategy;
+import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
-import com.couchbase.client.java.ClusterOptions;
 import com.couchbase.client.java.Collection;
-import com.couchbase.client.java.env.ClusterEnvironment;
 import com.couchbase.client.java.json.JsonArray;
 import com.couchbase.client.java.json.JsonObject;
+import com.couchbase.client.java.kv.GetResult;
+import com.couchbase.client.java.kv.RemoveOptions;
+import com.couchbase.client.java.kv.UpsertOptions;
 import com.couchbase.client.java.manager.collection.CollectionManager;
 import com.couchbase.client.java.manager.collection.CollectionSpec;
 import com.couchbase.client.java.manager.collection.ScopeSpec;
+import com.couchbase.client.java.manager.query.BuildQueryIndexOptions;
+import com.couchbase.client.java.manager.query.CreatePrimaryQueryIndexOptions;
+import com.couchbase.client.java.manager.query.QueryIndexManager;
 import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
 import com.couchbase.client.java.query.QueryScanConsistency;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import com.sun.imageio.plugins.gif.GIFImageMetadataFormat;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.Entry;
@@ -57,8 +62,6 @@ import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -92,9 +95,9 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
     private static final ConcurrentHashMap<CouchbaseStoreManager, Throwable> openManagers = new ConcurrentHashMap<>();
     //protected final StoreFeatures features;
     protected Configuration config;
-    private final Bucket bucket;
+    private Bucket bucket;
     private final String bucketName;
-    private final Cluster cluster;
+    private Cluster cluster;
     private final String defaultScopeName;
 
     private final int parallelism;
@@ -108,14 +111,30 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
         super(configuration, PORT_DEFAULT);
         this.config = configuration;
         stores = new ConcurrentHashMap<>();
-        String connectString = configuration.get(CLUSTER_CONNECT_STRING);
-        log.info("Connecting to {}", connectString);
+        this.bucketName = configuration.get(CLUSTER_CONNECT_BUCKET);
+        defaultScopeName = configuration.get(CLUSTER_DEFAULT_SCOPE);
+        String parallelism = configuration.get(CLUSTER_PARALLELISM);
+        try {
+            this.parallelism = Integer.parseInt(parallelism);
+            log.info("Using {} for parallel slice fetching", this.parallelism);
+        } catch (NumberFormatException nfe) {
+            throw new PermanentBackendException("Unable to parse cluster-parallelism setting", nfe);
+        }
+        if (parallelism == null || parallelism.isEmpty()) {
+            throw new PermanentBackendException("Couchbase slice query parallelism is not specified");
+        }
+    }
+
+    private void connect() throws BackendException {
+        if (cluster != null && bucket != null) {
+            return;
+        }
+        Configuration configuration = getStorageConfig();
         String user = configuration.get(CLUSTER_CONNECT_USERNAME);
         String password = configuration.get(CLUSTER_CONNECT_PASSWORD);
-        String parallelism = configuration.get(CLUSTER_PARALLELISM);
-        this.bucketName = configuration.get(CLUSTER_CONNECT_BUCKET);
 
-        defaultScopeName = configuration.get(CLUSTER_DEFAULT_SCOPE);
+        String connectString = configuration.get(CLUSTER_CONNECT_STRING);
+        log.info("Connecting to {}", connectString);
 
         if (connectString == null || connectString.isEmpty()) {
             throw new PermanentBackendException("Couchbase connect string is not specified");
@@ -126,42 +145,17 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
         if (password == null || password.isEmpty()) {
             throw new PermanentBackendException("Couchbase connect password is not specified");
         }
-        if (parallelism == null || parallelism.isEmpty()) {
-            throw new PermanentBackendException("Couchbase slice query parallelism is not specified");
-        }
 
         // open the db or connect to the cluster
-        boolean isTLS = false;
-        if (configuration.get(CLUSTER_CONNECT_STRING).startsWith("couchbases://")) {
-            isTLS = true;
-        }
-        ClusterEnvironment.Builder envBuilder = ClusterEnvironment.builder()
-                .ioConfig(IoConfig.enableDnsSrv(isTLS))
-                .ioConfig(IoConfig.networkResolution(NetworkResolution.DEFAULT))
-                .securityConfig(SecurityConfig.enableTls(isTLS)
-                        .trustManagerFactory(InsecureTrustManagerFactory.INSTANCE));
-        new ConnectionStringPropertyLoader(connectString).load(envBuilder);
-
-        ClusterEnvironment env = envBuilder.build();
-        log.trace("Connecting to couchbase cluster");
-
-
-        cluster = Cluster.connect(connectString,
-                ClusterOptions.clusterOptions(user, password).environment(env));
+        log.trace("Connecting to couchbase cluster '{}' (bucket: `{}`, scope: `{}`)", connectString, bucketName, defaultScopeName);
+        cluster = Cluster.connect(connectString, user, password);
 
         bucket = cluster.bucket(bucketName);
-        bucket.waitUntilReady(Duration.parse("PT10S"));
+        bucket.waitUntilReady(Duration.parse("PT20S"));
         log.trace("Connected to couchbase cluster");
 
         String clusterConnectString = configuration.get(CLUSTER_CONNECT_STRING);
         log.info("Couchbase connect string: {}", clusterConnectString);
-
-        try {
-            this.parallelism = Integer.parseInt(parallelism);
-            log.info("Using {} for parallel slice fetching", this.parallelism);
-        } catch (NumberFormatException nfe) {
-            throw new PermanentBackendException("Unable to parse cluster-parallelism setting", nfe);
-        }
 
         /*features = new StandardStoreFeatures.Builder()
                     .orderedScan(true)
@@ -189,6 +183,7 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
         StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder()
                 .orderedScan(true).unorderedScan(true).batchMutation(true)
                 .multiQuery(true).distributed(true).keyOrdered(true)
+                .transactional(false).locking(false)
                 .cellTTL(true).timestamps(true).preferredTimestamps(PREFERRED_TIMESTAMPS)
                 .optimisticLocking(true).keyConsistent(c);
 
@@ -250,6 +245,9 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
     @Override
     public CouchbaseKeyColumnValueStore openDatabase(String name, StoreMetaData.Container metaData) throws BackendException {
         Preconditions.checkNotNull(name);
+        if (cluster == null) {
+            connect();
+        }
         if (stores.containsKey(name)) {
             return stores.get(name);
         }
@@ -272,22 +270,30 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
                     }
                     if (!found) {
                         log.info("Creating new collection " + bucket.name() + "." + defaultScopeName + "." + name);
-                        CollectionSpec collectionSpec = CollectionSpec.create(name, defaultScopeName, Duration.ZERO);
-                        cm.createCollection(collectionSpec);
-                        openStoreDbs.put(name, bucket.scope(defaultScopeName).collection(name));
-                        Thread.sleep(2000);
-                        log.info("Creating primary index...");
-                        //cluster.queryIndexes().createPrimaryIndex("`"+bucketName+"`.`"+defaultScopeName+"`.`"+name+"`", CreatePrimaryQueryIndexOptions.createPrimaryQueryIndexOptions().ignoreIfExists(true));
-                        cluster.query("CREATE PRIMARY INDEX ON `default`:`" + bucketName + "`.`" + defaultScopeName + "`.`" + name + "`");
-                        Thread.sleep(1000);
+                        cm.createCollection(defaultScopeName, name);
+                        Thread.sleep(500);
+                        Collection collection = bucket.scope(defaultScopeName).collection(name);
+                        openStoreDbs.put(name, collection);
+                        collection.queryIndexes().createPrimaryIndex(
+                            CreatePrimaryQueryIndexOptions.createPrimaryQueryIndexOptions()
+                                .ignoreIfExists(true)
+                                .retryStrategy(
+                                    BestEffortRetryStrategy.withExponentialBackoff(
+                                        Duration.ofMillis(100),
+                                        Duration.ofMillis(30000),
+                                        2
+                                    )
+                                )
+                        );
                     }
                 }
             }
 
-            log.debug("Opened database collection {}", name);
 
             CouchbaseKeyColumnValueStore store = new CouchbaseKeyColumnValueStore(this, name, bucketName, defaultScopeName, cluster, parallelism);
             stores.put(name, store);
+            log.debug("Opened database collection {}", name);
+
             return store;
         } catch (Exception e) {
             throw new PermanentBackendException("Could not open Couchbase data store", e);
@@ -321,27 +327,42 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
 
     @Override
     public void close() throws BackendException {
-        stores.clear();
         if (log.isTraceEnabled())
             openManagers.remove(this);
 
         try {
-            // TBD: Whether to close or not the cluster itself is a bit of a question.
-            cluster.disconnect();
+            if (!stores.isEmpty()) {
+                stores.values().forEach(this::closeStore);
+            }
         } catch (Exception e) {
             throw new PermanentBackendException("Could not close Couchbase database", e);
         }
         log.info("CouchbaseStoreManager closed");
+
+        if (log.isTraceEnabled()) {
+            openManagers.remove(this);
+            dumpOpenManagers();
+        }
     }
 
 
     @Override
     public void clearStorage() throws BackendException {
 
-        for (String collection : openStoreDbs.keySet()) {
+        connect();
+        CollectionManager cm = bucket.collections();
+        ScopeSpec defaultScope = cm.getAllScopes().stream().filter(s -> s.name().equals(defaultScopeName)).findFirst().orElse(null);
+
+        if (defaultScope == null) {
+            throw new PermanentBackendException("Could not get ScopeSpec for configured scope ");
+        }
+
+
+        for (CollectionSpec cs : defaultScope.collections()) {
+            final String collection = cs.name();
             try {
                 //According to tests, clear storage is a hard clean process, and should wipe everything
-                String query = "DROP COLLECTION `" + bucket.name() + "`.`" + defaultScopeName + "`." + collection;
+                String query = "DELETE FROM `" + bucket.name() + "`.`" + defaultScopeName + "`." + collection;
                 log.trace("Running Query: " + query);
                 QueryResult result = cluster.query(query, QueryOptions.queryOptions().scanConsistency(QueryScanConsistency.REQUEST_PLUS));
 
@@ -356,6 +377,7 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
     @Override
     public boolean exists() throws BackendException {
         try {
+            connect();
             CollectionManager cm = bucket.collections();
             for (ScopeSpec s : cm.getAllScopes()) {
                 if (s.name().equals(defaultScopeName)) {
@@ -374,6 +396,10 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
     @Override
     public String getName() {
         return getClass().getSimpleName();
+    }
+
+    public void closeStore(CouchbaseKeyColumnValueStore store) {
+        stores.remove(store.getName());
     }
 
 
@@ -405,14 +431,14 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
                 if (log.isDebugEnabled()) {
                     log.debug("content={}", document.content());
                 }
-                openStoreDbs.get(docMutation.getTable()).upsert(document.id(), document.content());
-                //storeDb.upsert(document.id(), document.content());
+                openStoreDbs.get(docMutation.getTable()).upsert(document.id(), document.content(),
+                        UpsertOptions.upsertOptions());
             } else {
                 if (isNew) {
                     log.warn("Tried to remove Collection={}, Removing id={} but it hasn't been added ", openStoreDbs.get(docMutation.getTable()).name(), document.id());
                 } else {
                     log.info("Collection={}, Removing id={}", openStoreDbs.get(docMutation.getTable()).name(), document.id());
-                    openStoreDbs.get(docMutation.getTable()).remove(document.id());
+                    openStoreDbs.get(docMutation.getTable()).remove(document.id(), RemoveOptions.removeOptions());
                 }
                 //storeDb.remove(document.id());
             }
@@ -539,68 +565,44 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
         final List<CouchbaseDocumentMutation> documentMutations = convertToDocumentMutations(jbatch);
 
         Iterable<List<CouchbaseDocumentMutation>> batches = Iterables.partition(documentMutations, 100);
-
         for (List<CouchbaseDocumentMutation> batch : batches) {
-            List<String> newObj = new ArrayList<>();
-
-            List<JsonDocument> temp = Flux.fromIterable(documentMutations)
-                    .flatMap(document -> openStoreDbs.get(document.getTable()).reactive().get(document.getDocumentId())
-                            .flatMap(doc -> Mono.just(JsonDocument.create(document.getDocumentId(), doc.contentAsObject())))
-
-
-                    )
-                    .onErrorContinue((err, i) -> {
-                        log.info("==========Mutation tried to load a document that doesn't exist {}", i);
-                    })
-                    .collectList()
-                    .block();
-
-            Map<String, JsonDocument> results = temp.stream().collect(Collectors.toMap(JsonDocument::id, e -> e));
-
             List<Tuple2<String, JsonDocument>> upsertList = new ArrayList<>();
             List<Tuple2<String, JsonDocument>> deleteList = new ArrayList<>();
 
             for (CouchbaseDocumentMutation docMutation : batch) {
-                if (results.get(docMutation.getDocumentId()) == null) {
-                    newObj.add(docMutation.getDocumentId());
-                    results.put(docMutation.getDocumentId(), createNewDocument(docMutation));
+                JsonDocument document;
+                boolean isNew = false;
+                try {
+                    GetResult getResult = openStoreDbs.get(docMutation.getTable()).get(docMutation.getDocumentId());
+                    document = JsonDocument.create(
+                        docMutation.getDocumentId(),
+                        getResult.contentAsObject(),
+                        getResult.cas()
+                    );
+                } catch (DocumentNotFoundException ignored) {
+                    document = createNewDocument(docMutation);
+                    isNew = true;
                 }
 
-                JsonDocument document = results.get(docMutation.getDocumentId());
                 Map<String, CouchbaseColumn> columns = getMutatedColumns(docMutation, document);
 
                 if (!columns.isEmpty()) {
                     //argh!
                     updateColumns(document, columns);
+                    openStoreDbs.get(docMutation.getTable()).upsert(docMutation.getDocumentId(), document.content());
                     upsertList.add(Tuples.of(docMutation.getTable(), document));
                 } else {
-                    if (newObj.contains(document.id())) {
+                    if (isNew) {
                         log.warn("Tried to remove a document that doesn't exist in the database yet Collection={}, Removing id={}", openStoreDbs.get(docMutation.getTable()).name(), document.id());
                     } else {
+                        openStoreDbs.get(docMutation.getTable()).remove(docMutation.getDocumentId());
                         deleteList.add(Tuples.of(docMutation.getTable(), document));
                     }
                 }
             }
 
-            //bulk updates
-            Flux.fromIterable(upsertList)
-                    .flatMap(tuple -> openStoreDbs.get(tuple.getT1()).reactive().upsert(
-                                    tuple.getT2().id(), tuple.getT2().content()
-                            )
-                    )
-                    .collectList()
-                    .block();
-
-            log.debug("The following documents have been update: {}", upsertList.stream().map(e -> e.getT2().id()).collect(Collectors.joining("', '", "['", "'] ")));
-
-            //bulk deletes
-            Flux.fromIterable(deleteList)
-                    .flatMap(tuple -> openStoreDbs.get(tuple.getT1()).reactive().remove(tuple.getT2().id())
-                    )
-                    .collectList()
-                    .block();
+            log.debug("The following documents have been updated: {}", upsertList.stream().map(e -> e.getT2().id()).collect(Collectors.joining("', '", "['", "'] ")));
             log.debug("The following documents have been deleted: {}", deleteList.stream().map(e -> e.getT2().id()).collect(Collectors.joining("', '", "['", "'] ")));
-
         }
     }
 

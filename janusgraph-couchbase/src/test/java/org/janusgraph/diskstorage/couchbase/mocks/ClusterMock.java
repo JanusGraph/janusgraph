@@ -19,14 +19,13 @@ package org.janusgraph.diskstorage.couchbase.mocks;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Scope;
+import org.janusgraph.testutil.CouchbaseTestUtils;
 import org.mockito.Mockito;
 
 public class ClusterMock {
     public static final String ADDRESS = "__cluster__";
     public static final String USER = "__user__";
     public static final String PASSWORD = "__password__";
-    public static final String BUCKET = "__bucket__";
-    public static final String SCOPE = "__scope__";
 
     private static Cluster MOCK;
 
@@ -41,8 +40,8 @@ public class ClusterMock {
             Scope scope = ScopeMock.get();
 
             Mockito.when(Cluster.connect(Mockito.eq(ADDRESS), Mockito.eq(USER), Mockito.eq(PASSWORD))).thenReturn(cluster);
-            Mockito.when(cluster.bucket(Mockito.eq(BUCKET))).thenReturn(bucket);
-            Mockito.when(bucket.scope(SCOPE)).thenReturn(scope);
+            Mockito.when(cluster.bucket(Mockito.eq(CouchbaseTestUtils.BUCKET))).thenReturn(bucket);
+            Mockito.when(bucket.scope(CouchbaseTestUtils.SCOPE)).thenReturn(scope);
             Mockito.when(cluster.searchIndexes()).thenReturn(SearchIndexManagerMock.get());
             Mockito.when(cluster.queryIndexes()).thenReturn(QueryIndexManagerMock.get());
             MOCK = cluster;

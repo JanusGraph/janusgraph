@@ -82,7 +82,11 @@ public class CouchbaseColumnConverter {//implements StaticBuffer.Factory<String>
     }
 
     public static String toString(StaticBuffer buffer) {
-        return toString(buffer.as(StaticBuffer.ARRAY_FACTORY));
+        final String str = toString(buffer.as(StaticBuffer.ARRAY_FACTORY));
+        if (str.startsWith("0x")) {
+            return str.substring(2);
+        }
+        return str;
         //return stringSerializer.read(buffer.asReadBuffer());
         // return KeyValueStoreUtil.getString(buffer);
         //return buffer.as(this);

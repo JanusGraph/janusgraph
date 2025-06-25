@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public abstract class Lucene2CouchbaseQLTranslator {
@@ -117,12 +118,12 @@ public abstract class Lucene2CouchbaseQLTranslator {
     public static SearchQuery translate(PhraseQuery query) {
         Term[] termArray = query.getTerms();
         int[] positions = query.getPositions();
-        String[] phrase = IntStream.range(0, positions.length).boxed()
+        String phrase = IntStream.range(0, positions.length).boxed()
                 .sorted(Comparator.comparingInt(i -> positions[i]))
                 .map(i -> termArray[i].text())
-                .toArray(String[]::new);
+                .collect(Collectors.joining(" "));
 
-        return SearchQuery.phrase(phrase).field(query.getField());
+        return SearchQuery.matchPhrase(phrase).field(query.getField());
     }
 
     public static SearchQuery translate(PrefixQuery query) {

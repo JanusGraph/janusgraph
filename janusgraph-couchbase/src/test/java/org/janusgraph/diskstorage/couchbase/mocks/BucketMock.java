@@ -17,6 +17,7 @@
 package org.janusgraph.diskstorage.couchbase.mocks;
 
 import com.couchbase.client.java.Bucket;
+import org.janusgraph.testutil.CouchbaseTestUtils;
 
 import java.lang.ref.WeakReference;
 
@@ -31,7 +32,7 @@ public class BucketMock {
             Bucket bucket = mock(Bucket.class);
             MOCK = new WeakReference<>(bucket);
             when(bucket.collections()).thenReturn(CollectionManagerMock.get());
-            when(bucket.name()).thenReturn(ClusterMock.BUCKET);
+            when(bucket.name()).thenReturn(CouchbaseTestUtils.BUCKET);
         }
 
         return MOCK.get();

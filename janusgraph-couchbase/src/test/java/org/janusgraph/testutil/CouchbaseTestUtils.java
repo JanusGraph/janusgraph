@@ -16,15 +16,64 @@
 
 package org.janusgraph.testutil;
 
+import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
+import com.couchbase.client.java.Scope;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions;
+import org.janusgraph.diskstorage.couchbase.mocks.ClusterMock;
+import org.mockito.Mockito;
+import org.testcontainers.couchbase.BucketDefinition;
+import org.testcontainers.couchbase.CouchbaseContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.utility.DockerImageName;
+
+import java.lang.ref.WeakReference;
+import java.time.Duration;
 
 import static com.couchbase.client.java.query.QueryOptions.queryOptions;
 import static com.couchbase.client.java.query.QueryScanConsistency.REQUEST_PLUS;
 
 public class CouchbaseTestUtils {
 
+    public static final String BUCKET = "__bucket__";
+    public static final String SCOPE = "__scope__";
+
+    private static final BucketDefinition testBucketDefinition = new BucketDefinition("__bucket__")
+        .withPrimaryIndex(true)
+        .withQuota(100);
+
+    private static WeakReference<Configuration> configMock;
+
+    @Container
+    static final CouchbaseContainer couchbaseContainer =
+        new CouchbaseContainer(DockerImageName.parse("couchbase:enterprise").asCompatibleSubstituteFor("couchbase/server"))
+            .withCredentials("Administrator", "password")
+            .withBucket(testBucketDefinition)
+            .withStartupTimeout(Duration.ofMinutes(1));
+
+    private static Cluster cluster;
+    public static Cluster getCluster() {
+        init();
+        return cluster;
+    }
+
+    private static void init() {
+        if (cluster == null || !couchbaseContainer.isRunning()) {
+            if (couchbaseContainer.isRunning()) {
+                couchbaseContainer.start();
+            }
+            cluster = Cluster.connect(
+                couchbaseContainer.getConnectionString(),
+                couchbaseContainer.getUsername(),
+                couchbaseContainer.getPassword()
+            );
+            configMock.clear();
+        }
+    }
+
     public static void clearDatabase() throws Exception {
-        Cluster cluster = Cluster.connect("localhost", "Administrator", "password");
+        Cluster cluster = getCluster();
         executeAndIgnoreException(cluster, "delete from default._default.edgestore");
         executeAndIgnoreException(cluster, "delete from default._default.graphindex");
         executeAndIgnoreException(cluster, "delete from default._default.janusgraph_ids");
@@ -46,5 +95,30 @@ public class CouchbaseTestUtils {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+
+    public static Configuration getConfiguration() {
+        init();
+        if (configMock == null || configMock.get() == null) {
+            Configuration config = Mockito.mock(Configuration.class);
+            Mockito.when(config.get(CouchbaseIndexConfigOptions.CLUSTER_CONNECT_STRING)).thenReturn(couchbaseContainer.getConnectionString());
+            Mockito.when(config.get(CouchbaseIndexConfigOptions.CLUSTER_CONNECT_USERNAME)).thenReturn(couchbaseContainer.getUsername());
+            Mockito.when(config.get(CouchbaseIndexConfigOptions.CLUSTER_CONNECT_PASSWORD)).thenReturn(couchbaseContainer.getPassword());
+            Mockito.when(config.get(CouchbaseIndexConfigOptions.CLUSTER_CONNECT_BUCKET)).thenReturn(BUCKET);
+            Mockito.when(config.get(CouchbaseIndexConfigOptions.CLUSTER_DEFAULT_SCOPE)).thenReturn(SCOPE);
+            Mockito.when(config.get(CouchbaseIndexConfigOptions.CLUSTER_DEFAULT_FUZINESS)).thenReturn(2);
+            configMock = new WeakReference<>(config);
+        }
+        return configMock.get();
+    }
+
+    public static Bucket getBucket() {
+        return getCluster().bucket(BUCKET);
+    }
+
+    public static Scope getScope() {
+        return getBucket().scope(SCOPE);
     }
 }

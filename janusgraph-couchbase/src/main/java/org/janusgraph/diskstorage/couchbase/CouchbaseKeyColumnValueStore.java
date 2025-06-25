@@ -22,6 +22,7 @@ import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.json.JsonArray;
 import com.couchbase.client.java.json.JsonObject;
+import com.couchbase.client.java.kv.GetResult;
 import com.couchbase.client.java.manager.collection.CollectionManager;
 import com.couchbase.client.java.manager.collection.CollectionSpec;
 import com.couchbase.client.java.manager.collection.ScopeSpec;
@@ -59,6 +60,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -125,7 +127,7 @@ public class CouchbaseKeyColumnValueStore implements KeyColumnValueStore {
                         cm.createCollection(collectionSpec);
                         storeDb = bucket.scope(scopeName).collection(collectionName);
                         Thread.sleep(2000);
-                        LOGGER.debug("Creating primary index...");
+                        LOGGER.debug("Creating primary index on `default`:`{}`.`{}`.`{}`...", bucketName, scopeName, collectionName);
                         //cluster.queryIndexes().createPrimaryIndex("`"+bucketName+"`.`"+defaultScopeName+"`.`"+name+"`", CreatePrimaryQueryIndexOptions.createPrimaryQueryIndexOptions().ignoreIfExists(true));
                         cluster.query("CREATE PRIMARY INDEX ON `default`:`" + bucketName + "`.`" + scopeName + "`.`" + collectionName + "`");
                         Thread.sleep(1000);
@@ -141,6 +143,7 @@ public class CouchbaseKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public void close() {
+        storeManager.closeStore(this);
     }
 
     @Override
@@ -221,7 +224,13 @@ public class CouchbaseKeyColumnValueStore implements KeyColumnValueStore {
                             StaticBuffer column,
                             StaticBuffer expectedValue,
                             StoreTransaction txh) {
-        throw new UnsupportedOperationException();
+        GetResult lock = getCollection().getAndLock(key.toString(), Duration.ofDays(1));
+        JsonObject doc = lock.contentAsObject();
+        if (!Objects.equals(expectedValue, doc.get(column.toString()))) {
+            throw new IllegalStateException("Expected value mismatch");
+        }
+
+        ((CouchbaseTx) txh).addLock(getName(), key.toString(), lock.cas());
     }
 
     @Override
@@ -265,11 +274,11 @@ public class CouchbaseKeyColumnValueStore implements KeyColumnValueStore {
         select.append(" META().id as id,");
         if (keys == null) {
             if (keyStart != null) {
-                where.append(" AND META().id >= '").append(keyStart).append("'");
+                where.append(" AND META().id >= '").append(columnConverter.toId(keyStart)).append("'");
             }
 
             if (keyEnd != null) {
-                where.append(" AND META().id < '").append(keyEnd).append("'");
+                where.append(" AND META().id < '").append(columnConverter.toId(keyEnd)).append("'");
             }
         }
 

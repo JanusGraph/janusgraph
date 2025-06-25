@@ -22,6 +22,7 @@ public class CouchbaseDocumentMutation {
     private String table;
     private String documentId;
     private KCVMutation mutation;
+    private String cas;
 
     public CouchbaseDocumentMutation(String table, String documentId, KCVMutation mutation) {
         this.table = table;

@@ -17,6 +17,7 @@
 package org.janusgraph.diskstorage.couchbase.mocks;
 
 import com.couchbase.client.java.Scope;
+import org.janusgraph.testutil.CouchbaseTestUtils;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -26,7 +27,7 @@ public class ScopeMock {
     public static Scope get() {
         if (MOCK == null) {
             Scope scope = mock(Scope.class);
-            when(scope.name()).thenReturn(ClusterMock.SCOPE);
+            when(scope.name()).thenReturn(CouchbaseTestUtils.SCOPE);
             MOCK = scope;
         }
         return MOCK;

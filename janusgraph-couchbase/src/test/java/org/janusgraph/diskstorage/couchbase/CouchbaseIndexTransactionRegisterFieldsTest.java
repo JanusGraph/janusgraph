@@ -16,27 +16,19 @@
 
 package org.janusgraph.diskstorage.couchbase;
 
-import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
-import com.couchbase.client.java.Collection;
-import com.couchbase.client.java.Scope;
 import com.couchbase.client.java.manager.query.CreateQueryIndexOptions;
-import com.couchbase.client.java.manager.query.QueryIndex;
 import com.couchbase.client.java.manager.query.QueryIndexManager;
 import com.couchbase.client.java.manager.search.SearchIndexManager;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.couchbase.mocks.BucketMock;
-import org.janusgraph.diskstorage.couchbase.mocks.ClusterMock;
 import org.janusgraph.diskstorage.couchbase.mocks.QueryIndexManagerMock;
-import org.janusgraph.diskstorage.couchbase.mocks.ScopeMock;
 import org.janusgraph.diskstorage.couchbase.mocks.SearchIndexManagerMock;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.testutil.CouchbaseTestUtils;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -62,31 +54,16 @@ class CouchbaseIndexTransactionRegisterFieldsTest {
     CreateQueryIndexOptions cqi;
 
     @BeforeAll
-    static void prepareAll() {
-        Mockito.mockStatic(Mapping.class);
-        Mockito.mockStatic(CreateQueryIndexOptions.class);
-    }
-
-    @BeforeEach
-    void prepareForTest() {
-        BaseTransactionConfig btc = Mockito.mock(BaseTransactionConfig.class);
-        cluster = ClusterMock.get();
-        Bucket bucket = BucketMock.get();
-        Scope scope = ScopeMock.get();
-        cit = Mockito.spy(new CouchbaseIndexTransaction(btc, cluster, bucket, scope, "__inp_", "__ins_"));
-        Collection collection = Mockito.mock(Collection.class);
-        cqi = Mockito.mock(CreateQueryIndexOptions.class);
-        Mockito.when(cqi.scopeName(Mockito.eq(ClusterMock.SCOPE))).thenReturn(cqi);
-        Mockito.when(cqi.collectionName(Mockito.anyString())).thenReturn(cqi);
-        Mockito.when(CreateQueryIndexOptions.createQueryIndexOptions()).thenReturn(cqi);
-
-        QueryIndex qi = Mockito.mock(QueryIndex.class);
-        Mockito.doReturn(null).doReturn(qi).when(cit).getIndex(Mockito.anyString());
+    void prepareAll() {
+        cluster = CouchbaseTestUtils.getCluster();
+//        cit = new CouchbaseIndexTransaction(new StandardBaseTransactionConfig(
+//            "couchbase-test", TimestampProviders.MILLI, Instant.now(), null
+//        ));
     }
 
     @AfterEach
-    void tearDown() {
-        ClusterMock.reset();
+    void tearDown() throws Exception {
+        CouchbaseTestUtils.clearDatabase();
     }
 
     private KeyInformation keyInformation(Mapping mapping, Class type) {
@@ -103,7 +80,7 @@ class CouchbaseIndexTransactionRegisterFieldsTest {
         QueryIndexManager qim = QueryIndexManagerMock.get();
         HashSet<String> expectedKeys = new HashSet<>();
         expectedKeys.add("`test_key`");
-        Mockito.verify(qim).createIndex(Mockito.eq(ClusterMock.BUCKET), Mockito.eq("__inp__test_store"), Mockito.eq(expectedKeys), Mockito.eq(cqi));
+        Mockito.verify(qim).createIndex(Mockito.eq(CouchbaseTestUtils.BUCKET), Mockito.eq("__inp__test_store"), Mockito.eq(expectedKeys), Mockito.eq(cqi));
         Mockito.verify(cluster, Mockito.times(2)).queryIndexes();
 
         SearchIndexManager sim = SearchIndexManagerMock.get();
@@ -111,7 +88,7 @@ class CouchbaseIndexTransactionRegisterFieldsTest {
             Assert.assertNotNull(si);
             Map<String, Object> params = si.params();
             Assert.assertNotNull(params);
-            List<Map<String, Object>> keyProps = (List<Map<String, Object>>) pullMapKeys(params, "mapping/types/__scope__.test_store/properties/columns/properties/test_key/fields");
+            List<Map<String, Object>> keyProps = (List<Map<String, Object>>) pullMapKeys(params, "mapping/types/__scope__.test_store/properties/test_key/fields");
             AtomicBoolean found = new AtomicBoolean(false);
             keyProps.stream()
                     .filter(kp -> "test_key".equals(kp.get("name")))

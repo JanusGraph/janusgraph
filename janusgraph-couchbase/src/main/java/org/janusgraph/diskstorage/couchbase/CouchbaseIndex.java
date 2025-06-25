@@ -20,6 +20,7 @@ import com.couchbase.client.core.deps.io.netty.handler.ssl.util.InsecureTrustMan
 import com.couchbase.client.core.env.ConnectionStringPropertyLoader;
 import com.couchbase.client.core.env.IoConfig;
 import com.couchbase.client.core.env.SecurityConfig;
+import com.couchbase.client.core.error.ScopeExistsException;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.ClusterOptions;
@@ -27,14 +28,22 @@ import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.Scope;
 import com.couchbase.client.java.env.ClusterEnvironment;
 import com.couchbase.client.java.json.JsonArray;
+import com.couchbase.client.java.json.JsonObject;
+import com.couchbase.client.java.kv.MutationState;
+import com.couchbase.client.java.manager.collection.CollectionManager;
 import com.couchbase.client.java.manager.collection.CollectionSpec;
+import com.couchbase.client.java.manager.collection.CreateScopeOptions;
+import com.couchbase.client.java.manager.collection.ScopeSpec;
 import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
+import com.couchbase.client.java.query.QueryScanConsistency;
 import com.couchbase.client.java.search.SearchOptions;
 import com.couchbase.client.java.search.SearchQuery;
+import com.couchbase.client.java.search.SearchScanConsistency;
 import com.couchbase.client.java.search.result.SearchResult;
 import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.Namifiable;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
@@ -44,6 +53,8 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransaction;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.BaseTransactionConfigurable;
+import org.janusgraph.diskstorage.Mutation;
+import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.couchbase.lucene.Lucene2CouchbaseQLTranslator;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
@@ -53,6 +64,7 @@ import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.RawQuery;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.And;
@@ -75,16 +87,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.janusgraph.diskstorage.couchbase.CouchbaseConfigOptions.CLUSTER_CONNECT_STRING;
-import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_CONNECT_BUCKET;
-import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_CONNECT_PASSWORD;
-import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_CONNECT_USERNAME;
-import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_DEFAULT_FUZINESS;
-import static org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions.CLUSTER_DEFAULT_SCOPE;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
 
 /**
  * @author : Dmitrii Chechetkin (dmitrii.chechetkin@couchbase.com)
@@ -96,11 +101,11 @@ public class CouchbaseIndex implements IndexProvider {
     private static final String STRING_MAPPING_SUFFIX = "__STRING";
     static final String FTS_INDEX_NAME = "fulltext_index";
     private final String name;
-    private final Cluster cluster;
+    private Cluster cluster;
 
-    private final Bucket bucket;
+    private Bucket bucket;
 
-    private final Scope scope;
+    private Scope scope;
 
     private final int fuzziness;
 
@@ -108,35 +113,43 @@ public class CouchbaseIndex implements IndexProvider {
 
     private final String indexNamespace;
 
+    private AtomicReference<MutationState> lastMutationState = new AtomicReference<>();
+
     public CouchbaseIndex(Configuration config) {
         boolean isTLS = false;
-        final String connectString = config.get(CLUSTER_CONNECT_STRING);
+        final String connectString = config.get(CouchbaseIndexConfigOptions.CLUSTER_CONNECT_STRING);
         if (connectString.startsWith("couchbases://")) {
             isTLS = true;
         }
 
         ClusterEnvironment.Builder envBuilder = ClusterEnvironment.builder()
-                .ioConfig(IoConfig.enableDnsSrv(isTLS))
+                .ioConfig(IoConfig.enableDnsSrv(isTLS).enableMutationTokens(true))
                 .securityConfig(SecurityConfig.enableTls(isTLS)
                         .trustManagerFactory(InsecureTrustManagerFactory.INSTANCE));
 
         new ConnectionStringPropertyLoader(connectString).load(envBuilder);
 
         ClusterEnvironment env = envBuilder.build();
-        name = config.get(INDEX_NAME);
+        name = config.get(GraphDatabaseConfiguration.INDEX_NAME);
+        String bucketName = config.get(CouchbaseIndexConfigOptions.CLUSTER_CONNECT_BUCKET);
+        String scopeName = config.get(CouchbaseIndexConfigOptions.CLUSTER_DEFAULT_SCOPE);
+
+        LOGGER.info("Connecting Couchbase Index `{}` (bucket: `{}`, scope: `{}`)", connectString, bucketName, scopeName);
         cluster = Cluster.connect(connectString,
-                ClusterOptions.clusterOptions(config.get(CLUSTER_CONNECT_USERNAME),
-                        config.get(CLUSTER_CONNECT_PASSWORD)).environment(env));
+                ClusterOptions.clusterOptions(config.get(CouchbaseIndexConfigOptions.CLUSTER_CONNECT_USERNAME),
+                        config.get(CouchbaseIndexConfigOptions.CLUSTER_CONNECT_PASSWORD)).environment(env));
 
-        fuzziness = config.get(CLUSTER_DEFAULT_FUZINESS);
-
-        String bucketName = config.get(CLUSTER_CONNECT_BUCKET);
-        String scopeName = config.get(CLUSTER_DEFAULT_SCOPE);
+        fuzziness = config.get(CouchbaseIndexConfigOptions.CLUSTER_DEFAULT_FUZINESS);
 
         bucket = cluster.bucket(bucketName);
+        try {
+            bucket.collections().createScope(scopeName);
+        } catch (ScopeExistsException see) {
+            // ok, we'll reuse it
+        }
         scope = bucket.scope(scopeName);
         indexNamePrefix = String.format("%s_%s", bucketName, scopeName);
-        indexNamespace = String.format("%s.%s", bucketName, scopeName);
+        indexNamespace = String.format("`%s`.`%s`", bucketName, scopeName);
     }
 
     @Override
@@ -149,7 +162,7 @@ public class CouchbaseIndex implements IndexProvider {
     protected Collection getStorage(String name) {
         Collection result = scope.collection(name);
         if (result == null) {
-            bucket.collections().createCollection(CollectionSpec.create(name, scope.name()));
+            createCollection(name);
             result = scope.collection(name);
         }
         return result;
@@ -177,7 +190,28 @@ public class CouchbaseIndex implements IndexProvider {
         final String fieldName = aggregation.getFieldName() == null ? "*" : aggregation.getFieldName();
         return doQuery(String.format("%s(%s) as __agg_result", aggType, fieldName), query, information, tx)
                 .rowsAsObject().stream()
-                .findFirst().map(row -> row.getLong("__agg_result"))
+                .findFirst().map(row -> {
+                    if (aggregation.getType() == Aggregation.Type.SUM) {
+                        if (Float.class.isAssignableFrom(aggregation.getDataType()) || Double.class.isAssignableFrom(aggregation.getDataType())) {
+                            return row.getDouble("__agg_result");
+                        } else {
+                            return row.getLong("__agg_result");
+                        }
+                    } else if (aggregation.getType() == Aggregation.Type.AVG) {
+                        return row.getDouble("__agg_result");
+                    } else if (aggregation.getDataType() == null) {
+                        return row.getLong("__agg_result");
+                    } else if (aggregation.getDataType().equals(Long.class)) {
+                        return (Number) row.getLong("__agg_result");
+                    } else if (aggregation.getDataType().equals(Double.class)) {
+                        return (Number) row.getDouble("__agg_result");
+                    } else if (aggregation.getDataType().equals(Integer.class)) {
+                        return (Number) row.getInt("__agg_result");
+                    } else if (aggregation.getDataType().equals(Float.class)) {
+                        return row.getDouble("__agg_result").floatValue();
+                    }
+                    throw new RuntimeException("Unsupported aggregation type `" + aggregation.getType() + "`");
+                })
                 .orElse(0L);
     }
 
@@ -186,29 +220,28 @@ public class CouchbaseIndex implements IndexProvider {
     }
 
     protected Optional<CollectionSpec> getCollection(String name) {
-        return bucket.collections().getAllScopes()
-                .parallelStream()
+        return bucket.collections().getAllScopes().stream()
                 .filter(scopeSpec -> scopeSpec.name().equals(scope.name()))
-                .flatMap(scopeSpec -> scopeSpec.collections().parallelStream())
+                .flatMap(scopeSpec -> scopeSpec.collections().stream())
                 .filter(collectionSpec -> collectionSpec.name().equals(name))
                 .findFirst();
     }
 
     protected CollectionSpec createCollection(String name) {
-        CollectionSpec collectionSpec = CollectionSpec.create(name, scope.name(), Duration.ZERO);
-        bucket.collections().createCollection(collectionSpec);
+        bucket.collections().createCollection(scope.name(), name);
 
         try {
-            Thread.sleep(2000);
+            Thread.sleep(500);
             scope.query("CREATE PRIMARY INDEX ON `" + name + "`");
-            Thread.sleep(1000);
+//            Thread.sleep(1000);
+            LOGGER.info("Created index collection '{}'", name);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return collectionSpec;
+        return getCollection(name).get();
     }
 
-    protected List<QueryFilter> transformFilter(String storageName, Condition<?> condition) {
+    protected List<QueryFilter> transformFilter(String storageName, Condition<?> condition, KeyInformation.IndexRetriever information) {
         final List<QueryFilter> result = new LinkedList<>();
         if (condition instanceof PredicateCondition) {
             final PredicateCondition<String, ?> atom = (PredicateCondition<String, ?>) condition;
@@ -217,7 +250,7 @@ public class CouchbaseIndex implements IndexProvider {
             final JanusGraphPredicate predicate = atom.getPredicate();
             final String fullIndexName = getIndexFullName(storageName);
             if (value == null && predicate == Cmp.NOT_EQUAL) {
-                result.add(new QueryFilter(String.format("EXISTS %s", key)));
+                result.add(new QueryFilter(String.format("EXISTS `%s`", key)));
             } else if (predicate == Cmp.EQUAL
                     || predicate == Cmp.NOT_EQUAL
                     || predicate == Cmp.GREATER_THAN
@@ -225,15 +258,24 @@ public class CouchbaseIndex implements IndexProvider {
                     || predicate == Cmp.LESS_THAN
                     || predicate == Cmp.LESS_THAN_EQUAL
             ) {
-                result.add(new QueryFilter(String.format("%s %s ?", key, predicate), value));
+                if (predicate == Cmp.EQUAL) {
+                    KeyInformation keyInfo = information.get(storageName, key);
+                    if (keyInfo.getCardinality().equals(Cardinality.SINGLE)) {
+                        result.add(new QueryFilter(String.format("`%s` %s ?", key, predicate), value));
+                    } else {
+                        result.add(new QueryFilter(String.format("array_contains(`%s`, ?)", key), value));
+                    }
+                } else {
+                    result.add(new QueryFilter(String.format("`%s` %s ?", key, predicate), value));
+                }
             } else if (predicate == Text.PREFIX || predicate == Text.NOT_PREFIX) {
                 StringBuilder statement = new StringBuilder();
                 if (predicate == Text.NOT_PREFIX) {
                     statement.append("NOT ");
                 }
-                statement.append("POSITION(LOWER(")
+                statement.append("POSITION(LOWER(`")
                         .append(key)
-                        .append("), LOWER(?)) = 0");
+                        .append("`), LOWER(?)) = 0");
 
                 result.add(new QueryFilter(statement.toString(), value));
             } else if (predicate == Text.CONTAINS || predicate == Text.NOT_CONTAINS) {
@@ -241,9 +283,9 @@ public class CouchbaseIndex implements IndexProvider {
                 if (predicate == Text.NOT_CONTAINS) {
                     statement.append("NOT ");
                 }
-                statement.append("CONTAINS(LOWER(")
+                statement.append("CONTAINS(LOWER(`")
                         .append(key)
-                        .append("), LOWER(?))");
+                        .append("`), LOWER(?))");
 
                 result.add(new QueryFilter(statement.toString(), value));
             } else if ((predicate == Text.REGEX || predicate == Text.NOT_REGEX)) {
@@ -251,18 +293,18 @@ public class CouchbaseIndex implements IndexProvider {
                 if (predicate == Text.NOT_REGEX) {
                     statement.append("NOT ");
                 }
-                statement.append("REGEXP_MATCHES(")
+                statement.append("REGEXP_MATCHES(`")
                         .append(key)
-                        .append(", ?)");
+                        .append("`, ?)");
                 result.add(new QueryFilter(statement.toString(), value));
             } else if ((predicate == Text.CONTAINS_REGEX || predicate == Text.NOT_CONTAINS_REGEX)) {
                 StringBuilder statement = new StringBuilder();
                 if (predicate == Text.NOT_CONTAINS_REGEX) {
                     statement.append("NOT ");
                 }
-                statement.append("REGEXP_CONTAINS(")
+                statement.append("REGEXP_CONTAINS(`")
                         .append(key)
-                        .append(", ?)");
+                        .append("`, ?)");
                 result.add(new QueryFilter(statement.toString(), value));
             } else if (predicate instanceof Text) {
                 Text textPredicate = (Text) predicate;
@@ -285,7 +327,7 @@ public class CouchbaseIndex implements IndexProvider {
                 throw new IllegalArgumentException("Unsupported predicate: " + predicate.getClass().getCanonicalName());
             }
         } else if (condition instanceof Not) {
-            transformFilter(storageName, ((Not<?>) condition).getChild()).stream()
+            transformFilter(storageName, ((Not<?>) condition).getChild(), information).stream()
                     .map(qf -> new QueryFilter("NOT (" + qf.query() + ")", qf.arguments()))
                     .forEach(result::add);
         } else if (condition instanceof And || condition instanceof Or) {
@@ -294,7 +336,7 @@ public class CouchbaseIndex implements IndexProvider {
 
             for (Condition<?> child : condition.getChildren()) {
                 StringBuilder childFilter = new StringBuilder();
-                transformFilter(storageName, child).forEach(qf -> {
+                transformFilter(storageName, child, information).forEach(qf -> {
                     childFilter.append(qf.query());
                     arguments.addAll(Arrays.asList(qf.arguments()));
                 });
@@ -342,20 +384,38 @@ public class CouchbaseIndex implements IndexProvider {
         throw new IllegalArgumentException("Predicate is not supported: " + predicate);
     }
 
-    protected SearchResult doQuery(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
-        tx.commit();
+    protected QueryResult doQuery(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx, boolean countOnly) throws BackendException {
+//        tx.commit();
         SearchQuery fts = Lucene2CouchbaseQLTranslator.translate(query.getQuery());
-        SearchOptions options = SearchOptions.searchOptions()
-                .limit(query.getLimit())
-                .skip(query.getOffset());
+        JsonObject opts = JsonObject.create();
+        opts.put("index", getIndexFullName(query.getStore()));
+        StringBuilder n1ql = new StringBuilder("SELECT ");
+        if (countOnly) {
+            n1ql.append("COUNT(id) AS count FROM (");
+        } else {
+            n1ql.append("data.* FROM (");
+        }
+        n1ql.append("SELECT META(store).id as id, SEARCH_SCORE(store) as score ");
 
-        LOGGER.info("FTS query: %s", fts);
-        return cluster.searchQuery(getIndexFullName(query.getStore()), fts, options);
+        QueryOptions qo = QueryOptions.queryOptions();
+        if (lastMutationState.get() != null) {
+            qo.consistentWith(lastMutationState.get());
+        }
+//        qo.scanConsistency(QueryScanConsistency.REQUEST_PLUS);
+
+        n1ql.append(String.format(
+            "FROM `%s`.`%s`.`%s` as store WHERE SEARCH(store, %s, %s) LIMIT %d OFFSET %d",
+            bucket.name(), scope.name(), query.getStore(), fts.export(), opts,  Math.min(9999 - query.getOffset(), query.getLimit()), query.getOffset()
+        ));
+        n1ql.append(") as data");
+        LOGGER.info("fts query: {}", n1ql.toString());
+        return cluster.query(n1ql.toString(), qo);
+//        return cluster.searchQuery(getIndexFullName(query.getStore()), fts, options);
     }
 
     protected QueryResult doQuery(String select, IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
-        tx.commit();
-        List<QueryFilter> filter = transformFilter(query.getStore(), query.getCondition());
+//        tx.commit();
+        List<QueryFilter> filter = transformFilter(query.getStore(), query.getCondition(), information);
         JsonArray args = JsonArray.create();
         String filterString = filter.stream()
                 .peek(qf -> Arrays.stream(qf.arguments()).forEach(args::add))
@@ -372,11 +432,14 @@ public class CouchbaseIndex implements IndexProvider {
                         .collect(Collectors.joining(", ")) +
                 ((query.hasLimit()) ? " LIMIT " + query.getLimit() : "");
         try {
-            LOGGER.info("N1QL query: %s", query);
-            return cluster.query(n1ql,
-                    QueryOptions.queryOptions()
-                            .parameters(args)
-            );
+            LOGGER.info("N1QL query: {}", n1ql);
+            QueryOptions options = QueryOptions.queryOptions()
+                    .parameters(args);
+            MutationState ms = lastMutationState.get();
+            if (ms != null) {
+                options.consistentWith(ms);
+            }
+            return cluster.query(n1ql, options);
         } catch (Exception e) {
             LOGGER.error("Query failed: " + n1ql, e);
             throw new RuntimeException(e);
@@ -392,32 +455,54 @@ public class CouchbaseIndex implements IndexProvider {
 
     @Override
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
-        return doQuery(query, information, tx)
-                .rows().stream()
+        return doQuery(query, information, tx, false)
+                .rowsAsObject().stream()
                 .map(row -> {
-                    String docKey = getStorage(query.getStore()).get(row.id()).contentAsObject().getString("__document_key");
-                    return new RawQuery.Result<>(docKey, row.score());
+//                    String docKey = getStorage(query.getStore()).get(row.id()).contentAsObject().getString("__document_key");
+                    return new RawQuery.Result<>(row.getString("id"), row.getDouble("score"));
                 });
     }
 
     @Override
     public Long totals(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
-        return doQuery(query, information, tx).metaData().metrics().totalRows();
+        return (long) doQuery(query, information, tx, true).rowsAsObject()
+            .stream().findFirst().map(row -> row.getLong("count")).orElse(0L);
     }
 
     @Override
     public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException {
-        return new CouchbaseIndexTransaction(config, cluster, bucket, scope, indexNamePrefix, indexNamespace);
+        return new CouchbaseIndexTransaction(config, this, indexNamePrefix);
     }
 
     @Override
     public void close() throws BackendException {
-
+        LOGGER.info("Couchbase Index closed");
     }
 
     @Override
     public void clearStorage() throws BackendException {
+        LOGGER.info("Clear Storage Requested");
+        CollectionManager cm = bucket.collections();
+        ScopeSpec defaultScope = cm.getAllScopes().stream().filter(s -> s.name().equals(scope.name())).findFirst().orElse(null);
 
+        if (defaultScope == null) {
+            throw new PermanentBackendException("Could not get ScopeSpec for configured scope ");
+        }
+
+
+        for (CollectionSpec cs : defaultScope.collections()) {
+            final String collection = cs.name();
+            try {
+                //According to tests, clear storage is a hard clean process, and should wipe everything
+                String query = "DELETE FROM `" + bucket.name() + "`.`" + scope.name() + "`." + collection;
+                LOGGER.trace("Running Query: " + query);
+                cluster.query(query, QueryOptions.queryOptions().scanConsistency(QueryScanConsistency.REQUEST_PLUS));
+            } catch (Exception e) {
+                throw new RuntimeException("Could not clear Couchbase storage", e);
+            }
+        }
+
+        LOGGER.info("CouchbaseIndex {} cleared storage", name);
     }
 
     @Override
@@ -500,5 +585,34 @@ public class CouchbaseIndex implements IndexProvider {
                 .supportsNanoseconds()
                 .supportNotQueryNormalForm()
                 .build();
+    }
+
+    public Cluster getCluster() {
+        if (cluster == null) {
+            throw new RuntimeException("Cluster is closed");
+        }
+        return cluster;
+    }
+
+    public Bucket getBucket() {
+        if (bucket == null) {
+            throw new RuntimeException("Cluster is closed");
+        }
+        return bucket;
+    }
+
+    public Scope getScope() {
+        if (scope == null) {
+            throw new RuntimeException("Cluster is closed");
+        }
+        return scope;
+    }
+
+    public void setMutationState(MutationState mutationState) {
+        lastMutationState.set(mutationState);
+    }
+
+    public MutationState getMutationState() {
+        return lastMutationState.get();
     }
 }
