@@ -14,6 +14,14 @@
 
 package org.janusgraph.diskstorage.lucene;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+
+import java.time.Duration;
+import java.util.HashMap;
+
+import java.util.Map;
+
 import org.janusgraph.StorageSetup;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Cmp;
@@ -23,11 +31,22 @@ import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
+import org.janusgraph.diskstorage.indexing.IndexTransaction;
+import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.diskstorage.indexing.KeyInformation.IndexRetriever;
+import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,5 +168,49 @@ public class LuceneIndexTest extends IndexProviderTest {
     public void testMapKey2Field_MappingSpaces() {
         String expected = "field" + REPLACEMENT_CHAR + "name" + REPLACEMENT_CHAR + "with" + REPLACEMENT_CHAR + "spaces";
         assertEquals(expected, index.mapKey2Field("field name with spaces", null));
+    }
+
+    @Test
+    public void testUsesKeywordAnalyzerAfterAddingIndexKey() throws Exception {
+        final String newKeyword = "new_keyword";
+        final String store = "vertex";
+        initialize(store);
+        final Multimap<String, Object> initialDoc = HashMultimap.create();
+        initialDoc.put(STRING, "Tom and Jerry");
+        add(store, "doc1", initialDoc, true);
+        clopen();
+
+        // First run a query so that the KeyInformation gets used.
+        // It will be cached in the LuceneCustomAnalyzer.
+        IndexQuery query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom and Jerry"));
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
+
+        // Add newKeyword to KeyInformation and create a new retriever
+        final BaseTransactionConfig config = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
+        Map<String, KeyInformation> newKeys = new HashMap<>(allKeys);
+        newKeys.put(newKeyword, new StandardKeyInformation(String.class, Cardinality.SINGLE,
+            Mapping.TEXT.asParameter(), new Parameter<>(ParameterType.TEXT_ANALYZER.getName(),
+            getKeywordAnalyzerName())));
+        IndexRetriever indexRetriever = getIndexRetriever(newKeys);
+
+        // Create doc using newKeyword
+        IndexTransaction newTx = new IndexTransaction(index, indexRetriever, config, Duration.ofMillis(2000L));
+        final IndexEntry idx = new IndexEntry(newKeyword, "Tom and Jerry");
+        newTx.add(store, "doc2", idx, true);
+        newTx.commit();
+
+        newTx = new IndexTransaction(index, indexRetriever, config, Duration.ofMillis(2000L));
+
+        // Verify the doc has been added
+        query = new IndexQuery(store, PredicateCondition.of(newKeyword, Text.CONTAINS, "Tom and Jerry"));
+        assertEquals(1, newTx.queryStream(query).count(), query.toString());
+
+        // All the following queries should return zero results if the KeywordAnalyzer is being used
+        query = new IndexQuery(store, PredicateCondition.of(newKeyword, Text.CONTAINS, "Tom Jerry"));
+        assertEquals(0, newTx.queryStream(query).count(), query.toString());
+        query = new IndexQuery(store, PredicateCondition.of(newKeyword, Text.CONTAINS, "Tom"));
+        assertEquals(0, newTx.queryStream(query).count(), query.toString());
+        query = new IndexQuery(store, PredicateCondition.of(newKeyword, Text.CONTAINS_PREFIX, "jerr"));
+        assertEquals(0, newTx.queryStream(query).count(), query.toString());
     }
 }
