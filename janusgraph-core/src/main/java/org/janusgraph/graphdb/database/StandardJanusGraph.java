@@ -98,6 +98,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphIoRegistrati
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexAggStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMultiQueryStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphProxyTraversalStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphStepStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
@@ -161,7 +162,8 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                                JanusGraphMixedIndexAggStrategy.instance(),
                                JanusGraphMixedIndexCountStrategy.instance(),
                                JanusGraphStepStrategy.instance(),
-                               JanusGraphIoRegistrationStrategy.instance());
+                               JanusGraphIoRegistrationStrategy.instance(),
+                               JanusGraphProxyTraversalStrategy.instance());
 
         //Register with cache
         TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, graphStrategies);
