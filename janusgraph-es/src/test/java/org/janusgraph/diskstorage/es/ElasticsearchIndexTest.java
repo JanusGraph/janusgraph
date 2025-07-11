@@ -85,7 +85,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -229,9 +228,6 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         String message = Throwables.getRootCause(janusGraphException).getMessage();
 
         switch (JanusGraphElasticsearchContainer.getEsMajorVersion().value){
-            case 8:
-                assertTrue(message.contains("document_parsing_exception"));
-                break;
             case 7:
             case 6:
                 assertTrue(message.contains("mapper_parsing_exception"));
@@ -240,7 +236,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
                 assertTrue(message.contains("number_format_exception"));
                 break;
             default:
-                fail();
+                assertTrue(message.contains("document_parsing_exception"));
                 break;
         }
 

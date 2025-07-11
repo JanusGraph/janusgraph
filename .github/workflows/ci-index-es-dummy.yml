@@ -32,6 +32,10 @@ jobs:
       matrix:
         include:
           - module: es
+            args: "-Pelasticsearch9"
+            name: es9-java8
+            java: 8
+          - module: es
             args: "-Pelasticsearch8"
             name: es8
             java: 8
@@ -47,6 +51,11 @@ jobs:
             args: "-Pelasticsearch60"
             name: es60
             java: 8
+          - module: es
+            install-args: "-Pjava-11"
+            args: "-Pelasticsearch9"
+            name: es9
+            java: 11
           - module: es
             install-args: "-Pjava-11"
             args: "-Pelasticsearch8"
