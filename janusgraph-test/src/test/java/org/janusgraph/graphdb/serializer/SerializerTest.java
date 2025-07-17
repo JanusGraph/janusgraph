@@ -245,8 +245,8 @@ public class SerializerTest extends SerializerTestCommon {
         out.writeObjectNotNull(str.toString());
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
-        assertEquals(str.toString(), serialize.readObjectNotNull(b, String.class));
-        assertFalse(b.hasRemaining());
+        assertEquals(str.toString(), serialize.readObjectNotNull(b, String.class), "Serialized string does not match the original string");
+        assertFalse(b.hasRemaining(), "The buffer has remaining data after reading");
     }
 
     @Test
