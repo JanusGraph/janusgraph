@@ -58,6 +58,10 @@
                     <artifactId>cassandra-hadoop-util</artifactId>
                     <groupId>${project.groupId}</groupId>
                 </exclusion>
+                <exclusion>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>janusgraph-couchbase</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -65,6 +69,12 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${cql-module}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-couchbase</artifactId>
             <version>${project.version}</version>
         </dependency>
 
