@@ -24,6 +24,11 @@ services:
       - "8182:8182"
     networks:
       - jce-network
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "bin/gremlin.sh", "-e", "scripts/remote-connect.groovy"]
       interval: 10s
@@ -31,16 +36,21 @@ services:
       retries: 3
 
   cassandra:
-    image: cassandra:4.0.17
+    image: cassandra:4.0.18
     container_name: jce-cassandra
     ports:
       - "9042:9042"
       - "9160:9160"
     networks:
       - jce-network
+    healthcheck:
+      test: ["CMD", "nodetool", "status"]
+      interval: 10s
+      timeout: 30s
+      retries: 6
 
   elasticsearch:
-    image: elasticsearch:8.17.1
+    image: elasticsearch:8.18.4
     container_name: jce-elastic
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
@@ -54,9 +64,14 @@ services:
       - "9200:9200"
     networks:
       - jce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 10s
+      timeout: 30s
+      retries: 6
 
   janusgraph-visualizer:
-    image: janusgraph/janusgraph-visualizer:latest
+    image: janusgraph/janusgraph-visualizer:1.0.4
     container_name: jce-visualizer
     ports:
       - "3000:3000"
@@ -64,11 +79,12 @@ services:
     networks:
       - jce-network
     depends_on:
-      - janusgraph
+      janusgraph:
+        condition: service_healthy
     environment:
-      - GRAPH_URL=http://jce-janusgraph:8182
+      - GREMLIN_HOST=jce-janusgraph
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      test: ["CMD", "nc", "-v", "-w", "2", "localhost", "3001"]
       interval: 10s
       retries: 3
 
