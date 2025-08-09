@@ -14,7 +14,7 @@
 
 ARG BASE_IMAGE=eclipse-temurin:11-jre
 
-FROM debian:buster-slim as builder
+FROM debian:bullseye-slim as builder
 
 ARG TARGETARCH
 ARG JANUS_VERSION=1.0.0-SNAPSHOT
