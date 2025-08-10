@@ -14,7 +14,7 @@
 
 FROM debian:bookworm-20240211 as builder
 
-ARG HBASE_VERSION=2.5.0
+ARG HBASE_VERSION=2.6.0
 ARG HBASE_DIST="https://archive.apache.org/dist/hbase"
 
 RUN apt-get update && \
@@ -27,7 +27,7 @@ RUN rm -rf ./docs ./LEGAL ./*.txt ./*/*.cmd
 COPY ./hbase-site.xml /opt/hbase/conf/hbase-site.xml
 COPY ./hbase-policy.xml /opt/hbase/conf/hbase-policy.xml
 
-FROM openjdk:8-jre-buster
+FROM openjdk:8-jre-bullseye
 
 ARG HBASE_UID=1000
 ARG HBASE_GID=1000
