@@ -47,12 +47,8 @@
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
     </distributionManagement>
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
@@ -120,6 +116,8 @@
         <caffeine.version>2.9.3</caffeine.version>
         <checker-qual.version>3.46.0</checker-qual.version>
         <curator.version>5.7.0</curator.version>
+        <autoPublish>false</autoPublish>
+        <waitUntil>validated</waitUntil>
     </properties>
     <modules>
         <module>janusgraph-grpc</module>
@@ -1550,24 +1548,17 @@
                             </execution>
                         </executions>
                     </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>janusgraph-commit-release</id>
-            <build>
-                <plugins>
                     <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.7.0</version>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.8.0</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <!-- The Base URL of Nexus instance where we want to stage -->
-                            <nexusUrl>https://oss.sonatype.org</nexusUrl>
                             <!-- The server "id" element from settings to use authentication from -->
-                            <serverId>ossrh</serverId>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>${autoPublish}</autoPublish>
+                            <waitUntil>${waitUntil}</waitUntil>
+                            <waitMaxTime>3600</waitMaxTime>
                         </configuration>
                     </plugin>
                 </plugins>
