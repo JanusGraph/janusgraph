@@ -73,7 +73,7 @@ jobs:
         run: |
           mkdir -p ~/.m2/
           echo "<settingsSecurity><master>$MASTER_PASSWORD</master></settingsSecurity>" > ~/.m2/settings-security.xml
-          echo "<settings><servers><server><id>ossrh</id><username>$OSSRH_USERNAME</username><password>$OSSRH_PASSWORD</password></server></servers></settings>" > ~/.m2/settings.xml
+          echo "<settings><servers><server><id>central</id><username>$OSSRH_USERNAME</username><password>$OSSRH_PASSWORD</password></server></servers></settings>" > ~/.m2/settings.xml
         env:
           MASTER_PASSWORD: ${{ secrets.MASTER_PASSWORD }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
@@ -83,4 +83,4 @@ jobs:
       - name: Make JanusGraph JAR artifacts
         run: mvn clean install -Pjanusgraph-release -DskipTests=true
       - name: Deploy JanusGraph JAR artifacts into staging repository
-        run: mvn deploy -Pjanusgraph-release,janusgraph-commit-release -DskipTests=true -DautoReleaseAfterClose=true -Ddescription="$JG_DESCRIPTION" -DstagingDescription="$JG_DESCRIPTION"
+        run: mvn deploy -Pjanusgraph-release -DskipTests=true -DwaitUntil=published -DautoPublish=true -Ddescription="$JG_DESCRIPTION" -DstagingDescription="$JG_DESCRIPTION"
