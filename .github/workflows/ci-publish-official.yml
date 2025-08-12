@@ -74,7 +74,7 @@ jobs:
         run: |
           mkdir -p ~/.m2/
           echo "<settingsSecurity><master>$MASTER_PASSWORD</master></settingsSecurity>" > ~/.m2/settings-security.xml
-          echo "<settings><servers><server><id>ossrh</id><username>$OSSRH_USERNAME</username><password>$OSSRH_PASSWORD</password></server></servers></settings>" > ~/.m2/settings.xml
+          echo "<settings><servers><server><id>central</id><username>$OSSRH_USERNAME</username><password>$OSSRH_PASSWORD</password></server></servers></settings>" > ~/.m2/settings.xml
         env:
           MASTER_PASSWORD: ${{ secrets.MASTER_PASSWORD }}
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
@@ -87,7 +87,7 @@ jobs:
       - name: Print content of the generated target directory for debugging purposes
         run: echo $(ls janusgraph-dist/target/)
       - name: Deploy JanusGraph JAR artifacts into staging repository
-        run: mvn deploy -Pjanusgraph-release -DskipTests=true
+        run: mvn deploy -Pjanusgraph-release -DskipTests=true -DwaitUntil=validated -DautoPublish=false
       - name: Sign JanusGraph full distribution artifact
         run: gpg --armor --detach-sign --yes janusgraph-dist/target/${JG_FULL_DIST_NAME}.zip
       - name: Install requirements to build documentation
