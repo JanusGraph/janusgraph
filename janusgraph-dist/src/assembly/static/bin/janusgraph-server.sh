@@ -108,7 +108,7 @@ COLLECTED_JAVA_OPTIONS_FILE=""
 
 # Read user-defined JVM options from jvm.options file
 if [[ -z "$JAVA_OPTIONS_FILE" ]]; then
-  jver=$($JAVA -version 2>&1 | grep 'version' 2>&1 | awk -F\" '{ split($2,a,"."); print a[1]"."a[2]}')
+  jver=$("$JAVA" -version 2>&1 | grep 'version' 2>&1 | awk -F\" '{ split($2,a,"."); print a[1]"."a[2]}')
   if [[ $jver == "1.8" ]]; then                
     JAVA_OPTIONS_FILE="$JANUSGRAPH_CONF/jvm-8.options"
   else
@@ -130,11 +130,11 @@ if [[ -z "$CP" ]];then
   # Initialize classpath to $JANUSGRAPH_CFG
   CP="${JANUSGRAPH_CONF}"
   # Add the slf4j-log4j12 binding
-  CP="$CP":$(find -L $JANUSGRAPH_LIB -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+  CP="$CP":$(find -L "$JANUSGRAPH_LIB" -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
   # Add the jars in $JANUSGRAPH_HOME/lib that start with "janusgraph"
-  CP="$CP":$(find -L $JANUSGRAPH_LIB -name 'janusgraph*.jar' | sort | tr '\n' ':')
+  CP="$CP":$(find -L "$JANUSGRAPH_LIB" -name 'janusgraph*.jar' | sort | tr '\n' ':')
   # Add the remaining jars in $JANUSGRAPH_HOME/lib.
-  CP="$CP":$(find -L $JANUSGRAPH_LIB -name '*.jar' \
+  CP="$CP":$(find -L "$JANUSGRAPH_LIB" -name '*.jar' \
                   \! -name 'janusgraph*' \
                   \! -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
   # Add the jars in $BIN/../ext (at any subdirectory depth)
