@@ -144,6 +144,7 @@
         <module>janusgraph-examples</module>
         <module>janusgraph-mixed-index-utils</module>
         <module>janusgraph-scylla</module>
+        <module>janusgraph-tablestore</module>
     </modules>
     <repositories>
         <repository>
@@ -1456,6 +1457,11 @@
                 <groupId>javax.enterprise</groupId>
                 <artifactId>cdi-api</artifactId>
                 <version>2.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-client</artifactId>
+                <version>2.5.10</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
