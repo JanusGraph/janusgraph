@@ -210,44 +210,42 @@ public class LuceneIndex implements IndexProvider {
 
     private IndexWriter getWriter(String store, KeyInformation.IndexRetriever informations) throws BackendException {
         Preconditions.checkArgument(writerLock.isHeldByCurrentThread());
-        IndexWriter writer = writers.get(store);
-        if (writer == null) {
-            final LuceneCustomAnalyzer analyzer = delegatingAnalyzerFor(store, informations);
+        IndexWriter writer = writers.computeIfAbsent(store, key -> {
+            final LuceneCustomAnalyzer analyzer = delegatingAnalyzerFor(key, informations);
             final IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
             iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
             try {
-                writer = new IndexWriter(getStoreDirectory(store), iwc);
-                writers.put(store, writer);
-            } catch (final IOException e) {
-                throw new PermanentBackendException("Could not create writer", e);
+                return new IndexWriter(getStoreDirectory(store), iwc);
+            } catch (final IOException | BackendException e) {
+                log.error("Could not create writer", e);
+                return null;
             }
+        });
+        if (writer == null) {
+            throw new PermanentBackendException("Could not create writer");
         }
+        ((LuceneCustomAnalyzer) writer.getAnalyzer()).setInformations(informations);
         return writer;
     }
 
     private SpatialStrategy getSpatialStrategy(String key, KeyInformation ki) {
-        SpatialStrategy strategy = spatial.get(key);
         final Mapping mapping = Mapping.getMapping(ki);
         final int maxLevels = ParameterType.INDEX_GEO_MAX_LEVELS.findParameter(ki.getParameters(),
             DEFAULT_GEO_MAX_LEVELS);
         final double distErrorPct = ParameterType.INDEX_GEO_DIST_ERROR_PCT.findParameter(ki.getParameters(),
             DEFAULT_GEO_DIST_ERROR_PCT);
-        if (strategy == null) {
-            synchronized (spatial) {
-                if (!spatial.containsKey(key)) {
+        SpatialStrategy strategy = spatial.computeIfAbsent(key, k -> {
 //                    SpatialPrefixTree grid = new GeohashPrefixTree(ctx, GEO_MAX_LEVELS);
 //                    strategy = new RecursivePrefixTreeStrategy(grid, key);
-                    if (mapping == Mapping.DEFAULT) {
-                        strategy = PointVectorStrategy.newInstance(ctx, key);
-                    } else {
-                        final SpatialPrefixTree grid = new QuadPrefixTree(ctx, maxLevels);
-                        strategy = new RecursivePrefixTreeStrategy(grid, key);
-                        ((PrefixTreeStrategy) strategy).setDistErrPct(distErrorPct);
-                    }
-                    spatial.put(key, strategy);
-                } else return spatial.get(key);
+            if (mapping == Mapping.DEFAULT) {
+                return PointVectorStrategy.newInstance(ctx, k);
+            } else {
+                final SpatialPrefixTree grid = new QuadPrefixTree(ctx, maxLevels);
+                SpatialStrategy s = new RecursivePrefixTreeStrategy(grid, k);
+                ((PrefixTreeStrategy) s).setDistErrPct(distErrorPct);
+                return s;
             }
-        }
+        });
         return strategy;
     }
 
@@ -671,11 +669,7 @@ public class LuceneIndex implements IndexProvider {
             while (stream.incrementToken()) {
                 int offset = offsetAtt.startOffset();
                 String stem = termAtt.getBytesRef().utf8ToString();
-                List<String> stemList = stemsByOffset.get(offset);
-                if(stemList == null){
-                    stemList = new ArrayList<>();
-                    stemsByOffset.put(offset, stemList);
-                }
+                List<String> stemList = stemsByOffset.computeIfAbsent(offset, k -> new ArrayList<>());
                 stemList.add(stem);
             }
             return new ArrayList<>(stemsByOffset.values());
@@ -755,10 +749,10 @@ public class LuceneIndex implements IndexProvider {
     }
 
     private LuceneCustomAnalyzer delegatingAnalyzerFor(String store, KeyInformation.IndexRetriever information2) {
-        if (!delegatingAnalyzers.containsKey(store)) {
-            delegatingAnalyzers.put(store, new LuceneCustomAnalyzer(store, information2, Analyzer.PER_FIELD_REUSE_STRATEGY));
-        }
-        return delegatingAnalyzers.get(store);
+        LuceneCustomAnalyzer analyzer = delegatingAnalyzers.computeIfAbsent(store, key ->
+            new LuceneCustomAnalyzer(store, information2, Analyzer.PER_FIELD_REUSE_STRATEGY));
+        analyzer.setInformations(information2);
+        return analyzer;
     }
 
     private SearchParams convertQuery(Condition<?> condition, final KeyInformation.StoreRetriever information, final LuceneCustomAnalyzer delegatingAnalyzer) {
