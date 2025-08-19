@@ -1,5 +1,5 @@
 [![JanusGraph logo](janusgraph.png)](https://janusgraph.org/)
-
+ 
 JanusGraph is a highly scalable [graph database](https://en.wikipedia.org/wiki/Graph_database)
 optimized for storing and querying large graphs with billions of vertices and edges
 distributed across a multi-machine cluster. JanusGraph is a transactional database that
