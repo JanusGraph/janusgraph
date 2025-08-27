@@ -25,6 +25,7 @@
         <dependency.plugin.version>3.2.0</dependency.plugin.version>
         <test.skip.default>false</test.skip.default>
         <test.skip.tp>true</test.skip.tp>
+        <test.jvm.opts>-Xms2G -Xmx2G -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</test.jvm.opts>
         <testcontainers.version>1.20.0</testcontainers.version>
     </properties>
 

@@ -16,27 +16,20 @@
 
 package org.janusgraph.graphdb;
 
-import io.github.artsok.ParameterizedRepeatedIfExceptionsTest;
-import io.github.artsok.RepeatedIfExceptionsTest;
-import org.janusgraph.CouchbaseStorageSetup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.testutil.CouchbaseTestUtils;
 import org.janusgraph.testutil.JanusGraphCouchbaseContainer;
 import org.junit.Ignore;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 
 @Testcontainers

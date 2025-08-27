@@ -21,7 +21,6 @@ import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Scope;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions;
-import org.janusgraph.diskstorage.couchbase.mocks.ClusterMock;
 import org.mockito.Mockito;
 import org.testcontainers.couchbase.BucketDefinition;
 import org.testcontainers.couchbase.CouchbaseContainer;

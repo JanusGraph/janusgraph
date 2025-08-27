@@ -32,18 +32,13 @@ import com.couchbase.client.java.json.JsonObject;
 import com.couchbase.client.java.kv.MutationState;
 import com.couchbase.client.java.manager.collection.CollectionManager;
 import com.couchbase.client.java.manager.collection.CollectionSpec;
-import com.couchbase.client.java.manager.collection.CreateScopeOptions;
 import com.couchbase.client.java.manager.collection.ScopeSpec;
 import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
 import com.couchbase.client.java.query.QueryScanConsistency;
-import com.couchbase.client.java.search.SearchOptions;
 import com.couchbase.client.java.search.SearchQuery;
-import com.couchbase.client.java.search.SearchScanConsistency;
-import com.couchbase.client.java.search.result.SearchResult;
 import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.Namifiable;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
@@ -53,7 +48,6 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransaction;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.BaseTransactionConfigurable;
-import org.janusgraph.diskstorage.Mutation;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.couchbase.lucene.Lucene2CouchbaseQLTranslator;
@@ -101,6 +95,7 @@ public class CouchbaseIndex implements IndexProvider {
     private static final String STRING_MAPPING_SUFFIX = "__STRING";
     static final String FTS_INDEX_NAME = "fulltext_index";
     private final String name;
+    private final Integer clusterDelay;
     private Cluster cluster;
 
     private Bucket bucket;
@@ -133,6 +128,7 @@ public class CouchbaseIndex implements IndexProvider {
         name = config.get(GraphDatabaseConfiguration.INDEX_NAME);
         String bucketName = config.get(CouchbaseIndexConfigOptions.CLUSTER_CONNECT_BUCKET);
         String scopeName = config.get(CouchbaseIndexConfigOptions.CLUSTER_DEFAULT_SCOPE);
+        clusterDelay = config.get(CouchbaseIndexConfigOptions.CLUSTER_TEST_DELAY_MS);
 
         LOGGER.info("Connecting Couchbase Index `{}` (bucket: `{}`, scope: `{}`)", connectString, bucketName, scopeName);
         cluster = Cluster.connect(connectString,
@@ -142,6 +138,7 @@ public class CouchbaseIndex implements IndexProvider {
         fuzziness = config.get(CouchbaseIndexConfigOptions.CLUSTER_DEFAULT_FUZINESS);
 
         bucket = cluster.bucket(bucketName);
+        bucket.waitUntilReady(Duration.ofSeconds(5));
         try {
             bucket.collections().createScope(scopeName);
         } catch (ScopeExistsException see) {
@@ -408,9 +405,17 @@ public class CouchbaseIndex implements IndexProvider {
             bucket.name(), scope.name(), query.getStore(), fts.export(), opts,  Math.min(9999 - query.getOffset(), query.getLimit()), query.getOffset()
         ));
         n1ql.append(") as data");
-        LOGGER.info("fts query: {}", n1ql.toString());
-        return cluster.query(n1ql.toString(), qo);
-//        return cluster.searchQuery(getIndexFullName(query.getStore()), fts, options);
+        try {
+            LOGGER.info("fts query: {}", n1ql.toString());
+            if (clusterDelay > 0) {
+                LOGGER.warn("Delaying query execution by {}ms", clusterDelay);
+                Thread.sleep(clusterDelay);
+            }
+            return cluster.query(n1ql.toString(), qo);
+        } catch (Exception e) {
+            LOGGER.error("Query failed: " + n1ql, e);
+            throw new RuntimeException(e);
+        }
     }
 
     protected QueryResult doQuery(String select, IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
@@ -494,8 +499,8 @@ public class CouchbaseIndex implements IndexProvider {
             final String collection = cs.name();
             try {
                 //According to tests, clear storage is a hard clean process, and should wipe everything
-                String query = "DELETE FROM `" + bucket.name() + "`.`" + scope.name() + "`." + collection;
-                LOGGER.trace("Running Query: " + query);
+                String query = "DROP COLLECTION `" + bucket.name() + "`.`" + scope.name() + "`.`" + collection + "` IF EXISTS";
+                LOGGER.debug("Running Query: " + query);
                 cluster.query(query, QueryOptions.queryOptions().scanConsistency(QueryScanConsistency.REQUEST_PLUS));
             } catch (Exception e) {
                 throw new RuntimeException("Could not clear Couchbase storage", e);
@@ -512,7 +517,20 @@ public class CouchbaseIndex implements IndexProvider {
 
     @Override
     public boolean exists() throws BackendException {
-        return true;
+        try {
+            CollectionManager cm = bucket.collections();
+            for (ScopeSpec s : cm.getAllScopes()) {
+                if (s.name().equals(scope.name())) {
+                    if (s.collections().size() > 0) {
+                        return true;
+                    }
+                    return false;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            throw new PermanentBackendException(e);
+        }
     }
 
     @Override

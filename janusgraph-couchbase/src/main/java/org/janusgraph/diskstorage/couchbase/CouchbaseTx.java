@@ -16,10 +16,8 @@
 
 package org.janusgraph.diskstorage.couchbase;
 
-import com.couchbase.client.java.kv.GetResult;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

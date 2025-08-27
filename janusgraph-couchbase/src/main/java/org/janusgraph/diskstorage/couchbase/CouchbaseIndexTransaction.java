@@ -17,7 +17,6 @@
 package org.janusgraph.diskstorage.couchbase;
 
 import com.couchbase.client.core.error.DocumentNotFoundException;
-import com.couchbase.client.core.msg.kv.DurabilityLevel;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.json.JsonArray;
 import com.couchbase.client.java.json.JsonObject;

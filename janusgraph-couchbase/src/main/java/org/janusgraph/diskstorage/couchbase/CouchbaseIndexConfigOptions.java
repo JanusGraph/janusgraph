@@ -87,4 +87,12 @@ public interface CouchbaseIndexConfigOptions {
             ConfigOption.Type.LOCAL,
             2
     );
+
+    ConfigOption<Integer> CLUSTER_TEST_DELAY_MS = new ConfigOption<>(
+        CB_NS,
+        "cluster-test-delay-ms",
+        "Transaction delay used in FTS tests",
+        ConfigOption.Type.LOCAL,
+        0
+    );
 }

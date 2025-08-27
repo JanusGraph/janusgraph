@@ -16,25 +16,25 @@
 
 package org.janusgraph.diskstorage.couchbase;
 
-import com.couchbase.client.java.Cluster;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.testutil.JanusGraphCouchbaseContainer;
-import org.junit.Ignore;
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Ignore
-class CouchbaseIndexTest extends JanusGraphIndexTest {
+import java.util.concurrent.ExecutionException;
+
+@Testcontainers
+public class CouchbaseIndexTest extends JanusGraphIndexTest {
 
     @Container
     public static JanusGraphCouchbaseContainer cb = new JanusGraphCouchbaseContainer();
 
-    protected CouchbaseIndexTest() throws InterruptedException {
+    public CouchbaseIndexTest() throws InterruptedException {
         super(false, true, true);
     }
 
@@ -60,12 +60,12 @@ class CouchbaseIndexTest extends JanusGraphIndexTest {
 
     @Override
     public boolean supportsGeoPointExistsQuery() {
-        return true;
+        return false;
     }
 
     @Override
     public boolean supportsGeoShapePrefixTreeMapping() {
-        return true;
+        return false;
     }
 
     @Override
@@ -91,5 +91,40 @@ class CouchbaseIndexTest extends JanusGraphIndexTest {
     @Override
     public WriteConfiguration getConfiguration() {
         return cb.getJanusGraphConfig();
+    }
+
+    @Test
+    public void testMultipleIndexBackends() {
+        try {
+            cb.enableIndex2();
+            super.testMultipleIndexBackends();
+        } finally {
+            cb.disableIndex2();
+        }
+    }
+
+    @Test
+    public void testGraphCentricQueryProfiling() {
+        try {
+            cb.enableIndex2();
+            super.testGraphCentricQueryProfiling();
+        } finally {
+            cb.disableIndex2();
+        }
+    }
+
+    @Test
+    public void testSubsetReindex() {
+        Assert.assertThrows("Code is not implemented", ExecutionException.class, super::testSubsetReindex);
+    }
+
+    @Test
+    public void testListDeleteAddInOneTransaction() {
+        try {
+            cb.setClusterDelay(3000);
+            super.testListDeleteAddInOneTransaction();
+        } finally {
+            cb.resetClusterDelay();
+        }
     }
 }

@@ -18,10 +18,7 @@ package org.janusgraph.diskstorage.couchbase;
 
 import com.couchbase.client.core.error.CouchbaseException;
 import com.couchbase.client.core.error.DocumentNotFoundException;
-import com.couchbase.client.core.error.IndexFailureException;
-import com.couchbase.client.core.msg.kv.DurabilityLevel;
 import com.couchbase.client.core.retry.BestEffortRetryStrategy;
-import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Collection;
@@ -33,15 +30,12 @@ import com.couchbase.client.java.kv.UpsertOptions;
 import com.couchbase.client.java.manager.collection.CollectionManager;
 import com.couchbase.client.java.manager.collection.CollectionSpec;
 import com.couchbase.client.java.manager.collection.ScopeSpec;
-import com.couchbase.client.java.manager.query.BuildQueryIndexOptions;
 import com.couchbase.client.java.manager.query.CreatePrimaryQueryIndexOptions;
-import com.couchbase.client.java.manager.query.QueryIndexManager;
 import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
 import com.couchbase.client.java.query.QueryScanConsistency;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.sun.imageio.plugins.gif.GIFImageMetadataFormat;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.Entry;
@@ -362,10 +356,9 @@ public class CouchbaseStoreManager extends DistributedStoreManager implements Ke
             final String collection = cs.name();
             try {
                 //According to tests, clear storage is a hard clean process, and should wipe everything
-                String query = "DELETE FROM `" + bucket.name() + "`.`" + defaultScopeName + "`." + collection;
-                log.trace("Running Query: " + query);
-                QueryResult result = cluster.query(query, QueryOptions.queryOptions().scanConsistency(QueryScanConsistency.REQUEST_PLUS));
-
+                String query = "DROP COLLECTION `" + bucket.name() + "`.`" + defaultScopeName + "`.`" + collection + "` IF EXISTS";
+                log.debug("Running Query: " + query);
+                cluster.query(query, QueryOptions.queryOptions().scanConsistency(QueryScanConsistency.REQUEST_PLUS));
             } catch (Exception e) {
                 throw new PermanentBackendException("Could not clear Couchbase storage", e);
             }
