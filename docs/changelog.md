@@ -241,6 +241,16 @@ The following improvements are made for adding new vertex or updating vertex pro
 For more information see [GitHub PR #4292](https://github.com/JanusGraph/janusgraph/pull/4292)
 
 ### Version 1.0.1 (Release Date: November 6, 2024)
+##### BerkeleyJE ability to overwrite arbitrary settings applied at `EnvironmentConfig` creation
+
+The new namespace `storage.berkeleyje.ext` now allows to set custom configurations which were not directly exposed by 
+JanusGraph.
+The full list of possible setting is available inside the Java class `com.sleepycat.je.EnvironmentConfig`.
+All configurations values should be specified as `String` and be formated the same as specified in the official sleepycat
+[documentation](https://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/EnvironmentConfig.html).
+Example: `storage.berkeleyje.ext.je.lock.timeout=5000 ms`
+
+### Version 1.0.1 (Release Date: ???)
 
 /// tab | Maven
 ```xml
