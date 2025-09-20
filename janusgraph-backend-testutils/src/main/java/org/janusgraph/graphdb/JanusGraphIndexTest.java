@@ -19,6 +19,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import io.github.artsok.RepeatedIfExceptionsTest;
+import org.apache.commons.codec.DecoderException;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -53,6 +54,7 @@ import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.log.TransactionRecovery;
+import org.janusgraph.core.schema.CompositeIndexInfo;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.Mapping;
@@ -96,12 +98,14 @@ import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggSte
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.testutil.TestGraphConfigs;
+import org.javatuples.Pair;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -157,7 +161,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -1449,6 +1452,94 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         // mixed index only needs some field(s) to be present
         assertTrue(tx.traversal().V().has("intId2", 234).hasNext());
+    }
+
+    @Test
+    public void testSubsetReindex() throws Exception {
+
+        clopen(option(FORCE_INDEX_USAGE), true);
+
+        mgmt.makeVertexLabel("cat").make();
+        mgmt.makeVertexLabel("dog").make();
+
+        makeKey("id", Integer.class);
+        makeKey("name", String.class);
+        final PropertyKey typeKey = makeKey("type", String.class);
+
+        String typeIndex = "searchByType";
+        mgmt.buildIndex(typeIndex, Vertex.class)
+            .addKey(typeKey)
+            .buildCompositeIndex();
+        mgmt.commit();
+
+        //Cats
+        int catsCount = 3;
+        for (int i = 0; i < catsCount; i++) {
+            Vertex v = tx.addVertex("cat");
+            v.property("id", i);
+            v.property("name", "cat_" + i);
+            v.property("type", "cat");
+        }
+
+        //Dogs
+        for (int i = 0; i < 5; i++) {
+            Vertex v = tx.addVertex("dog");
+            v.property("id", i);
+            v.property("name", "dog_" + i);
+            v.property("type", "dog");
+        }
+
+        tx.commit();
+
+        //Select a subset of vertices to index
+        clopen(option(FORCE_INDEX_USAGE), true);
+        List<Vertex> cats = tx.traversal().V().has("type", "cat").toList();
+        assertEquals(catsCount, cats.size());
+        String excludedCat = cats.get(cats.size() - 1).value("name");
+        List<Pair<Object, String>> catsSubset = cats.subList(0, cats.size() - 1).stream()
+            .map(kitty -> new Pair<Object, String>(kitty.id(), kitty.value("name")))
+            .collect(Collectors.toList());
+
+        List<Vertex> dogs = tx.traversal().V().has("type", "dog").toList();
+        assertEquals(5, dogs.size());
+        tx.rollback();
+
+        //Create new Index
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        mgmt = graph.openManagement();
+        mgmt.getOpenInstances().stream().filter(i -> !i.contains("current")).forEach(i -> mgmt.forceCloseInstance(i));
+        mgmt.commit();
+
+        String catsNameIndex = "searchByName_CatsOnly";
+        mgmt = graph.openManagement();
+        mgmt.buildIndex(catsNameIndex, Vertex.class)
+            .addKey(mgmt.getPropertyKey("name"))
+            .indexOnly(mgmt.getVertexLabel("cat"))
+            .buildCompositeIndex();
+        mgmt.commit();
+
+        //Make Index as REGISTERED
+        mgmt = graph.openManagement();
+        mgmt.updateIndex(mgmt.getGraphIndex(catsNameIndex), SchemaAction.REGISTER_INDEX).get();
+        mgmt.commit();
+        ManagementSystem.awaitGraphIndexStatus(graph, catsNameIndex).status(SchemaStatus.REGISTERED).call();
+
+        //Reindex a given subset
+        List<Object> reIndexOnlyIds = catsSubset.stream().map(Pair::getValue0).collect(Collectors.toList());
+        mgmt = graph.openManagement();
+        mgmt.updateIndex(mgmt.getGraphIndex(catsNameIndex), SchemaAction.REINDEX, reIndexOnlyIds).get();
+        mgmt.commit();
+        ManagementSystem.awaitGraphIndexStatus(graph, catsNameIndex).status(SchemaStatus.ENABLED).call();
+
+        clopen(option(FORCE_INDEX_USAGE), true);
+        catsSubset.forEach(kitty -> {
+            List<Vertex> catsByName = tx.traversal().V().hasLabel("cat").has("name", kitty.getValue1()).toList();
+            assertEquals(1, catsByName.size());
+        });
+
+        List<Vertex> catsByName = tx.traversal().V().hasLabel("cat").has("name", excludedCat).toList();
+        assertEquals(0, catsByName.size());
+        tx.rollback();
     }
 
     @Test
@@ -4256,5 +4347,91 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 graph.traversal().V().has(namePropKeyStr, nameValue).limit(limit).count().next()
             );
         }
+    }
+
+    @Test
+    public void testGetIndexInfo() throws DecoderException {
+
+        clopen();
+
+        mgmt.makeVertexLabel("cat").make();
+
+        final PropertyKey idKey = makeKey("id", Integer.class);
+        final PropertyKey nameKey = makeKey("name", String.class);
+        final PropertyKey metaKey = makeKey("meta", Object.class);
+
+        String searchByNameIndex = "searchByName";
+        mgmt.buildIndex(searchByNameIndex, Vertex.class)
+            .addKey(nameKey)
+            .buildCompositeIndex();
+
+        String searchByMetaIndex = "searchByMeta";
+        mgmt.buildIndex(searchByMetaIndex, Vertex.class)
+            .addKey(nameKey)
+            .addKey(metaKey)
+            .buildCompositeIndex();
+
+        String inlinePropIndex = "inlineProp";
+        mgmt.buildIndex(inlinePropIndex, Vertex.class)
+            .addKey(nameKey)
+            .addKey(metaKey)
+            .addInlinePropertyKey(idKey)
+            .buildCompositeIndex();
+
+        mgmt.commit();
+
+        mgmt = graph.openManagement();
+
+        //Read index with single property
+        Map<String, Object> fieldValues = new HashMap<>();
+        fieldValues.put("name", "someName");
+
+        String hexString = mgmt.getIndexKey(searchByNameIndex, fieldValues);
+        CompositeIndexInfo indexInfo = mgmt.getIndexInfo(hexString);
+
+        IndexField[] indexFields = new IndexField[1];
+        indexFields[0] = IndexField.of(nameKey);
+
+        assertEquals(searchByNameIndex, indexInfo.getIndexName());
+        assertEquals(1, indexInfo.getCompositeIndexType().getFieldKeys().length);
+        assertEquals("someName", indexInfo.getValues().get(nameKey));
+        assertEquals(0, indexInfo.getCompositeIndexType().getInlineFieldKeys().length);
+
+        //Read index with multi properties
+        fieldValues = new HashMap<>();
+        fieldValues.put("name", "name1");
+        fieldValues.put("meta", "hello");
+
+        hexString = mgmt.getIndexKey(searchByMetaIndex, fieldValues);
+        indexInfo = mgmt.getIndexInfo(hexString);
+
+        indexFields = new IndexField[2];
+        indexFields[0] = IndexField.of(nameKey);
+        indexFields[1] = IndexField.of(metaKey);
+
+        assertEquals(searchByMetaIndex, indexInfo.getIndexName());
+        assertEquals(2, indexInfo.getCompositeIndexType().getFieldKeys().length);
+        assertEquals("name1", indexInfo.getValues().get(nameKey));
+        assertEquals("hello", indexInfo.getValues().get(metaKey));
+        assertEquals(0, indexInfo.getCompositeIndexType().getInlineFieldKeys().length);
+
+        //Read index with inline properties
+        fieldValues = new HashMap<>();
+        fieldValues.put("name", "name2");
+        fieldValues.put("meta", "bye");
+
+        hexString = mgmt.getIndexKey(inlinePropIndex, fieldValues);
+        indexInfo = mgmt.getIndexInfo(hexString);
+
+        indexFields = new IndexField[2];
+        indexFields[0] = IndexField.of(nameKey);
+        indexFields[1] = IndexField.of(metaKey);
+
+        assertEquals(inlinePropIndex, indexInfo.getIndexName());
+        assertEquals(2, indexInfo.getCompositeIndexType().getFieldKeys().length);
+        assertEquals("name2", indexInfo.getValues().get(nameKey));
+        assertEquals("bye", indexInfo.getValues().get(metaKey));
+        assertEquals(1, indexInfo.getCompositeIndexType().getInlineFieldKeys().length);
+        assertEquals("id", indexInfo.getCompositeIndexType().getInlineFieldKeys()[0]);
     }
 }

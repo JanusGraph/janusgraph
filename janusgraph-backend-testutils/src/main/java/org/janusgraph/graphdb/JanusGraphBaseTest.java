@@ -747,7 +747,7 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
     }
 
     protected ScanMetrics executeScanJob(VertexScanJob job) throws Exception {
-        return executeScanJob(VertexJobConverter.convert(graph,job));
+        return executeScanJob(VertexJobConverter.convert(graph, job, null));
     }
 
     protected ScanMetrics executeScanJob(ScanJob job) throws Exception {

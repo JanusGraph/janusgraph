@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version: "3"
-
 services:
   janusgraph:
-    image: docker.io/janusgraph/janusgraph:latest
+    image: janusgraph/janusgraph:latest
     container_name: jce-janusgraph
     environment:
       JANUS_PROPS_TEMPLATE: cql-es
@@ -26,6 +24,11 @@ services:
       - "8182:8182"
     networks:
       - jce-network
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "bin/gremlin.sh", "-e", "scripts/remote-connect.groovy"]
       interval: 10s
@@ -33,16 +36,21 @@ services:
       retries: 3
 
   cassandra:
-    image: cassandra:3
+    image: cassandra:4.0.18
     container_name: jce-cassandra
     ports:
       - "9042:9042"
       - "9160:9160"
     networks:
       - jce-network
+    healthcheck:
+      test: ["CMD", "nodetool", "status"]
+      interval: 10s
+      timeout: 30s
+      retries: 6
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.6.0
+    image: elasticsearch:8.18.4
     container_name: jce-elastic
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
@@ -51,11 +59,34 @@ services:
       - "transport.host=127.0.0.1"
       - "cluster.name=docker-cluster"
       - "xpack.security.enabled=false"
-      - "discovery.zen.minimum_master_nodes=1"
+      - "discovery.type=single-node"
     ports:
       - "9200:9200"
     networks:
       - jce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 10s
+      timeout: 30s
+      retries: 6
+
+  janusgraph-visualizer:
+    image: janusgraph/janusgraph-visualizer:1.0.4
+    container_name: jce-visualizer
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    networks:
+      - jce-network
+    depends_on:
+      janusgraph:
+        condition: service_healthy
+    environment:
+      - GREMLIN_HOST=jce-janusgraph
+    healthcheck:
+      test: ["CMD", "nc", "-v", "-w", "2", "localhost", "3001"]
+      interval: 10s
+      retries: 3
 
 networks:
   jce-network:

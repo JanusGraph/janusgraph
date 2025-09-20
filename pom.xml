@@ -47,12 +47,8 @@
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
     </distributionManagement>
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
@@ -67,18 +63,18 @@
         <logback.version>1.2.13</logback.version>
         <httpcomponents.httpclient.version>4.5.14</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.16</httpcomponents.httpcore.version>
-        <hadoop.version>3.3.6</hadoop.version>
+        <hadoop.version>3.4.1</hadoop.version>
         <hbase2.version>2.6.0-hadoop3</hbase2.version>
         <htrace.version>4.1.7</htrace.version>
         <bigtable.version>1.24.0</bigtable.version>
         <!-- align with org.apache.spark:spark-core_2.12 -->
         <jackson2.version>2.17.2</jackson2.version>
         <lucene-solr.version>8.11.3</lucene-solr.version>
-        <elasticsearch.version>8.15.3</elasticsearch.version>
+        <elasticsearch.version>9.0.3</elasticsearch.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <zookeeper.version>3.9.2</zookeeper.version>
-        <netty4.version>4.1.115.Final</netty4.version>
+        <netty4.version>4.1.118.Final</netty4.version>
         <jna.version>5.14.0</jna.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -114,12 +110,14 @@
         <jcabi.version>2.1.0</jcabi.version>
         <jmh.version>1.33</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
-        <jetty.version>9.4.55.v20240627</jetty.version>
+        <jetty.version>9.4.56.v20240826</jetty.version>
         <log4j2.version>2.23.1</log4j2.version>
         <graalvm-nativeimage.version>24.0.2</graalvm-nativeimage.version>
         <caffeine.version>2.9.3</caffeine.version>
         <checker-qual.version>3.46.0</checker-qual.version>
         <curator.version>5.7.0</curator.version>
+        <autoPublish>false</autoPublish>
+        <waitUntil>validated</waitUntil>
     </properties>
     <modules>
         <module>janusgraph-grpc</module>
@@ -697,7 +695,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.16.0</version>
+                <version>3.18.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-configuration</groupId>
@@ -1191,7 +1189,7 @@
             <dependency>
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>9.37.3</version>
+                <version>10.4.2</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -1550,24 +1548,17 @@
                             </execution>
                         </executions>
                     </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>janusgraph-commit-release</id>
-            <build>
-                <plugins>
                     <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.7.0</version>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.8.0</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <!-- The Base URL of Nexus instance where we want to stage -->
-                            <nexusUrl>https://oss.sonatype.org</nexusUrl>
                             <!-- The server "id" element from settings to use authentication from -->
-                            <serverId>ossrh</serverId>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>${autoPublish}</autoPublish>
+                            <waitUntil>${waitUntil}</waitUntil>
+                            <waitMaxTime>3600</waitMaxTime>
                         </configuration>
                     </plugin>
                 </plugins>
