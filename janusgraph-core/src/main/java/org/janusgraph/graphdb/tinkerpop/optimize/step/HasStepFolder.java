@@ -37,7 +37,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
@@ -120,8 +119,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             final JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(rootTraversal.asAdmin());
             final PropertyKey pKey = tx.getPropertyKey(key);
             if (pKey == null
-                || !(Comparable.class.isAssignableFrom(pKey.dataType()))
-                || (isVertexOrder && pKey.cardinality() != Cardinality.SINGLE)) {
+                || !(Comparable.class.isAssignableFrom(pKey.dataType()))) {
                 return false;
             }
         }
