@@ -49,7 +49,6 @@ repository.
 
 In additional to the web-based graph visualizer, JanusGraph supports a range of third party graph visualizers listed below:
 
-* [Arcade Analytics](https://arcadeanalytics.com/usermanual/#arcade-analytics)
 * [Cytoscape](https://www.cytoscape.org/)
 * [Gephi](https://tinkerpop.apache.org/docs/current/reference/#gephi-plugin)
   plugin for Apache TinkerPop
