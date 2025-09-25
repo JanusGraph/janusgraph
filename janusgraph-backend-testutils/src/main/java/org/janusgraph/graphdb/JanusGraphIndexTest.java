@@ -4434,4 +4434,31 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(1, indexInfo.getCompositeIndexType().getInlineFieldKeys().length);
         assertEquals("id", indexInfo.getCompositeIndexType().getInlineFieldKeys()[0]);
     }
+
+    @Test
+    public void testOrderingListProperty() {
+        PropertyKey strSingle = mgmt.makePropertyKey("strSingle").dataType(String.class).cardinality(Cardinality.SINGLE)
+                .make();
+        PropertyKey strList = mgmt.makePropertyKey("strList").dataType(String.class).cardinality(Cardinality.LIST)
+                .make();
+
+        mgmt.buildIndex("mixedStrSingle", Vertex.class).addKey(strSingle, Mapping.STRING.asParameter())
+                .buildMixedIndex(INDEX);
+        mgmt.buildIndex("mixedStrList", Vertex.class).addKey(
+                strList, Mapping.STRING.asParameter())
+                .buildMixedIndex(INDEX);
+        finishSchema();
+
+        tx.addVertex("strSingle", "val1", "strList", "val1");
+        tx.addVertex("strSingle", "val2");
+        tx.addVertex("strList", "val3");
+        tx.addVertex("strSingle", "val4", "strList", "val4", "strList", "val5", "strList", "val6");
+        tx.addVertex("strSingle", "val7", "strList", "val7");
+        tx.commit();
+
+        clopen(option(FORCE_INDEX_USAGE), false);
+
+        assertEquals(4, tx.traversal().V().has("strSingle").order().by("strSingle").count().next());
+        assertEquals(4, tx.traversal().V().has("strList").order().by("strList").count().next());
+    }
 }
