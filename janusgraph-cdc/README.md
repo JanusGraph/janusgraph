@@ -21,9 +21,9 @@ When using JanusGraph with external index backends, there's a risk of inconsiste
 
 ### CDC Modes
 
-- **DUAL** (default): Write to index during transaction AND publish to CDC topic for redundancy
-- **SKIP**: Skip index writes during transaction, rely entirely on CDC
-- **CDC_ONLY**: Same as SKIP (deprecated naming)
+- **dual** (default): Write to index during transaction AND publish to CDC topic for redundancy
+- **skip**: Skip index writes during transaction, rely entirely on CDC
+- **cdc-only**: Alias for skip mode (for backward compatibility)
 
 ## Configuration
 

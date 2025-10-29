@@ -46,7 +46,8 @@ public class CdcConfiguration {
             log.info("CDC enabled with mode: {}, topic: {}, bootstrap servers: {}", 
                     mode, kafkaTopic, kafkaBootstrapServers);
         } else {
-            this.mode = CdcIndexTransaction.CdcMode.DUAL;
+            // When disabled, these values are not used
+            this.mode = null;
             this.kafkaBootstrapServers = null;
             this.kafkaTopic = null;
         }
@@ -63,7 +64,6 @@ public class CdcConfiguration {
             case "dual":
                 return CdcIndexTransaction.CdcMode.DUAL;
             case "cdc-only":
-            case "cdc_only":
                 return CdcIndexTransaction.CdcMode.CDC_ONLY;
             default:
                 log.warn("Unknown CDC mode: {}, defaulting to DUAL", modeStr);
