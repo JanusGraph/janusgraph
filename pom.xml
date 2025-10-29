@@ -131,6 +131,7 @@
         <module>cassandra-hadoop-util</module>
         <module>scylla-hadoop-util</module>
         <module>janusgraph-cql</module>
+        <module>janusgraph-cdc</module>
         <module>janusgraph-hadoop</module>
         <module>janusgraph-hbase</module>
         <module>janusgraph-bigtable</module>
@@ -1154,6 +1155,11 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>solr</artifactId>
+                <version>${testcontainers.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>kafka</artifactId>
                 <version>${testcontainers.version}</version>
             </dependency>
             <dependency>

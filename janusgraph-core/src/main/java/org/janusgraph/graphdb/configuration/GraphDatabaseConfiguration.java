@@ -1118,6 +1118,29 @@ public class GraphDatabaseConfiguration {
                     "and its the developers responsibility to avoid field collisions.",
             ConfigOption.Type.GLOBAL, true);
 
+    // ############## CDC System ######################
+    // ################################################
+
+    public static final ConfigNamespace CDC_NS = new ConfigNamespace(INDEX_NS,"cdc","Configuration options for Change Data Capture for mixed indexes");
+
+    public static final ConfigOption<Boolean> INDEX_CDC_ENABLED = new ConfigOption<>(CDC_NS,"enabled",
+            "Enable Change Data Capture (CDC) for mixed index mutations. When enabled, mixed index mutations are " +
+                    "published to a Kafka topic for eventual consistency processing by CDC workers.",
+            ConfigOption.Type.GLOBAL, false);
+
+    public static final ConfigOption<String> INDEX_CDC_MODE = new ConfigOption<>(CDC_NS,"mode",
+            "CDC mode for mixed index mutations. Options: 'skip' (skip mutations during transaction, rely on CDC), " +
+                    "'dual' (write during transaction AND via CDC for consistency), 'cdc-only' (only via CDC).",
+            ConfigOption.Type.GLOBAL, "dual");
+
+    public static final ConfigOption<String> INDEX_CDC_KAFKA_BOOTSTRAP_SERVERS = new ConfigOption<>(CDC_NS,"kafka-bootstrap-servers",
+            "Comma-separated list of Kafka bootstrap servers for CDC event publishing.",
+            ConfigOption.Type.GLOBAL, String.class);
+
+    public static final ConfigOption<String> INDEX_CDC_KAFKA_TOPIC = new ConfigOption<>(CDC_NS,"kafka-topic",
+            "Kafka topic name for publishing CDC events for mixed index mutations.",
+            ConfigOption.Type.GLOBAL, "janusgraph-cdc-index-mutations");
+
 
     // ############## Logging System ######################
     // ################################################
