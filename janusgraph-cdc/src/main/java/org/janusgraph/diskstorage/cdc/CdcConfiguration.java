@@ -37,14 +37,18 @@ public class CdcConfiguration {
 
     public CdcConfiguration(Configuration config) {
         this.enabled = config.get(INDEX_CDC_ENABLED);
-        this.mode = parseCdcMode(config.get(INDEX_CDC_MODE));
-        this.kafkaBootstrapServers = config.get(INDEX_CDC_KAFKA_BOOTSTRAP_SERVERS);
-        this.kafkaTopic = config.get(INDEX_CDC_KAFKA_TOPIC);
-
+        
         if (enabled) {
+            this.mode = parseCdcMode(config.get(INDEX_CDC_MODE));
+            this.kafkaBootstrapServers = config.get(INDEX_CDC_KAFKA_BOOTSTRAP_SERVERS);
+            this.kafkaTopic = config.get(INDEX_CDC_KAFKA_TOPIC);
             validate();
             log.info("CDC enabled with mode: {}, topic: {}, bootstrap servers: {}", 
                     mode, kafkaTopic, kafkaBootstrapServers);
+        } else {
+            this.mode = CdcIndexTransaction.CdcMode.DUAL;
+            this.kafkaBootstrapServers = null;
+            this.kafkaTopic = null;
         }
     }
 
