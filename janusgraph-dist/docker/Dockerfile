@@ -65,14 +65,11 @@ RUN groupadd -r janusgraph --gid=999 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=999:999 /opt/janusgraph/ /opt/janusgraph/
-COPY --from=builder /opt/yq /usr/bin/yq
-COPY docker/docker-entrypoint.sh /usr/local/bin/
-COPY docker/load-initdb.sh /usr/local/bin/
+COPY --from=builder --chmod=755 /opt/yq /usr/bin/yq
+COPY --chmod=755 docker/docker-entrypoint.sh /usr/local/bin/
+COPY --chmod=755 docker/load-initdb.sh /usr/local/bin/
 
-RUN chmod 755 /usr/local/bin/docker-entrypoint.sh && \
-    chmod 755 /usr/local/bin/load-initdb.sh && \
-    chmod 755 /usr/bin/yq && \
-    mkdir -p ${JANUS_INITDB_DIR} ${JANUS_CONFIG_DIR} ${JANUS_DATA_DIR} && \
+RUN mkdir -p ${JANUS_INITDB_DIR} ${JANUS_CONFIG_DIR} ${JANUS_DATA_DIR} && \
     chown -R janusgraph:janusgraph ${JANUS_INITDB_DIR} ${JANUS_CONFIG_DIR} ${JANUS_DATA_DIR}
 
 EXPOSE 8182
@@ -86,13 +83,13 @@ CMD [ "janusgraph" ]
 ARG CREATED=test
 ARG REVISION=test
 
-LABEL org.opencontainers.image.title="JanusGraph Docker Image"
-LABEL org.opencontainers.image.description="Official JanusGraph Docker image"
-LABEL org.opencontainers.image.url="https://janusgraph.org/"
-LABEL org.opencontainers.image.documentation="https://docs.janusgraph.org/v1.1/"
-LABEL org.opencontainers.image.revision="${REVISION}"
-LABEL org.opencontainers.image.source="https://github.com/JanusGraph/janusgraph-docker/"
-LABEL org.opencontainers.image.vendor="JanusGraph"
-LABEL org.opencontainers.image.version="${JANUS_VERSION}"
-LABEL org.opencontainers.image.created="${CREATED}"
-LABEL org.opencontainers.image.license="Apache-2.0"
+LABEL org.opencontainers.image.title="JanusGraph Docker Image" \
+      org.opencontainers.image.description="Official JanusGraph Docker image" \
+      org.opencontainers.image.url="https://janusgraph.org/" \
+      org.opencontainers.image.documentation="https://docs.janusgraph.org/v1.1/" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.source="https://github.com/JanusGraph/janusgraph-docker/" \
+      org.opencontainers.image.vendor="JanusGraph" \
+      org.opencontainers.image.version="${JANUS_VERSION}" \
+      org.opencontainers.image.created="${CREATED}" \
+      org.opencontainers.image.license="Apache-2.0"
