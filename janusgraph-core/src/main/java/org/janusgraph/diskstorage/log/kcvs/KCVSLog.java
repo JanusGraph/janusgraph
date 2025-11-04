@@ -669,7 +669,12 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         Preconditions.checkArgument(readMarker!=null,"Read marker cannot be null");
         Preconditions.checkArgument(this.readMarker==null || this.readMarker.isCompatible(readMarker),
                 "Provided read marker is not compatible with existing read marker for previously registered readers");
-        if (this.readMarker==null) this.readMarker=readMarker;
+        if (this.readMarker==null || this.readMarker.isRecurring())
+            // for recurring read marker the marker needs to be updated
+            // so also the start time of the marker will be updated and the log
+            // is read from the right start time
+            this.readMarker = readMarker;
+
         boolean firstRegistration = this.readers.isEmpty();
         for (MessageReader reader : readers) {
             Preconditions.checkNotNull(reader);
@@ -704,6 +709,30 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     @Override
     public synchronized boolean unregisterReader(MessageReader reader) {
         ResourceUnavailableException.verifyOpen(isOpen,"Log",name);
+        return this.readers.remove(reader);
+    }
+
+    @Override
+    public synchronized boolean unregisterReaderAndStopReadingProcess(MessageReader reader) {
+        ResourceUnavailableException.verifyOpen(isOpen, "Log", name);
+
+        if (readExecutor!=null) {
+            readExecutor.shutdown();
+            try {
+                readExecutor.awaitTermination(1,TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                log.error("Could not terminate reader thread pool for KCVSLog {} due to interruption", name, e);
+            }
+            if (!readExecutor.isTerminated()) {
+                readExecutor.shutdownNow();
+                log.error("Reader thread pool for KCVSLog {} did not shut down in time - could not clean up or set read markers", name);
+            } else {
+                for (MessagePuller puller : msgPullers) {
+                    puller.close();
+                }
+            }
+        }
+
         return this.readers.remove(reader);
     }
 

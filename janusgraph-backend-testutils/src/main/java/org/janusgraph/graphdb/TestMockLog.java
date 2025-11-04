@@ -132,6 +132,11 @@ public class TestMockLog implements LogManager {
         }
 
         @Override
+        public synchronized boolean unregisterReaderAndStopReadingProcess(MessageReader reader) {
+            return readers.remove(reader);
+        }
+
+        @Override
         public String getName() {
             return name;
         }
