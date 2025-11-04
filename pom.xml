@@ -377,10 +377,9 @@
                     <configuration>
                         <source>${compiler.source}</source>
                         <target>${compiler.target}</target>
-                        <compilerArguments>
-                            <Xmaxerrs>500</Xmaxerrs>
-                        </compilerArguments>
                         <compilerArgs>
+                            <arg>-Xmaxerrs</arg>
+                            <arg>500</arg>
                             <arg>-Xlint:unchecked</arg>
                         </compilerArgs>
                     </configuration>
