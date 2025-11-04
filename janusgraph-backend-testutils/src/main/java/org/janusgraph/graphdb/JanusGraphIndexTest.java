@@ -2479,6 +2479,326 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(4, recoveryStats[1]); //all 4 index transaction had provoked errors in the indexing backend
     }
 
+    @Tag(TestCategory.BRITTLE_TESTS)
+    @Test
+    public void testRecurringIndexReplay() throws Exception {
+        final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
+        final Instant startTimeDay1 = times.getTime();
+        clopen(option(SYSTEM_LOG_TRANSACTIONS), true
+                , option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG), Duration.ofMillis(50)
+                , option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofMillis(250)
+                , option(MAX_COMMIT_TIME), Duration.ofSeconds(1)
+                , option(STORAGE_WRITE_WAITTIME), Duration.ofMillis(300)
+                , option(TestMockIndexProvider.INDEX_BACKEND_PROXY, INDEX), readConfig.get(INDEX_BACKEND, INDEX)
+                , option(INDEX_BACKEND, INDEX), TestMockIndexProvider.class.getName()
+                , option(TestMockIndexProvider.INDEX_MOCK_FAILADD, INDEX), true
+        );
+
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.buildIndex("mi", Vertex.class).addKey(name, getTextMapping()).addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+
+        // Simulating DAY 1 data ingestion when indexing backend is down
+        final Vertex[] vs = new JanusGraphVertex[4];
+
+        vs[0] = tx.addVertex("name", "Big Boy Bobson", "age", 55);
+        newTx();
+        vs[1] = tx.addVertex("name", "Long Little Lewis", "age", 35);
+        vs[2] = tx.addVertex("name", "Tall Long Tiger", "age", 75);
+        vs[3] = tx.addVertex("name", "Long John Don", "age", 15);
+        newTx();
+        vs[2] = getV(tx, vs[2]);
+        vs[2].remove();
+        vs[3] = getV(tx, vs[3]);
+        vs[3].property(VertexProperty.Cardinality.single, "name", "Bad Boy Badsy");
+        vs[3].property("age").remove();
+        newTx();
+        vs[0] = getV(tx, vs[0]);
+        vs[0].property(VertexProperty.Cardinality.single, "age", 66);
+        newTx();
+
+        clopen();
+        //Just to make sure nothing has been persisted to index
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "boy"),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "mi");
+
+        // Simulating DAY 1 index recovery when indexing backend is up
+        /*
+        Transaction Recovery
+         */
+        final TransactionRecovery recoveryDay1 = JanusGraphFactory.startRecurringTransactionRecovery(graph, startTimeDay1);
+        //wait
+        Thread.sleep(12000L);
+
+        final long[] recoveryStatsDay1 = ((StandardTransactionLogProcessor) recoveryDay1).getStatistics();
+        recoveryDay1.shutdown();
+
+        clopen();
+
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "boy"),
+                ElementCategory.VERTEX, 2, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "long"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "long").interval("age", 30, 40),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().has("age", 75),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "boy").interval("age", 60, 70),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().interval("age", 0, 100),
+                ElementCategory.VERTEX, 2, new boolean[]{true, true}, "mi");
+
+        assertEquals(1, recoveryStatsDay1[0]); //schema transaction was successful
+        assertEquals(4, recoveryStatsDay1[1]); //all 4 index transaction had provoked errors in the indexing backend
+        assertEquals(0, recoveryStatsDay1[2]); //no exception happened while recovering the failed index transactions
+
+        // wait for simulating some time between daily ingestions
+        Thread.sleep(12000L);
+
+        // Simulating DAY 2 data ingestion when indexing backend is down
+        final Instant startTimeDay2 = times.getTime();
+        clopen(option(SYSTEM_LOG_TRANSACTIONS), true
+                , option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG), Duration.ofMillis(50)
+                , option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofMillis(250)
+                , option(MAX_COMMIT_TIME), Duration.ofSeconds(1)
+                , option(STORAGE_WRITE_WAITTIME), Duration.ofMillis(300)
+                , option(TestMockIndexProvider.INDEX_BACKEND_PROXY, INDEX), readConfig.get(INDEX_BACKEND, INDEX)
+                , option(INDEX_BACKEND, INDEX), TestMockIndexProvider.class.getName()
+                , option(TestMockIndexProvider.INDEX_MOCK_FAILADD, INDEX), true
+        );
+
+        final Vertex[] vs2 = new JanusGraphVertex[4];
+
+        vs2[0] = tx.addVertex("name", "Big Girl Betty", "age", 45);
+        newTx();
+        vs2[1] = tx.addVertex("name", "Short Little Lucy", "age", 25);
+        vs2[2] = tx.addVertex("name", "Small Short Susan", "age", 65);
+        vs2[3] = tx.addVertex("name", "Short Jolie Don", "age", 10);
+        newTx();
+        vs2[2] = getV(tx, vs2[2]);
+        vs2[2].remove();
+        vs2[3] = getV(tx, vs2[3]);
+        vs2[3].property(VertexProperty.Cardinality.single, "name", "Bad Girl Barby");
+        vs2[3].property("age").remove();
+        newTx();
+        vs2[0] = getV(tx, vs2[0]);
+        vs2[0].property(VertexProperty.Cardinality.single, "age", 56);
+        newTx();
+
+        clopen();
+        //Just to make sure nothing has been persisted to index
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "girl"),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "mi");
+
+        // Simulating DAY 2 index recovery when indexing backend is up
+        /*
+        Transaction Recovery
+         */
+        final TransactionRecovery recoveryDay2 = JanusGraphFactory.startRecurringTransactionRecovery(graph, startTimeDay2);
+        //wait
+        Thread.sleep(12000L);
+
+        final long[] recoveryStatsDay2 = ((StandardTransactionLogProcessor) recoveryDay2).getStatistics();
+        recoveryDay2.shutdown();
+
+        clopen();
+
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "girl"),
+                ElementCategory.VERTEX, 2, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "short"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "short").interval("age", 20, 30),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().has("age", 65),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "girl").interval("age", 50, 60),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().interval("age", 0, 100),
+                ElementCategory.VERTEX, 4, new boolean[]{true, true}, "mi");
+
+        assertEquals(0, recoveryStatsDay2[0]); //no transaction was successful
+        assertEquals(4, recoveryStatsDay2[1]); //all 4 index transaction had provoked errors in the indexing backend
+        assertEquals(0, recoveryStatsDay2[2]); //no exception happened while recovering the failed index transactions
+
+        // wait for simulating some time between daily ingestions
+        Thread.sleep(6000L);
+
+        // Simulating DAY 3 data ingestion when indexing backend is down
+        final Instant startTimeDay3 = times.getTime();
+
+        clopen(option(SYSTEM_LOG_TRANSACTIONS), true
+                , option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG), Duration.ofMillis(50)
+                , option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofMillis(250)
+                , option(MAX_COMMIT_TIME), Duration.ofSeconds(1)
+                , option(STORAGE_WRITE_WAITTIME), Duration.ofMillis(300)
+                , option(TestMockIndexProvider.INDEX_BACKEND_PROXY, INDEX), readConfig.get(INDEX_BACKEND, INDEX)
+                , option(INDEX_BACKEND, INDEX), TestMockIndexProvider.class.getName()
+                , option(TestMockIndexProvider.INDEX_MOCK_FAILADD, INDEX), true
+        );
+
+        final Vertex[] vs3 = new JanusGraphVertex[1];
+
+        vs3[0] = tx.addVertex("name", "Random Person", "age", 101);
+        newTx();
+
+        // Just to make sure nothing has been persisted to index
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "random"),
+                ElementCategory.VERTEX, 0, new boolean[] { true, true }, "mi");
+
+        clopen(option(SYSTEM_LOG_TRANSACTIONS), true, option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG),
+                Duration.ofMillis(50), option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofMillis(250),
+                option(MAX_COMMIT_TIME), Duration.ofSeconds(1), option(STORAGE_WRITE_WAITTIME), Duration.ofMillis(300),
+                option(TestMockIndexProvider.INDEX_BACKEND_PROXY, INDEX), readConfig.get(INDEX_BACKEND, INDEX),
+                option(INDEX_BACKEND, INDEX), TestMockIndexProvider.class.getName(),
+                option(TestMockIndexProvider.INDEX_MOCK_FAILADD, INDEX), true);
+
+        // Simulating DAY 3 index recovery when indexing backend is still down
+        /*
+         * Transaction Recovery
+         */
+        final TransactionRecovery recoveryDay3_1 = JanusGraphFactory.startRecurringTransactionRecovery(graph, startTimeDay3);
+        // wait
+        Thread.sleep(12000L);
+
+        final long[] recoveryStatsDay3_1 = ((StandardTransactionLogProcessor) recoveryDay3_1).getStatistics();
+        recoveryDay3_1.shutdown();
+
+        clopen();
+
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "random"),
+                ElementCategory.VERTEX, 0, new boolean[] { true, true }, "mi");
+
+        assertEquals(0, recoveryStatsDay3_1[0]); //no transaction was successful
+        assertEquals(1, recoveryStatsDay3_1[1]); //the single index transaction had provoked errors in the indexing backend
+        assertEquals(1, recoveryStatsDay3_1[2]); //exception happened while recovering the failed index transaction
+
+        // wait
+        Thread.sleep(6000L);
+
+        // Simulating DAY 3 index recovery when finally indexing backend is up again
+        final TransactionRecovery recoveryDay3_2 = JanusGraphFactory.startRecurringTransactionRecovery(graph, startTimeDay3);
+        // wait
+        Thread.sleep(12000L);
+
+        final long[] recoveryStatsDay3_2 = ((StandardTransactionLogProcessor) recoveryDay3_2).getStatistics();
+        recoveryDay3_2.shutdown();
+
+        clopen();
+
+        // check if the recovery was indeed successful and the "Random Person" vertex can be retrieved via the index
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "random"),
+                ElementCategory.VERTEX, 1, new boolean[] { true, true }, "mi");
+
+        assertEquals(0, recoveryStatsDay3_2[0]); //no transaction was successful
+        assertEquals(1, recoveryStatsDay3_2[1]); //the single index transaction had provoked errors in the indexing backend
+        assertEquals(0, recoveryStatsDay3_2[2]); //no exception happened while recovering the failed index transaction
+    }
+
+    // this test is needed to make sure that recurring transaction recovery starts reading the write-ahead
+    // log from the correct start time
+    // testRecurringIndexReplay() test can't test this since it opens and closes the graph multiple 
+    // times and when a graph is closed, the ReadMarker got deleted and recreated once the recovery
+    // is started again.  testRecurringIndexReplay() test will pass even if the recurring ReadMarker's
+    // start time is not changed to the correct start time
+    @Tag(TestCategory.BRITTLE_TESTS)
+    @Test
+    public void testRecurringIndexReplayWithDifferentStartTime() throws Exception {
+        final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
+        clopen(option(SYSTEM_LOG_TRANSACTIONS), true, option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG),
+                Duration.ofMillis(50), option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofMillis(250),
+                option(MAX_COMMIT_TIME), Duration.ofSeconds(1), option(STORAGE_WRITE_WAITTIME), Duration.ofMillis(300),
+                option(TestMockIndexProvider.INDEX_BACKEND_PROXY, INDEX), readConfig.get(INDEX_BACKEND, INDEX),
+                option(INDEX_BACKEND, INDEX), TestMockIndexProvider.class.getName(),
+                option(TestMockIndexProvider.INDEX_MOCK_FAILADD, INDEX), true);
+
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.buildIndex("mi", Vertex.class).addKey(name, getTextMapping()).addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Instant startTimeBatch1 = times.getTime();
+
+        // Simulating BATCH 1 data ingestion when indexing backend is down
+        final Vertex[] vs = new JanusGraphVertex[4];
+
+        vs[0] = tx.addVertex("name", "Big Boy Bobson", "age", 55);
+        newTx();
+        vs[1] = tx.addVertex("name", "Long Little Lewis", "age", 35);
+        vs[2] = tx.addVertex("name", "Tall Long Tiger", "age", 75);
+        vs[3] = tx.addVertex("name", "Long John Don", "age", 15);
+        newTx();
+
+        //Just to make sure nothing has been persisted to index
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "boy"),
+                ElementCategory.VERTEX, 0, new boolean[] { true, true }, "mi");
+
+        // Simulating BATCH 1 index recovery when indexing backend is still down
+        /*
+        Transaction Recovery
+         */
+        final TransactionRecovery recoveryBatch1 = JanusGraphFactory.startRecurringTransactionRecovery(graph,
+                startTimeBatch1);
+        //wait
+        Thread.sleep(12000L);
+
+        final long[] recoveryStatsBatch1 = ((StandardTransactionLogProcessor) recoveryBatch1).getStatistics();
+        recoveryBatch1.shutdown();
+
+        assertEquals(0, recoveryStatsBatch1[0]); //no transaction was successful
+        assertEquals(2, recoveryStatsBatch1[1]); //the two index transactions had provoked errors in the indexing backend
+        assertEquals(2, recoveryStatsBatch1[2]); //exception happened while recovering the two failed index transactions
+
+        // Simulating BATCH 2 data ingestion when indexing backend is down
+        final Instant startTimeBatch2 = times.getTime();
+        final Vertex[] vs2 = new JanusGraphVertex[4];
+
+        vs2[0] = tx.addVertex("name", "Big Girl Betty", "age", 45);
+        newTx();
+        vs2[1] = tx.addVertex("name", "Short Little Lucy", "age", 25);
+        vs2[2] = tx.addVertex("name", "Small Short Susan", "age", 65);
+        vs2[3] = tx.addVertex("name", "Short Jolie Don", "age", 10);
+        newTx();
+
+        //Just to make sure nothing has been persisted to index
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "boy"),
+                ElementCategory.VERTEX, 0, new boolean[] { true, true }, "mi");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "girl"),
+                ElementCategory.VERTEX, 0, new boolean[] { true, true }, "mi");
+
+        // Simulating BATCH 2 index recovery when indexing backend is still down
+        /*
+        Transaction Recovery
+         */
+        final TransactionRecovery recoveryBatch2 = JanusGraphFactory.startRecurringTransactionRecovery(graph,
+                startTimeBatch2);
+        //wait
+        Thread.sleep(12000L);
+
+        final long[] recoveryStatsBatch2 = ((StandardTransactionLogProcessor) recoveryBatch2).getStatistics();
+        recoveryBatch2.shutdown();
+
+        assertEquals(0, recoveryStatsBatch2[0]); //no transaction was successful
+        assertEquals(2, recoveryStatsBatch2[1]); //the two index transactions had provoked errors in the indexing backend
+        assertEquals(2, recoveryStatsBatch2[2]); //exception happened while recovering the two failed index transactions
+
+        // Simulating BATCH 1 and 2 index recovery when indexing backend is still down
+        /*
+        Transaction Recovery
+         */
+        final TransactionRecovery recoveryBatch1_2 = JanusGraphFactory.startRecurringTransactionRecovery(graph,
+                startTimeBatch1);
+        //wait
+        Thread.sleep(12000L);
+
+        final long[] recoveryStatsBatch1_2 = ((StandardTransactionLogProcessor) recoveryBatch1_2).getStatistics();
+        recoveryBatch1_2.shutdown();
+
+        assertEquals(0, recoveryStatsBatch1_2[0]); //no transaction was successful
+        assertEquals(4, recoveryStatsBatch1_2[1]); //the four index transactions had provoked errors in the indexing backend
+        assertEquals(4, recoveryStatsBatch1_2[2]); //exception happened while recovering the four failed index transactions
+    }
+
     // flaky test: https://github.com/JanusGraph/janusgraph/issues/2272
     @RepeatedIfExceptionsTest(repeats = 3)
     public void testIndexUpdatesWithoutReindex() throws InterruptedException, ExecutionException {

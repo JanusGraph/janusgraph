@@ -26,12 +26,17 @@ public class ReadMarker {
 
     private final String identifier;
     private Instant startTime;
-
-
+    private boolean isRecurring;
 
     private ReadMarker(String identifier, Instant startTime) {
+        this(identifier, startTime, false);
+    }
+
+
+    private ReadMarker(String identifier, Instant startTime, boolean isRecurring) {
         this.identifier = identifier;
         this.startTime = startTime;
+        this.isRecurring = isRecurring;
     }
 
     /**
@@ -55,6 +60,10 @@ public class ReadMarker {
         return startTime!=null;
     }
 
+    public boolean isRecurring() {
+        return isRecurring;
+    }
+
     /**
      * Returns the start time of this marker if such has been defined or the current time if not
      * @return
@@ -72,6 +81,12 @@ public class ReadMarker {
      * @return
      */
     public boolean isCompatible(ReadMarker newMarker) {
+        if (isRecurring() && newMarker.isRecurring()) {
+            // recurring read marker is not expected to have identifier
+            // See this comment for more information:
+            // https://github.com/JanusGraph/janusgraph/pull/4872#discussion_r2490578432
+            return !hasIdentifier() && !newMarker.hasIdentifier();
+        }
         if (newMarker.hasIdentifier()) {
             return hasIdentifier() && identifier.equals(newMarker.identifier);
         }
@@ -94,6 +109,17 @@ public class ReadMarker {
      */
     public static ReadMarker fromTime(Instant timestamp) {
         return new ReadMarker(null, timestamp);
+    }
+
+    /**
+     * Starts reading the log from the given timestamp onward. The specified timestamp is included.
+     * The read marker is set to allow recurring mode which means that reading the log is supported
+     * several times from the same or from different timestamp.
+     * @param timestamp
+     * @return
+     */
+    public static ReadMarker fromTimeRecurring(Instant timestamp) {
+        return new ReadMarker(null, timestamp, true);
     }
 
     /**

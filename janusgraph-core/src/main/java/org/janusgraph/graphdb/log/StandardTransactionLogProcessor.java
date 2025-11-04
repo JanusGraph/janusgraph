@@ -93,13 +93,29 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     private final BackgroundCleaner cleaner;
     private final boolean verboseLogging;
 
+    // flag to support starting the log processor multiple times
+    // for a given graph
+    private final boolean recurringMode;
+
     private final AtomicLong successTxCounter = new AtomicLong(0);
     private final AtomicLong failureTxCounter = new AtomicLong(0);
+
+    // counter for storing how many transactions from failureTxCounter
+    // could not be repaired due to any exception
+    private final AtomicLong failureTxRepairExceptionCounter = new AtomicLong(0);
+
+    private final Log txLog;
+    private final TxLogMessageReader reader;
 
     private final Cache<StandardTransactionId,TxEntry> txCache;
 
     public StandardTransactionLogProcessor(StandardJanusGraph graph,
                                            Instant startTime) {
+        this(graph, startTime, false);
+    }
+
+    public StandardTransactionLogProcessor(StandardJanusGraph graph,
+                                           Instant startTime, boolean recurringMode) {
         Preconditions.checkArgument(graph != null && graph.isOpen());
         Preconditions.checkArgument(startTime!=null);
         Preconditions.checkArgument(graph.getConfiguration().hasLogTransactions(),
@@ -109,9 +125,10 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         Preconditions.checkArgument(maxTxLength != null && !maxTxLength.isZero(),
                 "Max transaction time cannot be 0");
         this.graph = graph;
+        this.recurringMode = recurringMode;
         this.serializer = graph.getDataSerializer();
         this.times = graph.getConfiguration().getTimestampProvider();
-        final Log txLog = graph.getBackend().getSystemTxLog();
+        this.txLog = graph.getBackend().getSystemTxLog();
         this.persistenceTime = graph.getConfiguration().getMaxWriteTime();
         this.verboseLogging = graph.getConfiguration().getConfiguration()
                 .get(GraphDatabaseConfiguration.VERBOSE_TX_RECOVERY);
@@ -123,26 +140,54 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                         "Unexpected removal cause [%s] for transaction [%s]", cause, key);
                     if (entry.status == LogTxStatus.SECONDARY_FAILURE || entry.status == LogTxStatus.PRIMARY_SUCCESS) {
                         failureTxCounter.incrementAndGet();
-                        fixSecondaryFailure(key, entry);
+                        try {
+                            fixSecondaryFailure(key, entry);
+                        } catch (Exception e) {
+                            failureTxRepairExceptionCounter.incrementAndGet();
+                            // pass exception up - here the exception is caught only for
+                            // incrementing the failureTxRepairExceptionCounter counter
+                            throw e;
+                        }
                     } else {
                         successTxCounter.incrementAndGet();
                     }
                 })
                 .build();
 
-        ReadMarker start = ReadMarker.fromTime(startTime);
-        txLog.registerReader(start,new TxLogMessageReader());
+        ReadMarker start;
+
+        if (this.recurringMode) {
+            // create the read marker with recurring mode so it can be registered multiple times
+            start = ReadMarker.fromTimeRecurring(startTime);
+        } else {
+            start = ReadMarker.fromTime(startTime);
+        }
+
+        this.reader = new TxLogMessageReader();
+        txLog.registerReader(start,this.reader);
 
         cleaner = new BackgroundCleaner();
         cleaner.start();
     }
 
     public long[] getStatistics() {
-        return new long[]{successTxCounter.get(),failureTxCounter.get()};
+        return new long[]{successTxCounter.get(),failureTxCounter.get(),failureTxRepairExceptionCounter.get()};
     }
 
     public synchronized void shutdown() throws JanusGraphException {
         cleaner.close(CLEAN_SLEEP_TIME);
+
+        // in recurring mode, the reader needs to be unregistered and the reading process
+        // needs to be stopped so resources are not occupied while the log processor is not
+        // actively running
+        if (this.recurringMode) {
+            try {
+                Thread.sleep(CLEAN_SLEEP_TIME.toMillis());
+                txLog.unregisterReaderAndStopReadingProcess(this.reader);
+            } catch (Exception e) {
+                logger.error("Interrupted while waiting for background cleaner to stop. Reader is not unregistered.", e);
+            }
+        }
     }
 
     private void logRecoveryMsg(String message, Object... args) {

@@ -83,6 +83,17 @@ public interface Log {
     boolean unregisterReader(MessageReader reader);
 
     /**
+     * Removes the given reader from the list of registered readers, terminates the reader thread pool and returns
+     * whether this reader was registered in the first place.
+     * Note, that removing the reader by this method also stops the reading process.
+     *
+     * @param reader
+     * @return true if this MessageReader was registered before and was successfully
+     *         unregistered, else false
+     */
+    boolean unregisterReaderAndStopReadingProcess(MessageReader reader);
+
+    /**
      * Returns the name of this log
      * @return
      */

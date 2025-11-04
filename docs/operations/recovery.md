@@ -45,11 +45,57 @@ identify partially failed transaction and repair any inconsistencies
 caused. It is suggested to run the transaction repair process on a
 separate machine connected to the cluster to isolate failures. Configure
 a separately controlled process to run the following where the start
-time specifies the time since epoch where the recovery process should
-start reading from the write-ahead log.
+time (Java Instant that specifies the time since epoch) where the recovery
+process should start reading from the write-ahead log.
 ```groovy
-recovery = JanusGraphFactory.startTransactionRecovery(graph, startTime, TimeUnit.MILLISECONDS);
+recovery = JanusGraphFactory.startTransactionRecovery(graph, startTime);
 ```
+
+Once the recovery process is started, the process never ends and stops
+only if:
+
+1. it is manually stopped by calling `recovery.shutdown()`
+2. the process encounters errors and fails due to exception
+3. the graph gets closed
+
+While the recovery process runs, `recovery.getStatistics()` call provides
+information about the progress of recovery process by returning three numbers:
+
+1. the first number shows how many secondary persistence transaction succeeded
+2. the second number shows how many secondary persistence transaction failed
+and attempted to be recovered
+3. the third number shows how many failed secondary persistence transaction
+could not be recovered
+
+Depending on the used `startTime` value and configured `log.tx.read-interval`
+configuration option, the recovery process might need to run for hours in
+order to process all relevant entries from the write-ahead log.
+`startTime` defines the point in time from which the write-ahead
+log should be read. The log is read in every `log.tx.read-interval`
+millisecond and an approximately 100 seconds long chunk is processed in
+one iteration.
+
+For example, if `startTime` is configured to look for log entries from
+the last twenty hours (72 000 seconds) and `log.tx.read-interval` is set to
+5 000 ms (5 seconds), it might take approximately at least one hour
+(72 000 / 100 * 5 = 3 600 seconds = 1 hour) while all log entries are processed.
+Note: in case there are many failed secondary persistence transactions, the recovery
+process might take much longer as fixing those transactions takes time.
+
+When a write-ahead log entry is found that should be repaired,
+the following INFO level log message appears in the JanusGraph's
+logging system where the transaction ID appears between the
+squared brackets:
+
+```
+Attempting to repair partially failed transaction [...]
+```
+
+Even if the recovery process is stopped by calling `recovery.shutdown()`,
+when it started again for the same graph `Provided read marker is not compatible
+with existing read marker for previously registered readers` error is shown.
+To avoid the error, the graph needs to be closed by `graph.close()` before the
+process is started again.
 
 Enabling the transaction write-ahead log causes an additional write
 operation for mutating transactions which increases the latency. Also
@@ -58,6 +104,27 @@ transaction write-ahead log has a configurable time-to-live of 2 days
 which means that log entries expire after that time to keep the storage
 overhead small. Refer to [Configuration Reference](../configs/configuration-reference.md) for a complete list of all
 log related configuration options to fine tune logging behavior.
+
+### Recurring Transaction Recovery
+
+In case of daily data ingestion, transaction recovery needs to run recurring to ensure that
+both primary and secondary persistence (e.g. indexing data by the mixed index backend)
+of the data succeeds each day.
+
+Since `JanusGraphFactory.startTransactionRecovery()` is not meant to be executed on
+recurring way, JanusGraph provides a dedicated way to run transaction recovery multiple
+times on the same graph:
+
+```groovy
+recovery = JanusGraphFactory.startRecurringTransactionRecovery(graph, startTime);
+```
+
+Similarly to the normal transaction recovery process, the recurring transaction recovery
+process has the same `graph` and `startTime` parameters and provides the same `getStatistics()`
+and `shutdown()` methods.
+
+Once the process is stopped, `startRecurringTransactionRecovery()` can be used
+to start the process again from the same or from another start time.
 
 ## JanusGraph Instance Failure
 
