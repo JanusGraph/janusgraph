@@ -11,8 +11,8 @@
     
     <properties>
         <hadoop.profile>2.0</hadoop.profile>
-        <hbase.docker.uid>1000</hbase.docker.uid>
-        <hbase.docker.gid>1000</hbase.docker.gid>
+        <hbase.docker.uid>999</hbase.docker.uid>
+        <hbase.docker.gid>999</hbase.docker.gid>
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <test.hbase.targetdir>${basedir}/target</test.hbase.targetdir>
     </properties>
