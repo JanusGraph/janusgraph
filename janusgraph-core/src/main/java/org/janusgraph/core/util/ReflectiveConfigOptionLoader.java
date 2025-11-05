@@ -122,6 +122,8 @@ public enum ReflectiveConfigOptionLoader {
          */
         List<String> classnames = Collections.unmodifiableList(Arrays.asList(
             "org.janusgraph.diskstorage.hbase.HBaseStoreManager",
+            "org.janusgraph.diskstorage.couchbase.CouchbaseConfigOptions",
+            "org.janusgraph.diskstorage.couchbase.CouchbaseIndexConfigOptions",
             "org.janusgraph.diskstorage.cql.CQLConfigOptions",
             "org.janusgraph.diskstorage.es.ElasticSearchIndex",
             "org.janusgraph.diskstorage.solr.SolrIndex",
