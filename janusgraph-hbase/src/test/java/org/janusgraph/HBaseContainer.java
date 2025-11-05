@@ -47,8 +47,8 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
     public static final String HBASE_TARGET_DIR = "test.hbase.targetdir";
     public static final String HBASE_DOCKER_PATH = "janusgraph-hbase/docker";
     private static final String DEFAULT_VERSION = "2.6.0";
-    private static final String DEFAULT_UID = "1000";
-    private static final String DEFAULT_GID = "1000";
+    private static final String DEFAULT_UID = "999";
+    private static final String DEFAULT_GID = "999";
 
     private static String getVersion() {
         String property = System.getProperty("hbase.docker.version");

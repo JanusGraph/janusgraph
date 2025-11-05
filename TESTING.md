@@ -189,5 +189,5 @@ System properties to configure HBase test executions:
 | Property | Description | Default value |
 | -------- | ----------- | ------------- |
 | `hbase.docker.version` | HBase version to be used in the docker image. | `2.6.0` |
-| `hbase.docker.uid` | Uid used to run inside HBase of the container | 1000 |
-| `hbase.docker.gid` | Gid used to run inside HBase of the container | 1000 |
+| `hbase.docker.uid` | Uid used to run inside HBase of the container | 999 |
+| `hbase.docker.gid` | Gid used to run inside HBase of the container | 999 |
