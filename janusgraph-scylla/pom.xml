@@ -57,11 +57,11 @@
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>com.datastax.oss</groupId>
+                    <groupId>org.apache.cassandra</groupId>
                     <artifactId>java-driver-core</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.datastax.oss</groupId>
+                    <groupId>org.apache.cassandra</groupId>
                     <artifactId>java-driver-query-builder</artifactId>
                 </exclusion>
             </exclusions>
@@ -156,11 +156,11 @@
             <type>test-jar</type>
             <exclusions>
                 <exclusion>
-                    <groupId>com.datastax.oss</groupId>
+                    <groupId>org.apache.cassandra</groupId>
                     <artifactId>java-driver-core</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.datastax.oss</groupId>
+                    <groupId>org.apache.cassandra</groupId>
                     <artifactId>java-driver-query-builder</artifactId>
                 </exclusion>
             </exclusions>
