@@ -243,6 +243,7 @@ public class SolrIndex implements IndexProvider {
         .supportsCardinality(Cardinality.SET)
         .supportsCustomAnalyzer()
         .supportsGeoContains()
+        .supportsOrderingListProperty()
         .build();
 
     private static final Map<Geo, String> SPATIAL_PREDICATES = spatialPredicates();

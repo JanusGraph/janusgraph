@@ -39,12 +39,13 @@ public class IndexFeatures {
     private final boolean supportsGeoContains;
     private final boolean supportsGeoExists;
     private final boolean supportsNotQueryNormalForm;
+    private final boolean supportsOrderingListProperty;
     private final Set<Cardinality> supportedCardinalities;
 
     public IndexFeatures(boolean supportsDocumentTTL, Mapping defaultMap, Set<Mapping> supportedMap,
                          String wildcardField, Set<Cardinality> supportedCardinalities, boolean supportsNanoseconds,
                          boolean supportCustomAnalyzer, boolean supportsGeoContains, boolean supportGeoExists,
-                         boolean supportsNotQueryNormalForm) {
+                         boolean supportsNotQueryNormalForm, boolean supportsOrderingListProperty) {
 
         Preconditions.checkArgument(defaultMap!=null && defaultMap!=Mapping.DEFAULT);
         Preconditions.checkArgument(supportedMap!=null && !supportedMap.isEmpty()
@@ -59,6 +60,7 @@ public class IndexFeatures {
         this.supportsGeoContains = supportsGeoContains;
         this.supportsGeoExists = supportGeoExists;
         this.supportsNotQueryNormalForm = supportsNotQueryNormalForm;
+        this.supportsOrderingListProperty = supportsOrderingListProperty;
     }
 
     public boolean supportsDocumentTTL() {
@@ -101,6 +103,10 @@ public class IndexFeatures {
         return supportsNotQueryNormalForm;
     }
 
+    public boolean supportsOrderingListProperty() {
+        return supportsOrderingListProperty;
+    }
+
     public static class Builder {
 
         private boolean supportsDocumentTTL = false;
@@ -113,6 +119,7 @@ public class IndexFeatures {
         private boolean supportsGeoContains;
         private boolean supportsGeoExists;
         private boolean supportNotQueryNormalForm;
+        private boolean supportsOrderingListProperty;
 
         public Builder supportsDocumentTTL() {
             supportsDocumentTTL=true;
@@ -164,10 +171,15 @@ public class IndexFeatures {
             return this;
         }
 
+        public Builder supportsOrderingListProperty() {
+            this.supportsOrderingListProperty = true;
+            return this;
+        }
+
         public IndexFeatures build() {
             return new IndexFeatures(supportsDocumentTTL, defaultStringMapping, Collections.unmodifiableSet(new HashSet<>(supportedMappings)),
                 wildcardField,  Collections.unmodifiableSet(new HashSet<>(supportedCardinalities)), supportsNanoseconds, supportsCustomAnalyzer,
-                supportsGeoContains, supportsGeoExists, supportNotQueryNormalForm);
+                supportsGeoContains, supportsGeoExists, supportNotQueryNormalForm, supportsOrderingListProperty);
         }
     }
 }
