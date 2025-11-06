@@ -61,12 +61,12 @@
 
         <!-- needed by Cassandra ccm -->
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-test-infra</artifactId>
             <version>${cassandra-driver.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>com.datastax.oss</groupId>
+                    <groupId>org.apache.cassandra</groupId>
                     <artifactId>java-driver-core</artifactId>
                 </exclusion>
             </exclusions>

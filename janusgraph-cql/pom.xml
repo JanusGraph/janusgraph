@@ -74,7 +74,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-core</artifactId>
             <version>${cassandra-driver.version}</version>
             <exclusions>
@@ -105,7 +105,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-query-builder</artifactId>
             <version>${cassandra-driver.version}</version>
             <exclusions>
