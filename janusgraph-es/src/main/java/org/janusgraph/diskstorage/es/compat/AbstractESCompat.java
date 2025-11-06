@@ -57,6 +57,7 @@ public abstract class AbstractESCompat {
             .supportsCustomAnalyzer()
             .supportsGeoExists()
             .supportNotQueryNormalForm()
+            .supportsOrderingListProperty()
         ;
     }
 

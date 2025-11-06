@@ -55,7 +55,7 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
     protected static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer();
 
     public ElasticsearchJanusGraphIndexTest() {
-        super(true, true, true);
+        super(true, true, true, true);
     }
 
     @Override

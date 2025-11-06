@@ -40,6 +40,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
@@ -117,11 +118,18 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 // do not fold comparators that include nested traversals that are not simple ElementValues
                 return false;
             }
+
+            // check if all mixed index backends of the graph supports ordering for LIST cardinality properties
+            // if this is the case, validJanusGraphOrder() method can return true not only for SINGLE
+            // but also for LIST cardinality properties
+            StandardJanusGraph graph = JanusGraphTraversalUtil.getJanusGraph(rootTraversal.asAdmin());
+            boolean allMixedIndexBackendSupportsOrderingListProperty = graph.getIndexSerializer().allMixedIndexBackendSupportsOrderingListProperty();
+
             final JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(rootTraversal.asAdmin());
             final PropertyKey pKey = tx.getPropertyKey(key);
             if (pKey == null
                 || !(Comparable.class.isAssignableFrom(pKey.dataType()))
-                || (isVertexOrder && pKey.cardinality() != Cardinality.SINGLE)) {
+                || (isVertexOrder && !allMixedIndexBackendSupportsOrderingListProperty && pKey.cardinality() != Cardinality.SINGLE)) {
                 return false;
             }
         }

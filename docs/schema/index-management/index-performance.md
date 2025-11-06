@@ -285,12 +285,16 @@ When using `order().by()` it is important to note that:
     results. All results will be retrieved and then sorted in-memory.
     For large result sets, this can be very expensive.
 
--   Mixed indexes support ordering natively and efficiently. However,
+-   Mixed indexes support ordering property keys with **SINGLE** cardinality
+    natively and efficiently. However,
     the property key used in the order().by() method must have been
     previously added to the mixed indexed for native result ordering
     support. This is important in cases where the the order().by() key
     is different from the query keys. If the property key is not part of
     the index, then sorting requires loading all results into memory.
+
+-   Only Elasticsearch and Solr mixed index backends support ordering
+    property keys with **LIST** cardinality natively and efficiently.
 
 ### Label Constraint
 

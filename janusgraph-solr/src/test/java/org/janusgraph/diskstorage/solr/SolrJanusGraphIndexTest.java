@@ -31,7 +31,7 @@ public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
     protected static JanusGraphSolrContainer solrContainer = new JanusGraphSolrContainer();
 
     protected SolrJanusGraphIndexTest() {
-        super(true, true, true);
+        super(true, true, true, true);
     }
 
     @Override

@@ -15,7 +15,7 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.Cardinality;
+//import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphQuery;
@@ -201,8 +201,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.dataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.dataType());
-        Preconditions.checkArgument(key.cardinality()== Cardinality.SINGLE,
-                "Ordering is undefined on multi-valued key [%s]", key.name());
+        //Preconditions.checkArgument(key.cardinality()== Cardinality.SINGLE,
+        //        "Ordering is undefined on multi-valued key [%s]", key.name());
         Preconditions.checkArgument(!orders.containsKey(key), "orders [%s] already contains key [%s]", orders, key);
         orders.add(key, Order.convert(order));
         return this;
