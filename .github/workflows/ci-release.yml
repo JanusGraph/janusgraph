@@ -47,7 +47,7 @@ jobs:
   build-all:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
@@ -75,7 +75,7 @@ jobs:
             java: 11
             tag_suffix: "-java-11"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
@@ -181,7 +181,7 @@ jobs:
             args: "-Dtest.skip.tp=false -DskipTests=true"
             java: 11
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
