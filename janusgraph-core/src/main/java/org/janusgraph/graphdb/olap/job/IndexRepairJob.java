@@ -229,7 +229,11 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
     @Override
     public void workerIterationEnd(final ScanMetrics metrics) {
         try {
-            if (index instanceof JanusGraphIndex) {
+            // If writeTx is `null` it means that `workerIterationStart` failed previously and write transaction was
+            // never assigned. In this case, instead of raising NPE here we skip this block which will
+            // properly propagate root cause exception instead of NPE exception.
+            // See the first `catch` block in `StandardScannerExecutor.run`.
+            if (index instanceof JanusGraphIndex && writeTx != null) {
                 BackendTransaction mutator = writeTx.getTxHandle();
                 IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
                 if (indexType.isMixedIndex() && documentsPerStore.size() > 0) {

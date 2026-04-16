@@ -1124,6 +1124,19 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigNamespace LOG_NS = new ConfigNamespace(GraphDatabaseConfiguration.ROOT_NS,"log","Configuration options for JanusGraph's logging system",true);
 
+    public static final ConfigOption<Boolean> MANAGEMENT_AUTO_CLOSE_STALE_INSTANCES = new ConfigOption<>(GRAPH_NS,
+            "management-auto-close-stale-instances",
+            "Whether to automatically force-close instances that fail to acknowledge schema changes within the " +
+                "configured timeout (graph.management-ack-timeout). When enabled, unresponsive instances are removed " +
+                "from the registration store so they no longer block schema status transitions.",
+            ConfigOption.Type.MASKABLE, false);
+
+    public static final ConfigOption<Duration> MANAGEMENT_ACK_TIMEOUT = new ConfigOption<>(GRAPH_NS,
+            "management-ack-timeout",
+            "Maximum time to wait for an instance to acknowledge a schema change before treating it as stale. " +
+                "Only effective when graph.management-auto-close-stale-instances is enabled.",
+            ConfigOption.Type.MASKABLE, Duration.ofSeconds(120));
+
     public static final String MANAGEMENT_LOG = "janusgraph";
     public static final String TRANSACTION_LOG = "tx";
     public static final String USER_LOG = "user";

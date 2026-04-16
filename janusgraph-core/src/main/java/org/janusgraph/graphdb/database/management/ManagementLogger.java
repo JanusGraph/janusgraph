@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -71,11 +72,21 @@ public class ManagementLogger implements MessageReader {
     private final AtomicInteger evictionTriggerCounter = new AtomicInteger(0);
     private final ConcurrentMap<Long,EvictionTrigger> evictionTriggerMap = new ConcurrentHashMap<>();
 
+    private final Duration ackTimeout;
+    private final boolean autoCloseStaleInstances;
+
     public ManagementLogger(StandardJanusGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times) {
+        this(graph, sysLog, schemaCache, times, Duration.ofSeconds(120), true);
+    }
+
+    public ManagementLogger(StandardJanusGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times,
+                            Duration ackTimeout, boolean autoCloseStaleInstances) {
         this.graph = graph;
         this.schemaCache = schemaCache;
         this.sysLog = sysLog;
         this.times = times;
+        this.ackTimeout = ackTimeout;
+        this.autoCloseStaleInstances = autoCloseStaleInstances;
         Preconditions.checkNotNull(times);
     }
 
@@ -163,11 +174,13 @@ public class ManagementLogger implements MessageReader {
         final List<Callable<Boolean>> updatedTypeTriggers;
         final StandardJanusGraph graph;
         final Set<String> instancesToBeAcknowledged;
+        final long createdAtMillis;
 
         private EvictionTrigger(long evictionId, List<Callable<Boolean>> updatedTypeTriggers, StandardJanusGraph graph) {
             this.graph = graph;
             this.evictionId = evictionId;
             this.updatedTypeTriggers = updatedTypeTriggers;
+            this.createdAtMillis = System.currentTimeMillis();
             final JanusGraphManagement mgmt = graph.openManagement();
             this.instancesToBeAcknowledged = ConcurrentHashMap.newKeySet();
             instancesToBeAcknowledged.addAll(((ManagementSystem) mgmt).getOpenInstancesInternal());
@@ -204,7 +217,33 @@ public class ManagementLogger implements MessageReader {
             final String instanceRemovedMsg = "Instance [{}] was removed list of open instances and therefore dropped from list of instances to be acknowledged.";
             instancesToBeAcknowledged.stream().filter(it -> !updatedInstances.contains(it)).filter(instancesToBeAcknowledged::remove).forEach(it -> log.debug(instanceRemovedMsg, it));
             mgmt.rollback();
+
+            if (autoCloseStaleInstances && !instancesToBeAcknowledged.isEmpty()
+                    && (System.currentTimeMillis() - createdAtMillis) > ackTimeout.toMillis()) {
+                log.warn("ACK timeout ({}s) exceeded for eviction [{}]. Force-closing unresponsive instances: {}",
+                        ackTimeout.getSeconds(), evictionId, instancesToBeAcknowledged);
+                forceCloseStaleInstances(new HashSet<>(instancesToBeAcknowledged));
+                instancesToBeAcknowledged.clear();
+            }
+
             return instancesToBeAcknowledged.size();
+        }
+
+        private void forceCloseStaleInstances(Set<String> staleInstances) {
+            try {
+                final JanusGraphManagement mgmt = graph.openManagement();
+                for (String instanceId : staleInstances) {
+                    try {
+                        mgmt.forceCloseInstance(instanceId);
+                        log.warn("Force-closed stale instance [{}]", instanceId);
+                    } catch (IllegalArgumentException e) {
+                        log.debug("Could not force-close instance [{}]: {}", instanceId, e.getMessage());
+                    }
+                }
+                mgmt.commit();
+            } catch (Exception e) {
+                log.error("Failed to force-close stale instances", e);
+            }
         }
     }
 

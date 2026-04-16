@@ -105,6 +105,23 @@ For more information on features and bug fixes in 1.2.0, see the GitHub mileston
 
 Starting from version 1.2.0 JanusGraph supports ElasticSearch 9.
 
+##### Zombie instances auto-close during index status update operations
+
+Starting from version 1.2.0 JanusGraph can automatically force-close JanusGraph instances that are unreachable
+during index status update operations.
+
+To enable this behavior, users can set the following configuration:
+```
+graph.management-auto-close-stale-instances=true
+```
+
+By default, an instance is considered stale if it is not reachable for more than 2 minutes. However, this 
+threshold can be adjusted using the following configuration:
+```
+graph.management-ack-timeout=240000 ms
+```
+This is a breaking change for users who use the `JanusGraphIndexStatusUpdate` interface.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven

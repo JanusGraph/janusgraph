@@ -115,6 +115,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -134,6 +135,8 @@ import java.util.stream.Collectors;
 import javax.script.Bindings;
 import javax.script.ScriptException;
 
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_ACK_TIMEOUT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_AUTO_CLOSE_STALE_INSTANCES;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
@@ -254,7 +257,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
 
         Log managementLog = backend.getSystemMgmtLog();
-        managementLogger = new ManagementLogger(this, managementLog, schemaCache, this.times);
+        Duration ackTimeout = configuration.getConfiguration().get(MANAGEMENT_ACK_TIMEOUT);
+        boolean autoCloseStaleInstances = configuration.getConfiguration().get(MANAGEMENT_AUTO_CLOSE_STALE_INSTANCES);
+        managementLogger = new ManagementLogger(this, managementLog, schemaCache, this.times, ackTimeout, autoCloseStaleInstances);
         managementLog.registerReader(ReadMarker.fromNow(), managementLogger);
 
         shutdownHook = new ShutdownThread(this);
