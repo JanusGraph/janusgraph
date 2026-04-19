@@ -1000,7 +1000,17 @@ public class ManagementSystem implements JanusGraphManagement {
                 break;
             case REINDEX:
                 builder = graph.getBackend().buildEdgeScanJob();
-                builder.setFinishJob(indexId.getIndexJobFinisher(graph, SchemaAction.ENABLE_INDEX));
+                SchemaAction reindexFinishAction;
+                if (index instanceof JanusGraphIndex && ((JanusGraphIndex) index).isMixedIndex()) {
+                    boolean hasWriteOnlyField = keySubset.stream()
+                        .map(k -> ((JanusGraphIndex) index).getIndexStatus(k))
+                        .anyMatch(s -> s == SchemaStatus.WRITE_ONLY_ENABLED);
+                    reindexFinishAction = hasWriteOnlyField ? SchemaAction.ENABLE_WRITE_ONLY : SchemaAction.ENABLE_INDEX;
+                } else {
+                    reindexFinishAction = schemaVertex.getStatus() == SchemaStatus.WRITE_ONLY_ENABLED
+                        ? SchemaAction.ENABLE_WRITE_ONLY : SchemaAction.ENABLE_INDEX;
+                }
+                builder.setFinishJob(indexId.getIndexJobFinisher(graph, reindexFinishAction));
                 builder.setJobId(indexId);
                 builder.setNumProcessingThreads(numOfThreads);
                 builder.setJob(VertexJobConverter.convert(graph, new IndexRepairJob(indexId.indexName, indexId.relationTypeName), vertexOnly));
@@ -1012,6 +1022,12 @@ public class ManagementSystem implements JanusGraphManagement {
                 break;
             case ENABLE_INDEX:
                 setStatus(schemaVertex, SchemaStatus.ENABLED, keySubset);
+                updatedTypes.add(schemaVertex);
+                if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
+                future = new EmptyScanJobFuture();
+                break;
+            case ENABLE_WRITE_ONLY:
+                setStatus(schemaVertex, SchemaStatus.WRITE_ONLY_ENABLED, keySubset);
                 updatedTypes.add(schemaVertex);
                 if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
                 future = new EmptyScanJobFuture();

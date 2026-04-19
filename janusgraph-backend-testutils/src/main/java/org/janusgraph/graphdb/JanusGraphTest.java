@@ -2245,6 +2245,77 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     @Tag(TestCategory.BRITTLE_TESTS)
     @Test
+    public void testWriteOnlyIndexComposite() throws InterruptedException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        );
+
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+
+        // Add data before index exists
+        tx.addVertex("name", "v1");
+        newTx();
+
+        // Create composite index
+        mgmt.buildIndex("writeOnlyIndex", Vertex.class).addKey(mgmt.getPropertyKey("name")).buildCompositeIndex();
+        mgmt.commit();
+
+        // Wait for REGISTERED
+        assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "writeOnlyIndex").status(SchemaStatus.REGISTERED)
+                .timeout(TestGraphConfigs.getSchemaConvergenceTime(ChronoUnit.SECONDS), ChronoUnit.SECONDS)
+                .call().getSucceeded());
+
+        // Enable write-only
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("writeOnlyIndex"), SchemaAction.ENABLE_WRITE_ONLY);
+        finishSchema();
+
+        // Verify status is WRITE_ONLY_ENABLED
+        assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, mgmt.getGraphIndex("writeOnlyIndex").getIndexStatus(mgmt.getPropertyKey("name")));
+
+        // Add data while index is write-only
+        tx.addVertex("name", "v2");
+        newTx();
+
+        // Query should NOT use the write-only index
+        evaluateQuery(tx.query().has("name", "v2"), ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        newTx();
+
+        // Fully enable the index
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("writeOnlyIndex"), SchemaAction.ENABLE_INDEX);
+        finishSchema();
+
+        // Now query SHOULD use the index (but only v2 was written while index was active)
+        evaluateQuery(tx.query().has("name", "v2"), ElementCategory.VERTEX, 1, new boolean[]{true, true}, "writeOnlyIndex");
+        // v1 was added before index, so not in index
+        evaluateQuery(tx.query().has("name", "v1"), ElementCategory.VERTEX, 0, new boolean[]{true, true}, "writeOnlyIndex");
+        newTx();
+
+        // Test DISABLE_INDEX from WRITE_ONLY_ENABLED
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("writeOnlyIndex"), SchemaAction.DISABLE_INDEX);
+        finishSchema();
+        assertEquals(SchemaStatus.DISABLED, mgmt.getGraphIndex("writeOnlyIndex").getIndexStatus(mgmt.getPropertyKey("name")));
+
+        // Test ENABLE_WRITE_ONLY from DISABLED
+        mgmt.updateIndex(mgmt.getGraphIndex("writeOnlyIndex"), SchemaAction.ENABLE_WRITE_ONLY);
+        finishSchema();
+        assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, mgmt.getGraphIndex("writeOnlyIndex").getIndexStatus(mgmt.getPropertyKey("name")));
+
+        // Test ENABLE_WRITE_ONLY from ENABLED
+        mgmt.updateIndex(mgmt.getGraphIndex("writeOnlyIndex"), SchemaAction.ENABLE_INDEX);
+        finishSchema();
+        assertEquals(SchemaStatus.ENABLED, mgmt.getGraphIndex("writeOnlyIndex").getIndexStatus(mgmt.getPropertyKey("name")));
+        mgmt.updateIndex(mgmt.getGraphIndex("writeOnlyIndex"), SchemaAction.ENABLE_WRITE_ONLY);
+        finishSchema();
+        assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, mgmt.getGraphIndex("writeOnlyIndex").getIndexStatus(mgmt.getPropertyKey("name")));
+    }
+
+    @Tag(TestCategory.BRITTLE_TESTS)
+    @Test
     public void testIndexShouldRegisterWhenWeRemoveAnInstance() throws InterruptedException {
         clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
                 option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),

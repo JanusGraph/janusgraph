@@ -2992,6 +2992,87 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     }
 
+    @Test
+    public void testWriteOnlyIndexMixed() throws InterruptedException, ExecutionException {
+        final Object[] settings = new Object[]{option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        };
+
+        clopen(settings);
+        final String defText = "Mountain rocks are great friends";
+        final int defTime = 5;
+        final double defHeight = 101.1;
+        final String[] defPhones = new String[]{"1234", "5678"};
+
+        // Create types and mixed index
+        mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        final PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
+        mgmt.makePropertyKey("height").dataType(Double.class).make();
+        mgmt.buildIndex("writeOnlyMixed", Vertex.class).addKey(text, getTextMapping(), getFieldMap(text)).buildMixedIndex(INDEX);
+        finishSchema();
+
+        // Add data before index is enabled
+        addVertex(defTime, defText, defHeight, defPhones);
+
+        // Wait for REGISTERED
+        ManagementSystem.awaitGraphIndexStatus(graph, "writeOnlyMixed").call();
+
+        // Enable write-only
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("writeOnlyMixed"), SchemaAction.ENABLE_WRITE_ONLY);
+        finishSchema();
+
+        // Verify WRITE_ONLY_ENABLED status
+        JanusGraphIndex idx = mgmt.getGraphIndex("writeOnlyMixed");
+        for (final PropertyKey key : idx.getFieldKeys()) {
+            assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, idx.getIndexStatus(key));
+        }
+
+        // Add data while write-only
+        addVertex(defTime, defText, defHeight, defPhones);
+
+        // Query should NOT use the write-only index
+        clopen(settings);
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks"),
+                ElementCategory.VERTEX, 2, new boolean[]{false, true});
+        newTx();
+
+        // Reindex - should stay in WRITE_ONLY_ENABLED
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("writeOnlyMixed"), SchemaAction.REINDEX).get();
+        mgmt.commit();
+        finishSchema();
+
+        // Verify still WRITE_ONLY_ENABLED after reindex
+        idx = mgmt.getGraphIndex("writeOnlyMixed");
+        for (final PropertyKey key : idx.getFieldKeys()) {
+            assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, idx.getIndexStatus(key));
+        }
+
+        // Query still should NOT use the index
+        newTx();
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks"),
+                ElementCategory.VERTEX, 2, new boolean[]{false, true});
+        newTx();
+
+        // Now fully enable
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("writeOnlyMixed"), SchemaAction.ENABLE_INDEX);
+        finishSchema();
+
+        // Verify ENABLED status
+        idx = mgmt.getGraphIndex("writeOnlyMixed");
+        for (final PropertyKey key : idx.getFieldKeys()) {
+            assertEquals(SchemaStatus.ENABLED, idx.getIndexStatus(key));
+        }
+
+        // Query SHOULD now use the index and find all data (reindex populated it)
+        clopen(settings);
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks"),
+                ElementCategory.VERTEX, 2, new boolean[]{true, true}, "writeOnlyMixed");
+    }
+
     private void addVertex(int time, String text, double height, String[] phones) {
         newTx();
         final JanusGraphVertex v = tx.addVertex("text", text, "time", time, "height", height);
