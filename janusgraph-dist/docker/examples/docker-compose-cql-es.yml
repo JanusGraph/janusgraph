@@ -36,8 +36,10 @@ services:
       retries: 3
 
   cassandra:
-    image: cassandra:4.0.18
+    image: cassandra:4.0.20
     container_name: jce-cassandra
+    volumes:
+      - ${JCE_CASSANDRA_DATA:-janusgraph-cassandra-data}:/var/lib/cassandra
     ports:
       - "9042:9042"
       - "9160:9160"
@@ -47,11 +49,13 @@ services:
       test: ["CMD", "nodetool", "status"]
       interval: 10s
       timeout: 30s
-      retries: 6
+      retries: 10
 
   elasticsearch:
-    image: elasticsearch:8.18.4
+    image: elasticsearch:8.19.15
     container_name: jce-elastic
+    volumes:
+      - ${JCE_ELASTICSEARCH_DATA:-janusgraph-elasticsearch-data}:/usr/share/elasticsearch/data/
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - "http.host=0.0.0.0"
@@ -92,3 +96,5 @@ networks:
   jce-network:
 volumes:
   janusgraph-default-data:
+  janusgraph-cassandra-data:
+  janusgraph-elasticsearch-data:
