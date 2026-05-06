@@ -303,7 +303,7 @@ Here's the policy we follow for tagging our container images:
 
 
 [JG]: https://janusgraph.org/
-[JG_TEMPLATES]: https://github.com/search?q=org:JanusGraph+repo:janusgraph+filename:janusgraph.properties%20path:janusgraph-dist/src/assembly/static/conf/gremlin-server
+[JG_TEMPLATES]: https://github.com/search?q=repo:janusgraph/janusgraph+%20path:janusgraph-dist/docker/conf/janusgraph-*-server.properties
 [GS_CONFIG]: http://tinkerpop.apache.org/docs/current/reference/#_configuring_2
 [YQ_GITHUB]: https://github.com/mikefarah/yq
 [YQ_DOC]: https://mikefarah.gitbook.io/yq
