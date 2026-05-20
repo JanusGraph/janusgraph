@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class ManagementTest extends JanusGraphBaseTest {
@@ -47,14 +48,9 @@ public abstract class ManagementTest extends JanusGraphBaseTest {
     public void testReservedNamesRejectedForPropertyKeys() {
         for (String s : ILLEGAL_USER_DEFINED_NAMES) {
             JanusGraphManagement tm = graph.openManagement();
-            try {
-                tm.makePropertyKey(s);
-                fail("Property key  \"" + s + "\" must be rejected");
-            } catch (IllegalArgumentException e) {
-                log.debug("Caught expected exception", e);
-            } finally {
-                tm.commit();
-            }
+            assertThrows(IllegalArgumentException.class, () -> tm.makePropertyKey(s), "Property key \"" + s + "\" must be rejected");
+            log.debug("Caught expected exception");
+            tm.commit();
         }
     }
 
