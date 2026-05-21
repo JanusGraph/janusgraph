@@ -14,12 +14,14 @@
 
 package org.janusgraph.graphdb.query;
 
+import java.io.Serializable;
+
 /**
  * Standard implementation of {@link Query}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class BaseQuery implements Query {
+public class BaseQuery implements Query, Serializable {
 
     private int limit;
 

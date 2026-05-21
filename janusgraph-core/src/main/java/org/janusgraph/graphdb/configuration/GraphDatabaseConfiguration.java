@@ -532,6 +532,37 @@ public class GraphDatabaseConfiguration {
             "transaction to independently fetch graph elements from storage before reading/writing them.",
             ConfigOption.Type.MASKABLE, false);
 
+    public static final ConfigOption<String> CACHE_TYPE = new ConfigOption<>(CACHE_NS,"cache-type",
+        "Enable or disable Redis cache (redis/inmemory)",
+        ConfigOption.Type.MASKABLE, "redis");
+
+    public static final ConfigOption<String> REDIS_CACHE_HOST = new ConfigOption<>(CACHE_NS,"redis-cache-host",
+        "Redis host name",
+        ConfigOption.Type.MASKABLE, "localhost");
+
+    public static final ConfigOption<Integer> REDIS_CACHE_PORT = new ConfigOption<>(CACHE_NS,"redis-cache-port",
+        "Redis host port",
+        ConfigOption.Type.MASKABLE, 6379);
+
+    public static final ConfigOption<Integer> REDIS_CACHE_CONNECTION_POOL_SIZE = new ConfigOption<>(CACHE_NS,"redis-cache-connectionPoolSize",
+        "Redis connection maximum pool size.",
+        ConfigOption.Type.MASKABLE, 64);
+
+    public static final ConfigOption<Integer> REDIS_CACHE_CONNECTION_MIN_IDLE_SIZE = new ConfigOption<>(CACHE_NS,"redis-cache" +
+        "-connectionMinimumIdleSize",
+        "Minimum idle Redis connection amount.",
+        ConfigOption.Type.MASKABLE, 24);
+
+    public static final ConfigOption<Integer> REDIS_CACHE_CONNECTION_TIME_OUT = new ConfigOption<>(CACHE_NS,"redis-cache" +
+        "-connectTimeout",
+        "Timeout during connecting to any Redis server.",
+        ConfigOption.Type.MASKABLE, 1000);
+
+    public static final ConfigOption<Boolean> REDIS_CACHE_KEEP_ALIVE = new ConfigOption<>(CACHE_NS,"redis-cache" +
+        "-keepAlive",
+        "Enables TCP keepAlive for connection.",
+        ConfigOption.Type.MASKABLE, true);
+
     /**
      * The size of the database level cache.
      * If this value is between 0.0 (strictly bigger) and 1.0 (strictly smaller), then it is interpreted as a
