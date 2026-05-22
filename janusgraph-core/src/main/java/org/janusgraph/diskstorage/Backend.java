@@ -171,6 +171,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         put(StandardStoreManager.BDB_JE, STORAGE_DIRECTORY);
         put(StandardStoreManager.CQL, STORAGE_HOSTS);
         put(StandardStoreManager.HBASE, STORAGE_HOSTS);
+        put(StandardStoreManager.TABLESTORE,STORAGE_HOSTS);
         //put(StandardStorageBackend.IN_MEMORY, null);
         put(StandardStoreManager.SCYLLA, STORAGE_HOSTS);
     }});
