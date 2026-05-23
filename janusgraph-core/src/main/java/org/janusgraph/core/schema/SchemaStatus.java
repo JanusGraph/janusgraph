@@ -37,6 +37,12 @@ public enum SchemaStatus {
     ENABLED,
 
     /**
+     * The index is enabled for write operations only. It receives updates during mutations and reindexing,
+     * but is not used to answer queries.
+     */
+    WRITE_ONLY_ENABLED,
+
+    /**
      * The index is temporarily disabled and not in use
      */
     DISABLED,

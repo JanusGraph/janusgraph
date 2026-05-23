@@ -24,6 +24,7 @@ import static org.janusgraph.core.schema.SchemaStatus.DISCARDED;
 import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
 import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
 import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
+import static org.janusgraph.core.schema.SchemaStatus.WRITE_ONLY_ENABLED;
 import static org.janusgraph.core.schema.SchemaStatus.DISABLED;
 
 /**
@@ -42,23 +43,23 @@ public enum SchemaAction {
     /**
      * Re-builds the index from the graph
      */
-    REINDEX(Arrays.asList(REGISTERED, ENABLED, DISABLED)),
+    REINDEX(Arrays.asList(REGISTERED, ENABLED, WRITE_ONLY_ENABLED, DISABLED)),
 
     /**
      * Enables the index so that it can be used by the query processing engine. An index must be registered before it
      * can be enabled.
      */
-    ENABLE_INDEX(Arrays.asList(REGISTERED, DISABLED, ENABLED)),
+    ENABLE_INDEX(Arrays.asList(REGISTERED, DISABLED, ENABLED, WRITE_ONLY_ENABLED)),
 
     /**
      * Disables the index in the graph so that it is no longer used.
      */
-    DISABLE_INDEX(Arrays.asList(ENABLED, DISABLED, REGISTERED)),
+    DISABLE_INDEX(Arrays.asList(ENABLED, WRITE_ONLY_ENABLED, DISABLED, REGISTERED)),
 
     /**
      * Deletes indexed data and leaves the index in an empty state.
      */
-    DISCARD_INDEX(Arrays.asList(DISABLED, REGISTERED, DISCARDED)),
+    DISCARD_INDEX(Arrays.asList(DISABLED, WRITE_ONLY_ENABLED, REGISTERED, DISCARDED)),
 
     /**
      * Removes the internal index vertex, which completely deletes the index
@@ -68,7 +69,13 @@ public enum SchemaAction {
     /**
      * Registers the index as empty which qualifies it for deletion.
      */
-    MARK_DISCARDED(Arrays.asList(DISABLED, REGISTERED, DISCARDED));
+    MARK_DISCARDED(Arrays.asList(DISABLED, WRITE_ONLY_ENABLED, REGISTERED, DISCARDED)),
+
+    /**
+     * Enables the index for write operations only. The index will receive updates during mutations and reindexing,
+     * but will not be used to answer queries.
+     */
+    ENABLE_WRITE_ONLY(Arrays.asList(REGISTERED, ENABLED, DISABLED));
 
     private final Set<SchemaStatus> applicableStatuses;
 
