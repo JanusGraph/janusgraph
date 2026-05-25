@@ -23,6 +23,7 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.graphdb.relations.RelationCache;
 import org.janusgraph.util.encoding.StringEncoding;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.AbstractList;
 import java.util.Arrays;
@@ -38,7 +39,7 @@ import static org.janusgraph.diskstorage.util.ArrayUtil.growSpace;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class StaticArrayEntryList extends AbstractList<Entry> implements EntryList {
+public class StaticArrayEntryList extends AbstractList<Entry> implements EntryList, Serializable {
 
     /**
      * All of the entries are stored sequentially in this byte array. The limitAndValuePos array contains the offset and
