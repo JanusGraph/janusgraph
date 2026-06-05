@@ -150,7 +150,10 @@ public class JanusGraphCassandraContainer extends CassandraContainer<JanusGraphC
         if (getVersion().startsWith("3.")) {
             return "cassandra3";
         }
-        return "cassandra4";
+        if (getVersion().startsWith("4.")) {
+            return "cassandra4";
+        }
+        return "cassandra5";
     }
 
     public JanusGraphCassandraContainer() {

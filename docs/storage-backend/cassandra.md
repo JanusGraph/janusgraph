@@ -21,6 +21,14 @@ With Cassandra 4.0, Thrift support will be removed in Cassandra.
 JanusGraph just supports the CQL storage backend.
 
 !!! note
+    The CQL backend is integration tested against Apache Cassandra 3.11,
+    4.0 and 5.0 (with both the Murmur3 and ByteOrdered partitioners). The
+    DataStax Java driver used by JanusGraph negotiates the native protocol
+    automatically, and table creation adapts the `compression` options to
+    the format expected by the detected Cassandra major version, so no
+    configuration changes are required when moving between these versions.
+
+!!! note
     If security is enabled on Cassandra, the user must have
     `CREATE permission on <all keyspaces>`, otherwise the keyspace must be
     created ahead of time by an administrator including the required

@@ -337,7 +337,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                                                              final Configuration configuration,
                                                              final int cassandraMajorVersion) {
         if (!configuration.get(CF_COMPRESSION)) {
-            // No compression
+            // Cassandra 5+ rejects {'sstable_compression': ''} — use {'enabled': false} instead.
+            if (cassandraMajorVersion >= 5)
+                return createTable.withOption("compression", ImmutableMap.of("enabled", false));
             return createTable.withNoCompression();
         }
 

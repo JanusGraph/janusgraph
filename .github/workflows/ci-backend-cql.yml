@@ -227,6 +227,51 @@ jobs:
             name: cassandra4-murmur-client-auth
             install-args: "-Pjava-11"
             java: 11
+          - module: cql
+            args: "-Pcassandra5-byteordered -Dtest=\"**/diskstorage/cql/*\""
+            name: cassandra5-byteordered-diskstorage
+            install-args: "-Pjava-11"
+            java: 11
+          - module: cql
+            args: "-Pcassandra5-murmur -Dtest=\"**/diskstorage/cql/*\""
+            name: cassandra5-murmur-diskstorage
+            install-args: "-Pjava-11"
+            java: 11
+          - module: cql
+            args: "-Pcassandra5-byteordered -Dtest=\"**/graphdb/cql/*\""
+            name: cassandra5-byteordered-graphdb
+            install-args: "-Pjava-11"
+            java: 11
+          - module: cql
+            args: "-Pcassandra5-murmur -Dtest=\"**/graphdb/cql/*\""
+            name: cassandra5-murmur-graphdb
+            install-args: "-Pjava-11"
+            java: 11
+          - module: cql
+            args: "-Pcassandra5-murmur -Dtest=\"**/hadoop/*\""
+            name: cassandra5-murmur-hadoop
+            install-args: "-Pjava-11"
+            java: 11
+          - module: cql
+            args: "-Pcassandra5-byteordered -Dtest=\"**/core/cql/*\""
+            name: cassandra5-byteordered-core
+            install-args: "-Pjava-11"
+            java: 11
+          - module: cql
+            args: "-Pcassandra5-murmur -Dtest=\"**/core/cql/*\""
+            name: cassandra5-murmur-core
+            install-args: "-Pjava-11"
+            java: 11
+          - module: cql
+            args: "-Pcassandra5-murmur-ssl -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
+            name: cassandra5-murmur-ssl
+            install-args: "-Pjava-11"
+            java: 11
+          - module: cql
+            args: "-Pcassandra5-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
+            name: cassandra5-murmur-client-auth
+            install-args: "-Pjava-11"
+            java: 11
     steps:
       - uses: actions/checkout@v4
         with:

@@ -27,7 +27,7 @@ All currently supported versions of JanusGraph are listed below.
 
 | JanusGraph | Storage Version | Cassandra | HBase | Bigtable | ScyllaDB | Elasticsearch | Solr | TinkerPop | Spark | Scala |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| 1.2.z | 2 | 3.11.z, 4.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.y, 7.y, 8.y, 9.y | 8.y | 3.7.z | 3.2.z | 2.12.z |
+| 1.2.z | 2 | 3.11.z, 4.0.z, 5.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.y, 7.y, 8.y, 9.y | 8.y | 3.7.z | 3.2.z | 2.12.z |
 | 1.1.z | 2 | 3.11.z, 4.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.y, 7.y, 8.y | 8.y | 3.7.z | 3.2.z | 2.12.z |
 
 !!! info
@@ -71,7 +71,7 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 
 **Tested Compatibility:**
 
-* Apache Cassandra 3.11.10, 4.0.6
+* Apache Cassandra 3.11.10, 4.0.6, 5.0.8
 * Apache HBase 2.6.0
 * Oracle BerkeleyJE 7.5.11
 * ScyllaDB 6.2.0
@@ -100,6 +100,13 @@ For more information on features and bug fixes in 1.2.0, see the GitHub mileston
 * [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v1.2.0/janusgraph-full-1.2.0.zip)
 
 #### Upgrade Instructions
+
+##### Apache Cassandra 5.0 support
+
+Starting from version 1.2.0 JanusGraph supports Apache Cassandra 5.0 as a storage backend.
+Apache Cassandra 5.0 requires Java 11 or newer. Since the pre-packaged distribution still
+targets Java 8, it continues to bundle Cassandra 4.0.6; connect JanusGraph to an externally
+managed Cassandra 5.0 cluster (running on Java 11+) to use the new backend.
 
 ##### ElasticSearch 9 support
 
