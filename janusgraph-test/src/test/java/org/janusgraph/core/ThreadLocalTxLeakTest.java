@@ -108,6 +108,56 @@ class ThreadLocalTxLeakTest {
         assertThreadLocalClosed();
     }
 
+    /**
+     * Reproduces https://github.com/JanusGraph/janusgraph/issues/4899: when the graph is closed on another
+     * thread (nulling the shared {@code txs} field) while a transaction is being closed, {@code doClose()}
+     * used to throw a {@link NullPointerException} in its cleanup block, masking the real commit/rollback
+     * outcome. After the fix, {@code doClose()} snapshots the {@code txs} reference and tolerates a null,
+     * so the cleanup completes without throwing.
+     */
+    @Test
+    void doCloseMustBeNullSafeWhenTxsClearedConcurrently() throws Exception {
+        CompletableFuture.runAsync(() -> {
+            // Simulate a concurrent close() that has already nulled the shared txs field before this
+            // thread reaches the doClose() cleanup that runs in commit()/rollback()'s finally block.
+            ThreadLocal<?> original = getThreadLocalTxs(graph);
+            setThreadLocalTxs(graph, null);
+            try {
+                Assertions.assertDoesNotThrow(() -> invokeDoClose(graph),
+                    "doClose() must not throw when txs has been nulled concurrently");
+            } finally {
+                // Restore the field so the @AfterEach close() does not trip over the artificially nulled txs.
+                setThreadLocalTxs(graph, original);
+            }
+        }, executorService).get();
+    }
+
+    private void invokeDoClose(JanusGraph graph) {
+        try {
+            Field container = JanusGraphBlueprintsGraph.class.getDeclaredField("tinkerpopTxContainer");
+            container.setAccessible(true);
+            Object graphTransaction = container.get(graph);
+            java.lang.reflect.Method doClose = graphTransaction.getClass().getDeclaredMethod("doClose");
+            doClose.setAccessible(true);
+            doClose.invoke(graphTransaction);
+        } catch (ReflectiveOperationException e) {
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            }
+            throw new JanusGraphException(e);
+        }
+    }
+
+    private void setThreadLocalTxs(JanusGraph graph, ThreadLocal<?> value) {
+        try {
+            Field txs = JanusGraphBlueprintsGraph.class.getDeclaredField("txs");
+            txs.setAccessible(true);
+            txs.set(graph, value);
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            throw new JanusGraphException(e);
+        }
+    }
+
     private void assertThreadLocalClosed() {
         Assertions.assertDoesNotThrow(() -> {
             CompletableFuture.runAsync(
