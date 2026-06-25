@@ -451,6 +451,21 @@ public class GraphDatabaseConfiguration {
             "as described in the config option 'schema.default'. If 'schema.constraints' is set to 'false' which is the default, then no schema constraints are applied.",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
 
+    public static final ConfigNamespace SCHEMA_REINDEX = new ConfigNamespace(SCHEMA_NS, "reindex",
+        "Configuration options for schema reindex operations.");
+
+    public static final ConfigOption<Boolean> MIXED_INDEX_REINDEX_BATCH_ENABLED = new ConfigOption<>(SCHEMA_REINDEX,
+        "mixed-index-batch-enabled",
+        "Whether mixed-index reindex jobs should batch document restore calls independently from the storage page size.",
+        ConfigOption.Type.MASKABLE, true);
+
+    public static final ConfigOption<Integer> MIXED_INDEX_REINDEX_BATCH_SIZE = new ConfigOption<>(SCHEMA_REINDEX,
+        "mixed-index-batch-size",
+        "Number of graph elements a mixed-index reindex worker should process before flushing restored documents " +
+            "to the index backend. Larger values can improve Elasticsearch bulk restore throughput at the cost " +
+            "of additional worker memory.",
+        ConfigOption.Type.MASKABLE, Integer.class, 1000, size -> size > 0);
+
     public static final ConfigNamespace SCHEMA_INIT = new ConfigNamespace(SCHEMA_NS,"init",
         "Configuration options for schema initialization on startup.");
 

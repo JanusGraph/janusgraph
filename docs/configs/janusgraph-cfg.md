@@ -410,6 +410,15 @@ Options for JSON schema initialization strategy.
 | schema.init.json.skip-indices | Skip creation of indices. | Boolean | false | LOCAL |
 | schema.init.json.string | JSON formated schema definition string. This option takes precedence if both `file` and `string` are used. | String | (no default value) | LOCAL |
 
+### schema.reindex
+Configuration options for schema reindex operations.
+
+
+| Name | Description | Datatype | Default Value | Mutability |
+| ---- | ---- | ---- | ---- | ---- |
+| schema.reindex.mixed-index-batch-enabled | Whether mixed-index reindex jobs should batch document restore calls independently from the storage page size. | Boolean | true | MASKABLE |
+| schema.reindex.mixed-index-batch-size | Number of graph elements a mixed-index reindex worker should process before flushing restored documents to the index backend. Larger values can improve Elasticsearch bulk restore throughput at the cost of additional worker memory. | Integer | 1000 | MASKABLE |
+
 ### storage
 Configuration options for the storage backend.  Some options are applicable only for certain backends.
 
@@ -488,6 +497,7 @@ CQL storage backend options
 | storage.cql.metadata-schema-enabled | Whether schema metadata is enabled. | Boolean | (no default value) | MASKABLE |
 | storage.cql.metadata-token-map-enabled | Whether token metadata is enabled. If disabled, partitioner-name must be provided. | Boolean | (no default value) | MASKABLE |
 | storage.cql.only-use-local-consistency-for-system-operations | True to prevent any system queries from using QUORUM consistency and always use LOCAL_QUORUM instead | Boolean | false | MASKABLE |
+| storage.cql.parallel-scan-token-ranges | Number of disjoint Murmur3 token ranges a full-table scan (e.g. a mixed-index reindex or other OLAP job) is split into. With the default value of 1 the full scan is issued as a single query that funnels the whole table through one coordinator. When set above 1 and the Murmur3 partitioner is in use, the scan is split into this many token-bounded queries that are streamed back in token order. NOTE: the ranges are currently consumed back-to-back by a single scan thread (only the first page of each range is prefetched concurrently, at construction), so this replaces one unbounded coordinator scan with several bounded ones rather than scanning all ranges fully in parallel. Values that are too high can overload the cluster. | Integer | 1 | MASKABLE |
 | storage.cql.partitioner-name | The name of Cassandra cluster's partitioner. It will be retrieved by client if not provided. If provided, it must match the cluster's partitioner name. It can be the full class name such as `org.apache.cassandra.dht.ByteOrderedPartitioner` or the simple name such as `ByteOrderedPartitioner` | String | (no default value) | MASKABLE |
 | storage.cql.protocol-version | The protocol version used to connect to the Cassandra database.  If no value is supplied then the driver will negotiate with the server. | Integer | 0 | LOCAL |
 | storage.cql.read-consistency-level | The consistency level of read operations against Cassandra | String | QUORUM | MASKABLE |

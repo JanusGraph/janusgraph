@@ -67,6 +67,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import org.janusgraph.diskstorage.log.Log;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
@@ -1000,6 +1001,7 @@ public class ManagementSystem implements JanusGraphManagement {
                 break;
             case REINDEX:
                 builder = graph.getBackend().buildEdgeScanJob();
+                configureMixedIndexReindexBatching(index, builder);
                 builder.setFinishJob(indexId.getIndexJobFinisher(graph, SchemaAction.ENABLE_INDEX));
                 builder.setJobId(indexId);
                 builder.setNumProcessingThreads(numOfThreads);
@@ -1069,6 +1071,13 @@ public class ManagementSystem implements JanusGraphManagement {
                 throw new UnsupportedOperationException("Update action not supported: " + updateAction);
         }
         return future;
+    }
+
+    private void configureMixedIndexReindexBatching(Index index, StandardScanner.Builder builder) {
+        if (index instanceof JanusGraphIndex && ((JanusGraphIndex) index).isMixedIndex()
+                && graph.getConfiguration().getConfiguration().get(GraphDatabaseConfiguration.MIXED_INDEX_REINDEX_BATCH_ENABLED)) {
+            builder.setWorkBlockSize(graph.getConfiguration().getConfiguration().get(GraphDatabaseConfiguration.MIXED_INDEX_REINDEX_BATCH_SIZE));
+        }
     }
 
     /**

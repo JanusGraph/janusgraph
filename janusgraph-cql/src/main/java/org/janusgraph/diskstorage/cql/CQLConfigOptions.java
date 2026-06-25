@@ -212,6 +212,20 @@ public interface CQLConfigOptions {
             ConfigOption.Type.MASKABLE,
             1024);
 
+    ConfigOption<Integer> PARALLEL_SCAN_TOKEN_RANGES = new ConfigOption<>(
+            CQL_NS,
+            "parallel-scan-token-ranges",
+            "Number of disjoint Murmur3 token ranges a full-table scan (e.g. a mixed-index reindex or other " +
+                "OLAP job) is split into. With the default value of 1 the full scan is issued as a single query " +
+                "that funnels the whole table through one coordinator. When set above 1 and the Murmur3 " +
+                "partitioner is in use, the scan is split into this many token-bounded queries that are streamed " +
+                "back in token order. NOTE: the ranges are currently consumed back-to-back by a single scan " +
+                "thread (only the first page of each range is prefetched concurrently, at construction), so this " +
+                "replaces one unbounded coordinator scan with several bounded ones rather than scanning all ranges " +
+                "fully in parallel. Values that are too high can overload the cluster.",
+            ConfigOption.Type.MASKABLE,
+            1);
+
     ConfigOption<Integer> BACK_PRESSURE_LIMIT = new ConfigOption<>(
         CQL_NS,
         "back-pressure-limit",
