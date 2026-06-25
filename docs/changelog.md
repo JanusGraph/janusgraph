@@ -122,6 +122,61 @@ graph.management-ack-timeout=240000 ms
 ```
 This is a breaking change for users who use the `JanusGraphIndexStatusUpdate` interface.
 
+##### Faster mixed-index reindex with batched document restores
+
+Mixed-index reindex jobs (`SchemaAction.REINDEX` against an Elasticsearch, Solr or Lucene index) now
+flush restored documents to the index backend in bounded batches while the storage scan is still
+running, instead of buffering a whole scan segment and flushing it once. This reduces the number of
+bulk requests, transaction commits and management-system reads per reindexed element and bounds worker
+memory.
+
+This behavior is **enabled by default**. Two new configuration options control it:
+```
+schema.reindex.mixed-index-batch-enabled=true
+schema.reindex.mixed-index-batch-size=1000
+```
+`schema.reindex.mixed-index-batch-size` is the number of documents a reindex worker buffers before
+issuing a single `restore` (bulk) call. A worker buffers up to this many documents in memory and a
+reindex runs several workers in parallel, so peak heap grows with `mixed-index-batch-size` ×
+reindex-threads × average-document-size — raise it only when documents are small and workers have
+headroom.
+
+Be aware of the following behavior changes when batching is enabled (the default):
+
+-   Restored documents become visible in the index **incrementally**, as each batch is flushed, rather
+    than once per scan segment. This is safe because a reindex is idempotent and rebuilds index state
+    from the graph as the source of truth; a reindex interrupted partway leaves partially-populated
+    index documents that a re-run deterministically completes.
+-   The reindex flush cadence is now driven by `mixed-index-batch-size` rather than by the storage
+    page size (`storage.page-size`).
+
+To restore the previous storage-page-sized, flush-once-per-segment behavior, set
+`schema.reindex.mixed-index-batch-enabled=false`. See the
+[Elasticsearch reindex tuning guide](index-backend/elasticsearch.md#reindex-optimization) for tuning
+the batch size, reindex threads and `index.[X].bulk-refresh` together.
+
+##### Faster OLAP scans (signal-based row hand-off)
+
+The OLAP scan pipeline behind reindex and other scan jobs now hands rows between its internal threads
+using blocking `take()` and sentinel markers instead of polling bounded queues on a fixed timer. On
+fast backends (notably CQL/Cassandra) this removes per-row hand-off latency that could otherwise
+dominate scan wall-clock time, speeding up single-node reindex and other full scans by a large factor.
+No configuration or user action is required.
+
+##### Opt-in parallel token-range scan for CQL full scans
+
+CQL full-table scans (used by reindex and other OLAP jobs) can optionally be split into several
+token-bounded queries instead of a single coordinator-funneled scan:
+```
+storage.cql.parallel-scan-token-ranges=1
+```
+The default value `1` preserves the previous single-query behavior. When set above `1` and the Murmur3
+partitioner is in use, the scan is split into that many disjoint token ranges streamed back in token
+order. Note: in this release the ranges are consumed back-to-back by a single scan thread (only the
+first page of each range is prefetched concurrently), so it replaces one unbounded coordinator scan
+with several bounded ones rather than scanning all ranges fully in parallel; setting very high values
+can overload the cluster. The option is ignored for non-Murmur3 partitioners.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven

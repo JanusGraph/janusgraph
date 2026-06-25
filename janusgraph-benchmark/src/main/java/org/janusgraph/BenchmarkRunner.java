@@ -106,6 +106,7 @@ public class BenchmarkRunner {
             builder.exclude(StaticArrayEntryListBenchmark.class.getSimpleName());
             builder.exclude(BackPressureBenchmark.class.getSimpleName());
             builder.exclude("CQL.*Benchmark");
+            builder.exclude(".*ElasticSearch.*Benchmark.*");
         }
         Collection<RunResult> results = new Runner(builder.build()).run();
         transformResults(results, outputs);

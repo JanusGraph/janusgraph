@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.olap.job;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.BaseVertexQuery;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphVertex;
@@ -31,9 +32,11 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
@@ -78,6 +81,23 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
 
     private Map<String,Map<String,List<IndexEntry>>> documentsPerStore = new HashMap<>();
 
+    /**
+     * Maximum number of mixed-index documents to accumulate before flushing them to the index backend
+     * via a single {@code restore} call. A non-positive value disables size-based flushing, in which case
+     * documents are only flushed once per scan iteration in {@link #workerIterationEnd(ScanMetrics)} (the
+     * legacy behavior). Resolved from configuration in {@link #workerIterationStart}.
+     */
+    private int mixedIndexBatchSize = -1;
+
+    /**
+     * The resolved index type and serializer for this reindex. They are constant for the whole job,
+     * so they are computed once in {@link #workerIterationStart} rather than per processed vertex
+     * (each {@code asIndexType()} call otherwise allocates a fresh wrapper). Only set when the target
+     * is a {@link JanusGraphIndex}; remain {@code null} for relation-type indexes.
+     */
+    private IndexType indexType;
+    private IndexSerializer indexSerializer;
+
     public IndexRepairJob() {
         super();
     }
@@ -86,6 +106,29 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
 
     public IndexRepairJob(final String indexName, final String indexType) {
         super(indexName,indexType);
+    }
+
+    @Override
+    public void workerIterationStart(JanusGraph graph, Configuration config, ScanMetrics metrics) {
+        super.workerIterationStart(graph, config, metrics);
+        // Resolve the mixed-index reindex batch size so that documents are flushed incrementally as they
+        // are produced, rather than being buffered for an entire scan segment. This bounds worker memory
+        // and lets restored documents stream to the index backend while the storage scan continues. It is
+        // particularly important for the distributed (MapReduce/Spark) reindex, whose mapper only flushes
+        // once per input split. Single-node reindex already flushes per work block of the same size, so
+        // this does not change its behavior.
+        final Configuration graphConfig = this.graph.getConfiguration().getConfiguration();
+        if (graphConfig.get(GraphDatabaseConfiguration.MIXED_INDEX_REINDEX_BATCH_ENABLED)) {
+            mixedIndexBatchSize = graphConfig.get(GraphDatabaseConfiguration.MIXED_INDEX_REINDEX_BATCH_SIZE);
+        } else {
+            mixedIndexBatchSize = -1;
+        }
+        // Resolve the index type and serializer once: they are constant for the whole reindex and
+        // were previously recomputed for every processed vertex (asIndexType() allocates a wrapper).
+        if (index instanceof JanusGraphIndex) {
+            indexType = managementSystem.getSchemaVertex(index).asIndexType();
+            indexSerializer = this.graph.getIndexSerializer();
+        }
     }
 
     /**
@@ -179,9 +222,8 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 }
                 metrics.incrementCustom(ADDED_RECORDS_COUNT, outAdditions.size()+totalInAdditions);
             } else if (index instanceof JanusGraphIndex) {
-                IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
+                // indexType and indexSerializer were resolved once in workerIterationStart.
                 assert indexType!=null;
-                IndexSerializer indexSerializer = graph.getIndexSerializer();
                 //Gather elements to index
                 Iterator<? extends JanusGraphElement> elements;
                 switch (indexType.getElement()) {
@@ -215,6 +257,12 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                             metrics.incrementCustom(DOCUMENT_UPDATES_COUNT);
                         }
                     }
+                    // Flush as soon as enough documents have been buffered so that worker memory stays bounded
+                    // and restored documents stream to the index backend while the scan keeps producing rows.
+                    if (mixedIndexBatchSize > 0 && countBufferedDocuments() >= mixedIndexBatchSize) {
+                        mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
+                        documentsPerStore = new HashMap<>();
+                    }
                 }
 
             } else throw new UnsupportedOperationException("Unsupported index found: "+index);
@@ -224,6 +272,14 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
             metrics.incrementCustom(FAILED_TX);
             throw new JanusGraphException(e.getMessage(), e);
         }
+    }
+
+    private int countBufferedDocuments() {
+        int count = 0;
+        for (Map<String, List<IndexEntry>> documents : documentsPerStore.values()) {
+            count += documents.size();
+        }
+        return count;
     }
 
     @Override

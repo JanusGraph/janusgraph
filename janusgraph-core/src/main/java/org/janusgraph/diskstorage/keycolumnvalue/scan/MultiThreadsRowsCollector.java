@@ -38,11 +38,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import static org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor.Row;
-import static org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor.TIME_PER_TRY;
 
 /**
  * Uses separate thread per query. May be used for {@link KeyColumnValueStore}
@@ -55,6 +53,13 @@ class MultiThreadsRowsCollector extends RowsCollector {
 
     private static final int MAX_KEY_LENGTH = 128; //in bytes
 
+    /**
+     * Sentinel pushed onto a data puller's queue when that puller has produced all of its rows.
+     * It lets the collector block on {@link BlockingQueue#take()} (waking the instant a row is
+     * handed off) instead of polling on a timer, while still learning when a query is exhausted.
+     */
+    private static final SliceResult END_OF_DATA = new SliceResult(null, null, null);
+
     private static final Logger log = LoggerFactory.getLogger(MultiThreadsRowsCollector.class);
 
     private final StoreFeatures storeFeatures;
@@ -65,7 +70,11 @@ class MultiThreadsRowsCollector extends RowsCollector {
     private final Configuration graphConfiguration;
     private final DataPuller[] pullThreads;
     private final BlockingQueue<SliceResult>[] dataQueues;
-    private boolean interrupted = false;
+    private volatile boolean interrupted = false;
+    /** The thread executing {@link #run()}; interrupted by {@link #interrupt()} to unblock {@code take()}. */
+    private volatile Thread collectorThread;
+    /** Per-query flag set once a query's {@link #END_OF_DATA} sentinel has been observed. */
+    private boolean[] finishedQueries;
 
     MultiThreadsRowsCollector(
         KeyColumnValueStore store,
@@ -101,35 +110,46 @@ class MultiThreadsRowsCollector extends RowsCollector {
     }
 
     void run() throws InterruptedException, TemporaryBackendException {
+        collectorThread = Thread.currentThread();
         int numQueries = queries.size();
         SliceResult[] currentResults = new SliceResult[numQueries];
-        while (!interrupted) {
-            collectDataFromPullers(currentResults, numQueries);
+        finishedQueries = new boolean[numQueries];
+        try {
+            while (!interrupted) {
+                collectDataFromPullers(currentResults, numQueries);
 
-            SliceResult conditionQuery = currentResults[0];
-            if (conditionQuery==null) break; //Termination condition - primary query has no more data
-            final StaticBuffer key = conditionQuery.key;
+                SliceResult conditionQuery = currentResults[0];
+                if (conditionQuery==null) break; //Termination condition - primary query has no more data
+                final StaticBuffer key = conditionQuery.key;
 
-            Row e = buildRow(numQueries, currentResults, key);
+                Row e = buildRow(numQueries, currentResults, key);
 
-            rowQueue.put(e);
+                rowQueue.put(e);
+            }
+        } catch (InterruptedException e) {
+            // interrupt() was invoked (scan cancellation) and unblocked our take()/put(). The thrown
+            // InterruptedException already cleared this thread's interrupt status, so downstream
+            // join()/cleanup() proceed normally; StandardScannerExecutor observes the `interrupted`
+            // flag and completes the scan as interrupted.
+            interrupted = true;
         }
     }
 
-    private void collectDataFromPullers(SliceResult[] currentResults, int numQueries) throws InterruptedException, TemporaryBackendException {
+    /**
+     * Blocks on each unfinished query's queue until the next row (or its {@link #END_OF_DATA}
+     * sentinel) arrives. Unlike a timed poll, this adds no per-row latency: the collector wakes the
+     * instant a data puller hands off a row. A query whose sentinel has been seen is skipped.
+     */
+    private void collectDataFromPullers(SliceResult[] currentResults, int numQueries) throws InterruptedException {
         for (int i = 0; i < numQueries; i++) {
-            if (currentResults[i]!=null) continue;
-            BlockingQueue<SliceResult> queue = dataQueues[i];
+            if (currentResults[i]!=null || finishedQueries[i]) continue;
 
-            SliceResult qr = queue.poll(TIME_PER_TRY, TimeUnit.MILLISECONDS); //Try very short time to see if we are done
-            if (qr==null) {
-                DataPuller dataPuller = pullThreads[i];
-                if (dataPuller.isFinished()) continue; //No more data to be expected
-                while (!dataPuller.isFinished() && qr == null) {
-                    qr = queue.poll(TIME_PER_TRY, TimeUnit.MILLISECONDS);
-                }
+            SliceResult qr = dataQueues[i].take(); //Blocks until a row or the END_OF_DATA sentinel is available
+            if (qr == END_OF_DATA) {
+                finishedQueries[i] = true; //No more data for this query; leave currentResults[i] null
+            } else {
+                currentResults[i] = qr;
             }
-            currentResults[i]=qr;
         }
     }
 
@@ -169,6 +189,12 @@ class MultiThreadsRowsCollector extends RowsCollector {
     @Override
     void interrupt() {
         interrupted = true;
+        // The collector blocks on take()/put(); interrupt its thread so the cancellation is observed
+        // immediately rather than after the next row arrives.
+        final Thread t = collectorThread;
+        if (t != null) {
+            t.interrupt();
+        }
     }
 
     @Override
@@ -224,6 +250,7 @@ class MultiThreadsRowsCollector extends RowsCollector {
 
         @Override
         public void run() {
+            boolean interruptedWhilePulling = false;
             try {
                 while (keyIterator.hasNext()) {
                     StaticBuffer key = keyIterator.next();
@@ -233,6 +260,7 @@ class MultiThreadsRowsCollector extends RowsCollector {
                     queue.put(new SliceResult(query, key, entryList));
                 }
             } catch (InterruptedException e) {
+                interruptedWhilePulling = true;
                 log.error("Data-pulling thread interrupted while waiting on queue or data", e);
             } catch (Throwable e) {
                 log.error("Could not load data from storage", e);
@@ -243,6 +271,19 @@ class MultiThreadsRowsCollector extends RowsCollector {
                     log.warn("Could not close storage iterator ", e);
                 }
                 finished=true;
+                // On normal completion signal the collector that this query is exhausted so its
+                // blocking take() wakes up. The collector is actively draining, so this completes as
+                // soon as a slot frees. We must NOT attempt this when interrupted: cancellation stops
+                // the collector, so the queue may be full and never drained again - a blocking put
+                // here would hang this thread until cleanup() forcibly interrupts it. A missed
+                // sentinel is harmless because the scan is being cancelled.
+                if (!interruptedWhilePulling && !Thread.currentThread().isInterrupted()) {
+                    try {
+                        queue.put(END_OF_DATA);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
             }
         }
 

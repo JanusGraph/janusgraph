@@ -342,6 +342,53 @@ on how to increase the refresh interval and its impact on write
 performance. Note, that a higher refresh interval means that it takes a
 longer time for graph mutations to be available in the index.
 
+### Reindex Optimization
+
+Mixed-index reindex jobs can batch more documents per backend restore call than
+the regular storage scan page size. This allows Elasticsearch to use larger bulk
+requests during `SchemaAction.REINDEX` without changing `storage.page-size` for
+other graph operations.
+
+```properties
+schema.reindex.mixed-index-batch-enabled = true
+schema.reindex.mixed-index-batch-size = 1000
+```
+
+Increase `schema.reindex.mixed-index-batch-size` when Elasticsearch can handle
+larger bulk requests and JanusGraph workers have enough memory for the queued
+documents. Set `schema.reindex.mixed-index-batch-enabled` to `false` to keep
+the previous storage-page-sized reindex batches.
+
+#### Tuning the reindex throughput
+
+The reindex job accumulates restored documents in memory and flushes them to
+Elasticsearch in a single bulk (`_bulk`) request per worker once the batch size
+is reached, so three settings determine reindex throughput:
+
+-   **Batch size** (`schema.reindex.mixed-index-batch-size`). A larger batch
+    sends fewer, larger bulk requests, which reduces the number of HTTP
+    round-trips, transaction commits and management-system reads per reindexed
+    element. The gains are largest going from the storage page size (the
+    pre-batching default, e.g. 100) up to roughly one or a few thousand
+    documents, and then taper off. Remember that a worker buffers up to
+    `mixed-index-batch-size` documents in memory, and a reindex runs several
+    workers in parallel, so peak heap usage grows with
+    `mixed-index-batch-size` × reindex-threads × average-document-size — keep
+    the default modest and raise it only when documents are small and workers
+    have headroom.
+-   **Reindex threads.** `updateIndex(index, SchemaAction.REINDEX)` uses
+    `Runtime.getRuntime().availableProcessors()` worker threads by default; pass
+    an explicit count with `updateIndex(index, SchemaAction.REINDEX, threads)`.
+    More threads issue more concurrent bulk requests and scale best when the
+    Elasticsearch index has multiple shards spread across data nodes.
+-   **Bulk refresh** (`index.[X].bulk-refresh`). With the default value `false`
+    a reindex is throughput-bound. If it is set to `wait_for` (or `true`) every
+    bulk request blocks until the next index refresh, which can dominate the
+    total reindex time; in that mode batching helps the most, because it
+    proportionally reduces the number of refresh waits. For the fastest reindex
+    keep `bulk-refresh = false` and rely on the index becoming searchable at the
+    next periodic refresh once the job completes.
+
 ### Further Reading
 
 -   Please refer to the [Elasticsearch homepage](https://www.elastic.co)

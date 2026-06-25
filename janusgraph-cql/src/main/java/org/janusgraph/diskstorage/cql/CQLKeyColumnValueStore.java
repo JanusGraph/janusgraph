@@ -63,6 +63,7 @@ import org.janusgraph.diskstorage.util.CompletableFutureUtil;
 import org.janusgraph.diskstorage.util.backpressure.QueryBackPressure;
 
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -85,6 +86,7 @@ import static io.vavr.Predicates.instanceOf;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.PARALLEL_SCAN_TOKEN_RANGES;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.GC_GRACE_SECONDS;
@@ -160,6 +162,9 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
 
     private final PreparedStatement getKeysAll;
     private final PreparedStatement getKeysRanged;
+    private final PreparedStatement getKeysRangedToken;
+    private final int parallelScanTokenRanges;
+    private final boolean parallelScanSupported;
     private final PreparedStatement deleteColumn;
     private final PreparedStatement insertColumn;
     private final PreparedStatement insertColumnWithTTL;
@@ -225,8 +230,25 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 .whereColumn(COLUMN_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(SLICE_START_BINDING))
                 .whereColumn(COLUMN_COLUMN_NAME).isLessThanOrEqualTo(bindMarker(SLICE_END_BINDING));
             this.getKeysAll = this.session.prepare(addTTLFunction(addTimestampFunction(getKeysAllSelect)).build());
+
+            // Token-bounded variant of the full scan, used to scan disjoint token ranges concurrently
+            // when parallel-scan-token-ranges > 1. Each range is matched with token(key) > start AND
+            // token(key) <= end, which tiles the ring exactly (see CQLTokenRangeSplitter).
+            final Select getKeysRangedTokenSelect = selectFrom(this.storeManager.getKeyspaceName(), this.tableName)
+                .column(KEY_COLUMN_NAME)
+                .column(COLUMN_COLUMN_NAME)
+                .column(VALUE_COLUMN_NAME)
+                .allowFiltering()
+                .where(
+                    Relation.token(KEY_COLUMN_NAME).isGreaterThan(bindMarker(KEY_START_BINDING)),
+                    Relation.token(KEY_COLUMN_NAME).isLessThanOrEqualTo(bindMarker(KEY_END_BINDING))
+                )
+                .whereColumn(COLUMN_COLUMN_NAME).isGreaterThanOrEqualTo(bindMarker(SLICE_START_BINDING))
+                .whereColumn(COLUMN_COLUMN_NAME).isLessThanOrEqualTo(bindMarker(SLICE_END_BINDING));
+            this.getKeysRangedToken = this.session.prepare(addTTLFunction(addTimestampFunction(getKeysRangedTokenSelect)).build());
         } else {
             this.getKeysAll = null;
+            this.getKeysRangedToken = null;
         }
 
         final DeleteSelection deleteSelection = addUsingTimestamp(deleteFrom(this.storeManager.getKeyspaceName(), this.tableName));
@@ -252,7 +274,18 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         asyncQueryExecutionService = new GroupingAsyncQueryExecutionService(configuration, storeManager, tableName,
             this::addTTLFunction, this::addTimestampFunction, singleKeyGetter, multiKeysGetter);
 
+        this.parallelScanTokenRanges = Math.max(1, configuration.get(PARALLEL_SCAN_TOKEN_RANGES));
+        // Token-range parallel scan is only correct for the Murmur3 partitioner, whose tokens are plain
+        // longs that tile [Long.MIN_VALUE, Long.MAX_VALUE]; for any other partitioner we keep the single scan.
+        this.parallelScanSupported = this.getKeysRangedToken != null && isMurmur3Partitioner();
+
         // @formatter:on
+    }
+
+    private boolean isMurmur3Partitioner() {
+        return this.session.getMetadata().getTokenMap()
+            .map(tokenMap -> tokenMap.getPartitionerName().contains("Murmur3"))
+            .orElse(false);
     }
 
     private DeleteSelection addUsingTimestamp(DeleteSelection deleteSelection) {
@@ -517,16 +550,38 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
             throw new PermanentBackendException("This operation is only allowed when partitioner supports unordered scan");
         }
 
-        return Try.of(() -> new CQLResultSetKeyIterator(
+        final int pageSize = this.storeManager.getPageSize();
+        return Try.of(() -> {
+            if (parallelScanSupported && parallelScanTokenRanges > 1) {
+                final long[][] tokenRanges = CQLTokenRangeSplitter.splitMurmur3Ring(parallelScanTokenRanges);
+                final List<CQLPagingIterator> rangeScans = new ArrayList<>(tokenRanges.length);
+                for (final long[] tokenRange : tokenRanges) {
+                    rangeScans.add(new CQLPagingIterator(getKeysRangedToken.boundStatementBuilder()
+                        .setLong(KEY_START_BINDING, tokenRange[0])
+                        .setLong(KEY_END_BINDING, tokenRange[1])
+                        .setByteBuffer(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
+                        .setByteBuffer(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
+                        .setPageSize(pageSize)
+                        .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()).build()));
+                }
+                // Each per-range pager issues only its FIRST page on construction (concurrently across
+                // ranges); io.vavr Iterator.concat then drains the ranges back-to-back on the single scan
+                // thread, so deeper paging is sequential range-by-range rather than fully parallel.
+                // Concatenating in ring order preserves global token order, which the multi-query scan merge
+                // in StandardScannerExecutor relies on.
+                // TODO: for true end-to-end parallelism, drain each range on its own thread feeding the merge.
+                return new CQLResultSetKeyIterator(query, this.singleKeyGetter, Iterator.concat(rangeScans));
+            }
+            return new CQLResultSetKeyIterator(
                 query,
                 this.singleKeyGetter,
                 new CQLPagingIterator(
                     getKeysAll.boundStatementBuilder()
                         .setByteBuffer(SLICE_START_BINDING, query.getSliceStart().asByteBuffer())
                         .setByteBuffer(SLICE_END_BINDING, query.getSliceEnd().asByteBuffer())
-                        .setPageSize(this.storeManager.getPageSize())
-                        .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()).build())))
-                .getOrElseThrow(EXCEPTION_MAPPER);
+                        .setPageSize(pageSize)
+                        .setConsistencyLevel(getTransaction(txh).getReadConsistencyLevel()).build()));
+        }).getOrElseThrow(EXCEPTION_MAPPER);
     }
 
     @Override

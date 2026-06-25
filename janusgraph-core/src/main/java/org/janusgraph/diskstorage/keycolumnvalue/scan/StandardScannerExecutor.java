@@ -45,8 +45,15 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
     private static final Logger log =
             LoggerFactory.getLogger(StandardScannerExecutor.class);
 
-    private static final int TIMEOUT_MS = 180000; // 60 seconds
-    static final int TIME_PER_TRY = 10; // 10 milliseconds
+    private static final int TIMEOUT_MS = 180000; // 3 minutes
+
+    /**
+     * Sentinel row enqueued once per processor after the row collector finishes. A processor that
+     * takes it knows no more rows are coming and exits. This lets processors block on
+     * {@link BlockingQueue#take()} (waking the instant a row is enqueued) instead of polling on a
+     * timer - the timed poll previously added latency per scanned row on fast backends.
+     */
+    private static final Row POISON_PILL = new Row(null, null);
 
     private final ScanJob job;
     private final Consumer<ScanMetrics> finishJob;
@@ -132,8 +139,19 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
 
             rowsCollector.join();
 
-            for (Processor processor : processors) {
-                processor.finish();
+            // The collector has produced every row; enqueue one poison pill per processor so each
+            // blocked take() wakes and the processor exits once it has drained the remaining rows.
+            // Use a bounded offer rather than a blocking put: a live processor keeps draining the queue,
+            // so in the normal case there is room and offer returns immediately. This runs once per scan
+            // at teardown, never on the per-row path, so it cannot reintroduce hand-off latency. The
+            // timeout only elapses if every processor has already died (e.g. all threw in the work-block
+            // rollover) and left the queue full - a blocking put would then hang forever; instead we give
+            // up and let the finally block force-terminate any stragglers.
+            for (int i = 0; i < numProcessors; i++) {
+                if (!processorQueue.offer(POISON_PILL, TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                    log.error("Timed out enqueuing scan termination signal; processor(s) already terminated");
+                    break;
+                }
             }
             if (!Threads.waitForCompletion(processors,TIMEOUT_MS)) log.error("Processor did not terminate in time");
 
@@ -218,7 +236,6 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
         private ScanJob job;
         private final BlockingQueue<Row> processorQueue;
 
-        private volatile boolean finished;
         private int numProcessed;
 
 
@@ -226,7 +243,6 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
             this.job = job;
             this.processorQueue = processorQueue;
 
-            this.finished = false;
             this.numProcessed = 0;
         }
 
@@ -234,25 +250,24 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
         public void run() {
             try {
                 job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
-                while (!finished || !processorQueue.isEmpty()) {
-                    Row row;
-                    while ((row=processorQueue.poll(TIME_PER_TRY,TimeUnit.MILLISECONDS))!=null) {
-                        if (numProcessed>=workBlockSize) {
-                            //Setup new chunk of work
-                            job.workerIterationEnd(metrics);
-                            job = job.clone();
-                            job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
-                            numProcessed=0;
-                        }
-                        try {
-                            job.process(row.key,row.entries,metrics);
-                            metrics.increment(ScanMetrics.Metric.SUCCESS);
-                        } catch (Throwable ex) {
-                            log.error("Exception processing row ["+row.key+"]: ",ex);
-                            metrics.increment(ScanMetrics.Metric.FAILURE);
-                        }
-                        numProcessed++;
+                while (true) {
+                    Row row = processorQueue.take(); //Blocks until a row (or the POISON_PILL) is available
+                    if (row == POISON_PILL) break; //Collector finished: no more rows will be produced
+                    if (numProcessed>=workBlockSize) {
+                        //Setup new chunk of work
+                        job.workerIterationEnd(metrics);
+                        job = job.clone();
+                        job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
+                        numProcessed=0;
                     }
+                    try {
+                        job.process(row.key,row.entries,metrics);
+                        metrics.increment(ScanMetrics.Metric.SUCCESS);
+                    } catch (Throwable ex) {
+                        log.error("Exception processing row ["+row.key+"]: ",ex);
+                        metrics.increment(ScanMetrics.Metric.FAILURE);
+                    }
+                    numProcessed++;
                 }
             } catch (InterruptedException e) {
                 log.error("Processing thread interrupted while waiting on queue or processing data", e);
@@ -261,10 +276,6 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
             } finally {
                 job.workerIterationEnd(metrics);
             }
-        }
-
-        public void finish() {
-            this.finished=true;
         }
     }
 
