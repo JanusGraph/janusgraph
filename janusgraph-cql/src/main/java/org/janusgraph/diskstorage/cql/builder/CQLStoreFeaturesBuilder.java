@@ -61,6 +61,7 @@ public class CQLStoreFeaturesBuilder {
         fb.keyConsistent((onlyUseLocalConsistency ? local : global), local);
         fb.locking(useExternalLocking);
         fb.optimisticLocking(true);
+        fb.optimizedWholeRowDeletion(true);
         fb.multiQuery(true);
 
         if (!configuration.get(TTL_ENABLED)) {

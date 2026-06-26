@@ -223,4 +223,14 @@ public interface StoreFeatures {
      */
     boolean hasOptimisticLocking();
 
+    /**
+     * Whether this storage backend can delete an entire row/partition for a key in a single
+     * efficient operation, honoring {@link org.janusgraph.diskstorage.Mutation#hasWholeRowDeletion()}.
+     * Backends returning true must, when a mutation has this flag set, delete every column for the
+     * key (e.g. a Cassandra partition-level DELETE) rather than enumerating columns.
+     *
+     * @return true if the backend supports optimized whole-row deletion, else false
+     */
+    boolean hasOptimizedWholeRowDeletion();
+
 }

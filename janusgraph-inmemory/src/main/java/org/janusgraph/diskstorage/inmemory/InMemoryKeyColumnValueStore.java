@@ -123,6 +123,11 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         cvs.mutate(additions, deletions, txh);
     }
 
+    /** Removes the entire row (all columns) for the given key in a single operation. */
+    void deleteRow(StaticBuffer key) {
+        kcv.remove(key);
+    }
+
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException();

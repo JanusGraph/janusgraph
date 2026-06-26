@@ -230,6 +230,11 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      */
     private volatile Map<Long, InternalRelation> deletedRelations;
 
+    /**
+     * Keeps track of canonical ids of vertices that have been fully removed in this transaction
+     */
+    private volatile Set<Object> removedVertexCanonicalIds = null;
+
     //######## Index Caches
     /**
      * Caches the result of index calls so that repeated index queries don't need
@@ -762,6 +767,31 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     public boolean isRemovedRelation(Long relationId) {
         return deletedRelations.containsKey(relationId);
+    }
+
+    /** Records that the given (loaded) vertex has been fully removed in this transaction, keyed by its canonical id, so commit can issue a single whole-row deletion instead of per-column deletes. */
+    public void recordRemovedVertex(InternalVertex vertex) {
+        if (vertex.isNew()) return;
+        final Object canonicalId = idInspector.isPartitionedVertex(vertex.id())
+            ? idManager.getCanonicalVertexId(((Number) vertex.id()).longValue())
+            : vertex.id();
+        Set<Object> result = removedVertexCanonicalIds;
+        if (result == null) {
+            if (config.isSingleThreaded()) {
+                removedVertexCanonicalIds = result = new HashSet<>();
+            } else {
+                synchronized (this) {
+                    result = removedVertexCanonicalIds;
+                    if (result == null) removedVertexCanonicalIds = result = ConcurrentHashMap.newKeySet();
+                }
+            }
+        }
+        result.add(canonicalId);
+    }
+
+    /** Returns true if the vertex with the given canonical id was fully removed in this transaction (see {@link #recordRemovedVertex}). */
+    public boolean isVertexFullyRemoved(Object canonicalId) {
+        return removedVertexCanonicalIds != null && removedVertexCanonicalIds.contains(canonicalId);
     }
 
     private TransactionLock getLock(final Object... tuple) {

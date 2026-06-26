@@ -186,6 +186,15 @@ More information on Cassandra consistency levels and acceptable
 values can be found [here](https://docs.datastax.com/en/cassandra-oss/3.x/cassandra/dml/dmlDataConsistencyTOC.html).
 In general, higher levels are more consistent and robust but have higher latency.
 
+### Super-node deletion (whole-row delete)
+
+Removing a vertex with many incident edges previously issued one column-level `DELETE` per edge on the
+vertex's partition, creating a large number of cell tombstones that can overwhelm reads on that partition.
+As of 1.2.0, when a vertex is removed JanusGraph instead issues a single partition-level
+`DELETE ... WHERE key = ?`, producing one tombstone for the whole partition. This is controlled by
+`storage.drop-whole-row-on-vertex-removal` (default `true`). Set it to `false` to restore the previous
+per-column behavior.
+
 ## Global Graph Operations
 
 JanusGraph over Cassandra supports global vertex and edge iteration.
