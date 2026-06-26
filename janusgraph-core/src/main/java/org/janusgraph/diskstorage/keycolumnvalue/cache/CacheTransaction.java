@@ -82,10 +82,15 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     }
 
     void mutate(KCVSCache store, StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws BackendException {
+        mutate(store, key, additions, deletions, false);
+    }
+
+    void mutate(KCVSCache store, StaticBuffer key, List<Entry> additions, List<Entry> deletions, boolean wholeRowDeletion) throws BackendException {
         Preconditions.checkNotNull(store);
-        if (additions.isEmpty() && deletions.isEmpty()) return;
+        if (additions.isEmpty() && deletions.isEmpty() && !wholeRowDeletion) return;
 
         KCVEntryMutation m = new KCVEntryMutation(additions, deletions);
+        if (wholeRowDeletion) m.setWholeRowDeletion(true);
         final Map<StaticBuffer, KCVEntryMutation> storeMutation = mutations.computeIfAbsent(store, k -> new HashMap<>());
         KCVEntryMutation existingM = storeMutation.get(key);
         if (existingM != null) {
@@ -121,8 +126,9 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
 
     private KCVMutation convert(KCVEntryMutation mutation) {
         assert !mutation.isEmpty();
+        final KCVMutation result;
         if (mutation.hasDeletions()) {
-            return new KCVMutation(
+            result = new KCVMutation(
                 () -> new ArrayList<>(mutation.getAdditions()),
                 () -> {
                     List<Entry> deletions = mutation.getDeletions();
@@ -132,8 +138,11 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
                     }
                     return convertedDeletions;
                 });
+        } else {
+            result = new KCVMutation(mutation.getAdditions(), KeyColumnValueStore.NO_DELETIONS);
         }
-        return new KCVMutation(mutation.getAdditions(), KeyColumnValueStore.NO_DELETIONS);
+        result.setWholeRowDeletion(mutation.hasWholeRowDeletion());
+        return result;
     }
 
     private void flushInternal() throws BackendException {

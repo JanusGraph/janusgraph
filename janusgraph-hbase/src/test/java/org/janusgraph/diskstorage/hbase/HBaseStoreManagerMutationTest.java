@@ -40,6 +40,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 public class HBaseStoreManagerMutationTest {
@@ -169,5 +172,65 @@ public class HBaseStoreManagerMutationTest {
         Put put = commands.getFirst().get(0);
         putColumnsWithTTL.add(put.getTTL());
         assertArrayEquals(expectedColumnsWithTTL.toArray(), putColumnsWithTTL.toArray());
+    }
+
+    /**
+     * Verifies that a {@link KCVMutation} with {@code setWholeRowDeletion(true)} and no per-column
+     * deletions produces a column-family-level {@link Delete} (not per-qualifier deletes) in
+     * {@link HBaseStoreManager#convertToCommands}.
+     *
+     * <p>Before the fix, a flag-only mutation with empty deletions list produced no Delete at all
+     * (the old guard was {@code if (mutation.hasDeletions())}). After the fix it must produce a
+     * Delete whose cell map contains exactly one {@link Cell.Type#DeleteFamily} cell, with no
+     * qualifier bytes (i.e. qualifier length == 0) — the hallmark of a family-level tombstone.
+     */
+    @Test
+    public void convertToCommandsWholeRowDeletionUsesFamilyDelete() throws Exception {
+        final String storeName = "store1";
+        final StaticBuffer rowkey = KeyColumnValueStoreUtil.longToByteBuffer(42);
+
+        KCVMutation mutation = new KCVMutation(Collections.emptyList(), Collections.emptyList());
+        mutation.setWholeRowDeletion(true);
+
+        final Map<StaticBuffer, KCVMutation> rowkeyMutationMap = new HashMap<>();
+        rowkeyMutationMap.put(rowkey, mutation);
+
+        final Map<String, Map<StaticBuffer, KCVMutation>> storeMutationMap = new HashMap<>();
+        storeMutationMap.put(storeName, rowkeyMutationMap);
+
+        HBaseStoreManager manager = new HBaseStoreManager(hBaseContainer.getModifiableConfiguration());
+        // Use a non-null delTimestamp so the timestamp branch is exercised.
+        final long delTimestamp = System.currentTimeMillis();
+        final Map<StaticBuffer, Pair<List<Put>, Delete>> commandsPerRowKey =
+                manager.convertToCommands(storeMutationMap, null, delTimestamp);
+
+        assertEquals(1, commandsPerRowKey.size(), "Expected exactly one rowkey entry");
+        Pair<List<Put>, Delete> commands = commandsPerRowKey.values().iterator().next();
+
+        // A whole-row deletion must produce a Delete (old code would have produced null).
+        Delete d = commands.getSecond();
+        assertNotNull(d, "Delete must be non-null for a whole-row-deletion mutation");
+
+        // The Delete's family-cell map must contain at least one entry.
+        assertNotNull(d.getFamilyCellMap(), "Family cell map must not be null");
+        assertFalse(d.getFamilyCellMap().isEmpty(), "Family cell map must not be empty");
+
+        // Every cell in the Delete must be a DeleteFamily tombstone (no per-qualifier delete).
+        boolean hasDeleteFamily = false;
+        for (Map.Entry<byte[], List<Cell>> familyEntry : d.getFamilyCellMap().entrySet()) {
+            for (Cell c : familyEntry.getValue()) {
+                Cell.Type type = c.getType();
+                assertEquals(Cell.Type.DeleteFamily, type,
+                        "Expected DeleteFamily cell type, got " + type + " — a per-column qualifier delete was produced instead of a family delete");
+                // A family delete cell has a zero-length qualifier.
+                assertEquals(0, c.getQualifierLength(),
+                        "Family delete cell must have an empty qualifier");
+                hasDeleteFamily = true;
+            }
+        }
+        assertTrue(hasDeleteFamily, "At least one DeleteFamily cell must be present");
+
+        // No puts should have been produced (the mutation had no additions).
+        assertTrue(commands.getFirst().isEmpty(), "Expected no Put commands for a whole-row-deletion-only mutation");
     }
 }

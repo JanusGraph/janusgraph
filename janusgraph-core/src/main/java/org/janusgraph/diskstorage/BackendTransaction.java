@@ -213,7 +213,11 @@ public class BackendTransaction implements LoggableTransaction {
      * @param deletions List of columns to be removed
      */
     public void mutateEdges(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws BackendException {
-        edgeStore.mutateEntries(key, additions, deletions, storeTx);
+        mutateEdges(key, additions, deletions, false);
+    }
+
+    public void mutateEdges(StaticBuffer key, List<Entry> additions, List<Entry> deletions, boolean wholeRowDeletion) throws BackendException {
+        edgeStore.mutateEntries(key, additions, deletions, wholeRowDeletion, storeTx);
     }
 
     /**

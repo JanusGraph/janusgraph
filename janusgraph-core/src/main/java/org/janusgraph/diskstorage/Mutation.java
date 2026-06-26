@@ -37,6 +37,8 @@ public abstract class Mutation<E,K> {
 
     private List<K> deletions;
 
+    private boolean wholeRowDeletion = false;
+
     public Mutation(List<E> additions, List<K> deletions) {
         assert additions!=null;
         assert deletions!=null;
@@ -98,6 +100,21 @@ public abstract class Mutation<E,K> {
     }
 
     /**
+     * Whether this mutation deletes the entire row/partition for its key. When set, the backend
+     * (if it advertises {@code StoreFeatures.hasOptimizedWholeRowDeletion()}) deletes all columns
+     * for the key in a single operation before applying any additions, instead of deleting each
+     * column individually.
+     */
+    public boolean hasWholeRowDeletion() {
+        return wholeRowDeletion;
+    }
+
+    /** Marks whether this mutation deletes the entire row/partition for its key. @see #hasWholeRowDeletion() */
+    public void setWholeRowDeletion(boolean wholeRowDeletion) {
+        this.wholeRowDeletion = wholeRowDeletion;
+    }
+
+    /**
      * Adds a new entry as an addition to this mutation
      *
      * @param entry
@@ -135,6 +152,8 @@ public abstract class Mutation<E,K> {
             if (null == deletions) deletions = m.deletions;
             else deletions.addAll(m.deletions);
         }
+
+        this.wholeRowDeletion = this.wholeRowDeletion || m.wholeRowDeletion;
     }
 
     public boolean isEmpty() {
@@ -142,7 +161,7 @@ public abstract class Mutation<E,K> {
     }
 
     public int getTotalMutations() {
-        return (additions==null?0:additions.size()) + (deletions==null?0:deletions.size());
+        return (additions==null?0:additions.size()) + (deletions==null?0:deletions.size()) + (wholeRowDeletion?1:0);
     }
 
     /**

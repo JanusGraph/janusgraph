@@ -67,6 +67,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
             .keyOrdered(true)
             .persists(false)
             .optimisticLocking(true)
+            .optimizedWholeRowDeletion(true)
             .keyConsistent(GraphDatabaseConfiguration.buildGraphConfiguration())
             .build();
     }
@@ -115,10 +116,16 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> storeMut : mutations.entrySet()) {
-            KeyColumnValueStore store = stores.get(storeMut.getKey());
+            InMemoryKeyColumnValueStore store = stores.get(storeMut.getKey());
             Preconditions.checkNotNull(store);
             for (Map.Entry<StaticBuffer, KCVMutation> keyMut : storeMut.getValue().entrySet()) {
-                store.mutate(keyMut.getKey(), keyMut.getValue().getAdditions(), keyMut.getValue().getDeletions(), txh);
+                KCVMutation mut = keyMut.getValue();
+                if (mut.hasWholeRowDeletion()) {
+                    store.deleteRow(keyMut.getKey());
+                }
+                if (mut.hasAdditions() || mut.hasDeletions()) {
+                    store.mutate(keyMut.getKey(), mut.getAdditions(), mut.getDeletions(), txh);
+                }
             }
         }
     }

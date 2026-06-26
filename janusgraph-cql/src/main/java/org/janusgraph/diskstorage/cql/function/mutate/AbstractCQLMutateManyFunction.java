@@ -41,15 +41,26 @@ public abstract class AbstractCQLMutateManyFunction {
         if(assignTimestamp){
             this.createMaskedTimestampFunction = DistributedStoreManager.MaskedTimestamp::new;
             this.sleepAfterWriteFunction = sleepAfterWriteFunction;
-            this.deletionsFunction = (commitTime, keyMutations, columnValueStore, key) -> Iterator.of(commitTime.getDeletionTime(times))
-                .flatMap(deleteTime -> Iterator.ofAll(keyMutations.getDeletions()).map(deletion -> columnValueStore.deleteColumn(key, deletion, deleteTime)));
+            this.deletionsFunction = (commitTime, keyMutations, columnValueStore, key) -> {
+                if (keyMutations.hasWholeRowDeletion()) {
+                    return Iterator.of(columnValueStore.deleteRow(key, commitTime.getDeletionTime(times)));
+                }
+                return Iterator.of(commitTime.getDeletionTime(times))
+                    .flatMap(deleteTime -> Iterator.ofAll(keyMutations.getDeletions())
+                        .map(deletion -> columnValueStore.deleteColumn(key, deletion, deleteTime)));
+            };
             this.additionsFunction = (commitTime, keyMutations, columnValueStore, key) -> Iterator.of(commitTime.getAdditionTime(times))
                 .flatMap(addTime -> Iterator.ofAll(keyMutations.getAdditions()).map(addition -> columnValueStore.insertColumn(key, addition, addTime)));
         } else {
             this.createMaskedTimestampFunction = txh -> null;
             this.sleepAfterWriteFunction = mustPass -> {};
-            this.deletionsFunction = (commitTime, keyMutations, columnValueStore, key) -> Iterator.ofAll(keyMutations.getDeletions())
-                .map(deletion -> columnValueStore.deleteColumn(key, deletion));
+            this.deletionsFunction = (commitTime, keyMutations, columnValueStore, key) -> {
+                if (keyMutations.hasWholeRowDeletion()) {
+                    return Iterator.of(columnValueStore.deleteRow(key));
+                }
+                return Iterator.ofAll(keyMutations.getDeletions())
+                    .map(deletion -> columnValueStore.deleteColumn(key, deletion));
+            };
             this.additionsFunction = (commitTime, keyMutations, columnValueStore, key) -> Iterator.ofAll(keyMutations.getAdditions())
                 .map(addition -> columnValueStore.insertColumn(key, addition));
         }

@@ -680,6 +680,13 @@ public class GraphDatabaseConfiguration {
             "Whether to enable batch loading into the storage backend",
             ConfigOption.Type.LOCAL, false);
 
+    public static final ConfigOption<Boolean> DROP_WHOLE_ROW_ON_VERTEX_REMOVAL = new ConfigOption<>(STORAGE_NS,"drop-whole-row-on-vertex-removal",
+            "When a vertex is removed, delete its entire storage row in a single operation (e.g. a Cassandra " +
+            "partition-level delete producing one tombstone) instead of deleting each edge/property column " +
+            "individually. This greatly reduces tombstone pressure when removing super-nodes. Only takes effect " +
+            "on storage backends that support optimized whole-row deletion; ignored otherwise.",
+            ConfigOption.Type.MASKABLE, true);
+
     /**
      * Enables transactions on storage backends that support them
      */
@@ -1481,6 +1488,7 @@ public class GraphDatabaseConfiguration {
     private boolean allowVertexIdSetting;
     private boolean allowCustomVertexIdType;
     private boolean logTransactions;
+    private boolean dropWholeRowOnVertexRemoval;
     private String metricsPrefix;
     private String unknownIndexKeyName;
     private MultiQueryHasStepStrategyMode hasStepStrategyMode;
@@ -1640,6 +1648,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean hasLogTransactions() {
         return logTransactions;
+    }
+
+    public boolean getDropWholeRowOnVertexRemoval() {
+        return dropWholeRowOnVertexRemoval;
     }
 
     public TimestampProvider getTimestampProvider() {
@@ -1809,6 +1821,7 @@ public class GraphDatabaseConfiguration {
         }
 
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
+        dropWholeRowOnVertexRemoval = configuration.get(DROP_WHOLE_ROW_ON_VERTEX_REMOVAL);
 
         unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
 

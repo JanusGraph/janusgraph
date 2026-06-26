@@ -166,6 +166,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     private final int parallelScanTokenRanges;
     private final boolean parallelScanSupported;
     private final PreparedStatement deleteColumn;
+    private final PreparedStatement deleteRow;
     private final PreparedStatement insertColumn;
     private final PreparedStatement insertColumnWithTTL;
 
@@ -255,6 +256,11 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         this.deleteColumn = this.session.prepare(deleteSelection
                 .whereColumn(KEY_COLUMN_NAME).isEqualTo(bindMarker(KEY_BINDING))
                 .whereColumn(COLUMN_COLUMN_NAME).isEqualTo(bindMarker(COLUMN_BINDING))
+                .build());
+
+        final DeleteSelection deleteRowSelection = addUsingTimestamp(deleteFrom(this.storeManager.getKeyspaceName(), this.tableName));
+        this.deleteRow = this.session.prepare(deleteRowSelection
+                .whereColumn(KEY_COLUMN_NAME).isEqualTo(bindMarker(KEY_BINDING))
                 .build());
 
         final Insert insertColumnInsert = addUsingTimestamp(insertInto(this.storeManager.getKeyspaceName(), this.tableName)
@@ -476,6 +482,19 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         BoundStatementBuilder builder = deleteColumn.boundStatementBuilder()
             .setByteBuffer(KEY_BINDING, key.asByteBuffer())
             .setByteBuffer(COLUMN_BINDING, column.asByteBuffer());
+        if (timestamp != null) {
+            builder = builder.setLong(TIMESTAMP_BINDING, timestamp);
+        }
+        return builder.build();
+    }
+
+    public BatchableStatement<BoundStatement> deleteRow(final StaticBuffer key) {
+        return deleteRow(key, null);
+    }
+
+    public BatchableStatement<BoundStatement> deleteRow(final StaticBuffer key, final Long timestamp) {
+        BoundStatementBuilder builder = deleteRow.boundStatementBuilder()
+            .setByteBuffer(KEY_BINDING, key.asByteBuffer());
         if (timestamp != null) {
             builder = builder.setLong(TIMESTAMP_BINDING, timestamp);
         }

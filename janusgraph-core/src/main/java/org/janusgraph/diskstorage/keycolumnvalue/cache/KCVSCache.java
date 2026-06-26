@@ -68,8 +68,12 @@ public abstract class KCVSCache extends KCVSProxy {
     }
 
     public void mutateEntries(StaticBuffer key, List<Entry> additions, List<Entry> deletions, StoreTransaction txh) throws BackendException {
+        mutateEntries(key, additions, deletions, false, txh);
+    }
+
+    public void mutateEntries(StaticBuffer key, List<Entry> additions, List<Entry> deletions, boolean wholeRowDeletion, StoreTransaction txh) throws BackendException {
         assert txh instanceof CacheTransaction;
-        ((CacheTransaction) txh).mutate(this, key, additions, deletions);
+        ((CacheTransaction) txh).mutate(this, key, additions, deletions, wholeRowDeletion);
     }
 
     @Override

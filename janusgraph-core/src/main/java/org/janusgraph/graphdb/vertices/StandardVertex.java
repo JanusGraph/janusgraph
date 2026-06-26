@@ -162,13 +162,20 @@ public class StandardVertex extends AbstractVertex {
     @Override
     public synchronized void remove() {
         super.remove();
-        ((StandardVertex) it()).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+        // Resolve the current-transaction vertex once. Calling it() again after the lifecycle is
+        // flipped to REMOVED would re-resolve via getNextTx().getVertex(id) and throw "was removed"
+        // when this reference originated in an already-closed transaction.
+        final StandardVertex vertex = (StandardVertex) it();
+        vertex.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+        tx().recordRemovedVertex(vertex);
     }
 
     @Override
     public synchronized void remove(Iterable<JanusGraphRelation> loadedRelations) {
         super.remove(loadedRelations);
-        ((StandardVertex) it()).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+        final StandardVertex vertex = (StandardVertex) it();
+        vertex.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+        tx().recordRemovedVertex(vertex);
     }
 
     @Override

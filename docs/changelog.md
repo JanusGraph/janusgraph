@@ -184,6 +184,18 @@ first page of each range is prefetched concurrently), so it replaces one unbound
 with several bounded ones rather than scanning all ranges fully in parallel; setting very high values
 can overload the cluster. The option is ignored for non-Murmur3 partitioners.
 
+##### Whole-row deletion on vertex removal (super-node tombstone reduction)
+
+Starting from version 1.2.0, when a vertex is removed JanusGraph deletes its entire storage row in a single
+operation on backends that support it (CQL/Cassandra issues one partition-level delete instead of one
+column delete per incident edge), drastically reducing tombstone pressure when removing super-nodes.
+
+This behavior is enabled by default. To restore the previous per-column deletion behavior, set:
+
+```
+storage.drop-whole-row-on-vertex-removal=false
+```
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven

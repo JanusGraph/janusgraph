@@ -381,7 +381,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 .orderedScan(true).unorderedScan(true).batchMutation(true)
                 .multiQuery(true).distributed(true).keyOrdered(true).storeTTL(true)
                 .cellTTL(true).timestamps(true).preferredTimestamps(PREFERRED_TIMESTAMPS)
-                .optimisticLocking(true).keyConsistent(c);
+                .optimisticLocking(true).keyConsistent(c)
+                .optimizedWholeRowDeletion(true);
 
         try {
             fb.localKeyPartition(getDeployment() == Deployment.LOCAL);
@@ -950,7 +951,20 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     commandsPerKey.put(m.getKey(), commands);
                 }
 
-                if (mutation.hasDeletions()) {
+                if (mutation.hasWholeRowDeletion()) {
+                    if (commands.getSecond() == null) {
+                        Delete d = new Delete(key);
+                        if (delTimestamp != null) {
+                            d.setTimestamp(delTimestamp);
+                        }
+                        commands.setSecond(d);
+                    }
+                    if (delTimestamp != null) {
+                        commands.getSecond().addFamily(cfName, delTimestamp);
+                    } else {
+                        commands.getSecond().addFamily(cfName);
+                    }
+                } else if (mutation.hasDeletions()) {
                     if (commands.getSecond() == null) {
                         Delete d = new Delete(key);
                         if (delTimestamp != null) {

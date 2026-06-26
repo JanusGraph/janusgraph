@@ -174,6 +174,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     private final GraphDatabaseConfiguration config;
     private final Backend backend;
     private final IDManager idManager;
+    private final boolean wholeRowDeletionEnabled;
     private final VertexIDAssigner idAssigner;
     private final TimestampProvider times;
     private final CacheInvalidationService cacheInvalidationService;
@@ -217,6 +218,8 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
         this.idAssigner = config.getIDAssigner(backend);
         this.idManager = idAssigner.getIDManager();
+        this.wholeRowDeletionEnabled = configuration.getDropWholeRowOnVertexRemoval()
+            && backend.getStoreFeatures().hasOptimizedWholeRowDeletion();
 
         this.cacheInvalidationService = new KCVSCacheInvalidationService(
             backend.getEdgeStoreCache(), backend.getIndexStoreCache(), idManager);
@@ -856,8 +859,18 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         for (Object vertexId : mutations.keySet()) {
             IDUtils.checkId(vertexId);
             final List<InternalRelation> edges = mutations.get(vertexId);
-            final List<Entry> additions = new ArrayList<>(edges.size());
-            final List<Entry> deletions = new ArrayList<>(Math.max(10, edges.size() / 10));
+
+            final Object canonicalId = idManager.isPartitionedVertex(vertexId)
+                ? idManager.getCanonicalVertexId(((Number) vertexId).longValue())
+                : vertexId;
+            final boolean wholeRowDeletion = wholeRowDeletionEnabled && tx.isVertexFullyRemoved(canonicalId);
+
+            // When the whole row is deleted, per-column deletions are skipped and a fully-removed
+            // vertex has no additions, so both lists stay empty. Avoid preallocating large backing
+            // arrays sized to edges.size() for super-node removals.
+            final List<Entry> additions = new ArrayList<>(wholeRowDeletion ? 0 : edges.size());
+            final List<Entry> deletions = new ArrayList<>(wholeRowDeletion ? 0 : Math.max(10, edges.size() / 10));
+
             for (final InternalRelation edge : edges) {
                 final InternalRelationType baseType = (InternalRelationType) edge.getType();
                 assert baseType.getBaseType()==null;
@@ -868,11 +881,18 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
                         if (edge.getVertex(pos).id().equals(vertexId)) {
-                            StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
                             if (edge.isRemoved()) {
-                                deletions.add(entry);
+                                // Skip serializing per-column deletions entirely when a whole-row delete will be issued:
+                                // writeRelation() is not called, so removing a super-node avoids serializing every incident
+                                // edge (CPU + allocations) only to discard the result. wholeRowDeletion is true only when the
+                                // backend advertises the capability, so backends without it always serialize the full
+                                // per-column deletions list (no data loss).
+                                if (!wholeRowDeletion) {
+                                    deletions.add(edgeSerializer.writeRelation(edge, type, pos, tx));
+                                }
                             } else {
                                 Preconditions.checkArgument(edge.isNew());
+                                StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
                                 int ttl = getTTL(edge);
                                 if (ttl > 0) {
                                     entry.setMetaData(EntryMetaData.TTL, ttl);
@@ -885,7 +905,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             }
 
             StaticBuffer vertexKey = idManager.getKey(vertexId);
-            mutator.mutateEdges(vertexKey, additions, deletions);
+            mutator.mutateEdges(vertexKey, additions, deletions, wholeRowDeletion);
         }
     }
 
