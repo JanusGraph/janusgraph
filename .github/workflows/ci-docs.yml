@@ -87,9 +87,16 @@ jobs:
             --menu.js-url="https://raw.githubusercontent.com/JanusGraph/janusgraph/master/docs/theme/structor-menu.js.gotmpl"
             --exp-branch=master --debug
       - run: sudo chown -R $(id -u):$(id -g) .
+      - uses: actions/create-github-app-token@v3
+        id: docs-update-app-token
+        with:
+          client-id: ${{ vars.DOCS_UPDATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.DOCS_UPDATE_APP_CERT }}
+          owner: ${{ github.repository_owner }}
+          repositories: docs.janusgraph.org
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
-          token: ${{ secrets.ACCESS_TOKEN }}
+          token: ${{ steps.docs-update-app-token.outputs.token }}
           repository-name: JanusGraph/docs.janusgraph.org
           branch: master
           folder: site
