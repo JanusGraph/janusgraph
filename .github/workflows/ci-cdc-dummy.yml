@@ -1,0 +1,47 @@
+# Copyright 2026 JanusGraph Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Companion to ci-cdc.yml: when a change touches only the paths that ci-cdc.yml ignores (docs, etc.),
+# the real workflow does not run. This dummy reports the same status check names as success so required
+# checks are satisfied. Keep the matrix names in sync with ci-cdc.yml.
+
+name: CI CDC
+
+on:
+  pull_request:
+    paths:
+    - 'docs/**'
+    - '.github/workflows/ci-docs.yml'
+    - '.github/ISSUE_TEMPLATE/**'
+    - 'requirements.txt'
+    - 'mkdocs.yml'
+    - 'docs.Dockerfile'
+    - '*.md'
+
+jobs:
+  tests:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - name: cdc-java8
+            java: 8
+          - name: cdc-java11
+            install-args: "-Pjava-11"
+            java: 11
+          - name: cdc-e2e-java17
+            java: 17
+    steps:
+      - run: 'echo "No build required"'

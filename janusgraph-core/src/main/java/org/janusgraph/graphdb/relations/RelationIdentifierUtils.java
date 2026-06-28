@@ -49,6 +49,11 @@ public class RelationIdentifierUtils {
             throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a type");
 
         Iterable<? extends JanusGraphRelation> relations = getJanusGraphRelations(rId, tx, v, (RelationType) typeVertex);
+        if (relations == null) {
+            // findEdgeRelations returns null when the adjacent (in-)vertex no longer exists: the edge is gone with it,
+            // so there is no relation to find. Return null instead of NPE'ing in the loop below.
+            return null;
+        }
 
         for (JanusGraphRelation r : relations) {
             //Find current or previous relation

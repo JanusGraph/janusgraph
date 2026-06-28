@@ -347,6 +347,19 @@ If custom vertex ids are used, avoid deleting and re-creating vertices under the
 (run `REINDEX` afterwards to restore them). With automatically assigned ids this race cannot occur because ids are
 never reused.
 
+##### CDC-based mixed index synchronization
+
+Starting from version 1.2.0, JanusGraph can keep mixed indexes (e.g. ElasticSearch) eventually consistent with the
+graph via Change-Data-Capture instead of a synchronous index write during the transaction that can diverge on failure
+(a cause of [permanent stale indexes](advanced-topics/stale-index.md)). This is opt-in and disabled by default.
+
+With Apache Cassandra storage, set `storage.cql.cdc=true` to create the `edgestore` table with Cassandra CDC enabled,
+mark the mixed index backend with `index.[X].cdc.enabled=true` (and `index.[X].cdc.synchronous=false` for cdc-only
+mode, which skips the synchronous index write), and run the new `janusgraph-cdc` worker. The worker consumes the
+Cassandra change stream (e.g. via Debezium and Kafka) and reindexes affected elements from their current graph state,
+which is idempotent and order-independent. See
+[CDC Mixed Index Synchronization](advanced-topics/cdc-mixed-index.md) for the full setup.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven

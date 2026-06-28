@@ -81,8 +81,10 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
@@ -1139,6 +1141,42 @@ public class GraphDatabaseConfiguration {
                     "indexed property key names are valid field names. Renaming the property key will NOT rename the field " +
                     "and its the developers responsibility to avoid field collisions.",
             ConfigOption.Type.GLOBAL, true);
+
+    public static final ConfigNamespace INDEX_CDC_NS = new ConfigNamespace(INDEX_NS, "cdc",
+            "Configuration options for Change-Data-Capture (CDC) based maintenance of this mixed index backend");
+
+    public static final ConfigOption<Boolean> INDEX_CDC_ENABLED = new ConfigOption<>(INDEX_CDC_NS, "enabled",
+            "Whether this mixed index backend is maintained via the CDC pipeline (the janusgraph-cdc worker consumes " +
+            "Change-Data-Capture events of the graph data and reindexes affected elements) instead of, or in addition " +
+            "to, synchronous index writes during the transaction. Has no effect unless an external CDC pipeline " +
+            "(e.g. Cassandra CDC + Debezium + Kafka) and the janusgraph-cdc worker are running.",
+            ConfigOption.Type.MASKABLE, false);
+
+    public static final ConfigOption<Boolean> INDEX_CDC_SYNCHRONOUS = new ConfigOption<>(INDEX_CDC_NS, "synchronous",
+            "Only relevant when index.[X].cdc.enabled is true. When true (default), the mixed index is ALSO written " +
+            "synchronously during the transaction (dual mode: safe and redundant - CDC repairs any synchronous failure). " +
+            "When false, the synchronous mixed index write is skipped (cdc-only mode) and the index is updated " +
+            "exclusively by the CDC worker, which maximizes efficiency at the cost of the index lagging the graph by " +
+            "the CDC propagation latency.",
+            ConfigOption.Type.MASKABLE, true);
+
+    /**
+     * The names of the index backends with {@link #INDEX_CDC_ENABLED} true. With {@code cdcOnly}, restricted to those
+     * additionally configured with {@link #INDEX_CDC_SYNCHRONOUS} false (cdc-only mode: the synchronous mixed-index
+     * write is skipped). The commit-side skip ({@code StandardJanusGraph}) and the CDC worker's index discovery
+     * ({@code janusgraph-cdc}) are the two halves of one contract -- every cdc-only index must be worker-managed --
+     * so both derive their sets from this one method.
+     */
+    public static Set<String> getCdcBackingIndexNames(Configuration configuration, boolean cdcOnly) {
+        final Set<String> result = new HashSet<>();
+        for (String indexName : configuration.getContainedNamespaces(INDEX_NS)) {
+            final Configuration indexConfig = configuration.restrictTo(indexName);
+            if (indexConfig.get(INDEX_CDC_ENABLED) && (!cdcOnly || !indexConfig.get(INDEX_CDC_SYNCHRONOUS))) {
+                result.add(indexName);
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    }
 
 
     // ############## Logging System ######################

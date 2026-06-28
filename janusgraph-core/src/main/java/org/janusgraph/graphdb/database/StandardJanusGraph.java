@@ -172,6 +172,10 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     }
 
     private final GraphDatabaseConfiguration config;
+    /** Backing index names configured as cdc-only (index.[X].cdc.enabled=true and cdc.synchronous=false):
+     *  their mixed-index mutations are skipped on the synchronous commit path and applied asynchronously
+     *  by the CDC pipeline (janusgraph-cdc worker) instead. */
+    private final Set<String> cdcOnlyBackingIndexes;
     private final Backend backend;
     private final IDManager idManager;
     private final boolean wholeRowDeletionEnabled;
@@ -212,6 +216,18 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     public StandardJanusGraph(GraphDatabaseConfiguration configuration) {
 
         this.config = configuration;
+        this.cdcOnlyBackingIndexes =
+            GraphDatabaseConfiguration.getCdcBackingIndexNames(configuration.getConfiguration(), true);
+        if (!cdcOnlyBackingIndexes.isEmpty()) {
+            // There is no way to validate from here that a capture pipeline (e.g. Cassandra CDC + Debezium + Kafka +
+            // the janusgraph-cdc worker) is actually running, so make the trade-off loud: with cdc-only configured and
+            // no pipeline, mixed indexes silently stop being maintained (and the WAL records these transactions as
+            // fully successful, so transaction recovery will not repair them either).
+            log.warn("Mixed index backend(s) {} are configured cdc-only (index.[X].cdc.enabled=true and "
+                + "index.[X].cdc.synchronous=false): synchronous index writes are SKIPPED for them. Ensure the external "
+                + "CDC pipeline and the janusgraph-cdc worker are running, otherwise these indexes will not be updated.",
+                cdcOnlyBackingIndexes);
+        }
         this.backend = configuration.getBackend();
 
         this.name = configuration.getGraphName();
@@ -926,8 +942,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                     mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(update.getEntry()));
             } else {
                 final IndexUpdate<String,IndexEntry> update = indexUpdate;
+                final String backingIndexName = update.getIndex().getBackingIndexName();
+                if (cdcOnlyBackingIndexes.contains(backingIndexName)) {
+                    // cdc-only: skip the synchronous mixed-index write; the CDC pipeline maintains this index.
+                    continue;
+                }
                 has2iMods = true;
-                IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
+                IndexTransaction itx = mutator.getIndexTransaction(backingIndexName);
                 String indexStore = ((MixedIndexType)update.getIndex()).getStoreName();
                 if (!indexUpdate.isDeletion())
                     itx.add(indexStore, update.getKey(), update.getEntry(), update.getElement().isNew());

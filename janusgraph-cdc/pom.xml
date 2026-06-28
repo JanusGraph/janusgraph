@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph</artifactId>
+        <version>1.2.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>janusgraph-cdc</artifactId>
+    <name>JanusGraph-CDC: Change-Data-Capture mixed-index synchronization for JanusGraph</name>
+    <url>http://janusgraph.org</url>
+
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+        <kafka.version>3.8.1</kafka.version>
+    </properties>
+
+    <dependencies>
+        <!-- Compile Dependencies -->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>${kafka.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson2.version}</version>
+        </dependency>
+
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-backend-testutils</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-inmemory</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-lucene</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Component E2E: real ElasticSearch + Kafka (Testcontainers, require Java 17+ to run) -->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-es</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-es</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-elasticsearch</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-kafka</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- The Docker/Testcontainers tests run only on Java 17+: the full Cassandra-CDC -> Debezium -> Kafka ->
+                 ElasticSearch pipeline (Debezium 3.x is Java 17 bytecode) and the real Kafka+ElasticSearch worker test
+                 are both exercised by the dedicated Java 17 CI job (see .github/workflows/ci-cdc.yml). Exclude them from
+                 compilation by default so the module still builds and runs its unit tests on Java 8/11. The
+                 cassandra-cdc-e2e profile (auto-active on Java 17+) re-includes and runs them. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <testExcludes>
+                        <testExclude>**/CdcCassandraDebeziumElasticsearchTest.java</testExclude>
+                        <testExclude>**/CdcKafkaElasticsearchTest.java</testExclude>
+                        <testExclude>**/JanusGraphCdcConnectorStarter.java</testExclude>
+                    </testExcludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Full Cassandra-CDC -> Debezium -> Kafka -> ElasticSearch end-to-end test. Auto-activates on Java 17+
+             (Debezium 3.x and Testcontainers 2.x both require Java 17+; cassandra-all 4.1.7 is not Java-24-compatible,
+             so use Java 17). Pulls the real Debezium Cassandra connector (test scope only). -->
+        <profile>
+            <id>cassandra-cdc-e2e</id>
+            <activation>
+                <jdk>[17,)</jdk>
+            </activation>
+            <dependencyManagement>
+                <dependencies>
+                    <!-- cassandra-all parses cassandra.yaml via SnakeYAML 1.x's CustomClassLoaderConstructor(Class,
+                         ClassLoader); override JanusGraph's managed 2.x (SnakeYAML is unused by janusgraph-cdc). -->
+                    <dependency>
+                        <groupId>org.yaml</groupId>
+                        <artifactId>snakeyaml</artifactId>
+                        <version>1.33</version>
+                    </dependency>
+                    <!-- cassandra-all 4.1.7 pins netty-tcnative-boringssl-static 2.0.36, but JanusGraph forces
+                         netty 4.1.118.Final. On Linux that skew throws NoSuchMethodError for
+                         io.netty.internal.tcnative.SSLContext.setCurvesList(long, String[]) when OpenSSL initializes
+                         (on macOS the native is absent so netty silently falls back to the JDK provider, hiding it).
+                         Align tcnative to the release paired with netty 4.1.118 (tcnative.version 2.0.71-SNAPSHOT ->
+                         latest released 2.0.70.Final). -->
+                    <dependency>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-tcnative-boringssl-static</artifactId>
+                        <version>2.0.70.Final</version>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+            <dependencies>
+                <dependency>
+                    <groupId>io.debezium</groupId>
+                    <artifactId>debezium-connector-cassandra-4</artifactId>
+                    <version>3.5.2.Final</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.janusgraph</groupId>
+                    <artifactId>janusgraph-cql</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>testcontainers-cassandra</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <!-- Re-include the Debezium E2E test source (overrides the default testExcludes). -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <testExcludes combine.self="override"/>
+                        </configuration>
+                    </plugin>
+                    <!-- SnakeYAML is pinned to 1.x for cassandra-all; the 2.0 requirement comes from an unused
+                         confluent schema-registry test dependency, so exclude it from the upper-bound check. -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-dependency-convergence</id>
+                                <configuration>
+                                    <rules>
+                                        <requireUpperBoundDeps>
+                                            <excludes>
+                                                <exclude>com.fasterxml.jackson.core:jackson-annotations</exclude>
+                                                <exclude>com.fasterxml.jackson.core:jackson-databind</exclude>
+                                                <exclude>com.fasterxml.jackson.core:jackson-core</exclude>
+                                                <exclude>org.yaml:snakeyaml</exclude>
+                                            </excludes>
+                                        </requireUpperBoundDeps>
+                                        <DependencyConvergence />
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- cassandra-all (embedded Debezium connector) needs these module opens on Java 17+. -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>${default.test.jvm.opts} -Xmx1500m
+                                --add-exports java.base/jdk.internal.misc=ALL-UNNAMED
+                                --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
+                                --add-exports java.base/sun.nio.ch=ALL-UNNAMED
+                                --add-exports java.management.rmi/com.sun.jmx.remote.internal.rmi=ALL-UNNAMED
+                                --add-exports java.rmi/sun.rmi.registry=ALL-UNNAMED
+                                --add-exports java.rmi/sun.rmi.server=ALL-UNNAMED
+                                --add-exports java.sql/java.sql=ALL-UNNAMED
+                                --add-opens java.base/java.lang=ALL-UNNAMED
+                                --add-opens java.base/java.lang.module=ALL-UNNAMED
+                                --add-opens java.base/jdk.internal.loader=ALL-UNNAMED
+                                --add-opens java.base/jdk.internal.ref=ALL-UNNAMED
+                                --add-opens java.base/jdk.internal.reflect=ALL-UNNAMED
+                                --add-opens java.base/jdk.internal.math=ALL-UNNAMED
+                                --add-opens java.base/jdk.internal.module=ALL-UNNAMED
+                                --add-opens java.base/jdk.internal.util.jar=ALL-UNNAMED
+                                --add-opens java.base/java.nio=ALL-UNNAMED
+                                --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+                                --add-opens java.base/java.lang.ref=ALL-UNNAMED
+                                --add-opens java.base/java.util=ALL-UNNAMED
+                                --add-opens java.base/java.util.concurrent=ALL-UNNAMED
+                                --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
+                                --add-opens java.base/java.io=ALL-UNNAMED
+                                --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
