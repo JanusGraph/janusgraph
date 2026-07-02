@@ -344,9 +344,13 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
 
         @Override
         protected void doClose() {
+            // Snapshot the shared txs reference first: close() may null it out concurrently on another
+            // thread. Capturing it before the calls below keeps the race window minimal so this thread
+            // still removes its own ThreadLocal entry rather than relying on delayed GC-based cleanup.
+            ThreadLocal<JanusGraphBlueprintsTransaction> localTxs = txs;
             super.doClose();
             transactionListeners.remove();
-            txs.remove();
+            if (localTxs != null) localTxs.remove();
         }
 
         @Override
