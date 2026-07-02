@@ -63,10 +63,12 @@ into consideration and are still very valuable community input. The
 following rules apply to the voting process.
 
 -   Approval flows
-    -   2 committer approvals are required to merge a pull request
+    -   2 committer approvals, or 1 TSC member approval, are required to merge a pull request
     -   If a committer submits the pull request, it has their implicit
         approval so it requires 1 additional committer approval
-    -   1 committer approval followed a one week review period for
+    -   If a TSC member submits the pull request, it has their implicit
+        approval and requires no additional approvals
+    -   1 committer approval followed by a one week review period for
         objections at which point a lazy consensus is assumed
 -   One or more -1 votes within a change request will veto the pull
     request until the noted issue(s) are addressed and the -1 vote is
