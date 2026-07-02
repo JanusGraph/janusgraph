@@ -562,8 +562,10 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 }
             }
         }
-        //Filter out potentially removed vertices
-        result.removeIf(JanusGraphElement::isRemoved);
+        //Filter out potentially removed vertices. A concurrent transaction release (e.g. graph.close() on
+        //another thread) can swap the vertexCache to an EmptyVertexCache whose get() returns null after this
+        //method has already passed verifyOpen(), so guard against null entries the same way getVertex() does.
+        result.removeIf(v -> v == null || v.isRemoved());
         return result;
     }
 
