@@ -58,7 +58,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - run: pip install setuptools
+      # ccm requires the pkg_resources module which was removed in setuptools 82,
+      # so setuptools needs to stay below version 82 (see #4905)
+      - run: pip install 'setuptools<82'
       - run: pip install git+https://github.com/li-boxuan/ccm.git
 
       - uses: actions/checkout@v4
