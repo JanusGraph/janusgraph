@@ -53,6 +53,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Properties;
 import java.util.function.LongSupplier;
 
@@ -107,7 +108,7 @@ public class CdcKafkaElasticsearchTest {
 
         idManager = ((StandardJanusGraph) graph).getIDManager();
         decoder = new DebeziumCassandraJsonDecoder((StandardJanusGraph) graph);
-        applier = new MixedIndexUpdateApplier((StandardJanusGraph) graph, "search"::equals);
+        applier = new MixedIndexUpdateApplier((StandardJanusGraph) graph, Collections.singleton("search"));
 
         Properties producerProps = new Properties();
         producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.getBootstrapServers());

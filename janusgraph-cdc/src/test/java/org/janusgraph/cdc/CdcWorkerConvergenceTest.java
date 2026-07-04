@@ -101,7 +101,7 @@ public class CdcWorkerConvergenceTest {
 
         idManager = ((StandardJanusGraph) graph).getIDManager();
         decoder = new DebeziumCassandraJsonDecoder((StandardJanusGraph) graph);
-        applier = new MixedIndexUpdateApplier((StandardJanusGraph) graph, BACKING::equals);
+        applier = new MixedIndexUpdateApplier((StandardJanusGraph) graph, Collections.singleton(BACKING));
         config = CdcWorkerConfiguration.builder()
             .bootstrapServers("dummy:9092").topics(Arrays.asList(TOPIC))
             .retryLimit(2).retryInitialWait(Duration.ofMillis(1)).retryMaxWait(Duration.ofMillis(2))

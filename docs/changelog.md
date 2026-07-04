@@ -355,7 +355,9 @@ graph via Change-Data-Capture instead of a synchronous index write during the tr
 
 With Apache Cassandra storage, set `storage.cql.cdc=true` to create the `edgestore` table with Cassandra CDC enabled,
 mark the mixed index backend with `index.[X].cdc.enabled=true` (and `index.[X].cdc.synchronous=false` for cdc-only
-mode, which skips the synchronous index write), and run the new `janusgraph-cdc` worker. The worker consumes the
+mode, which skips the synchronous index write), and run the new `janusgraph-cdc` worker. Like `storage.cql.cdc`, the
+`index.[X].cdc.*` options are managed cluster-wide (`GLOBAL_OFFLINE`): on an existing graph, change them via
+`mgmt.set(...)` while no other instance is open. The worker consumes the
 Cassandra change stream (e.g. via Debezium and Kafka) and reindexes affected elements from their current graph state,
 which is idempotent and order-independent. See
 [CDC Mixed Index Synchronization](advanced-topics/cdc-mixed-index.md) for the full setup.

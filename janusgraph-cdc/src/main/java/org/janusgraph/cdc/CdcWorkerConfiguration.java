@@ -50,15 +50,19 @@ public final class CdcWorkerConfiguration {
     public static final String RETRY_LIMIT = "cdc.retry.limit";
     public static final String RETRY_INITIAL_WAIT_MS = "cdc.retry.initial-wait-ms";
     public static final String RETRY_MAX_WAIT_MS = "cdc.retry.max-wait-ms";
+    /** Path to the JanusGraph configuration file the worker opens (read access to the graph plus index-backend write
+     *  access). Consumed by {@link CdcIndexUpdateWorkerMain}; declared here so all {@code cdc.*} keys live together. */
+    public static final String GRAPH_CONFIG = "cdc.graph-config";
     /** Prefix for arbitrary Kafka consumer settings (e.g. {@code cdc.consumer.security.protocol=SASL_SSL}): the rest
-     *  of the key is passed to the {@link org.apache.kafka.clients.consumer.KafkaConsumer} verbatim. The worker's
-     *  offset-management settings (manual commits, byte-array deserializers) cannot be overridden this way. */
+     *  of the key is passed to the {@link org.apache.kafka.clients.consumer.KafkaConsumer} verbatim. The settings the
+     *  worker's at-least-once contract depends on (manual offset commits, byte-array deserializers) and the settings
+     *  with dedicated {@code cdc.*} keys (bootstrap servers, group id, max poll records) cannot be overridden this
+     *  way; everything else -- including {@code auto.offset.reset}, which merely defaults to {@code earliest} -- can. */
     public static final String CONSUMER_PREFIX = "cdc.consumer.";
 
     private static final Set<String> KNOWN_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
         BOOTSTRAP_SERVERS, TOPICS, GROUP_ID, MAX_POLL_RECORDS, POLL_TIMEOUT_MS, WORKER_THREADS,
-        RETRY_LIMIT, RETRY_INITIAL_WAIT_MS, RETRY_MAX_WAIT_MS,
-        "cdc.graph-config" /* CdcIndexUpdateWorkerMain.GRAPH_CONFIG; read by the runner from the same file */)));
+        RETRY_LIMIT, RETRY_INITIAL_WAIT_MS, RETRY_MAX_WAIT_MS, GRAPH_CONFIG)));
 
     private final String bootstrapServers;
     private final List<String> topics;
@@ -79,7 +83,7 @@ public final class CdcWorkerConfiguration {
         this.topics = Collections.unmodifiableList(new ArrayList<>(b.topics));
         this.groupId = Objects.requireNonNull(b.groupId, GROUP_ID + " must not be null");
         this.maxPollRecords = requireAtLeast(b.maxPollRecords, 1, MAX_POLL_RECORDS);
-        this.pollTimeout = requireNonNegative(b.pollTimeout, POLL_TIMEOUT_MS);
+        this.pollTimeout = requirePositive(b.pollTimeout, POLL_TIMEOUT_MS);
         this.workerThreads = requireAtLeast(b.workerThreads, 1, WORKER_THREADS);
         this.retryLimit = requireAtLeast(b.retryLimit, 0, RETRY_LIMIT);
         this.retryInitialWait = requireNonNegative(b.retryInitialWait, RETRY_INITIAL_WAIT_MS);
@@ -94,11 +98,21 @@ public final class CdcWorkerConfiguration {
         return value;
     }
 
+    private static Duration requirePositive(Duration value, String name) {
+        Objects.requireNonNull(value, name + " must not be null");
+        if (value.isNegative() || value.isZero()) {
+            // Fail fast: a negative poll timeout would make every consumer.poll() throw (an endless error-log loop
+            // instead of a startup failure), and a ZERO poll timeout would busy-spin the poll loop on an idle topic
+            // (poll(ZERO) returns immediately), pinning a core per worker and hammering the broker with fetches.
+            throw new IllegalArgumentException(name + " must be positive but was " + value.toMillis() + " ms");
+        }
+        return value;
+    }
+
     private static Duration requireNonNegative(Duration value, String name) {
         Objects.requireNonNull(value, name + " must not be null");
         if (value.isNegative()) {
-            // Fail fast: a negative poll timeout would make every consumer.poll() throw (an endless error-log loop
-            // instead of a startup failure), and negative retry waits would disable the backoff entirely.
+            // Fail fast: negative retry waits would disable the backoff entirely.
             throw new IllegalArgumentException(name + " must not be negative but was " + value.toMillis() + " ms");
         }
         return value;
@@ -150,13 +164,18 @@ public final class CdcWorkerConfiguration {
     public Properties toConsumerProperties() {
         Properties p = new Properties();
         // Pass-through settings first (security, timeouts, client.id, ...): the managed settings below always win,
-        // because the worker's at-least-once contract depends on them (manual offset commits, raw byte payloads).
+        // because either the worker's at-least-once contract depends on them (manual offset commits, raw byte
+        // payloads) or they have a dedicated first-class cdc.* key (bootstrap servers, group id, max poll records).
         consumerOverrides.forEach(p::put);
         p.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         p.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         p.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, maxPollRecords);
         p.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        p.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        // A DEFAULT, not managed: "earliest" so a brand-new consumer group starts from the retained CDC backlog
+        // instead of Kafka's "latest" default (which would silently drop every change captured before first start).
+        // Overridable via cdc.consumer.auto.offset.reset (e.g. "latest" when a fresh group's history is covered by a
+        // REINDEX) -- it does not affect the at-least-once contract, only where a group with no offsets begins.
+        p.putIfAbsent(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         p.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         p.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         return p;

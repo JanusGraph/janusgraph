@@ -47,7 +47,7 @@ import java.util.function.Supplier;
  */
 public final class CdcIndexUpdateWorkerMain implements AutoCloseable {
 
-    public static final String GRAPH_CONFIG = "cdc.graph-config";
+    public static final String GRAPH_CONFIG = CdcWorkerConfiguration.GRAPH_CONFIG;
 
     private static final Logger log = LoggerFactory.getLogger(CdcIndexUpdateWorkerMain.class);
 
@@ -64,7 +64,7 @@ public final class CdcIndexUpdateWorkerMain implements AutoCloseable {
         this.graph = graph;
         final StandardJanusGraph standardGraph = (StandardJanusGraph) graph;
         final Set<String> cdcIndexes = cdcEnabledBackingIndexes(standardGraph);
-        final MixedIndexUpdateApplier applier = new MixedIndexUpdateApplier(standardGraph, cdcIndexes::contains);
+        final MixedIndexUpdateApplier applier = new MixedIndexUpdateApplier(standardGraph, cdcIndexes);
         if (applier.getManagedBackingIndexes().isEmpty()) {
             throw new IllegalStateException("No CDC-managed mixed indexes found; refusing to start the CDC "
                 + "index-update worker. Ensure at least one backing index has index.[<name>].cdc.enabled=true AND that "
@@ -105,6 +105,15 @@ public final class CdcIndexUpdateWorkerMain implements AutoCloseable {
         // total shutdown latency is roughly the slowest single worker instead of the sum across workers.
         workers.forEach(CdcIndexUpdateWorker::initiateShutdown);
         workers.forEach(CdcIndexUpdateWorker::awaitTermination);
+        final long stillRunning = workers.stream().filter(CdcIndexUpdateWorker::isAlive).count();
+        if (stillRunning > 0) {
+            // awaitTermination's join is bounded, so a worker stuck in a slow index/storage call can outlive it.
+            // Closing the graph is still the right contract for close() -- the stuck worker's in-flight apply will
+            // then fail against the closed graph WITHOUT committing its offsets, so Kafka redelivers the batch to
+            // the next consumer (at-least-once); nothing is lost, but the errors it logs are expected.
+            log.warn("Closing the graph while {} CDC worker(s) have not terminated within the shutdown timeout; "
+                + "their in-flight batch will fail harmlessly and be redelivered by Kafka", stillRunning);
+        }
         if (graph.isOpen()) {
             graph.close();
         }

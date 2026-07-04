@@ -121,7 +121,7 @@ public class DebeziumCassandraJsonDecoder implements CdcEventDecoder {
         final byte[] columnBytes = decodeCell(data, "column1");
         if (columnBytes == null) {
             // Partition-level mutation (e.g. whole-vertex delete): reindex the vertex from current state.
-            return Collections.singletonList(new CdcElementChange(ElementCategory.VERTEX, canonicalVertexId(vertexId)));
+            return Collections.singletonList(vertexChange(vertexId));
         }
         return resolveChanges(vertexId, columnBytes, decodeCell(data, "value"));
     }
@@ -149,10 +149,16 @@ public class DebeziumCassandraJsonDecoder implements CdcEventDecoder {
             final RelationCache cache = graph.getEdgeSerializer().readRelation(entry, true, tx);
             if (IDManager.isSystemRelationTypeId(cache.typeId)) {
                 // System columns (e.g. the VertexExists marker) carry no index-relevant data of their own.
-                return Collections.singletonList(new CdcElementChange(ElementCategory.VERTEX, canonicalVertexId(vertexId)));
+                return Collections.singletonList(vertexChange(vertexId));
             }
             final RelationType type = tx.getExistingRelationType(cache.typeId);
             if (type.isEdgeLabel() && cache.relationId > 0) {
+                // Deliberately the RAW row/column ids, never canonicalVertexId(): for edges of partitioned vertices,
+                // the user-facing edge id -- and with it the relation index document id, which embeds both endpoint
+                // ids -- is built from the PARTITION-REPRESENTATIVE vertex the edge was assigned to, exactly the id
+                // under which the edge's row copies are stored and which its columns reference. Canonicalizing here
+                // would produce an edge identity (and document id) that matches nothing the synchronous path wrote.
+                // (Vertex DOCUMENTS are the opposite case: they are keyed by the canonical id, hence vertexChange().)
                 final Object otherVertexId = cache.getOtherVertexId();
                 final Object outVertexId = cache.direction == Direction.OUT ? vertexId : otherVertexId;
                 final Object inVertexId = cache.direction == Direction.OUT ? otherVertexId : vertexId;
@@ -162,9 +168,9 @@ public class DebeziumCassandraJsonDecoder implements CdcEventDecoder {
             if (type.isPropertyKey()) {
                 // A property column changed: reindex the owning vertex (for vertex indexes on the property key) and,
                 // when the property's relation id is recoverable, the property element itself (for property-element
-                // mixed indexes).
+                // mixed indexes). As above, the RelationIdentifier keeps the raw row-owner id.
                 final List<CdcElementChange> changes = new ArrayList<>(2);
-                changes.add(new CdcElementChange(ElementCategory.VERTEX, canonicalVertexId(vertexId)));
+                changes.add(vertexChange(vertexId));
                 if (cache.relationId > 0) {
                     changes.add(new CdcElementChange(ElementCategory.PROPERTY,
                         new RelationIdentifier(vertexId, cache.typeId, cache.relationId, null)));
@@ -175,9 +181,9 @@ public class DebeziumCassandraJsonDecoder implements CdcEventDecoder {
             // region, which a delete tombstone does not carry. Reindex both endpoints from current state -- their
             // vertex documents stay correct; see the documented cdc-only limitations for the edge document itself.
             final List<CdcElementChange> changes = new ArrayList<>(2);
-            changes.add(new CdcElementChange(ElementCategory.VERTEX, canonicalVertexId(vertexId)));
+            changes.add(vertexChange(vertexId));
             if (cache.getOtherVertexId() != null) {
-                changes.add(new CdcElementChange(ElementCategory.VERTEX, canonicalVertexId(cache.getOtherVertexId())));
+                changes.add(vertexChange(cache.getOtherVertexId()));
             }
             return changes;
         } catch (RuntimeException | AssertionError e) {
@@ -193,12 +199,18 @@ public class DebeziumCassandraJsonDecoder implements CdcEventDecoder {
             // vertex from current state, which keeps all vertex-element indexes correct. A dropped relation type also
             // lands here (its schema lookup fails without a backend cause), which converges the same way.
             log.debug("Could not parse the changed relation for vertex {}; reindexing the vertex instead", vertexId, e);
-            return Collections.singletonList(new CdcElementChange(ElementCategory.VERTEX, canonicalVertexId(vertexId)));
+            return Collections.singletonList(vertexChange(vertexId));
         } finally {
             if (tx.isOpen()) {
                 tx.rollback();
             }
         }
+    }
+
+    /** A VERTEX change for this (row-owner or column-referenced) vertex id, canonicalized: all six emission sites
+     *  must route through here so none can miss the partitioned-vertex mapping below. */
+    private CdcElementChange vertexChange(Object vertexId) {
+        return new CdcElementChange(ElementCategory.VERTEX, canonicalVertexId(vertexId));
     }
 
     /**
@@ -207,6 +219,12 @@ public class DebeziumCassandraJsonDecoder implements CdcEventDecoder {
      * decode to partition-local ids, but the vertex's index document is keyed by the canonical id (reads canonicalize,
      * and index writes come from canonically-identified vertex objects) -- a document removal issued under a
      * partition-local id would silently miss it. Non-partitioned and custom (String) ids pass through unchanged.
+     *
+     * <p>Applied to VERTEX changes ONLY. The ids embedded in {@link RelationIdentifier}s (edge/property changes) must
+     * stay raw: a partitioned vertex's relations are identified by the partition-representative id they were assigned
+     * to -- that is what the user-facing relation id and therefore the relation document id embed (see the comment in
+     * {@code resolveChanges}), and {@code DebeziumCassandraJsonDecoderTest#canonicalizesPartitionedVertexIdsFromPartitionCopyRows}
+     * pins down both directions of this contract.</p>
      */
     private Object canonicalVertexId(Object vertexId) {
         if (vertexId instanceof Long && idManager.isPartitionedVertex(vertexId)) {

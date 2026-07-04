@@ -99,6 +99,20 @@ public class DebeziumCassandraJsonDecoderTest {
         return c;
     }
 
+    /**
+     * Asserts the decoded changes are exactly one EDGE change with exactly this identity. Compared via
+     * {@code toString()}: {@link RelationIdentifier#equals} looks only at relationId+typeId, but relation index
+     * documents are keyed by the full four-part string INCLUDING both endpoint ids -- an out/in endpoint swap or a
+     * non-canonical endpoint id (both of which target the wrong document) must fail here, and would pass an
+     * {@code equals} comparison.
+     */
+    private void assertEdgeChange(RelationIdentifier expected, Collection<CdcElementChange> changes, String message) {
+        assertEquals(1, changes.size(), message);
+        CdcElementChange change = changes.iterator().next();
+        assertEquals(ElementCategory.EDGE, change.getCategory(), message);
+        assertEquals(expected.toString(), change.getElementId().toString(), message);
+    }
+
     @Test
     public void decodesVertexFromPartitionKey() {
         JanusGraphVertex v = graph.addVertex();
@@ -208,7 +222,7 @@ public class DebeziumCassandraJsonDecoderTest {
         byte[] val = bytesOf(edgeEntry.getValue());
 
         Collection<CdcElementChange> changes = decoder.decode(null, event("edgestore", "i", key, col, val));
-        assertEquals(new CdcElementChange(ElementCategory.EDGE, expected), changes.iterator().next());
+        assertEdgeChange(expected, changes, "the OUT column must decode to the edge's full identity");
     }
 
     @Test
@@ -228,8 +242,7 @@ public class DebeziumCassandraJsonDecoderTest {
         Collection<CdcElementChange> changes =
             decoder.decode(null, event("edgestore", "i", key, bytesOf(inEntry.getColumn()), bytesOf(inEntry.getValue())));
 
-        assertEquals(new CdcElementChange(ElementCategory.EDGE, expected), changes.iterator().next(),
-            "the IN column must yield the same edge identity as the OUT column");
+        assertEdgeChange(expected, changes, "the IN column must yield the same edge identity as the OUT column");
     }
 
     @Test
@@ -248,8 +261,7 @@ public class DebeziumCassandraJsonDecoderTest {
         Collection<CdcElementChange> changes =
             decoder.decode(null, event("edgestore", "d", key, bytesOf(edgeEntry.getColumn()), null)); // no value cell
 
-        assertEquals(new CdcElementChange(ElementCategory.EDGE, expected), changes.iterator().next(),
-            "a MULTI-edge delete without a value cell must still identify the edge");
+        assertEdgeChange(expected, changes, "a MULTI-edge delete without a value cell must still identify the edge");
     }
 
     @Test
@@ -274,36 +286,58 @@ public class DebeziumCassandraJsonDecoderTest {
         Collection<CdcElementChange> changes =
             decoder.decode(null, event("edgestore", "d", key, bytesOf(edgeEntry.getColumn()), null)); // no value cell
 
-        assertEquals(new CdcElementChange(ElementCategory.EDGE, expected), changes.iterator().next(),
+        assertEdgeChange(expected, changes,
             "a signature-label edge delete without a value cell must still identify the edge");
     }
 
     @Test
     public void canonicalizesPartitionedVertexIdsFromPartitionCopyRows() {
-        // The adjacency of a partitioned vertex is spread across per-partition rows whose keys decode to
-        // partition-local ids, but its index document is keyed by the canonical id: VERTEX changes must be
-        // canonicalized, or a document removal issued for a partition-local id would silently miss the document.
+        // Partitioned vertices have TWO id contracts, in opposite directions, and this test pins down both:
+        //  - The vertex's own index document is keyed by the CANONICAL id, but its adjacency arrives from
+        //    per-partition rows whose keys decode to partition-local ids -> VERTEX changes must canonicalize
+        //    (a removal issued under a partition-local id would silently miss the document).
+        //  - An EDGE of a partitioned vertex is identified by the PARTITION-REPRESENTATIVE id it was assigned to:
+        //    that is what the user-facing edge id (and so the edge document id) embeds, and it is exactly the raw
+        //    row/column id of the edge's stored copies -> RelationIdentifier endpoints must stay RAW; canonicalizing
+        //    them would produce an identity that matches no document the synchronous path ever wrote.
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "inmemory");
         config.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS, 8);
         StandardJanusGraph partitionedGraph = (StandardJanusGraph) JanusGraphFactory.open(config.getConfiguration());
         try {
+            JanusGraphManagement mgmt = partitionedGraph.openManagement();
+            mgmt.makeVertexLabel("hub").partition().make();
+            mgmt.commit();
+            JanusGraphVertex hub = partitionedGraph.addVertex("hub");
+            JanusGraphVertex other = partitionedGraph.addVertex();
+            Edge e = hub.addEdge("knows", other);
+            partitionedGraph.tx().commit();
+            Long hubId = (Long) hub.id(); // the canonical id, keying the hub's own vertex document
+            RelationIdentifier edgeId = (RelationIdentifier) e.id();
+
             IDManager idm = partitionedGraph.getIDManager();
-            long canonicalId = idm.getVertexID(42, IDManager.PARTITIONED_VERTEX_PARTITION,
-                IDManager.VertexIDType.PartitionedVertex);
-            long copyId = canonicalId;
-            for (long p = 0; p < idm.getPartitionBound() && copyId == canonicalId; p++) {
-                copyId = idm.getPartitionedVertexId(canonicalId, p);
+            long copyId = hubId;
+            for (long p = 0; p < idm.getPartitionBound() && copyId == hubId; p++) {
+                copyId = idm.getPartitionedVertexId(hubId, p);
             }
-            assertNotEquals(canonicalId, copyId, "expected a non-canonical representative id");
-
+            assertNotEquals(hubId.longValue(), copyId, "expected a non-canonical representative id");
             DebeziumCassandraJsonDecoder partitionedDecoder = new DebeziumCassandraJsonDecoder(partitionedGraph);
-            byte[] key = idm.getKey(copyId).as(org.janusgraph.diskstorage.StaticBuffer.ARRAY_FACTORY);
-            Collection<CdcElementChange> changes =
-                partitionedDecoder.decode(null, event("edgestore", "d", key, null, null));
 
-            assertEquals(Collections.singletonList(new CdcElementChange(ElementCategory.VERTEX, canonicalId)),
-                new ArrayList<>(changes), "a partition-local vertex id must be canonicalized");
+            // Partition-level event from a partition-copy row: the VERTEX change must carry the canonical id.
+            Collection<CdcElementChange> vertexChanges = partitionedDecoder.decode(null,
+                event("edgestore", "d", bytesOf(idm.getKey(copyId)), null, null));
+            assertEquals(Collections.singletonList(new CdcElementChange(ElementCategory.VERTEX, hubId)),
+                new ArrayList<>(vertexChanges), "a partition-local vertex id must be canonicalized");
+
+            // Edge column from the row the edge actually lives in (its out endpoint is the partition REPRESENTATIVE
+            // the edge was assigned to, usually != the canonical id): the decoded identity must equal e.id() exactly,
+            // i.e. the raw representative id must be preserved, not canonicalized.
+            Entry edgeEntry = serializeFirstRelation(partitionedGraph, hubId, "knows", 0);
+            byte[] edgeRowKey = bytesOf(idm.getKey(edgeId.getOutVertexId()));
+            Collection<CdcElementChange> edgeChanges = partitionedDecoder.decode(null,
+                event("edgestore", "i", edgeRowKey, bytesOf(edgeEntry.getColumn()), bytesOf(edgeEntry.getValue())));
+            assertEdgeChange(edgeId, edgeChanges,
+                "an edge of a partitioned vertex must keep its raw partition-representative endpoint id");
         } finally {
             partitionedGraph.close();
         }
@@ -345,7 +379,11 @@ public class DebeziumCassandraJsonDecoderTest {
 
     /** @param position 0 = the relation as stored at its out-vertex; 1 = as stored at its in-vertex (IN column). */
     private Entry serializeFirstRelation(Long vid, String edgeLabel, int position) {
-        StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
+        return serializeFirstRelation(graph, vid, edgeLabel, position);
+    }
+
+    private static Entry serializeFirstRelation(StandardJanusGraph g, Long vid, String edgeLabel, int position) {
+        StandardJanusGraphTx tx = (StandardJanusGraphTx) g.newTransaction();
         try {
             Vertex v = tx.getVertex(vid);
             InternalRelation rel;
@@ -355,7 +393,7 @@ public class DebeziumCassandraJsonDecoderTest {
                 VertexProperty<?> p = v.properties().next();
                 rel = (InternalRelation) p;
             }
-            return graph.getEdgeSerializer().writeRelation(rel, position, tx);
+            return g.getEdgeSerializer().writeRelation(rel, position, tx);
         } finally {
             tx.rollback();
         }

@@ -39,6 +39,8 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
@@ -83,7 +85,7 @@ public class MixedIndexUpdateApplierTest {
         ManagementSystem.awaitGraphIndexStatus(graph, "esearch").status(SchemaStatus.ENABLED)
             .timeout(60, ChronoUnit.SECONDS).call();
 
-        applier = new MixedIndexUpdateApplier((StandardJanusGraph) graph, BACKING::equals);
+        applier = new MixedIndexUpdateApplier((StandardJanusGraph) graph, Collections.singleton(BACKING));
     }
 
     @AfterEach
@@ -206,7 +208,7 @@ public class MixedIndexUpdateApplierTest {
         ManagementSystem.awaitGraphIndexStatus(graph, "psearch").status(SchemaStatus.ENABLED)
             .timeout(60, ChronoUnit.SECONDS).call();
         // Rebuild the applier so it discovers the newly created property-element index.
-        applier = new MixedIndexUpdateApplier((StandardJanusGraph) graph, BACKING::equals);
+        applier = new MixedIndexUpdateApplier((StandardJanusGraph) graph, Collections.singleton(BACKING));
 
         JanusGraphVertex v = graph.addVertex();
         JanusGraphVertexProperty<?> p = (JanusGraphVertexProperty<?>) v.property("sensor", "s1");
@@ -255,7 +257,7 @@ public class MixedIndexUpdateApplierTest {
             ManagementSystem.awaitGraphIndexStatus(stringIdGraph, "vsearch").status(SchemaStatus.ENABLED)
                 .timeout(60, ChronoUnit.SECONDS).call();
             MixedIndexUpdateApplier stringIdApplier =
-                new MixedIndexUpdateApplier((StandardJanusGraph) stringIdGraph, BACKING::equals);
+                new MixedIndexUpdateApplier((StandardJanusGraph) stringIdGraph, Collections.singleton(BACKING));
 
             stringIdGraph.addVertex(org.apache.tinkerpop.gremlin.structure.T.id, "custom_alice", "name", "alice");
             stringIdGraph.tx().commit();
@@ -283,5 +285,53 @@ public class MixedIndexUpdateApplierTest {
         applyVertex(alice, bob);
         assertEquals(1L, vertexHits("alice"));
         assertEquals(1L, vertexHits("bob"));
+    }
+
+    @Test
+    public void reindexesAcrossMultipleBackingIndexes() throws InterruptedException {
+        // One apply() call spans ALL managed backing indexes (one shared element load, one restore per backing).
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
+        config.set(STORAGE_BACKEND, "inmemory");
+        for (String backing : new String[]{"search", "search2"}) {
+            config.set(INDEX_BACKEND, "lucene", backing);
+            config.set(INDEX_DIRECTORY, tempDir.resolve("lucene-" + backing).toString(), backing);
+            config.set(GraphDatabaseConfiguration.INDEX_CDC_ENABLED, true, backing);
+            config.set(GraphDatabaseConfiguration.INDEX_CDC_SYNCHRONOUS, false, backing);
+        }
+        JanusGraph multiGraph = JanusGraphFactory.open(config.getConfiguration());
+        try {
+            JanusGraphManagement mgmt = multiGraph.openManagement();
+            PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+            PropertyKey alias = mgmt.makePropertyKey("alias").dataType(String.class).make();
+            mgmt.buildIndex("vsearch1", Vertex.class).addKey(name).buildMixedIndex("search");
+            mgmt.buildIndex("vsearch2", Vertex.class).addKey(alias).buildMixedIndex("search2");
+            mgmt.commit();
+            ManagementSystem.awaitGraphIndexStatus(multiGraph, "vsearch1").status(SchemaStatus.ENABLED)
+                .timeout(60, ChronoUnit.SECONDS).call();
+            ManagementSystem.awaitGraphIndexStatus(multiGraph, "vsearch2").status(SchemaStatus.ENABLED)
+                .timeout(60, ChronoUnit.SECONDS).call();
+            MixedIndexUpdateApplier multiApplier = new MixedIndexUpdateApplier((StandardJanusGraph) multiGraph,
+                new HashSet<>(Arrays.asList("search", "search2")));
+
+            JanusGraphVertex v = multiGraph.addVertex("name", "carol", "alias", "cc");
+            multiGraph.tx().commit();
+            multiApplier.apply(Arrays.asList(new CdcElementChange(ElementCategory.VERTEX, v.id())));
+
+            assertEquals(1L, multiGraph.indexQuery("vsearch1", "v.name:carol").vertexStream().count());
+            assertEquals(1L, multiGraph.indexQuery("vsearch2", "v.alias:cc").vertexStream().count());
+        } finally {
+            multiGraph.close();
+        }
+    }
+
+    @Test
+    public void unknownVertexIdInBatchResolvesToRemovalWithoutDisturbingOthers() {
+        // A well-formed id that no longer (or never) resolves is exactly the delete case: it must map to a document
+        // removal (a no-op if no document exists) while the live changes in the same batch still apply. This also
+        // exercises the batched preload's partial-result handling (one id resolves, the other is a cached miss).
+        Long vid = addVertex("dave");
+        Long missing = vid + (1L << 10); // same id-type suffix bits, different count: well-formed but nonexistent
+        applyVertex(missing, vid);
+        assertEquals(1L, vertexHits("dave"), "an unknown id in the batch must not prevent the real change from applying");
     }
 }

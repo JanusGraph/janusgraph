@@ -25,14 +25,17 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,22 +57,32 @@ public class CdcIndexUpdateWorkerMainTest {
             .build();
     }
 
-    @Test
-    public void cdcEnabledBackingIndexesReflectsConfig() throws InterruptedException {
+    /** Opens an inmemory graph with a cdc-enabled "search" (Lucene) backing index but no mixed index yet. */
+    private JanusGraph openCdcEnabledGraph(String dir) {
         ModifiableConfiguration cfg = GraphDatabaseConfiguration.buildGraphConfiguration();
         cfg.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "inmemory");
         cfg.set(GraphDatabaseConfiguration.INDEX_BACKEND, "lucene", "search");
-        cfg.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, tempDir.resolve("lucene").toString(), "search");
+        cfg.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, tempDir.resolve(dir).toString(), "search");
         cfg.set(GraphDatabaseConfiguration.INDEX_CDC_ENABLED, true, "search");
-        JanusGraph graph = JanusGraphFactory.open(cfg.getConfiguration());
-        try {
-            JanusGraphManagement mgmt = graph.openManagement();
-            PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-            mgmt.buildIndex("vsearch", Vertex.class).addKey(name).buildMixedIndex("search");
-            mgmt.commit();
-            org.janusgraph.graphdb.database.management.ManagementSystem
-                .awaitGraphIndexStatus(graph, "vsearch").status(SchemaStatus.ENABLED).timeout(60, ChronoUnit.SECONDS).call();
+        return JanusGraphFactory.open(cfg.getConfiguration());
+    }
 
+    /** {@link #openCdcEnabledGraph} plus an ENABLED "vsearch" mixed index on the backing. */
+    private JanusGraph openCdcEnabledGraphWithMixedIndex(String dir) throws InterruptedException {
+        JanusGraph graph = openCdcEnabledGraph(dir);
+        JanusGraphManagement mgmt = graph.openManagement();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.buildIndex("vsearch", Vertex.class).addKey(name).buildMixedIndex("search");
+        mgmt.commit();
+        ManagementSystem.awaitGraphIndexStatus(graph, "vsearch").status(SchemaStatus.ENABLED)
+            .timeout(60, ChronoUnit.SECONDS).call();
+        return graph;
+    }
+
+    @Test
+    public void cdcEnabledBackingIndexesReflectsConfig() throws InterruptedException {
+        JanusGraph graph = openCdcEnabledGraphWithMixedIndex("lucene");
+        try {
             Set<String> cdcIndexes = CdcIndexUpdateWorkerMain.cdcEnabledBackingIndexes((StandardJanusGraph) graph);
             assertEquals(Collections.singleton("search"), cdcIndexes);
         } finally {
@@ -79,25 +92,22 @@ public class CdcIndexUpdateWorkerMainTest {
 
     @Test
     public void buildsConfiguredNumberOfWorkersAndClosesGraph() throws InterruptedException {
-        ModifiableConfiguration cfg = GraphDatabaseConfiguration.buildGraphConfiguration();
-        cfg.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "inmemory");
-        cfg.set(GraphDatabaseConfiguration.INDEX_BACKEND, "lucene", "search");
-        cfg.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, tempDir.resolve("lucene").toString(), "search");
-        cfg.set(GraphDatabaseConfiguration.INDEX_CDC_ENABLED, true, "search");
-        JanusGraph graph = JanusGraphFactory.open(cfg.getConfiguration());
-        JanusGraphManagement mgmt = graph.openManagement();
-        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.buildIndex("vsearch", Vertex.class).addKey(name).buildMixedIndex("search");
-        mgmt.commit();
-        org.janusgraph.graphdb.database.management.ManagementSystem
-            .awaitGraphIndexStatus(graph, "vsearch").status(SchemaStatus.ENABLED).timeout(60, ChronoUnit.SECONDS).call();
-
-        CdcIndexUpdateWorkerMain main = new CdcIndexUpdateWorkerMain(graph, config(3),
-            () -> new MockConsumer<>(OffsetResetStrategy.EARLIEST));
-        assertEquals(3, main.getWorkerCount());
-
-        main.start();
-        main.close(); // stops workers and closes the graph
+        JanusGraph graph = openCdcEnabledGraphWithMixedIndex("lucene-workers");
+        CdcIndexUpdateWorkerMain main = null;
+        try {
+            main = new CdcIndexUpdateWorkerMain(graph, config(3),
+                () -> new MockConsumer<>(OffsetResetStrategy.EARLIEST));
+            assertEquals(3, main.getWorkerCount());
+            main.start();
+        } finally {
+            // On the happy path this IS the assertion target (close() stops the workers and closes the graph); on an
+            // assertion/start failure it prevents leaking the graph and the started worker threads into later tests.
+            if (main != null) {
+                main.close();
+            } else {
+                graph.close();
+            }
+        }
         assertFalse(graph.isOpen(), "graph closed on shutdown");
     }
 
@@ -118,21 +128,9 @@ public class CdcIndexUpdateWorkerMainTest {
 
     @Test
     public void closesAlreadyCreatedConsumersWhenConstructionFails() throws InterruptedException {
-        ModifiableConfiguration cfg = GraphDatabaseConfiguration.buildGraphConfiguration();
-        cfg.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "inmemory");
-        cfg.set(GraphDatabaseConfiguration.INDEX_BACKEND, "lucene", "search");
-        cfg.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, tempDir.resolve("lucene-ctorfail").toString(), "search");
-        cfg.set(GraphDatabaseConfiguration.INDEX_CDC_ENABLED, true, "search");
-        JanusGraph graph = JanusGraphFactory.open(cfg.getConfiguration());
+        JanusGraph graph = openCdcEnabledGraphWithMixedIndex("lucene-ctorfail");
         try {
-            JanusGraphManagement mgmt = graph.openManagement();
-            PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-            mgmt.buildIndex("vsearch", Vertex.class).addKey(name).buildMixedIndex("search");
-            mgmt.commit();
-            org.janusgraph.graphdb.database.management.ManagementSystem
-                .awaitGraphIndexStatus(graph, "vsearch").status(SchemaStatus.ENABLED).timeout(60, ChronoUnit.SECONDS).call();
-
-            java.util.List<MockConsumer<byte[], byte[]>> created = new java.util.ArrayList<>();
+            List<MockConsumer<byte[], byte[]>> created = new ArrayList<>();
             assertThrows(RuntimeException.class, () -> new CdcIndexUpdateWorkerMain(graph, config(2), () -> {
                 if (!created.isEmpty()) {
                     throw new RuntimeException("simulated consumer construction failure");
@@ -152,12 +150,7 @@ public class CdcIndexUpdateWorkerMainTest {
     public void refusesToStartWhenCdcEnabledButNoMixedIndexExists() {
         // index.search.cdc.enabled=true but NO mixed index is built on "search": the applier manages nothing, so the
         // worker would still consume and commit change events while applying nothing. The runner must fail fast.
-        ModifiableConfiguration cfg = GraphDatabaseConfiguration.buildGraphConfiguration();
-        cfg.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "inmemory");
-        cfg.set(GraphDatabaseConfiguration.INDEX_BACKEND, "lucene", "search");
-        cfg.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, tempDir.resolve("lucene-nomixed").toString(), "search");
-        cfg.set(GraphDatabaseConfiguration.INDEX_CDC_ENABLED, true, "search");
-        JanusGraph graph = JanusGraphFactory.open(cfg.getConfiguration());
+        JanusGraph graph = openCdcEnabledGraph("lucene-nomixed");
         try {
             assertThrows(IllegalStateException.class, () -> new CdcIndexUpdateWorkerMain(graph, config(1),
                 () -> new MockConsumer<>(OffsetResetStrategy.EARLIEST)));

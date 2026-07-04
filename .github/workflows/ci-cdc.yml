@@ -37,8 +37,8 @@ on:
       - 'dependabot/**'
 
 env:
-  # Cap the ElasticSearch test container heap so Cassandra + Kafka + ES + the test JVM coexist on the runner.
-  ES_JAVA_OPTS: "-Xms256m -Xmx512m"
+  # (The ElasticSearch test container heap is capped by JanusGraphElasticsearchContainer itself, which hard-codes
+  # ES_JAVA_OPTS for the container -- a workflow-level ES_JAVA_OPTS env var would not reach it.)
   BUILD_MAVEN_OPTS: "-DskipTests=true --batch-mode --also-make"
   VERIFY_MAVEN_OPTS: "-Pcoverage"
 
@@ -78,7 +78,7 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: zulu
       - run: mvn clean install --projects janusgraph-cdc ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
-      - run: mvn verify --projects janusgraph-cdc ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.install-args }} ${{ matrix.args }}
+      - run: mvn verify --projects janusgraph-cdc ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.install-args }}
       - uses: actions/upload-artifact@v4
         with:
           name: jacoco-reports-cdc-${{ matrix.name }}

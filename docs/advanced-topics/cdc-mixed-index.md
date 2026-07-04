@@ -133,6 +133,21 @@ index.search.cdc.enabled=true
 index.search.cdc.synchronous=false
 ```
 
+Both options are managed **cluster-wide** (`GLOBAL_OFFLINE`, like `index.[X].backend` and `storage.cql.cdc`), so every
+JanusGraph instance and the CDC worker read the same stored value and cannot disagree about who maintains an index. On
+a **new** graph the values above are taken from the properties file at first startup. On an **existing** graph a
+properties-file entry is ignored (with a warning); change the stored value via the management API while no other
+instance is open, then restart:
+
+```groovy
+mgmt = graph.openManagement()
+mgmt.set('index.search.cdc.enabled', true)
+mgmt.set('index.search.cdc.synchronous', false)
+mgmt.commit()
+```
+
+(Setting `cdc.synchronous=false` without `cdc.enabled=true` has no effect and is reported with a warning at startup.)
+
 ### 3. Debezium Cassandra connector
 
 The Debezium Cassandra connector runs **co-located with each Cassandra node** (it reads the node's `cdc_raw` commit-log
@@ -197,7 +212,9 @@ cdc.retry.max-wait-ms=30000
 
 Unrecognized `cdc.*` keys are logged and ignored (so a typo does not silently run with defaults). The worker's
 offset-management settings (`enable.auto.commit=false` and the byte-array deserializers) cannot be overridden via
-`cdc.consumer.*` — the at-least-once guarantee depends on them.
+`cdc.consumer.*` — the at-least-once guarantee depends on them. `auto.offset.reset` is only *defaulted* to `earliest`
+(a brand-new consumer group starts from the retained CDC backlog rather than silently skipping it); override it with
+`cdc.consumer.auto.offset.reset=latest` when a fresh group's history is already covered, e.g. by a `REINDEX`.
 
 The worker opens a read connection to the graph (to read current element state and to obtain the ElasticSearch index
 transaction), so it must be able to reach both Cassandra and ElasticSearch. Offsets are committed only after a batch is
@@ -210,6 +227,13 @@ skipped, so the index eventually catches up instead of silently going stale.
   time. Tune the Cassandra commit-log settings above and the worker poll/batch settings for your throughput.
 - **Supported elements** — vertices, vertex properties, and edges (including edge properties) are all reindexed.
 - **Delivery** — at-least-once; the reindex-from-current-state model makes duplicates and out-of-order delivery safe.
+- **Long index-backend outages** — while ElasticSearch is unreachable, a worker retries the in-flight batch
+  (`cdc.retry.*`, each attempt itself retrying up to `storage.write-time`) without calling `poll()`. If the combined
+  retry time exceeds Kafka's `max.poll.interval.ms` (default 5 minutes), Kafka evicts the worker from the consumer
+  group and redelivers the batch after it rejoins — safe (reindexing is idempotent) but noisy, as workers cycle
+  through eviction/rejoin until the backend recovers. For long outages either raise
+  `cdc.consumer.max.poll.interval.ms` or lower `cdc.retry.limit`/`storage.write-time` so a failing batch is handed
+  back to Kafka (rewind, no offsets committed) before the deadline.
 - **Adding a mixed index later** — the worker discovers CDC-managed indexes at startup. After creating a new mixed
   index on a CDC backing, restart the workers and run a `REINDEX` (required for pre-existing data anyway); the reindex
   also covers any changes consumed between index creation and the restart.

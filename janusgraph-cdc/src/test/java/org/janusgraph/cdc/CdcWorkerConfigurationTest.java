@@ -99,10 +99,13 @@ public class CdcWorkerConfigurationTest {
         assertThrows(IllegalArgumentException.class, () -> baseBuilder().maxPollRecords(0).build());
         assertThrows(IllegalArgumentException.class, () -> baseBuilder().retryLimit(-1).build());
         // A negative poll timeout would make every consumer.poll() throw (an endless error-log loop instead of a
-        // startup failure), and negative retry waits would silently disable the backoff.
+        // startup failure), a ZERO poll timeout would busy-spin the poll loop on an idle topic, and negative retry
+        // waits would silently disable the backoff. Zero retry waits are legal ("retry immediately").
         assertThrows(IllegalArgumentException.class, () -> baseBuilder().pollTimeout(Duration.ofMillis(-1)).build());
+        assertThrows(IllegalArgumentException.class, () -> baseBuilder().pollTimeout(Duration.ZERO).build());
         assertThrows(IllegalArgumentException.class, () -> baseBuilder().retryInitialWait(Duration.ofMillis(-1)).build());
         assertThrows(IllegalArgumentException.class, () -> baseBuilder().retryMaxWait(Duration.ofMillis(-1)).build());
+        baseBuilder().retryInitialWait(Duration.ZERO).retryMaxWait(Duration.ZERO).build();
     }
 
     @Test
@@ -121,6 +124,21 @@ public class CdcWorkerConfigurationTest {
         assertEquals(false, consumer.get(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG),
             "the at-least-once offset management must win over pass-through settings");
         assertEquals(5, cfg.getRetryLimit(), "a typo'd cdc.* key must not be applied");
+    }
+
+    @Test
+    public void autoOffsetResetIsADefaultNotAManagedSetting() {
+        assertEquals("earliest", baseBuilder().build().toConsumerProperties()
+                .get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG),
+            "a new consumer group must default to the retained CDC backlog, not Kafka's 'latest'");
+
+        Properties p = new Properties();
+        p.setProperty("cdc.bootstrap-servers", "kafka:9092");
+        p.setProperty("cdc.topics", "t");
+        p.setProperty("cdc.consumer.auto.offset.reset", "latest"); // e.g. fresh group whose history a REINDEX covers
+        assertEquals("latest", CdcWorkerConfiguration.fromProperties(p).toConsumerProperties()
+                .get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG),
+            "auto.offset.reset is only a default and must honor a cdc.consumer.* override");
     }
 
     private CdcWorkerConfiguration.Builder baseBuilder() {

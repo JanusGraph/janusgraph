@@ -1149,16 +1149,19 @@ public class GraphDatabaseConfiguration {
             "Whether this mixed index backend is maintained via the CDC pipeline (the janusgraph-cdc worker consumes " +
             "Change-Data-Capture events of the graph data and reindexes affected elements) instead of, or in addition " +
             "to, synchronous index writes during the transaction. Has no effect unless an external CDC pipeline " +
-            "(e.g. Cassandra CDC + Debezium + Kafka) and the janusgraph-cdc worker are running.",
-            ConfigOption.Type.MASKABLE, false);
+            "(e.g. Cassandra CDC + Debezium + Kafka) and the janusgraph-cdc worker are running. Managed cluster-wide " +
+            "(GLOBAL_OFFLINE) so every JanusGraph instance and the CDC worker agree on who maintains the index: set " +
+            "it in the configuration when the graph is first created, or change it later via " +
+            "mgmt.set(\"index.[X].cdc.enabled\", ...) while no other instance is open.",
+            ConfigOption.Type.GLOBAL_OFFLINE, false);
 
     public static final ConfigOption<Boolean> INDEX_CDC_SYNCHRONOUS = new ConfigOption<>(INDEX_CDC_NS, "synchronous",
             "Only relevant when index.[X].cdc.enabled is true. When true (default), the mixed index is ALSO written " +
             "synchronously during the transaction (dual mode: safe and redundant - CDC repairs any synchronous failure). " +
             "When false, the synchronous mixed index write is skipped (cdc-only mode) and the index is updated " +
             "exclusively by the CDC worker, which maximizes efficiency at the cost of the index lagging the graph by " +
-            "the CDC propagation latency.",
-            ConfigOption.Type.MASKABLE, true);
+            "the CDC propagation latency. Managed cluster-wide (GLOBAL_OFFLINE), like index.[X].cdc.enabled.",
+            ConfigOption.Type.GLOBAL_OFFLINE, true);
 
     /**
      * The names of the index backends with {@link #INDEX_CDC_ENABLED} true. With {@code cdcOnly}, restricted to those
@@ -1171,8 +1174,17 @@ public class GraphDatabaseConfiguration {
         final Set<String> result = new HashSet<>();
         for (String indexName : configuration.getContainedNamespaces(INDEX_NS)) {
             final Configuration indexConfig = configuration.restrictTo(indexName);
-            if (indexConfig.get(INDEX_CDC_ENABLED) && (!cdcOnly || !indexConfig.get(INDEX_CDC_SYNCHRONOUS))) {
-                result.add(indexName);
+            if (indexConfig.get(INDEX_CDC_ENABLED)) {
+                if (!cdcOnly || !indexConfig.get(INDEX_CDC_SYNCHRONOUS)) {
+                    result.add(indexName);
+                }
+            } else if (indexConfig.has(INDEX_CDC_SYNCHRONOUS) && !indexConfig.get(INDEX_CDC_SYNCHRONOUS)) {
+                // cdc.synchronous=false without cdc.enabled=true is a dead setting (the whole cdc.* namespace is
+                // inert then), but an operator who set it plausibly believes cdc-only mode is active -- say so
+                // loudly instead of leaving them to discover it from indexing behavior.
+                log.warn("Ignoring index.{}.cdc.synchronous=false because index.{}.cdc.enabled is false: CDC is off "
+                    + "for this backend and its mixed indexes are written synchronously. Set index.{}.cdc.enabled=true "
+                    + "to activate cdc-only mode.", indexName, indexName, indexName);
             }
         }
         return Collections.unmodifiableSet(result);

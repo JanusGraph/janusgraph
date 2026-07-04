@@ -216,7 +216,7 @@ public class CdcCassandraDebeziumElasticsearchTest {
         CdcIndexUpdateWorker w = new CdcIndexUpdateWorker(
             new KafkaConsumer<>(config.toConsumerProperties()),
             new DebeziumCassandraJsonDecoder(sjg),
-            new MixedIndexUpdateApplier(sjg, Collections.singleton(BACKING)::contains)::apply,
+            new MixedIndexUpdateApplier(sjg, Collections.singleton(BACKING))::apply,
             config);
         w.start();
         return w;

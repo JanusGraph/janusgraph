@@ -34,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -159,10 +160,13 @@ public class CdcIndexUpdateWorkerLoopTest {
             polled.countDown();
         });
         CdcIndexUpdateWorker worker = new CdcIndexUpdateWorker(subConsumer, decoder, applier, config);
+        assertFalse(worker.isAlive(), "not alive before start()");
         worker.start();
         assertTrue(polled.await(10, TimeUnit.SECONDS), "worker entered the poll loop");
+        assertTrue(worker.isAlive(), "alive while the poll loop runs (embedders monitor this)");
         worker.close();    // sets running=false, wakes the consumer, and joins the worker thread
         assertTrue(subConsumer.closed(), "consumer closed on shutdown");
+        assertFalse(worker.isAlive(), "no longer alive after close()");
     }
 
     private static final class RecordingApplier implements CdcIndexApplier {

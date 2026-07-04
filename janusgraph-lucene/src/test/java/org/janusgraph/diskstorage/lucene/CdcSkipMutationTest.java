@@ -98,4 +98,25 @@ public class CdcSkipMutationTest {
             g.close();
         }
     }
+
+    @Test
+    public void compositeIndexUnaffectedByCdcOnlyMode() throws Exception {
+        // cdc-only filters mixed-index updates out at generation time (StandardJanusGraph.commitIndexAppliesToFilter);
+        // composite indexes live in the primary storage backend and must never be caught by that filter.
+        JanusGraph g = openGraph(true, false);
+        try {
+            JanusGraphManagement mgmt = g.openManagement();
+            PropertyKey code = mgmt.makePropertyKey("code").dataType(String.class).make();
+            mgmt.buildIndex("byCode", Vertex.class).addKey(code).buildCompositeIndex();
+            mgmt.commit();
+            ManagementSystem.awaitGraphIndexStatus(g, "byCode").status(SchemaStatus.ENABLED)
+                .timeout(60, ChronoUnit.SECONDS).call();
+            g.addVertex("code", "x1");
+            g.tx().commit();
+            assertEquals(1L, g.traversal().V().has("code", "x1").count().next().longValue(),
+                "composite index lookups must keep working in cdc-only mode");
+        } finally {
+            g.close();
+        }
+    }
 }
