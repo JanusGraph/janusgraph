@@ -281,6 +281,72 @@ This behavior is enabled by default. To restore the previous per-column deletion
 storage.drop-whole-row-on-vertex-removal=false
 ```
 
+##### Write-only index state (`WRITE_ONLY_ENABLED`) and reindexing without automatic enablement
+
+Starting from version 1.2.0 an index can be explicitly enabled for write operations only. A new schema status
+`SchemaStatus.WRITE_ONLY_ENABLED` and a new schema action `SchemaAction.ENABLE_WRITE_ONLY` were added. An index in
+the `WRITE_ONLY_ENABLED` state receives updates for all graph mutations but is not used to answer queries, and —
+in contrast to a `REGISTERED` index — `SchemaAction.REINDEX` preserves its state instead of automatically enabling
+the index. This enables the workflow *create index → reindex it (without enabling) → enable it later when necessary*
+as well as demoting an `ENABLED` index to write-only and re-enabling it later without a reindex. See
+[Index Lifecycle](schema/index-management/index-lifecycle.md) for the full state machine and workflows.
+
+The following behaviors were extended or clarified. None of them change the behavior of existing workflows:
+
+-   **Documentation clarification (no behavior change):** indexes in the `INSTALLED` and `REGISTERED` states have
+    always received updates for graph mutations; queries only ever use `ENABLED` indexes. Previous documentation
+    incorrectly stated that only `ENABLED` indexes receive updates. If you relied on the documented (incorrect)
+    behavior and want an index that receives no updates, disable it or use the new create-then-disable workflow
+    below.
+-   `SchemaAction.DISABLE_INDEX` can now also be applied to an `INSTALLED` or `WRITE_ONLY_ENABLED` index. Disabling
+    an index within the same management transaction that creates it yields an index definition that is known to the
+    cluster but never receives any writes until activated.
+-   `SchemaAction.REGISTER_INDEX` can now also be applied to a `DISABLED` index to re-activate it for writes.
+    Reaching the `REGISTERED` status guarantees that all instances write to the index, which makes a subsequent
+    reindex lossless.
+-   A pending index registration no longer overwrites a status change that superseded it. Previously, disabling an
+    index while its registration acknowledgment was still pending could result in the index being moved back to
+    `REGISTERED` once all acknowledgments arrived.
+-   `SchemaAction.REINDEX`, `SchemaAction.ENABLE_INDEX`, `SchemaAction.DISCARD_INDEX` and
+    `SchemaAction.MARK_DISCARDED` also accept indexes in the `WRITE_ONLY_ENABLED` state.
+
+Note for downgrades: the new status is persisted in the schema. Schemas containing indexes (or mixed-index keys) in
+the `WRITE_ONLY_ENABLED` state cannot be read by JanusGraph versions older than 1.2.0. Only start using
+`SchemaAction.ENABLE_WRITE_ONLY` after all JanusGraph instances of the cluster have been upgraded to 1.2.0 or newer.
+
+##### New action to remove stale index entries (`REMOVE_STALE_ENTRIES`)
+
+Starting from version 1.2.0 stale index entries — entries which reference graph elements that no longer exist, for
+example because the element was deleted while an index status change was still propagating through the cluster or
+while the index was disabled — can be removed with the new schema action `SchemaAction.REMOVE_STALE_ENTRIES`:
+
+```groovy
+mgmt = graph.openManagement()
+mgmt.updateIndex(mgmt.getGraphIndex("myIndex"), SchemaAction.REMOVE_STALE_ENTRIES).get()
+mgmt.commit()
+```
+
+The action complements `REINDEX`: a reindex restores missing entries for existing elements but never removes
+entries, while `REMOVE_STALE_ENTRIES` removes entries of deleted elements but never adds entries. The index status
+is not changed. The returned `ScanMetrics` report the number of removed entries under the custom metric
+`stale-entries-removed`. Previously such entries could only be removed one-by-one with the low-level
+`StaleIndexRecordUtil` helper (which required knowing the stale element ids and index record values upfront) or by
+dropping and rebuilding the whole index.
+
+Supported index types:
+
+-   **Composite graph indexes**: the internal index store is scanned and every entry whose element no longer exists
+    is deleted.
+-   **Mixed graph indexes**: the documents are enumerated through exists-queries against the index backend. This
+    requires at least one index field whose data type supports exists queries; fields that do not support them are
+    skipped with a warning.
+-   **Vertex-centric indexes** are not supported by this action.
+
+If custom vertex ids are used, avoid deleting and re-creating vertices under the same custom id while a
+`REMOVE_STALE_ENTRIES` job is running, because the job could remove the index entries of the re-created vertex
+(run `REINDEX` afterwards to restore them). With automatically assigned ids this race cannot occur because ids are
+never reused.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven

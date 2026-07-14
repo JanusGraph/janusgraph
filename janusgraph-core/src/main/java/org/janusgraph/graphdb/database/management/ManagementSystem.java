@@ -81,6 +81,8 @@ import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
+import org.janusgraph.graphdb.olap.job.MixedIndexStaleEntryRemover;
+import org.janusgraph.graphdb.olap.job.StaleIndexEntryRemoveJob;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
@@ -1002,7 +1004,13 @@ public class ManagementSystem implements JanusGraphManagement {
             case REINDEX:
                 builder = graph.getBackend().buildEdgeScanJob();
                 configureMixedIndexReindexBatching(index, builder);
-                builder.setFinishJob(indexId.getIndexJobFinisher(graph, SchemaAction.ENABLE_INDEX));
+                if (isWriteOnlyEnabled(index, schemaVertex)) {
+                    //An explicitly write-only index keeps its status after reindexing instead of being
+                    //automatically enabled for queries
+                    builder.setFinishJob(indexId.getIndexJobFinisher());
+                } else {
+                    builder.setFinishJob(indexId.getIndexJobFinisher(graph, SchemaAction.ENABLE_INDEX));
+                }
                 builder.setJobId(indexId);
                 builder.setNumProcessingThreads(numOfThreads);
                 builder.setJob(VertexJobConverter.convert(graph, new IndexRepairJob(indexId.indexName, indexId.relationTypeName), vertexOnly));
@@ -1011,6 +1019,40 @@ public class ManagementSystem implements JanusGraphManagement {
                 } catch (BackendException e) {
                     throw new JanusGraphException(e);
                 }
+                break;
+            case REMOVE_STALE_ENTRIES:
+                if (index instanceof RelationTypeIndex) {
+                    throw new UnsupportedOperationException("Stale index entry removal is not supported for" +
+                        " vertex-centric indexes: " + index.name());
+                }
+                if (((JanusGraphIndex) index).isMixedIndex()) {
+                    //Fail fast instead of starting a background job which would only fail inside the worker
+                    Preconditions.checkArgument(!keySubset.isEmpty(),
+                        "Update action [%s] cannot be invoked for index [%s] because none of its fields has" +
+                            " one of the applicable statuses %s", updateAction, index.name(),
+                        updateAction.getApplicableStatus());
+                    //Stale document deletions are flushed through the same bulk restore() calls as reindex
+                    //document restores, so the reindex batch size option governs both
+                    future = MixedIndexStaleEntryRemover.submit(graph, indexId.indexName,
+                        graph.getConfiguration().getConfiguration().get(GraphDatabaseConfiguration.MIXED_INDEX_REINDEX_BATCH_SIZE));
+                } else {
+                    builder = graph.getBackend().buildGraphIndexScanJob();
+                    builder.setFinishJob(indexId.getIndexJobFinisher());
+                    builder.setJobId(indexId);
+                    builder.setNumProcessingThreads(numOfThreads);
+                    builder.setJob(new StaleIndexEntryRemoveJob(graph, indexId.indexName, indexId.relationTypeName));
+                    try {
+                        future = builder.execute();
+                    } catch (BackendException e) {
+                        throw new JanusGraphException(e);
+                    }
+                }
+                break;
+            case ENABLE_WRITE_ONLY:
+                setStatus(schemaVertex, SchemaStatus.WRITE_ONLY_ENABLED, keySubset);
+                updatedTypes.add(schemaVertex);
+                if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
+                future = new EmptyScanJobFuture();
                 break;
             case ENABLE_INDEX:
                 setStatus(schemaVertex, SchemaStatus.ENABLED, keySubset);
@@ -1081,6 +1123,25 @@ public class ManagementSystem implements JanusGraphManagement {
     }
 
     /**
+     * Determines whether the given index is explicitly enabled for writes only. A mixed index counts as
+     * write-only if any of its field keys has the {@link SchemaStatus#WRITE_ONLY_ENABLED} status because
+     * such a status can only be reached through an explicit {@link SchemaAction#ENABLE_WRITE_ONLY} request.
+     */
+    private static boolean isWriteOnlyEnabled(Index index, JanusGraphSchemaVertex schemaVertex) {
+        if (index instanceof RelationTypeIndex) {
+            return schemaVertex.getStatus() == SchemaStatus.WRITE_ONLY_ENABLED;
+        }
+        IndexType indexType = schemaVertex.asIndexType();
+        if (indexType.isCompositeIndex()) {
+            return schemaVertex.getStatus() == SchemaStatus.WRITE_ONLY_ENABLED;
+        }
+        for (ParameterIndexField field : ((MixedIndexType) indexType).getFieldKeys()) {
+            if (field.getStatus() == SchemaStatus.WRITE_ONLY_ENABLED) return true;
+        }
+        return false;
+    }
+
+    /**
      * Upon the open managementsystem's commit, this graph will be asynchronously evicted from the cache on all JanusGraph nodes in your
      * cluster, once there are no open transactions on this graph on each respective JanusGraph node
      * and assuming each node is correctly configured to use the {@link org.janusgraph.graphdb.management.JanusGraphManager}.
@@ -1145,9 +1206,32 @@ public class ManagementSystem implements JanusGraphManagement {
                 JanusGraphVertex vertex = management.transaction.getVertex(schemaVertexId);
                 Preconditions.checkArgument(vertex != null && vertex instanceof JanusGraphSchemaVertex);
                 JanusGraphSchemaVertex schemaVertex = (JanusGraphSchemaVertex) vertex;
+                //Only complete the pending status handshake for schema elements which are still INSTALLED:
+                //a concurrent status change (e.g. DISABLE_INDEX) supersedes the pending status update
                 Set<PropertyKeyVertex> keys = new HashSet<>(propertyKeys.size());
-                for (Long keyId : propertyKeys) {
-                    keys.add((PropertyKeyVertex) management.transaction.getVertex(keyId));
+                if (propertyKeys.isEmpty()) {
+                    if (schemaVertex.getStatus() != SchemaStatus.INSTALLED) {
+                        log.info("Skipping status update to {} on schema element (ID#{}) because its status" +
+                                " is no longer INSTALLED", newStatus, schemaVertexId);
+                        management.rollback();
+                        return true;
+                    }
+                } else {
+                    MixedIndexType indexType = (MixedIndexType) schemaVertex.asIndexType();
+                    for (Long keyId : propertyKeys) {
+                        PropertyKeyVertex key = (PropertyKeyVertex) management.transaction.getVertex(keyId);
+                        ParameterIndexField field = indexType.getField(key);
+                        if (field != null && field.getStatus() == SchemaStatus.INSTALLED) {
+                            keys.add(key);
+                        } else {
+                            log.info("Skipping status update to {} for property key (ID#{}) on schema element (ID#{})" +
+                                    " because its status is no longer INSTALLED", newStatus, keyId, schemaVertexId);
+                        }
+                    }
+                    if (keys.isEmpty()) {
+                        management.rollback();
+                        return true;
+                    }
                 }
                 management.setStatus(schemaVertex, newStatus, keys);
                 management.updatedTypes.addAll(keys);

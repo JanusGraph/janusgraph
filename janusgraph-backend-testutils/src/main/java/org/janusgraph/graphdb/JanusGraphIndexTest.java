@@ -73,6 +73,7 @@ import org.janusgraph.diskstorage.indexing.IndexInformation;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJobFuture;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.example.GraphOfTheGodsFactory;
@@ -83,6 +84,7 @@ import org.janusgraph.graphdb.database.index.IndexUpdate;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.database.util.IndexRecordUtil;
 import org.janusgraph.graphdb.database.util.StaleIndexRecordUtil;
+import org.janusgraph.graphdb.olap.job.StaleIndexEntryRemoveJob;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.Order;
@@ -2992,6 +2994,135 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     }
 
+    @Test
+    public void testWriteOnlyEnabledMixedIndex() throws InterruptedException, ExecutionException {
+        final Object[] settings = new Object[]{option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        };
+        clopen(settings);
+
+        mgmt.makePropertyKey("text").dataType(String.class).make();
+        finishSchema();
+
+        //Add data before the index exists
+        tx.addVertex("text", "mountain rocks are great friends");
+        newTx();
+
+        //Create the mixed index on the existing key and wait until it is registered
+        finishSchema();
+        final PropertyKey text = mgmt.getPropertyKey("text");
+        mgmt.buildIndex("theIndex", Vertex.class).addKey(text, getTextMapping()).buildMixedIndex(INDEX);
+        mgmt.commit();
+        tx.commit();
+        ManagementUtil.awaitGraphIndexUpdate(graph, "theIndex", 10, ChronoUnit.SECONDS);
+        finishSchema();
+
+        //Enable the index for writes only
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_WRITE_ONLY).get();
+        finishSchema();
+        JanusGraphIndex index = mgmt.getGraphIndex("theIndex");
+        for (final PropertyKey key : index.getFieldKeys()) {
+            assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, index.getIndexStatus(key));
+        }
+        finishSchema();
+
+        //Writes flow into the write-only index, but the index is not used to answer queries
+        tx.addVertex("text", "hills are okay friends too");
+        newTx();
+        clopen(settings);
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "friends"),
+                ElementCategory.VERTEX, 2, new boolean[]{false, true});
+        newTx();
+
+        //Reindex without enabling: the index must keep its WRITE_ONLY_ENABLED status
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REINDEX).get();
+        finishSchema();
+        index = mgmt.getGraphIndex("theIndex");
+        for (final PropertyKey key : index.getFieldKeys()) {
+            assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, index.getIndexStatus(key));
+        }
+        finishSchema();
+        clopen(settings);
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "friends"),
+                ElementCategory.VERTEX, 2, new boolean[]{false, true});
+        newTx();
+
+        //Fully enable the index: reindexed data as well as data written while write-only must be queryable
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX).get();
+        finishSchema();
+        index = mgmt.getGraphIndex("theIndex");
+        for (final PropertyKey key : index.getFieldKeys()) {
+            assertEquals(SchemaStatus.ENABLED, index.getIndexStatus(key));
+        }
+        clopen(settings);
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "friends"),
+                ElementCategory.VERTEX, 2, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "hills"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
+    }
+
+    @Test
+    public void testMixedIndexDisabledAtCreationReceivesNoWrites() throws InterruptedException, ExecutionException {
+        final Object[] settings = new Object[]{option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        };
+        clopen(settings);
+
+        mgmt.makePropertyKey("text").dataType(String.class).make();
+        finishSchema();
+
+        //Create a mixed index over an existing key and disable it within the same management transaction
+        final PropertyKey text = mgmt.getPropertyKey("text");
+        final JanusGraphIndex theIndex = mgmt.buildIndex("theIndex", Vertex.class).addKey(text, getTextMapping()).buildMixedIndex(INDEX);
+        mgmt.updateIndex(theIndex, SchemaAction.DISABLE_INDEX);
+        mgmt.commit();
+        tx.commit();
+
+        //The pending registration from the index creation must not resurrect the disabled index
+        assertFalse(ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").status(SchemaStatus.REGISTERED)
+                .timeout(2, ChronoUnit.SECONDS).call().getSucceeded());
+        finishSchema();
+        JanusGraphIndex index = mgmt.getGraphIndex("theIndex");
+        for (final PropertyKey key : index.getFieldKeys()) {
+            assertEquals(SchemaStatus.DISABLED, index.getIndexStatus(key));
+        }
+        finishSchema();
+
+        //Data written while the index is disabled must not reach the index backend
+        tx.addVertex("text", "mountain rocks are great friends");
+        newTx();
+
+        //Re-register and enable: the index answers queries but contains no entry for the disabled-period data
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX).get();
+        mgmt.commit();
+        tx.commit();
+        assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").status(SchemaStatus.REGISTERED)
+                .call().getSucceeded());
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX).get();
+        finishSchema();
+
+        clopen(settings);
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks"),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "theIndex");
+        newTx();
+
+        //Reindex to bring the disabled-period data into the index
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REINDEX).get();
+        finishSchema();
+        clopen(settings);
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
+    }
+
     private void addVertex(int time, String text, double height, String[] phones) {
         newTx();
         final JanusGraphVertex v = tx.addVertex("text", text, "time", time, "height", height);
@@ -4313,6 +4444,92 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertFalse(tx.traversal().V().has(namePropKeyStr, "vertex2").has(agePropKeyStr, 123).hasNext());
         // Check that the age record wasn't removed
         assertTrue(tx.traversal().V().has(agePropKeyStr, 123).hasNext());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testRemoveStaleMixedIndexEntries(boolean multipleFields) throws InterruptedException, ExecutionException {
+        final Object[] settings = new Object[]{option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        };
+        clopen(settings);
+
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        JanusGraphManagement.IndexBuilder indexBuilder = mgmt.buildIndex("theIndex", Vertex.class)
+            .addKey(name, getStringMapping());
+        if (multipleFields) {
+            indexBuilder.addKey(time);
+        }
+        indexBuilder.buildMixedIndex(INDEX);
+        finishSchema();
+
+        tx.addVertex("name", "stale", "time", 1);
+        tx.addVertex("name", "alive", "time", 2);
+        newTx();
+
+        //Disable the index and delete a vertex while the index does not receive updates -> stale document
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.DISABLE_INDEX).get();
+        finishSchema();
+        tx.query().has("name", Cmp.EQUAL, "stale").vertices().iterator().next().remove();
+        newTx();
+
+        //Re-activate the index without reindexing
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX).get();
+        mgmt.commit();
+        tx.commit();
+        assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").status(SchemaStatus.REGISTERED)
+                .call().getSucceeded());
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX).get();
+        finishSchema();
+
+        //The stale document surfaces as a ghost vertex
+        clopen(settings);
+        evaluateQuery(tx.query().has("name", Cmp.EQUAL, "stale"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
+        newTx();
+
+        //Remove the stale documents. A document indexed under several fields must be counted and removed once.
+        finishSchema();
+        ScanMetrics metrics = mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REMOVE_STALE_ENTRIES).get();
+        finishSchema();
+        assertEquals(1, metrics.getCustom(StaleIndexEntryRemoveJob.REMOVED_RECORDS_COUNT));
+
+        //A second run must find nothing to remove: the stale document is physically gone
+        ScanMetrics secondRun = mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REMOVE_STALE_ENTRIES).get();
+        finishSchema();
+        assertEquals(0, secondRun.getCustom(StaleIndexEntryRemoveJob.REMOVED_RECORDS_COUNT));
+
+        clopen(settings);
+        evaluateQuery(tx.query().has("name", Cmp.EQUAL, "stale"),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().has("name", Cmp.EQUAL, "alive"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
+        if (multipleFields) {
+            evaluateQuery(tx.query().has("time", 2),
+                    ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
+        }
+    }
+
+    @Test
+    public void testRemoveStaleEntriesMixedIndexActionApplicability() {
+        clopen();
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+
+        //A mixed index whose fields are all still INSTALLED must be rejected immediately instead of
+        //failing asynchronously inside the background cleanup job
+        PropertyKey name = mgmt.getPropertyKey("name");
+        final JanusGraphIndex installedIndex = mgmt.buildIndex("theIndex", Vertex.class)
+            .addKey(name, getStringMapping()).buildMixedIndex(INDEX);
+        assertEquals(SchemaStatus.INSTALLED, installedIndex.getIndexStatus(name));
+        assertThrows(IllegalArgumentException.class, () -> mgmt.updateIndex(installedIndex, SchemaAction.REMOVE_STALE_ENTRIES));
+        mgmt.rollback();
+        mgmt = graph.openManagement();
     }
 
     @Test
