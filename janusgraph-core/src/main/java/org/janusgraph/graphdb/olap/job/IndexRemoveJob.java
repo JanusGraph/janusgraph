@@ -21,6 +21,7 @@ import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.RelationTypeIndex;
+import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.Entry;
@@ -46,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -111,9 +113,10 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
         //Must be a relation type index or a composite graph index
         JanusGraphSchemaVertex schemaVertex = managementSystem.getSchemaVertex(index);
         SchemaStatus actualStatus = schemaVertex.getStatus();
-        Preconditions.checkArgument(
-            actualStatus == SchemaStatus.REGISTERED || actualStatus == SchemaStatus.DISABLED || actualStatus == SchemaStatus.DISCARDED,
-            "The index [%s] must be disabled before it can be removed, but is currently [%s].", indexName, actualStatus);
+        Set<SchemaStatus> acceptableStatuses = SchemaAction.DISCARD_INDEX.getApplicableStatus();
+        Preconditions.checkArgument(acceptableStatuses.contains(actualStatus),
+            "The index [%s] cannot be removed with status [%s]. The status must be one of %s.",
+            indexName, actualStatus, acceptableStatuses);
     }
 
     @Override

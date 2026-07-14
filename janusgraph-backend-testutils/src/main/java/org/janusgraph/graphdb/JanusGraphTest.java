@@ -129,6 +129,7 @@ import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
+import org.janusgraph.graphdb.olap.job.StaleIndexEntryRemoveJob;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
@@ -2160,6 +2161,390 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         finishSchema();
         assertEquals(30, pmetrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
         assertEquals(30, graphIndexMetrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
+    }
+
+    @Test
+    public void testReindexWithoutEnablingIndexThenEnableLater() throws InterruptedException, ExecutionException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        );
+        //Types without index
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
+        PropertyKey sensor = mgmt.makePropertyKey("sensor").dataType(Double.class).cardinality(Cardinality.LIST).make();
+        finishSchema();
+
+        //Add data before the indexes exist
+        JanusGraphVertex v = tx.addVertex();
+        for (int i = 0; i < 10; i++) {
+            v.property("sensor", i, "time", i);
+            v.property("name", "v" + i);
+        }
+        newTx();
+
+        //Create the indexes after the fact and wait until they are registered everywhere
+        finishSchema();
+        sensor = mgmt.getPropertyKey("sensor");
+        time = mgmt.getPropertyKey("time");
+        name = mgmt.getPropertyKey("name");
+        mgmt.buildPropertyIndex(sensor, "byTime", desc, time);
+        mgmt.buildIndex("byName", Vertex.class).addKey(name).buildCompositeIndex();
+        mgmt.commit();
+        tx.commit();
+        ManagementUtil.awaitVertexIndexUpdate(graph, "byTime", "sensor", 10, ChronoUnit.SECONDS);
+        ManagementUtil.awaitGraphIndexUpdate(graph, "byName", 10, ChronoUnit.SECONDS);
+
+        //Enable the indexes for writes only
+        finishSchema();
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime"), SchemaAction.ENABLE_WRITE_ONLY).get();
+        mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.ENABLE_WRITE_ONLY).get();
+        finishSchema();
+        assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime").getIndexStatus());
+        JanusGraphIndex byName = mgmt.getGraphIndex("byName");
+        assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, byName.getIndexStatus(byName.getFieldKeys()[0]));
+        finishSchema();
+
+        //Add data while the indexes are write-only
+        newTx();
+        v = getV(tx, v);
+        for (int i = 100; i < 110; i++) {
+            v.property("sensor", i, "time", i);
+            v.property("name", "v" + i);
+        }
+        newTx();
+
+        //Write-only indexes must not be used to answer queries
+        v = getV(tx, v);
+        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time", desc),
+                PROPERTY, 4, 1, new boolean[]{false, false}, tx.getPropertyKey("time"), Order.DESC);
+        evaluateQuery(tx.query().has("name", "v105"),
+                ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        newTx();
+
+        //Reindex without enabling: the indexes must keep their WRITE_ONLY_ENABLED status
+        finishSchema();
+        ScanMetrics reindexByTime = mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime"), SchemaAction.REINDEX).get();
+        finishSchema();
+        ScanMetrics reindexByName = mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.REINDEX).get();
+        finishSchema();
+        assertNotEquals(0, reindexByTime.getCustom(IndexRepairJob.ADDED_RECORDS_COUNT));
+        assertNotEquals(0, reindexByName.getCustom(IndexRepairJob.ADDED_RECORDS_COUNT));
+        assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime").getIndexStatus());
+        byName = mgmt.getGraphIndex("byName");
+        assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, byName.getIndexStatus(byName.getFieldKeys()[0]));
+        finishSchema();
+
+        //Still not used to answer queries after reindexing
+        newTx();
+        v = getV(tx, v);
+        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time", desc),
+                PROPERTY, 4, 1, new boolean[]{false, false}, tx.getPropertyKey("time"), Order.DESC);
+        evaluateQuery(tx.query().has("name", "v5"),
+                ElementCategory.VERTEX, 1, new boolean[]{false, true});
+
+        //Add more data while the indexes remain write-only
+        v = getV(tx, v);
+        for (int i = 200; i < 210; i++) {
+            v.property("sensor", i, "time", i);
+            v.property("name", "v" + i);
+        }
+        newTx();
+
+        //Enable the indexes fully; no additional reindex must be necessary
+        finishSchema();
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime"), SchemaAction.ENABLE_INDEX).get();
+        mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.ENABLE_INDEX).get();
+        finishSchema();
+        assertEquals(SchemaStatus.ENABLED, mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime").getIndexStatus());
+        byName = mgmt.getGraphIndex("byName");
+        assertEquals(SchemaStatus.ENABLED, byName.getIndexStatus(byName.getFieldKeys()[0]));
+        finishSchema();
+
+        //All data must now be answered from the indexes: reindexed data as well as data written while write-only
+        newTx();
+        v = getV(tx, v);
+        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time", desc),
+                PROPERTY, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
+        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time", desc),
+                PROPERTY, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
+        evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time", desc),
+                PROPERTY, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
+        evaluateQuery(tx.query().has("name", "v5"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "byName");
+        evaluateQuery(tx.query().has("name", "v105"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "byName");
+        evaluateQuery(tx.query().has("name", "v205"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "byName");
+    }
+
+    @Test
+    public void testWriteOnlyIndexDemotionAndPromotionWithoutReindex() throws InterruptedException, ExecutionException {
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.buildIndex("byName", Vertex.class).addKey(name).buildCompositeIndex();
+        finishSchema();
+
+        tx.addVertex("name", "a1");
+        newTx();
+        evaluateQuery(tx.query().has("name", "a1"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "byName");
+        newTx();
+
+        //Demote the enabled index to writes-only
+        finishSchema();
+        JanusGraphIndex byName = mgmt.getGraphIndex("byName");
+        assertEquals(SchemaStatus.ENABLED, byName.getIndexStatus(byName.getFieldKeys()[0]));
+        mgmt.updateIndex(byName, SchemaAction.ENABLE_WRITE_ONLY).get();
+        finishSchema();
+        byName = mgmt.getGraphIndex("byName");
+        assertEquals(SchemaStatus.WRITE_ONLY_ENABLED, byName.getIndexStatus(byName.getFieldKeys()[0]));
+        finishSchema();
+
+        //While write-only the index must not be used to answer queries...
+        tx.addVertex("name", "a2");
+        newTx();
+        evaluateQuery(tx.query().has("name", "a1"),
+                ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        evaluateQuery(tx.query().has("name", "a2"),
+                ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        newTx();
+
+        //...but it keeps receiving writes, so it can be fully enabled again without reindexing
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.ENABLE_INDEX).get();
+        finishSchema();
+        byName = mgmt.getGraphIndex("byName");
+        assertEquals(SchemaStatus.ENABLED, byName.getIndexStatus(byName.getFieldKeys()[0]));
+        newTx();
+        evaluateQuery(tx.query().has("name", "a1"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "byName");
+        evaluateQuery(tx.query().has("name", "a2"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "byName");
+    }
+
+    @Test
+    public void testCreateDisabledIndexAndActivateLater() throws InterruptedException, ExecutionException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        );
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+
+        //Create an index over an existing key and disable it within the same management transaction:
+        //the index must not receive any writes until it is explicitly activated
+        PropertyKey name = mgmt.getPropertyKey("name");
+        JanusGraphIndex byName = mgmt.buildIndex("byName", Vertex.class).addKey(name).buildCompositeIndex();
+        mgmt.updateIndex(byName, SchemaAction.DISABLE_INDEX);
+        mgmt.commit();
+        tx.commit();
+
+        //The pending registration from the index creation must not resurrect the disabled index
+        assertFalse(ManagementSystem.awaitGraphIndexStatus(graph, "byName").status(SchemaStatus.REGISTERED)
+                .timeout(2, ChronoUnit.SECONDS).call().getSucceeded());
+        finishSchema();
+        byName = mgmt.getGraphIndex("byName");
+        assertEquals(SchemaStatus.DISABLED, byName.getIndexStatus(byName.getFieldKeys()[0]));
+        finishSchema();
+
+        //Data written while the index is disabled must not be indexed
+        tx.addVertex("name", "while-disabled");
+        newTx();
+
+        //Activate the index for writes through re-registration (required for the registration barrier)
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.REGISTER_INDEX).get();
+        mgmt.commit();
+        tx.commit();
+        assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "byName").status(SchemaStatus.REGISTERED)
+                .call().getSucceeded());
+        finishSchema();
+
+        tx.addVertex("name", "while-registered");
+        newTx();
+
+        //Enable reads without reindexing: only data written after the re-registration is visible through the index
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.ENABLE_INDEX).get();
+        finishSchema();
+        newTx();
+        evaluateQuery(tx.query().has("name", "while-registered"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "byName");
+        evaluateQuery(tx.query().has("name", "while-disabled"),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "byName");
+        newTx();
+
+        //Reindex to pick up the data written while the index was disabled
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.REINDEX).get();
+        finishSchema();
+        newTx();
+        evaluateQuery(tx.query().has("name", "while-disabled"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "byName");
+    }
+
+    @Test
+    public void testEnableWriteOnlyIndexActionApplicability() {
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+
+        //INSTALLED (within the creating transaction): rejected because the registration barrier has not been passed yet
+        PropertyKey name = mgmt.getPropertyKey("name");
+        final JanusGraphIndex installedIndex = mgmt.buildIndex("byNameInstalled", Vertex.class).addKey(name).buildCompositeIndex();
+        assertEquals(SchemaStatus.INSTALLED, installedIndex.getIndexStatus(installedIndex.getFieldKeys()[0]));
+        assertThrows(IllegalArgumentException.class, () -> mgmt.updateIndex(installedIndex, SchemaAction.ENABLE_WRITE_ONLY));
+        mgmt.rollback();
+        mgmt = graph.openManagement();
+
+        //DISABLED: rejected because the index must pass the registration barrier (REGISTER_INDEX) first,
+        //otherwise a subsequent reindex could miss writes from instances that do not yet write to the index
+        PropertyKey rating = mgmt.makePropertyKey("rating").dataType(Integer.class).make();
+        JanusGraphIndex byRating = mgmt.buildIndex("byRating", Vertex.class).addKey(rating).buildCompositeIndex();
+        mgmt.updateIndex(byRating, SchemaAction.DISABLE_INDEX);
+        finishSchema();
+        JanusGraphIndex byRating2 = mgmt.getGraphIndex("byRating");
+        assertEquals(SchemaStatus.DISABLED, byRating2.getIndexStatus(byRating2.getFieldKeys()[0]));
+        assertThrows(IllegalArgumentException.class, () -> mgmt.updateIndex(mgmt.getGraphIndex("byRating"), SchemaAction.ENABLE_WRITE_ONLY));
+        mgmt.rollback();
+        mgmt = graph.openManagement();
+    }
+
+    @Test
+    public void testRemoveStaleCompositeIndexEntries() throws InterruptedException, ExecutionException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        );
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.buildIndex("byName", Vertex.class).addKey(name).buildCompositeIndex();
+        finishSchema();
+
+        tx.addVertex("name", "stale");
+        tx.addVertex("name", "alive");
+        newTx();
+
+        //Disable the index and delete a vertex while the index does not receive updates -> stale index entry
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.DISABLE_INDEX).get();
+        finishSchema();
+        tx.query().has("name", "stale").vertices().iterator().next().remove();
+        newTx();
+
+        //Re-activate the index without reindexing
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.REGISTER_INDEX).get();
+        mgmt.commit();
+        tx.commit();
+        assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "byName").status(SchemaStatus.REGISTERED)
+                .call().getSucceeded());
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.ENABLE_INDEX).get();
+        finishSchema();
+
+        //The stale entry surfaces as a ghost vertex
+        newTx();
+        evaluateQuery(tx.query().has("name", "stale"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "byName");
+        newTx();
+
+        //Remove the stale entries
+        finishSchema();
+        ScanMetrics metrics = mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.REMOVE_STALE_ENTRIES).get();
+        finishSchema();
+        assertEquals(1, metrics.getCustom(StaleIndexEntryRemoveJob.REMOVED_RECORDS_COUNT));
+        assertEquals(2, metrics.getCustom(StaleIndexEntryRemoveJob.SCANNED_RECORDS_COUNT));
+
+        //A second run must find nothing to remove: the stale entry is physically gone
+        ScanMetrics secondRun = mgmt.updateIndex(mgmt.getGraphIndex("byName"), SchemaAction.REMOVE_STALE_ENTRIES).get();
+        finishSchema();
+        assertEquals(0, secondRun.getCustom(StaleIndexEntryRemoveJob.REMOVED_RECORDS_COUNT));
+
+        newTx();
+        evaluateQuery(tx.query().has("name", "stale"),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "byName");
+        evaluateQuery(tx.query().has("name", "alive"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "byName");
+    }
+
+    @Test
+    public void testRemoveStaleCompositeEdgeIndexEntries() throws InterruptedException, ExecutionException {
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
+        );
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        mgmt.makeEdgeLabel("knows").make();
+        mgmt.buildIndex("edgesByTime", Edge.class).addKey(time).buildCompositeIndex();
+        finishSchema();
+
+        JanusGraphVertex v1 = tx.addVertex();
+        JanusGraphVertex v2 = tx.addVertex();
+        v1.addEdge("knows", v2, "time", 1);
+        v1.addEdge("knows", v2, "time", 2);
+        newTx();
+
+        //Disable the index and delete an edge while the index does not receive updates -> stale index entry
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("edgesByTime"), SchemaAction.DISABLE_INDEX).get();
+        finishSchema();
+        tx.query().has("time", 1).edges().iterator().next().remove();
+        newTx();
+
+        //Re-activate the index without reindexing
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("edgesByTime"), SchemaAction.REGISTER_INDEX).get();
+        mgmt.commit();
+        tx.commit();
+        assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "edgesByTime").status(SchemaStatus.REGISTERED)
+                .call().getSucceeded());
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("edgesByTime"), SchemaAction.ENABLE_INDEX).get();
+        finishSchema();
+
+        //Remove the stale entries (a stale relation entry does not surface as a ghost because unresolvable
+        //relation identifiers are filtered at query time, so the metrics carry the assertions)
+        finishSchema();
+        ScanMetrics metrics = mgmt.updateIndex(mgmt.getGraphIndex("edgesByTime"), SchemaAction.REMOVE_STALE_ENTRIES).get();
+        finishSchema();
+        assertEquals(1, metrics.getCustom(StaleIndexEntryRemoveJob.REMOVED_RECORDS_COUNT));
+        assertEquals(2, metrics.getCustom(StaleIndexEntryRemoveJob.SCANNED_RECORDS_COUNT));
+
+        ScanMetrics secondRun = mgmt.updateIndex(mgmt.getGraphIndex("edgesByTime"), SchemaAction.REMOVE_STALE_ENTRIES).get();
+        finishSchema();
+        assertEquals(0, secondRun.getCustom(StaleIndexEntryRemoveJob.REMOVED_RECORDS_COUNT));
+        assertEquals(1, secondRun.getCustom(StaleIndexEntryRemoveJob.SCANNED_RECORDS_COUNT));
+
+        //The live edge is still served from the index
+        newTx();
+        evaluateQuery(tx.query().has("time", 2),
+                ElementCategory.EDGE, 1, new boolean[]{true, true}, "edgesByTime");
+        evaluateQuery(tx.query().has("time", 1),
+                ElementCategory.EDGE, 0, new boolean[]{true, true}, "edgesByTime");
+    }
+
+    @Test
+    public void testRemoveStaleEntriesActionApplicability() {
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+
+        //INSTALLED (within the creating transaction): rejected, the index is not applicable yet
+        PropertyKey name = mgmt.getPropertyKey("name");
+        final JanusGraphIndex installedIndex = mgmt.buildIndex("byNameInstalled", Vertex.class).addKey(name).buildCompositeIndex();
+        assertEquals(SchemaStatus.INSTALLED, installedIndex.getIndexStatus(installedIndex.getFieldKeys()[0]));
+        assertThrows(IllegalArgumentException.class, () -> mgmt.updateIndex(installedIndex, SchemaAction.REMOVE_STALE_ENTRIES));
+        mgmt.rollback();
+        mgmt = graph.openManagement();
+
+        //Vertex-centric indexes are not supported
+        PropertyKey rating = mgmt.makePropertyKey("rating").dataType(Integer.class).cardinality(Cardinality.LIST).make();
+        PropertyKey rtime = mgmt.makePropertyKey("rtime").dataType(Integer.class).make();
+        mgmt.buildPropertyIndex(rating, "ratingByTime", desc, rtime);
+        finishSchema();
+        final RelationTypeIndex rindex = mgmt.getRelationIndex(mgmt.getRelationType("rating"), "ratingByTime");
+        assertEquals(SchemaStatus.ENABLED, rindex.getIndexStatus());
+        assertThrows(UnsupportedOperationException.class, () -> mgmt.updateIndex(rindex, SchemaAction.REMOVE_STALE_ENTRIES));
+        mgmt.rollback();
+        mgmt = graph.openManagement();
     }
 
     @Tag(TestCategory.BRITTLE_TESTS)
