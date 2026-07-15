@@ -218,13 +218,44 @@ public interface CQLConfigOptions {
             "Number of disjoint Murmur3 token ranges a full-table scan (e.g. a mixed-index reindex or other " +
                 "OLAP job) is split into. With the default value of 1 the full scan is issued as a single query " +
                 "that funnels the whole table through one coordinator. When set above 1 and the Murmur3 " +
-                "partitioner is in use, the scan is split into this many token-bounded queries that are streamed " +
-                "back in token order. NOTE: the ranges are currently consumed back-to-back by a single scan " +
-                "thread (only the first page of each range is prefetched concurrently, at construction), so this " +
-                "replaces one unbounded coordinator scan with several bounded ones rather than scanning all ranges " +
-                "fully in parallel. Values that are too high can overload the cluster.",
+                "partitioner is in use: scan jobs (reindex and other OLAP jobs run through the scan-job " +
+                "framework) drain each token range on its own set of threads, scanning all ranges fully in " +
+                "parallel; other callers of a whole-table scan receive the ranges as token-bounded queries " +
+                "streamed back-to-back in token order (bounded coordinator scans, not extra parallelism). " +
+                "Each range adds concurrent scan queries against the cluster (one per scan-job query, times " +
+                "the number of ranges), so values that are too high can overload the cluster; a small multiple " +
+                "of the cluster's node count is a sensible starting point.",
             ConfigOption.Type.MASKABLE,
             1);
+
+    ConfigOption<Integer> SCAN_PAGE_SIZE = new ConfigOption<>(
+            CQL_NS,
+            "scan-page-size",
+            "Page size (CQL rows per backend round trip) used for scan queries: whole-table and token-range " +
+                "scans on the Murmur3 partitioner as well as key-range scans on ordered partitioners - i.e. " +
+                "every getKeys-style key iteration, which is the path OLAP jobs (such as a mixed-index reindex) " +
+                "read through. Transactional slice reads keep using storage.page-size. When 0 or negative, " +
+                "storage.page-size is used for scans as well. A scan streams many rows per request, so a page " +
+                "size several times larger than the OLTP-oriented storage.page-size usually cuts scan round " +
+                "trips (and total scan time) substantially at the cost of slightly larger response payloads " +
+                "held in memory per scan thread.",
+            ConfigOption.Type.MASKABLE,
+            0);
+
+    ConfigOption<Boolean> SCAN_PER_PARTITION_LIMIT_ENABLED = new ConfigOption<>(
+            CQL_NS,
+            "scan-per-partition-limit-enabled",
+            "Push each scan query's per-key entry limit into the CQL full-scan queries as PER PARTITION LIMIT. " +
+                "Scan jobs (e.g. reindex) issue a grounding (key-existence) query with a per-key limit of 1; " +
+                "without the pushdown every cell of every row slice is streamed to the client and discarded " +
+                "there, so the grounding query alone transfers the whole table (including adjacency data " +
+                "irrelevant to the job). With the pushdown the server stops after the per-key limit, e.g. one " +
+                "cell per key for the grounding query. Requires PER PARTITION LIMIT support in the backend " +
+                "(Apache Cassandra 3.6+, ScyllaDB); a CQL-compatible service that rejects the clause (e.g. " +
+                "Amazon Keyspaces) automatically falls back to plain scan statements with a warning at store " +
+                "open, so leaving the option enabled is safe everywhere; set it to false to skip the attempt.",
+            ConfigOption.Type.MASKABLE,
+            true);
 
     ConfigOption<Integer> BACK_PRESSURE_LIMIT = new ConfigOption<>(
         CQL_NS,

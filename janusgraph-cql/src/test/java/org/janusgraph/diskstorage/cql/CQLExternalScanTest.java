@@ -15,17 +15,24 @@
 package org.janusgraph.diskstorage.cql;
 
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.KeyColumnValueStoreUtil;
 import org.janusgraph.diskstorage.KeyValueStoreUtil;
 import org.janusgraph.diskstorage.SimpleScanJob;
 import org.janusgraph.diskstorage.SimpleScanJobRunner;
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.SplittableScanStore;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
@@ -34,9 +41,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Exercises the full scan pipeline ({@code MultiThreadsRowsCollector} + processors) against a real,
@@ -55,6 +70,8 @@ public class CQLExternalScanTest {
 
     private static final TimestampProvider TIMES = TimestampProviders.MICRO;
     private static final String STORE_NAME = "scantest";
+    private static final int SCAN_SUITE_KEYS = 1000;
+    private static final int SCAN_SUITE_COLUMNS = 40;
 
     private CQLStoreManager manager;
     private KeyColumnValueStore store;
@@ -92,22 +109,109 @@ public class CQLExternalScanTest {
 
     @Test
     public void multiQueryScanSuiteOnExternalCql() throws Exception {
-        final int keys = 1000;
-        final int columns = 40;
-        final String[][] values = KeyValueStoreUtil.generateData(keys, columns);
+        loadScanSuiteData();
+        runScanSuite();
+    }
+
+    /**
+     * Same scan suite with the split-parallel collector: parallel-scan-token-ranges > 1 makes the
+     * scan-job framework drain each Murmur3 token range on its own pipeline
+     * ({@code PartitionedRowsCollector}), so this exercises split tiling + per-split multi-query merge.
+     */
+    @ParameterizedTest
+    @ValueSource(ints = {2, 5})
+    public void multiQueryScanSuiteWithParallelTokenRanges(int ranges) throws Exception {
+        reopen(config -> config.set(CQLConfigOptions.PARALLEL_SCAN_TOKEN_RANGES, ranges));
+        loadScanSuiteData();
+        runScanSuite();
+    }
+
+    /** Same scan suite without the PER PARTITION LIMIT pushdown (plain full-slice scan statements). */
+    @Test
+    public void multiQueryScanSuiteWithoutPerPartitionLimit() throws Exception {
+        reopen(config -> config.set(CQLConfigOptions.SCAN_PER_PARTITION_LIMIT_ENABLED, false));
+        loadScanSuiteData();
+        runScanSuite();
+    }
+
+    /**
+     * The union of getKeysForSplit(0..n-1) must be exactly the keys/entries of the unsplit scan -
+     * a gap would silently lose vertices in a reindex, an overlap would duplicate them.
+     */
+    @Test
+    public void splitScanTilesKeySpaceExactly() throws Exception {
+        loadScanSuiteData();
+        final SliceQuery everything = new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128));
+
+        final StoreTransaction tx = manager.beginTransaction(
+            StandardBaseTransactionConfig.of(TIMES, manager.getFeatures().getKeyConsistentTxConfig()));
+        try {
+            final Map<StaticBuffer, Integer> unsplit = collectKeys(store.getKeys(everything, tx));
+
+            final SplittableScanStore splittable = (SplittableScanStore) store;
+            for (int splitCount : new int[]{1, 2, 3, 7, 8, 16, 32}) {
+                final Map<StaticBuffer, Integer> union = new HashMap<>();
+                for (int split = 0; split < splitCount; split++) {
+                    collectKeys(splittable.getKeysForSplit(everything, tx, split, splitCount))
+                        .forEach((key, count) -> {
+                            final Integer previous = union.put(key, count);
+                            assertNull(previous, "key returned by more than one split");
+                        });
+                }
+                assertEquals(unsplit, union, "splitCount=" + splitCount);
+            }
+        } finally {
+            tx.rollback();
+        }
+    }
+
+    private Map<StaticBuffer, Integer> collectKeys(KeyIterator iterator) throws Exception {
+        final Map<StaticBuffer, Integer> keys = new HashMap<>();
+        try {
+            while (iterator.hasNext()) {
+                final StaticBuffer key = iterator.next();
+                int entries = 0;
+                try (RecordIterator<Entry> entryIterator = iterator.getEntries()) {
+                    while (entryIterator.hasNext()) {
+                        entryIterator.next();
+                        entries++;
+                    }
+                }
+                keys.put(key, entries);
+            }
+        } finally {
+            iterator.close();
+        }
+        return keys;
+    }
+
+    /** Re-opens the manager/store on the same (already cleared) keyspace with customized options. */
+    private void reopen(Consumer<ModifiableConfiguration> customizer) throws BackendException {
+        store.close();
+        manager.close();
+        final ModifiableConfiguration config = externalCqlConfiguration();
+        customizer.accept(config);
+        manager = new CQLStoreManager(config);
+        store = manager.openDatabase(STORE_NAME);
+    }
+
+    private void loadScanSuiteData() throws Exception {
+        final String[][] values = KeyValueStoreUtil.generateData(SCAN_SUITE_KEYS, SCAN_SUITE_COLUMNS);
         // Give every second key only half its columns, matching the in-memory scanTestWithSimpleJob.
         for (int i = 0; i < values.length; i++) {
-            if (i % 2 == 0) values[i] = Arrays.copyOf(values[i], columns / 2);
+            if (i % 2 == 0) values[i] = Arrays.copyOf(values[i], SCAN_SUITE_COLUMNS / 2);
         }
         final StoreTransaction tx = manager.beginTransaction(
             StandardBaseTransactionConfig.of(TIMES, manager.getFeatures().getKeyConsistentTxConfig()));
         KeyColumnValueStoreUtil.loadValues(store, tx, values);
         tx.commit();
+    }
 
+    private void runScanSuite() throws Exception {
         final StandardScanner scanner = new StandardScanner(manager);
         final SimpleScanJobRunner runner =
             (ScanJob job, Configuration jobConf, String rootNSName) -> runSimpleJob(scanner, job, jobConf);
-        SimpleScanJob.runBasicTests(keys, columns, runner);
+        SimpleScanJob.runBasicTests(SCAN_SUITE_KEYS, SCAN_SUITE_COLUMNS, runner);
     }
 
     private ScanMetrics runSimpleJob(StandardScanner scanner, ScanJob job, Configuration jobConf)

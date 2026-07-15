@@ -19,6 +19,7 @@ import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.LongAdder;
 
 import static org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor.Row;
 
@@ -32,10 +33,27 @@ abstract class RowsCollector {
 
     protected final KeyColumnValueStore store;
     protected final BlockingQueue<Row> rowQueue;
+    private final LongAdder producedRows = new LongAdder();
 
     RowsCollector(KeyColumnValueStore store, BlockingQueue<Row> rowQueue) {
         this.store = store;
         this.rowQueue = rowQueue;
+    }
+
+    /** Hands a merged row to the processing queue and counts it for progress reporting. */
+    protected void putRow(Row row) throws InterruptedException {
+        rowQueue.put(row);
+        producedRows.increment();
+    }
+
+    /** Number of rows this collector has handed to the processing queue so far. */
+    long getProducedCount() {
+        return producedRows.sum();
+    }
+
+    /** Human-readable per-producer counters for progress logging; empty when not tracked. */
+    String getPullersProgress() {
+        return "";
     }
 
     abstract void run() throws InterruptedException, TemporaryBackendException;

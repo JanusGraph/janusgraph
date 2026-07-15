@@ -178,11 +178,63 @@ token-bounded queries instead of a single coordinator-funneled scan:
 storage.cql.parallel-scan-token-ranges=1
 ```
 The default value `1` preserves the previous single-query behavior. When set above `1` and the Murmur3
-partitioner is in use, the scan is split into that many disjoint token ranges streamed back in token
-order. Note: in this release the ranges are consumed back-to-back by a single scan thread (only the
-first page of each range is prefetched concurrently), so it replaces one unbounded coordinator scan
-with several bounded ones rather than scanning all ranges fully in parallel; setting very high values
-can overload the cluster. The option is ignored for non-Murmur3 partitioners.
+partitioner is in use, scan jobs (reindex and other jobs running through the scan-job framework) drain
+each token range on its own row-collection pipeline — its own data-puller threads and merge thread —
+so the storage scan runs fully in parallel across ranges and producer throughput scales with the range
+count until the cluster saturates. Non-scan-job callers of a whole-table scan receive the ranges as
+token-bounded queries streamed back-to-back in token order (bounded coordinator scans, without extra
+parallelism). Each range adds concurrent scan queries against the cluster (one per scan-job query,
+times the number of ranges), so very high values can overload the cluster; a small multiple of the
+cluster's node count is a sensible starting point. The option is ignored for non-Murmur3 partitioners.
+
+##### CQL scan-only page size
+
+Full-table scans can use their own CQL page size instead of the OLTP-oriented `storage.page-size`:
+```
+storage.cql.scan-page-size=0
+```
+The default `0` keeps using `storage.page-size`. Since a full scan streams many rows per request, a
+page size several times larger than the OLTP page size usually cuts scan round trips (and total scan
+time) substantially; a few thousand rows per page is a reasonable value. Scan pages are additionally
+fetched with a one-page lookahead, overlapping the network wait of the next page with client-side
+processing of the current one — this pipelining is always on and needs no configuration.
+
+##### PER PARTITION LIMIT pushdown for CQL scans
+
+Scan queries now push their per-key entry limit into the CQL query as `PER PARTITION LIMIT`
+(enabled by default):
+```
+storage.cql.scan-per-partition-limit-enabled=true
+```
+Scan jobs issue a grounding (key-existence) query with a per-key limit of 1; previously every cell of
+every row slice was streamed to the client and discarded there, so the grounding query alone
+transferred the whole table — including adjacency data irrelevant to the job. With the pushdown the
+server stops after the per-key limit (one cell per key for the grounding query), which substantially
+reduces scan time and network transfer on graphs with wide rows (many edges or properties per vertex).
+Requires `PER PARTITION LIMIT` support in the backend (Apache Cassandra 3.6+, ScyllaDB). A
+CQL-compatible service that rejects the clause (e.g. Amazon Keyspaces) automatically falls back to
+plain scan statements — store open logs a warning and continues instead of failing; set the option
+to `false` to skip the attempt entirely.
+
+##### Scan jobs fail loudly on data-puller errors
+
+Previously, when an internal scan data-puller thread died on a storage error, the scan completed
+"successfully" with silently missing rows — for a reindex this could ENABLE an incomplete index. A
+scan job now fails with a `TemporaryBackendException` describing the failed puller instead of
+returning a partial result, and it fails fast: the error surfaces as soon as the dead puller's
+end-of-data marker is observed rather than after the remaining key space has been streamed and
+discarded.
+
+##### Scan progress logging
+
+`StandardScannerExecutor` now logs a start line (job, query count, processor count, collector type,
+queue capacity), a progress line every 30 seconds (rows produced by the storage scan, rows processed
+by workers, current rates, row-queue fill) and a completion summary (total rows, elapsed, average
+rate). The row-queue fill discriminates the bottleneck at a glance: a near-empty queue means the scan
+is storage-bound, a near-full queue means processing/index writes are the bottleneck. Per-puller
+counters are logged at `DEBUG` level, and mixed-index reindex jobs additionally report bulk-flush
+count/size/time through the custom scan metrics `mixed-index-flushes`, `mixed-index-flushed-docs` and
+`mixed-index-flush-time-ms`.
 
 ##### Whole-row deletion on vertex removal (super-node tombstone reduction)
 

@@ -22,6 +22,7 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.SplittableScanStore;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.BufferUtil;
@@ -66,10 +67,15 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
     private final Configuration graphConfiguration;
     private final ScanMetrics metrics;
 
+    /** How often the running scan logs a one-line progress summary. */
+    private static final long PROGRESS_LOG_PERIOD_MS = 30_000;
+
     private boolean hasCompleted = false;
     private boolean interrupted = false;
 
     private RowsCollector rowsCollector;
+    private volatile BlockingQueue<Row> processorQueue;
+    private volatile int processorQueueCapacity;
 
     StandardScannerExecutor(final ScanJob job, final Consumer<ScanMetrics> finishJob,
                             final KeyColumnValueStore store, final StoreTransaction storeTx,
@@ -94,7 +100,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
     @Override
     public void run() {
 
-        BlockingQueue<Row> processorQueue;
+        final long startTime = System.currentTimeMillis();
 
         try {
             job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
@@ -102,10 +108,11 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
             List<SliceQuery> queries = job.getQueries();
             int numQueries = queries.size();
 
-            processorQueue = new LinkedBlockingQueue<>(
-                this.graphConfiguration.get(GraphDatabaseConfiguration.PAGE_SIZE) * numProcessors * numQueries);
-
             Preconditions.checkArgument(numQueries > 0,"Must at least specify one query for job: %s",job);
+
+            processorQueueCapacity =
+                this.graphConfiguration.get(GraphDatabaseConfiguration.PAGE_SIZE) * numProcessors * numQueries;
+            processorQueue = new LinkedBlockingQueue<>(processorQueueCapacity);
 
             if (numQueries > 1) {
                 //It is assumed that the first query is the grounding query if multiple queries exist
@@ -120,6 +127,10 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
 
             rowsCollector = buildScanner(processorQueue, queries);
 
+            log.info("Scan job started: job={}, queries={}, processors={}, workBlockSize={}, collector={}, rowQueueCapacity={}",
+                job.getClass().getSimpleName(), numQueries, numProcessors, workBlockSize,
+                rowsCollector.getClass().getSimpleName(), processorQueueCapacity);
+
         }  catch (Throwable e) {
             log.error("Exception trying to setup the job:", e);
             cleanupSilent();
@@ -128,13 +139,20 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
             return;
         }
 
+        // Everything below runs under the try/finally: a failure starting a processor or the progress
+        // logger (e.g. OutOfMemoryError creating a native thread) must still complete the future and
+        // tear the pipeline down, or callers block forever on get().
         Processor[] processors = new Processor[numProcessors];
-        for (int i=0;i<processors.length;i++) {
-            processors[i]= new Processor(job.clone(),processorQueue);
-            processors[i].start();
-        }
+        Thread progressLogger = null;
 
         try {
+            for (int i=0;i<processors.length;i++) {
+                processors[i]= new Processor(job.clone(),processorQueue);
+                processors[i].start();
+            }
+
+            progressLogger = startProgressLogger(startTime);
+
             rowsCollector.run();
 
             rowsCollector.join();
@@ -166,27 +184,100 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
             if (interrupted) {
                 setException(new InterruptedException("Scanner got interrupted"));
             } else {
+                logCompletion(startTime);
                 finishJob.accept(metrics);
                 set(metrics);
             }
         } catch (Throwable e) {
-            log.error("Exception occurred during job execution:", e);
+            if (interrupted) {
+                // Cancellation routinely unblocks a waiting call with an InterruptedException; that is
+                // teardown noise, not a job failure.
+                log.debug("Exception occurred during cancelled job teardown:", e);
+            } else {
+                log.error("Exception occurred during job execution:", e);
+            }
             job.workerIterationEnd(metrics);
             setException(e);
         } finally {
+            if (progressLogger != null) {
+                progressLogger.interrupt();
+            }
             Threads.terminate(processors);
             cleanupSilent();
         }
+    }
+
+    /**
+     * Periodically logs pipeline state so a long scan (e.g. a reindex of a large graph) shows WHERE
+     * time is spent: {@code produced} is the storage-side (producer) row count, {@code processed} the
+     * worker-side count, and the queue fill discriminates the bottleneck - a near-empty queue means
+     * the scan is storage-bound (producers can't keep up), a near-full queue means it is
+     * processing/index-bound (workers can't keep up).
+     */
+    private Thread startProgressLogger(final long startTime) {
+        final Thread progressLogger = new Thread(() -> {
+            long lastProduced = 0;
+            long lastProcessed = 0;
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Thread.sleep(PROGRESS_LOG_PERIOD_MS);
+                } catch (InterruptedException e) {
+                    return;
+                }
+                final long produced = rowsCollector.getProducedCount();
+                final long processed = metrics.get(ScanMetrics.Metric.SUCCESS) + metrics.get(ScanMetrics.Metric.FAILURE);
+                final double windowSeconds = PROGRESS_LOG_PERIOD_MS / 1000d;
+                log.info("Scan progress: produced={} rows ({}/s), processed={} rows ({}/s, failures={}), rowQueue={}/{}, elapsed={}s",
+                    produced, Math.round((produced - lastProduced) / windowSeconds),
+                    processed, Math.round((processed - lastProcessed) / windowSeconds),
+                    metrics.get(ScanMetrics.Metric.FAILURE),
+                    processorQueue.size(), processorQueueCapacity,
+                    (System.currentTimeMillis() - startTime) / 1000);
+                if (log.isDebugEnabled()) {
+                    log.debug("Scan producers: {}", rowsCollector.getPullersProgress());
+                }
+                lastProduced = produced;
+                lastProcessed = processed;
+            }
+        }, "scan-progress-" + job.getClass().getSimpleName() + "-" + Integer.toHexString(System.identityHashCode(this)));
+        progressLogger.setDaemon(true);
+        progressLogger.start();
+        return progressLogger;
+    }
+
+    private void logCompletion(final long startTime) {
+        final long elapsedMs = Math.max(1, System.currentTimeMillis() - startTime);
+        final long success = metrics.get(ScanMetrics.Metric.SUCCESS);
+        final long failure = metrics.get(ScanMetrics.Metric.FAILURE);
+        log.info("Scan job finished: job={}, processedRows={} (failures={}), elapsed={}s, avgRate={} rows/s",
+            job.getClass().getSimpleName(), success + failure, failure,
+            elapsedMs / 1000, Math.round((success + failure) * 1000d / elapsedMs));
     }
 
     private RowsCollector buildScanner(BlockingQueue<Row> processorQueue, List<SliceQuery> queries) throws BackendException {
         if(!storeFeatures.hasConsistentScan()) {
             return new SingleThreadRowsCollector(store, storeTx, queries,
                 job.getKeyFilter(), processorQueue);
-        } else {
-            return new MultiThreadsRowsCollector(store, storeFeatures, storeTx, queries,
-                job.getKeyFilter(), job.getKeysToScan(), processorQueue, graphConfiguration);
         }
+        final int splitCount = unorderedScanSplitCount();
+        if (splitCount > 1) {
+            return new PartitionedRowsCollector(store, storeFeatures, storeTx, queries,
+                job.getKeyFilter(), processorQueue, graphConfiguration, (SplittableScanStore) store, splitCount);
+        }
+        return new MultiThreadsRowsCollector(store, storeFeatures, storeTx, queries,
+            job.getKeyFilter(), job.getKeysToScan(), processorQueue, graphConfiguration);
+    }
+
+    /**
+     * Split-parallel collection applies only to whole-key-space scans: a targeted scan
+     * ({@code getKeysToScan() != null}) already fetches an explicit key list and gains nothing
+     * from key-space partitioning.
+     */
+    private int unorderedScanSplitCount() {
+        if (job.getKeysToScan() != null || !(store instanceof SplittableScanStore)) {
+            return 1;
+        }
+        return Math.max(1, ((SplittableScanStore) store).getUnorderedScanSplitCount());
     }
 
     @Override
