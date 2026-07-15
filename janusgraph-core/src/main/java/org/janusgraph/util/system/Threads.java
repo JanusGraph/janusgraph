@@ -50,7 +50,10 @@ public class Threads {
             try {
                 Thread.sleep(Math.min(sleepPeriodMillis,endTime-currentTime));
             } catch (InterruptedException e) {
-                System.err.println("Interrupted while waiting for completion of threads!");
+                // The caller was interrupted (e.g. scan cancellation): stop waiting and preserve the
+                // interrupt status instead of silently swallowing it and sitting out the full timeout.
+                Thread.currentThread().interrupt();
+                return !oneAlive(threads);
             }
         }
         return true;

@@ -35,11 +35,16 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -111,9 +116,60 @@ public class ScanCancellationTest {
             "scan processed all " + NUM_KEYS + " keys despite being cancelled (processed=" + processed.get() + ")");
     }
 
+    /**
+     * Cancels the scan while the scan thread is still inside job setup (before the row collector
+     * exists). Historically this threw NullPointerException out of {@code cancel(true)}; with the
+     * fix the cancel is a clean no-op on the missing collector, and the scan thread observes the
+     * volatile {@code interrupted} flag right after setup, tears the pipeline down and never
+     * processes a row nor invokes the finish-job callback.
+     */
+    @Test
+    public void cancelBeforeSetupCompletesMustNotRunTheScan() throws Exception {
+        final StandardScanner scanner = new StandardScanner(manager);
+        final CountDownLatch setupEntered = new CountDownLatch(1);
+        final CountDownLatch cancelIssued = new CountDownLatch(1);
+        final CountDownLatch iterationEnded = new CountDownLatch(1);
+        final AtomicBoolean finishJobCalled = new AtomicBoolean(false);
+        final AtomicInteger processed = new AtomicInteger(0);
+
+        final ScanJobFuture future = scanner.build()
+            .setStoreName(STORE_NAME)
+            // A single worker keeps the workerIterationEnd signal unambiguous on a regressed path.
+            .setNumProcessingThreads(1)
+            .setWorkBlockSize(100)
+            .setTimestampProvider(TIMES)
+            .setFinishJob(m -> finishJobCalled.set(true))
+            .setJob(new SetupBlockingScanJob(setupEntered, cancelIssued, iterationEnded, processed))
+            .execute();
+
+        assertTrue(setupEntered.await(20, TimeUnit.SECONDS), "scan never entered job setup");
+
+        // The collector does not exist yet; cancel(true) used to NPE out of this call.
+        assertTrue(future.cancel(true), "cancel(true) should succeed on a scan still in setup");
+        assertTrue(future.isCancelled(), "future should report cancelled");
+
+        cancelIssued.countDown(); // let the scan thread finish setup and observe the cancellation
+
+        assertThrows(CancellationException.class, () -> future.get(20, TimeUnit.SECONDS));
+        assertTrue(iterationEnded.await(20, TimeUnit.SECONDS), "scan thread never wound down the job");
+        assertTrue(awaitNoDataPullerThreads(15_000),
+            "scan pipeline did not unwind after a pre-setup cancellation");
+
+        // Bounded absence-check rather than a single fixed sleep: on the fixed path nothing can
+        // invoke finishJob or process rows anymore, while a regressed path (scan running despite
+        // the cancel) trips the assertions the moment it does either.
+        final long absenceDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(500);
+        while (System.nanoTime() - absenceDeadline < 0) {
+            assertFalse(finishJobCalled.get(), "finishJob must not run for a cancelled scan");
+            assertEquals(0, processed.get(), "a scan cancelled before setup completed must process no rows");
+            Thread.sleep(25);
+        }
+    }
+
     private static boolean awaitNoDataPullerThreads(long timeoutMillis) throws InterruptedException {
-        final long deadline = System.currentTimeMillis() + timeoutMillis;
-        while (System.currentTimeMillis() < deadline) {
+        // nanoTime is monotonic; a wall-clock jump must not shorten or extend the wait.
+        final long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
+        while (System.nanoTime() - deadline < 0) {
             if (!anyDataPullerThreadAlive()) return true;
             Thread.sleep(25);
         }
@@ -127,6 +183,61 @@ public class ScanCancellationTest {
             }
         }
         return false;
+    }
+
+    /**
+     * Scan job whose setup ({@code workerIterationStart}) blocks until the test has issued the
+     * cancellation, guaranteeing the cancel lands while the row collector does not exist yet.
+     */
+    private static final class SetupBlockingScanJob implements ScanJob {
+
+        private final CountDownLatch setupEntered;
+        private final CountDownLatch cancelIssued;
+        private final CountDownLatch iterationEnded;
+        private final AtomicInteger processed;
+
+        private SetupBlockingScanJob(CountDownLatch setupEntered, CountDownLatch cancelIssued,
+                                     CountDownLatch iterationEnded, AtomicInteger processed) {
+            this.setupEntered = setupEntered;
+            this.cancelIssued = cancelIssued;
+            this.iterationEnded = iterationEnded;
+            this.processed = processed;
+        }
+
+        @Override
+        public List<SliceQuery> getQueries() {
+            return Collections.singletonList(new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128)));
+        }
+
+        @Override
+        public Predicate<StaticBuffer> getKeyFilter() {
+            return k -> true;
+        }
+
+        @Override
+        public void workerIterationStart(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
+            setupEntered.countDown();
+            try {
+                cancelIssued.await(30, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        @Override
+        public void workerIterationEnd(ScanMetrics metrics) {
+            iterationEnded.countDown();
+        }
+
+        @Override
+        public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
+            processed.incrementAndGet();
+        }
+
+        @Override
+        public ScanJob clone() {
+            return new SetupBlockingScanJob(setupEntered, cancelIssued, iterationEnded, processed);
+        }
     }
 
     /**
