@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
@@ -29,6 +30,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
 import org.janusgraph.diskstorage.keycolumnvalue.MultiKeysQueryGroups;
 import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.SplittableScanStore;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.util.stats.MetricManager;
 import org.slf4j.Logger;
@@ -69,7 +71,7 @@ import java.util.Map;
  *
  * @author Dan LaRocque (dalaro@hopcount.org)
  */
-public class MetricInstrumentedStore implements KeyColumnValueStore {
+public class MetricInstrumentedStore implements KeyColumnValueStore, SplittableScanStore {
 
     private final KeyColumnValueStore backend;
 
@@ -181,6 +183,33 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws BackendException {
         return runWithMetrics(txh, metricsStoreName, M_GET_KEYS, () -> {
             final KeyIterator ki = backend.getKeys(query, txh);
+            if (txh.getConfiguration().hasGroupName()) {
+                return MetricInstrumentedIterator.of(ki, txh.getConfiguration().getGroupName(), metricsStoreName, M_GET_KEYS, M_ITERATOR);
+            } else {
+                return ki;
+            }
+        });
+    }
+
+    @Override
+    public int getUnorderedScanSplitCount() {
+        // Forward the split-scan capability of the wrapped store: without this delegation, the
+        // scan-job framework's `store instanceof SplittableScanStore` check would see only the
+        // metrics wrapper and silently fall back to a single scan pipeline.
+        if (backend instanceof SplittableScanStore) {
+            return ((SplittableScanStore) backend).getUnorderedScanSplitCount();
+        }
+        return 1;
+    }
+
+    @Override
+    public KeyIterator getKeysForSplit(final SliceQuery query, final StoreTransaction txh,
+                                       final int splitIndex, final int splitCount) throws BackendException {
+        if (!(backend instanceof SplittableScanStore)) {
+            throw new PermanentBackendException("Store does not support split scans: " + backend);
+        }
+        return runWithMetrics(txh, metricsStoreName, M_GET_KEYS, () -> {
+            final KeyIterator ki = ((SplittableScanStore) backend).getKeysForSplit(query, txh, splitIndex, splitCount);
             if (txh.getConfiguration().hasGroupName()) {
                 return MetricInstrumentedIterator.of(ki, txh.getConfiguration().getGroupName(), metricsStoreName, M_GET_KEYS, M_ITERATOR);
             } else {

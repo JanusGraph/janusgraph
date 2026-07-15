@@ -79,6 +79,23 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
      */
     public static final String DOCUMENT_UPDATES_COUNT = "doc-updates";
 
+    /**
+     * The number of batched mixed-index restore calls (bulk flushes) issued to the index backend.
+     */
+    public static final String MIXED_INDEX_FLUSH_COUNT = "mixed-index-flushes";
+
+    /**
+     * The total number of documents sent to the index backend through batched restore calls.
+     */
+    public static final String MIXED_INDEX_FLUSHED_DOCUMENTS = "mixed-index-flushed-docs";
+
+    /**
+     * Cumulative wall-clock milliseconds (summed across workers) spent inside index-backend restore
+     * calls. Divide by {@link #MIXED_INDEX_FLUSH_COUNT} for the average flush latency, or compare
+     * against per-worker elapsed time to see what fraction of the reindex is index-backend-bound.
+     */
+    public static final String MIXED_INDEX_FLUSH_TIME_MS = "mixed-index-flush-time-ms";
+
     private Map<String,Map<String,List<IndexEntry>>> documentsPerStore = new HashMap<>();
 
     /**
@@ -260,8 +277,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                     // Flush as soon as enough documents have been buffered so that worker memory stays bounded
                     // and restored documents stream to the index backend while the scan keeps producing rows.
                     if (mixedIndexBatchSize > 0 && countBufferedDocuments() >= mixedIndexBatchSize) {
-                        mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
-                        documentsPerStore = new HashMap<>();
+                        restoreDocuments(mutator, indexType, metrics);
                     }
                 }
 
@@ -282,6 +298,23 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
         return count;
     }
 
+    /**
+     * Sends the buffered documents to the index backend, tracking flush count/size/time as custom
+     * scan metrics so a slow reindex can be attributed to (or exonerated from) index-backend writes:
+     * comparing {@link #MIXED_INDEX_FLUSH_TIME_MS} against wall-clock-per-worker shows the fraction
+     * of worker time spent inside index-backend restores.
+     */
+    private void restoreDocuments(BackendTransaction mutator, IndexType indexType, ScanMetrics metrics) throws BackendException {
+        final int documents = countBufferedDocuments();
+        final long flushStart = System.nanoTime();
+        mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
+        documentsPerStore = new HashMap<>();
+        metrics.incrementCustom(MIXED_INDEX_FLUSH_COUNT);
+        metrics.incrementCustom(MIXED_INDEX_FLUSHED_DOCUMENTS, documents);
+        // Round to nearest ms: truncation would systematically undercount across many fast flushes.
+        metrics.incrementCustom(MIXED_INDEX_FLUSH_TIME_MS, (System.nanoTime() - flushStart + 500_000) / 1_000_000);
+    }
+
     @Override
     public void workerIterationEnd(final ScanMetrics metrics) {
         try {
@@ -293,8 +326,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 BackendTransaction mutator = writeTx.getTxHandle();
                 IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
                 if (indexType.isMixedIndex() && documentsPerStore.size() > 0) {
-                    mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
-                    documentsPerStore = new HashMap<>();
+                    restoreDocuments(mutator, indexType, metrics);
                 }
             }
         } catch (BackendException e) {

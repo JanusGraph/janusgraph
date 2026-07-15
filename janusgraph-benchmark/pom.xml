@@ -73,6 +73,18 @@
             <version>${jna.version}</version>
         </dependency>
 
+        <!-- Manually-enabled large-scale benchmark tests -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- needed by Cassandra ccm -->
         <dependency>
             <groupId>org.apache.cassandra</groupId>

@@ -389,6 +389,51 @@ is reached, so three settings determine reindex throughput:
     keep `bulk-refresh = false` and rely on the index becoming searchable at the
     next periodic refresh once the job completes.
 
+#### When the storage scan, not Elasticsearch, is the ceiling
+
+On the CQL backend the reindex pipeline is often **storage-scan-bound**, not
+Elasticsearch-bound: the scan job streams the whole table through a small,
+fixed number of scan queries (one per slice query — three for a vertex mixed
+index), and the reindex worker threads spend most of their time waiting for
+rows. The telltale signs are low Elasticsearch CPU, only a handful of reindex
+workers reporting activity regardless of the configured thread count, and the
+scan progress log (`StandardScannerExecutor`) showing a near-empty row queue.
+
+Three CQL options remove that ceiling:
+
+```properties
+# Scan each Murmur3 token range on its own pipeline (true parallel scan).
+storage.cql.parallel-scan-token-ranges = 8
+
+# Bigger pages for full scans only (OLTP reads keep storage.page-size).
+storage.cql.scan-page-size = 2000
+
+# Stop scan queries server-side at each row's per-key limit (default true).
+storage.cql.scan-per-partition-limit-enabled = true
+```
+
+-   **`parallel-scan-token-ranges`** splits the scan into disjoint token
+    ranges, each drained by its own data-puller threads and merged
+    independently — producer throughput scales roughly linearly until the
+    Cassandra cluster saturates. Start with a small multiple of the cluster's
+    node count and watch node load.
+-   **`scan-page-size`** decouples the scan fetch size from the OLTP-oriented
+    `storage.page-size`; a few thousand rows per page is usually a safe and
+    substantial improvement. Pages are additionally prefetched one ahead, so
+    the network wait overlaps row processing.
+-   **`scan-per-partition-limit-enabled`** pushes each scan query's per-key
+    limit into the query as `PER PARTITION LIMIT`. The scan's key-existence
+    (grounding) query has a per-key limit of 1, so on graphs with wide rows
+    (many edges or properties per vertex) this stops the grounding query from
+    streaming the entire table to the client just to prove each key exists.
+    On a CQL-compatible service without `PER PARTITION LIMIT` support the
+    pushdown auto-disables with a warning at store open.
+
+The scan-side and Elasticsearch-side settings compose: once the storage scan is
+parallel, raise the reindex thread count and, if Elasticsearch becomes the new
+bottleneck, scale its side (shards, replicas during rebuild, refresh interval)
+as described above.
+
 ### Further Reading
 
 -   Please refer to the [Elasticsearch homepage](https://www.elastic.co)

@@ -19,6 +19,7 @@ import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySlicesIterator;
 import org.janusgraph.diskstorage.keycolumnvalue.MultiSlicesQuery;
@@ -72,25 +73,54 @@ class SingleThreadRowsCollector extends RowsCollector {
         keyIterator = store.getKeys(new MultiSlicesQuery(queries), storeTx);
     }
 
-    void run()  {
+    void run() throws TemporaryBackendException {
+        Throwable failure = null;
         try {
             while (!interrupted && keyIterator.hasNext()) {
                 StaticBuffer key = keyIterator.next();
                 Map<SliceQuery, RecordIterator<Entry>> sliceToEntriesMap = keyIterator.getEntries();
-                if (!keyFilter.test(key)) continue;
+                // Per the KeySlicesIterator contract the per-key sub-iterators must be iterated over
+                // AND closed before the key iterator advances - also for filtered-out keys.
+                if (!keyFilter.test(key)) {
+                    closeEntryIterators(sliceToEntriesMap);
+                    continue;
+                }
                 Map<SliceQuery, EntryList> rowEntries = new HashMap<>(sliceToEntriesMap.size());
-                sliceToEntriesMap.forEach((sliceQuery, entryList) -> rowEntries.put(sliceQuery, EntryArrayList.of(entryList)));
-                rowQueue.put(new Row(key, rowEntries));
+                for (Map.Entry<SliceQuery, RecordIterator<Entry>> sliceEntries : sliceToEntriesMap.entrySet()) {
+                    try (RecordIterator<Entry> entries = sliceEntries.getValue()) {
+                        rowEntries.put(sliceEntries.getKey(), EntryArrayList.of(entries));
+                    }
+                }
+                putRow(new Row(key, rowEntries));
             }
         } catch (InterruptedException e) {
-            log.error("Data-pulling thread interrupted while waiting on queue or data", e);
+            // interrupt() was invoked (scan cancellation); mirror MultiThreadsRowsCollector and
+            // complete as interrupted without an alarming log - StandardScannerExecutor reports it.
+            interrupted = true;
         } catch (Throwable e) {
+            failure = e;
             log.error("Could not load data from storage", e);
         } finally {
             try {
                 keyIterator.close();
             } catch (IOException e) {
                 log.warn("Could not close storage iterator ", e);
+            }
+        }
+        if (failure != null) {
+            // Completing normally here would let the scan succeed with silently missing rows (for a
+            // reindex: an incomplete index getting ENABLED), so surface the storage error instead.
+            throw new TemporaryBackendException(
+                "Storage scan failed; failing the scan because its result would be incomplete", failure);
+        }
+    }
+
+    private static void closeEntryIterators(Map<SliceQuery, RecordIterator<Entry>> sliceToEntriesMap) {
+        for (RecordIterator<Entry> entries : sliceToEntriesMap.values()) {
+            try {
+                entries.close();
+            } catch (IOException e) {
+                log.warn("Could not close storage sub-iterator of a filtered-out key", e);
             }
         }
     }
