@@ -70,10 +70,17 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
     /** How often the running scan logs a one-line progress summary. */
     private static final long PROGRESS_LOG_PERIOD_MS = 30_000;
 
-    private boolean hasCompleted = false;
-    private boolean interrupted = false;
+    private boolean collectorCleanedUp = false;
+    private boolean storeTxRolledBack = false;
+    /**
+     * Written by the cancelling thread ({@link #interruptTask()}), read by the scan thread; volatile
+     * together with {@link #rowsCollector} so that - whichever way the cancel/setup race goes - either
+     * the canceller observes the collector and interrupts it, or the scan thread observes the flag.
+     */
+    private volatile boolean interrupted = false;
 
-    private RowsCollector rowsCollector;
+    /** Written by the scan thread during setup, read by the cancelling thread; see {@link #interrupted}. */
+    private volatile RowsCollector rowsCollector;
     private volatile BlockingQueue<Row> processorQueue;
     private volatile int processorQueueCapacity;
 
@@ -134,8 +141,19 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
         }  catch (Throwable e) {
             log.error("Exception trying to setup the job:", e);
             cleanupSilent();
-            job.workerIterationEnd(metrics);
+            endJobIterationSilently();
             setException(e);
+            return;
+        }
+
+        if (interrupted) {
+            // The scan was cancelled before the collector existed, so interruptTask() had nothing to
+            // interrupt: stop here instead of running a whole scan whose result would be discarded.
+            // (Both `interrupted` and `rowsCollector` are volatile, so a cancel concurrent with the
+            // setup above either sees the collector and interrupts it, or is seen by this check.)
+            cleanupSilent();
+            endJobIterationSilently();
+            setException(new InterruptedException("Scanner got interrupted"));
             return;
         }
 
@@ -196,7 +214,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
             } else {
                 log.error("Exception occurred during job execution:", e);
             }
-            job.workerIterationEnd(metrics);
+            endJobIterationSilently();
             setException(e);
         } finally {
             if (progressLogger != null) {
@@ -283,24 +301,82 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sca
     @Override
     protected void interruptTask() {
         interrupted = true;
-        rowsCollector.interrupt();
-    }
-
-    private void cleanup() throws BackendException {
-        if (!hasCompleted) {
-            hasCompleted = true;
-            if(rowsCollector != null){
-                rowsCollector.cleanup();
-            }
-            storeTx.rollback();
+        // Cancellation can arrive before run() has built the collector; the interrupted flag alone
+        // is enough then - run() completes the future as interrupted once it gets going.
+        final RowsCollector collector = rowsCollector;
+        if (collector != null) {
+            collector.interrupt();
         }
     }
 
+    /**
+     * Idempotent teardown, called once on the regular completion path and once more from the
+     * final cleanup-on-failure path. Collector cleanup and the transaction rollback are tracked
+     * separately: the rollback must run even when the collector cleanup throws, a rollback
+     * failure must not mask the collector failure (it is attached as suppressed), and a failed
+     * rollback stays retryable by the later cleanup attempt instead of being skipped forever.
+     */
+    private void cleanup() throws BackendException {
+        Throwable collectorFailure = null;
+        try {
+            if (!collectorCleanedUp) {
+                if(rowsCollector != null){
+                    rowsCollector.cleanup();
+                }
+                // Marked only on success so a failed cleanup (e.g. an iterator close error) stays
+                // retryable by the later cleanup attempt, exactly like the rollback below.
+                collectorCleanedUp = true;
+            }
+        } catch (Throwable t) {
+            collectorFailure = t;
+            throw t;
+        } finally {
+            if (!storeTxRolledBack) {
+                try {
+                    storeTx.rollback();
+                    storeTxRolledBack = true;
+                } catch (BackendException | RuntimeException | Error rollbackFailure) {
+                    if (collectorFailure == null) {
+                        throw rollbackFailure;
+                    }
+                    if (rollbackFailure instanceof Error) {
+                        // A JVM-level Error outranks the collector failure - propagate it as primary
+                        // and keep the collector failure visible as suppressed.
+                        rollbackFailure.addSuppressed(collectorFailure);
+                        throw rollbackFailure;
+                    }
+                    // Keep the collector failure primary; losing it to a rollback failure would hide
+                    // the root cause of the cleanup problem.
+                    collectorFailure.addSuppressed(rollbackFailure);
+                }
+            }
+        }
+    }
+
+    /**
+     * Truly silent variant of {@link #cleanup()} for teardown paths: cleanup() can also propagate
+     * RuntimeException/Error (e.g. from the transaction rollback), and letting anything escape here
+     * would skip the subsequent future completion - callers of get() would block forever - or kill
+     * the scan thread from a finally block.
+     */
     private void cleanupSilent() {
         try {
             cleanup();
-        } catch (BackendException ex) {
+        } catch (Throwable ex) {
             log.error("Encountered exception when trying to clean up after failure",ex);
+        }
+    }
+
+    /**
+     * {@code workerIterationEnd} runs user job code; on teardown paths a failure in it must neither
+     * prevent the future from completing (a throw before {@code setException} would leave callers of
+     * {@code get()} blocked forever) nor mask the primary failure being reported.
+     */
+    private void endJobIterationSilently() {
+        try {
+            job.workerIterationEnd(metrics);
+        } catch (Throwable e) {
+            log.warn("Exception occurred while ending the job iteration during scan teardown", e);
         }
     }
 
