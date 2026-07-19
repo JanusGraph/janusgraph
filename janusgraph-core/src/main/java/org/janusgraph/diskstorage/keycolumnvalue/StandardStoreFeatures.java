@@ -14,8 +14,11 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue;
 
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
+
+import java.util.Comparator;
 
 /**
  * Immutable, {@link Builder}-customizable implementation of StoreFeatures.
@@ -30,6 +33,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     private final boolean batchMutation;
     private final boolean localKeyPartition;
     private final boolean keyOrdered;
+    private final Comparator<StaticBuffer> scanKeyOrder;
     private final boolean distributed;
     private final boolean transactional;
     private final boolean keyConsistent;
@@ -84,6 +88,11 @@ public class StandardStoreFeatures implements StoreFeatures {
     @Override
     public boolean isKeyOrdered() {
         return keyOrdered;
+    }
+
+    @Override
+    public Comparator<StaticBuffer> getScanKeyOrder() {
+        return scanKeyOrder;
     }
 
     @Override
@@ -178,6 +187,7 @@ public class StandardStoreFeatures implements StoreFeatures {
         private boolean batchMutation;
         private boolean localKeyPartition;
         private boolean keyOrdered;
+        private Comparator<StaticBuffer> scanKeyOrder;
         private boolean distributed;
         private boolean transactional;
         private boolean timestamps;
@@ -212,6 +222,7 @@ public class StandardStoreFeatures implements StoreFeatures {
             batchMutation(template.hasBatchMutation());
             localKeyPartition(template.hasLocalKeyPartition());
             keyOrdered(template.isKeyOrdered());
+            scanKeyOrder(template.getScanKeyOrder());
             distributed(template.isDistributed());
             transactional(template.hasTxIsolation());
             timestamps(template.hasTimestamps());
@@ -276,6 +287,12 @@ public class StandardStoreFeatures implements StoreFeatures {
 
         public Builder keyOrdered(boolean b) {
             keyOrdered = b;
+            return this;
+        }
+
+        /** See {@link StoreFeatures#getScanKeyOrder()}; null (the default) means not computable. */
+        public Builder scanKeyOrder(Comparator<StaticBuffer> order) {
+            scanKeyOrder = order;
             return this;
         }
 
@@ -352,7 +369,7 @@ public class StandardStoreFeatures implements StoreFeatures {
         public StandardStoreFeatures build() {
             return new StandardStoreFeatures(consistentScan, unorderedScan, orderedScan,
                     multiQuery, locking, batchMutation, localKeyPartition,
-                    keyOrdered, distributed, transactional, keyConsistent,
+                    keyOrdered, scanKeyOrder, distributed, transactional, keyConsistent,
                     timestamps, preferredTimestamps, cellLevelTTL,
                     storeLevelTTL, visibility, supportsPersist,
                     keyConsistentTxConfig,
@@ -363,7 +380,8 @@ public class StandardStoreFeatures implements StoreFeatures {
 
     private StandardStoreFeatures(boolean consistentScan, boolean unorderedScan, boolean orderedScan,
                                   boolean multiQuery, boolean locking, boolean batchMutation,
-                                  boolean localKeyPartition, boolean keyOrdered, boolean distributed,
+                                  boolean localKeyPartition, boolean keyOrdered,
+                                  Comparator<StaticBuffer> scanKeyOrder, boolean distributed,
                                   boolean transactional, boolean keyConsistent,
                                   boolean timestamps, TimestampProviders preferredTimestamps,
                                   boolean cellLevelTTL, boolean storeLevelTTL,
@@ -380,6 +398,7 @@ public class StandardStoreFeatures implements StoreFeatures {
         this.batchMutation = batchMutation;
         this.localKeyPartition = localKeyPartition;
         this.keyOrdered = keyOrdered;
+        this.scanKeyOrder = scanKeyOrder;
         this.distributed = distributed;
         this.transactional = transactional;
         this.keyConsistent = keyConsistent;

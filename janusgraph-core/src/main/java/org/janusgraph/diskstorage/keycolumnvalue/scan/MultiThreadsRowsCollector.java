@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -88,20 +89,23 @@ class MultiThreadsRowsCollector extends RowsCollector {
     /**
      * Per-secondary-query buffer of rows taken from the data queue but not yet matched to a
      * grounding key, oldest first; see {@link #secondaryEntries(int, StaticBuffer)}. Index 0
-     * (the grounding query) is unused - its rows are consumed one per merge iteration. On a
-     * key-ordered scan the buffer holds at most one row (the merge-join look-ahead).
+     * (the grounding query) is unused - its rows are consumed one per merge iteration. When the
+     * scan order is known the buffer holds at most one row (the merge-join look-ahead).
      */
     private Deque<SliceResult>[] pendingRows;
 
     /**
-     * Whether this scan iterates keys in their natural {@link StaticBuffer} order for every query,
-     * which lets the merge classify any row against the current grounding key by comparison. Token-
-     * ordered scans (e.g. CQL/Murmur3) iterate in a backend-internal order the merge cannot compute,
-     * so they use the bounded-buffer recovery in {@link #bufferedSecondaryEntries(int, StaticBuffer)}
-     * instead. Targeted scans (keysToScan) and supplier-provided iterators (token-range splits) make
-     * no natural-order promise either.
+     * The order in which this scan's streams iterate keys, when it is computable client-side; null
+     * otherwise. A known order lets the merge classify any row against the current grounding key by
+     * comparison (the lossless merge join). It is either the store-provided order
+     * ({@link StoreFeatures#getScanKeyOrder()}, e.g. CQL/Murmur3 token order - which split iterators
+     * of one token range follow too) or, on key-ordered whole-key-space scans
+     * ({@link StoreFeatures#isKeyOrdered()}), the natural {@link StaticBuffer} order. Scans with no
+     * computable order use the bounded-buffer recovery in
+     * {@link #bufferedSecondaryEntries(int, StaticBuffer)} instead. Targeted scans (keysToScan)
+     * iterate in the caller's list order and make neither promise.
      */
-    private final boolean scanKeysNaturallyOrdered;
+    private final Comparator<StaticBuffer> scanKeyOrder;
 
     /**
      * Upper bound of {@link #pendingRows} per query on scans without a computable key order. Large
@@ -122,8 +126,16 @@ class MultiThreadsRowsCollector extends RowsCollector {
      */
     private static final int MAX_BLOCKING_TAKES_PER_KEY = 8;
 
-    /** Preceding grounding key of a natural-order multi-query scan; see {@link #verifyNaturalKeyOrder}. */
+    /** Preceding grounding key of a known-order multi-query scan; see {@link #verifyScanKeyOrder}. */
     private StaticBuffer previousGroundingKey;
+
+    /**
+     * Whether {@link #scanKeyOrder} came from {@link StoreFeatures#getScanKeyOrder()} rather than
+     * being the natural order implied by {@link StoreFeatures#isKeyOrdered()}. Order violations
+     * name the promise that was actually relied on, and a store may legally provide the natural
+     * comparator, so comparator identity cannot tell the two apart.
+     */
+    private final boolean scanKeyOrderIsStoreProvided;
 
     MultiThreadsRowsCollector(
         KeyColumnValueStore store,
@@ -164,8 +176,17 @@ class MultiThreadsRowsCollector extends RowsCollector {
         this.graphConfiguration = graphConfiguration;
         this.keyIteratorSupplier = keyIteratorSupplier;
         this.threadNameSuffix = threadNameSuffix;
-        this.scanKeysNaturallyOrdered =
-            storeFeatures.isKeyOrdered() && keysToScan == null && keyIteratorSupplier == null;
+        Comparator<StaticBuffer> order = null;
+        boolean storeProvided = false;
+        if (keysToScan == null) {
+            order = storeFeatures.getScanKeyOrder();
+            storeProvided = order != null;
+            if (order == null && keyIteratorSupplier == null && storeFeatures.isKeyOrdered()) {
+                order = Comparator.naturalOrder();
+            }
+        }
+        this.scanKeyOrder = order;
+        this.scanKeyOrderIsStoreProvided = storeProvided;
 
         this.dataQueues = new BlockingQueue[queries.size()];
         this.pullThreads = new DataPuller[queries.size()];
@@ -233,8 +254,8 @@ class MultiThreadsRowsCollector extends RowsCollector {
                 final SliceResult primary = nextPrimaryRow();
                 if (primary == null) break; //Termination condition - primary query has no more data
                 final StaticBuffer key = primary.key;
-                if (scanKeysNaturallyOrdered && numQueries > 1) {
-                    verifyNaturalKeyOrder(key);
+                if (scanKeyOrder != null && numQueries > 1) {
+                    verifyScanKeyOrder(key);
                 }
 
                 final Map<SliceQuery, EntryList> queryResults = new HashMap<>(numQueries);
@@ -285,18 +306,22 @@ class MultiThreadsRowsCollector extends RowsCollector {
     /**
      * The merge join in {@link #orderedSecondaryEntries(int, StaticBuffer)} drops every row comparing
      * below the current grounding key as provably stale, which is only sound while the scan really
-     * yields keys in their natural order - the promise {@link StoreFeatures#isKeyOrdered()} makes for
-     * whole-key-space scans. A store that broke it would not fail visibly: rows of live keys would be
-     * dropped as stale and the scan would complete "successfully" with silently missing data (for a
-     * reindex: an incomplete index getting ENABLED). So the promise is verified against the grounding
-     * stream as it is consumed - all of one scan's streams share its iteration order - and a violation
-     * fails the scan instead. Single-query scans skip this: nothing is merged, so no row can be dropped.
+     * yields keys in the order the store declared - natural order under
+     * {@link StoreFeatures#isKeyOrdered()}, or the store-provided {@link StoreFeatures#getScanKeyOrder()}
+     * (for CQL/Murmur3: a client-side token computation that must match the server's). A store that
+     * broke the promise would not fail visibly: rows of live keys would be dropped as stale and the
+     * scan would complete "successfully" with silently missing data (for a reindex: an incomplete
+     * index getting ENABLED). So the promise is verified against the grounding stream as it is
+     * consumed - all of one scan's streams share its iteration order - and a violation fails the
+     * scan instead. Single-query scans skip this: nothing is merged, so no row can be dropped.
      */
-    private void verifyNaturalKeyOrder(final StaticBuffer key) throws TemporaryBackendException {
-        if (previousGroundingKey != null && previousGroundingKey.compareTo(key) >= 0) {
+    private void verifyScanKeyOrder(final StaticBuffer key) throws TemporaryBackendException {
+        if (previousGroundingKey != null && scanKeyOrder.compare(previousGroundingKey, key) >= 0) {
+            final String declaredOrder = scanKeyOrderIsStoreProvided
+                ? "the store-provided scan order [" + scanKeyOrder + "] it declared (StoreFeatures.getScanKeyOrder())"
+                : "the natural key order it declared (StoreFeatures.isKeyOrdered())";
             throw new TemporaryBackendException("Scan of store [" + store.getName() + "] returned keys out of " +
-                "their natural order although the store declares itself key-ordered (StoreFeatures.isKeyOrdered()); " +
-                "failing the scan because the ordered merge drops out-of-order rows, so its result would silently miss data");
+                declaredOrder + "; failing the scan because the ordered merge drops out-of-order rows, so its result would silently miss data");
         }
         previousGroundingKey = key;
     }
@@ -313,22 +338,24 @@ class MultiThreadsRowsCollector extends RowsCollector {
      * {@link EntryList#EMPTY_LIST} for the query - for a reindex, documents missing that query's
      * data for the rest of the scan.
      * <p>
-     * On a key-ordered scan every row is classified directly against the current grounding key
-     * (classic merge join, at most one look-ahead row buffered). Otherwise the shared iteration
-     * order still proves any buffered row OLDER than a matching row stale, so a bounded buffer
-     * recovers from stale rows as later keys match. Dropping a stale row loses nothing: a key
-     * written after the scan passed it is indexed by the normal live-write path, never by the scan.
+     * When the scan's key order is known ({@link #scanKeyOrder}) every row is classified directly
+     * against the current grounding key (classic merge join, at most one look-ahead row buffered).
+     * Otherwise the shared iteration order still proves any buffered row OLDER than a matching row
+     * stale, so a bounded buffer recovers from stale rows as later keys match. Dropping a stale row
+     * loses nothing: a key written after the scan passed it is indexed by the normal live-write
+     * path, never by the scan.
      */
     private EntryList secondaryEntries(final int queryIndex, final StaticBuffer key)
             throws InterruptedException, TemporaryBackendException {
-        return scanKeysNaturallyOrdered ? orderedSecondaryEntries(queryIndex, key)
+        return scanKeyOrder != null ? orderedSecondaryEntries(queryIndex, key)
             : bufferedSecondaryEntries(queryIndex, key);
     }
 
     /**
-     * Merge-join for key-ordered scans: a strict key comparison classifies every row as stale
-     * (behind the grounding stream - dropped), matching (consumed), or ahead (kept as the single
-     * look-ahead row). Stale rows can never accumulate, no matter how sparse the query.
+     * Merge-join for scans whose key order is known ({@link #scanKeyOrder}): a strict key comparison
+     * classifies every row as stale (behind the grounding stream - dropped), matching (consumed), or
+     * ahead (kept as the single look-ahead row). Stale rows can never accumulate, no matter how
+     * sparse the query.
      */
     private EntryList orderedSecondaryEntries(final int queryIndex, final StaticBuffer key)
             throws InterruptedException, TemporaryBackendException {
@@ -349,7 +376,7 @@ class MultiThreadsRowsCollector extends RowsCollector {
                     }
                     next = qr;
                 }
-                final int order = next.key.compareTo(key);
+                final int order = scanKeyOrder.compare(next.key, key);
                 if (order == 0) {
                     assert queries.get(queryIndex).equals(next.query);
                     return next.entries;

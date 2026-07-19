@@ -18,6 +18,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.cql.CQLStoreManager;
+import org.janusgraph.diskstorage.cql.TokenOrderKeyComparator;
 import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.util.system.NetworkUtil;
@@ -89,6 +90,18 @@ public class CQLStoreFeaturesBuilder {
             case "RandomPartitioner":
             case "Murmur3Partitioner": {
                 fb.keyOrdered(false).orderedScan(false).unorderedScan(true);
+                // Murmur3 ring order is client-computable through the driver's token factory; declaring it
+                // puts multi-query scans (e.g. a reindex) on the lossless merge-join strategy instead of the
+                // bounded-buffer one, whose recovery from writes concurrent with the scan is capped. The
+                // TokenMap is absent when metadata token-map support is disabled (the escape hatch back to
+                // the buffered merge) or the partitioner is unknown to the driver (e.g. Amazon Keyspaces'
+                // DefaultPartitioner); RandomPartitioner is deliberately not declared - its order would be
+                // computable the same way, but no CI covers it and an undetected deviation would fail every
+                // multi-query scan via the framework's order verification.
+                if ("Murmur3Partitioner".equals(partitioner)) {
+                    session.getMetadata().getTokenMap()
+                        .ifPresent(tokenMap -> fb.scanKeyOrder(new TokenOrderKeyComparator(tokenMap)));
+                }
                 deployment = DistributedStoreManager.Deployment.REMOTE;
                 break;
             }

@@ -18,6 +18,7 @@ import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.KeyColumnValueStoreUtil;
+import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.StoreMetaData;
 import org.janusgraph.diskstorage.TemporaryBackendException;
@@ -33,6 +34,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.EntryArrayList;
 import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
@@ -44,8 +46,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -184,7 +188,60 @@ public class ScanStaleSecondaryRowTest {
         final Throwable cause = failure.getCause();
         assertTrue(cause instanceof TemporaryBackendException,
             "an order-contract violation must surface as a backend failure but was: " + cause);
-        assertTrue(cause.getMessage().contains("natural order"), cause.getMessage());
+        assertTrue(cause.getMessage().contains("out of the natural key order"), cause.getMessage());
+    }
+
+    /**
+     * A store-provided scan-order comparator ({@code StoreFeatures.getScanKeyOrder()}) must put the
+     * merge on the lossless merge-join strategy even though the scan is not naturally ordered
+     * ({@code keyOrdered=false}, as token-ordered backends declare). The 45-row stale burst exceeds
+     * the buffered strategy's pending buffer, so only the merge join keeps every key's data - this
+     * fails with 20 of 50 keys blanked if the comparator is ignored.
+     */
+    @Test
+    public void storeProvidedScanOrderMustDriveTheLosslessMergeJoin() throws Exception {
+        loadData(SPARSE_STRIDE);
+        final Map<Integer, Integer> staleBursts = new HashMap<>();
+        staleBursts.put(20, 45);
+
+        runScanAndAssert(withScanKeyOrder(withoutNaturalKeyOrder(manager), Comparator.naturalOrder()),
+            staleBursts, NUM_KEYS / SPARSE_STRIDE);
+    }
+
+    /**
+     * Same protection as the natural-order tripwire, for a store-PROVIDED order: when the scan's
+     * streams do not actually iterate in the order the comparator declares (here: the comparator
+     * says reversed, the store iterates naturally - what a wrong client-side token computation
+     * would look like on a real backend), the scan must fail instead of silently dropping rows
+     * that the merge join misclassifies as stale.
+     */
+    @Test
+    public void misdeclaredStoreProvidedScanOrderMustFailTheScan() throws Exception {
+        loadData(1);
+
+        final ExecutionException failure = assertThrows(ExecutionException.class,
+            () -> runScan(withScanKeyOrder(withoutNaturalKeyOrder(manager), Comparator.reverseOrder())));
+
+        final Throwable cause = failure.getCause();
+        assertTrue(cause instanceof TemporaryBackendException,
+            "an order-contract violation must surface as a backend failure but was: " + cause);
+        assertTrue(cause.getMessage().contains("out of the store-provided scan order"), cause.getMessage());
+    }
+
+    /**
+     * End-to-end shape of a token-ordered backend with a client-computable order (CQL/Murmur3 with
+     * a token comparator): every stream iterates in a consistent order that is NOT the natural one
+     * (simulated by serving all streams in reverse), the store declares the matching comparator,
+     * and a stale burst larger than the buffered strategy's pending buffer arrives. The merge join
+     * under the provided order must keep every key's data and drop every stale row.
+     */
+    @Test
+    public void staleBurstsUnderAStoreProvidedNonNaturalOrderMustBeLossless() throws Exception {
+        loadData(SPARSE_STRIDE);
+        final Map<Integer, Integer> staleBursts = new HashMap<>();
+        staleBursts.put(20, 45);
+
+        assertScanKeepsSecondaryData(runScan(reversedOrderManager(manager, staleBursts)), NUM_KEYS / SPARSE_STRIDE);
     }
 
     /**
@@ -204,8 +261,10 @@ public class ScanStaleSecondaryRowTest {
 
     private void runScanAndAssert(KeyColumnValueStoreManager scanManager, Map<Integer, Integer> staleBursts,
                                   int expectedRowsWithSecondary) throws Exception {
-        final ScanMetrics metrics = runScan(staleRowInjectingManager(scanManager, staleBursts));
+        assertScanKeepsSecondaryData(runScan(staleRowInjectingManager(scanManager, staleBursts)), expectedRowsWithSecondary);
+    }
 
+    private static void assertScanKeepsSecondaryData(ScanMetrics metrics, int expectedRowsWithSecondary) {
         assertEquals(NUM_KEYS, metrics.getCustom(PROCESSED_ROWS),
             "every real key must surface exactly once; stale keys must not surface at all");
         assertEquals(expectedRowsWithSecondary, metrics.getCustom(ROWS_WITH_SECONDARY),
@@ -234,6 +293,150 @@ public class ScanStaleSecondaryRowTest {
             @Override
             public StoreFeatures getFeatures() {
                 return new StandardStoreFeatures.Builder(real.getFeatures()).keyOrdered(false).build();
+            }
+        };
+    }
+
+    /** Declares a store-provided scan order ({@code StoreFeatures.getScanKeyOrder()}) on top of {@code real}. */
+    private static KeyColumnValueStoreManager withScanKeyOrder(KeyColumnValueStoreManager real,
+                                                               Comparator<StaticBuffer> scanKeyOrder) {
+        return new KCVSManagerProxy(real) {
+            @Override
+            public StoreFeatures getFeatures() {
+                return new StandardStoreFeatures.Builder(real.getFeatures()).scanKeyOrder(scanKeyOrder).build();
+            }
+        };
+    }
+
+    /**
+     * Serves every query's stream in REVERSE natural order - a consistent, deterministic iteration
+     * order that is not the natural one, the shape of a token-ordered backend - and declares the
+     * matching comparator via {@code StoreFeatures.getScanKeyOrder()} (with {@code keyOrdered}
+     * masked off). Stale keys are injected into the secondary stream at their correct positions in
+     * the SERVED (reversed) order: after the n-th served secondary row, keys sorting between it and
+     * the next served row.
+     */
+    private static KeyColumnValueStoreManager reversedOrderManager(KeyColumnValueStoreManager real,
+                                                                   Map<Integer, Integer> staleBursts) {
+        return new KCVSManagerProxy(real) {
+            @Override
+            public StoreFeatures getFeatures() {
+                return new StandardStoreFeatures.Builder(real.getFeatures())
+                    .keyOrdered(false)
+                    .scanKeyOrder(Comparator.reverseOrder())
+                    .build();
+            }
+
+            @Override
+            public KeyColumnValueStore openDatabase(String name, StoreMetaData.Container metaData) throws BackendException {
+                final KeyColumnValueStore store = real.openDatabase(name, metaData);
+                return new KCVSProxy(store) {
+                    @Override
+                    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws BackendException {
+                        final List<KeyRow> rows = materialize(store.getKeys(columnQuery, unwrapTx(txh)));
+                        Collections.reverse(rows);
+                        if (columnQuery.equals(SECONDARY_QUERY)) {
+                            injectStaleRowsReversed(rows, staleBursts);
+                        } else if (!columnQuery.equals(GROUNDING_QUERY)) {
+                            throw new IllegalStateException("Unexpected scan query: " + columnQuery);
+                        }
+                        return keyIteratorOver(rows);
+                    }
+                };
+            }
+        };
+    }
+
+    /** A fully materialized scan row: the key plus the entries of one slice query. */
+    private static final class KeyRow {
+        final StaticBuffer key;
+        final EntryList entries;
+
+        KeyRow(StaticBuffer key, EntryList entries) {
+            this.key = key;
+            this.entries = entries;
+        }
+    }
+
+    private static List<KeyRow> materialize(KeyIterator keys) throws BackendException {
+        final List<KeyRow> rows = new ArrayList<>();
+        try (KeyIterator iterator = keys) {
+            while (iterator.hasNext()) {
+                final StaticBuffer key = iterator.next();
+                rows.add(new KeyRow(key, EntryArrayList.of(iterator.getEntries())));
+            }
+        } catch (IOException e) {
+            throw new PermanentBackendException(e);
+        }
+        return rows;
+    }
+
+    /**
+     * Inserts, after the n-th row (n = map key, 1-based, counted over the rows already in the
+     * list), a burst of stale rows sorting strictly between that row and the following one in the
+     * list's (reversed) order: suffixed copies of the FOLLOWING key sort naturally just above it,
+     * i.e. just below the n-th row under the reversed comparator, and descending suffixes keep the
+     * burst itself ordered in the served (reversed) direction.
+     */
+    private static void injectStaleRowsReversed(List<KeyRow> rows, Map<Integer, Integer> staleBursts) {
+        final List<KeyRow> result = new ArrayList<>(rows.size());
+        for (int i = 0; i < rows.size(); i++) {
+            result.add(rows.get(i));
+            final Integer burst = staleBursts.get(i + 1);
+            if (burst != null) {
+                if (i + 1 >= rows.size()) {
+                    throw new IllegalStateException("Stale burst after the last row is not representable");
+                }
+                final StaticBuffer nextRealKey = rows.get(i + 1).key;
+                for (int sequence = burst - 1; sequence >= 0; sequence--) {
+                    result.add(new KeyRow(staleKeyAfter(nextRealKey, sequence), EntryArrayList.of(staleEntries())));
+                }
+            }
+        }
+        rows.clear();
+        rows.addAll(result);
+    }
+
+    private static KeyIterator keyIteratorOver(List<KeyRow> rows) {
+        final Iterator<KeyRow> it = rows.iterator();
+        return new KeyIterator() {
+            private KeyRow current;
+
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override
+            public StaticBuffer next() {
+                current = it.next();
+                return current.key;
+            }
+
+            @Override
+            public RecordIterator<Entry> getEntries() {
+                final Iterator<Entry> entries = current.entries.iterator();
+                return new RecordIterator<Entry>() {
+                    @Override
+                    public boolean hasNext() {
+                        return entries.hasNext();
+                    }
+
+                    @Override
+                    public Entry next() {
+                        return entries.next();
+                    }
+
+                    @Override
+                    public void close() {
+                        // NOP
+                    }
+                };
+            }
+
+            @Override
+            public void close() {
+                // NOP: fully materialized
             }
         };
     }

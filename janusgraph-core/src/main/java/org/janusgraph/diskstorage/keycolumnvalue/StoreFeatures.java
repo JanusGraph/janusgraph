@@ -14,9 +14,12 @@
 
 package org.janusgraph.diskstorage.keycolumnvalue;
 
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
+
+import java.util.Comparator;
 
 /**
  * Describes features supported by a storage backend.
@@ -80,6 +83,26 @@ public interface StoreFeatures {
      *
      */
     boolean isKeyOrdered();
+
+    /**
+     * A total order over keys consistent with the iteration order of this backend's key scans, or
+     * null when that order is not computable client-side (the default). When non-null, every
+     * whole-key-space scan of a store of this backend - {@link KeyColumnValueStore#getKeys(SliceQuery,
+     * StoreTransaction)}, {@link KeyColumnValueStore#getKeys(KeyRangeQuery, StoreTransaction)} and
+     * every split iterator of a {@link SplittableScanStore} - MUST yield keys strictly increasing
+     * under this comparator. Scan-order violations fail multi-query scans (the scan framework
+     * verifies the promise as it consumes rows).
+     * <p>
+     * Backends whose scans iterate in the natural {@link StaticBuffer} order need not implement
+     * this; declaring {@link #isKeyOrdered()} already lets the scan framework merge with the natural
+     * order. This hook is for backends with a deterministic but non-natural scan order that a client
+     * can compute - e.g. Cassandra's token order under the Murmur3 partitioner - and enables the
+     * lossless merge-join strategy of multi-query scans in place of the bounded-buffer strategy
+     * (whose recovery from keys written concurrently with the scan is capped).
+     */
+    default Comparator<StaticBuffer> getScanKeyOrder() {
+        return null;
+    }
 
     /**
      * Whether this storage backend writes and reads data from more than one
