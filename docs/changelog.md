@@ -225,6 +225,24 @@ returning a partial result, and it fails fast: the error surfaces as soon as the
 end-of-data marker is observed rather than after the remaining key space has been streamed and
 discarded.
 
+##### Scan merge no longer loses data on writes concurrent with the scan
+
+The multi-query scan merge matches each secondary slice query's rows against the grounding
+(key-existence) stream. A key written while the scan runs can appear only in a secondary stream —
+the grounding puller had already passed its position — and such a row can never match. Previously
+it permanently occupied the merge's single pending slot for that query, so every later key was
+silently merged with empty results for the query: a reindex on a live graph produced documents
+missing that query's data for the rest of the scan. On backends whose scans iterate keys in their
+natural order the merge now classifies every row directly against the grounding key (a merge join),
+so stale rows are dropped outright; on token-ordered backends (such as CQL with the Murmur3
+partitioner), where that order is not computable client-side, a bounded per-query buffer of
+unmatched rows recovers by dropping the rows the grounding stream has provably passed. Keys written
+during the scan are unaffected either way: they are indexed by normal live-write index maintenance,
+never by the scan itself. Because the merge join is only sound on a scan that really iterates keys
+in their natural order, a multi-query scan now also verifies that promise against the stream as it
+is consumed and fails the scan if the store violates its declared key order, instead of silently
+dropping rows.
+
 ##### Scan progress logging
 
 `StandardScannerExecutor` now logs a start line (job, query count, processor count, collector type,
