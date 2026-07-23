@@ -1,0 +1,90 @@
+# Copyright 2026 JanusGraph Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: CI CDC
+
+on:
+  pull_request:
+    paths-ignore:
+    - 'docs/**'
+    - '.github/workflows/ci-docs.yml'
+    - '.github/ISSUE_TEMPLATE/**'
+    - 'requirements.txt'
+    - 'mkdocs.yml'
+    - 'docs.Dockerfile'
+    - '*.md'
+  push:
+    paths-ignore:
+    - 'docs/**'
+    - '.github/workflows/ci-docs.yml'
+    - '.github/ISSUE_TEMPLATE/**'
+    - 'requirements.txt'
+    - 'mkdocs.yml'
+    - 'docs.Dockerfile'
+    - '*.md'
+    branches-ignore:
+      - 'dependabot/**'
+
+env:
+  # (The ElasticSearch test container heap is capped by JanusGraphElasticsearchContainer itself, which hard-codes
+  # ES_JAVA_OPTS for the container -- a workflow-level ES_JAVA_OPTS env var would not reach it.)
+  BUILD_MAVEN_OPTS: "-DskipTests=true --batch-mode --also-make"
+  VERIFY_MAVEN_OPTS: "-Pcoverage"
+
+jobs:
+  tests:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Java 8 / 11: the module compiles and its unit tests run. The Docker/Testcontainers tests
+          # (Kafka+ES worker test and the full Cassandra-CDC->Debezium->Kafka->ES pipeline) are excluded
+          # from compilation here (see janusgraph-cdc/pom.xml) and run only on the Java 17 job below.
+          - name: cdc-java8
+            java: 8
+          - name: cdc-java11
+            install-args: "-Pjava-11"
+            java: 11
+          # Java 17: the cassandra-cdc-e2e Maven profile auto-activates (Debezium 3.x and Testcontainers
+          # require Java 17+), re-including and running the real-container tests, including the full
+          # Cassandra-CDC -> Debezium -> Kafka -> ElasticSearch pipeline against Docker.
+          - name: cdc-e2e-java17
+            java: 17
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: zulu
+      - run: mvn clean install --projects janusgraph-cdc ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
+      - run: mvn verify --projects janusgraph-cdc ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.install-args }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-reports-cdc-${{ matrix.name }}
+          path: target/jacoco-combined.exec
+      - uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          name: codecov-cdc-${{ matrix.name }}

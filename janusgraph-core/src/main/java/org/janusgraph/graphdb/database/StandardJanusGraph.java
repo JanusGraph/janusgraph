@@ -75,6 +75,8 @@ import org.janusgraph.graphdb.util.MultiSliceQueriesGroupingUtil;
 import org.janusgraph.util.IDUtils;
 import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
+import org.janusgraph.graphdb.database.util.IndexAppliesToFunction;
+import org.janusgraph.graphdb.database.util.IndexRecordUtil;
 import org.janusgraph.graphdb.database.log.LogTxStatus;
 import org.janusgraph.graphdb.database.log.TransactionLogHeader;
 import org.janusgraph.graphdb.database.management.ManagementLogger;
@@ -103,6 +105,7 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.graphdb.types.CompositeIndexType;
+import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.BaseRelationType;
@@ -172,6 +175,16 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     }
 
     private final GraphDatabaseConfiguration config;
+    /** Backing index names configured as cdc-only (index.[X].cdc.enabled=true and cdc.synchronous=false):
+     *  their mixed-index mutations are skipped on the synchronous commit path and applied asynchronously
+     *  by the CDC pipeline (janusgraph-cdc worker) instead. */
+    private final Set<String> cdcOnlyBackingIndexes;
+    /** The index filter used when generating commit-time index updates: standard applicability
+     *  ({@link IndexRecordUtil#FULL_INDEX_APPLIES_TO_FILTER}) minus the mixed indexes on cdc-only backends -- their
+     *  updates are filtered out at GENERATION (not just skipped at write time) so the hot commit path never pays for
+     *  serializing entries that would only be discarded. Composite indexes are never filtered. Reindex/repair jobs
+     *  and transaction recovery use their own filters and are unaffected -- they still write cdc-only indexes. */
+    private final IndexAppliesToFunction commitIndexAppliesToFilter;
     private final Backend backend;
     private final IDManager idManager;
     private final boolean wholeRowDeletionEnabled;
@@ -212,6 +225,21 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     public StandardJanusGraph(GraphDatabaseConfiguration configuration) {
 
         this.config = configuration;
+        this.cdcOnlyBackingIndexes =
+            GraphDatabaseConfiguration.getCdcBackingIndexNames(configuration.getConfiguration(), true);
+        this.commitIndexAppliesToFilter = cdcOnlyBackingIndexes.isEmpty()
+            ? IndexRecordUtil.FULL_INDEX_APPLIES_TO_FILTER
+            : (index, element) -> IndexRecordUtil.indexAppliesTo(index, element) && !isCdcOnlyMixedIndex(index);
+        if (!cdcOnlyBackingIndexes.isEmpty()) {
+            // There is no way to validate from here that a capture pipeline (e.g. Cassandra CDC + Debezium + Kafka +
+            // the janusgraph-cdc worker) is actually running, so make the trade-off loud: with cdc-only configured and
+            // no pipeline, mixed indexes silently stop being maintained (and the WAL records these transactions as
+            // fully successful, so transaction recovery will not repair them either).
+            log.warn("Mixed index backend(s) {} are configured cdc-only (index.[X].cdc.enabled=true and "
+                + "index.[X].cdc.synchronous=false): synchronous index writes are SKIPPED for them. Ensure the external "
+                + "CDC pipeline and the janusgraph-cdc worker are running, otherwise these indexes will not be updated.",
+                cdcOnlyBackingIndexes);
+        }
         this.backend = configuration.getBackend();
 
         this.name = configuration.getGraphName();
@@ -782,7 +810,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                     mutator.acquireEdgeLock(idManager.getKey(vertex.id()), entry);
                 }
             }
-            indexUpdates.addAll(indexSerializer.getIndexUpdates(del, tx));
+            indexUpdates.addAll(indexSerializer.getIndexUpdates(del, commitIndexAppliesToFilter, tx));
         }
     }
 
@@ -813,7 +841,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                     mutator.acquireEdgeLock(idManager.getKey(vertex.id()), entry.getColumn());
                 }
             }
-            indexUpdates.addAll(indexSerializer.getIndexUpdates(add, tx));
+            indexUpdates.addAll(indexSerializer.getIndexUpdates(add, commitIndexAppliesToFilter, tx));
         }
     }
 
@@ -824,7 +852,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                                                  final StandardJanusGraphTx tx,
                                                  final List<IndexUpdate> indexUpdates) {
         indexUpdates.addAll(mutatedProperties.keySet().parallelStream()
-            .flatMap(v -> indexSerializer.getIndexUpdates(v, mutatedProperties.get(v), tx))
+            .flatMap(v -> indexSerializer.getIndexUpdates(v, mutatedProperties.get(v), commitIndexAppliesToFilter, tx))
             .collect(Collectors.toList()));
     }
 
@@ -909,6 +937,11 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         }
     }
 
+    /** Whether this is a mixed index on a cdc-only backend, i.e. one whose synchronous updates are not generated. */
+    private boolean isCdcOnlyMixedIndex(IndexType index) {
+        return index.isMixedIndex() && cdcOnlyBackingIndexes.contains(((MixedIndexType) index).getBackingIndexName());
+    }
+
     /**
      * Add index updates
      *
@@ -926,6 +959,8 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                     mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(update.getEntry()));
             } else {
                 final IndexUpdate<String,IndexEntry> update = indexUpdate;
+                // cdc-only mixed indexes never reach this loop: commitIndexAppliesToFilter already excluded them
+                // when the updates were generated, so their entries are neither serialized nor written here.
                 has2iMods = true;
                 IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
                 String indexStore = ((MixedIndexType)update.getIndex()).getStoreName();

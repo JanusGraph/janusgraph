@@ -39,6 +39,13 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+        <!-- Custom-vertex-id test backend: berkeleyje (OrderedKeyValueStore) does not support custom vid types. -->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-inmemory</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>

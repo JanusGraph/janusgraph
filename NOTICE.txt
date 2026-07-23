@@ -22,6 +22,7 @@ It also includes software from other open source projects including, but not lim
  * Apache Groovy [http://groovy-lang.org/]
  * Apache HBase [https://hbase.apache.org/]
  * Apache Hadoop [https://hadoop.apache.org/]
+ * Apache Kafka [https://kafka.apache.org/]
  * Apache Kerby [https://github.com/apache/directory-kerby]
  * Apache Log4j [https://logging.apache.org/log4j]
  * Apache Lucene [https://lucene.apache.org/]
@@ -29,6 +30,7 @@ It also includes software from other open source projects including, but not lim
  * Apache TinkerPop [https://tinkerpop.apache.org/]
  * Astyanax [https://github.com/Netflix/astyanax]
  * DataStax Driver for Apache Cassandra  [https://github.com/datastax/java-driver]
+ * Debezium [https://debezium.io/]
  * EasyMock [http://easymock.org/]
  * Elasticsearch [https://www.elastic.co/]
  * Google Cloud Bigtable [https://github.com/googlecloudplatform/cloud-bigtable-client]
@@ -46,6 +48,7 @@ It also includes software from other open source projects including, but not lim
  * Reflections8 [https://github.com/aschoerk/reflections8]
  * SLF4J [https://www.slf4j.org/]
  * Spatial4j [https://github.com/locationtech/spatial4j]
+ * Testcontainers [https://testcontainers.com/]
  * Vavr [https://www.vavr.io/]
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

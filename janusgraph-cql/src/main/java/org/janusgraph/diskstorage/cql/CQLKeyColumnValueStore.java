@@ -40,6 +40,7 @@ import io.vavr.collection.Iterator;
 import io.vavr.control.Try;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -430,6 +431,16 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore, SplittableSc
 
     private static void initializeTable(final CqlSession session, final String keyspaceName, final String tableName, final Configuration configuration) {
         int cassandraMajorVersion = getCassandraMajorVersion(session);
+        CreateTableWithOptions createTable = buildCreateTable(keyspaceName, tableName, configuration, cassandraMajorVersion);
+        session.execute(createTable.build());
+    }
+
+    /**
+     * Builds the {@code CREATE TABLE} statement for a JanusGraph store. Package-private and side-effect free so the
+     * table options (including Cassandra CDC) can be asserted in unit tests without a live Cassandra cluster.
+     */
+    static CreateTableWithOptions buildCreateTable(final String keyspaceName, final String tableName,
+                                                   final Configuration configuration, final int cassandraMajorVersion) {
         CreateTableWithOptions createTable = createTable(keyspaceName, tableName)
                 .ifNotExists()
                 .withPartitionKey(KEY_COLUMN_NAME, DataTypes.BLOB)
@@ -441,7 +452,13 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore, SplittableSc
         createTable = gcGraceSeconds(createTable, configuration);
         createTable = speculativeRetryOptions(createTable, configuration);
 
-        session.execute(createTable.build());
+        // Cassandra CDC is only meaningful on the edgestore table, whose mutations imply mixed-index changes.
+        // Composite-index data (graphindex) and system stores are not relevant to mixed-index synchronization.
+        if (configuration.get(CQLConfigOptions.CDC) && Backend.EDGESTORE_NAME.equals(tableName)) {
+            createTable = createTable.withCDC(true);
+        }
+
+        return createTable;
     }
 
     private static CreateTableWithOptions compressionOptions(final CreateTableWithOptions createTable,

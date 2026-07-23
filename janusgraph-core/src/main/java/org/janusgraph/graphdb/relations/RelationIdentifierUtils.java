@@ -28,6 +28,8 @@ import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 
+import java.util.Collections;
+
 public class RelationIdentifierUtils {
     public static RelationIdentifier get(InternalRelation r, long relationId) {
         if (relationId > 0) {
@@ -69,7 +71,11 @@ public class RelationIdentifierUtils {
     public static Iterable<? extends JanusGraphRelation> findEdgeRelations(JanusGraphVertex v, RelationType type, RelationIdentifier rId, JanusGraphTransaction tx){
         Direction dir = Direction.OUT;
         JanusGraphVertex other = ((StandardJanusGraphTx)tx).getInternalVertex(rId.getInVertexId());
-        if (other==null || other.isRemoved()) return null;
+        if (other==null || other.isRemoved()) {
+            // The adjacent (in-)vertex no longer exists, so the edge is gone with it: there are no relations to find.
+            // Empty (never null) so callers can iterate the result unconditionally.
+            return Collections.emptyList();
+        }
         if (((StandardJanusGraphTx) tx).isPartitionedVertex(v) && !((StandardJanusGraphTx) tx).isPartitionedVertex(other)) { //Swap for likely better performance
             JanusGraphVertex tmp = other;
             other = v;

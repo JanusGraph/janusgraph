@@ -139,6 +139,7 @@
         <module>janusgraph-bigtable</module>
         <module>janusgraph-es</module>
         <module>janusgraph-lucene</module>
+        <module>janusgraph-cdc</module>
         <module>janusgraph-all</module>
         <module>janusgraph-dist</module>
         <module>janusgraph-benchmark</module>

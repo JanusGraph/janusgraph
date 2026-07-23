@@ -332,7 +332,7 @@ public class IndexSerializer {
     }
 
     public void removeElement(Object elementId, MixedIndexType index, Map<String,Map<String,List<IndexEntry>>> documentsPerStore) {
-        Preconditions.checkArgument((index.getElement()==ElementCategory.VERTEX && elementId instanceof Long) ||
+        Preconditions.checkArgument((index.getElement()==ElementCategory.VERTEX && (elementId instanceof Long || elementId instanceof String)) ||
             (index.getElement().isRelation() && elementId instanceof RelationIdentifier),"Invalid element id [%s] provided for index: %s",elementId,index);
         getDocuments(documentsPerStore,index).put(element2String(elementId),new ArrayList<>());
     }

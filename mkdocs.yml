@@ -177,6 +177,7 @@ nav:
     - Datatype and Attribute Serializer Configuration: advanced-topics/serializer.md
     - JanusGraph with TinkerPop’s Hadoop-Gremlin: advanced-topics/hadoop.md
     - Transaction Log: advanced-topics/transaction-log.md
+    - CDC Mixed Index Synchronization: advanced-topics/cdc-mixed-index.md
     - JanusGraph Data model: advanced-topics/data-model.md
     - JanusGraph Bus: advanced-topics/janusgraph-bus.md
     - ExecutorService: advanced-topics/executor-service.md

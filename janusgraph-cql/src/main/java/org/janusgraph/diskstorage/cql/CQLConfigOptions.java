@@ -44,6 +44,16 @@ public interface CQLConfigOptions {
             ConfigOption.Type.LOCAL,
             "janusgraph");
 
+    ConfigOption<Boolean> CDC = new ConfigOption<>(
+            CQL_NS,
+            "cdc",
+            "Enable Apache Cassandra Change-Data-Capture by setting the cdc=true table option on JanusGraph's " +
+            "edgestore table. This allows an external CDC pipeline (e.g. Debezium + Kafka, consumed by the " +
+            "janusgraph-cdc worker) to capture graph mutations and keep mixed indexes eventually consistent. " +
+            "Requires the Cassandra cluster to be started with cdc_enabled=true.",
+            ConfigOption.Type.GLOBAL_OFFLINE,
+            false);
+
     ConfigOption<Integer> PROTOCOL_VERSION = new ConfigOption<>(
             CQL_NS,
             "protocol-version",
