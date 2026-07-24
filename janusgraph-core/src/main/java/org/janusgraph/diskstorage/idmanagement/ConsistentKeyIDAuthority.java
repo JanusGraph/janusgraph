@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_CAV_BITS;
@@ -110,6 +111,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     private final boolean randomizeUniqueId;
     protected final int randomUniqueIDLimit;
     private final Duration waitGracePeriod;
+    private final Duration outdatedBlocksThreshold;
     private final boolean supportsInterruption;
 
     private final Random random = new Random();
@@ -121,6 +123,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         this.idStore = idStore;
         this.times = config.get(TIMESTAMP_PROVIDER);
         this.waitGracePeriod = idApplicationWaitMS.dividedBy(10);
+        this.outdatedBlocksThreshold = idApplicationWaitMS.multipliedBy(10);
         Preconditions.checkNotNull(times);
 
         supportsInterruption = manager.getFeatures().supportsInterruption();
@@ -181,14 +184,11 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         return manager.beginTransaction(storeTxConfigBuilder.build());
     }
 
-    private long getCurrentID(final StaticBuffer partitionKey) throws BackendException {
-        final List<Entry> blocks = BackendOperation.execute(
-            (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh),this,times);
-
-        if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
+    private long getCurrentID(final List<Entry> previousBlocks) throws BackendException {
+        if (previousBlocks == null) throw new TemporaryBackendException("Could not read from storage");
         long latest = BASE_ID;
 
-        for (Entry e : blocks) {
+        for (Entry e : previousBlocks) {
             long counterVal = getBlockValue(e);
             if (latest < counterVal) {
                 latest = counterVal;
@@ -243,7 +243,9 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
             final int uniquePID = getUniquePartitionID();
             final StaticBuffer partitionKey = getPartitionKey(partition,idNamespace,uniquePID);
             try {
-                long nextStart = getCurrentID(partitionKey);
+                final List<Entry> previousBlocks = BackendOperation.execute(
+                    (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh),this,times);
+                long nextStart = getCurrentID(previousBlocks);
                 if (idBlockUpperBound - blockSize <= nextStart) {
                     log.info("ID overflow detected on partition({})-namespace({}) with uniqueid {}. Current id {}, block size {}, and upper bound {} for bit width {}.",
                             partition, idNamespace, uniquePID, nextStart, blockSize, idBlockUpperBound, uniqueIdBitWidth);
@@ -326,28 +328,10 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                 } finally {
                     if (!success && null != target) {
                         //Delete claim to not pollute id space
-                        for (int attempt = 0; attempt < ROLLBACK_ATTEMPTS; attempt++) {
-                            try {
-                                final StaticBuffer finalTarget = target; // copy for the inner class
-                                BackendOperation.execute(txh -> {
-                                    idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(finalTarget), txh);
-                                    return true;
-                                }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
-                                    @Override
-                                    public StoreTransaction openTx() throws BackendException {
-                                        return manager.beginTransaction(storeTxConfigBuilder.build());
-                                    }
-                                    @Override
-                                    public void close() {}
-                                },times);
-
-                                break;
-                            } catch (BackendException e) {
-                                log.warn("Storage exception while deleting old block application - retrying in {}", rollbackWaitTime, e);
-                                if (!rollbackWaitTime.isZero())
-                                    sleepAndConvertInterrupts(rollbackWaitTime);
-                            }
-                        }
+                        deleteFailedClaimBlock(partitionKey, target);
+                    } else {
+                        //Delete previous blocks to not pollute id space as we got brand new one
+                        deleteOutdatedBlocks(partitionKey, previousBlocks);
                     }
                 }
             } catch (UniqueIDExhaustedException e) {
@@ -362,6 +346,58 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
         throw new TemporaryLockingException(String.format("Reached timeout %d (%s elapsed) when attempting to allocate id block on partition(%d)-namespace(%d)",
                                             timeout.getNano(), methodTime, partition, idNamespace));
+    }
+
+    private void deleteFailedClaimBlock(StaticBuffer partitionKey, StaticBuffer target) throws BackendException {
+        for (int attempt = 0; attempt < ROLLBACK_ATTEMPTS; attempt++) {
+            try {
+                final StaticBuffer finalTarget = target; // copy for the inner class
+                BackendOperation.execute(txh -> {
+                    idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(finalTarget), txh);
+                    return true;
+                }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
+                    @Override
+                    public StoreTransaction openTx() throws BackendException {
+                        return manager.beginTransaction(storeTxConfigBuilder.build());
+                    }
+                    @Override
+                    public void close() {}
+                },times);
+
+                break;
+            } catch (BackendException e) {
+                log.warn("Storage exception while deleting old block application - retrying in {}", rollbackWaitTime, e);
+                if (!rollbackWaitTime.isZero())
+                    sleepAndConvertInterrupts(rollbackWaitTime);
+            }
+        }
+    }
+
+    private void deleteOutdatedBlocks(StaticBuffer partitionKey, List<Entry> previousBlocks) {
+        try {
+            BackendOperation.execute(txh -> {
+                Instant currentTime = times.getTime();
+                List<StaticBuffer> outdatedBlocksKeys = previousBlocks.stream()
+                    .filter(entry -> {
+                        Instant idBlockTimestamp = times.getTime(getBlockTimestamp(entry));
+                        return idBlockTimestamp.plus(outdatedBlocksThreshold).isBefore(currentTime);
+                    })
+                    .map(Entry::getColumn)
+                    .collect(Collectors.toList());
+                idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, outdatedBlocksKeys, txh);
+                return true;
+            }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
+                @Override
+                public StoreTransaction openTx() throws BackendException {
+                    return manager.beginTransaction(storeTxConfigBuilder.build());
+                }
+                @Override
+                public void close() {}
+            },times);
+
+        } catch (BackendException e) {
+            log.warn("Storage exception while deleting previous [{}] blocks", previousBlocks.size(), e);
+        }
     }
 
 
@@ -385,6 +421,10 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
     private long getBlockValue(Entry column) {
         return -column.getLong(0);
+    }
+
+    private long getBlockTimestamp(Entry column) {
+        return column.getLong(8);
     }
 
     private void sleepAndConvertInterrupts(Duration d) throws BackendException {
