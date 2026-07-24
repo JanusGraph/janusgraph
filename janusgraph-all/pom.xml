@@ -113,6 +113,11 @@
             <artifactId>janusgraph-mixed-index-utils</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-couchbase</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Jackson 2.x -->
         <dependency>
