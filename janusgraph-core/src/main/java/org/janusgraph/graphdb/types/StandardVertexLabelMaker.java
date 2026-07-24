@@ -22,6 +22,7 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.SystemTypeManager;
 
 import static org.janusgraph.graphdb.types.TypeDefinitionCategory.PARTITIONED;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.PROXY;
 import static org.janusgraph.graphdb.types.TypeDefinitionCategory.STATIC;
 
 /**
@@ -34,6 +35,7 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
     private String name;
     private boolean partitioned;
     private boolean isStatic;
+    private boolean isProxy;
 
     public StandardVertexLabelMaker(StandardJanusGraphTx tx) {
         this.tx = tx;
@@ -64,11 +66,20 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
     }
 
     @Override
+    public StandardVertexLabelMaker setProxy() {
+        isProxy = true;
+        return this;
+    }
+
+    @Override
     public VertexLabel make() {
         Preconditions.checkArgument(!partitioned || !isStatic,"A vertex label cannot be partitioned and static at the same time");
+        Preconditions.checkArgument(!partitioned || !isProxy, "A vertex label cannot be partitioned and proxy at the same time");
+        Preconditions.checkArgument(!isStatic || !isProxy, "A vertex label cannot be proxy and static at the same time");
         TypeDefinitionMap def = new TypeDefinitionMap();
         def.setValue(PARTITIONED, partitioned);
         def.setValue(STATIC, isStatic);
+        def.setValue(PROXY, isProxy);
 
         return (VertexLabelVertex)tx.makeSchemaVertex(JanusGraphSchemaCategory.VERTEXLABEL,name,def);
     }
