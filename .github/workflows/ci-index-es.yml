@@ -127,7 +127,7 @@ jobs:
           distribution: zulu
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ env.VERIFY_MAVEN_OPTS }} ${{ matrix.install-args }} ${{ matrix.args }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: jacoco-reports-${{ matrix.module }}-${{ matrix.name }}
           path: target/jacoco-combined.exec
