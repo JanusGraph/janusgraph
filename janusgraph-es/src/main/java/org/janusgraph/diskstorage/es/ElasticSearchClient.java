@@ -52,7 +52,14 @@ public interface ElasticSearchClient extends Closeable {
 
     void deleteIndex(String indexName) throws IOException;
 
-    void clearStore(String indexName, String storeName) throws IOException;
+    /**
+     * Deletes the Elasticsearch index which backs a store, if it exists.
+     *
+     * @param indexStoreName the Elasticsearch index name of the store, already derived by the caller from the
+     *                       JanusGraph store name, so that the mapping between the two exists in exactly one place.
+     *                       It is used verbatim; in particular it is not lowercased here.
+     */
+    void clearStore(String indexStoreName) throws IOException;
 
     void bulkRequest(List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException;
 

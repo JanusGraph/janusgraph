@@ -76,6 +76,7 @@ import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -335,6 +336,25 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertFalse(indexExists(GraphDatabaseConfiguration.INDEX_NAME.getDefaultValue()));
         assertTrue(indexExists("test1"));
         assertTrue(indexExists("test2"));
+    }
+
+    @Test
+    public void testClearStoreOfAMixedCaseStoreName() throws Exception {
+        //A mixed index stores its JanusGraph index name as the store name verbatim and those names are case
+        //sensitive, while an Elasticsearch index name is always lowercase. clearStore has to derive the name the
+        //same way every read and write path does, or SchemaAction.DISCARD_INDEX targets a name which cannot exist,
+        //the documents survive, and the schema is marked DISCARDED anyway
+        final String storeName = "vertexByName";
+        //Locale.ROOT so the expectation cannot drift with the default locale of whoever runs this. The store name is
+        //ASCII and carries no dotted I, so it is the same string the production derivation produces in any locale
+        final String indexStoreName = INDEX_NAME.getDefaultValue() + "_" + storeName.toLowerCase(Locale.ROOT);
+
+        initialize(storeName);
+        assertTrue(indexExists(indexStoreName));
+
+        index.clearStore(storeName);
+
+        assertFalse(indexExists(indexStoreName));
     }
 
     @Test
