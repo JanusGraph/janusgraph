@@ -14,13 +14,16 @@
 
 package org.janusgraph.diskstorage.es;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClientBuilder;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
@@ -306,8 +309,13 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<Integer> RETRY_LIMIT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry-limit",
-            "Sets the number of attempts for configured retryable error codes.", ConfigOption.Type.LOCAL,
-            Integer.class, 0);
+            "Number of times the Elasticsearch client reattempts a request which failed transiently before giving " +
+                "up on it: a request answered with a status code listed in `retry-error-codes`, or one which " +
+                "produced no response at all when `retry-transport-failures` is enabled. The failed items of a bulk " +
+                "request are reattempted on their own, so these attempts do not resend items which already " +
+                "succeeded. Set to 0 to disable them. A failure which survives these attempts is then classified by " +
+                "the same two options, and an index mutation which is still transient is reattempted as a whole by " +
+                "JanusGraph for up to `storage.write-time`.", ConfigOption.Type.LOCAL, Integer.class, 3);
 
     public static final ConfigOption<Long> RETRY_INITIAL_WAIT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry-initial-wait",
@@ -321,8 +329,32 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<String[]> RETRY_ERROR_CODES =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry-error-codes",
-            "Comma separated list of Elasticsearch REST client ResponseException error codes to retry. " +
-                "E.g. \"408,429\"", ConfigOption.Type.LOCAL, String[].class, new String[0]);
+            "Comma separated list of Elasticsearch HTTP status codes which are considered transient, whether " +
+                "answered to a request or reported for a single bulk item. Such a failure is reattempted at two " +
+                "levels. First the Elasticsearch client reattempts the request `retry-limit` times, resending only " +
+                "the failed items of a bulk request. If that does not succeed, an index mutation which failed this " +
+                "way is reported as a temporary rather than a permanent backend exception, so JanusGraph reattempts " +
+                "the whole mutation with exponential backoff for up to `storage.write-time` instead of dropping it " +
+                "and leaving the mixed index inconsistent with the graph; a bulk request qualifies only when every " +
+                "item which failed did so with one of these codes. Resubmitting a whole mutation resends items " +
+                "which already succeeded, which duplicates the values of LIST cardinality properties - the client " +
+                "level attempts do not. Queries get the client level attempts only. Set to an empty list to " +
+                "consider every status code permanent, which disables both levels. E.g. \"429,502,503,504\"",
+            ConfigOption.Type.LOCAL, String[].class, new String[]{"429", "502", "503", "504"},
+            ElasticSearchIndex::isStatusCodeList);
+
+    public static final ConfigOption<Boolean> RETRY_TRANSPORT_FAILURES =
+        new ConfigOption<>(ELASTICSEARCH_NS, "retry-transport-failures",
+            "Whether Elasticsearch failures which never produced an HTTP response - connection refused, connection " +
+                "reset, socket timeout, prematurely closed connection, TLS failure - are considered transient and " +
+                "reattempted at the same two levels as a status code listed in `retry-error-codes`: `retry-limit` " +
+                "times by the Elasticsearch client, then as a whole index mutation by JanusGraph for up to " +
+                "`storage.write-time`. Such a failure leaves it unknown whether Elasticsearch applied the request, " +
+                "so any reattempt may resubmit items which already succeeded; resubmission is idempotent except for " +
+                "LIST cardinality properties, whose values are appended. While this option is enabled every TLS " +
+                "failure is treated as transient, not only a handshake which was interrupted, so a write against a " +
+                "persistently misconfigured or untrusted certificate is reattempted for the whole write time before " +
+                "it fails.", ConfigOption.Type.LOCAL, true);
 
     public static final ConfigOption<Integer> BULK_CHUNK_SIZE_LIMIT_BYTES =
         new ConfigOption<>(ELASTICSEARCH_NS, "bulk-chunk-size-limit-bytes",
@@ -368,6 +400,10 @@ public class ElasticSearchIndex implements IndexProvider {
             "}");
 
     static final String INDEX_NAME_SEPARATOR = "_";
+
+    private static final int MIN_HTTP_STATUS_CODE = 100;
+
+    private static final int MAX_HTTP_STATUS_CODE = 599;
     private static final String SCRIPT_ID_SEPARATOR = "-";
 
     private static final String MAX_OPEN_SCROLL_CONTEXT_PARAMETER = "search.max_open_scroll_context";
@@ -398,6 +434,8 @@ public class ElasticSearchIndex implements IndexProvider {
     private final String parameterizedDeletionScriptId;
     private final boolean supportsGeoShapePrefixTree;
     private final CircleProcessor bdbCircleProcessor;
+    private final Set<Integer> retryErrorCodes;
+    private final boolean retryTransportFailures;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = determineIndexName(config);
@@ -413,6 +451,8 @@ public class ElasticSearchIndex implements IndexProvider {
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query nb result by query to {}", batchSize);
         bdbCircleProcessor = MixedIndexUtilsConfigOptions.buildBKDCircleProcessor(config);
+        retryErrorCodes = parseStatusCodes(config.get(RETRY_ERROR_CODES));
+        retryTransportFailures = config.get(RETRY_TRANSPORT_FAILURES);
 
         client = interfaceConfiguration(config).getClient();
         supportsGeoShapePrefixTree = client.getMajorVersion().getValue() <= 7;
@@ -541,11 +581,102 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private BackendException convert(Exception esException) {
-        if (esException instanceof InterruptedException) {
+        return convert(esException, retryErrorCodes, retryTransportFailures);
+    }
+
+    //Only a TemporaryBackendException is reattempted by BackendOperation, so a transient failure classified as
+    //permanent means the index mutation is dropped rather than reattempted
+    @VisibleForTesting
+    static BackendException convert(Exception esException, Set<Integer> retryErrorCodes,
+                                    boolean retryTransportFailures) {
+        final Throwable temporaryCause = findTemporaryCause(esException, retryErrorCodes, retryTransportFailures);
+        if (temporaryCause instanceof InterruptedException) {
+            //Throwing the InterruptedException cleared the interrupt status of the thread, and the exception itself
+            //is consumed here, so restore the status. BackendOperation reattempts a temporary failure and relies on
+            //the status to abort that wait, without which a cancelled operation keeps reattempting the mutation for
+            //the whole write time budget
+            Thread.currentThread().interrupt();
             return new TemporaryBackendException("Interrupted while waiting for response", esException);
+        } else if (temporaryCause != null) {
+            return new TemporaryBackendException("Temporary exception while executing index operation, classified as "
+                + "transient by " + describe(temporaryCause), esException);
         } else {
             return new PermanentBackendException("Unknown exception while executing index operation", esException);
         }
+    }
+
+    //Names the signal the classification was taken from, so that an operator reading the log knows whether the
+    //reattempt was decided by a status code, by the statuses of the failed bulk items, or by a transport failure
+    private static String describe(Throwable temporaryCause) {
+        if (temporaryCause instanceof ResponseException) {
+            return "HTTP status "
+                + ((ResponseException) temporaryCause).getResponse().getStatusLine().getStatusCode();
+        }
+        if (temporaryCause instanceof ElasticSearchBulkFailureException) {
+            return "bulk item statuses "
+                + ((ElasticSearchBulkFailureException) temporaryCause).getFailedItemStatusCodes();
+        }
+        return "transport failure " + temporaryCause.getClass().getSimpleName();
+    }
+
+    //Returns the first cause indicating that the operation may succeed if reattempted, or null if the failure is not
+    //recognised as transient. The whole chain is inspected because the Elasticsearch client wraps the failure, and
+    //wraps an interrupt during a client side retry wait in a RuntimeException
+    private static Throwable findTemporaryCause(Throwable throwable, Set<Integer> retryErrorCodes,
+                                                boolean retryTransportFailures) {
+        for (Throwable cause : TransientFailures.causalChain(throwable)) {
+            if (cause instanceof InterruptedException) {
+                return cause;
+            } else if (cause instanceof ResponseException) {
+                final int statusCode = ((ResponseException) cause).getResponse().getStatusLine().getStatusCode();
+                if (retryErrorCodes.contains(statusCode)) {
+                    return cause;
+                }
+            } else if (cause instanceof ElasticSearchBulkFailureException) {
+                //A bulk request is only worth reattempting if every item which failed did so transiently
+                final Set<Integer> statusCodes = ((ElasticSearchBulkFailureException) cause).getFailedItemStatusCodes();
+                if (!statusCodes.isEmpty() && retryErrorCodes.containsAll(statusCodes)) {
+                    return cause;
+                }
+            } else if (retryTransportFailures && TransientFailures.isTransportFailure(cause)) {
+                return cause;
+            }
+        }
+        return null;
+    }
+
+    //An empty list is meaningful here - it turns both levels of reattempt off, and both the option description and
+    //the changelog document it as the way to restore the previous behavior - so the disallowEmpty verification which
+    //ConfigOption installs by default cannot be used. Verify the shape of the value instead, because otherwise a
+    //value which is not a status code leaves the constructor as a bare NumberFormatException naming neither the
+    //option nor the offending entry. Public because RestClientSetup reads the same option for the client level
+    public static boolean isStatusCodeList(String[] statusCodes) {
+        if (statusCodes == null) {
+            return false;
+        }
+        return nonBlank(statusCodes).allMatch(ElasticSearchIndex::isStatusCode);
+    }
+
+    //A value outside the range an HTTP status code can take never matches a response, so accepting it would leave
+    //the classification it was meant to enable switched off with nothing said about it
+    private static boolean isStatusCode(String statusCode) {
+        try {
+            final int parsed = Integer.parseInt(statusCode);
+            return parsed >= MIN_HTTP_STATUS_CODE && parsed <= MAX_HTTP_STATUS_CODE;
+        } catch (NumberFormatException notAStatusCode) {
+            return false;
+        }
+    }
+
+    //Immutable, because the parsed set is held for the lifetime of the index and read from every classification
+    public static Set<Integer> parseStatusCodes(String[] statusCodes) {
+        return nonBlank(statusCodes).map(Integer::parseInt).collect(ImmutableSet.toImmutableSet());
+    }
+
+    //A trailing separator, or a separator surrounded by spaces, is a plausible way to write the list and says
+    //nothing about the codes which were intended
+    private static Stream<String> nonBlank(String[] statusCodes) {
+        return Arrays.stream(statusCodes).map(String::trim).filter(statusCode -> !statusCode.isEmpty());
     }
 
     private static String getDualMappingName(String key) {
@@ -909,8 +1040,15 @@ public class ElasticSearchIndex implements IndexProvider {
                 client.bulkRequest(requests, null);
             }
         } catch (final Exception e) {
-            log.error("Failed to execute bulk Elasticsearch mutation", e);
-            throw convert(e);
+            final BackendException converted = convert(e);
+            //Reserve the error level for a mutation which is about to be dropped: a temporary failure is reattempted
+            //by BackendOperation, and is only lost if the write time budget runs out, which commit reports itself
+            if (converted instanceof TemporaryBackendException) {
+                log.warn("Transient failure while executing bulk Elasticsearch mutation", e);
+            } else {
+                log.error("Failed to execute bulk Elasticsearch mutation", e);
+            }
+            throw converted;
         }
     }
 

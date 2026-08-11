@@ -22,6 +22,7 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
+import org.janusgraph.diskstorage.es.ElasticSearchBulkFailureException;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
@@ -123,6 +126,44 @@ public class RestClientRetryTest {
             //Verify that despite only calling bulkRequest once, we had 2 calls to the underlying rest client's
             //perform request (due to the retried failure)
             verify(restClientMock, times(2)).performRequest(requestCaptor.capture());
+        }
+    }
+
+    @Test
+    public void testFailedBulkItemsRetainTheirStatusCodes() throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        //A bulk response returns a success despite underlying items having failed
+        when(statusLine.getStatusCode()).thenReturn(200);
+
+        RestBulkResponse.RestBulkItemResponse rejectedItem = new RestBulkResponse.RestBulkItemResponse();
+        rejectedItem.setError("es_rejected_execution_exception");
+        rejectedItem.setStatus(429);
+        RestBulkResponse.RestBulkItemResponse unmappedItem = new RestBulkResponse.RestBulkItemResponse();
+        unmappedItem.setError("mapper_parsing_exception");
+        unmappedItem.setStatus(400);
+        RestBulkResponse bulkResponse = new RestBulkResponse();
+        bulkResponse.setItems(
+            Stream.of(
+                Collections.singletonMap("index", rejectedItem),
+                Collections.singletonMap("index", unmappedItem)
+            ).collect(Collectors.toList())
+        );
+        HttpEntity httpEntityMock = mock(HttpEntity.class);
+        when(httpEntityMock.getContent()).thenReturn(new ByteArrayInputStream(mapper.writeValueAsBytes(bulkResponse)));
+        Response responseMock = mock(Response.class);
+        when(responseMock.getEntity()).thenReturn(httpEntityMock);
+        when(responseMock.getStatusLine()).thenReturn(statusLine);
+
+        //No retries are configured, so the item failures are reported immediately
+        try (RestElasticSearchClient restClientUnderTest = createClient(0, Collections.emptySet())) {
+            when(restClientMock.performRequest(any())).thenReturn(responseMock);
+            restClientUnderTest.bulkRequest(Arrays.asList(
+                ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id1"),
+                ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id2")
+            ), null);
+            Assertions.fail("Should have thrown for the failed bulk items");
+        } catch (ElasticSearchBulkFailureException e) {
+            Assertions.assertEquals(Sets.newHashSet(429, 400), e.getFailedItemStatusCodes());
         }
     }
 
@@ -218,5 +259,81 @@ public class RestClientRetryTest {
             Assertions.assertSame(differentExceptionType, e);
         }
         verify(restClientMock, times(1)).performRequest(requestCaptor.capture());
+    }
+
+    @Test
+    public void testTransportFailureRetriedWhenEnabled() throws IOException {
+        //A connection reset produces no response, so no status code can match it; whether it is reattempted is
+        //decided by its own switch, on the same attempt budget as a status code
+        IOException connectionReset = new SocketException("Connection reset");
+        IOException expectedFinalException = new IOException("Expected");
+        try (RestElasticSearchClient restClientUnderTest = createClient(1, Collections.emptySet())) {
+            restClientUnderTest.setRetryTransportFailures(true);
+            when(restClientMock.performRequest(any()))
+                .thenThrow(connectionReset)
+                .thenThrow(expectedFinalException);
+            restClientUnderTest.bulkRequest(Collections.singletonList(
+                ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id")), null);
+            Assertions.fail("Should have thrown the expected exception after the reattempt");
+        } catch (Exception actualException) {
+            Assertions.assertSame(expectedFinalException, actualException);
+        }
+        verify(restClientMock, times(2)).performRequest(requestCaptor.capture());
+    }
+
+    @Test
+    public void testTransportFailureWrappedByTheClientIsRecognised() throws IOException {
+        //RestClient rewraps the failure of a node attempt while unwrapping the future it waited on, so the transport
+        //failure can sit below the exception which is thrown
+        IOException wrapped = new IOException("node attempt failed", new SocketTimeoutException("read timed out"));
+        IOException expectedFinalException = new IOException("Expected");
+        try (RestElasticSearchClient restClientUnderTest = createClient(1, Collections.emptySet())) {
+            restClientUnderTest.setRetryTransportFailures(true);
+            when(restClientMock.performRequest(any()))
+                .thenThrow(wrapped)
+                .thenThrow(expectedFinalException);
+            restClientUnderTest.bulkRequest(Collections.singletonList(
+                ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id")), null);
+            Assertions.fail("Should have thrown the expected exception after the reattempt");
+        } catch (Exception actualException) {
+            Assertions.assertSame(expectedFinalException, actualException);
+        }
+        verify(restClientMock, times(2)).performRequest(requestCaptor.capture());
+    }
+
+    @Test
+    public void testTransportFailureNotRetriedWhenDisabled() throws IOException {
+        IOException connectionReset = new SocketException("Connection reset");
+        try (RestElasticSearchClient restClientUnderTest = createClient(3, Collections.emptySet())) {
+            //setRetryTransportFailures is never called, so the switch is off and the attempt budget is irrelevant
+            when(restClientMock.performRequest(any())).thenThrow(connectionReset);
+            restClientUnderTest.bulkRequest(Collections.singletonList(
+                ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id")), null);
+            Assertions.fail("Should have thrown the transport failure without a reattempt");
+        } catch (Exception actualException) {
+            Assertions.assertSame(connectionReset, actualException);
+        }
+        verify(restClientMock, times(1)).performRequest(requestCaptor.capture());
+    }
+
+    @Test
+    public void testInterruptedRetryWaitRestoresTheInterruptStatus() throws IOException {
+        //Thread.sleep clears the interrupt status when it throws. The wait has to put it back, because
+        //BackendOperation above relies on it to abort its own backoff rather than reattempting for the whole budget
+        doReturn(429).when(statusLine).getStatusCode();
+        doReturn(statusLine).when(response).getStatusLine();
+        doReturn(response).when(responseException).getResponse();
+        try (RestElasticSearchClient restClientUnderTest = createClient(1, Sets.newHashSet(429))) {
+            when(restClientMock.performRequest(any())).thenThrow(responseException);
+            Thread.currentThread().interrupt();
+            Assertions.assertThrows(RuntimeException.class, () -> restClientUnderTest.bulkRequest(
+                Collections.singletonList(
+                    ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id")), null));
+            Assertions.assertTrue(Thread.currentThread().isInterrupted(),
+                "the interrupt status must survive the retry wait");
+        } finally {
+            //Reads and clears the status, so it cannot leak into the next test
+            Thread.interrupted();
+        }
     }
 }
