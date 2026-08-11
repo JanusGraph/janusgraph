@@ -35,9 +35,9 @@ import java.util.List;
  */
 public class CompositeIndexTypeWrapper extends IndexTypeWrapper implements CompositeIndexType {
 
-    private IndexField[] fields = null;
+    private volatile IndexField[] fields = null;
 
-    private String[] inlineKeys = null;
+    private volatile String[] inlineKeys = null;
 
     public CompositeIndexTypeWrapper(SchemaSource base) {
         super(base);
