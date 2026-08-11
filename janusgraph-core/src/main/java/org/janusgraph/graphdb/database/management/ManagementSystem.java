@@ -114,6 +114,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -985,6 +986,15 @@ public class ManagementSystem implements JanusGraphManagement {
                     if (applicableStatus.contains(field.getStatus()))
                         keySubset.add((PropertyKeyVertex) field.getFieldKey());
                 }
+                //A mixed index keeps a status per field instead of one status on the index, so this is the
+                //equivalent of the isApplicableStatus check the composite branch makes above. Without it an action
+                //which matches no field reaches setStatusVertex, whose precondition is guaranteed to fail for a
+                //mixed index and carries no message at all, so the caller is left with a bare
+                //IllegalArgumentException saying nothing about the real problem
+                Preconditions.checkArgument(!keySubset.isEmpty(),
+                    "Update action [%s] cannot be invoked for index [%s] because none of its fields has one of the" +
+                        " applicable statuses %s. The current status of each field is %s", updateAction, index.name(),
+                    orderedStatuses(applicableStatus), fieldStatuses(mixedIndexType));
 
                 dependentTypes.addAll(keySubset);
             }
@@ -1026,11 +1036,6 @@ public class ManagementSystem implements JanusGraphManagement {
                         " vertex-centric indexes: " + index.name());
                 }
                 if (((JanusGraphIndex) index).isMixedIndex()) {
-                    //Fail fast instead of starting a background job which would only fail inside the worker
-                    Preconditions.checkArgument(!keySubset.isEmpty(),
-                        "Update action [%s] cannot be invoked for index [%s] because none of its fields has" +
-                            " one of the applicable statuses %s", updateAction, index.name(),
-                        updateAction.getApplicableStatus());
                     //Stale document deletions are flushed through the same bulk restore() calls as reindex
                     //document restores, so the reindex batch size option governs both
                     future = MixedIndexStaleEntryRemover.submit(graph, indexId.indexName,
@@ -1278,6 +1283,20 @@ public class ManagementSystem implements JanusGraphManagement {
 
     private void setUpdateTrigger(Callable<Boolean> trigger) {
         updatedTypeTriggers.add(trigger);
+    }
+
+    //Renders statuses in the natural order of the enum, which the JLS defines as the order they are declared in, so
+    //that a user facing message does not inherit the iteration order of whatever collection happens to hold them -
+    //the applicable statuses of an action reach this as an unordered Set
+    private static String orderedStatuses(Collection<SchemaStatus> statuses) {
+        return statuses.stream().sorted().map(SchemaStatus::name).collect(Collectors.joining(", ", "[", "]"));
+    }
+
+    //Reports the status of every field of a mixed index, so that a rejected update action can say why it was rejected
+    private static String fieldStatuses(MixedIndexType index) {
+        return Arrays.stream(index.getFieldKeys())
+            .map(field -> field.getFieldKey().name() + "=" + field.getStatus().name())
+            .collect(Collectors.joining(", ", "[", "]"));
     }
 
     private void setStatus(JanusGraphSchemaVertex vertex, SchemaStatus status, Set<PropertyKeyVertex> keys) {
