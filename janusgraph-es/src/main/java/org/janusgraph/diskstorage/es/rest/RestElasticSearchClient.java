@@ -39,8 +39,10 @@ import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
+import org.janusgraph.diskstorage.es.ElasticSearchBulkFailureException;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
+import org.janusgraph.diskstorage.es.TransientFailures;
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
 import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
@@ -121,6 +123,10 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private final boolean esVersion7;
 
     private Integer retryOnConflict;
+
+    //Whether a failure which produced no HTTP response is reattempted like a status code in retryOnErrorCodes.
+    //Configured through RestClientSetup from RETRY_TRANSPORT_FAILURES, like the other optional client settings
+    private boolean retryTransportFailures;
 
     private final String retryOnConflictKey;
 
@@ -567,8 +573,20 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                             retryCount++;
                         } else {
                             final List<Object> errorItems = bulkItemsThatFailed.stream().map(Triplet::getValue0).collect(Collectors.toList());
-                            errorItems.forEach(error -> log.error("Failed to execute ES query: {}", error));
-                            throw new IOException("Failure(s) in Elasticsearch bulk request: " + errorItems);
+                            //Summarise rather than log a line per item: a large batch rejected wholesale would
+                            //otherwise emit thousands of lines, once per reattempt, exactly during the outage the
+                            //reattempts exist for. The level which matches the outcome of the whole mutation is the
+                            //caller's to choose, and the thrown exception carries every failed item on a getter
+                            log.warn("{} of {} items in the Elasticsearch bulk request failed, with statuses {}",
+                                bulkItemsThatFailed.size(), bulkRequestChunk.size(), errorCodes);
+                            if (log.isDebugEnabled()) {
+                                for (final Triplet<Object, Integer, RequestBytes> failedItem : bulkItemsThatFailed) {
+                                    log.debug("Failed to execute ES query with status {}: {}",
+                                        failedItem.getValue1(), failedItem.getValue0());
+                                }
+                            }
+                            //Retain the item statuses so callers can classify the failure as transient or permanent
+                            throw new ElasticSearchBulkFailureException(errorCodes, errorItems);
                         }
                     } else {
                         //The entire bulk request was successful, leave the loop
@@ -577,6 +595,10 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                 }
             }
         }
+    }
+
+    public void setRetryTransportFailures(boolean retryTransportFailures) {
+        this.retryTransportFailures = retryTransportFailures;
     }
 
     public void setRetryOnConflict(Integer retryOnConflict) {
@@ -710,6 +732,10 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         return performRequest(new Request(method, path), requestData);
     }
 
+    //Reattempts a request which failed transiently, up to retryAttemptLimit times. A status code is transient when
+    //it is listed in retryOnErrorCodes; a failure which produced no response at all - and so has no status code -
+    //is transient when retryTransportFailures is set. Both are the same definition ElasticSearchIndex classifies
+    //the final failure by, so a failure which survives these attempts is handed on rather than contradicted
     private Response performRequestWithRetry(Request request) throws IOException {
         int retryCount = 0;
         while (true) {
@@ -719,8 +745,12 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                 if (!retryOnErrorCodes.contains(e.getResponse().getStatusLine().getStatusCode()) || retryCount >= retryAttemptLimit) {
                     throw e;
                 }
-                performRetryWait(retryCount);
+            } catch (IOException e) {
+                if (!retryTransportFailures || !TransientFailures.hasTransportFailureCause(e) || retryCount >= retryAttemptLimit) {
+                    throw e;
+                }
             }
+            performRetryWait(retryCount);
             retryCount++;
         }
     }
@@ -731,6 +761,9 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         try {
             Thread.sleep(waitDurationMs);
         } catch (InterruptedException interruptedException) {
+            //Thread.sleep cleared the interrupt status when it threw. Put it back so that whoever is waiting above -
+            //BackendOperation, which aborts its own backoff on it - can see the operation was cancelled
+            Thread.currentThread().interrupt();
             throw new RuntimeException(String.format("Thread interrupted while waiting for retry attempt %d of %d", retryCount, retryAttemptLimit), interruptedException);
         }
     }
