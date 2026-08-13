@@ -22,6 +22,7 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
+import org.janusgraph.diskstorage.es.ElasticSearchBulkFailureException;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -123,6 +124,44 @@ public class RestClientRetryTest {
             //Verify that despite only calling bulkRequest once, we had 2 calls to the underlying rest client's
             //perform request (due to the retried failure)
             verify(restClientMock, times(2)).performRequest(requestCaptor.capture());
+        }
+    }
+
+    @Test
+    public void testFailedBulkItemsRetainTheirStatusCodes() throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        //A bulk response returns a success despite underlying items having failed
+        when(statusLine.getStatusCode()).thenReturn(200);
+
+        RestBulkResponse.RestBulkItemResponse rejectedItem = new RestBulkResponse.RestBulkItemResponse();
+        rejectedItem.setError("es_rejected_execution_exception");
+        rejectedItem.setStatus(429);
+        RestBulkResponse.RestBulkItemResponse unmappedItem = new RestBulkResponse.RestBulkItemResponse();
+        unmappedItem.setError("mapper_parsing_exception");
+        unmappedItem.setStatus(400);
+        RestBulkResponse bulkResponse = new RestBulkResponse();
+        bulkResponse.setItems(
+            Stream.of(
+                Collections.singletonMap("index", rejectedItem),
+                Collections.singletonMap("index", unmappedItem)
+            ).collect(Collectors.toList())
+        );
+        HttpEntity httpEntityMock = mock(HttpEntity.class);
+        when(httpEntityMock.getContent()).thenReturn(new ByteArrayInputStream(mapper.writeValueAsBytes(bulkResponse)));
+        Response responseMock = mock(Response.class);
+        when(responseMock.getEntity()).thenReturn(httpEntityMock);
+        when(responseMock.getStatusLine()).thenReturn(statusLine);
+
+        //No retries are configured, so the item failures are reported immediately
+        try (RestElasticSearchClient restClientUnderTest = createClient(0, Collections.emptySet())) {
+            when(restClientMock.performRequest(any())).thenReturn(responseMock);
+            restClientUnderTest.bulkRequest(Arrays.asList(
+                ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id1"),
+                ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "some_doc_id2")
+            ), null);
+            Assertions.fail("Should have thrown for the failed bulk items");
+        } catch (ElasticSearchBulkFailureException e) {
+            Assertions.assertEquals(Sets.newHashSet(429, 400), e.getFailedItemStatusCodes());
         }
     }
 

@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.es;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -21,6 +22,9 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import org.apache.http.ConnectionClosedException;
+import org.apache.http.NoHttpResponseException;
+import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClientBuilder;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
@@ -71,7 +75,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
+import java.net.SocketException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -324,6 +330,31 @@ public class ElasticSearchIndex implements IndexProvider {
             "Comma separated list of Elasticsearch REST client ResponseException error codes to retry. " +
                 "E.g. \"408,429\"", ConfigOption.Type.LOCAL, String[].class, new String[0]);
 
+    public static final ConfigOption<String[]> TEMPORARY_ERROR_CODES =
+        new ConfigOption<>(ELASTICSEARCH_NS, "temporary-error-codes",
+            "Comma separated list of Elasticsearch HTTP status codes which are considered transient. An index " +
+                "operation failing with one of these codes is reported as a temporary rather than a permanent " +
+                "backend exception, so JanusGraph reattempts it with exponential backoff for up to " +
+                "`storage.write-time` instead of dropping the mutation and leaving the mixed index inconsistent " +
+                "with the graph. This is applied after the `retry-limit` attempts made by the Elasticsearch client " +
+                "itself have been exhausted. A reattempt resubmits the whole mutation, including the bulk items " +
+                "which already succeeded, so it can duplicate the values of LIST cardinality properties as " +
+                "described by `temporary-transport-failures`. Set to an empty list to consider every status code " +
+                "permanent. E.g. \"429,502,503,504\"", ConfigOption.Type.LOCAL, String[].class,
+            new String[]{"429", "502", "503", "504"});
+
+    public static final ConfigOption<Boolean> TEMPORARY_TRANSPORT_FAILURES =
+        new ConfigOption<>(ELASTICSEARCH_NS, "temporary-transport-failures",
+            "Whether Elasticsearch failures which never produced an HTTP response - connection refused, connection " +
+                "reset, socket timeout, prematurely closed connection - are considered transient, and are therefore " +
+                "reattempted for up to `storage.write-time` as described by `temporary-error-codes`. Such a failure " +
+                "leaves it unknown whether Elasticsearch applied the request, so a reattempt may resubmit items " +
+                "which already succeeded. Resubmission is idempotent except for LIST cardinality properties, whose " +
+                "values are appended. Disabling this alone does not remove that risk, because a reattempt driven by " +
+                "`temporary-error-codes` resubmits the whole mutation as well: clear both options if duplicated " +
+                "values in a mixed index are less acceptable than a dropped mutation.",
+            ConfigOption.Type.LOCAL, true);
+
     public static final ConfigOption<Integer> BULK_CHUNK_SIZE_LIMIT_BYTES =
         new ConfigOption<>(ELASTICSEARCH_NS, "bulk-chunk-size-limit-bytes",
             "The total size limit in bytes of a bulk request. Mutation batches in excess of this limit will be " +
@@ -398,6 +429,8 @@ public class ElasticSearchIndex implements IndexProvider {
     private final String parameterizedDeletionScriptId;
     private final boolean supportsGeoShapePrefixTree;
     private final CircleProcessor bdbCircleProcessor;
+    private final Set<Integer> temporaryErrorCodes;
+    private final boolean temporaryTransportFailures;
 
     public ElasticSearchIndex(Configuration config) throws BackendException {
         indexName = determineIndexName(config);
@@ -413,6 +446,9 @@ public class ElasticSearchIndex implements IndexProvider {
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query nb result by query to {}", batchSize);
         bdbCircleProcessor = MixedIndexUtilsConfigOptions.buildBKDCircleProcessor(config);
+        temporaryErrorCodes = Arrays.stream(config.get(TEMPORARY_ERROR_CODES))
+            .mapToInt(Integer::parseInt).boxed().collect(Collectors.toSet());
+        temporaryTransportFailures = config.get(TEMPORARY_TRANSPORT_FAILURES);
 
         client = interfaceConfiguration(config).getClient();
         supportsGeoShapePrefixTree = client.getMajorVersion().getValue() <= 7;
@@ -541,11 +577,65 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private BackendException convert(Exception esException) {
-        if (esException instanceof InterruptedException) {
+        return convert(esException, temporaryErrorCodes, temporaryTransportFailures);
+    }
+
+    //Only a TemporaryBackendException is reattempted by BackendOperation, so a transient failure classified as
+    //permanent means the index mutation is dropped rather than reattempted
+    @VisibleForTesting
+    static BackendException convert(Exception esException, Set<Integer> temporaryErrorCodes,
+                                    boolean temporaryTransportFailures) {
+        final Throwable temporaryCause = findTemporaryCause(esException, temporaryErrorCodes,
+            temporaryTransportFailures);
+        if (temporaryCause instanceof InterruptedException) {
+            //Throwing the InterruptedException cleared the interrupt status of the thread, and the exception itself
+            //is consumed here, so restore the status. BackendOperation reattempts a temporary failure and relies on
+            //the status to abort that wait, without which a cancelled operation keeps reattempting the mutation for
+            //the whole write time budget
+            Thread.currentThread().interrupt();
             return new TemporaryBackendException("Interrupted while waiting for response", esException);
+        } else if (temporaryCause != null) {
+            return new TemporaryBackendException("Temporary exception while executing index operation", esException);
         } else {
             return new PermanentBackendException("Unknown exception while executing index operation", esException);
         }
+    }
+
+    //Returns the first cause indicating that the operation may succeed if reattempted, or null if the failure is not
+    //recognised as transient. The whole chain is inspected because the Elasticsearch client wraps the failure, and
+    //wraps an interrupt during a client side retry wait in a RuntimeException
+    private static Throwable findTemporaryCause(Throwable throwable, Set<Integer> temporaryErrorCodes,
+                                                boolean temporaryTransportFailures) {
+        for (Throwable cause = throwable; cause != null; cause = cause.getCause()) {
+            if (cause instanceof InterruptedException) {
+                return cause;
+            } else if (cause instanceof ResponseException) {
+                final int statusCode = ((ResponseException) cause).getResponse().getStatusLine().getStatusCode();
+                if (temporaryErrorCodes.contains(statusCode)) {
+                    return cause;
+                }
+            } else if (cause instanceof ElasticSearchBulkFailureException) {
+                //A bulk request is only worth reattempting if every item which failed did so transiently
+                final Set<Integer> statusCodes = ((ElasticSearchBulkFailureException) cause).getFailedItemStatusCodes();
+                if (!statusCodes.isEmpty() && temporaryErrorCodes.containsAll(statusCodes)) {
+                    return cause;
+                }
+            } else if (temporaryTransportFailures && isTransportFailure(cause)) {
+                return cause;
+            }
+        }
+        return null;
+    }
+
+    //Whether the failure occurred before Elasticsearch could produce an HTTP response, and so has no status code to
+    //classify on
+    private static boolean isTransportFailure(Throwable cause) {
+        //SocketException covers ConnectException and a connection reset by the peer, while InterruptedIOException
+        //covers SocketTimeoutException and ConnectTimeoutException
+        return cause instanceof SocketException
+            || cause instanceof InterruptedIOException
+            || cause instanceof NoHttpResponseException
+            || cause instanceof ConnectionClosedException;
     }
 
     private static String getDualMappingName(String key) {
@@ -909,8 +999,15 @@ public class ElasticSearchIndex implements IndexProvider {
                 client.bulkRequest(requests, null);
             }
         } catch (final Exception e) {
-            log.error("Failed to execute bulk Elasticsearch mutation", e);
-            throw convert(e);
+            final BackendException converted = convert(e);
+            //Reserve the error level for a mutation which is about to be dropped: a temporary failure is reattempted
+            //by BackendOperation, and is only lost if the write time budget runs out, which commit reports itself
+            if (converted instanceof TemporaryBackendException) {
+                log.warn("Transient failure while executing bulk Elasticsearch mutation", e);
+            } else {
+                log.error("Failed to execute bulk Elasticsearch mutation", e);
+            }
+            throw converted;
         }
     }
 

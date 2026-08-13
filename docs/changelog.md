@@ -347,6 +347,48 @@ If custom vertex ids are used, avoid deleting and re-creating vertices under the
 (run `REINDEX` afterwards to restore them). With automatically assigned ids this race cannot occur because ids are
 never reused.
 
+##### Transient Elasticsearch failures are retried instead of dropping the index mutation
+
+Previously every Elasticsearch failure except an interrupt was reported as a `PermanentBackendException`. Because
+index mutations are applied after the storage mutations in a commit they cannot be rolled back, so a transient
+failure — a rolling restart, a saturated write queue, a socket timeout during a GC pause — dropped the mutation with
+a single ERROR log line and left the mixed index inconsistent with the graph until a reindex or a transaction-log
+recovery repaired it.
+
+Such a failure is now reported as a `TemporaryBackendException`, which the retry loop already present in
+`BackendOperation` reattempts with exponential backoff for up to `storage.write-time` (default 100s). This applies
+after the `index.[X].elasticsearch.retry-limit` attempts made by the Elasticsearch client itself, and unlike those it
+also covers failures which never produced an HTTP response and therefore cannot be matched by
+`index.[X].elasticsearch.retry-error-codes`.
+
+This behavior is **enabled by default**. Two new configuration options control it:
+```
+index.[X].elasticsearch.temporary-error-codes=429,502,503,504
+index.[X].elasticsearch.temporary-transport-failures=true
+```
+`temporary-error-codes` lists the HTTP status codes considered transient, whether reported by the request itself or
+by an individual bulk item. A bulk request is reattempted only when *every* item which failed did so with one of
+these codes, since a batch containing a permanently failing item — a mapping conflict, for instance — cannot succeed
+on a reattempt. `temporary-transport-failures` covers the failures that produce no HTTP response at all: connection
+refused, connection reset, socket timeout and a prematurely closed connection.
+
+Be aware of the following while either option is enabled:
+
+-   A reattempt resubmits the whole mutation, including the bulk items which had already succeeded. This applies to
+    both options, not only to `temporary-transport-failures`: a bulk item rejected with 429 means the remaining items
+    of that batch were applied, a 502 or 504 from a proxy leaves it unknown whether Elasticsearch applied the request,
+    and a transport failure leaves the same question open.
+-   Resubmission is idempotent for whole-document writes, deletions and `SET` cardinality properties, but the values
+    of a `LIST` cardinality property are appended, so a resubmitted item can duplicate them in the index document.
+-   Set `index.[X].elasticsearch.temporary-error-codes` to an empty list **and**
+    `index.[X].elasticsearch.temporary-transport-failures=false` if duplicated `LIST` values in a mixed index are less
+    acceptable than a dropped mutation. Disabling only one of the two still leaves the other able to reattempt.
+
+Clearing both options restores the previous behavior for every failure which reached Elasticsearch. An interrupt is
+not covered by either option: it was already reported as a `TemporaryBackendException` before this change, and still
+is. It now aborts the reattempt loop immediately rather than letting it run for the whole write time budget, because
+the interrupt status of the thread is restored once the `InterruptedException` has been consumed.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven

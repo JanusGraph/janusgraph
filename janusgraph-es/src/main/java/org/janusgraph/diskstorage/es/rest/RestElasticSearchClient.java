@@ -39,6 +39,7 @@ import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
+import org.janusgraph.diskstorage.es.ElasticSearchBulkFailureException;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
@@ -569,7 +570,9 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                         } else {
                             final List<Object> errorItems = bulkItemsThatFailed.stream().map(Triplet::getValue0).collect(Collectors.toList());
                             errorItems.forEach(error -> log.error("Failed to execute ES query: {}", error));
-                            throw new IOException("Failure(s) in Elasticsearch bulk request: " + errorItems);
+                            //Retain the item statuses so callers can classify the failure as transient or permanent
+                            throw new ElasticSearchBulkFailureException(
+                                "Failure(s) in Elasticsearch bulk request: " + errorItems, errorCodes);
                         }
                     } else {
                         //The entire bulk request was successful, leave the loop
