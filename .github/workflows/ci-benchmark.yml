@@ -36,7 +36,7 @@ jobs:
   build-all:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
@@ -63,7 +63,7 @@ jobs:
       - run: pip install 'setuptools<82'
       - run: pip install git+https://github.com/li-boxuan/ccm.git
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/cache@v4
         with:
           path: ~/.m2/repository

@@ -31,7 +31,7 @@ jobs:
     name: buf lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ory/build-buf-action@v0
         with:
           bufVersion: v0.56.0
