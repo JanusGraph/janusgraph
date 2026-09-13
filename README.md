@@ -133,6 +133,7 @@ CLAs and best practices for working with GitHub.
 
 The following users have deployed JanusGraph in production.
 
+* [Airbnb] (https://www.airbnb.com/) - [blog post] (https://medium.com/airbnb-engineering/scaling-airbnbs-identity-graph-with-a-unified-knowledge-graph-infrastructure-ebac467b7836)
 * [CELUM](https://www.celum.com/)
 * [Crédit Agricole CIB](https://www.ca-cib.com/) - [use case](https://github.com/JanusGraph/janusgraph/discussions/2734)
 * [eBay](https://www.ebay.com/) - [video](https://youtu.be/EtB1BPG00PE)
