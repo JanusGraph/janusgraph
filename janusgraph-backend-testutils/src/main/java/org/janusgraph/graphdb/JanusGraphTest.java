@@ -199,6 +199,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -5182,11 +5183,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 3);
 
         // until repeat emit(predicate).
-        // This case is using batches per iteration and not batches per loop
+        // Since TinkerPop 3.8 a repeat traversal which contains a barrier receives all traversers of a loop at once,
+        // so this case is batched per loop as well (before TinkerPop 3.8 it was using batches per iteration).
         profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).until(__.in("knows").has("depth", "3")).repeat(__.out("knows").barrier(barrierSize)).emit(__.in("knows").has("depth", "3")).count());
         assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
-        assertEquals(0, countBackendQueriesOfSize(s -> s > barrierSize * levelVerticesAmount, profile.getMetrics()));
-        assertTrue(countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()) > ((int) Math.pow(levelVerticesAmount, depth)));
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile);
 
         // until emit(predicate) repeat
         profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).until(__.in("knows").has("depth", "3")).emit(__.in("knows").has("depth", "3")).repeat(__.out("knows").barrier(barrierSize)).count());
@@ -5194,11 +5195,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 2);
 
         // emit(predicate) repeat until
-        // This case is using batches per iteration and not batches per loop
+        // Since TinkerPop 3.8 a repeat traversal which contains a barrier receives all traversers of a loop at once,
+        // so this case is batched per loop as well (before TinkerPop 3.8 it was using batches per iteration).
         profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).emit(__.in("knows").has("depth", "3")).repeat(__.out("knows").barrier(barrierSize)).until(__.in("knows").has("depth", "3")).count());
         assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
-        assertEquals(0, countBackendQueriesOfSize(s -> s > barrierSize * levelVerticesAmount, profile.getMetrics()));
-        assertTrue(countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()) > ((int) Math.pow(levelVerticesAmount, depth)));
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 3);
 
         // repeat emit(predicate) until
         profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.out("knows").barrier(barrierSize)).emit(__.in("knows").has("depth", "3")).until(__.in("knows").has("depth", "3")).count());
@@ -5216,11 +5217,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 3);
 
         // emit repeat until
-        // This case is using batches per iteration and not batches per loop
+        // Since TinkerPop 3.8 a repeat traversal which contains a barrier receives all traversers of a loop at once,
+        // so this case is batched per loop as well (before TinkerPop 3.8 it was using batches per iteration).
         profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).emit().repeat(__.out("knows").barrier(barrierSize)).until(__.in("knows").has("depth", "3")).count());
         assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
-        assertEquals(0, countBackendQueriesOfSize(s -> s > barrierSize * levelVerticesAmount, profile.getMetrics()));
-        assertTrue(countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()) > ((int) Math.pow(levelVerticesAmount, depth)));
+        assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 3);
 
         // repeat emit until
         profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.out("knows").barrier(barrierSize)).emit().until(__.in("knows").has("depth", "3")).count());
@@ -5228,7 +5229,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertRepeatBatchSizeByLoop(depth, levelVerticesAmount, barrierSize, profile, 3);
 
         // MultiQueriable inside multi-query compatible parent which is inside repeat step
-        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.union(__.out("knows"), __.<Vertex>where(__.in("knows")).none()).barrier(barrierSize)).emit().count());
+        profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize).repeat(__.union(__.out("knows"), __.<Vertex>where(__.in("knows")).discard()).barrier(barrierSize)).emit().count());
         assertTrue(countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()) > 0);
         assertEquals(0, countBackendQueriesOfSize(s -> s > barrierSize * levelVerticesAmount, profile.getMetrics()));
         assertTrue(countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()) <= 2);
@@ -5256,10 +5257,12 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         Vertex[] middleVertices = graph.traversal().V(a).repeat(__.out("knows")).times(depth/2+1).toList().toArray(new Vertex[0]);;
 
         // Repeat step mode: CLOSEST_REPEAT_PARENT. multi-nested `repeat` start steps. Early drop.
+        // Since TinkerPop 3.8 a repeat traversal which contains a barrier receives all traversers of a loop at once, so the
+        // first iteration of the nested `repeat` prefetches a whole batch of the outer barrier instead of a single vertex.
         profile = testLimitedBatch(() -> graph.traversal().V((Object[]) middleVertices).barrier(barrierSize).repeat(__.barrier(barrierSize).union(__.repeat(__.out("knows").barrier(barrierSize)).until(__.identity())).barrier(barrierSize)).until(__.identity()).limit(1),
             option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(REPEAT_STEP_BATCH_MODE), MultiQueryStrategyRepeatStepMode.CLOSEST_REPEAT_PARENT.getConfigName());
-        assertEquals(1,countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()));
-        assertEquals(0,countBackendQueriesOfSize(s -> s > levelVerticesAmount, profile.getMetrics()));
+        assertEquals(1,countBackendQueriesOfSize(barrierSize * levelVerticesAmount, profile.getMetrics()));
+        assertEquals(0,countBackendQueriesOfSize(s -> s != barrierSize * levelVerticesAmount, profile.getMetrics()));
 
         // Repeat step mode: ALL_REPEAT_PARENTS. multi-nested `repeat` start steps. Early drop.
         profile = testLimitedBatch(() -> graph.traversal().V((Object[]) middleVertices).barrier(barrierSize).repeat(__.barrier(barrierSize).union(__.repeat(__.out("knows").barrier(barrierSize)).until(__.identity())).barrier(barrierSize)).until(__.identity()).limit(1),
@@ -5285,13 +5288,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(0, countBackendQueriesOfSize(s -> s < levelVerticesAmount, profile.getMetrics()));
 
         // Repeat step mode: STARTS_ONLY_OF_ALL_REPEAT_PARENTS. multi-nested `repeat` start steps. Most outer repeat step next iteration not registering new vertices.
+        // Since TinkerPop 3.8 a repeat traversal which contains a barrier receives all traversers of a loop at once (the
+        // `barrier(1)` no longer feeds them one by one), so all vertices of the second loop are prefetched together by
+        // the nested `repeat` even though the most outer `repeat` does not register them for the next iteration.
         profile = testLimitedBatch(() -> graph.traversal().V(a).barrier(barrierSize)
                 .repeat(__.<Vertex>barrier(1)
                     .repeat(__.out("knows").barrier(barrierSize)).until(__.identity().loops().is(P.gt(0))).barrier(barrierSize)
                 ).until(__.identity().loops().is(P.gt(1))),
             option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true, option(REPEAT_STEP_BATCH_MODE), MultiQueryStrategyRepeatStepMode.STARTS_ONLY_OF_ALL_REPEAT_PARENTS.getConfigName());
-        assertEquals(1+levelVerticesAmount,countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()));
-        assertEquals(0, countBackendQueriesOfSize(s -> s > levelVerticesAmount, profile.getMetrics()));
+        assertEquals(1,countBackendQueriesOfSize(levelVerticesAmount, profile.getMetrics()));
+        assertEquals(1,countBackendQueriesOfSize(levelVerticesAmount*levelVerticesAmount, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(s -> s > levelVerticesAmount*levelVerticesAmount, profile.getMetrics()));
         assertEquals(0, countBackendQueriesOfSize(s -> s < levelVerticesAmount, profile.getMetrics()));
     }
 
@@ -5310,11 +5317,30 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         int currentReturnSize = 1;
         int currentLoop = 0;
         while (currentReturnSize < maxReturnSize && currentLoop <= depth){
-            assertTrue(countBackendQueriesOfSize(currentReturnSize, profile.getMetrics()) <= uniqueBatchRequestsAmount * 2);
+            final long queries = countBackendQueriesOfSize(currentReturnSize, profile.getMetrics());
+            assertTrue(queries <= uniqueBatchRequestsAmount * 2, "Expected at most " + uniqueBatchRequestsAmount * 2 +
+                " backend queries of size " + currentReturnSize + " but found " + queries + ". Backend query sizes: " + backendQuerySizes(profile.getMetrics()));
             currentReturnSize*=levelVerticesAmount;
             ++currentLoop;
         }
-        assertEquals(0, countBackendQueriesOfSize(s -> s > maxReturnSize, profile.getMetrics()));
+        assertEquals(0, countBackendQueriesOfSize(s -> s > maxReturnSize, profile.getMetrics()),
+            "Expected no backend queries larger than " + maxReturnSize + ". Backend query sizes: " + backendQuerySizes(profile.getMetrics()));
+    }
+
+    /**
+     * Returns the sizes of all backend queries of the given metrics mapped to the number of queries of that size.
+     */
+    private Map<Long, Long> backendQuerySizes(Collection<? extends Metrics> metrics) {
+        final Map<Long, Long> sizes = new TreeMap<>();
+        for (Metrics m : metrics) {
+            if (m.getName().equals("backend-query")) {
+                for (Long count : m.getCounts().values()) {
+                    sizes.merge(count, 1L, Long::sum);
+                }
+            }
+            backendQuerySizes(m.getNested()).forEach((size, count) -> sizes.merge(size, count, Long::sum));
+        }
+        return sizes;
     }
 
     private void addTestAdjacentVertices(Vertex vertex, int levelVerticesAmount, int depth, Map<Integer, Integer> levelToNumberOfVertices){

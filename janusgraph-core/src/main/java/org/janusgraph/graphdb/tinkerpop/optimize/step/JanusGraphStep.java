@@ -59,7 +59,7 @@ import java.util.Map.Entry;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implements HasStepFolder<S, E>, Profiling, HasContainerHolder {
+public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implements HasStepFolder<S, E>, Profiling, HasContainerHolder<S, E> {
 
     private final ArrayList<HasContainer> hasContainers = new ArrayList<>();
     private final Map<String, Map<List<HasContainer>, QueryInfo>> hasLocalContainers = new LinkedHashMap<>();

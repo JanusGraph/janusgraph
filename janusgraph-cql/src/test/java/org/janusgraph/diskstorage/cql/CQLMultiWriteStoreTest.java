@@ -14,11 +14,9 @@
 
 package org.janusgraph.diskstorage.cql;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import com.datastax.oss.driver.internal.core.session.DefaultSession;
 import org.apache.commons.lang.UnhandledException;
+import org.apache.logging.log4j.Level;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.MultiWriteKeyColumnValueStoreTest;
@@ -59,75 +57,58 @@ public class CQLMultiWriteStoreTest extends MultiWriteKeyColumnValueStoreTest {
     @Test
     public void shouldLogSessionLeakWarning() throws BackendException {
 
-        TestLoggerUtils.processWithLoggerReplacement(
-            logger -> {
+        TestLoggerUtils.processWithLogCapture(DefaultSession.class, Level.WARN, capture -> {
 
-                ModifiableConfiguration configuration = getBaseStorageConfiguration();
-                configuration.set(SESSION_LEAK_THRESHOLD, 2);
+            ModifiableConfiguration configuration = getBaseStorageConfiguration();
+            configuration.set(SESSION_LEAK_THRESHOLD, 2);
 
-                ListAppender<ILoggingEvent> listAppender = TestLoggerUtils.registerListAppender(logger);
+            Assertions.assertFalse(hasWarnLog(capture));
 
-                Assertions.assertFalse(hasWarnLog(listAppender));
-
-                List<CQLStoreManager> storeManagers = new ArrayList<>(3);
-                for(int i=0; i<3; i++){
-                    try {
-                        storeManagers.add(new CQLStoreManager(configuration));
-                    } catch (BackendException e) {
-                        Assertions.fail();
-                    }
+            List<CQLStoreManager> storeManagers = new ArrayList<>(3);
+            for(int i=0; i<3; i++){
+                try {
+                    storeManagers.add(new CQLStoreManager(configuration));
+                } catch (BackendException e) {
+                    Assertions.fail();
                 }
+            }
 
-                Assertions.assertTrue(hasWarnLog(listAppender));
+            Assertions.assertTrue(hasWarnLog(capture));
 
-                storeManagers.forEach(cqlStoreManager -> {
-                    try{
-                        cqlStoreManager.close();
-                    } catch (BackendException backendException){
-                        throw new UnhandledException(backendException);
-                    }
-                });
+            storeManagers.forEach(cqlStoreManager -> {
+                try{
+                    cqlStoreManager.close();
+                } catch (BackendException backendException){
+                    throw new UnhandledException(backendException);
+                }
+            });
 
-            },
-            DefaultSession.class,
-            ch.qos.logback.classic.Level.WARN
-        );
+        });
     }
 
     @Test
     public void shouldProperlyCloseSessionOnExceptionAndNotLogSessionLeakWarnings() {
 
-        TestLoggerUtils.processWithLoggerReplacement(
-            logger -> {
+        TestLoggerUtils.processWithLogCapture(DefaultSession.class, Level.WARN, capture -> {
 
-                ModifiableConfiguration configuration = Mockito.spy(getBaseStorageConfiguration());
-                configuration.set(SESSION_LEAK_THRESHOLD, 2);
+            ModifiableConfiguration configuration = Mockito.spy(getBaseStorageConfiguration());
+            configuration.set(SESSION_LEAK_THRESHOLD, 2);
 
-                ListAppender<ILoggingEvent> listAppender = TestLoggerUtils.registerListAppender(logger);
+            Mockito.doThrow(RuntimeException.class).when(configuration).get(BATCH_STATEMENT_SIZE);
 
-                Mockito.doThrow(RuntimeException.class).when(configuration).get(BATCH_STATEMENT_SIZE);
+            Assertions.assertFalse(hasWarnLog(capture));
 
-                Assertions.assertFalse(hasWarnLog(listAppender));
+            for(int i=0; i<3; i++){
+                Assertions.assertThrows(Throwable.class, () -> new CQLStoreManager(configuration));
+            }
 
-                for(int i=0; i<3; i++){
-                    Assertions.assertThrows(Throwable.class, () -> new CQLStoreManager(configuration));
-                }
+            Assertions.assertFalse(hasWarnLog(capture));
 
-                Assertions.assertFalse(hasWarnLog(listAppender));
-
-            },
-            DefaultSession.class,
-            ch.qos.logback.classic.Level.WARN
-        );
+        });
     }
 
-    private boolean hasWarnLog(ListAppender<ILoggingEvent> listAppender){
-        for (ILoggingEvent logEvent : listAppender.list){
-            if(Level.WARN.equals(logEvent.getLevel()) &&
-                logEvent.getMessage().startsWith("You have too many session instances")){
-                return true;
-            }
-        }
-        return false;
+    private boolean hasWarnLog(TestLoggerUtils.LogCapture capture){
+        return capture.getEvents().stream().anyMatch(logEvent -> Level.WARN.equals(logEvent.getLevel()) &&
+            logEvent.getMessage().getFormattedMessage().startsWith("You have too many session instances"));
     }
 }

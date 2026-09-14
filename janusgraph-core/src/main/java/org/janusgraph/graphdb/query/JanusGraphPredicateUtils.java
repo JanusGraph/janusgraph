@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.query;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
+import org.apache.tinkerpop.gremlin.process.traversal.NotP;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Text;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -65,6 +66,11 @@ public class JanusGraphPredicateUtils {
                 default: throw new IllegalArgumentException("Unexpected container: " + con);
 
             }
+        } else if (p instanceof NotP.NotPBiPredicate) {
+            // TinkerPop 3.8 negates predicates by wrapping them (P.not(p) / p.negate() -> NotP) instead of
+            // swapping in the complementary bi-predicate, so unwrap and negate the JanusGraph equivalent.
+            final JanusGraphPredicate original = convertInternal(((NotP.NotPBiPredicate<?, ?>) p).getOriginal());
+            return original != null && original.hasNegation() ? original.negate() : null;
         } else return null;
     }
 

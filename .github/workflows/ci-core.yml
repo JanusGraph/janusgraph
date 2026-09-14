@@ -52,28 +52,10 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v4
         with:
-          java-version: 8
+          java-version: 11
           distribution: zulu
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
-
-  build-java11:
-    needs: build-all
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 11
-          distribution: zulu
-      - run: mvn clean install --projects janusgraph-all -Pjava-11 -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
-      - run: mvn verify --projects janusgraph-all -Pjava-11 -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
 
   tests:
     runs-on: ubuntu-22.04
@@ -83,42 +65,65 @@ jobs:
       matrix:
         include:
           - module: core
-            java: 8
+            java: 11
           - module: driver
-            java: 8
+            java: 11
           - module: server
-            java: 8
+            java: 11
           - module: test
-            java: 8
+            java: 11
           - module: inmemory
             args: "-Dtest.skip.tp=false"
-            java: 8
+            java: 11
           - module: berkeleyje
-            java: 8
+            java: 11
           - module: lucene
-            java: 8
+            java: 11
           - module: core
-            install-args: "-Pjava-11"
-            java: 11
+            java: 17
+          - module: core
+            java: 21
+          - module: core
+            java: 25
           - module: driver
-            install-args: "-Pjava-11"
-            java: 11
+            java: 17
+          - module: driver
+            java: 21
+          - module: driver
+            java: 25
           - module: server
-            install-args: "-Pjava-11"
-            java: 11
+            java: 17
+          - module: server
+            java: 21
+          - module: server
+            java: 25
           - module: test
-            install-args: "-Pjava-11"
-            java: 11
+            java: 17
+          - module: test
+            java: 21
+          - module: test
+            java: 25
           - module: inmemory
-            install-args: "-Pjava-11"
             args: "-Dtest.skip.tp=false"
-            java: 11
+            java: 17
+          - module: inmemory
+            args: "-Dtest.skip.tp=false"
+            java: 21
+          - module: inmemory
+            args: "-Dtest.skip.tp=false"
+            java: 25
           - module: berkeleyje
-            install-args: "-Pjava-11"
-            java: 11
+            java: 17
+          - module: berkeleyje
+            java: 21
+          - module: berkeleyje
+            java: 25
           - module: lucene
-            install-args: "-Pjava-11"
-            java: 11
+            java: 17
+          - module: lucene
+            java: 21
+          - module: lucene
+            java: 25
     steps:
       - uses: actions/checkout@v4
         with:

@@ -2,7 +2,7 @@
 
 ## Building zip archives
 
-Run `mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true -Pjava-11`.  
+Run `mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true`.  
 This command can be run from either the root of the JanusGraph repository 
 (the parent of the janusgraph-dist directory) or the janusgraph-dist directory.
 Running from the root of the repository is recommended.  Running from 

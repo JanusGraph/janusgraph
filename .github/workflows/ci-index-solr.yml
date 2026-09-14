@@ -54,7 +54,7 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v4
         with:
-          java-version: 8
+          java-version: 11
           distribution: zulu
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
@@ -68,13 +68,12 @@ jobs:
         include:
           - module: solr
             args: "-Psolr8"
-            name: solr8-java8
-            java: 8
-          - module: solr
-            install-args: "-Pjava-11"
-            args: "-Psolr8"
             name: solr8
             java: 11
+          - module: solr
+            args: "-Psolr8"
+            name: solr8-java25
+            java: 25
     steps:
       - uses: actions/checkout@v4
         with:

@@ -34,11 +34,10 @@ jobs:
           - module: solr
             args: "-Psolr8"
             name: solr8
-            java: 8
-          - module: solr
-            install-args: "-Pjava-11"
-            args: "-Psolr8"
-            name: solr8
             java: 11
+          - module: solr
+            args: "-Psolr8"
+            name: solr8-java25
+            java: 25
     steps:
       - run: 'echo "No build required"'
