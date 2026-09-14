@@ -57,7 +57,7 @@ public class JanusGraphPropertyMapStep<K, E> extends PropertyMapStep<K, E> imple
     private final boolean isReturnTypeValue;
 
     public JanusGraphPropertyMapStep(PropertyMapStep<K, E> originalStep, boolean prefetchAllPropertiesRequired, boolean prefetchingAllowed) {
-        super(originalStep.getTraversal(), originalStep.getReturnType(), originalStep.getTraversalRing(), originalStep.getPropertyKeys());
+        super(originalStep.getTraversal(), originalStep.getReturnType(), originalStep.getPropertyKeys());
         CopyStepUtil.copyAbstractStepModifiableFields(originalStep, this);
         this.prefetchAllPropertiesRequired = prefetchAllPropertiesRequired;
         this.prefetchingAllowed = prefetchingAllowed;
@@ -66,7 +66,10 @@ public class JanusGraphPropertyMapStep<K, E> extends PropertyMapStep<K, E> imple
         tokens = originalStep.getIncludedTokens();
         withIdsFetching = includeToken(WithOptions.ids);
         withLabelsFetching = includeToken(WithOptions.labels);
-        traversalRing.getTraversals().forEach(this::integrateChild);
+        final Traversal.Admin<K, E> originalValueTraversal = originalStep.getValueTraversal();
+        if (originalValueTraversal != null) {
+            this.valueTraversal = this.integrateChild(originalValueTraversal);
+        }
         parameters = originalStep.getParameters();
         parameters.getTraversals().forEach(this::integrateChild);
 

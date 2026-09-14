@@ -14,7 +14,7 @@
 
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.NoneStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DiscardStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphHasStep;
@@ -54,7 +54,7 @@ public class AdjacentVertexHasUniquePropertyOptimizerStrategyTest extends Optimi
         assertNumStep(1, 1, g.V(sv[0]).out().has("id", 0), JanusGraphHasStep.class);
         assertNumStep(1, 0, g.V(sv[0]).out().has("id", 0).has("uniqueId", 0), JanusGraphHasStep.class);
         assertNumStep(0, 0, g.V(sv[0]).out().has("uniqueId", 10000), JanusGraphHasStep.class);
-        assertNumStep(0, 1, g.V(sv[0]).out().has("uniqueId", 10000), NoneStep.class);
+        assertNumStep(0, 1, g.V(sv[0]).out().has("uniqueId", 10000), DiscardStep.class);
 
         // ensure step labels are handled correctly
         assertSameResultWithOptimizations(g.V().as("v1").out().has("uniqueId", 0).as("v2").select("v1", "v2").by("uniqueId"),
@@ -79,7 +79,7 @@ public class AdjacentVertexHasUniquePropertyOptimizerStrategyTest extends Optimi
         assertNumStep(1, 1, g.V(sv[0]).out().has("id", 0), JanusGraphHasStep.class);
         assertNumStep(1, 1, g.V(sv[0]).out().has("id", 0).has("uniqueId", 0), JanusGraphHasStep.class);
         assertNumStep(0, 1, g.V(sv[0]).out().has("uniqueId", 10000), JanusGraphHasStep.class);
-        assertNumStep(0, 0, g.V(sv[0]).out().has("uniqueId", 10000), NoneStep.class);
+        assertNumStep(0, 0, g.V(sv[0]).out().has("uniqueId", 10000), DiscardStep.class);
 
         // ensure step labels are handled correctly
         assertSameResultWithOptimizations(g.V().as("v1").out().has("uniqueId", 0).as("v2").select("v1", "v2").by("uniqueId"),

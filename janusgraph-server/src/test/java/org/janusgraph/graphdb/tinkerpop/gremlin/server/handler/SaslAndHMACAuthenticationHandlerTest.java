@@ -19,6 +19,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMessage;
+import org.apache.tinkerpop.gremlin.server.Settings;
 import org.easymock.EasyMockSupport;
 import org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.HMACAuthenticator;
 import org.janusgraph.graphdb.tinkerpop.gremlin.server.auth.JanusGraphSimpleAuthenticator;
@@ -51,7 +52,7 @@ public class SaslAndHMACAuthenticationHandlerTest extends EasyMockSupport {
         expect(ctx.fireChannelRead(eq(msg))).andReturn(ctx);
         replayAll();
 
-        final SaslAndHMACAuthenticationHandler handler = new SaslAndHMACAuthenticationHandler(authenticator, null);
+        final SaslAndHMACAuthenticationHandler handler = new SaslAndHMACAuthenticationHandler(authenticator, new Settings());
         handler.channelRead(ctx, msg);
     }
 
@@ -74,7 +75,7 @@ public class SaslAndHMACAuthenticationHandlerTest extends EasyMockSupport {
         expect(ctx.fireChannelRead(eq(msg))).andReturn(ctx);
         replayAll();
 
-        final SaslAndHMACAuthenticationHandler handler = new SaslAndHMACAuthenticationHandler(authenticator, null);
+        final SaslAndHMACAuthenticationHandler handler = new SaslAndHMACAuthenticationHandler(authenticator, new Settings());
         handler.channelRead(ctx, msg);
     }
 

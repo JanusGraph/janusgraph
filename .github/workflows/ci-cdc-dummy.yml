@@ -36,12 +36,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: cdc-java8
-            java: 8
           - name: cdc-java11
-            install-args: "-Pjava-11"
             java: 11
+          - name: cdc-java25
+            java: 25
           - name: cdc-e2e-java17
             java: 17
+          - name: cdc-e2e-java21
+            java: 21
     steps:
       - run: 'echo "No build required"'

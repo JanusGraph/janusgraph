@@ -32,6 +32,8 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.util.BufferUtil;
@@ -46,14 +48,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -323,40 +324,41 @@ public class CQLStoreTest extends KeyColumnValueStoreTest {
 
     @Test
     @FeatureFlag(feature = JanusGraphFeature.UnorderedScan)
-    public void testGetKeysWithoutOrderedScan() throws BackendException, NoSuchFieldException, IllegalAccessException {
+    public void testGetKeysWithoutOrderedScan() throws BackendException {
         // support unordered scan but not ordered scan
-        Field field = StandardStoreFeatures.class.getDeclaredField("orderedScan");
-        field.setAccessible(true);
-        Field modifiersField = Field.class
-            .getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-        field.set(manager.getFeatures(), false);
-        Exception ex = assertThrows(PermanentBackendException.class, () -> store.getKeys(
+        final StoreFeatures features = new StandardStoreFeatures.Builder(manager.getFeatures()).orderedScan(false).build();
+        final KeyColumnValueStore storeWithFeatures = openStoreWithFeatures(features, "testGetKeysWithoutOrderedScan");
+        Exception ex = assertThrows(PermanentBackendException.class, () -> storeWithFeatures.getKeys(
             new KeyRangeQuery(BufferUtil.getLongBuffer(1), BufferUtil.getLongBuffer(1000), BufferUtil.getLongBuffer(1),
                 BufferUtil.getLongBuffer(1000)), tx));
         assertEquals("This operation is only allowed when the byteorderedpartitioner is used.", ex.getMessage());
-        assertDoesNotThrow(() -> store.getKeys(
+        assertDoesNotThrow(() -> storeWithFeatures.getKeys(
             new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(4)), tx));
     }
 
     @Test
     @FeatureFlag(feature = JanusGraphFeature.OrderedScan)
-    public void testGetKeysWithoutUnorderedScan() throws BackendException, NoSuchFieldException, IllegalAccessException {
+    public void testGetKeysWithoutUnorderedScan() throws BackendException {
         // support ordered scan but not unordered scan
-        Field field = StandardStoreFeatures.class.getDeclaredField("unorderedScan");
-        field.setAccessible(true);
-        Field modifiersField = Field.class
-            .getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-        field.set(manager.getFeatures(), false);
-        Exception ex = assertThrows(PermanentBackendException.class, () -> store.getKeys(
+        final StoreFeatures features = new StandardStoreFeatures.Builder(manager.getFeatures()).unorderedScan(false).build();
+        final KeyColumnValueStore storeWithFeatures = openStoreWithFeatures(features, "testGetKeysWithoutUnorderedScan");
+        Exception ex = assertThrows(PermanentBackendException.class, () -> storeWithFeatures.getKeys(
             new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(4)), tx));
         assertEquals("This operation is only allowed when partitioner supports unordered scan", ex.getMessage());
-        assertDoesNotThrow(() -> store.getKeys(
+        assertDoesNotThrow(() -> storeWithFeatures.getKeys(
             new KeyRangeQuery(BufferUtil.getLongBuffer(1), BufferUtil.getLongBuffer(1000), BufferUtil.getLongBuffer(1),
                 BufferUtil.getLongBuffer(1000)), tx));
+    }
+
+    /**
+     * Opens a dedicated store whose manager reports the given features. The store consults its manager's features on
+     * every scan, so it is opened from a spy of the manager which returns the given features (the store keeps the spy
+     * as its manager). The features of {@link StandardStoreFeatures} are final, so they cannot be changed in place.
+     */
+    private KeyColumnValueStore openStoreWithFeatures(final StoreFeatures features, final String storeName) throws BackendException {
+        final KeyColumnValueStoreManager managerWithFeatures = Mockito.spy(manager);
+        Mockito.doReturn(features).when(managerWithFeatures).getFeatures();
+        return managerWithFeatures.openDatabase(storeName);
     }
 
     @Override

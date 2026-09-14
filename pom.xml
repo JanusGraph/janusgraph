@@ -52,18 +52,18 @@
     </distributionManagement>
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
-        <tinkerpop.version>3.7.3</tinkerpop.version>
-        <avro.version>1.11.3</avro.version>
-        <junit-platform.version>1.11.0</junit-platform.version>
-        <junit.version>5.11.0</junit.version>
-        <mockito.version>4.11.0</mockito.version>
+        <tinkerpop.version>3.8.2</tinkerpop.version>
+        <avro.version>1.11.4</avro.version>
+        <junit-platform.version>1.14.4</junit-platform.version>
+        <junit.version>5.14.4</junit.version>
+        <mockito.version>5.23.0</mockito.version>
         <jamm.version>0.3.3</jamm.version>
         <metrics.version>4.2.37</metrics.version>
         <slf4j.version>1.7.36</slf4j.version>
         <logback.version>1.2.13</logback.version>
         <httpcomponents.httpclient.version>4.5.14</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.16</httpcomponents.httpcore.version>
-        <hadoop.version>3.4.1</hadoop.version>
+        <hadoop.version>3.4.3</hadoop.version>
         <hbase2.version>2.6.0-hadoop3</hbase2.version>
         <htrace.version>4.1.7</htrace.version>
         <bigtable.version>1.24.0</bigtable.version>
@@ -71,10 +71,10 @@
         <jackson2.version>2.17.2</jackson2.version>
         <lucene-solr.version>8.11.3</lucene-solr.version>
         <elasticsearch.version>9.0.3</elasticsearch.version>
-        <commons.beanutils.version>1.9.4</commons.beanutils.version>
+        <commons.beanutils.version>1.11.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <zookeeper.version>3.9.2</zookeeper.version>
-        <netty4.version>4.1.118.Final</netty4.version>
+        <netty4.version>4.1.138.Final</netty4.version>
         <jna.version>5.14.0</jna.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -82,21 +82,22 @@
         <gpg.skip>false</gpg.skip>
         <maven.gpg.version>3.2.4</maven.gpg.version>
         <perf.jvm.opts />
-        <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
-        <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
+        <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts} ${test.jdk.jvm.opts}</default.test.jvm.opts>
+        <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts} ${test.jdk.jvm.opts}</mem.jvm.opts>
         <test.extra.jvm.opts />
+        <!-- JVM options which depend on the JDK running the tests, see the `jdk17-plus-tests` profile -->
+        <test.jdk.jvm.opts />
         <test.skip.default>false</test.skip.default>
         <test.skip.tp>true</test.skip.tp>
         <top.level.basedir>${basedir}</top.level.basedir>
         <maven.javadoc.version>3.10.0</maven.javadoc.version>
-        <compiler.source>1.8</compiler.source>
-        <compiler.target>1.8</compiler.target>
+        <!-- Minimum Java version. Compiling with the javac release flag guarantees that builds on newer JDKs (17, 21, 25) do
+             not use APIs which are missing on Java 11. -->
+        <compiler.release>11</compiler.release>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
-        <!-- Cassandra version bundled into the pre-packaged distribution. Must stay on a
-             release that supports Java 8, since the distribution is built/run on Java 8
-             (see ci-publish-official.yml and getting-started/installation.md). Cassandra 5.0
-             requires Java 11+, so it is supported/tested as a backend but not bundled here.
+        <!-- Cassandra version bundled into the pre-packaged distribution. Cassandra 5.0 is
+             supported/tested as a backend but is not bundled here.
              When this version is updated please also update sha256 -->
         <!-- https://downloads.apache.org/cassandra/4.0.6/apache-cassandra-4.0.6-bin.tar.gz.sha256 -->
         <cassandra-dist.version>4.0.6</cassandra-dist.version>
@@ -113,7 +114,7 @@
         <jcabi.version>2.1.0</jcabi.version>
         <jmh.version>1.33</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
-        <jetty.version>9.4.56.v20240826</jetty.version>
+        <jetty.version>9.4.57.v20241219</jetty.version>
         <log4j2.version>2.23.1</log4j2.version>
         <graalvm-nativeimage.version>24.0.2</graalvm-nativeimage.version>
         <caffeine.version>2.9.3</caffeine.version>
@@ -379,8 +380,7 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.13.0</version>
                     <configuration>
-                        <source>${compiler.source}</source>
-                        <target>${compiler.target}</target>
+                        <release>${compiler.release}</release>
                         <compilerArgs>
                             <arg>-Xmaxerrs</arg>
                             <arg>500</arg>
@@ -418,6 +418,12 @@
                             </goals>
                             <phase>test</phase>
                             <configuration combine.self="override">
+                                <!-- combine.self="override" discards the default surefire configuration, so this
+                                     execution never used default.test.jvm.opts (heap sizing, -ea, coverage agent) and
+                                     intentionally still does not, to leave the TinkerPop suites' JVM unchanged. Only
+                                     the JDK dependent options (e.g. the module opens needed by Kryo/Gryo on Java 17+)
+                                     are passed, they are empty on Java 11. -->
+                                <argLine>${test.jdk.jvm.opts}</argLine>
                                 <reuseForks>false</reuseForks>
                                 <forkCount>1</forkCount>
                                 <parallel>none</parallel>
@@ -506,7 +512,7 @@
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.12</version>
+                    <version>0.8.15</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -634,7 +640,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-configuration2</artifactId>
-                <version>2.10.1</version>
+                <version>2.15.1</version>
             </dependency>
 
             <dependency>
@@ -698,7 +704,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.18.0</version>
+                <version>3.20.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-configuration</groupId>
@@ -728,7 +734,7 @@
             <dependency>
                 <groupId>commons-logging</groupId>
                 <artifactId>commons-logging</artifactId>
-                <version>1.3.4</version>
+                <version>1.4.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -917,18 +923,13 @@
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
-                <artifactId>mockito-inline</artifactId>
-                <version>${mockito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
                 <artifactId>mockito-junit-jupiter</artifactId>
                 <version>${mockito.version}</version>
             </dependency>
             <dependency>
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
-                <version>1.15.1</version>
+                <version>1.17.7</version>
             </dependency>
             <dependency>
                 <groupId>org.apiguardian</groupId>
@@ -1016,7 +1017,7 @@
             <dependency>
                 <groupId>org.jacoco</groupId>
                 <artifactId>org.jacoco.ant</artifactId>
-                <version>0.8.12</version>
+                <version>0.8.15</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
@@ -1197,7 +1198,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-text</artifactId>
-                <version>1.12.0</version>
+                <version>1.15.0</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
@@ -1289,6 +1290,19 @@
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-auth</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <!-- Spark 3.3.x pulls in the Hadoop 3.3.2 client artifacts, which still use Subject.getSubject() and
+                 therefore fail on Java 24+ (UnsupportedOperationException: getSubject is not supported), e.g. when the
+                 HBase client resolves the current user. Keep them on the same version as the other Hadoop artifacts. -->
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client-api</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client-runtime</artifactId>
                 <version>${hadoop.version}</version>
             </dependency>
             <dependency>
@@ -1480,10 +1494,31 @@
 
     <profiles>
         <profile>
-            <id>java-11</id>
+            <!-- Java 17 and newer enforce strong encapsulation of the JDK internals. Some of the libraries used by the
+                 tests (most notably Kryo/Gryo, Hadoop and Netty) still rely on deep reflection, so open the same set of
+                 modules TinkerPop opens for its own test suites on JDK 17, 21 and 25. -->
+            <id>jdk17-plus-tests</id>
+            <activation>
+                <jdk>[17,)</jdk>
+            </activation>
             <properties>
-                <compiler.source>11</compiler.source>
-                <compiler.target>11</compiler.target>
+                <test.jdk.jvm.opts>
+                    -XX:+IgnoreUnrecognizedVMOptions
+                    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+                    --add-exports=java.base/sun.security.x509=ALL-UNNAMED
+                    --add-exports=java.base/sun.security.action=ALL-UNNAMED
+                    --add-opens=java.base/java.io=ALL-UNNAMED
+                    --add-opens=java.base/java.nio=ALL-UNNAMED
+                    --add-opens=java.base/sun.nio.cs=ALL-UNNAMED
+                    --add-opens=java.base/java.lang=ALL-UNNAMED
+                    --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                    --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+                    --add-opens=java.base/java.util=ALL-UNNAMED
+                    --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+                    --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+                    --add-opens=java.base/java.net=ALL-UNNAMED
+                    --enable-native-access=ALL-UNNAMED
+                </test.jdk.jvm.opts>
             </properties>
         </profile>
 
@@ -1698,7 +1733,7 @@
                             <dependency>
                                 <groupId>org.jacoco</groupId>
                                 <artifactId>org.jacoco.ant</artifactId>
-                                <version>0.8.12</version>
+                                <version>0.8.15</version>
                             </dependency>
                         </dependencies>
                     </plugin>

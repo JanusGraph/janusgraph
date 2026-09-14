@@ -20,7 +20,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.FilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.NoneStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DiscardStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.IdStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -131,7 +131,7 @@ public class AdjacentVertexHasUniquePropertyOptimizerStrategy
             HasContainer hc = new HasContainer(ADJACENT_ID.name(), P.eq(filterTraversal.next()));
             return new HasStep<>(traversal, hc);
         } else {
-            return new NoneStep<>(traversal);
+            return new DiscardStep<>(traversal);
         }
     }
 }

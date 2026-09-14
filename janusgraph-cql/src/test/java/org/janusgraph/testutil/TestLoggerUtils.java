@@ -14,105 +14,113 @@
 
 package org.janusgraph.testutil;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
-import org.slf4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.AbstractAppender;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.config.Property;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
+/**
+ * Lets a test observe the log events a class emits.
+ * <p>
+ * The tests route SLF4J to Log4j 2, so the events of a class (including the events of its {@code private static final}
+ * logger field) can be captured by temporarily configuring a Log4j logger for the class name with an in-memory
+ * appender. This replaces the former approach of swapping the class' logger field via reflection, which is not
+ * possible anymore on Java 12+.
+ */
 public class TestLoggerUtils {
 
-    private static final Constructor<ch.qos.logback.classic.Logger> LOGBACK_CONSTRUCTOR;
-    private static final LoggerContext LOGBACK_CONTEXT = new LoggerContext();
-    private static final ch.qos.logback.classic.Logger ROOT_LOGGER = LOGBACK_CONTEXT.getLogger("ROOT");
     private static final Level DEFAULT_LOGGING_LEVEL = Level.DEBUG;
 
-    static {
-        try {
-            LOGBACK_CONSTRUCTOR = ch.qos.logback.classic.Logger.class.getDeclaredConstructor(
-                String.class, ch.qos.logback.classic.Logger.class, LoggerContext.class);
-            LOGBACK_CONSTRUCTOR.setAccessible(true);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalStateException(e);
+    /**
+     * The log events captured for a class while {@link #processWithLogCapture(Class, Level, Consumer)} runs.
+     */
+    public static class LogCapture {
+
+        private final List<LogEvent> events = new CopyOnWriteArrayList<>();
+
+        public List<LogEvent> getEvents() {
+            return events;
+        }
+
+        public boolean hasEventOfLevel(final Level level) {
+            return events.stream().anyMatch(event -> level.equals(event.getLevel()));
+        }
+
+        public boolean hasEventOfLevel(final Level level, final String messagePart) {
+            return events.stream().anyMatch(event -> level.equals(event.getLevel())
+                && event.getMessage().getFormattedMessage().contains(messagePart));
         }
     }
 
-    public static ch.qos.logback.classic.Logger createLogbackLogger(Class<?> clazz, Level loggingLevel){
-        try {
-            ch.qos.logback.classic.Logger logger = LOGBACK_CONSTRUCTOR.newInstance(clazz.getName(), ROOT_LOGGER, LOGBACK_CONTEXT);
-            logger.setLevel(loggingLevel);
-            return logger;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalStateException(e);
+    private static class CapturingAppender extends AbstractAppender {
+
+        private final LogCapture capture;
+
+        private CapturingAppender(final String name, final LogCapture capture) {
+            super(name, null, null, true, Property.EMPTY_ARRAY);
+            this.capture = capture;
+        }
+
+        @Override
+        public void append(final LogEvent event) {
+            capture.events.add(event.toImmutable());
         }
     }
 
-    public static void processWithLoggerReplacement(Consumer<ch.qos.logback.classic.Logger> processWithLoggerReplacementFunction,
-                                                    Class<?> classWhereToReplaceLogger){
-        processWithLoggerReplacement(processWithLoggerReplacementFunction, classWhereToReplaceLogger, DEFAULT_LOGGING_LEVEL);
+    public static void processWithLogCapture(final Class<?> classWhoseLogsToCapture,
+                                             final Consumer<LogCapture> processWithLogCaptureFunction) {
+        processWithLogCapture(classWhoseLogsToCapture, DEFAULT_LOGGING_LEVEL, processWithLogCaptureFunction);
     }
 
-    public static void processWithLoggerReplacement(Consumer<ch.qos.logback.classic.Logger> processWithLoggerReplacementFunction,
-                                                    Class<?> classWhereToReplaceLogger, Level loggingLevel){
+    /**
+     * Runs the given function while all log events of the given class at the given level or above are captured.
+     * The logger configuration of the class is restored afterwards.
+     */
+    public static void processWithLogCapture(final Class<?> classWhoseLogsToCapture, final Level loggingLevel,
+                                             final Consumer<LogCapture> processWithLogCaptureFunction) {
+        final String loggerName = classWhoseLogsToCapture.getName();
+        final org.apache.logging.log4j.spi.LoggerContext spiContext = LogManager.getContext(false);
+        if (!(spiContext instanceof LoggerContext)) {
+            throw new IllegalStateException("Capturing log events requires Log4j Core as the active Log4j implementation but the "
+                + "logger context is a " + spiContext.getClass().getName());
+        }
+        final LoggerContext context = (LoggerContext) spiContext;
+        final Configuration configuration = context.getConfiguration();
 
-        Field loggerField = getModifiableLoggerField(classWhereToReplaceLogger);
-        Logger originalLogger = getLoggerFromField(loggerField);
+        // getLoggerConfig() returns the closest parent configuration if the class has no configuration of its own
+        final LoggerConfig existingConfig = configuration.getLoggerConfig(loggerName);
+        final boolean ownConfig = loggerName.equals(existingConfig.getName());
+        final LoggerConfig loggerConfig = ownConfig ? existingConfig : new LoggerConfig(loggerName, loggingLevel, true);
+        final Level originalLevel = loggerConfig.getLevel();
+
+        final LogCapture capture = new LogCapture();
+        final CapturingAppender appender = new CapturingAppender("TestLogCapture-" + loggerName, capture);
+        appender.start();
+        if (!ownConfig) {
+            configuration.addLogger(loggerName, loggerConfig);
+        }
+        loggerConfig.addAppender(appender, loggingLevel, null);
+        loggerConfig.setLevel(loggingLevel);
+        context.updateLoggers();
         try {
-
-            ch.qos.logback.classic.Logger loggerToUseInFunction = createLogbackLogger(classWhereToReplaceLogger, loggingLevel);
-            replaceLoggerField(loggerField, loggerToUseInFunction);
-
-            processWithLoggerReplacementFunction.accept(loggerToUseInFunction);
-
-            loggerToUseInFunction.detachAndStopAllAppenders();
-
+            processWithLogCaptureFunction.accept(capture);
         } finally {
-            // revert back to original logger
-            replaceLoggerField(loggerField, originalLogger);
+            loggerConfig.removeAppender(appender.getName());
+            appender.stop();
+            if (ownConfig) {
+                loggerConfig.setLevel(originalLevel);
+            } else {
+                configuration.removeLogger(loggerName);
+            }
+            context.updateLoggers();
         }
-    }
-
-    public static Field getModifiableLoggerField(Class<?> clazz){
-        Field loggerField = Arrays.stream(clazz.getDeclaredFields()).filter(field -> org.slf4j.Logger.class.isAssignableFrom(field.getType()))
-            .findFirst().orElseThrow(() -> new IllegalStateException("No logger found in class "+clazz.getName()));
-        try {
-            loggerField.setAccessible(true);
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(loggerField, loggerField.getModifiers() & ~Modifier.FINAL);
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
-        }
-        return loggerField;
-    }
-
-    public static Logger getLoggerFromField(Field loggerField){
-        try {
-            return (Logger) loggerField.get(null);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void replaceLoggerField(Field loggerField, Logger logger){
-        try {
-            loggerField.set(null, logger);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static ListAppender<ILoggingEvent> registerListAppender(ch.qos.logback.classic.Logger logger){
-        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
-        listAppender.start();
-        logger.addAppender(listAppender);
-        return listAppender;
     }
 }

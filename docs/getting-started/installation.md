@@ -89,7 +89,7 @@ For further reading, see the [JanusGraph Server](../operations/server.md) sectio
 
 ## Local Installation
 
-In order to run JanusGraph, Java 8 SE is required.
+In order to run JanusGraph, Java 11 SE or newer is required. JanusGraph is tested with Java 11, 17, 21 and 25 (OLAP jobs using Apache Spark are only supported on Java 11 and 17, and the Cassandra bundled into the `janusgraph-full` distribution requires Java 11).
 Make sure the `$JAVA_HOME` environment variable points to the correct location where either JRE or JDK is installed.
 JanusGraph can be downloaded as a .zip archive from the [Releases](https://github.com/JanusGraph/janusgraph/releases) section of the project repository.
 

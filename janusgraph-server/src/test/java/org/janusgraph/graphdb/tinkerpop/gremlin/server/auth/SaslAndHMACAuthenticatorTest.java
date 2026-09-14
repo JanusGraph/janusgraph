@@ -44,7 +44,7 @@ public class SaslAndHMACAuthenticatorTest extends JanusGraphAbstractAuthenticato
 
     @Test
     public void testNewSaslNegotiatorInet() {
-        final InetAddress inet = createMock(InetAddress.class);
+        final InetAddress inet = InetAddress.getLoopbackAddress();
         assertThrows(RuntimeException.class, () -> new SaslAndHMACAuthenticator().newSaslNegotiator(inet));
     }
 

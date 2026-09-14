@@ -27,7 +27,7 @@ All currently supported versions of JanusGraph are listed below.
 
 | JanusGraph | Storage Version | Cassandra | HBase | Bigtable | ScyllaDB | Elasticsearch | Solr | TinkerPop | Spark | Scala |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| 1.2.z | 2 | 3.11.z, 4.0.z, 5.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.y, 7.y, 8.y, 9.y | 8.y | 3.7.z | 3.2.z | 2.12.z |
+| 1.2.z | 2 | 3.11.z, 4.0.z, 5.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.y, 7.y, 8.y, 9.y | 8.y | 3.8.z | 3.2.z | 2.12.z |
 | 1.1.z | 2 | 3.11.z, 4.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.y, 7.y, 8.y | 8.y | 3.7.z | 3.2.z | 2.12.z |
 
 !!! info
@@ -78,8 +78,8 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 * Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.15.3, 9.0.3
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
-* Apache TinkerPop 3.7.3
-* Java 8, 11
+* Apache TinkerPop 3.8.2
+* Java 11, 17, 21, 25 (OLAP with Apache Spark: Java 11 and 17 only)
 
 **Installed versions in the Pre-Packaged Distribution:**
 
@@ -101,12 +101,93 @@ For more information on features and bug fixes in 1.2.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### Java 11 is now the minimum supported Java version, Java 17, 21 and 25 are supported
+
+Starting from version 1.2.0 JanusGraph requires Java 11 or newer. Support for Java 8 has been dropped
+for building and running JanusGraph, JanusGraph Server, the pre-packaged distribution and the Gremlin
+Console. All JanusGraph artifacts are now compiled for Java 11, so applications embedding JanusGraph
+must run on Java 11 or newer as well. This change is required by the upgrade to Apache TinkerPop 3.8,
+which itself requires Java 11.
+
+JanusGraph is now built and tested with Java 11, 17, 21 and 25. The exceptions are the OLAP modules
+(`janusgraph-hadoop` and the Hadoop/Spark based graph computer of the storage backends): Apache Spark
+3.3.x, which TinkerPop's `spark-gremlin` is based on, only runs on Java 8 through 17, so OLAP jobs are
+only supported on Java 11 and 17. The pre-packaged distribution bundles Cassandra 4.0.6, which itself
+only runs on Java 8 and 11, so the embedded Cassandra of the `janusgraph-full` distribution requires
+Java 11 while an external Cassandra cluster can be used from JanusGraph running on any supported Java
+version.
+
+Java 17 and newer enforce strong encapsulation of the JDK internals. JanusGraph itself does not need
+any `--add-opens` / `--add-exports` options, but some libraries which can be used with JanusGraph still
+rely on deep reflection (most notably the Kryo serialization used by Gryo and OLAP), in which case the
+options documented by TinkerPop for JDK 17 have to be passed to the JVM (JanusGraph's test suites pass
+them on JDK 17 and newer, see the `jdk17-plus-tests` profile of the root `pom.xml`). The Hadoop client
+artifacts pulled in by Spark (`hadoop-client-api`, `hadoop-client-runtime`) are aligned with the other
+Hadoop 3.4.3 artifacts, because their 3.3.x versions still call `Subject.getSubject()`, which does not
+work on Java 24 and newer (this affected the HBase client's user resolution).
+
+Since the default build now targets Java 11, the separate Java 11 build variant has been removed:
+
+* The `-Pjava-11` Maven profile no longer exists. Build JanusGraph with `mvn clean install` on Java 11+.
+* The `janusgraph-java-11-<version>.zip` and `janusgraph-java-11-full-<version>.zip` distribution archives
+  are no longer produced. Use `janusgraph-<version>.zip` and `janusgraph-full-<version>.zip` instead;
+  they are built for Java 11.
+* The `-java-11` Docker image tag suffix produced by that build variant is gone. The regular
+  `janusgraph/janusgraph:<version>` images are the only ones built; they already use a Java 11 runtime
+  (`eclipse-temurin:11-jre`).
+* `conf/jvm-8.options` has been removed from the distribution. `bin/janusgraph-server.sh` now always
+  reads `conf/jvm-11.options` unless `JAVA_OPTIONS_FILE` is set.
+
+##### Upgrade to Apache TinkerPop 3.8.2
+
+JanusGraph 1.2.0 upgrades Apache TinkerPop from 3.7.3 to 3.8.2. TinkerPop 3.8 is a new minor release
+line with a number of breaking changes to Gremlin semantics that may affect existing traversals and
+applications. The most notable ones are:
+
+* `store()` was removed in favor of `local(aggregate())`, `aggregate(Scope, String)` was removed and
+  `has(key, traversal)` / `has(T, traversal)` were removed (use `where()` instead).
+* `none()` was renamed to `discard()`; `none(P)` is now a collection filtering step complementing
+  `any(P)` and `all(P)`.
+* `P.getOriginalValue()` was removed in favor of `P.getValue()`.
+* `java.time.OffsetDateTime` replaces `java.util.Date` as the default date type: `asDate()`, `dateAdd()`
+  and `dateDiff()` return `OffsetDateTime`, and `dateDiff()` returns milliseconds instead of seconds.
+* The repeat traversal of `repeat()` now consistently uses global semantics: if it contains a barrier step
+  (for example `barrier()`, `order()` or `aggregate()`), all traversers of a loop enter the repeat traversal
+  at once instead of one at a time, which changes the ordering of results and lets barrier steps see all
+  traversers of the loop. JanusGraph's own multi-query batching steps inserted into repeat traversals do
+  not trigger this mode, so a `repeat()` without user-defined barriers keeps processing its traversers in
+  bounded batches. `RepeatUnrollStrategy` only unrolls simple navigation and filter steps, and `cap()` /
+  `inject()` inside `repeat()` are rejected by `StandardVerificationStrategy`.
+* `valueMap()`, `propertyMap()`, `groupCount()`, `sack()`, `dedup()`, `sample()` and `aggregate()` reject
+  more than one `by()` modulator.
+* `property(key, value)` without an explicit cardinality now always resolves the cardinality through
+  `Graph.Features.VertexFeatures.getCardinality(key)`. JanusGraph resolves it against the schema of the
+  calling transaction (including property keys created but not yet committed in that transaction) and
+  falls back to the default cardinality of the configured schema maker for unknown keys.
+* Arithmetic in `sum()` and `sack()` promotes to the next wider numeric type on overflow, `split()` with
+  an empty separator splits a string into its characters, and floating-point literals in `gremlin-lang`
+  scripts are parsed as `Double` instead of `BigDecimal`.
+* GraphSON 2.0 and 3.0 only deserialize `TraversalStrategy` implementations that are registered with
+  `TraversalStrategies.GlobalCache` (all JanusGraph strategies are registered).
+* GraphSON 1.0 with embedded types (`GraphSONMessageSerializerV1`, `TypeInfo.PARTIAL_TYPES`) only deserializes
+  explicitly allowed `@class` type ids. GraphSON 1.0 mappers created through `JanusGraph.io()` allow JanusGraph's
+  own types automatically. A manually configured `GraphSONMessageSerializerV1` needs
+  `allowedTypeIdNames: [org.janusgraph.graphdb.relations.RelationIdentifier, org.janusgraph.core.attribute.Geoshape, org.janusgraph.graphdb.tinkerpop.io.JanusGraphP]`
+  next to `ioRegistries` (see the commented examples in `conf/gremlin-server/*.yaml`), and a hand-built
+  `GraphSONMapper` needs `JanusGraphIoRegistryV1d0.allowGraphSONTypeIds(builder)` (or
+  `addAllowedTypeIdName(...)` with the names of `JanusGraphIoRegistryV1d0.GRAPHSON_ALLOWED_TYPE_ID_NAMES`).
+* The `UnifiedChannelizer` of Gremlin Server has been deprecated.
+
+Please review the TinkerPop upgrade documentation for
+[3.8.0](https://tinkerpop.apache.org/docs/3.8.0/upgrade/#_tinkerpop_3_8_0),
+[3.8.1](https://tinkerpop.apache.org/docs/3.8.1/upgrade/#_tinkerpop_3_8_1) and
+[3.8.2](https://tinkerpop.apache.org/docs/3.8.2/upgrade/#_tinkerpop_3_8_2) before upgrading.
+
 ##### Apache Cassandra 5.0 support
 
 Starting from version 1.2.0 JanusGraph supports Apache Cassandra 5.0 as a storage backend.
-Apache Cassandra 5.0 requires Java 11 or newer. Since the pre-packaged distribution still
-targets Java 8, it continues to bundle Cassandra 4.0.6; connect JanusGraph to an externally
-managed Cassandra 5.0 cluster (running on Java 11+) to use the new backend.
+The pre-packaged distribution continues to bundle Cassandra 4.0.6; connect JanusGraph to an
+externally managed Cassandra 5.0 cluster to use the new backend.
 
 ##### ElasticSearch 9 support
 

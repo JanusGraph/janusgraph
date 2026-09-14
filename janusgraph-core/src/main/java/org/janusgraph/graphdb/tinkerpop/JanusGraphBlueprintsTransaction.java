@@ -50,6 +50,11 @@ import java.util.Optional;
 public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTransaction {
 
     /**
+     * The {@link Features} of the graph bound to this transaction, created lazily by {@link #features()}.
+     */
+    private volatile Features features;
+
+    /**
      * Returns the graph that this transaction is based on
      * @return
      */
@@ -62,7 +67,15 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
 
     @Override
     public Features features() {
-        return getGraph().features();
+        // TinkerPop asks for the features on every property mutation, so the transaction-bound view is created once
+        Features features = this.features;
+        if (features == null) {
+            final Features graphFeatures = getGraph().features();
+            // resolve schema dependent features (e.g. property key cardinality) against this transaction
+            features = graphFeatures instanceof JanusGraphFeatures ? ((JanusGraphFeatures) graphFeatures).forTransaction(this) : graphFeatures;
+            this.features = features;
+        }
+        return features;
     }
 
     @Override

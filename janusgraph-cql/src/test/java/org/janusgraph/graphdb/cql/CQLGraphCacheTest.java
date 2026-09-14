@@ -14,13 +14,11 @@
 
 package org.janusgraph.graphdb.cql;
 
-import io.github.artsok.ParameterizedRepeatedIfExceptionsTest;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.JanusGraphCassandraContainer;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -38,19 +36,41 @@ public class CQLGraphCacheTest extends JanusGraphTest {
     }
 
     // flaky test: https://github.com/JanusGraph/janusgraph/issues/1457
-    @ParameterizedRepeatedIfExceptionsTest(repeats = 3)
-    @ValueSource(booleans = {true, false})
+    // The parameterized variant of rerunner-jupiter's retry annotation does not work with JUnit 5.13+, so the
+    // parameterized test of the base class is overridden without a test annotation (which excludes it from this
+    // class) and its two parameter values are expanded into the dedicated repeatable tests below.
     @Override
     public void simpleLogTest(boolean useStringId) throws InterruptedException {
         super.simpleLogTest(useStringId);
     }
 
+    @RepeatedIfExceptionsTest(repeats = 3)
+    public void simpleLogTestWithLongId() throws InterruptedException {
+        simpleLogTest(false);
+    }
+
+    @RepeatedIfExceptionsTest(repeats = 3)
+    public void simpleLogTestWithStringId() throws InterruptedException {
+        simpleLogTest(true);
+    }
+
     // flaky test: https://github.com/JanusGraph/janusgraph/issues/1457
-    @ParameterizedRepeatedIfExceptionsTest(repeats = 3)
-    @ValueSource(booleans = {true, false})
+    // The parameterized variant of rerunner-jupiter's retry annotation does not work with JUnit 5.13+, so the
+    // parameterized test of the base class is overridden without a test annotation (which excludes it from this
+    // class) and its two parameter values are expanded into the dedicated repeatable tests below.
     @Override
     public void simpleLogTestWithFailure(boolean useStringId) throws InterruptedException {
         super.simpleLogTestWithFailure(useStringId);
+    }
+
+    @RepeatedIfExceptionsTest(repeats = 3)
+    public void simpleLogTestWithFailureWithLongId() throws InterruptedException {
+        simpleLogTestWithFailure(false);
+    }
+
+    @RepeatedIfExceptionsTest(repeats = 3)
+    public void simpleLogTestWithFailureWithStringId() throws InterruptedException {
+        simpleLogTestWithFailure(true);
     }
 
     // flaky test: https://github.com/JanusGraph/janusgraph/issues/1497
