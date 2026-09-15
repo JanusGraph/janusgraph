@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+    <Appenders>
+        <File name="TestFile" fileName="target/test.log">
+            <PatternLayout>
+                <Pattern>%d{HH:mm:ss} %-5level %class.%method{36} - %msg%n</Pattern>
+            </PatternLayout>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="TestFile"/>
+        </Root>
+    </Loggers>
+</Configuration>
