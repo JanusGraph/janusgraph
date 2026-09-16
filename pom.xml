@@ -96,12 +96,12 @@
         <compiler.release>11</compiler.release>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS</test.excluded.groups>
         <dependency.locations.enabled>false</dependency.locations.enabled>
-        <!-- Cassandra version bundled into the pre-packaged distribution. Cassandra 5.0 is
-             supported/tested as a backend but is not bundled here.
-             When this version is updated please also update sha256 -->
-        <!-- https://downloads.apache.org/cassandra/4.0.6/apache-cassandra-4.0.6-bin.tar.gz.sha256 -->
-        <cassandra-dist.version>4.0.6</cassandra-dist.version>
-        <cassandra-dist.version.sha256>86d14a8e158e4e8554388b1aab598efcb879ddb09c480edecabb3c350b58fe6b</cassandra-dist.version.sha256>
+        <!-- Cassandra version bundled into the pre-packaged janusgraph-full distribution (Cassandra 5.0 runs on
+             Java 11 and 17). When this version is updated please also update the sha256 below and regenerate the
+             overlay files in janusgraph-dist/src/assembly/static/cassandra from the new tarball. -->
+        <!-- https://downloads.apache.org/cassandra/5.0.9/apache-cassandra-5.0.9-bin.tar.gz.sha256 -->
+        <cassandra-dist.version>5.0.9</cassandra-dist.version>
+        <cassandra-dist.version.sha256>eee1460b47ebe188a29521207230617f22aad7f9e1674f5ea454f10c8f344d61</cassandra-dist.version.sha256>
         <cassandra-driver.version>4.19.3</cassandra-driver.version>
         <scylla-driver.version>4.19.0.9</scylla-driver.version>
         <scylladb.version>6.2.0</scylladb.version>

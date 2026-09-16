@@ -12,6 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# This file is derived from the stock bin/cassandra launcher of Apache Cassandra 5.0.9. The only
+# JanusGraph change is the default CASSANDRA_LOG_DIR, which points to the logs directory of the
+# JanusGraph distribution (see the block above the cassandra-env.sh include).
 
 
 # OPTIONS:
@@ -109,22 +113,20 @@ if [ -z "$CASSANDRA_CONF" -o -z "$CLASSPATH" ]; then
     exit 1
 fi
 
+# JanusGraph change: log into the logs directory of the JanusGraph distribution (next to janusgraph.log)
+# instead of cassandra/logs. This has to be set before cassandra-env.sh is sourced because that script
+# applies its own default of $CASSANDRA_HOME/logs.
+if [ -z "$CASSANDRA_LOG_DIR" ]; then
+  CASSANDRA_LOG_DIR=$CASSANDRA_HOME/../logs
+fi
+
 if [ -f "$CASSANDRA_CONF/cassandra-env.sh" ]; then
     . "$CASSANDRA_CONF/cassandra-env.sh"
 fi
 
 if [ -z "$CASSANDRA_LOG_DIR" ]; then
-  # JanusGraph change: All logs in single directory are collected in single directory
-  CASSANDRA_LOG_DIR=$CASSANDRA_HOME/../logs
+  CASSANDRA_LOG_DIR=$CASSANDRA_HOME/logs
 fi
-
-# Special-case path variables.
-case "`uname`" in
-    CYGWIN*|MINGW*) 
-        CLASSPATH=`cygpath -p -w "$CLASSPATH"`
-        CASSANDRA_CONF=`cygpath -p -w "$CASSANDRA_CONF"`
-    ;;
-esac
 
 # Cassandra uses an installed jemalloc via LD_PRELOAD / DYLD_INSERT_LIBRARIES by default to improve off-heap
 # memory allocation performance. The following code searches for an installed libjemalloc.dylib/.so/.1.so using
@@ -139,21 +141,27 @@ find_library()
     pattern=$1
     path=$(echo ${2} | tr ":" " ")
 
-    find $path -regex "$pattern" -print 2>/dev/null | head -n 1
+    find $path -regex "$pattern" -print 2>/dev/null | sort -ru | head -n 1
 }
 case "`uname -s`" in
     Linux)
         if [ -z $CASSANDRA_LIBJEMALLOC ] ; then
+            dirs="/lib64 /lib /usr/lib64 /usr/lib "
             which ldconfig > /dev/null 2>&1
             if [ $? = 0 ] ; then
-                # e.g. for CentOS
-                dirs="/lib64 /lib /usr/lib64 /usr/lib `ldconfig -v 2>/dev/null | grep -v '^\s' | sed 's/^\([^:]*\):.*$/\1/'`"
-            else
-                # e.g. for Debian, OpenSUSE
-                dirs="/lib64 /lib /usr/lib64 /usr/lib `cat /etc/ld.so.conf /etc/ld.so.conf.d/*.conf | grep '^/'`"
+                dirs="$dirs `ldconfig -v 2>/dev/null | grep -v '^\s' | sed 's/^\([^:]*\):.*$/\1/'`"
+            fi
+            if [ -f /etc/ld.so.conf ]; then
+                dirs="$dirs `cat /etc/ld.so.conf | grep '^/'`"
+            fi
+            additional_configs=$(ls /etc/ld.so.conf.d/*.conf 2>&1)
+            if [ $? = 0 ]; then
+                for conf in $additional_configs; do
+                    dirs="$dirs `cat $conf | grep '^/'`"
+                done
             fi
             dirs=`echo $dirs | tr " " ":"`
-            CASSANDRA_LIBJEMALLOC=$(find_library '.*/libjemalloc\.so\(\.1\)*' $dirs)
+            CASSANDRA_LIBJEMALLOC=$(find_library '.*/libjemalloc\.so.*' $dirs)
         fi
         if [ ! -z $CASSANDRA_LIBJEMALLOC ] ; then
             export JVM_OPTS="$JVM_OPTS -Dcassandra.libjemalloc=$CASSANDRA_LIBJEMALLOC"

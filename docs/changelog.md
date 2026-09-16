@@ -83,7 +83,7 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 
 **Installed versions in the Pre-Packaged Distribution:**
 
-* Cassandra 4.0.6
+* Cassandra 5.0.9
 * Elasticsearch 7.14.0
 
 #### Changes
@@ -112,9 +112,9 @@ which itself requires Java 11.
 JanusGraph is now built and tested with Java 11, 17, 21 and 25. The exceptions are the OLAP modules
 (`janusgraph-hadoop` and the Hadoop/Spark based graph computer of the storage backends): Apache Spark
 3.3.x, which TinkerPop's `spark-gremlin` is based on, only runs on Java 8 through 17, so OLAP jobs are
-only supported on Java 11 and 17. The pre-packaged distribution bundles Cassandra 4.0.6, which itself
-only runs on Java 8 and 11, so the embedded Cassandra of the `janusgraph-full` distribution requires
-Java 11 while an external Cassandra cluster can be used from JanusGraph running on any supported Java
+only supported on Java 11 and 17. The pre-packaged distribution bundles Cassandra 5.0.9, which itself
+only runs on Java 11 and 17, so the embedded Cassandra of the `janusgraph-full` distribution requires
+Java 11 or 17 while an external Cassandra cluster can be used from JanusGraph running on any supported Java
 version.
 
 Java 17 and newer enforce strong encapsulation of the JDK internals. JanusGraph itself does not need
@@ -186,8 +186,13 @@ Please review the TinkerPop upgrade documentation for
 ##### Apache Cassandra 5.0 support
 
 Starting from version 1.2.0 JanusGraph supports Apache Cassandra 5.0 as a storage backend.
-The pre-packaged distribution continues to bundle Cassandra 4.0.6; connect JanusGraph to an
-externally managed Cassandra 5.0 cluster to use the new backend.
+The pre-packaged `janusgraph-full` distribution now bundles Cassandra 5.0.9 instead of Cassandra 4.0.6.
+The embedded Cassandra runs on Java 11 and 17 (Cassandra 4.0 only ran on Java 8 and 11). Its
+`cassandra/conf/cassandra.yaml` is regenerated from the stock Cassandra 5.0 configuration with the
+JanusGraph settings (cluster name, `db/cassandra` data directories) applied; `num_tokens` stays at 256 so
+data directories created by earlier `janusgraph-full` distributions keep working. Review the Cassandra
+[5.0 upgrade notes](https://github.com/apache/cassandra/blob/cassandra-5.0/NEWS.txt) before reusing an
+existing `db/cassandra` directory with the new distribution.
 
 ##### ElasticSearch 9 support
 
