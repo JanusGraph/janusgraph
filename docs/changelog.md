@@ -75,7 +75,7 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 * Apache HBase 2.6.0
 * Oracle BerkeleyJE 7.5.11
 * ScyllaDB 6.2.0
-* Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.15.3, 9.0.3
+* Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.15.3, 9.5.4
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
 * Apache TinkerPop 3.8.2
