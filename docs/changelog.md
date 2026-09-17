@@ -84,7 +84,7 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 **Installed versions in the Pre-Packaged Distribution:**
 
 * Cassandra 5.0.9
-* Elasticsearch 7.14.0
+* Elasticsearch 7.17.29
 
 #### Changes
 
@@ -197,6 +197,14 @@ existing `db/cassandra` directory with the new distribution.
 ##### ElasticSearch 9 support
 
 Starting from version 1.2.0 JanusGraph supports ElasticSearch 9.
+
+The pre-packaged `janusgraph-full` distribution now bundles Elasticsearch 7.17.29 instead of Elasticsearch 7.17.8.
+Elasticsearch 7.17 is the last Elasticsearch line whose JVM can be Java 11: the bundled Elasticsearch runs on the
+JDK shipped in its Linux x86_64 tarball or, where that JDK cannot run (for example macOS or Linux on ARM), on the
+JDK of the host through `JAVA_HOME`. Elasticsearch 8 requires Java 17 and Elasticsearch 9 requires Java 21 for
+its JVM, and since 9.4 its launcher and native libraries are x86_64 only, so bundling them would have made the
+embedded Elasticsearch Linux x86_64 only. The native machine learning binaries are no longer part of the
+distribution (machine learning is disabled in the bundled `elasticsearch.yml`).
 
 ##### Zombie instances auto-close during index status update operations
 

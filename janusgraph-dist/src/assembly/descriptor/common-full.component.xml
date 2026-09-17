@@ -44,6 +44,8 @@
             <excludes>
               <exclude>**/elasticsearch.yml</exclude>
               <exclude>**/jvm.options</exclude>
+              <!-- machine learning is disabled in the bundled elasticsearch.yml; its native binaries are the largest part of the tarball -->
+              <exclude>**/modules/x-pack-ml/platform/**</exclude>
               <exclude>**/data/**</exclude>
               <exclude>**/logs/**</exclude>
             </excludes>
