@@ -147,7 +147,7 @@ public class MgmtOlapJobBenchmark {
 
         private static final int ELASTIC_PORT = 9200;
         private static final String DEFAULT_ELASTICSEARCH_IMAGE = "docker.elastic.co/elasticsearch/elasticsearch";
-        private static final String DEFAULT_ELASTICSEARCH_VERSION = "9.0.3";
+        private static final String DEFAULT_ELASTICSEARCH_VERSION = "9.5.4";
         private static final String INDEX_BACKEND_NAME = "search";
         private static final String INDEX_NAME = "nameMixed";
 
