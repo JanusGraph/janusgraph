@@ -861,8 +861,8 @@ public class ElasticSearchIndex implements IndexProvider {
                                 mutation.getDeletions(), true);
                             Map doc = compat.prepareStoredScript(parameterizedDeletionScriptId, params).build();
                             log.trace("Deletion script {} with params {}", PARAMETERIZED_DELETION_SCRIPT, params);
-                            requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
-                                documentId, doc));
+                            requestByStore.add(ElasticSearchMutation.createFieldDeletionRequest(indexStoreName,
+                                storeName, documentId, doc));
                         }
                     }
                     if (mutation.hasAdditions()) {
