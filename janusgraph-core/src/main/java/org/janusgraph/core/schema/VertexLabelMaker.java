@@ -52,6 +52,8 @@ public interface VertexLabelMaker {
      */
     VertexLabelMaker setStatic();
 
+    VertexLabelMaker setProxy();
+
     /**
      * Creates a {@link VertexLabel} according to the specifications of this builder.
      *
