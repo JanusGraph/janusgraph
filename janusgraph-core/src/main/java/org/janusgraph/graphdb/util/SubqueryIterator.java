@@ -29,8 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -73,8 +75,12 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                 throw new JanusGraphException("Could not call index", e);
             }
         }
+        //Membership is tested once for every element the first index returns, and otherResults is deliberately
+        //unbounded: StandardJanusGraphTx passes NO_LIMIT to processIntersectingRetrievals so that the intersection is
+        //complete. Scanning the list for each element would make the intersection cost O(n*m)
+        final Set<Object> otherResultSet = otherResults == null ? null : new HashSet<>(otherResults);
         elementIterator = stream
-                .filter(e -> otherResults == null || otherResults.contains(e))
+                .filter(e -> otherResultSet == null || otherResultSet.contains(e))
                 .map(e -> {
                     JanusGraphElement r = function.apply(e);
                     if (r == null) {
