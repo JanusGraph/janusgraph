@@ -166,9 +166,9 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
             final Response response = delegate.performRequest(INFO_REQUEST);
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 final ClusterInfo info = mapper.readValue(inputStream, ClusterInfo.class);
-                majorVersion = ElasticMajorVersion.parse(info.getVersion() != null ? (String) info.getVersion().get("number") : null);
+                majorVersion = ElasticMajorVersion.parse(info.getVersion());
             }
-        } catch (final IOException e) {
+        } catch (final IOException|IllegalArgumentException e) {
             log.warn("Unable to determine Elasticsearch server version. Default to {}.", majorVersion, e);
         }
 
@@ -751,7 +751,7 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     }
 
     @JsonIgnoreProperties(ignoreUnknown=true)
-    private static final class ClusterInfo {
+    public static final class ClusterInfo {
 
         private Map<String,Object> version;
 
