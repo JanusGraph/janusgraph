@@ -1482,10 +1482,13 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public void clearStore(String storeName) throws BackendException {
+        //Derive the name the same way every read and write path does, so that a store name which is not already
+        //lowercase still resolves to the Elasticsearch index which actually holds its documents
+        final String indexStoreName = getIndexStoreName(storeName);
         try {
-            client.clearStore(indexName, storeName);
+            client.clearStore(indexStoreName);
         } catch (final Exception e) {
-            throw new PermanentBackendException("Could not clear store " + indexName + "_" + storeName, e);
+            throw new PermanentBackendException("Could not clear store " + indexStoreName, e);
         }
     }
 

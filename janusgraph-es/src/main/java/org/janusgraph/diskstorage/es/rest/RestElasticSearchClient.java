@@ -387,10 +387,9 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     }
 
     @Override
-    public void clearStore(String indexName, String storeName) throws IOException {
-        String name = indexName + "_" + storeName;
-        if (indexExists(name)) {
-            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName + "_" + storeName, null);
+    public void clearStore(String indexStoreName) throws IOException {
+        if (indexExists(indexStoreName)) {
+            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexStoreName, null);
         }
     }
 
