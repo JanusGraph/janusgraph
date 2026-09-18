@@ -183,7 +183,7 @@ public class HMACAuthenticatorTest extends JanusGraphAbstractAuthenticatorTest {
     @Test
     public void testNewSaslNegotiatorOfInetAddr() {
         final HMACAuthenticator authenticator = new HMACAuthenticator();
-        assertThrows(RuntimeException.class, () -> authenticator.newSaslNegotiator(createMock(InetAddress.class)));
+        assertThrows(RuntimeException.class, () -> authenticator.newSaslNegotiator(InetAddress.getLoopbackAddress()));
     }
 
     @Test

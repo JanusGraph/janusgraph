@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.tinkerpop;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -34,12 +35,20 @@ public class JanusGraphFeatures implements Graph.Features {
     private final EdgeFeatures edgeFeatures;
 
     private final StandardJanusGraph graph;
+    private final StoreFeatures storageFeatures;
+    /**
+     * The transaction schema dependent features (such as {@link VertexFeatures#getCardinality(String)}) are resolved
+     * against, or {@code null} if these are the graph-level features which have to open their own transaction.
+     */
+    private final JanusGraphTransaction tx;
 
-    private JanusGraphFeatures(StandardJanusGraph graph, StoreFeatures storageFeatures) {
+    private JanusGraphFeatures(StandardJanusGraph graph, StoreFeatures storageFeatures, JanusGraphTransaction tx) {
         graphFeatures = new JanusGraphGeneralFeatures(storageFeatures.supportsPersistence());
         vertexFeatures = new JanusGraphVertexFeatures();
         edgeFeatures = new JanusGraphEdgeFeatures();
         this.graph = graph;
+        this.storageFeatures = storageFeatures;
+        this.tx = tx;
     }
 
     @Override
@@ -63,7 +72,16 @@ public class JanusGraphFeatures implements Graph.Features {
     }
 
     public static JanusGraphFeatures getFeatures(StandardJanusGraph graph, StoreFeatures storageFeatures) {
-        return new JanusGraphFeatures(graph,storageFeatures);
+        return new JanusGraphFeatures(graph, storageFeatures, null);
+    }
+
+    /**
+     * Returns a view of these features which resolves schema dependent features, such as the cardinality of a
+     * property key, against the given transaction so that schema elements created (but not yet committed) in that
+     * transaction are taken into account.
+     */
+    public JanusGraphFeatures forTransaction(JanusGraphTransaction tx) {
+        return new JanusGraphFeatures(graph, storageFeatures, tx);
     }
 
     private static class JanusGraphDataTypeFeatures implements DataTypeFeatures {
@@ -159,17 +177,30 @@ public class JanusGraphFeatures implements Graph.Features {
 
         @Override
         public VertexProperty.Cardinality getCardinality(final String key) {
+            // Prefer the transaction these features are bound to: it sees property keys which were created in it
+            // but are not committed yet and it saves opening a transaction per lookup. TinkerPop resolves the
+            // cardinality of every property(key, value) mutation through this method since 3.8.
+            final JanusGraphTransaction boundTx = JanusGraphFeatures.this.tx;
+            if (boundTx instanceof StandardJanusGraphTx && boundTx.isOpen()) {
+                return getCardinality((StandardJanusGraphTx) boundTx, key);
+            }
             StandardJanusGraphTx tx = (StandardJanusGraphTx)JanusGraphFeatures.this.graph.buildTransaction()
                 .dirtyVertexSize(0)
                 .vertexCacheSize(0)
                 .readOnly()
                 .start();
             try {
-                if (!tx.containsPropertyKey(key)) return tx.getConfiguration().getAutoSchemaMaker().defaultPropertyCardinality(key).convert();
-                return tx.getPropertyKey(key).cardinality().convert();
+                return getCardinality(tx, key);
             } finally {
                 tx.rollback();
             }
+        }
+
+        private VertexProperty.Cardinality getCardinality(final StandardJanusGraphTx tx, final String key) {
+            if (!tx.containsPropertyKey(key)) {
+                return tx.getConfiguration().getAutoSchemaMaker().defaultPropertyCardinality(key).convert();
+            }
+            return tx.getPropertyKey(key).cardinality().convert();
         }
 
         @Override

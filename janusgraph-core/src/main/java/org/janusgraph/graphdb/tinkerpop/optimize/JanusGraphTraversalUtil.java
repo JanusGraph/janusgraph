@@ -39,8 +39,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.ProjectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertyMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TraversalFlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TraversalMapStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.AggregateGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.AggregateLocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.AggregateStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GroupSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SideEffectStep;
@@ -127,8 +126,7 @@ public class JanusGraphTraversalUtil {
             TraversalSideEffectStep.class,
             WherePredicateStep.class,
             WhereTraversalStep.class,
-            AggregateLocalStep.class,
-            AggregateGlobalStep.class,
+            AggregateStep.class,
             GroupCountStep.class,
             TraversalFlatMapStep.class,
             TraversalMapStep.class

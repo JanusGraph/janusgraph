@@ -17,7 +17,7 @@ the various supported storage and indexing backends.
 
 ## Prerequisites
 
-* Java 8 Development Kit, update 40 or higher. [Oracle Java](https://www.oracle.com/java/index.html) and [OpenJDK](https://openjdk.java.net/) have been tested successfully.
+* Java 11 Development Kit or newer. [Oracle Java](https://www.oracle.com/java/index.html) and [OpenJDK](https://openjdk.java.net/) have been tested successfully.
 * [Apache Maven](https://maven.apache.org/), version 3.3 or higher
 
 ### JanusGraph distribution

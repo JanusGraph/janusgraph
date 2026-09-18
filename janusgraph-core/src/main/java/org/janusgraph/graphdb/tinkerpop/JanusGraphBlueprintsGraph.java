@@ -22,6 +22,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoVersion;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
@@ -128,7 +129,13 @@ public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
     @Override
     public <I extends Io> I io(final Io.Builder<I> builder) {
         if (builder.requiresVersion(GryoVersion.V1_0) || builder.requiresVersion(GraphSONVersion.V1_0)) {
-            return (I) builder.graph(this).onMapper(mapper ->  mapper.addRegistry(JanusGraphIoRegistryV1d0.instance())).create();
+            return (I) builder.graph(this).onMapper(mapper -> {
+                mapper.addRegistry(JanusGraphIoRegistryV1d0.instance());
+                if (mapper instanceof GraphSONMapper.Builder) {
+                    // GraphSON 1.0 embedded types only deserialize explicitly allowed @class type ids (TinkerPop 3.8.2+)
+                    JanusGraphIoRegistryV1d0.allowGraphSONTypeIds((GraphSONMapper.Builder) mapper);
+                }
+            }).create();
         } else if (builder.requiresVersion(GraphSONVersion.V2_0)) {
             return (I) builder.graph(this).onMapper(mapper ->  mapper.addRegistry(JanusGraphIoRegistry.instance())).create();
         } else {

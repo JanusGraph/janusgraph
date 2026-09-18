@@ -1175,7 +1175,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertEquals(190, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").max().next());
             assertEquals(25, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("age").max().next());
             assertEquals(170, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").min().next());
-            assertEquals(535L, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").sum().next());
+            // since TinkerPop 3.8 sum() retains the number type of the stream (promoted by bulking), so compare the numeric value only
+            assertEquals(535L, ((Number) tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").sum().next()).longValue());
             assertEquals(535.0/3, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").mean().next());
             Metrics mMixedOr = tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val"))
                 .profile().next().getMetrics(0);
@@ -1273,7 +1274,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).toList().size());
         assertEquals(190, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).values("height").max().next());
         assertEquals(170, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).values("height").min().next());
-        assertEquals(535L, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).values("height").sum().next());
+        assertEquals(535L, ((Number) tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).values("height").sum().next()).longValue());
         assertEquals(535.0/3, tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20)).values("height").mean().next());
         Metrics mMixedOr = tx.traversal().V().or(__.has("name", "bob"), __.has("age", 20))
             .profile().next().getMetrics(0);
@@ -1330,7 +1331,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").toList().size());
         assertEquals(170, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").max().next());
         assertEquals(170, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").min().next());
-        assertEquals(170L, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").sum().next());
+        assertEquals(170L, ((Number) tx.traversal().V().has("name", "bob").has("prop", "val").values("height").sum().next()).longValue());
         assertEquals(170.0, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").mean().next());
         assertEquals(174.8, (double)tx.traversal().V().has("name", "bob").values("weight").sum().next(), 0.001);
         Metrics mMixedAnd = tx.traversal().V().has("name", "bob").has("prop", "val")
@@ -1362,7 +1363,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(1, tx.traversal().V().has("name", "bob").has("prop", "val").toList().size());
         assertEquals(170, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").max().next());
         assertEquals(170, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").min().next());
-        assertEquals(170L, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").sum().next());
+        assertEquals(170L, ((Number) tx.traversal().V().has("name", "bob").has("prop", "val").values("height").sum().next()).longValue());
         assertEquals(170.0, tx.traversal().V().has("name", "bob").has("prop", "val").values("height").mean().next());
         final Metrics mMixedAnd2 = tx.traversal().V().has("name", "bob").has("prop", "val")
             .has("desc", Text.textContains("coding")).profile().next().getMetrics(0);

@@ -56,7 +56,7 @@ jobs:
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v4
         with:
-          java-version: "8.0.382+5"
+          java-version: "11.0.20+1"
           distribution: zulu
       - run: mvn clean install --projects janusgraph-all -Pjanusgraph-cache -Dmaven.javadoc.skip=true ${{ env.BUILD_MAVEN_OPTS }}
       - run: mvn verify --projects janusgraph-all -Pjanusgraph-cache ${{ env.VERIFY_MAVEN_OPTS }}
@@ -69,11 +69,8 @@ jobs:
       matrix:
         include:
           - args: ""
-            java: 8
-            tag_suffix: ""
-          - args: "-Pjava-11"
             java: 11
-            tag_suffix: "-java-11"
+            tag_suffix: ""
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -83,12 +80,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v4
-        if: "matrix.java == 8"
-        with:
-          java-version: "8.0.382+5"
-          distribution: zulu
-      - uses: actions/setup-java@v4
-        if: "matrix.java == 11"
         with:
           java-version: "11.0.20+1"
           distribution: zulu
@@ -139,47 +130,46 @@ jobs:
         include:
           - module: inmemory
             args: "-Dtest.skip.tp=false -DskipTests=true"
-            java: 8
-          - module: berkeleyje
-            args: "-Dtest.skip.tp=false -DskipTests=true"
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-byteordered -Dtest.skip.tp=false -DskipTests=true"
-            java: 8
-          - module: cql
-            args: "-Pcassandra3-murmur -Dtest.skip.tp=false -DskipTests=true"
-            java: 8
-          - module: hbase
-            args: "-Dtest.skip.tp=false -DskipTests=true"
-            java: 8
-          - module: inmemory
-            install-args: "-Pjava-11"
-            args: "-Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: berkeleyje
-            install-args: "-Pjava-11"
             args: "-Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: cql
-            install-args: "-Pjava-11"
             args: "-Pcassandra3-byteordered -Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: cql
-            install-args: "-Pjava-11"
             args: "-Pcassandra3-murmur -Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: cql
-            install-args: "-Pjava-11"
             args: "-Pcassandra4-byteordered -Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: cql
-            install-args: "-Pjava-11"
             args: "-Pcassandra4-murmur -Dtest.skip.tp=false -DskipTests=true"
             java: 11
           - module: hbase
-            install-args: "-Pjava-11"
             args: "-Dtest.skip.tp=false -DskipTests=true"
             java: 11
+          - module: inmemory
+            args: "-Dtest.skip.tp=false -DskipTests=true"
+            java: 17
+          - module: inmemory
+            args: "-Dtest.skip.tp=false -DskipTests=true"
+            java: 21
+          - module: inmemory
+            args: "-Dtest.skip.tp=false -DskipTests=true"
+            java: 25
+          - module: berkeleyje
+            args: "-Dtest.skip.tp=false -DskipTests=true"
+            java: 17
+          - module: berkeleyje
+            args: "-Dtest.skip.tp=false -DskipTests=true"
+            java: 21
+          - module: berkeleyje
+            args: "-Dtest.skip.tp=false -DskipTests=true"
+            java: 25
+          - module: cql
+            args: "-Pcassandra4-murmur -Dtest.skip.tp=false -DskipTests=true"
+            java: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
@@ -189,14 +179,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       - uses: actions/setup-java@v4
-        if: "matrix.java == 8"
         with:
-          java-version: "8.0.382+5"
-          distribution: zulu
-      - uses: actions/setup-java@v4
-        if: "matrix.java == 11"
-        with:
-          java-version: "11.0.20+1"
+          java-version: ${{ matrix.java }}
           distribution: zulu
       - run: mvn clean install --projects janusgraph-${{ matrix.module }} ${{ env.BUILD_MAVEN_OPTS }} ${{ matrix.install-args }}
       - run: mvn verify --projects janusgraph-${{ matrix.module }} ${{ matrix.install-args }} ${{ matrix.args }}

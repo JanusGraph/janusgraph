@@ -50,20 +50,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Java 8 / 11: the module compiles and runs its unit tests plus the real Kafka + ElasticSearch
+          # Java 11 / 25: the module compiles and runs its unit tests plus the real Kafka + ElasticSearch
           # worker test (Testcontainers; Docker is available on the runners, as for the other backend suites).
           # Only the Debezium-dependent pipeline test sources are excluded from compilation here (Debezium 3.x
-          # is Java 17 bytecode -- see janusgraph-cdc/pom.xml); they run only on the Java 17 job below.
-          - name: cdc-java8
-            java: 8
+          # is Java 17 bytecode and cassandra-all 4.1.7 does not run on JDK 24+ -- see janusgraph-cdc/pom.xml);
+          # they run only on the Java 17 and 21 jobs below.
           - name: cdc-java11
-            install-args: "-Pjava-11"
             java: 11
-          # Java 17: the cassandra-cdc-e2e Maven profile auto-activates (Debezium 3.x requires Java 17+;
+          - name: cdc-java25
+            java: 25
+          # Java 17 / 21: the cassandra-cdc-e2e Maven profile auto-activates (Debezium 3.x requires Java 17+;
           # bounded below JDK 24 where cassandra-all 4.1.7 does not run), re-including and running the full
           # Cassandra-CDC -> Debezium -> Kafka -> ElasticSearch pipeline against Docker.
           - name: cdc-e2e-java17
             java: 17
+          - name: cdc-e2e-java21
+            java: 21
     steps:
       - uses: actions/checkout@v4
         with:

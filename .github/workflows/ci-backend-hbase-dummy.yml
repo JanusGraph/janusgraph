@@ -34,29 +34,26 @@ jobs:
           - module: hbase
             args: "-Dtest=\"**/diskstorage/hbase/*\""
             name: hbase2-diskstorage
-            java: 8
+            java: 11
           - module: hbase
             args: "-Dtest=\"**/graphdb/hbase/*\""
             name: hbase2-graphdb
-            java: 8
+            java: 11
           - module: hbase
             args: "-Dtest=\"**/hadoop/*\""
             name: hbase2-hadoop
-            java: 8
+            java: 11
           - module: hbase
-            install-args: "-Pjava-11"
             args: "-Dtest=\"**/diskstorage/hbase/*\""
-            name: hbase2-diskstorage
-            java: 11
+            name: hbase2-diskstorage-java25
+            java: 25
           - module: hbase
-            install-args: "-Pjava-11"
             args: "-Dtest=\"**/graphdb/hbase/*\""
-            name: hbase2-graphdb
-            java: 11
+            name: hbase2-graphdb-java25
+            java: 25
           - module: hbase
-            install-args: "-Pjava-11"
             args: "-Dtest=\"**/hadoop/*\""
-            name: hbase2-hadoop
-            java: 11
+            name: hbase2-hadoop-java17
+            java: 17
     steps:
       - run: 'echo "No build required"'

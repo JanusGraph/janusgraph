@@ -30,6 +30,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.MultiQueryPositions;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMultiQueryStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.MultiQueriable;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphNoOpBarrierVertexOnlyStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphRepeatStep;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Arrays;
@@ -92,6 +93,15 @@ public class JanusGraphMultiQueryStrategy extends AbstractTraversalStrategy<Trav
             default: throw new IllegalStateException("Unimplemented `repeat` step mode "+repeatStepMode.getConfigName());
         }
 
+        if (limitedBatch) {
+            // The barrier steps inserted below must not switch `repeat()` into TinkerPop's mode for repeat traversals
+            // with barriers, which adds all start traversers to the repeat traversal at once instead of batching them.
+            // Nested repeat steps are replaced as well (their own traversal level would do it too when the strategies
+            // are applied to it, this just doesn't rely on that order); JanusGraphRepeatSteps are skipped.
+            TraversalHelper.getStepsOfAssignableClassRecursively(RepeatStep.class, traversal).stream()
+                .filter(repeatStep -> repeatStep.getClass() == RepeatStep.class)
+                .forEach(repeatStep -> JanusGraphRepeatStep.replace(repeatStep, repeatStep.getTraversal()));
+        }
         insertMultiQuerySteps(traversal, limitedBatch, limitedBatchSize);
         configureMultiQueriables(traversal, limitedBatch, limitedBatchSize, multiNestedRepeatEligible, multiNestedRepeatNextIterationEligible);
     }
