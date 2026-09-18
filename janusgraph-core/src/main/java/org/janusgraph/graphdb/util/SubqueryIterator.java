@@ -52,6 +52,10 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
 
     private boolean isTimerRunning;
 
+    private final int limit;
+
+    private int emittedCount;
+
     public SubqueryIterator(JointIndexQuery.Subquery subQuery, IndexSerializer indexSerializer,
                             BackendTransaction backendTx,
                             StandardJanusGraphTx tx,
@@ -59,6 +63,7 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                             Function<Object, ? extends JanusGraphElement> function, List<Object> otherResults) {
         this.subQuery = subQuery;
         this.indexCache = indexCache;
+        this.limit = limit;
         final List<Object> cacheResponse = indexCache.getIfPresent(subQuery);
         final Stream<?> stream;
         if (cacheResponse != null) {
@@ -84,6 +89,7 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                 })
                 .filter(r -> r != null) // ignore invalid elements
                 .limit(limit)
+                .peek(r -> emittedCount++)
                 .iterator();
     }
 
@@ -98,19 +104,32 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
 
     /**
      * Close the iterator, stop timer and update profiler.
-     * Put results into cache if the underlying elementIterator is exhausted.
+     * Put results into cache only if no later query can ask for more results than the cached list holds.
      */
     @Override
     public void close() {
         if (isTimerRunning) {
             assert currentIds != null;
-            if (!elementIterator.hasNext()) {
+            if (!elementIterator.hasNext() && isSafeToCache()) {
                 indexCache.put(subQuery, currentIds);
             }
             profiler.setResultSize(currentIds.size());
             profiler.stopTimer();
             isTimerRunning = false;
         }
+    }
+
+    //The cache stores a result list against the limit of the subquery which produced it, and serves that list only to
+    //a later query whose limit is no larger. Two situations make currentIds safe to store.
+    //Fewer emitted elements than the limit means the limit never stopped the index being read, so currentIds holds
+    //every result and serves any later limit.
+    //Otherwise the limit truncated the read and currentIds is only a prefix. A prefix is still safe while the limit
+    //the cache records for it is no larger than the limit which produced it. That holds for a single subquery, because
+    //JointIndexQuery.updateLimit propagates the limit into it. It does not hold once a joint query has more than one
+    //subquery, because updateLimit then leaves the subquery limits alone: the cache would record the wider subquery
+    //limit for a prefix read under the narrower joint limit, and serve too few results to a later query in between.
+    private boolean isSafeToCache() {
+        return emittedCount < limit || subQuery.getLimit() <= limit;
     }
 
 }
