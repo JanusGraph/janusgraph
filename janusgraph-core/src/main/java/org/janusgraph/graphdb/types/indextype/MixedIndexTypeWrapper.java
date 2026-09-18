@@ -30,7 +30,7 @@ import java.util.List;
 public class MixedIndexTypeWrapper extends IndexTypeWrapper implements MixedIndexType {
 
     public static final String NAME_PREFIX = "extindex";
-    private ParameterIndexField[] fields = null;
+    private volatile ParameterIndexField[] fields = null;
 
     public MixedIndexTypeWrapper(SchemaSource base) {
         super(base);
