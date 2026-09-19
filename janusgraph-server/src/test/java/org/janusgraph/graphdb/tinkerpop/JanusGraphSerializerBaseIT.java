@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.tinkerpop;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -68,6 +69,21 @@ public abstract class JanusGraphSerializerBaseIT {
         }
         t2.next();
         assertEquals(4, g.V().properties().toList().size());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {500, 1_000, 1_000_000, 10_000_000, 20_000_000, 21_000_000})
+    public void testWriteLargeString(int stringLength) throws Exception {
+        setUp(false);
+        try (GraphTraversalSource g = traversal()) {
+            GraphTraversal<Vertex, Vertex> t = g.addV("largeStringTestLabel");
+            String largeStringPropertyKey = "largeString";
+            String largeStringValue = RandomStringUtils.random(stringLength, 'a', 'b', 'c', 'd', 'e', 'f');
+            Vertex initialVertex = t.property(largeStringPropertyKey, largeStringValue).next();
+
+            Vertex recalledVertex = g.V().hasLabel("largeStringTestLabel").has(largeStringPropertyKey, largeStringValue).next();
+            assertEquals(initialVertex.id(), recalledVertex.id());
+        }
     }
 
     @ParameterizedTest
