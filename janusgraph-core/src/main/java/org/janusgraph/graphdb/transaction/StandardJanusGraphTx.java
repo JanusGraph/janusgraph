@@ -579,6 +579,14 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         return vertexCache.get(vertexId, internalVertexRetriever);
     }
 
+    /**
+     * Whether this transaction already holds the vertex with the given id, because it was created or loaded in this
+     * transaction. Never accesses storage.
+     */
+    public boolean isVertexCached(Object vertexId) {
+        return vertexCache.contains(vertexId);
+    }
+
     private class VertexConstructor implements Retriever<Object, InternalVertex> {
 
         private final boolean verifyExistence;

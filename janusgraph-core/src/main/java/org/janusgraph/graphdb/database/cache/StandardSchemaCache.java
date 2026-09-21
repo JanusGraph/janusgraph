@@ -135,6 +135,19 @@ public class StandardSchemaCache implements SchemaCache {
         return (((typeId<<2)+systemTypeId)<<1)+edgeDir;
     }
 
+    /**
+     * Decides whether a result read from storage may be remembered, in the primary map as well as in the bounded
+     * fallback cache. Non-empty results are always cached. An empty result is only cached for
+     * {@link BaseLabel#SchemaDefinitionEdge}: every existing schema vertex has a category and definition properties
+     * (and every named one a name), so an empty answer for those means that the schema vertex is not (yet) visible to
+     * this instance and must be re-read on the next lookup. Definition edges (vertex-centric indexes, consistency modifiers, connection
+     * and property constraints) are legitimately absent for most schema elements, and that answer is the most frequent
+     * one the query planner asks for, so it has to be served from memory.
+     */
+    private static boolean isCacheable(final BaseRelationType type, final EntryList entries) {
+        return !entries.isEmpty() || type == BaseLabel.SchemaDefinitionEdge;
+    }
+
     @Override
     public EntryList getSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir) {
         assert IDManager.isSystemRelationTypeId(type.id()) && type.longId() > 0;
@@ -151,7 +164,7 @@ public class StandardSchemaCache implements SchemaCache {
             entries = schemaRelationsBackup.getIfPresent(typePlusRelation);
             if (entries==null) {
                 entries = retriever.retrieveSchemaRelations(schemaId, type, dir);
-                if (!entries.isEmpty()) { //only cache if type exists
+                if (isCacheable(type, entries)) {
                     schemaRelationsBackup.put(typePlusRelation, entries);
                 }
             }
@@ -167,7 +180,9 @@ public class StandardSchemaCache implements SchemaCache {
                 } else {
                     //Expand map
                     entries = retriever.retrieveSchemaRelations(schemaId, type, dir);
-                    types.put(typePlusRelation,entries);
+                    if (isCacheable(type, entries)) {
+                        types.put(typePlusRelation,entries);
+                    }
                 }
             }
         }
