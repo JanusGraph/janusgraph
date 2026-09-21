@@ -119,6 +119,7 @@ import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.database.util.IndexRecordUtil;
 import org.janusgraph.graphdb.database.util.StaleIndexRecordUtil;
+import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalElement;
@@ -4574,6 +4575,68 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             .next();
 
         assertEquals(1, g.V(next).values("name").toList().size());
+    }
+
+    /**
+     * An edge-by-id lookup for a label whose schema vertex is not yet visible must not leave that label with a
+     * cached empty definition once it becomes visible. The lookup here races the label's creation: the id is assigned
+     * when the label is made, but its schema row is only written when the creating transaction commits.
+     */
+    @Test
+    public void testEdgeByIdLookupBeforeLabelIsVisibleDoesNotPoisonSchemaCache() {
+        JanusGraphVertex a = graph.addVertex();
+        JanusGraphVertex b = graph.addVertex();
+        graph.tx().commit();
+        Object aId = a.id();
+        Object bId = b.id();
+
+        JanusGraphTransaction creator = graph.newTransaction();
+        EdgeLabel knows = creator.makeEdgeLabel("knows").multiplicity(Multiplicity.SIMPLE).make();
+
+        JanusGraphTransaction reader = graph.newTransaction();
+        RelationIdentifier notYetVisible = new RelationIdentifier(aId, knows.longId(), 1L, bId);
+        assertFalse(reader.getEdges(notYetVisible).iterator().hasNext());
+        reader.rollback();
+
+        creator.getVertex(aId).addEdge("knows", creator.getVertex(bId));
+        creator.commit();
+
+        newTx();
+        assertEquals(Multiplicity.SIMPLE, tx.getEdgeLabel("knows").multiplicity());
+        assertCount(1, tx.getVertex(aId).query().direction(Direction.OUT).labels("knows").edges());
+        assertEquals(1, tx.traversal().V(aId).outE().count().next());
+        RelationIdentifier eid = (RelationIdentifier) Iterables.getOnlyElement(tx.getVertex(aId).query().labels("knows").edges()).id();
+        assertEquals(eid, Iterables.getOnlyElement(tx.getEdges(eid)).id());
+        // malformed type ids resolve to "no edge" as before: a negative one, and one with valid type bits that lies
+        // outside the schema id range
+        assertFalse(tx.getEdges(new RelationIdentifier(aId, -knows.longId(), 1L, bId)).iterator().hasNext());
+        long typeBits = knows.longId() & ((1L << IDManager.MAX_PADDING_BITWIDTH) - 1);
+        long outOfRange = ((Long.MAX_VALUE >>> IDManager.MAX_PADDING_BITWIDTH) << IDManager.MAX_PADDING_BITWIDTH) | typeBits;
+        assertFalse(tx.getEdges(new RelationIdentifier(aId, outOfRange, 1L, bId)).iterator().hasNext());
+    }
+
+    /**
+     * Definition edges written by ordinary transactions (here connection constraints auto-created under
+     * schema.constraints=true) must be visible to later transactions on the same instance: the second edge must
+     * find the constraint the first one created instead of creating another copy.
+     */
+    @Test
+    public void testAutoCreatedConnectionConstraintIsSeenByLaterTransactions() {
+        clopen(option(SCHEMA_CONSTRAINTS), true);
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makeEdgeLabel("knows").make();
+        finishSchema();
+
+        for (int i = 0; i < 3; i++) {
+            JanusGraphTransaction t = graph.newTransaction();
+            JanusGraphVertex p1 = t.addVertex("person");
+            JanusGraphVertex p2 = t.addVertex("person");
+            p1.addEdge("knows", p2);
+            t.commit();
+        }
+
+        assertEquals(1, mgmt.getEdgeLabel("knows").mappedConnections().size());
+        assertEquals(1, mgmt.getVertexLabel("person").mappedConnections().size());
     }
 
     private void createStrictSchemaForVertexProperties() {

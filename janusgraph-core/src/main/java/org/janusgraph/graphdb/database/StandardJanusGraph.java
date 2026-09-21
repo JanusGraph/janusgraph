@@ -108,6 +108,7 @@ import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.system.BaseKey;
+import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.types.system.BaseRelationType;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.util.ExceptionFactory;
@@ -121,6 +122,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1107,6 +1109,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         final KCVSLog txLog = logTransaction?backend.getSystemTxLog():null;
         final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp, times);
         ModificationSummary commitSummary;
+        final Set<Long> schemaElementsWithChangedDefinitionEdges = collectSchemaElementsWithChangedDefinitionEdges(addedRelations, deletedRelations);
 
         try {
             //3.1 Log transaction (write-ahead log) if enabled
@@ -1240,7 +1243,30 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 log.error("Could not roll-back transaction ["+transactionId+"] after failure due to exception",e2);
             }
             throw e;
+        } finally {
+            //4. Definition edges written outside of ManagementSystem (e.g. constraints auto-created under
+            //   schema.constraints=true) are not broadcast as cache evictions. Expire the local schema cache
+            //   entries of the schema vertices they touch so this instance re-reads them.
+            for (Long schemaId : schemaElementsWithChangedDefinitionEdges) {
+                schemaCache.expireSchemaElement(schemaId);
+            }
         }
+    }
+
+    private static Set<Long> collectSchemaElementsWithChangedDefinitionEdges(final Collection<InternalRelation> addedRelations,
+                                                                            final Collection<InternalRelation> deletedRelations) {
+        Set<Long> schemaIds = Collections.emptySet();
+        for (Collection<InternalRelation> relations : Arrays.asList(addedRelations, deletedRelations)) {
+            for (InternalRelation relation : relations) {
+                if (relation.getType() != BaseLabel.SchemaDefinitionEdge) continue;
+                if (schemaIds.isEmpty()) schemaIds = new HashSet<>();
+                for (int pos = 0; pos < relation.getArity(); pos++) {
+                    InternalVertex vertex = relation.getVertex(pos);
+                    if (vertex instanceof JanusGraphSchemaVertex) schemaIds.add(((JanusGraphSchemaVertex) vertex).longId());
+                }
+            }
+        }
+        return schemaIds;
     }
 
 

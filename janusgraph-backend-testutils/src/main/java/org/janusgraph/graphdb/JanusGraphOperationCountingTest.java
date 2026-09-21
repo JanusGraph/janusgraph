@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.Multiplicity;
@@ -42,9 +43,11 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.util.CacheMetricsAction;
 import org.janusgraph.diskstorage.util.MetricInstrumentedStore;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.util.stats.MetricManager;
@@ -297,6 +300,64 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         verifyStoreMetrics(getConfig().get(IDS_STORE_NAME));
     }
 
+
+    @Test
+    public void testEdgeByIdDoesNotReadTypeVertex() {
+        metricsPrefix = "testEdgeByIdDoesNotReadTypeVertex";
+        final String schemaPrefix = GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT;
+
+        JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        JanusGraphVertex v = tx.addVertex("name", "john");
+        JanusGraphVertex u = tx.addVertex("name", "mary");
+        RelationIdentifier eid = (RelationIdentifier) v.addEdge("knows", u).id();
+        // label and edge created in this transaction: resolvable by id before commit, without any read
+        RelationIdentifier newLabelEid = (RelationIdentifier) v.addEdge("likes", u).id();
+        assertEquals(newLabelEid, Iterables.getOnlyElement(tx.getEdges(newLabelEid)).id());
+        verifyStoreMetrics(EDGESTORE_NAME);
+        tx.commit();
+
+        // warm the schema cache for the label, then start counting
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(eid, Iterables.getOnlyElement(tx.getEdges(eid)).id());
+        tx.commit();
+        resetMetrics();
+
+        // 1 slice on the out-vertex for the edge itself; the label's schema row is read neither in this
+        // transaction nor through the schema cache (which loads under the schema metrics group)
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        JanusGraphEdge e = Iterables.getOnlyElement(tx.getEdges(eid));
+        assertEquals(eid, e.id());
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1L));
+        verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of());
+        tx.commit();
+
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        RelationIdentifier missingEdge = new RelationIdentifier(eid.getOutVertexId(), eid.getTypeId(), eid.getRelationId() + 1, eid.getInVertexId());
+        assertFalse(tx.getEdges(missingEdge).iterator().hasNext());
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L));
+        verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of());
+        tx.commit();
+
+        // a well-formed label id with no schema vertex behind it resolves to "no edge". Its (empty) definition is
+        // read through the schema cache and deliberately not remembered, so that a label created later under this
+        // id is picked up: one schema read per lookup, and never a read in this transaction's group.
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        long missingTypeId = IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, 1L << 40);
+        RelationIdentifier missingType = new RelationIdentifier(eid.getOutVertexId(), missingTypeId, eid.getRelationId(), eid.getInVertexId());
+        assertFalse(tx.getEdges(missingType).iterator().hasNext());
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L));
+        verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of(M_GET_SLICE, 1L));
+        assertFalse(tx.getEdges(missingType).iterator().hasNext());
+        verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of(M_GET_SLICE, 2L));
+        // the lookups left nothing behind in the transaction: resolving the id as a vertex still checks storage and finds nothing
+        assertNull(tx.getVertex(missingTypeId));
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 3L));
+        // ... and the removed stub that check left in the transaction is treated as "no such type", without any read
+        assertFalse(tx.getEdges(missingType).iterator().hasNext());
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 3L));
+        verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of(M_GET_SLICE, 2L));
+        tx.commit();
+    }
 
     @Test
     public void testKCVSAccess1() {
