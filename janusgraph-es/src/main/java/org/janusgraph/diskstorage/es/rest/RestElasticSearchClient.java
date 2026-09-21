@@ -403,9 +403,12 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     class RequestBytes {
         final byte [] requestBytes;
         final byte [] requestSource;
+        //Retained so that a failed bulk item can be interpreted against the operation which produced it
+        final boolean removesContentOnly;
 
         @VisibleForTesting
         RequestBytes(final ElasticSearchMutation request) throws JsonProcessingException {
+            this.removesContentOnly = request.removesContentOnly();
             Map<String, Object> requestData = new HashMap<>();
             if (useMappingTypes) {
                 requestData.put("_index", request.getIndex());
@@ -476,14 +479,32 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         for (int itemIndex = 0; itemIndex < bulkResponseItems.size(); itemIndex++) {
             Collection<RestBulkResponse.RestBulkItemResponse> bulkResponseItem = bulkResponseItems.get(itemIndex).values();
             if (bulkResponseItem.size() > 1) {
-                throw new IllegalStateException("There should only be a single item per bulk reponse item entry");
+                throw new IllegalStateException("There should only be a single item per bulk response item entry");
             }
             RestBulkResponse.RestBulkItemResponse item = bulkResponseItem.iterator().next();
-            if (item.getError() != null && item.getStatus() != HttpStatus.SC_NOT_FOUND) {
-                errors.add(Triplet.with(item.getError(), item.getStatus(), submittedBulkRequestItems.get(itemIndex)));
+            final RequestBytes submittedItem = submittedBulkRequestItems.get(itemIndex);
+            if (item.getError() != null && !isAbsentDocumentRemoval(item, submittedItem)) {
+                errors.add(Triplet.with(item.getError(), item.getStatus(), submittedItem));
             }
         }
         return errors;
+    }
+
+    //Removing content which is already absent leaves the index in the state the mutation asked for, so the 404
+    //Elasticsearch answers with is a success. Both a whole document deletion and a script which deletes fields count.
+    //A 404 for a mutation which adds content is a document_missing_exception: the write did not happen, and treating
+    //it as a success drops the mutation with nothing reported.
+    //Only the status is examined and not the reason, so what changes is which mutations are exempt, not which
+    //reasons. A removal is exempted from every 404 exactly as before; a mutation which adds content is now exempted
+    //from none, which is the point of this change and does include an index_not_found_exception it used to swallow.
+    //For the record, the reasons a 404 can carry here: a whole document deletion of an absent document does not
+    //reach this method at all, because Elasticsearch answers it with result not_found and no error; the field
+    //deletion script gets a document_missing_exception; and either can get an index_not_found_exception when the
+    //whole index is gone. Narrowing the exemption so that a removal reports that last one too would be a further
+    //behavior change on the deletion path this one does not otherwise touch, so it is left for its own change
+    private static boolean isAbsentDocumentRemoval(final RestBulkResponse.RestBulkItemResponse item,
+                                                   final RequestBytes submittedItem) {
+        return item.getStatus() == HttpStatus.SC_NOT_FOUND && submittedItem.removesContentOnly;
     }
 
     @VisibleForTesting

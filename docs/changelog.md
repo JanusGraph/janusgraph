@@ -523,6 +523,30 @@ JanusGraph's own retry wait ever hands one over unwrapped, so a cancelled index 
 been consumed, so `BackendOperation` aborts its backoff wait immediately instead of reissuing the request for the
 whole write time budget.
 
+##### An Elasticsearch update which failed because the document is missing is now reported
+
+A bulk request reports item level failures inside an otherwise successful HTTP response. JanusGraph previously treated
+*every* item answered with HTTP 404 as a success, whatever mutation produced it. That is right for a mutation which
+only takes content out of the index — a whole document deletion, or the script which deletes fields — because an
+absent document already satisfies it. It is wrong for a mutation which adds content: there a 404 is a
+`document_missing_exception`, and the write did not happen.
+
+A transaction which takes content out of a document and puts other content in — a property removed and a different one
+set on the same element, or a value of a `LIST` or `SET` cardinality property replaced — sends a field deletion and an
+addition against the same document, and `mutate()` withholds the upsert from the addition once a mutation has deletions.
+So if the Elasticsearch document was already missing, both items were answered with 404, both were discarded, and the
+addition was never indexed. Nothing reported it: the mutation returned normally, so even the
+`<prefix>.indexProvider.<INDEX-NAME>.mutate.exceptions` metric stayed at zero. Changing the value of a `SINGLE`
+cardinality property is not this case: the deletion of the old value is consolidated away because the same field is
+added, so that addition carries an upsert and recreates the document, from the changed field alone.
+
+Such an item is now reported, which means **a commit which previously appeared to succeed can now fail visibly** on a
+graph whose mixed index has already diverged. A 404 is not among the transient status codes of
+`index.[X].elasticsearch.retry-error-codes`, so the failure is classified permanent and the mutation is dropped with an
+ERROR rather than reattempted — reattempting cannot recreate a document whose upsert was withheld. That is the intent: the alternative is that the divergence stays
+invisible. Repairing the affected documents with `SchemaAction.REINDEX`, or with transaction log recovery, clears the
+condition.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven
