@@ -23,6 +23,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -75,6 +76,7 @@ import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
@@ -242,6 +244,85 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         }
 
         tx = null;
+    }
+
+    //The document is present in the graph but absent from the index, and the transaction takes content out of it and
+    //puts other content in. The addition is sent as an update without an upsert, because the mutation has deletions,
+    //so Elasticsearch answers it with a 404 document_missing_exception: a lost write. Every 404 used to be taken for a
+    //success, which left the addition unindexed with nothing reported
+    @Test
+    public void testAdditionToAMissingDocumentIsReported() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", documentWith(TIME, 1L), true);
+        clopen();
+
+        //Take the document out of the index behind the back of the transaction which follows
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        newTx();
+
+        //A deletion of one field and an addition of another both survive consolidation, so the upsert is withheld
+        tx.delete("vertex", "diverged", TIME, 1L, false);
+        tx.add("vertex", "diverged", WEIGHT, 2.5, false);
+        final JanusGraphException e = assertThrows(JanusGraphException.class, tx::commit,
+            "Commit should not have succeeded.");
+        tx = null;
+
+        final Throwable rootCause = Throwables.getRootCause(e);
+        assertTrue(rootCause instanceof ElasticSearchBulkFailureException, rootCause.toString());
+        final ElasticSearchBulkFailureException failure = (ElasticSearchBulkFailureException) rootCause;
+        //Only the addition is reported. Elasticsearch answers the field deletion with the same 404, but that one
+        //asked for nothing an absent document does not already satisfy
+        assertEquals(1, failure.getFailedItems().size(), failure.getFailedItems().toString());
+        assertEquals(Collections.singleton(HttpStatus.SC_NOT_FOUND), failure.getFailedItemStatusCodes());
+        assertTrue(failure.getFailedItems().get(0).toString().contains("document_missing_exception"),
+            failure.getFailedItems().toString());
+    }
+
+    //Both mutations which only take content out of the index. Elasticsearch answers a whole document deletion of an
+    //absent document with a 404 carrying no error, and the script which deletes fields with a 404
+    //document_missing_exception. Neither is a lost write, because an absent document is already the state each asked
+    //for, so neither is reported
+    @Test
+    public void testRemovingContentFromAMissingDocumentIsNotReported() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", documentWith(TIME, 1L), true);
+        clopen();
+
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        newTx();
+
+        //The field deletion script against the absent document. A reported item would make this commit throw
+        tx.delete("vertex", "diverged", TIME, 1L, false);
+        newTx();
+        //The whole document deletion of the absent document
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        newTx();
+    }
+
+    //A value change of a SINGLE cardinality key is not the reported shape, although issue #4926 names it as the one:
+    //IndexTransaction consolidates the mutation before mutate() sees it, and the deletion of the old value is dropped
+    //because the same field is added. The addition then carries an upsert, which recreates the absent document from
+    //the changed field alone
+    @Test
+    public void testValueChangeOfASingleCardinalityKeyRecreatesAMissingDocument() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", documentWith(TIME, 1L), true);
+        clopen();
+
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        newTx();
+
+        tx.delete("vertex", "diverged", TIME, 1L, false);
+        tx.add("vertex", "diverged", TIME, 2L, false);
+        clopen();
+
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TIME, Cmp.EQUAL, 2L))).count());
+    }
+
+    private static Multimap<String, Object> documentWith(String key, Object value) {
+        final Multimap<String, Object> document = HashMultimap.create();
+        document.put(key, value);
+        return document;
     }
 
     @Test
