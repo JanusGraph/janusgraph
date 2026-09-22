@@ -17,6 +17,7 @@ package org.janusgraph.diskstorage.es;
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -51,6 +52,7 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
@@ -91,6 +93,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -100,6 +103,7 @@ import java.util.stream.Stream;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -461,10 +465,196 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         }
     }
 
+    //The transaction hands the provider the complete indexed content of an existing element, and the provider uses it
+    //as the upsert of every update it sends for the document. A document which turns out to be missing is then
+    //recreated whole in the same round trip, whether the mutation removes content or not, instead of from the touched
+    //fields alone or not at all
+    @Test
+    public void testACompleteDocumentRecreatesAMissingDocumentWhole() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", document(TIME, 1L, WEIGHT, 1.5, NAME, "whole"), true);
+        clopen();
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        newTx();
+
+        //Removing one field and adding another is the shape which cannot carry an upsert built from the additions
+        tx.delete("vertex", "diverged", TIME, 1L, false);
+        tx.add("vertex", "diverged", WEIGHT, 2.5, false);
+        tx.registerCompleteDocument("vertex", "diverged",
+            Arrays.asList(new IndexEntry(WEIGHT, 2.5), new IndexEntry(NAME, "whole")));
+        clopen();
+
+        assertEquals(ImmutableMap.of(WEIGHT, 2.5, NAME, "whole"), source("vertex", "diverged"));
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(NAME, Cmp.EQUAL, "whole"))).count());
+    }
+
+    @Test
+    public void testACompleteDocumentRecreatesAMissingDocumentForAnAdditionsOnlyMutation() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", document(TIME, 1L, NAME, "whole"), true);
+        clopen();
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        newTx();
+
+        //An addition alone used to recreate the document from itself, so the element was findable by the new field only
+        tx.add("vertex", "diverged", WEIGHT, 2.5, false);
+        tx.registerCompleteDocument("vertex", "diverged",
+            Arrays.asList(new IndexEntry(TIME, 1L), new IndexEntry(NAME, "whole"), new IndexEntry(WEIGHT, 2.5)));
+        clopen();
+
+        assertEquals(ImmutableMap.of(TIME, 1L, NAME, "whole", WEIGHT, 2.5), source("vertex", "diverged"));
+    }
+
+    @Test
+    public void testACompleteDocumentDoesNotDuplicateAListValueItRecreates() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", document(PHONE_LIST, "1"), true);
+        clopen();
+        tx.delete("vertex", "diverged", PHONE_LIST, "1", true);
+        newTx();
+
+        //Replacing a LIST value keeps both its deletion and its addition, which travel in the one script update. That
+        //update inserts the complete document and its script is skipped, so neither is applied to the snapshot, which
+        //already holds the outcome: the new value is there once and the old one is gone
+        tx.delete("vertex", "diverged", PHONE_LIST, "1", false);
+        tx.add("vertex", "diverged", PHONE_LIST, "2", false);
+        tx.registerCompleteDocument("vertex", "diverged", Collections.singletonList(new IndexEntry(PHONE_LIST, "2")));
+        clopen();
+
+        assertEquals(ImmutableMap.of(PHONE_LIST, Arrays.asList("2")), source("vertex", "diverged"));
+    }
+
+    @Test
+    public void testACompleteDocumentLeavesAnExistingDocumentToTheMutation() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", document(TIME, 1L, NAME, "whole", PHONE_LIST, "1"), true);
+        clopen();
+
+        //The document exists, so the upsert is not used and the one script applies every change to it as the mutation
+        //always has: a removal, a collection addition, and single valued fields both new and changed
+        tx.delete("vertex", "diverged", TIME, 1L, false);
+        tx.add("vertex", "diverged", PHONE_LIST, "2", false);
+        tx.add("vertex", "diverged", WEIGHT, 2.5, false);
+        tx.add("vertex", "diverged", NAME, "changed", false);
+        tx.registerCompleteDocument("vertex", "diverged", Arrays.asList(new IndexEntry(NAME, "changed"),
+            new IndexEntry(PHONE_LIST, "1"), new IndexEntry(PHONE_LIST, "2"), new IndexEntry(WEIGHT, 2.5)));
+        clopen();
+
+        assertEquals(ImmutableMap.of(NAME, "changed", PHONE_LIST, Arrays.asList("1", "2"), WEIGHT, 2.5),
+            source("vertex", "diverged"));
+    }
+
+    @Test
+    public void testACompleteDocumentKeepsADuplicateListValueItRecreates() throws Exception {
+        initialize("vertex");
+        //A LIST holds equal values apart, so the document starts with "x" twice
+        tx.add("vertex", "diverged", PHONE_LIST, "x", true);
+        tx.add("vertex", "diverged", PHONE_LIST, "x", true);
+        clopen();
+        tx.delete("vertex", "diverged", PHONE_LIST, "x", true);
+        newTx();
+
+        //Removing one of the two while changing another field: the snapshot already holds the remaining "x", and a
+        //deletion applied on top of the inserted snapshot would take that one away as well
+        tx.delete("vertex", "diverged", PHONE_LIST, "x", false);
+        tx.add("vertex", "diverged", WEIGHT, 2.5, false);
+        tx.registerCompleteDocument("vertex", "diverged",
+            Arrays.asList(new IndexEntry(PHONE_LIST, "x"), new IndexEntry(WEIGHT, 2.5)));
+        clopen();
+
+        assertEquals(ImmutableMap.of(PHONE_LIST, Arrays.asList("x"), WEIGHT, 2.5), source("vertex", "diverged"));
+    }
+
+    @Test
+    public void testACompleteDocumentRemovesOneOfTwoEqualListValuesFromAnExistingDocument() throws Exception {
+        initialize("vertex");
+        tx.add("vertex", "diverged", PHONE_LIST, "x", true);
+        tx.add("vertex", "diverged", PHONE_LIST, "x", true);
+        clopen();
+
+        //The document exists, so the script runs against it and takes one occurrence away, as it always has
+        tx.delete("vertex", "diverged", PHONE_LIST, "x", false);
+        tx.add("vertex", "diverged", WEIGHT, 2.5, false);
+        tx.registerCompleteDocument("vertex", "diverged",
+            Arrays.asList(new IndexEntry(PHONE_LIST, "x"), new IndexEntry(WEIGHT, 2.5)));
+        clopen();
+
+        assertEquals(ImmutableMap.of(PHONE_LIST, Arrays.asList("x"), WEIGHT, 2.5), source("vertex", "diverged"));
+    }
+
+    //An upsert which recreates a missing document goes through the store's ingest pipeline like any new document:
+    //Elasticsearch runs the pipeline of a bulk request on the upsert of an update whose document is missing. The
+    //pipeline of the ingestvertex store sets a field which the complete document does not hold
+    @Test
+    public void testACompleteDocumentRecreatesAMissingDocumentThroughTheIngestPipeline() throws Exception {
+        initialize("ingestvertex");
+        add("ingestvertex", "diverged", document(TEXT, "bob"), true);
+        clopen();
+        tx.delete("ingestvertex", "diverged", TEXT, "bob", true);
+        newTx();
+
+        tx.add("ingestvertex", "diverged", WEIGHT, 2.5, false);
+        tx.registerCompleteDocument("ingestvertex", "diverged",
+            Arrays.asList(new IndexEntry(TEXT, "bob"), new IndexEntry(WEIGHT, 2.5)));
+        clopen();
+
+        assertEquals(ImmutableMap.of(TEXT, "bob", WEIGHT, 2.5, STRING, "hello"), source("ingestvertex", "diverged"));
+    }
+
+    //The complete document only matters when the document turns out to be missing. An update which it would make larger
+    //than bulk-chunk-size-limit-bytes is sent without it and updates the existing document exactly as before, instead
+    //of failing an update which fits on its own
+    @Test
+    public void testACompleteDocumentTooLargeToSendIsLeftOut() throws Exception {
+        initialize("vertex");
+        final String large = RandomStringUtils.randomAlphanumeric(5000);
+        add("vertex", "large", document(TEXT, large), true);
+        clopen();
+
+        final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
+        cc.set("index.es.elasticsearch.bulk-chunk-size-limit-bytes", "2000");
+        final ElasticSearchIndex smallChunks = new ElasticSearchIndex(makeESTestConfig("es", cc));
+        try {
+            final IndexTransaction update = new IndexTransaction(smallChunks, indexRetriever,
+                StandardBaseTransactionConfig.of(TimestampProviders.MILLI), Duration.ofSeconds(5));
+            update.add("vertex", "large", WEIGHT, 2.5, false);
+            update.registerCompleteDocument("vertex", "large",
+                Arrays.asList(new IndexEntry(TEXT, large), new IndexEntry(WEIGHT, 2.5)));
+            update.commit();
+        } finally {
+            smallChunks.close();
+        }
+
+        assertEquals(ImmutableMap.of(TEXT, large, WEIGHT, 2.5), source("vertex", "large"));
+    }
+
     //Up to Elasticsearch 6 a document is addressed through its mapping type, which JanusGraph names after the store
     private static String documentPath(String store, String documentId) {
         final String type = JanusGraphElasticsearchContainer.getEsMajorVersion().value <= 6 ? store : "_doc";
         return INDEX_NAME.getDefaultValue() + "_" + store + "/" + type + "/" + documentId;
+    }
+
+    private Map<String, Object> source(String store, String documentId) throws Exception {
+        final HttpGet get = new HttpGet(documentPath(store, documentId));
+        try (CloseableHttpResponse response = httpClient.execute(host, get)) {
+            final String body = EntityUtils.toString(response.getEntity());
+            //A missing document is a failure of the test, said as such rather than as a cast of a null _source
+            assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode(), body);
+            final Map<?, ?> source = (Map<?, ?>) ((JSONObject) new JSONParser().parse(body)).get("_source");
+            assertNotNull(source, "no _source in " + body);
+            final Map<String, Object> copy = new HashMap<>();
+            source.forEach((key, value) -> copy.put(String.valueOf(key), value));
+            return copy;
+        }
+    }
+
+    private static Multimap<String, Object> document(Object... keysAndValues) {
+        assertEquals(0, keysAndValues.length % 2, "keys and values come in pairs");
+        final Multimap<String, Object> document = HashMultimap.create();
+        for (int i = 0; i < keysAndValues.length; i += 2) {
+            document.put((String) keysAndValues[i], keysAndValues[i + 1]);
+        }
+        return document;
     }
 
     private static Multimap<String, Object> documentWith(String key, Object value) {

@@ -47,14 +47,24 @@ public class ElasticSearchMutation {
     //so the two can only be told apart from the mutation itself
     private final boolean removesContentOnly;
 
+    //The same update without the element's complete document, for when the complete document would make the update
+    //too large to send; null for any other mutation
+    private final ElasticSearchMutation withoutCompleteDocument;
+
     private ElasticSearchMutation(RequestType requestType, String index, String type, String id, Map source,
                                   boolean removesContentOnly) {
+        this(requestType, index, type, id, source, removesContentOnly, null);
+    }
+
+    private ElasticSearchMutation(RequestType requestType, String index, String type, String id, Map source,
+                                  boolean removesContentOnly, ElasticSearchMutation withoutCompleteDocument) {
         this.requestType = requestType;
         this.index = index;
         this.type = type;
         this.id = id;
         this.source = source;
         this.removesContentOnly = removesContentOnly;
+        this.withoutCompleteDocument = withoutCompleteDocument;
     }
 
     public static ElasticSearchMutation createDeleteRequest(String index, String type, String id) {
@@ -79,12 +89,34 @@ public class ElasticSearchMutation {
         return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, source, false);
     }
 
+    //An update which carries the element's complete document as its upsert, so that a document which turns out to be
+    //missing is recreated whole. The complete document only matters in that case, so the same update without it is
+    //kept as well: an existing document is updated exactly the same way by it, and it is what is sent when the
+    //complete document would make the update too large to send. Without the complete document the update only takes
+    //content out of the index when it only removes content
+    public static ElasticSearchMutation createUpdateRequestWithCompleteDocument(String index, String type, String id,
+                                                                                ImmutableMap.Builder<String, Object> builder,
+                                                                                Map<String, Object> completeDocument,
+                                                                                boolean removesContentOnlyWithoutIt) {
+        final Map<String, Object> update = builder.build();
+        final ElasticSearchMutation withoutIt = new ElasticSearchMutation(RequestType.UPDATE, index, type, id, update,
+            removesContentOnlyWithoutIt);
+        final Map<String, Object> source = ImmutableMap.<String, Object>builder().putAll(update)
+            .put(ES_UPSERT_KEY, completeDocument).build();
+        return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, source, false, withoutIt);
+    }
+
     public RequestType getRequestType() {
         return requestType;
     }
 
     public boolean removesContentOnly() {
         return removesContentOnly;
+    }
+
+    //The same update without the element's complete document, or null when the mutation carries none
+    public ElasticSearchMutation withoutCompleteDocument() {
+        return withoutCompleteDocument;
     }
 
     public String getIndex() {

@@ -83,8 +83,12 @@ public abstract class AbstractESCompat {
     }
 
     public ImmutableMap.Builder<String, Object> prepareStoredScript(String scriptId, List<Map<String, Object>> fields) {
-        Map<String, Object> script = ImmutableMap.of(ES_ID_KEY, scriptId,
-            ES_PARAMS_KEY, ImmutableMap.of(ES_PARAMS_FIELDS_KEY, fields));
+        return prepareStoredScript(scriptId, ImmutableMap.of(ES_PARAMS_FIELDS_KEY, fields));
+    }
+
+    //A stored script with the given parameters, for a script which takes more than one list of fields
+    public ImmutableMap.Builder<String, Object> prepareStoredScript(String scriptId, Map<String, Object> params) {
+        Map<String, Object> script = ImmutableMap.of(ES_ID_KEY, scriptId, ES_PARAMS_KEY, params);
         return ImmutableMap.<String, Object>builder().put(ES_SCRIPT_KEY, script);
     }
 

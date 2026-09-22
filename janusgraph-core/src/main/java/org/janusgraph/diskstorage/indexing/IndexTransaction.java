@@ -76,6 +76,36 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         getIndexMutation(store,documentId,false,deleteAll).deletion(new IndexEntry(key,value));
     }
 
+    //Attaches the complete indexed content of an existing element to its pending mutation, so that a provider which
+    //finds the element's document missing can recreate it whole. Only a mutation which updates an existing document
+    //takes it: a new document is written whole anyway, and a deleted one is not recreated
+    public void registerCompleteDocument(String store, String documentId, List<IndexEntry> completeDocument) {
+        final IndexMutation m = getExistingIndexMutation(store, documentId);
+        if (m != null && !m.isNew() && !m.isDeleted()) {
+            m.setCompleteDocument(completeDocument);
+        }
+    }
+
+    public boolean hasCompleteDocument(String store, String documentId) {
+        final IndexMutation m = getExistingIndexMutation(store, documentId);
+        return m != null && m.hasCompleteDocument();
+    }
+
+    //Whether the pending mutation of the document updates an existing document and has no complete document yet:
+    //what a caller which can supply one asks before it reads the element for it. The mutation decides, not the
+    //element an update came from - a replaced relation delivers its deletion from a removed element and its addition
+    //from a new one, and the two add up to an update of the existing document. A complete document which was supplied
+    //empty counts as supplied, since every read within the commit sees the same state of the element
+    public boolean needsCompleteDocument(String store, String documentId) {
+        final IndexMutation m = getExistingIndexMutation(store, documentId);
+        return m != null && !m.isNew() && !m.isDeleted() && !m.hasCompleteDocument();
+    }
+
+    private IndexMutation getExistingIndexMutation(String store, String documentId) {
+        final Map<String, IndexMutation> storeMutations = mutations == null ? null : mutations.get(store);
+        return storeMutations == null ? null : storeMutations.get(documentId);
+    }
+
     private IndexMutation getIndexMutation(String store, String documentId, boolean isNew, boolean isDeleted) {
         final Map<String, IndexMutation> storeMutations = mutations.computeIfAbsent(store, k -> new HashMap<>(DEFAULT_INNER_MAP_SIZE));
         IndexMutation m = storeMutations.get(documentId);

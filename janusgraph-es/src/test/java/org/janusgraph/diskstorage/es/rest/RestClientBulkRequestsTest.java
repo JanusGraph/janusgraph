@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.es.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
 import org.elasticsearch.client.Request;
@@ -103,6 +104,32 @@ public class RestClientBulkRequestsTest {
             //Verify that despite only calling bulkRequest() once, we had 2 calls to the underlying rest client's
             //perform request (due to the mutations being split across 2 calls)
             verify(restClientMock, times(2)).performRequest(requestCaptor.capture());
+        }
+    }
+
+    @Test
+    public void testLeavingOutACompleteDocumentWhichMakesAnUpdateTooLarge() throws IOException {
+        final int bulkLimit = 1000;
+        final String largeValue = String.join("", Collections.nCopies(2 * bulkLimit, "a"));
+        final ElasticSearchMutation fits = ElasticSearchMutation.createUpdateRequestWithCompleteDocument("some_index",
+            "some_type", "fits", ImmutableMap.<String, Object>builder().put("doc", Collections.singletonMap("small", "value")),
+            Collections.singletonMap("small", "value"), false);
+        final ElasticSearchMutation tooLarge = ElasticSearchMutation.createUpdateRequestWithCompleteDocument(
+            "some_index", "some_type", "too_large",
+            ImmutableMap.<String, Object>builder().put("doc", Collections.singletonMap("small", "value")),
+            Collections.singletonMap("large", largeValue), false);
+        try (RestElasticSearchClient restClientUnderTest = createClient(bulkLimit)) {
+            final RestElasticSearchClient.BulkRequestChunker chunkerUnderTest =
+                restClientUnderTest.new BulkRequestChunker(Arrays.asList(fits, tooLarge));
+            final List<RestElasticSearchClient.RequestBytes> chunk = chunkerUnderTest.next();
+            //Both are sent, and nothing is left over to fail as too large
+            Assertions.assertEquals(2, chunk.size());
+            Assertions.assertFalse(chunkerUnderTest.hasNext());
+            //The one which fits keeps its complete document, the other goes without it
+            Assertions.assertEquals(restClientUnderTest.new RequestBytes(fits).getSerializedSize(),
+                chunk.get(0).getSerializedSize());
+            Assertions.assertEquals(restClientUnderTest.new RequestBytes(tooLarge.withoutCompleteDocument())
+                .getSerializedSize(), chunk.get(1).getSerializedSize());
         }
     }
 
