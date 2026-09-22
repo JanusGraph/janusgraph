@@ -61,6 +61,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -408,10 +409,15 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         final byte [] requestSource;
         //Retained so that a failed bulk item can be interpreted against the operation which produced it
         final boolean removesContentOnly;
+        //The document the item belongs to, so that a failed bulk can say which documents did not apply
+        final String store;
+        final String documentId;
 
         @VisibleForTesting
         RequestBytes(final ElasticSearchMutation request) throws JsonProcessingException {
             this.removesContentOnly = request.removesContentOnly();
+            this.store = request.getType();
+            this.documentId = request.getId();
             Map<String, Object> requestData = new HashMap<>();
             if (useMappingTypes) {
                 requestData.put("_index", request.getIndex());
@@ -510,6 +516,14 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
             && !isIndexNotFound(item.getError());
     }
 
+    private static Map<String, Set<String>> documentsByStore(final Iterable<RequestBytes> requests) {
+        final Map<String, Set<String>> documentsByStore = new HashMap<>();
+        for (final RequestBytes request : requests) {
+            documentsByStore.computeIfAbsent(request.store, k -> new HashSet<>()).add(request.documentId);
+        }
+        return documentsByStore;
+    }
+
     //The error of a failed bulk item is a map which names the exception under "type"
     private static boolean isIndexNotFound(final Object error) {
         return error instanceof Map && INDEX_NOT_FOUND_EXCEPTION.equals(((Map<?, ?>) error).get(ERROR_TYPE_KEY));
@@ -526,6 +540,9 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         // size of a HTTP request to 100mb by default
         private final PeekingIterator<RequestBytes> requestIterator;
         private final int[] exceptionallyLargeRequests;
+        //The documents of the oversized requests, by store: never sent, and reported only once every well sized chunk
+        //went through, so a failure before that has to name them as unsent
+        private final Map<String, Set<String>> oversizedDocumentsByStore = new HashMap<>();
 
         @VisibleForTesting
         BulkRequestChunker(List<ElasticSearchMutation> requests) throws JsonProcessingException {
@@ -539,12 +556,24 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                     serializedRequests.add(requestBytes);
                 } else {
                     requestSizesThatWereTooLarge.add(requestSerializedSize);
+                    oversizedDocumentsByStore.computeIfAbsent(request.getType(), k -> new HashSet<>()).add(request.getId());
                 }
             }
             this.requestIterator = Iterators.peekingIterator(serializedRequests.iterator());
             //Condense request sizes that are too large into an int array to remove Boxed & List memory overhead
             this.exceptionallyLargeRequests = requestSizesThatWereTooLarge.isEmpty() ? null :
                 requestSizesThatWereTooLarge.stream().mapToInt(Integer::intValue).toArray();
+        }
+
+        //The documents which have not been sent, by store: those of the chunks not handed out yet, and the oversized
+        //ones. A failure names them as unsent so that a reattempt does not take them for applied and drop them. This
+        //consumes the chunker, so it is asked once, when a failure ends the request
+        Map<String, Set<String>> unsentDocumentsByStore() {
+            final Map<String, Set<String>> unsent = new HashMap<>();
+            requestIterator.forEachRemaining(request ->
+                unsent.computeIfAbsent(request.store, k -> new HashSet<>()).add(request.documentId));
+            oversizedDocumentsByStore.forEach((store, ids) -> unsent.computeIfAbsent(store, k -> new HashSet<>()).addAll(ids));
+            return unsent;
         }
 
         @Override
@@ -614,8 +643,13 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                                         failedItem.getValue1(), failedItem.getValue0());
                                 }
                             }
-                            //Retain the item statuses so callers can classify the failure as transient or permanent
-                            throw new ElasticSearchBulkFailureException(errorCodes, errorItems);
+                            final List<RequestBytes> failedRequests = bulkItemsThatFailed.stream()
+                                .map(Triplet::getValue2).collect(Collectors.toList());
+                            //Retain the item statuses so callers can classify the failure as transient or permanent,
+                            //and the documents so that a reattempt can leave out those which applied: the ones whose
+                            //items failed here, and the ones of the chunks this failure stops from being sent at all
+                            throw new ElasticSearchBulkFailureException(errorCodes, errorItems,
+                                documentsByStore(failedRequests), bulkRequestChunker.unsentDocumentsByStore());
                         }
                     } else {
                         //The entire bulk request was successful, leave the loop

@@ -498,17 +498,25 @@ The two levels are:
 
 Be aware of the following while the options are enabled:
 
--   The second level resubmits the **whole mutation**, including the bulk items which had already succeeded, and a
-    transport failure at either level leaves it unknown whether Elasticsearch applied the request. Resubmission is
-    idempotent for whole-document writes, deletions and `SET` cardinality properties, but the values of a `LIST`
-    cardinality property are appended, so a resubmitted item can duplicate them in the index document.
+-   The second level resubmits the mutation without the documents which are known to have applied: every store
+    whose own bulk request had already returned, and in the bulk request which failed every document none of whose
+    items failed or went unsent. A bulk request larger than `index.[X].elasticsearch.bulk-chunk-size-limit-bytes` is
+    sent in chunks, and the documents of the chunks which were never sent are resubmitted. A failure which reports no
+    item statuses — no response at all, or a status for the bulk request as a whole — leaves it unknown what that
+    request applied, so after one the interrupted bulk is resubmitted whole, the chunks which went through before it
+    included. Resubmission is idempotent for whole-document writes, deletions and `SET` cardinality properties, but
+    the values of a `LIST` cardinality property are appended, so a document resubmitted after such a failure can hold
+    them twice. The same holds for a document one of whose items failed while another item of it had succeeded: it
+    is resubmitted whole. Within one bulk request Elasticsearch answers the items of one document, which share a shard
+    request, alike for the statuses it reattempts by default, so this takes either a per-item status which the
+    operator listed as transient, or a document whose items were split between two chunks.
 -   During an Elasticsearch outage a commit which touches a mixed index now takes up to `storage.write-time` to
     report the failure instead of failing fast.
 -   While `retry-transport-failures` is enabled every `SSLException` is treated as transient, not only an interrupted
     handshake, so a write against a persistently misconfigured or untrusted certificate is reattempted for the whole
     write time before it fails.
 -   Set `index.[X].elasticsearch.retry-error-codes` to an empty list **and**
-    `index.[X].elasticsearch.retry-transport-failures=false` if duplicated `LIST` values in a mixed index are less
+    `index.[X].elasticsearch.retry-transport-failures=false` if `LIST` values duplicated after such a failure are less
     acceptable than a dropped mutation; that restores the previous behavior at both levels. Setting `retry-limit=0`
     alone disables only the client level and keeps the JanusGraph level.
 

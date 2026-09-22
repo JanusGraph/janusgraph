@@ -54,9 +54,11 @@ import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
+import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
+import org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -64,7 +66,9 @@ import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.util.stats.MetricManager;
 import org.janusgraph.util.system.ConfigurationUtil;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -82,8 +86,12 @@ import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -391,6 +399,72 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         } finally {
             transientOnListedStatuses.close();
         }
+    }
+
+    //A reattempt after a temporary failure resends only the documents which did not apply. The good document has a
+    //LIST value appended by the addition script, the one write a resend does not make idempotent: if the reattempts
+    //resent it, the document would hold the value once per attempt
+    @Test
+    public void testAReattemptResendsOnlyTheDocumentsWhichDidNotApply() throws Exception {
+        initialize("vertex");
+        add("vertex", "good", documentWith(PHONE_LIST, "1"), true);
+        clopen();
+
+        //A 400 is not transient anywhere in practice, but it is the one item failure a live Elasticsearch can be made
+        //to answer on demand, with a value the mapping rejects. Listing it makes the bulk failure temporary, so that
+        //BackendOperation reattempts the mutation until the write time is used up
+        final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
+        cc.set("index.es.elasticsearch.retry-error-codes", "400");
+        cc.set("index.es.elasticsearch.retry-limit", "0");
+        final ElasticSearchIndex transientOn400 = new ElasticSearchIndex(makeESTestConfig("es", cc));
+        try {
+            //Metered, so that the number of attempts can be asserted: a run which gave up after a single attempt,
+            //because a bulk under refresh=wait_for takes about a second, would prove nothing about reattempts
+            final String metricsGroup = "ElasticsearchIndexTest.reattempts." + UUID.randomUUID();
+            final IndexTransaction reattempting = new IndexTransaction(
+                new MetricInstrumentedIndexProvider(transientOn400, "es"), indexRetriever,
+                new StandardBaseTransactionConfig.Builder().timestampProvider(TimestampProviders.MILLI)
+                    .groupName(metricsGroup).build(), Duration.ofSeconds(5));
+            try {
+                reattempting.add("vertex", "good", PHONE_LIST, "2", false);
+                reattempting.add("vertex", "bad", TIME, "not a time", true);
+
+                //commit runs the mutation through BackendOperation.execute, which wraps what ends the wait
+                final JanusGraphException e = assertThrows(JanusGraphException.class, reattempting::commit);
+                //The wait ended with a temporary failure; that it was reattempted is what the metric below shows
+                assertTrue(e.getCause() instanceof TemporaryBackendException, String.valueOf(e.getCause()));
+                final long attempts = MetricManager.INSTANCE.getCounter(metricsGroup, "es",
+                    MetricInstrumentedIndexProvider.M_MUTATE, MetricInstrumentedIndexProvider.M_CALLS).getCount();
+                assertTrue(attempts >= 2, "the mutation was attempted " + attempts + " time(s)");
+            } finally {
+                //The commit did not complete, so the transaction still holds the mutation it could not apply
+                reattempting.rollback();
+            }
+        } finally {
+            transientOn400.close();
+        }
+
+        assertEquals(Arrays.asList("1", "2"), listValues("vertex", "good", PHONE_LIST));
+    }
+
+    private List<Object> listValues(String store, String documentId, String field) throws Exception {
+        final HttpGet get = new HttpGet(documentPath(store, documentId));
+        try (CloseableHttpResponse response = httpClient.execute(host, get)) {
+            final String body = EntityUtils.toString(response.getEntity());
+            //A missing document is a failure of the test, said as such rather than as a cast of a null _source
+            assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode(), body);
+            final Object source = ((JSONObject) new JSONParser().parse(body)).get("_source");
+            assertTrue(source instanceof JSONObject, "no _source in " + body);
+            final Object values = ((JSONObject) source).get(field);
+            assertTrue(values instanceof JSONArray, "no list " + field + " in " + body);
+            return new ArrayList<>((JSONArray) values);
+        }
+    }
+
+    //Up to Elasticsearch 6 a document is addressed through its mapping type, which JanusGraph names after the store
+    private static String documentPath(String store, String documentId) {
+        final String type = JanusGraphElasticsearchContainer.getEsMajorVersion().value <= 6 ? store : "_doc";
+        return INDEX_NAME.getDefaultValue() + "_" + store + "/" + type + "/" + documentId;
     }
 
     private static Multimap<String, Object> documentWith(String key, Object value) {

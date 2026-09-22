@@ -17,8 +17,10 @@ package org.janusgraph.diskstorage.es;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -39,12 +41,43 @@ public class ElasticSearchBulkFailureException extends IOException {
 
     private final List<Object> failedItems;
 
+    //The ids of the documents whose items failed, by store, and of the documents in the chunks of the request which
+    //were never sent because of that failure, so that a reattempt can leave out the documents which applied and
+    //nothing else. Both empty when the failure did not come with that information
+    private final Map<String, Set<String>> failedDocumentsByStore;
+    private final Map<String, Set<String>> unsentDocumentsByStore;
+
     public ElasticSearchBulkFailureException(Set<Integer> failedItemStatusCodes, List<Object> failedItems) {
+        this(failedItemStatusCodes, failedItems, Collections.emptyMap(), Collections.emptyMap());
+    }
+
+    public ElasticSearchBulkFailureException(Set<Integer> failedItemStatusCodes, List<Object> failedItems,
+                                             Map<String, Set<String>> failedDocumentsByStore) {
+        this(failedItemStatusCodes, failedItems, failedDocumentsByStore, Collections.emptyMap());
+    }
+
+    public ElasticSearchBulkFailureException(Set<Integer> failedItemStatusCodes, List<Object> failedItems,
+                                             Map<String, Set<String>> failedDocumentsByStore,
+                                             Map<String, Set<String>> unsentDocumentsByStore) {
         super(describe(
             Objects.requireNonNull(failedItemStatusCodes, "The statuses of the failed bulk items are required"),
             Objects.requireNonNull(failedItems, "The failed bulk items are required")));
         this.failedItemStatusCodes = Collections.unmodifiableSet(new HashSet<>(failedItemStatusCodes));
         this.failedItems = Collections.unmodifiableList(new ArrayList<>(failedItems));
+        this.failedDocumentsByStore = copyOf(failedDocumentsByStore, "failed");
+        this.unsentDocumentsByStore = copyOf(unsentDocumentsByStore, "unsent");
+    }
+
+    private static Map<String, Set<String>> copyOf(Map<String, Set<String>> documentsByStore, String what) {
+        final Map<String, Set<String>> documents = new HashMap<>();
+        Objects.requireNonNull(documentsByStore, () -> "The " + what + " documents are required").forEach((store, ids) -> {
+            Objects.requireNonNull(store, () -> "A store of the " + what + " documents is required");
+            Objects.requireNonNull(ids, () -> "The " + what + " documents of store " + store + " are required");
+            ids.forEach(id -> Objects.requireNonNull(id,
+                () -> "A document id of the " + what + " documents of store " + store + " is required"));
+            documents.put(store, Collections.unmodifiableSet(new HashSet<>(ids)));
+        });
+        return Collections.unmodifiableMap(documents);
     }
 
     private static String describe(Set<Integer> failedItemStatusCodes, List<Object> failedItems) {
@@ -68,5 +101,16 @@ public class ElasticSearchBulkFailureException extends IOException {
     //Every item Elasticsearch reported as failed, whether or not the message rendered it
     public List<Object> getFailedItems() {
         return failedItems;
+    }
+
+    //The ids of the documents whose items failed, by store. Empty when the failure carries no such information
+    public Map<String, Set<String>> getFailedDocumentsByStore() {
+        return failedDocumentsByStore;
+    }
+
+    //The ids of the documents in the chunks of the request which were never sent because of this failure, by store.
+    //Not applied, so a reattempt has to resend them. Empty when the failure carries no such information
+    public Map<String, Set<String>> getUnsentDocumentsByStore() {
+        return unsentDocumentsByStore;
     }
 }

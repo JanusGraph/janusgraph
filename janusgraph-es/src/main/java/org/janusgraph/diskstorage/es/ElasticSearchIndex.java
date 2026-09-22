@@ -80,7 +80,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -580,6 +582,89 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
+    //BackendOperation reattempts a temporary failure by calling mutate again with the same map, so take out of it what
+    //is known to have applied: every store whose bulk request returned, and in the bulk which failed every document
+    //none of whose items failed - which leaves in the documents whose items failed and the documents of the chunks
+    //the failure stopped from being sent. A failure which reports no item statuses - no response at all, or a status
+    //for the bulk request as a whole - says nothing about what the bulk it interrupted applied, so that bulk is resent
+    //whole. A resent document which had applied is written twice, which appends the values of its LIST cardinality
+    //properties again, so what is taken out is exactly what a reattempt would otherwise duplicate
+    @VisibleForTesting
+    static void retainUnappliedDocuments(Map<String, Map<String, IndexMutation>> mutations, Set<String> appliedStores,
+                                         Set<String> storesInBulk, Exception failure) {
+        //A map the caller does not allow to change is left alone: when the applied stores cannot be taken out of it,
+        //nothing inside it is narrowed either, and the whole mutation is resent
+        if (!narrowQuietly("the stores whose bulk request returned", () -> mutations.keySet().removeAll(appliedStores))) {
+            return;
+        }
+        final ElasticSearchBulkFailureException bulkFailure = findBulkFailure(failure);
+        if (bulkFailure == null) {
+            return;
+        }
+        final Map<String, Set<String>> documentsToResend = documentsToResend(bulkFailure);
+        //Only narrow the bulk when the response names documents this mutation holds; anything else would leave the
+        //reattempt with nothing to resend and the failure silently forgotten
+        if (documentsToResend.isEmpty() || !namesPendingDocuments(documentsToResend, mutations)) {
+            return;
+        }
+        for (final String store : storesInBulk) {
+            final Map<String, IndexMutation> documents = mutations.get(store);
+            if (documents == null) {
+                continue;
+            }
+            narrowQuietly("the applied documents of store " + store, () -> {
+                documents.keySet().retainAll(documentsToResend.getOrDefault(store, Collections.emptySet()));
+                if (documents.isEmpty()) {
+                    mutations.remove(store);
+                }
+            });
+        }
+    }
+
+    //Each step takes out only content which is known to have applied and stands on its own, so a document map the
+    //caller does not allow to change simply has that store resent whole, while the other stores are still narrowed.
+    //Nothing which must be resent is ever lost, whichever steps go through
+    private static boolean narrowQuietly(String what, Runnable narrowing) {
+        try {
+            narrowing.run();
+            return true;
+        } catch (UnsupportedOperationException e) {
+            log.debug("Could not take {} out of the Elasticsearch mutation before its reattempt", what, e);
+            return false;
+        }
+    }
+
+    //The documents a failed bulk request leaves to resend: those whose items failed, and those of the chunks which
+    //were never sent because an earlier chunk failed
+    private static Map<String, Set<String>> documentsToResend(ElasticSearchBulkFailureException failure) {
+        final Map<String, Set<String>> toResend = new HashMap<>();
+        failure.getFailedDocumentsByStore().forEach((store, ids) ->
+            toResend.computeIfAbsent(store, k -> new HashSet<>()).addAll(ids));
+        failure.getUnsentDocumentsByStore().forEach((store, ids) ->
+            toResend.computeIfAbsent(store, k -> new HashSet<>()).addAll(ids));
+        return toResend;
+    }
+
+    private static boolean namesPendingDocuments(Map<String, Set<String>> documentsToResend,
+                                                 Map<String, Map<String, IndexMutation>> mutations) {
+        for (final Map.Entry<String, Set<String>> store : documentsToResend.entrySet()) {
+            final Map<String, IndexMutation> documents = mutations.get(store.getKey());
+            if (documents == null || !documents.keySet().containsAll(store.getValue())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static ElasticSearchBulkFailureException findBulkFailure(Throwable failure) {
+        for (final Throwable cause : TransientFailures.causalChain(failure)) {
+            if (cause instanceof ElasticSearchBulkFailureException) {
+                return (ElasticSearchBulkFailureException) cause;
+            }
+        }
+        return null;
+    }
+
     private BackendException convert(Exception esException) {
         return convert(esException, retryErrorCodes, retryTransportFailures);
     }
@@ -969,6 +1054,11 @@ public class ElasticSearchIndex implements IndexProvider {
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever information,
                        BaseTransaction tx) throws BackendException {
         final List<ElasticSearchMutation> requests = new ArrayList<>();
+        //Which stores were sent in a bulk request which returned, and which are in the one in flight, so that a
+        //reattempt after a temporary failure resends only what is not known to have applied
+        final Set<String> appliedStores = new HashSet<>();
+        final Set<String> storesInBulk = new HashSet<>();
+        final Set<String> pooledStores = new HashSet<>();
         try {
             for (final Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 final List<ElasticSearchMutation> requestByStore = new ArrayList<>();
@@ -1031,12 +1121,20 @@ public class ElasticSearchIndex implements IndexProvider {
                     }
                 }
                 if (!requestByStore.isEmpty() && ingestPipelines.containsKey(storeName)) {
+                    storesInBulk.clear();
+                    storesInBulk.add(storeName);
                     client.bulkRequest(requestByStore, String.valueOf(ingestPipelines.get(storeName)));
+                    appliedStores.add(storeName);
                 } else if (!requestByStore.isEmpty()) {
                     requests.addAll(requestByStore);
+                    pooledStores.add(storeName);
+                } else {
+                    appliedStores.add(storeName);
                 }
             }
             if (!requests.isEmpty()) {
+                storesInBulk.clear();
+                storesInBulk.addAll(pooledStores);
                 client.bulkRequest(requests, null);
             }
         } catch (final Exception e) {
@@ -1044,6 +1142,7 @@ public class ElasticSearchIndex implements IndexProvider {
             //Reserve the error level for a mutation which is about to be dropped: a temporary failure is reattempted
             //by BackendOperation, and is only lost if the write time budget runs out, which commit reports itself
             if (converted instanceof TemporaryBackendException) {
+                retainUnappliedDocuments(mutations, appliedStores, storesInBulk, e);
                 log.warn("Transient failure while executing bulk Elasticsearch mutation", e);
             } else {
                 log.error("Failed to execute bulk Elasticsearch mutation", e);
