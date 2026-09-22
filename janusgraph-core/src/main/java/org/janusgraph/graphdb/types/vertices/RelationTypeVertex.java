@@ -41,9 +41,12 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
 
     private ConsistencyModifier consistency = null;
     private Integer ttl = null;
-    private List<IndexType> indexes = null;
-
-    private List<IndexReferenceType> indexesReferences = null;
+    //Both index caches are built on first read and published through their field, so they are volatile: without it a
+    //thread which shares the transaction can see the reference before the list behind it is completely built, and be
+    //handed fewer indexes than the key has. consistency and ttl hold immutable values, for which a stale read only
+    //recomputes.
+    private volatile List<IndexType> indexes = null;
+    private volatile List<IndexReferenceType> indexesReferences = null;
 
     public RelationTypeVertex(StandardJanusGraphTx tx, Object id, byte lifecycle) {
         super(tx, id, lifecycle);
