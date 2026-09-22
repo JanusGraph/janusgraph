@@ -391,6 +391,36 @@ public class ElasticSearchIndex implements IndexProvider {
             "    }",
             "}");
 
+    //Every change of one document in one script - its removals, its collection additions and its single valued
+    //fields - for the update which carries the element's complete document as its upsert: Elasticsearch writes the
+    //upsert of an update whose document is missing and skips its script, so the outcome the snapshot already holds is
+    //not applied a second time. Removing one occurrence of a LIST value, or adding one, is what a second application
+    //would get wrong. A single valued field is assigned as a whole, an object value such as a geo shape included
+    private static final String PARAMETERIZED_MUTATION_SCRIPT = parameterizedScriptPrepare("",
+            "for (field in params.deletions) {",
+            "    if (field.cardinality == 'SINGLE') {",
+            "        ctx._source.remove(field.name);",
+            "    } else if (ctx._source.containsKey(field.name)) {",
+            "        def fieldIndex = ctx._source[field.name].indexOf(field.value);",
+            "        if (fieldIndex >= 0 && fieldIndex < ctx._source[field.name].size()) {",
+            "            ctx._source[field.name].remove(fieldIndex);",
+            "        }",
+            "    }",
+            "}",
+            "for (field in params.additions) {",
+            "    if (ctx._source[field.name] == null) {",
+            "        ctx._source[field.name] = [];",
+            "    }",
+            "    if (field.cardinality != 'SET' || ctx._source[field.name].indexOf(field.value) == -1) {",
+            "        ctx._source[field.name].add(field.value);",
+            "    }",
+            "}",
+            "ctx._source.putAll(params.doc);");
+
+    private static final String MUTATION_SCRIPT_DELETIONS_KEY = "deletions";
+    private static final String MUTATION_SCRIPT_ADDITIONS_KEY = "additions";
+    private static final String MUTATION_SCRIPT_DOC_KEY = "doc";
+
     private static final String PARAMETERIZED_ADDITION_SCRIPT = parameterizedScriptPrepare("",
             "for (field in params.fields) {",
             "    if (ctx._source[field.name] == null) {",
@@ -434,6 +464,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private final boolean useMappingForES7;
     private final String parameterizedAdditionScriptId;
     private final String parameterizedDeletionScriptId;
+    private final String parameterizedMutationScriptId;
     private final boolean supportsGeoShapePrefixTree;
     private final CircleProcessor bdbCircleProcessor;
     private final Set<Integer> retryErrorCodes;
@@ -443,6 +474,7 @@ public class ElasticSearchIndex implements IndexProvider {
         indexName = determineIndexName(config);
         parameterizedAdditionScriptId = generateScriptId("add");
         parameterizedDeletionScriptId = generateScriptId("del");
+        parameterizedMutationScriptId = generateScriptId("mut");
         useAllField = config.get(USE_ALL_FIELD);
         useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
         allowMappingUpdate = config.get(ALLOW_MAPPING_UPDATE);
@@ -487,6 +519,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private void setupStoredScripts() throws PermanentBackendException {
         setupStoredScriptIfNeeded(parameterizedAdditionScriptId, PARAMETERIZED_ADDITION_SCRIPT);
         setupStoredScriptIfNeeded(parameterizedDeletionScriptId, PARAMETERIZED_DELETION_SCRIPT);
+        setupStoredScriptIfNeeded(parameterizedMutationScriptId, PARAMETERIZED_MUTATION_SCRIPT);
     }
 
     private void setupStoredScriptIfNeeded(String storedScriptId, String source) throws PermanentBackendException {
@@ -663,6 +696,50 @@ public class ElasticSearchIndex implements IndexProvider {
             }
         }
         return null;
+    }
+
+    //With the element's complete document in hand, the document is updated by exactly one update, which carries the
+    //complete document as its upsert, so a document which turns out to be missing is recreated whole in the same round
+    //trip - and nothing is applied on top of it: Elasticsearch writes the upsert of an update whose document is
+    //missing and skips that update's script. So every change of the document travels in one script, which either
+    //applies to the existing document or is skipped as a whole; sent separately, a later part would apply to a snapshot
+    //which already holds its outcome, and removing or adding one occurrence of a LIST value is not idempotent. Being
+    //one item, the update is also applied or rejected as a whole: a bulk request split into chunks cannot separate the
+    //changes of a document, and a reattempt of a failed document never replays a part of them which had applied.
+    //An update the complete document would make too large to send goes without it, as the client decides
+    private void addUpdatesCarryingTheCompleteDocument(List<ElasticSearchMutation> requests, String indexStoreName,
+                                                       String storeName, String documentId, IndexMutation mutation,
+                                                       KeyInformation.IndexRetriever information,
+                                                       Map<String, Object> completeDocument) throws BackendException {
+        final KeyInformation.StoreRetriever storeRetriever = information.get(storeName);
+        final List<Map<String, Object>> deletions = mutation.hasDeletions()
+            ? getParameters(storeRetriever, mutation.getDeletions(), true) : Collections.emptyList();
+        final List<Map<String, Object>> collectionAdditions = mutation.hasAdditions()
+            ? getParameters(storeRetriever, mutation.getAdditions(), false, Cardinality.SINGLE) : Collections.emptyList();
+        final Map<String, Object> singleValuedAdditions = mutation.hasAdditions()
+            ? getAdditionDoc(information, storeName, mutation) : Collections.emptyMap();
+        if (deletions.isEmpty() && collectionAdditions.isEmpty() && singleValuedAdditions.isEmpty()) {
+            return;
+        }
+        final ImmutableMap.Builder<String, Object> script = compat.prepareStoredScript(parameterizedMutationScriptId,
+            ImmutableMap.of(MUTATION_SCRIPT_DELETIONS_KEY, deletions, MUTATION_SCRIPT_ADDITIONS_KEY, collectionAdditions,
+                MUTATION_SCRIPT_DOC_KEY, singleValuedAdditions));
+        requests.add(ElasticSearchMutation.createUpdateRequestWithCompleteDocument(indexStoreName, storeName,
+            documentId, script, completeDocument, collectionAdditions.isEmpty() && singleValuedAdditions.isEmpty()));
+        log.trace("Mutation script {} with deletions {}, collection additions {} and single valued additions {}",
+            PARAMETERIZED_MUTATION_SCRIPT, deletions, collectionAdditions, singleValuedAdditions);
+    }
+
+    //The complete indexed content of the element as an Elasticsearch document, when the transaction supplied it for
+    //an update of an existing document and the element has anything indexed; null otherwise, which includes a complete
+    //document supplied empty: there is nothing to recreate a missing document from, so the mutation goes as without one
+    private Map<String, Object> completeDocument(IndexMutation mutation, KeyInformation.StoreRetriever storeRetriever)
+            throws BackendException {
+        if (mutation.isNew() || mutation.isDeleted() || !mutation.hasCompleteDocument()) {
+            return null;
+        }
+        final List<IndexEntry> entries = mutation.getCompleteDocument();
+        return entries.isEmpty() ? null : getNewDocument(entries, storeRetriever);
     }
 
     private BackendException convert(Exception esException) {
@@ -1071,13 +1148,20 @@ public class ElasticSearchIndex implements IndexProvider {
                     Preconditions.checkArgument(!(mutation.isNew() && mutation.isDeleted()));
                     Preconditions.checkArgument(!mutation.isNew() || !mutation.hasDeletions());
                     Preconditions.checkArgument(!mutation.isDeleted() || !mutation.hasAdditions());
-                    //Deletions first
-                    if (mutation.hasDeletions()) {
-                        if (mutation.isDeleted()) {
-                            log.trace("Deleting entire document {}", documentId);
-                            requestByStore.add(ElasticSearchMutation.createDeleteRequest(indexStoreName, storeName,
-                                    documentId));
-                        } else {
+                    //The complete indexed content of the element, when the transaction supplied it, is the upsert of
+                    //every update sent for the document: a document which turns out to be missing is recreated whole
+                    //in the same round trip, rather than from the touched fields alone or not at all
+                    final Map<String, Object> completeDocument = completeDocument(mutation, information.get(storeName));
+                    if (mutation.hasDeletions() && mutation.isDeleted()) {
+                        log.trace("Deleting entire document {}", documentId);
+                        requestByStore.add(ElasticSearchMutation.createDeleteRequest(indexStoreName, storeName,
+                                documentId));
+                    } else if (completeDocument != null) {
+                        addUpdatesCarryingTheCompleteDocument(requestByStore, indexStoreName, storeName, documentId,
+                            mutation, information, completeDocument);
+                    } else {
+                        //Deletions first
+                        if (mutation.hasDeletions()) {
                             List<Map<String, Object>> params = getParameters(information.get(storeName),
                                 mutation.getDeletions(), true);
                             Map doc = compat.prepareStoredScript(parameterizedDeletionScriptId, params).build();
@@ -1085,37 +1169,37 @@ public class ElasticSearchIndex implements IndexProvider {
                             requestByStore.add(ElasticSearchMutation.createFieldDeletionRequest(indexStoreName,
                                 storeName, documentId, doc));
                         }
-                    }
-                    if (mutation.hasAdditions()) {
-                        if (mutation.isNew()) { //Index
-                            log.trace("Adding entire document {}", documentId);
-                            final Map<String, Object> source = getNewDocument(mutation.getAdditions(),
-                                    information.get(storeName));
-                            requestByStore.add(ElasticSearchMutation.createIndexRequest(indexStoreName, storeName,
-                                    documentId, source));
-                        } else {
-                            final Map upsert;
-                            if (!mutation.hasDeletions()) {
-                                upsert = getNewDocument(mutation.getAdditions(), information.get(storeName));
+                        if (mutation.hasAdditions()) {
+                            if (mutation.isNew()) { //Index
+                                log.trace("Adding entire document {}", documentId);
+                                final Map<String, Object> source = getNewDocument(mutation.getAdditions(),
+                                        information.get(storeName));
+                                requestByStore.add(ElasticSearchMutation.createIndexRequest(indexStoreName, storeName,
+                                        documentId, source));
                             } else {
-                                upsert = null;
-                            }
+                                final Map upsert;
+                                if (!mutation.hasDeletions()) {
+                                    upsert = getNewDocument(mutation.getAdditions(), information.get(storeName));
+                                } else {
+                                    upsert = null;
+                                }
 
-                            List<Map<String, Object>> params = getParameters(information.get(storeName),
-                                    mutation.getAdditions(), false, Cardinality.SINGLE);
-                            if (!params.isEmpty()) {
-                                ImmutableMap.Builder builder = compat.prepareStoredScript(parameterizedAdditionScriptId, params);
-                                requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
-                                        documentId, builder, upsert));
-                                log.trace("Adding script {} with params {}", PARAMETERIZED_ADDITION_SCRIPT, params);
-                            }
+                                List<Map<String, Object>> params = getParameters(information.get(storeName),
+                                        mutation.getAdditions(), false, Cardinality.SINGLE);
+                                if (!params.isEmpty()) {
+                                    ImmutableMap.Builder builder = compat.prepareStoredScript(parameterizedAdditionScriptId, params);
+                                    requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
+                                            documentId, builder, upsert));
+                                    log.trace("Adding script {} with params {}", PARAMETERIZED_ADDITION_SCRIPT, params);
+                                }
 
-                            final Map<String, Object> doc = getAdditionDoc(information, storeName, mutation);
-                            if (!doc.isEmpty()) {
-                                final ImmutableMap.Builder builder = ImmutableMap.builder().put(ES_DOC_KEY, doc);
-                                requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
-                                        documentId, builder, upsert));
-                                log.trace("Adding update {}", doc);
+                                final Map<String, Object> doc = getAdditionDoc(information, storeName, mutation);
+                                if (!doc.isEmpty()) {
+                                    final ImmutableMap.Builder builder = ImmutableMap.builder().put(ES_DOC_KEY, doc);
+                                    requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
+                                            documentId, builder, upsert));
+                                    log.trace("Adding update {}", doc);
+                                }
                             }
                         }
                     }

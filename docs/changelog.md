@@ -518,7 +518,9 @@ Be aware of the following while the options are enabled:
     them twice. The same holds for a document one of whose items failed while another item of it had succeeded: it
     is resubmitted whole. Within one bulk request Elasticsearch answers the items of one document, which share a shard
     request, alike for the statuses it reattempts by default, so this takes either a per-item status which the
-    operator listed as transient, or a document whose items were split between two chunks.
+    operator listed as transient, or a document whose items were split between two chunks. Neither can happen to the
+    document of an existing element whose complete indexed content is at hand, which is updated by a single item (see
+    *A missing Elasticsearch document is recreated whole* below).
 -   During an Elasticsearch outage a commit which touches a mixed index now takes up to `storage.write-time` to
     report the failure instead of failing fast.
 -   While `retry-transport-failures` is enabled every `SSLException` is treated as transient, not only an interrupted
@@ -602,6 +604,27 @@ listed in `index.[X].elasticsearch.retry-error-codes` (`429`, `502`, `503`, `504
 `index.[X].elasticsearch.retry-transport-failures`, a connection or TLS failure are transient and reattempted with
 backoff within `storage.read-time`; everything else remains permanent. The pages of a scroll are fetched while the
 caller consumes the result stream, outside that budget, and are not covered.
+
+##### A missing Elasticsearch document is recreated whole
+
+When an element exists in the graph but its document is missing from the mixed index — an index write lost earlier, a
+document removed by hand — the next mutation of the element recreated the document from the fields it touched alone, or,
+if the mutation also removed content, could not recreate it at all and was reported as a lost write. The transaction now
+hands the index provider the element's complete indexed content along with every mutation which updates an existing
+document — a property change on an edge or a vertex property included, although it replaces the relation — and the
+Elasticsearch provider sends every change of the document, its removals, its collection additions and its single-valued
+fields, in one script update which carries that content as its upsert. A document which turns out to be missing is
+therefore recreated whole in the same round trip, whichever shape the mutation has, and in a store with an ingest
+pipeline it goes through the pipeline, as Elasticsearch runs the pipeline of a bulk request on the upsert of an update
+whose document is missing. A document which exists is updated as before, except that a single-valued field is assigned
+rather than merged, which replaces an object value such as a geo shape as a whole. Being one item, the update of a
+document is also applied or rejected as a whole: a bulk request split into chunks can no longer separate a document's
+changes, and a reattempt never replays a part of them which had applied. This has two costs. The content is read while
+the transaction commits, so a commit which updates an existing element covered by a mixed index reads that element's
+indexed properties, which are usually loaded already. And every update of an existing document carries that content
+once, so bulk requests grow with the size of the documents they update; an update the content would make larger than
+`index.[X].elasticsearch.bulk-chunk-size-limit-bytes` is sent without it, as before this change, rather than failing. A
+mixed index on a cdc-only backend, whose documents are written asynchronously, is not affected.
 
 ### Version 1.1.0 (Release Date: November 7, 2024)
 

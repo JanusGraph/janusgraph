@@ -1073,6 +1073,18 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                     itx.add(indexStore, update.getKey(), update.getEntry(), update.getElement().isNew());
                 else
                     itx.delete(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
+                //The document of an existing element may turn out to be missing from the index. Hand the provider the
+                //element's complete indexed content once, so that it recreates the document whole rather than from the
+                //touched fields. Whether the document is an existing one is the pending mutation's to say, not the
+                //element's: a property change on an edge or a vertex property replaces the relation, so its deletion
+                //arrives from a removed element and its addition from a new one, while the mutation they add up to is
+                //an update of the existing document. Read here, while the transaction can still read: the index
+                //commit runs after the storage commit. A cdc-only index writes its documents asynchronously and takes
+                //none
+                if (!isCdcOnlyMixedIndex(update.getIndex()) && itx.needsCompleteDocument(indexStore, update.getKey())) {
+                    itx.registerCompleteDocument(indexStore, update.getKey(),
+                        indexSerializer.getCompleteDocument(update.getElement(), (MixedIndexType) update.getIndex()));
+                }
             }
         }
 

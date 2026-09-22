@@ -551,6 +551,13 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
             for (ElasticSearchMutation request : requests) {
                 RequestBytes requestBytes = new RequestBytes(request);
                 int requestSerializedSize = requestBytes.getSerializedSize();
+                final ElasticSearchMutation withoutCompleteDocument = request.withoutCompleteDocument();
+                if (requestSerializedSize > bulkChunkSerializedLimitBytes && withoutCompleteDocument != null) {
+                    //The element's complete document only matters when the document turns out to be missing. An update
+                    //it makes too large to send goes without it, and updates an existing document exactly the same way
+                    requestBytes = new RequestBytes(withoutCompleteDocument);
+                    requestSerializedSize = requestBytes.getSerializedSize();
+                }
                 if (requestSerializedSize <= bulkChunkSerializedLimitBytes) {
                     //Only keep items that we can actually send in memory
                     serializedRequests.add(requestBytes);

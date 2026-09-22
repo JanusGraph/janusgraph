@@ -311,8 +311,18 @@ public class IndexSerializer {
     }
 
     public boolean reindexElement(JanusGraphElement element, MixedIndexType index, Map<String,Map<String,List<IndexEntry>>> documentsPerStore) {
-        if (!indexAppliesTo(index, element))
+        final List<IndexEntry> entries = getCompleteDocument(element, index);
+        if (entries.isEmpty())
             return false;
+        getDocuments(documentsPerStore, index).put(element2String(element), entries);
+        return true;
+    }
+
+    //The complete indexed content of the element in this index, as a restore writes the document: every value of
+    //every enabled field key. Empty when the index does not apply to the element or nothing it indexes is set
+    public List<IndexEntry> getCompleteDocument(JanusGraphElement element, MixedIndexType index) {
+        if (!indexAppliesTo(index, element))
+            return Collections.emptyList();
         final List<IndexEntry> entries = new ArrayList<>();
         for (final ParameterIndexField field: index.getFieldKeys()) {
             final PropertyKey key = field.getFieldKey();
@@ -321,10 +331,7 @@ public class IndexSerializer {
                 element.values(key.name()).forEachRemaining(value->entries.add(new IndexEntry(key2Field(field), value)));
             }
         }
-        if (entries.isEmpty())
-            return false;
-        getDocuments(documentsPerStore, index).put(element2String(element), entries);
-        return true;
+        return entries;
     }
 
     private Map<String,List<IndexEntry>> getDocuments(Map<String,Map<String,List<IndexEntry>>> documentsPerStore, MixedIndexType index) {
