@@ -30,7 +30,7 @@ automatically repair such inconsistencies, JanusGraph can maintain a
 transaction write-ahead log which is enabled through the configuration.
 ```properties
 tx.log-tx = true
-tx.max-commit-time = 10000
+tx.max-commit-time = 300 s
 ```
 
 The max-commit-time property is used to determine when a transaction has
@@ -38,7 +38,28 @@ failed. If the persistence stage of the transaction takes longer than
 this time, JanusGraph will attempt to recover it if necessary. Hence,
 this time out should be configured as a generous upper bound on the
 maximum duration of persistence. Note, that this does not include the
-time spent before commit.
+time spent before commit. The persistence stage writes to the storage
+backend and then to each index backend in turn, and each of those writes
+is reattempted for up to `storage.write-time` when it fails temporarily,
+so the value has to exceed `storage.write-time` multiplied by one plus
+the number of index backends; JanusGraph logs a warning at graph open
+when it does not. That is a minimum rather than a generous bound: the
+clock starts before the writes are prepared, a transaction with more
+than `storage.buffer-size` mutations writes to the storage backend in
+several chunks, each reattempted on its own, a storage backend without
+transaction isolation (Cassandra and HBase, or BerkeleyDB with
+`storage.transactions=false`) commits the schema elements a transaction
+creates in a storage write of their own first, and the last attempt of
+each write can run past `storage.write-time`. The default of 300 s
+covers the storage backend and one index backend at the default write
+time, with one write time to spare. A transaction which writes a user
+log (`TransactionBuilder.logIdentifier`) needs more: recovery sends its
+user-log event again when it expires before recovery has read its final
+status, so its user-log write (up to `log.user.max-write-time` when
+`log.user.send-delay` is 0) and the transaction log's final status write
+(up to `log.tx.max-write-time`) have to fit in as well. The recovery
+process keeps every transaction it reads for this long, so its memory
+use grows with the value.
 
 In addition, a separate process must be setup that reads the log to
 identify partially failed transaction and repair any inconsistencies

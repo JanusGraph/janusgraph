@@ -41,6 +41,7 @@ import org.janusgraph.diskstorage.log.Message;
 import org.janusgraph.diskstorage.log.MessageReader;
 import org.janusgraph.diskstorage.log.ReadMarker;
 import org.janusgraph.diskstorage.util.BackendOperation;
+import org.janusgraph.diskstorage.util.time.Durations;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -69,7 +70,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -134,7 +134,8 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                 .get(GraphDatabaseConfiguration.VERBOSE_TX_RECOVERY);
         this.txCache = Caffeine.newBuilder()
                 .initialCapacity(100)
-                .expireAfterWrite(maxTxLength.toNanos(), TimeUnit.NANOSECONDS)
+                //No longer than the cache's elapsed-time comparison can reach, where toNanos() used to fail the start
+                .expireAfterWrite(Durations.min(maxTxLength, GraphDatabaseConfiguration.LONGEST_RECOVERY_WAIT))
                 .removalListener((RemovalListener<StandardTransactionId, TxEntry>) (key,entry, cause) -> {
                     Preconditions.checkArgument(cause == RemovalCause.EXPIRED,
                         "Unexpected removal cause [%s] for transaction [%s]", cause, key);

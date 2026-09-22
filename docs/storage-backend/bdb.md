@@ -129,5 +129,8 @@ storage.berkeleyje.lock-mode=LockMode.READ_UNCOMMITTED
 storage.berkeleyje.ext.je.lock.timeout=0
 storage.lock.wait-time=5000
 ids.authority.wait-time=2000
-tx.max-commit-time=30000
 ```
+
+Earlier versions of this suggestion also set `tx.max-commit-time=30000`. That option only matters for
+[transaction recovery](../operations/recovery.md) and has to outlast `storage.write-time`; 30 s does not outlast the
+default write time of 100 s, so the option is better left at its default.
