@@ -78,6 +78,9 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private static final String REQUEST_TYPE_DELETE = "DELETE";
     private static final String REQUEST_TYPE_GET = "GET";
     private static final String REQUEST_TYPE_POST = "POST";
+    //The type Elasticsearch names in the error of a bulk item which was answered with a 404 because the index is gone
+    private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
+    private static final String ERROR_TYPE_KEY = "type";
     private static final String REQUEST_TYPE_PUT = "PUT";
     private static final String REQUEST_TYPE_HEAD = "HEAD";
     private static final String REQUEST_SEPARATOR = "/";
@@ -494,17 +497,22 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     //Elasticsearch answers with is a success. Both a whole document deletion and a script which deletes fields count.
     //A 404 for a mutation which adds content is a document_missing_exception: the write did not happen, and treating
     //it as a success drops the mutation with nothing reported.
-    //Only the status is examined and not the reason, so what changes is which mutations are exempt, not which
-    //reasons. A removal is exempted from every 404 exactly as before; a mutation which adds content is now exempted
-    //from none, which is the point of this change and does include an index_not_found_exception it used to swallow.
-    //For the record, the reasons a 404 can carry here: a whole document deletion of an absent document does not
-    //reach this method at all, because Elasticsearch answers it with result not_found and no error; the field
-    //deletion script gets a document_missing_exception; and either can get an index_not_found_exception when the
-    //whole index is gone. Narrowing the exemption so that a removal reports that last one too would be a further
-    //behavior change on the deletion path this one does not otherwise touch, so it is left for its own change
+    //The one 404 a removal is not exempt from is the index_not_found_exception Elasticsearch answers a deletion
+    //against a missing index with: the whole index being gone is not a state any mutation asked for, and an addition
+    //against the same index is reported, so a removal is too. The reasons a 404 otherwise carries here: a whole
+    //document deletion of an absent document does not reach this method at all, because Elasticsearch answers it
+    //with result not_found and no error; the field deletion script gets a document_missing_exception, which is
+    //exempt; and an update against a missing index, with the default action.auto_create_index, creates the index and
+    //then reports the document as missing
     private static boolean isAbsentDocumentRemoval(final RestBulkResponse.RestBulkItemResponse item,
                                                    final RequestBytes submittedItem) {
-        return item.getStatus() == HttpStatus.SC_NOT_FOUND && submittedItem.removesContentOnly;
+        return item.getStatus() == HttpStatus.SC_NOT_FOUND && submittedItem.removesContentOnly
+            && !isIndexNotFound(item.getError());
+    }
+
+    //The error of a failed bulk item is a map which names the exception under "type"
+    private static boolean isIndexNotFound(final Object error) {
+        return error instanceof Map && INDEX_NOT_FOUND_EXCEPTION.equals(((Map<?, ?>) error).get(ERROR_TYPE_KEY));
     }
 
     @VisibleForTesting

@@ -55,6 +55,7 @@ public class RestClientBulkItemStatusTest {
     private static final String INDEX = "some_index";
     private static final String TYPE = "some_type";
     private static final String DOCUMENT_MISSING = "document_missing_exception";
+    private static final String INDEX_NOT_FOUND = "index_not_found_exception";
     private static final String OTHER_ERROR = "an_error";
     //Distinct per item, so that a test can say which item was reported rather than counting occurrences of a shared
     //string in the message
@@ -145,13 +146,44 @@ public class RestClientBulkItemStatusTest {
         }
     }
 
+    //Elasticsearch describes the reason for a failed item in a map with a type. A removal is exempt from a 404 which
+    //says the document is missing, but not from one which says the whole index is missing
+    private static Map<String, Object> reason(String type) {
+        return ImmutableMap.of("type", type, "reason", type + " for the test");
+    }
+
     @Test
-    public void shouldTreatA404CarryingAnErrorForAWholeDocumentDeletionAsSuccess() throws IOException {
-        //The 404-with-an-error variant of a deletion, which in practice means an index_not_found_exception: nothing
-        //is thrown, because the index is already in the state the deletion asked for. The no-error variant, which
-        //is what Elasticsearch actually answers a deletion of a merely absent document with, is the next test
+    public void shouldReportAWholeDocumentDeletionAgainstAMissingIndex() throws IOException {
+        final ElasticSearchBulkFailureException e = assertThrows(ElasticSearchBulkFailureException.class, () -> bulkRequest(
+            Collections.singletonList(ElasticSearchMutation.createDeleteRequest(INDEX, TYPE, "doc1")),
+            Collections.singletonList("delete"), Collections.singletonList(HttpStatus.SC_NOT_FOUND),
+            Collections.singletonList(reason(INDEX_NOT_FOUND))));
+        assertEquals(Collections.singletonList(reason(INDEX_NOT_FOUND)), e.getFailedItems());
+    }
+
+    @Test
+    public void shouldReportAFieldDeletionAgainstAMissingIndex() throws IOException {
+        final ElasticSearchBulkFailureException e = assertThrows(ElasticSearchBulkFailureException.class, () -> bulkRequest(
+            Collections.singletonList(fieldDeletion("doc1")), Collections.singletonList("update"),
+            Collections.singletonList(HttpStatus.SC_NOT_FOUND), Collections.singletonList(reason(INDEX_NOT_FOUND))));
+        assertEquals(Collections.singletonList(reason(INDEX_NOT_FOUND)), e.getFailedItems());
+    }
+
+    @Test
+    public void shouldTreatTheFieldDeletionOfAnAbsentDocumentAsSuccessWhenTheReasonSaysSo() throws IOException {
+        //The reason Elasticsearch actually gives for the field deletion script against an absent document
+        bulkRequest(Collections.singletonList(fieldDeletion("doc1")), Collections.singletonList("update"),
+            Collections.singletonList(HttpStatus.SC_NOT_FOUND), Collections.singletonList(reason(DOCUMENT_MISSING)));
+    }
+
+    @Test
+    public void shouldTreatA404CarryingAnotherErrorForAWholeDocumentDeletionAsSuccess() throws IOException {
+        //A 404 of a deletion whose reason is anything but a missing index: nothing is thrown, because only a missing
+        //index is a condition a removal did not ask for. The no-error variant, which is what Elasticsearch actually
+        //answers a deletion of a merely absent document with, is the next test
         bulkRequest(Collections.singletonList(ElasticSearchMutation.createDeleteRequest(INDEX, TYPE, "doc1")),
-            Collections.singletonList("delete"), Collections.singletonList(HttpStatus.SC_NOT_FOUND));
+            Collections.singletonList("delete"), Collections.singletonList(HttpStatus.SC_NOT_FOUND),
+            Collections.singletonList(reason(OTHER_ERROR)));
     }
 
     @Test
