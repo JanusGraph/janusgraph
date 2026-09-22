@@ -49,7 +49,11 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
     }
 
     private String name = null;
-    private TypeDefinitionMap definition = null;
+    //Filled on first read and published through the field, so volatile: without it a thread which shares the
+    //transaction can see the reference before the map behind it is completely filled. name holds an immutable value,
+    //and the two relation caches below hold ImmutableListMultimap instances, whose own final fields publish their
+    //content safely even though the fields here are plain.
+    private volatile TypeDefinitionMap definition = null;
     private ListMultimap<TypeDefinitionCategory,Entry> outRelations = null;
     private ListMultimap<TypeDefinitionCategory,Entry> inRelations = null;
 
