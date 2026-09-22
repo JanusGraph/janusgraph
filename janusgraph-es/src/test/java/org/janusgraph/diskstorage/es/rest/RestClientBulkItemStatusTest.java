@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.es.rest;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -40,6 +41,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 //A bulk response reports item level failures inside an otherwise successful HTTP response. Every 404 used to be treated
@@ -70,9 +73,13 @@ public class RestClientBulkItemStatusTest {
     private StatusLine statusLine;
 
     private RestElasticSearchClient createClient() throws IOException {
+        return createClient(100_000_000);
+    }
+
+    private RestElasticSearchClient createClient(int bulkChunkSerializedLimitBytes) throws IOException {
         when(restClientMock.performRequest(any())).thenThrow(new IOException());
         final RestElasticSearchClient clientUnderTest = new RestElasticSearchClient(restClientMock, 0, false,
-            0, Collections.emptySet(), 0, 0, 100_000_000);
+            0, Collections.emptySet(), 0, 0, bulkChunkSerializedLimitBytes);
         Mockito.reset(restClientMock);
         return clientUnderTest;
     }
@@ -241,6 +248,7 @@ public class RestClientBulkItemStatusTest {
             Arrays.asList("update", "update"), Arrays.asList(HttpStatus.SC_NOT_FOUND, HttpStatus.SC_NOT_FOUND),
             Arrays.asList(FIELD_DELETION_ERROR, ADDITION_ERROR)));
         assertEquals(Collections.singletonList(ADDITION_ERROR), e.getFailedItems());
+        assertEquals(Collections.singletonMap(TYPE, Collections.singleton("doc1")), e.getFailedDocumentsByStore());
     }
 
     @Test
@@ -251,6 +259,57 @@ public class RestClientBulkItemStatusTest {
             Arrays.asList(null, OTHER_ERROR)));
         //Only the failed item is reported; the successful one carries no error to report
         assertEquals(Collections.singletonList(OTHER_ERROR), e.getFailedItems());
+        //and only its document is named, so that a reattempt can leave the other one out
+        assertEquals(Collections.singletonMap(TYPE, Collections.singleton("doc2")), e.getFailedDocumentsByStore());
+    }
+
+    @Test
+    public void shouldNameTheDocumentsOfTheChunksWhichWereNeverSent() throws IOException {
+        //A chunk limit of exactly one item's size splits two items into two chunks. The first chunk fails, so the
+        //second is never sent, and its document is neither applied nor failed: a reattempt has to resend it, and
+        //the failure has to say so
+        final int oneItem;
+        try (RestElasticSearchClient measuring = createClient()) {
+            oneItem = measuring.new RequestBytes(update("doc1")).getSerializedSize();
+        }
+        try (RestElasticSearchClient clientUnderTest = createClient(oneItem)) {
+            final Response firstChunkResponse = bulkResponseWith(Collections.singletonList("update"),
+                Collections.singletonList(HttpStatus.SC_BAD_REQUEST), Collections.singletonList(OTHER_ERROR));
+            when(restClientMock.performRequest(any())).thenReturn(firstChunkResponse);
+
+            final ElasticSearchBulkFailureException e = assertThrows(ElasticSearchBulkFailureException.class,
+                () -> clientUnderTest.bulkRequest(Arrays.asList(update("doc1"), update("doc2")), null));
+
+            assertEquals(Collections.singletonMap(TYPE, Collections.singleton("doc1")), e.getFailedDocumentsByStore());
+            assertEquals(Collections.singletonMap(TYPE, Collections.singleton("doc2")), e.getUnsentDocumentsByStore());
+            //and the second chunk was indeed never sent
+            verify(restClientMock, times(1)).performRequest(any());
+        }
+    }
+
+    @Test
+    public void shouldNameAnOversizedDocumentAsUnsentWhenAnEarlierChunkFails() throws IOException {
+        //An item larger than the chunk limit is never sent, and is reported only once every well sized chunk went
+        //through. A failure before that has to name its document as unsent, or a reattempt would take it for applied
+        //and the mutation would neither be written nor reported
+        final int oneItem;
+        try (RestElasticSearchClient measuring = createClient()) {
+            oneItem = measuring.new RequestBytes(update("doc1")).getSerializedSize();
+        }
+        final ElasticSearchMutation oversized = ElasticSearchMutation.createUpdateRequest(INDEX, TYPE, "big",
+            ImmutableMap.builder().put("doc", ImmutableMap.of("name", Strings.repeat("x", 2 * oneItem))), null);
+        try (RestElasticSearchClient clientUnderTest = createClient(oneItem)) {
+            final Response firstChunkResponse = bulkResponseWith(Collections.singletonList("update"),
+                Collections.singletonList(HttpStatus.SC_BAD_REQUEST), Collections.singletonList(OTHER_ERROR));
+            when(restClientMock.performRequest(any())).thenReturn(firstChunkResponse);
+
+            final ElasticSearchBulkFailureException e = assertThrows(ElasticSearchBulkFailureException.class,
+                () -> clientUnderTest.bulkRequest(Arrays.asList(update("doc1"), oversized), null));
+
+            assertEquals(Collections.singletonMap(TYPE, Collections.singleton("doc1")), e.getFailedDocumentsByStore());
+            assertEquals(Collections.singletonMap(TYPE, Collections.singleton("big")), e.getUnsentDocumentsByStore());
+            verify(restClientMock, times(1)).performRequest(any());
+        }
     }
 
     @Test
