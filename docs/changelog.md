@@ -557,6 +557,15 @@ only in case, such as `byName` and `byname`, shared one backend index: each othe
 holds such a pair keeps working as before, and is repaired by discarding one of the two and recreating it under a
 distinct name. Composite indexes have no backend index and are not affected.
 
+##### Index restores are reattempted after a transient failure
+
+`IndexTransaction.restore`, through which `SchemaAction.REINDEX`, stale entry removal, CDC index updates and
+transaction log recovery write their documents, called the index provider directly, so a failure the provider
+classified as transient — for Elasticsearch a 429, a 503 or a dropped connection — failed the batch outright,
+where the same failure during a commit is reattempted. It now runs through `BackendOperation` like a commit does:
+reattempted with backoff for up to `storage.write-time`, and only then reported. A restore writes whole documents, so
+a reattempt is idempotent.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven
