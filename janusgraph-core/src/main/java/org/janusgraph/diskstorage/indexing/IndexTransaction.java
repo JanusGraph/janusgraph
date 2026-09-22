@@ -120,8 +120,23 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         return index.totals(query, keyInformation,indexTx);
     }
 
-    public void restore(Map<String, Map<String,List<IndexEntry>>> documents) throws BackendException {
-        index.restore(documents, keyInformation,indexTx);
+    public void restore(Map<String, Map<String, List<IndexEntry>>> documents) throws BackendException {
+        //restore writes whole documents, so a reattempt is safe. Run it through BackendOperation as flushInternal does
+        //for mutate, so that a failure the provider classified as temporary is reattempted within the write time
+        //instead of failing the reindex or recovery batch outright. executeDirect keeps the checked exception the
+        //callers handle
+        BackendOperation.executeDirect(new Callable<Void>() {
+            @Override
+            public Void call() throws BackendException {
+                index.restore(documents, keyInformation, indexTx);
+                return null;
+            }
+
+            @Override
+            public String toString() {
+                return "IndexRestore";
+            }
+        }, maxWriteTime);
     }
 
     @Override
