@@ -1383,7 +1383,8 @@ public class ElasticSearchIndex implements IndexProvider {
                     = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED), false);
             return (query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn).map(RawQuery.Result::getResult);
         } catch (final IOException | UncheckedIOException e) {
-            throw new PermanentBackendException(e);
+            //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
+            throw convert(e);
         }
     }
 
@@ -1447,7 +1448,8 @@ public class ElasticSearchIndex implements IndexProvider {
                 requestBody,
                 useScroll);
         } catch (final IOException | UncheckedIOException e) {
-            throw new PermanentBackendException(e);
+            //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
+            throw convert(e);
         }
     }
 
@@ -1458,7 +1460,8 @@ public class ElasticSearchIndex implements IndexProvider {
                 compat.createRequestBody(compat.queryString(query.getQuery()), query.getParameters()));
             return QueryUtil.applyOffsetWithQueryLimitAfterCount(countTotal, query.getOffset(), query);
         } catch (final IOException | UncheckedIOException e) {
-            throw new PermanentBackendException(e);
+            //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
+            throw convert(e);
         }
     }
 
@@ -1481,7 +1484,14 @@ public class ElasticSearchIndex implements IndexProvider {
         final boolean useScroll = size >= batchSize;
         final ElasticSearchResponse response = runCommonQuery(query, information, tx, size, useScroll);
         log.debug("First Executed query [{}] in {} ms", query.getQuery(), response.getTook());
-        final Iterator<RawQuery.Result<String>> resultIterator = getResultsIterator(useScroll, response, size);
+        final Iterator<RawQuery.Result<String>> resultIterator;
+        try {
+            //A scroll whose first page is also its last is closed right here, which is one more request that can
+            //fail the way the search itself can, so it is classified the same way
+            resultIterator = getResultsIterator(useScroll, response, size);
+        } catch (final UncheckedIOException e) {
+            throw convert(e);
+        }
         final Stream<RawQuery.Result<String>> toReturn
                 = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED),
                 false).skip(query.getOffset());
@@ -1505,7 +1515,8 @@ public class ElasticSearchIndex implements IndexProvider {
                 default: throw new UnsupportedOperationException();
             }
         } catch (final IOException | UncheckedIOException e) {
-            throw new PermanentBackendException(e);
+            //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
+            throw convert(e);
         }
     }
 

@@ -575,6 +575,17 @@ where the same failure during a commit is reattempted. It now runs through `Back
 reattempted with backoff for up to `storage.write-time`, and only then reported. A restore writes whole documents, so
 a reattempt is idempotent.
 
+##### Transient Elasticsearch read failures are reattempted
+
+A mixed index query, count or aggregation against Elasticsearch wrapped every failure in a `PermanentBackendException`,
+so a throttled or momentarily unreachable cluster failed the traversal outright — although `BackendTransaction` already
+runs every index read through `BackendOperation`, which reattempts a `TemporaryBackendException` for up to
+`storage.read-time`, as it does for a storage read. The read paths now classify a failure the way the write path has since the retry options were unified: a status
+listed in `index.[X].elasticsearch.retry-error-codes` (`429`, `502`, `503`, `504` by default) and, with
+`index.[X].elasticsearch.retry-transport-failures`, a connection or TLS failure are transient and reattempted with
+backoff within `storage.read-time`; everything else remains permanent. The pages of a scroll are fetched while the
+caller consumes the result stream, outside that budget, and are not covered.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven

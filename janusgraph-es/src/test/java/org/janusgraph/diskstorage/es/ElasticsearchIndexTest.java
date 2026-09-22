@@ -45,6 +45,8 @@ import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransaction;
+import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
@@ -53,10 +55,14 @@ import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.json.simple.JSONObject;
@@ -345,6 +351,46 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         final Object error = failure.getFailedItems().get(0);
         assertTrue(error instanceof Map, String.valueOf(error));
         assertEquals("index_not_found_exception", ((Map<?, ?>) error).get("type"), String.valueOf(error));
+    }
+
+    //A read failure whose status is listed in retry-error-codes is classified transient, the way a write failure is,
+    //so that BackendOperation reattempts it within storage.read-time. Nothing makes a 400 or a 404 transient in
+    //practice, but they are the statuses a live Elasticsearch can be made to answer a search with on demand - a
+    //malformed query string, and an index which does not exist - and the classification only asks whether the status
+    //is on the list. Between them the two shapes reach all four read paths
+    @Test
+    public void testReadFailureWithAStatusInRetryErrorCodesIsTransient() throws Exception {
+        final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
+        cc.set("index.es.elasticsearch.retry-error-codes", "400,404");
+        //No client level reattempts, so that the classification is what the test waits for
+        cc.set("index.es.elasticsearch.retry-limit", "0");
+        final ElasticSearchIndex transientOnListedStatuses = new ElasticSearchIndex(makeESTestConfig("es", cc));
+        try {
+            final BaseTransaction readTx = transientOnListedStatuses.beginTransaction(
+                StandardBaseTransactionConfig.of(TimestampProviders.MILLI));
+            try {
+                transientOnListedStatuses.register("vertex", TIME, allKeys.get(TIME), readTx);
+                //An unbalanced query string, which Elasticsearch rejects with a 400: the raw query and count paths
+                final RawQuery malformed = new RawQuery("vertex", TIME + ":(", new Parameter[0]);
+                assertThrows(TemporaryBackendException.class,
+                    () -> transientOnListedStatuses.query(malformed, indexRetriever, readTx));
+                assertThrows(TemporaryBackendException.class,
+                    () -> transientOnListedStatuses.totals(malformed, indexRetriever, readTx));
+
+                //A well formed query against a store whose index does not exist, which Elasticsearch answers with a
+                //404: the index query and aggregation paths
+                final IndexQuery againstAMissingIndex = new IndexQuery("nosuchstore",
+                    PredicateCondition.of(TIME, Cmp.EQUAL, 1L));
+                assertThrows(TemporaryBackendException.class,
+                    () -> transientOnListedStatuses.query(againstAMissingIndex, indexRetriever, readTx));
+                assertThrows(TemporaryBackendException.class, () -> transientOnListedStatuses.queryAggregation(
+                    againstAMissingIndex, indexRetriever, readTx, Aggregation.MIN(TIME)));
+            } finally {
+                readTx.rollback();
+            }
+        } finally {
+            transientOnListedStatuses.close();
+        }
     }
 
     private static Multimap<String, Object> documentWith(String key, Object value) {
