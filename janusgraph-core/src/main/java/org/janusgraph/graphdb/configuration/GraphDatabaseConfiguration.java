@@ -84,6 +84,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -234,10 +235,24 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<>(TRANSACTION_NS,"max-commit-time",
-            "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
-                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
-                    "Must be longer than the maximum allowed write time.",
-            ConfigOption.Type.GLOBAL, Duration.ofSeconds(10));
+            "Maximum time that a transaction might take to commit against all backends; a value without a unit is in " +
+                    "milliseconds. This is used by the distributed " +
+                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed). " +
+                    "Transaction recovery starts its clock at the transaction's first log entry, so a value shorter than the commit " +
+                    "really takes lets recovery restore the index documents of a transaction which is still committing, underneath " +
+                    "the index writes that commit has yet to make. A commit reattempts its storage write and then each of its index " +
+                    "writes for up to storage.write-time in turn, so this must exceed storage.write-time multiplied by one plus the " +
+                    "number of configured index backends; a warning is logged at graph open when transaction logging is enabled and " +
+                    "it does not. That is only the minimum: the time a commit spends preparing its writes counts as well; a " +
+                    "transaction with more than storage.buffer-size mutations writes storage in several chunks, each reattempted " +
+                    "for up to storage.write-time; on a storage backend without transaction isolation, a transaction which " +
+                    "creates schema elements first commits them in a storage write of their own, reattempted the same way; and " +
+                    "the last attempt of each write can run past its write time. So leave headroom for the largest transactions. " +
+                    "A transaction which writes a user log (TransactionBuilder.logIdentifier) is exposed for longer: until " +
+                    "recovery has read its final status, an expiry makes recovery send its user-log event again, so its " +
+                    "user-log write (up to log.user.max-write-time when log.user.send-delay is 0) and the transaction log's " +
+                    "final status write (up to log.tx.max-write-time) count as well.",
+            ConfigOption.Type.GLOBAL, Duration.ofSeconds(300));
 
 
     public static final ConfigNamespace TRANSACTION_RECOVERY_NS = new ConfigNamespace(TRANSACTION_NS,"recovery",
@@ -1697,6 +1712,88 @@ public class GraphDatabaseConfiguration {
         return unknownIndexKeyName;
     }
 
+    /**
+     * The longest transaction recovery waits for a transaction, about 146 years: half the nanoseconds a long holds.
+     * Its cache compares the nanoseconds elapsed since it read a transaction, a signed difference, with the wait, so a
+     * wait of all a long holds would never be reached, the difference wrapping around first. Recovery waits no longer
+     * than this for a longer {@link #MAX_COMMIT_TIME}.
+     * <p>
+     * This is an internal limit, not a configuration option: it is public only so that the transaction recovery
+     * processor and the check of {@link #MAX_COMMIT_TIME} at graph open share one value.
+     */
+    public static final Duration LONGEST_RECOVERY_WAIT = Duration.ofNanos(Long.MAX_VALUE >>> 1);
+
+    //Transaction recovery treats a transaction as failed once max-commit-time has elapsed since its first log entry,
+    //and restores the index documents of the elements it changed from the storage backend. While the commit still has
+    //index writes to make, those then land on top of documents which already reflect the transaction. The warning is
+    //for a value which cannot outlast even a commit whose storage write is a single chunk; how much more the largest
+    //transactions need depends on their size and on the backends, which are not known here. A GLOBAL option which was
+    //never set explicitly resolves to the code default, so an existing graph picks a new default up when its instances
+    //restart; only an explicitly stored value survives an upgrade.
+    private static void warnIfMaxCommitTimeIsTooShort(Duration maxCommitTime, Duration maxWriteTime, int indexBackends) {
+        final int writes = 1 + indexBackends;
+        final Optional<Duration> minimum = singleChunkCommitBudget(maxWriteTime, indexBackends);
+        if (minimum.isEmpty()) {
+            //No value of max-commit-time can outlast a budget which reaches the longest recovery can wait, so the
+            //remedy is the write time.
+            log.warn("Transaction recovery cannot wait longer than {} for a transaction, but the writes of a commit may "
+                + "keep being reattempted for at least as long: {} ({}) for each of its {} writes, the storage write and "
+                + "{} index backend(s). No {} can outlast that, so transaction recovery can restore the index documents of a "
+                + "transaction which is still committing. Lower {} to a realistic value.", LONGEST_RECOVERY_WAIT,
+                STORAGE_WRITE_WAITTIME.toStringWithoutRoot(), maxWriteTime, writes, indexBackends,
+                MAX_COMMIT_TIME.toStringWithoutRoot(), STORAGE_WRITE_WAITTIME.toStringWithoutRoot());
+        } else if (maxCommitTime.compareTo(minimum.get()) <= 0) {
+            log.warn("{} is {}, which does not exceed the {} for which even a small commit may keep reattempting its "
+                + "writes: {} ({}) for each of its {} writes, the storage write and {} index backend(s). Transaction "
+                + "recovery considers a transaction failed once {} has elapsed, so it can restore the index documents "
+                + "of a transaction which is still committing, underneath the index writes that commit has yet to make. "
+                + "Set {} to more than {}, with headroom for transactions whose storage write spans several {} chunks, "
+                + "which create schema elements or which write a user log, through the management system, for "
+                + "instance {} followed by mgmt.commit().",
+                MAX_COMMIT_TIME.toStringWithoutRoot(), maxCommitTime, minimum.get(),
+                STORAGE_WRITE_WAITTIME.toStringWithoutRoot(), maxWriteTime, writes, indexBackends,
+                MAX_COMMIT_TIME.toStringWithoutRoot(), MAX_COMMIT_TIME.toStringWithoutRoot(), minimum.get(),
+                BUFFER_SIZE.toStringWithoutRoot(), suggestedManagementSystemCall(maxWriteTime, indexBackends));
+        }
+    }
+
+    //The time for which the writes of a commit whose storage write is a single chunk may be reattempted before it gives
+    //up: the storage write and then one write per index backend, each for up to write-time. It is the least a
+    //max-commit-time has to exceed, not a bound on a commit: the preparation of the writes counts as well, a transaction
+    //with more than storage.buffer-size mutations writes storage in several chunks, each with a write-time of its own,
+    //a storage backend without transaction isolation commits the schema elements a transaction creates in a storage
+    //write of their own before the rest, and the last attempt of each write can run past its write time. Empty when no
+    //max-commit-time which transaction recovery can wait for exceeds it.
+    static Optional<Duration> singleChunkCommitBudget(Duration maxWriteTime, int indexBackends) {
+        try {
+            final Duration budget = maxWriteTime.multipliedBy(1 + indexBackends);
+            return budget.compareTo(LONGEST_RECOVERY_WAIT) < 0 ? Optional.of(budget) : Optional.empty();
+        } catch (ArithmeticException e) {
+            return Optional.empty();
+        }
+    }
+
+    //Whether max-commit-time exceeds that budget. Equality is not enough, since the last attempt of each write can
+    //start just before its write time runs out, and a budget which reaches the longest recovery can wait cannot be
+    //exceeded at all.
+    static boolean outlastsASingleChunkCommit(Duration maxCommitTime, Duration maxWriteTime, int indexBackends) {
+        return singleChunkCommitBudget(maxWriteTime, indexBackends).map(budget -> maxCommitTime.compareTo(budget) > 0).orElse(false);
+    }
+
+    //The management system call the warning suggests, written so that it can be pasted as it is. It sets that budget
+    //and one write time more, the headroom the default leaves over the storage write and one index backend, but no
+    //more than transaction recovery can wait, as an ISO-8601 duration, which any Duration can be written as. The sum
+    //cannot overflow, a budget being shorter than recovery can wait and at least one write time. A placeholder only
+    //when there is no budget, for which the warning suggests no value.
+    static String suggestedManagementSystemCall(Duration maxWriteTime, int indexBackends) {
+        final String value = singleChunkCommitBudget(maxWriteTime, indexBackends)
+            .map(budget -> budget.plus(maxWriteTime))
+            .map(suggested -> suggested.compareTo(LONGEST_RECOVERY_WAIT) < 0 ? suggested : LONGEST_RECOVERY_WAIT)
+            .map(suggested -> "java.time.Duration.parse(\"" + suggested + "\")")
+            .orElse("<duration>");
+        return "mgmt.set(\"" + MAX_COMMIT_TIME.toStringWithoutRoot() + "\", " + value + ")";
+    }
+
     public boolean hasLogTransactions() {
         return logTransactions;
     }
@@ -1872,6 +1969,16 @@ public class GraphDatabaseConfiguration {
         }
 
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
+        if (logTransactions) {
+            //The transaction log's own writes add nothing to the budget of the index documents: the precommit entry is
+            //written before the recovery clock can start, the primary success is committed together with the storage
+            //write, and the secondary status follows the index writes, after which a restore only rewrites documents
+            //which are right. A transaction which writes a user log is the exception: until recovery has read that
+            //status it would send the user-log event again, so the user-log write and the final status write count
+            //for it as well. The log identifier is set per transaction, so the warning cannot take it into account.
+            warnIfMaxCommitTimeIsTooShort(configuration.get(MAX_COMMIT_TIME),
+                configuration.get(STORAGE_WRITE_WAITTIME), configuration.getContainedNamespaces(INDEX_NS).size());
+        }
         dropWholeRowOnVertexRemoval = configuration.get(DROP_WHOLE_ROW_ON_VERTEX_REMOVAL);
 
         unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;

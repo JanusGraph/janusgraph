@@ -626,6 +626,44 @@ once, so bulk requests grow with the size of the documents they update; an updat
 `index.[X].elasticsearch.bulk-chunk-size-limit-bytes` is sent without it, as before this change, rather than failing. A
 mixed index on a cdc-only backend, whose documents are written asynchronously, is not affected.
 
+##### `tx.max-commit-time` now defaults to 300 s and is checked against the least a commit may take
+
+`tx.max-commit-time` is the time after which transaction recovery considers a transaction failed and restores the index
+documents of the elements it changed from the storage backend, counted from the transaction's first log entry. A commit
+reattempts its storage write and then each of its index writes in turn, each for up to `storage.write-time` (100 s by
+default), so the option has to exceed `storage.write-time` multiplied by one plus the number of index backends. That is
+only the minimum: the time a commit spends preparing its writes counts as well, a transaction with more than
+`storage.buffer-size` mutations writes storage in several chunks, each reattempted on its own, a storage backend without
+transaction isolation (Cassandra and HBase, or BerkeleyDB with `storage.transactions=false`) commits the schema elements
+a transaction creates in a storage write of their own first, and the last attempt of each write can run past its write
+time. Yet the option defaulted to 10 s, so recovery could restore the documents of a
+transaction which was still committing, and the index writes that commit had yet to make then landed on documents
+which already reflected it — appending the values of a `LIST` cardinality property twice, or removing an occurrence
+which should have stayed. The default is now 300 s: the storage write and one index backend at the default write time,
+with one write time to spare, for instance for a second storage chunk. JanusGraph logs a warning at graph open, when
+transaction logging is enabled, whenever `tx.max-commit-time` does not exceed that minimum for the configured index
+backends; the warning names the minimum and suggests a management system call, ready to paste, which sets one write
+time more, so a graph with two or more index backends is told what to set, and a graph which commits large
+transactions should allow more still. The default stops there because the transaction recovery
+process keeps every transaction it reads, the content of its modifications included, for `tx.max-commit-time`: a
+recovery process of a write-heavy graph now holds thirty times as much in memory as it did with the old default.
+
+After an upgrade a graph which never set the option resolves the new default as soon as its instances are restarted;
+the value of a `GLOBAL` option is only stored when it is set explicitly. A graph which did set it keeps its value, gets
+the warning if that value is too short, and raises it with the management system call the warning suggests, for
+two index backends at the default write time `mgmt.set("tx.max-commit-time", java.time.Duration.parse("PT6M40S"))`
+followed by `mgmt.commit()`, which a transaction recovery processor picks up when it is next started. The recovery of
+a transaction which really did fail starts correspondingly later. A transaction recovery process waits about 146 years
+at most, half the nanoseconds a `long` holds, so that the time since it read a transaction always compares correctly;
+a longer `tx.max-commit-time` used to keep it from starting at all and now makes it wait up to that limit.
+
+A transaction which writes a user log (`TransactionBuilder.logIdentifier`) is exposed for longer: its commit writes
+the user-log event after the index writes and only then its final status, and a transaction which expires before
+recovery has read that status gets its user-log event sent again. Such a transaction needs its user-log write (up to
+`log.user.max-write-time` when `log.user.send-delay` is 0; by default the event is sent in the background) and the
+transaction log's final status write (up to `log.tx.max-write-time`) inside `tx.max-commit-time` as well. The log
+identifier is set per transaction, so the warning cannot take it into account.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven
