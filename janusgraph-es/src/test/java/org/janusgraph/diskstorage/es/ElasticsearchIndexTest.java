@@ -319,6 +319,34 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TIME, Cmp.EQUAL, 2L))).count());
     }
 
+    //A removal against an index which no longer exists is reported. Elasticsearch answers it with a 404 as well, but
+    //one which says the whole index is missing, and that is not the state any mutation asked for
+    @Test
+    public void testRemovalAgainstAMissingIndexIsReported() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", documentWith(TIME, 1L), true);
+        clopen();
+
+        //Drop the whole index behind the back of the transaction which follows
+        final String indexStoreName = INDEX_NAME.getDefaultValue() + "_vertex";
+        IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete(indexStoreName)));
+        assertFalse(indexExists(indexStoreName));
+
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        final JanusGraphException e = assertThrows(JanusGraphException.class, tx::commit,
+            "Commit should not have succeeded.");
+        tx = null;
+
+        final Throwable rootCause = Throwables.getRootCause(e);
+        assertTrue(rootCause instanceof ElasticSearchBulkFailureException, rootCause.toString());
+        final ElasticSearchBulkFailureException failure = (ElasticSearchBulkFailureException) rootCause;
+        assertEquals(Collections.singleton(HttpStatus.SC_NOT_FOUND), failure.getFailedItemStatusCodes());
+        //The reason is the type Elasticsearch names in the item's error map
+        final Object error = failure.getFailedItems().get(0);
+        assertTrue(error instanceof Map, String.valueOf(error));
+        assertEquals("index_not_found_exception", ((Map<?, ?>) error).get("type"), String.valueOf(error));
+    }
+
     private static Multimap<String, Object> documentWith(String key, Object value) {
         final Multimap<String, Object> document = HashMultimap.create();
         document.put(key, value);

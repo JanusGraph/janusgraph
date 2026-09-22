@@ -540,12 +540,21 @@ addition was never indexed. Nothing reported it: the mutation returned normally,
 cardinality property is not this case: the deletion of the old value is consolidated away because the same field is
 added, so that addition carries an upsert and recreates the document, from the changed field alone.
 
-Such an item is now reported, which means **a commit which previously appeared to succeed can now fail visibly** on a
-graph whose mixed index has already diverged. A 404 is not among the transient status codes of
-`index.[X].elasticsearch.retry-error-codes`, so the failure is classified permanent and the mutation is dropped with an
-ERROR rather than reattempted — reattempting cannot recreate a document whose upsert was withheld. That is the intent: the alternative is that the divergence stays
-invisible. Repairing the affected documents with `SchemaAction.REINDEX`, or with transaction log recovery, clears the
-condition.
+Such an item is now reported. A 404 is not among the transient status codes of
+`index.[X].elasticsearch.retry-error-codes`, so the failure is classified permanent and the mutation is dropped rather
+than reattempted — reattempting cannot recreate a document whose upsert was withheld. **What a deployment sees changes
+on a graph whose mixed index has already diverged.** The graph commit itself still returns normally, because JanusGraph
+commits the storage backend first and never aborts on a mixed index failure, but the commit now logs the dropped
+mutation at ERROR, counts it in the `<prefix>.indexProvider.<INDEX-NAME>.mutate.exceptions` metric and, where the
+transaction log is enabled, records `SECONDARY_FAILURE` for the transaction, from which transaction log recovery repairs
+the document. That is the intent: the alternative is that the divergence stays invisible. `SchemaAction.REINDEX` repairs
+the affected documents as well.
+
+The same now holds for a removal against an Elasticsearch index which no longer exists. Elasticsearch answers a
+deletion against a missing index with a 404 carrying `index_not_found_exception`, which used to be taken for a success
+like every other 404 of a removal, so the commit passed silently although the index it was meant to update was gone.
+A removal stays exempt from a 404 which says only that the document is missing, since an absent document is the state
+it asked for.
 
 ##### Mixed index names on one backing index must now differ in more than case
 
