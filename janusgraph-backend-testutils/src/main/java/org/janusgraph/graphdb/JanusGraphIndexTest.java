@@ -272,6 +272,30 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testMixedIndexNamesDifferingOnlyInCaseAreRejected() {
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.buildIndex("byName", Vertex.class).addKey(name, getStringMapping()).buildMixedIndex(INDEX);
+
+        //The backend derives its own index name from this one case insensitively, so the two would share a backend
+        //index and each other's documents
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> mgmt.buildIndex("byname", Vertex.class).addKey(age).buildMixedIndex(INDEX));
+        //The message names both the index which was asked for and the one which is in the way
+        assertTrue(e.getMessage().contains("'byname'") && e.getMessage().contains("'byName'"), e.getMessage());
+        //Nor on another element type: the backend index name does not carry it
+        assertThrows(IllegalArgumentException.class,
+            () -> mgmt.buildIndex("BYNAME", Edge.class).addKey(age).buildMixedIndex(INDEX));
+
+        //A composite index has no backend index, so it may spell its name any way
+        mgmt.buildIndex("byname", Vertex.class).addKey(age).buildCompositeIndex();
+        finishSchema();
+
+        assertTrue(mgmt.getGraphIndex("byName").isMixedIndex());
+        assertTrue(mgmt.getGraphIndex("byname").isCompositeIndex());
+    }
+
+    @Test
     public void testUpdateSchemaChangeNameForPropertyKey() {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).buildMixedIndex(INDEX);

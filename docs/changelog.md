@@ -547,6 +547,16 @@ ERROR rather than reattempted — reattempting cannot recreate a document whose 
 invisible. Repairing the affected documents with `SchemaAction.REINDEX`, or with transaction log recovery, clears the
 condition.
 
+##### Mixed index names on one backing index must now differ in more than case
+
+An index backend derives its own index name from the JanusGraph index name case-insensitively — Elasticsearch
+lowercases it, Lucene names a directory after it — so two mixed indexes on the same backing index whose names differed
+only in case, such as `byName` and `byname`, shared one backend index: each other's documents and mappings, and a
+`SchemaAction.DISCARD_INDEX` of one dropped the other's documents. Creating the second one is now rejected with an
+`IllegalArgumentException` which names the existing index. Existing definitions are not touched: a graph which already
+holds such a pair keeps working as before, and is repaired by discarding one of the two and recreating it under a
+distinct name. Composite indexes have no backend index and are not affected.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven

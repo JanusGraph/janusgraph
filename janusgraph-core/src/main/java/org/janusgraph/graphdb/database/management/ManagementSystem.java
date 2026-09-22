@@ -725,10 +725,26 @@ public class ManagementSystem implements JanusGraphManagement {
         Preconditions.checkArgument(getGraphIndex(indexName) == null, "An index with name '%s' has already been defined", indexName);
     }
 
+    //An index backend derives its own index name from the JanusGraph index name case-insensitively (Elasticsearch
+    //lowercases it, Lucene names a directory after it), so two mixed indexes on the same backing index whose names
+    //differ only in case would share one backend index, and with it each other's documents and mappings.
+    private void checkMixedIndexNameDistinctIgnoringCase(String indexName, String backingIndex) {
+        for (JanusGraphIndex index : getGraphIndexes(Element.class)) {
+            if (index.isMixedIndex() && backingIndex.equals(index.getBackingIndex())
+                && indexName.equalsIgnoreCase(index.name())) {
+                throw new IllegalArgumentException(String.format("Cannot create mixed index '%s' on backing index "
+                    + "'%s': mixed index '%s' is already defined there, and mixed index names on one backing index must "
+                    + "differ in more than case, because the backing index derives its own index name from them "
+                    + "case-insensitively.", indexName, backingIndex, index.name()));
+            }
+        }
+    }
+
     private JanusGraphIndex createMixedIndex(String indexName, ElementCategory elementCategory,
                                              JanusGraphSchemaType constraint, String backingIndex) {
         Preconditions.checkArgument(graph.getIndexSerializer().containsIndex(backingIndex), "Unknown external index backend: %s", backingIndex);
         checkIndexName(indexName);
+        checkMixedIndexNameDistinctIgnoringCase(indexName, backingIndex);
 
         TypeDefinitionMap def = new TypeDefinitionMap();
         def.setValue(TypeDefinitionCategory.INTERNAL_INDEX, false);
