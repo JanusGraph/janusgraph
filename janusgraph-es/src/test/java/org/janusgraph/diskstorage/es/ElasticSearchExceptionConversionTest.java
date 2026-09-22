@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -150,6 +151,16 @@ public class ElasticSearchExceptionConversionTest {
         assertInstanceOf(TemporaryBackendException.class, convert(new ConnectTimeoutException("connect timed out")));
         assertInstanceOf(TemporaryBackendException.class, convert(new NoHttpResponseException("failed to respond")));
         assertInstanceOf(TemporaryBackendException.class, convert(new ConnectionClosedException("Connection closed")));
+    }
+
+    //The read paths catch UncheckedIOException as well, which the scroll hands an IOException through a Stream in.
+    //The classification walks the causal chain, so the wrapped failure is what gets classified
+    @Test
+    public void shouldClassifyTheCauseOfAnUncheckedIOException() {
+        assertInstanceOf(TemporaryBackendException.class, convert(new UncheckedIOException(responseException(503))));
+        assertInstanceOf(TemporaryBackendException.class,
+            convert(new UncheckedIOException(new ConnectException("Connection refused"))));
+        assertInstanceOf(PermanentBackendException.class, convert(new UncheckedIOException(responseException(400))));
     }
 
     @Test
