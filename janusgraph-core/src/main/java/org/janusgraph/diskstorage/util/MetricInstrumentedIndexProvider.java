@@ -145,6 +145,7 @@ public class MetricInstrumentedIndexProvider implements IndexProvider {
     private void runWithMetrics(BaseTransactionConfigurable tx, String name, StorageRunnable impl) throws BackendException {
         if (!tx.getConfiguration().hasGroupName()) {
             impl.run();
+            return;
         }
 
         String groupName = tx.getConfiguration().getGroupName();
