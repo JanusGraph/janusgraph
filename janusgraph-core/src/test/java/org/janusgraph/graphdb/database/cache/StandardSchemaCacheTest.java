@@ -27,9 +27,16 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StandardSchemaCacheTest {
@@ -149,5 +156,105 @@ public class StandardSchemaCacheTest {
         cache.getSchemaRelations(unindexedLabel, BaseLabel.SchemaDefinitionEdge, Direction.OUT);
 
         assertEquals(1, retriever.relationRetrievals.get() - before);
+    }
+
+    /**
+     * Serves what storage holds when asked, and can hold the next lookup at the point where it has read storage but
+     * not returned yet, so that a test can commit a change and evict it in between.
+     */
+    private static class PausingRetriever implements SchemaCache.StoreRetrieval {
+        volatile EntryList relations = EntryList.EMPTY_LIST;
+        volatile Long schemaId;
+        volatile boolean pauseNext;
+        final CountDownLatch read = new CountDownLatch(1);
+        final CountDownLatch resume = new CountDownLatch(1);
+
+        @Override
+        public Long retrieveSchemaByName(String typeName) {
+            final Long result = schemaId;
+            pauseIfArmed();
+            return result;
+        }
+
+        @Override
+        public EntryList retrieveSchemaRelations(long schemaId, BaseRelationType type, Direction dir) {
+            final EntryList result = relations;
+            pauseIfArmed();
+            return result;
+        }
+
+        private void pauseIfArmed() {
+            if (!pauseNext) return;
+            pauseNext = false;
+            read.countDown();
+            try {
+                assertTrue(resume.await(10, TimeUnit.SECONDS));
+            } catch (InterruptedException e) {
+                throw new AssertionError(e);
+            }
+        }
+    }
+
+    /**
+     * Runs the lookup, lets it read storage, then commits a change and evicts it the way a schema commit does, and only
+     * then lets the lookup return what it read. What the lookup read predates the change, so it must not stay cached.
+     */
+    private static <T> T raceAnEviction(PausingRetriever retriever, Callable<T> lookup, Runnable commitAndEvict)
+        throws Exception {
+        final ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            retriever.pauseNext = true;
+            final Future<T> result = executor.submit(lookup);
+            assertTrue(retriever.read.await(10, TimeUnit.SECONDS));
+            commitAndEvict.run();
+            retriever.resume.countDown();
+            return result.get(10, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private static void assertAnEvictedRelationLookupIsNotCached(StandardSchemaCache cache, PausingRetriever retriever,
+                                                                  long schemaId) throws Exception {
+        final EntryList read = raceAnEviction(retriever,
+            () -> cache.getSchemaRelations(schemaId, BaseLabel.SchemaDefinitionEdge, Direction.OUT),
+            () -> {
+                retriever.relations = NON_EMPTY;
+                cache.expireSchemaElement(schemaId);
+            });
+        assertTrue(read.isEmpty());
+        assertEquals(NON_EMPTY, cache.getSchemaRelations(schemaId, BaseLabel.SchemaDefinitionEdge, Direction.OUT));
+    }
+
+    @Test
+    public void aRelationLookupWhichRacesAnEvictionIsNotCachedInPrimaryMode() throws Exception {
+        final PausingRetriever retriever = new PausingRetriever();
+        final StandardSchemaCache cache = new StandardSchemaCache(CACHE_SIZE, retriever);
+        assertAnEvictedRelationLookupIsNotCached(cache, retriever, edgeLabelId(1));
+    }
+
+    @Test
+    public void aRelationLookupWhichRacesAnEvictionIsNotCachedAfterFallingBackToBoundedCache() throws Exception {
+        final PausingRetriever retriever = new PausingRetriever();
+        final StandardSchemaCache cache = new StandardSchemaCache(CACHE_SIZE, retriever);
+        retriever.relations = NON_EMPTY;
+        overflowPrimaryRelationMap(cache);
+        retriever.relations = EntryList.EMPTY_LIST;
+        assertAnEvictedRelationLookupIsNotCached(cache, retriever, edgeLabelId(RELATION_CAPACITY + 10));
+    }
+
+    @Test
+    public void aNameLookupWhichRacesAnEvictionIsNotCached() throws Exception {
+        final PausingRetriever retriever = new PausingRetriever();
+        final StandardSchemaCache cache = new StandardSchemaCache(CACHE_SIZE, retriever);
+        final long renamed = edgeLabelId(1);
+        retriever.schemaId = renamed;
+        //The lookup finds the name, then the element is renamed and evicted before the lookup returns
+        final Long read = raceAnEviction(retriever, () -> cache.getSchemaId("knows"), () -> {
+            retriever.schemaId = null;
+            cache.expireSchemaElement(renamed);
+        });
+        assertEquals(renamed, read);
+        assertNull(cache.getSchemaId("knows"));
     }
 }
