@@ -83,10 +83,6 @@ jobs:
             name: es6
             java: 11
           - module: es
-            args: "-Pelasticsearch60"
-            name: es60
-            java: 11
-          - module: es
             args: "-Pelasticsearch9"
             name: es9-java25
             java: 25
@@ -101,10 +97,6 @@ jobs:
           - module: es
             args: "-Pelasticsearch6"
             name: es6-java25
-            java: 25
-          - module: es
-            args: "-Pelasticsearch60"
-            name: es60-java25
             java: 25
     steps:
       - uses: actions/checkout@v4
