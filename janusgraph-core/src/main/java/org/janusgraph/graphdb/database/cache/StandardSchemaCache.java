@@ -30,6 +30,7 @@ import org.janusgraph.graphdb.types.system.SystemRelationType;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -60,6 +61,10 @@ public class StandardSchemaCache implements SchemaCache {
 
     private volatile ConcurrentMap<Long,EntryList> schemaRelations;
     private final Cache<Long,EntryList> schemaRelationsBackup;
+
+    //The number of evictions which have started. A lookup which read storage while one ran may have read the state
+    //before the change the eviction is for, so it must not leave what it read in the cache
+    private final AtomicLong evictions = new AtomicLong();
 
     public StandardSchemaCache(final StoreRetrieval retriever) {
         this(MAX_CACHED_TYPES_DEFAULT,retriever);
@@ -92,9 +97,10 @@ public class StandardSchemaCache implements SchemaCache {
         if (types==null) {
             id = typeNamesBackup.getIfPresent(schemaName);
             if (id==null) {
+                final long evictionsBefore = evictions.get();
                 id = retriever.retrieveSchemaByName(schemaName);
                 if (id!=null) { //only cache if type exists
-                    typeNamesBackup.put(schemaName,id);
+                    publish(typeNamesBackup.asMap(), schemaName, id, evictionsBefore);
                 }
             }
         } else {
@@ -108,9 +114,10 @@ public class StandardSchemaCache implements SchemaCache {
                     return getSchemaId(schemaName);
                 } else {
                     //Expand map
+                    final long evictionsBefore = evictions.get();
                     id = retriever.retrieveSchemaByName(schemaName);
                     if (id!=null) { //only cache if type exists
-                        types.put(schemaName,id);
+                        publish(types, schemaName, id, evictionsBefore);
                     }
                 }
             }
@@ -163,9 +170,10 @@ public class StandardSchemaCache implements SchemaCache {
         if (types==null) {
             entries = schemaRelationsBackup.getIfPresent(typePlusRelation);
             if (entries==null) {
+                final long evictionsBefore = evictions.get();
                 entries = retriever.retrieveSchemaRelations(schemaId, type, dir);
                 if (isCacheable(type, entries)) {
-                    schemaRelationsBackup.put(typePlusRelation, entries);
+                    publish(schemaRelationsBackup.asMap(), typePlusRelation, entries, evictionsBefore);
                 }
             }
         } else {
@@ -179,9 +187,10 @@ public class StandardSchemaCache implements SchemaCache {
                     return getSchemaRelations(schemaId, type, dir);
                 } else {
                     //Expand map
+                    final long evictionsBefore = evictions.get();
                     entries = retriever.retrieveSchemaRelations(schemaId, type, dir);
                     if (isCacheable(type, entries)) {
-                        types.put(typePlusRelation,entries);
+                        publish(types, typePlusRelation, entries, evictionsBefore);
                     }
                 }
             }
@@ -190,8 +199,22 @@ public class StandardSchemaCache implements SchemaCache {
         return entries;
     }
 
+    /**
+     * Caches what a lookup read from storage, unless an eviction started since the lookup read the eviction count:
+     * the lookup may then have read the state before the change that eviction is for, and caching it would undo the
+     * eviction. An eviction which starts while the value is being put may run its removals before the put, so the
+     * value is taken out again if the count has moved by then; one which starts later removes the value itself.
+     */
+    private <K, V> void publish(final ConcurrentMap<K, V> cache, final K key, final V value, final long evictionsBefore) {
+        if (evictions.get() != evictionsBefore) return;
+        cache.put(key, value);
+        if (evictions.get() != evictionsBefore) cache.remove(key, value);
+    }
+
     @Override
     public void expireSchemaElement(final long schemaId) {
+        //Counted before the removals, so that a lookup whose value lands after them sees that it has to take it out
+        evictions.incrementAndGet();
         //1) expire relations
         final long cutTypeId = (schemaId >>> SCHEMAID_BACK_SHIFT);
         ConcurrentMap<Long,EntryList> types = schemaRelations;
