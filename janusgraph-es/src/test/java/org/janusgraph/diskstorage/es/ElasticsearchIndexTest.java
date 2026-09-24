@@ -23,6 +23,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -44,6 +45,8 @@ import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransaction;
+import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
@@ -51,13 +54,21 @@ import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
+import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
+import org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.util.stats.MetricManager;
 import org.janusgraph.util.system.ConfigurationUtil;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -75,7 +86,13 @@ import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -243,6 +260,219 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         tx = null;
     }
 
+    //The document is present in the graph but absent from the index, and the transaction takes content out of it and
+    //puts other content in. The addition is sent as an update without an upsert, because the mutation has deletions,
+    //so Elasticsearch answers it with a 404 document_missing_exception: a lost write. Every 404 used to be taken for a
+    //success, which left the addition unindexed with nothing reported
+    @Test
+    public void testAdditionToAMissingDocumentIsReported() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", documentWith(TIME, 1L), true);
+        clopen();
+
+        //Take the document out of the index behind the back of the transaction which follows
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        newTx();
+
+        //A deletion of one field and an addition of another both survive consolidation, so the upsert is withheld
+        tx.delete("vertex", "diverged", TIME, 1L, false);
+        tx.add("vertex", "diverged", WEIGHT, 2.5, false);
+        final JanusGraphException e = assertThrows(JanusGraphException.class, tx::commit,
+            "Commit should not have succeeded.");
+        tx = null;
+
+        final Throwable rootCause = Throwables.getRootCause(e);
+        assertTrue(rootCause instanceof ElasticSearchBulkFailureException, rootCause.toString());
+        final ElasticSearchBulkFailureException failure = (ElasticSearchBulkFailureException) rootCause;
+        //Only the addition is reported. Elasticsearch answers the field deletion with the same 404, but that one
+        //asked for nothing an absent document does not already satisfy
+        assertEquals(1, failure.getFailedItems().size(), failure.getFailedItems().toString());
+        assertEquals(Collections.singleton(HttpStatus.SC_NOT_FOUND), failure.getFailedItemStatusCodes());
+        assertTrue(failure.getFailedItems().get(0).toString().contains("document_missing_exception"),
+            failure.getFailedItems().toString());
+    }
+
+    //Both mutations which only take content out of the index. Elasticsearch answers a whole document deletion of an
+    //absent document with a 404 carrying no error, and the script which deletes fields with a 404
+    //document_missing_exception. Neither is a lost write, because an absent document is already the state each asked
+    //for, so neither is reported
+    @Test
+    public void testRemovingContentFromAMissingDocumentIsNotReported() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", documentWith(TIME, 1L), true);
+        clopen();
+
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        newTx();
+
+        //The field deletion script against the absent document. A reported item would make this commit throw
+        tx.delete("vertex", "diverged", TIME, 1L, false);
+        newTx();
+        //The whole document deletion of the absent document
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        newTx();
+    }
+
+    //A value change of a SINGLE cardinality key is not the reported shape, although issue #4926 names it as the one:
+    //IndexTransaction consolidates the mutation before mutate() sees it, and the deletion of the old value is dropped
+    //because the same field is added. The addition then carries an upsert, which recreates the absent document from
+    //the changed field alone
+    @Test
+    public void testValueChangeOfASingleCardinalityKeyRecreatesAMissingDocument() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", documentWith(TIME, 1L), true);
+        clopen();
+
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        newTx();
+
+        tx.delete("vertex", "diverged", TIME, 1L, false);
+        tx.add("vertex", "diverged", TIME, 2L, false);
+        clopen();
+
+        assertEquals(1, tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(TIME, Cmp.EQUAL, 2L))).count());
+    }
+
+    //A removal against an index which no longer exists is reported. Elasticsearch answers it with a 404 as well, but
+    //one which says the whole index is missing, and that is not the state any mutation asked for
+    @Test
+    public void testRemovalAgainstAMissingIndexIsReported() throws Exception {
+        initialize("vertex");
+        add("vertex", "diverged", documentWith(TIME, 1L), true);
+        clopen();
+
+        //Drop the whole index behind the back of the transaction which follows
+        final String indexStoreName = INDEX_NAME.getDefaultValue() + "_vertex";
+        IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete(indexStoreName)));
+        assertFalse(indexExists(indexStoreName));
+
+        tx.delete("vertex", "diverged", TIME, 1L, true);
+        final JanusGraphException e = assertThrows(JanusGraphException.class, tx::commit,
+            "Commit should not have succeeded.");
+        tx = null;
+
+        final Throwable rootCause = Throwables.getRootCause(e);
+        assertTrue(rootCause instanceof ElasticSearchBulkFailureException, rootCause.toString());
+        final ElasticSearchBulkFailureException failure = (ElasticSearchBulkFailureException) rootCause;
+        assertEquals(Collections.singleton(HttpStatus.SC_NOT_FOUND), failure.getFailedItemStatusCodes());
+        //The reason is the type Elasticsearch names in the item's error map
+        final Object error = failure.getFailedItems().get(0);
+        assertTrue(error instanceof Map, String.valueOf(error));
+        assertEquals("index_not_found_exception", ((Map<?, ?>) error).get("type"), String.valueOf(error));
+    }
+
+    //A read failure whose status is listed in retry-error-codes is classified transient, the way a write failure is,
+    //so that BackendOperation reattempts it within storage.read-time. Nothing makes a 400 or a 404 transient in
+    //practice, but they are the statuses a live Elasticsearch can be made to answer a search with on demand - a
+    //malformed query string, and an index which does not exist - and the classification only asks whether the status
+    //is on the list. Between them the two shapes reach all four read paths
+    @Test
+    public void testReadFailureWithAStatusInRetryErrorCodesIsTransient() throws Exception {
+        final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
+        cc.set("index.es.elasticsearch.retry-error-codes", "400,404");
+        //No client level reattempts, so that the classification is what the test waits for
+        cc.set("index.es.elasticsearch.retry-limit", "0");
+        final ElasticSearchIndex transientOnListedStatuses = new ElasticSearchIndex(makeESTestConfig("es", cc));
+        try {
+            final BaseTransaction readTx = transientOnListedStatuses.beginTransaction(
+                StandardBaseTransactionConfig.of(TimestampProviders.MILLI));
+            try {
+                transientOnListedStatuses.register("vertex", TIME, allKeys.get(TIME), readTx);
+                //An unbalanced query string, which Elasticsearch rejects with a 400: the raw query and count paths
+                final RawQuery malformed = new RawQuery("vertex", TIME + ":(", new Parameter[0]);
+                assertThrows(TemporaryBackendException.class,
+                    () -> transientOnListedStatuses.query(malformed, indexRetriever, readTx));
+                assertThrows(TemporaryBackendException.class,
+                    () -> transientOnListedStatuses.totals(malformed, indexRetriever, readTx));
+
+                //A well formed query against a store whose index does not exist, which Elasticsearch answers with a
+                //404: the index query and aggregation paths
+                final IndexQuery againstAMissingIndex = new IndexQuery("nosuchstore",
+                    PredicateCondition.of(TIME, Cmp.EQUAL, 1L));
+                assertThrows(TemporaryBackendException.class,
+                    () -> transientOnListedStatuses.query(againstAMissingIndex, indexRetriever, readTx));
+                assertThrows(TemporaryBackendException.class, () -> transientOnListedStatuses.queryAggregation(
+                    againstAMissingIndex, indexRetriever, readTx, Aggregation.MIN(TIME)));
+            } finally {
+                readTx.rollback();
+            }
+        } finally {
+            transientOnListedStatuses.close();
+        }
+    }
+
+    //A reattempt after a temporary failure resends only the documents which did not apply. The good document has a
+    //LIST value appended by the addition script, the one write a resend does not make idempotent: if the reattempts
+    //resent it, the document would hold the value once per attempt
+    @Test
+    public void testAReattemptResendsOnlyTheDocumentsWhichDidNotApply() throws Exception {
+        initialize("vertex");
+        add("vertex", "good", documentWith(PHONE_LIST, "1"), true);
+        clopen();
+
+        //A 400 is not transient anywhere in practice, but it is the one item failure a live Elasticsearch can be made
+        //to answer on demand, with a value the mapping rejects. Listing it makes the bulk failure temporary, so that
+        //BackendOperation reattempts the mutation until the write time is used up
+        final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
+        cc.set("index.es.elasticsearch.retry-error-codes", "400");
+        cc.set("index.es.elasticsearch.retry-limit", "0");
+        final ElasticSearchIndex transientOn400 = new ElasticSearchIndex(makeESTestConfig("es", cc));
+        try {
+            //Metered, so that the number of attempts can be asserted: a run which gave up after a single attempt,
+            //because a bulk under refresh=wait_for takes about a second, would prove nothing about reattempts
+            final String metricsGroup = "ElasticsearchIndexTest.reattempts." + UUID.randomUUID();
+            final IndexTransaction reattempting = new IndexTransaction(
+                new MetricInstrumentedIndexProvider(transientOn400, "es"), indexRetriever,
+                new StandardBaseTransactionConfig.Builder().timestampProvider(TimestampProviders.MILLI)
+                    .groupName(metricsGroup).build(), Duration.ofSeconds(5));
+            try {
+                reattempting.add("vertex", "good", PHONE_LIST, "2", false);
+                reattempting.add("vertex", "bad", TIME, "not a time", true);
+
+                //commit runs the mutation through BackendOperation.execute, which wraps what ends the wait
+                final JanusGraphException e = assertThrows(JanusGraphException.class, reattempting::commit);
+                //The wait ended with a temporary failure; that it was reattempted is what the metric below shows
+                assertTrue(e.getCause() instanceof TemporaryBackendException, String.valueOf(e.getCause()));
+                final long attempts = MetricManager.INSTANCE.getCounter(metricsGroup, "es",
+                    MetricInstrumentedIndexProvider.M_MUTATE, MetricInstrumentedIndexProvider.M_CALLS).getCount();
+                assertTrue(attempts >= 2, "the mutation was attempted " + attempts + " time(s)");
+            } finally {
+                //The commit did not complete, so the transaction still holds the mutation it could not apply
+                reattempting.rollback();
+            }
+        } finally {
+            transientOn400.close();
+        }
+
+        assertEquals(Arrays.asList("1", "2"), listValues("vertex", "good", PHONE_LIST));
+    }
+
+    private List<Object> listValues(String store, String documentId, String field) throws Exception {
+        final HttpGet get = new HttpGet(documentPath(store, documentId));
+        try (CloseableHttpResponse response = httpClient.execute(host, get)) {
+            final String body = EntityUtils.toString(response.getEntity());
+            //A missing document is a failure of the test, said as such rather than as a cast of a null _source
+            assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode(), body);
+            final Object source = ((JSONObject) new JSONParser().parse(body)).get("_source");
+            assertTrue(source instanceof JSONObject, "no _source in " + body);
+            final Object values = ((JSONObject) source).get(field);
+            assertTrue(values instanceof JSONArray, "no list " + field + " in " + body);
+            return new ArrayList<>((JSONArray) values);
+        }
+    }
+
+    //Up to Elasticsearch 6 a document is addressed through its mapping type, which JanusGraph names after the store
+    private static String documentPath(String store, String documentId) {
+        final String type = JanusGraphElasticsearchContainer.getEsMajorVersion().value <= 6 ? store : "_doc";
+        return INDEX_NAME.getDefaultValue() + "_" + store + "/" + type + "/" + documentId;
+    }
+
+    private static Multimap<String, Object> documentWith(String key, Object value) {
+        final Multimap<String, Object> document = HashMultimap.create();
+        document.put(key, value);
+        return document;
+    }
+
     @Test
     public void testUnescapedDollarInSet() throws Exception {
         initialize("vertex");
@@ -335,6 +565,25 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertFalse(indexExists(GraphDatabaseConfiguration.INDEX_NAME.getDefaultValue()));
         assertTrue(indexExists("test1"));
         assertTrue(indexExists("test2"));
+    }
+
+    @Test
+    public void testClearStoreOfAMixedCaseStoreName() throws Exception {
+        //A mixed index stores its JanusGraph index name as the store name verbatim and those names are case
+        //sensitive, while an Elasticsearch index name is always lowercase. clearStore has to derive the name the
+        //same way every read and write path does, or SchemaAction.DISCARD_INDEX targets a name which cannot exist,
+        //the documents survive, and the schema is marked DISCARDED anyway
+        final String storeName = "vertexByName";
+        //Locale.ROOT so the expectation cannot drift with the default locale of whoever runs this. The store name is
+        //ASCII and carries no dotted I, so it is the same string the production derivation produces in any locale
+        final String indexStoreName = INDEX_NAME.getDefaultValue() + "_" + storeName.toLowerCase(Locale.ROOT);
+
+        initialize(storeName);
+        assertTrue(indexExists(indexStoreName));
+
+        index.clearStore(storeName);
+
+        assertFalse(indexExists(indexStoreName));
     }
 
     @Test

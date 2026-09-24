@@ -42,33 +42,49 @@ public class ElasticSearchMutation {
 
     private final Map source;
 
-    private ElasticSearchMutation(RequestType requestType, String index, String type, String id, Map source) {
+    //A mutation which only takes content out of the index asks for nothing that an absent document does not already
+    //satisfy. Elasticsearch reports an absent document as a 404 for such a mutation and for one which puts content in,
+    //so the two can only be told apart from the mutation itself
+    private final boolean removesContentOnly;
+
+    private ElasticSearchMutation(RequestType requestType, String index, String type, String id, Map source,
+                                  boolean removesContentOnly) {
         this.requestType = requestType;
         this.index = index;
         this.type = type;
         this.id = id;
         this.source = source;
+        this.removesContentOnly = removesContentOnly;
     }
 
     public static ElasticSearchMutation createDeleteRequest(String index, String type, String id) {
-        return new ElasticSearchMutation(RequestType.DELETE, index, type, id, null);
+        return new ElasticSearchMutation(RequestType.DELETE, index, type, id, null, true);
     }
 
     public static ElasticSearchMutation createIndexRequest(String index, String type, String id, Map source) {
-        return new ElasticSearchMutation(RequestType.INDEX, index, type, id, source);
+        return new ElasticSearchMutation(RequestType.INDEX, index, type, id, source, false);
+    }
+
+    //An update which runs a script removing fields from a document, rather than the whole document
+    public static ElasticSearchMutation createFieldDeletionRequest(String index, String type, String id, Map source) {
+        return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, source, true);
     }
 
     public static ElasticSearchMutation createUpdateRequest(String index, String type, String id, Map source) {
-        return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, source);
+        return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, source, false);
     }
 
     public static ElasticSearchMutation createUpdateRequest(String index, String type, String id, ImmutableMap.Builder builder, Map upsert) {
         final Map source = upsert == null ? builder.build() : builder.put(ES_UPSERT_KEY, upsert).build();
-        return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, source);
+        return new ElasticSearchMutation(RequestType.UPDATE, index, type, id, source, false);
     }
 
     public RequestType getRequestType() {
         return requestType;
+    }
+
+    public boolean removesContentOnly() {
+        return removesContentOnly;
     }
 
     public String getIndex() {

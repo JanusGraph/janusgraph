@@ -75,7 +75,7 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 * Apache HBase 2.6.0
 * Oracle BerkeleyJE 7.5.11
 * ScyllaDB 6.2.0
-* Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.15.3, 9.0.3
+* Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.15.3, 9.5.4
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
 * Apache TinkerPop 3.8.2
@@ -84,7 +84,7 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 **Installed versions in the Pre-Packaged Distribution:**
 
 * Cassandra 5.0.9
-* Elasticsearch 7.14.0
+* Elasticsearch 7.17.29
 
 #### Changes
 
@@ -197,6 +197,14 @@ existing `db/cassandra` directory with the new distribution.
 ##### ElasticSearch 9 support
 
 Starting from version 1.2.0 JanusGraph supports ElasticSearch 9.
+
+The pre-packaged `janusgraph-full` distribution now bundles Elasticsearch 7.17.29 instead of Elasticsearch 7.17.8.
+Elasticsearch 7.17 is the last Elasticsearch line whose JVM can be Java 11: the bundled Elasticsearch runs on the
+JDK shipped in its Linux x86_64 tarball or, where that JDK cannot run (for example macOS or Linux on ARM), on the
+JDK of the host through `JAVA_HOME`. Elasticsearch 8 requires Java 17 and Elasticsearch 9 requires Java 21 for
+its JVM, and since 9.4 its launcher and native libraries are x86_64 only, so bundling them would have made the
+embedded Elasticsearch Linux x86_64 only. The native machine learning binaries are no longer part of the
+distribution (machine learning is disabled in the bundled `elasticsearch.yml`).
 
 ##### Zombie instances auto-close during index status update operations
 
@@ -448,6 +456,143 @@ identify remain synchronous), and run the new `janusgraph-cdc` worker. Like `sto
 Cassandra change stream (e.g. via Debezium and Kafka) and reindexes affected elements from their current graph state,
 which is idempotent and order-independent. See
 [CDC Mixed Index Synchronization](advanced-topics/cdc-mixed-index.md) for the full setup.
+
+##### Transient Elasticsearch failures are retried instead of dropping the index mutation
+
+Previously every Elasticsearch failure except an interrupt was reported as a `PermanentBackendException`. Because
+index mutations are applied after the storage mutations in a commit they cannot be rolled back, so a transient
+failure — a rolling restart, a saturated write queue, a socket timeout during a GC pause — dropped the mutation with
+a single ERROR log line and left the mixed index inconsistent with the graph until a reindex or a transaction-log
+recovery repaired it. The Elasticsearch client did have a retry mechanism, but it was disabled by default
+(`index.[X].elasticsearch.retry-limit=0` and an empty `index.[X].elasticsearch.retry-error-codes`), could only act
+on a failure which produced an HTTP response, and once its attempts ran out the failure was still reported as
+permanent.
+
+Such a failure is now reattempted at two levels, both **enabled by default** and both governed by one definition of
+what counts as transient:
+
+```
+index.[X].elasticsearch.retry-error-codes=429,502,503,504
+index.[X].elasticsearch.retry-transport-failures=true
+index.[X].elasticsearch.retry-limit=3
+```
+
+-   `retry-error-codes` lists the HTTP status codes considered transient, whether answered to a request or reported
+    for an individual bulk item. Its default was previously empty.
+-   `retry-transport-failures` (new) covers the failures which produce no HTTP response at all: connection refused,
+    connection reset, socket timeout, a prematurely closed connection and a TLS failure — the last of which is what a
+    rolling restart of a TLS secured cluster produces.
+-   `retry-limit` is the number of attempts the Elasticsearch client makes. Its default was previously `0`.
+
+The two levels are:
+
+1.  **The Elasticsearch client** reattempts the request `retry-limit` times, with the short waits controlled by
+    `retry-initial-wait` and `retry-max-wait`. For a bulk request it resends only the items which failed, so these
+    attempts never resend an item which already succeeded. This level applies to queries as well as writes.
+2.  **JanusGraph** classifies whatever survives those attempts. An index mutation which still failed transiently is
+    reported as a `TemporaryBackendException`, which the retry loop already present in `BackendOperation` reattempts
+    with exponential backoff for up to `storage.write-time` (default 100s) — the same contract that already applies
+    to a temporary storage failure. A bulk request qualifies only when *every* item which failed did so transiently,
+    since a batch containing a permanently failing item — a mapping conflict, for instance — cannot succeed on a
+    reattempt.
+
+Be aware of the following while the options are enabled:
+
+-   The second level resubmits the mutation without the documents which are known to have applied: every store
+    whose own bulk request had already returned, and in the bulk request which failed every document none of whose
+    items failed or went unsent. A bulk request larger than `index.[X].elasticsearch.bulk-chunk-size-limit-bytes` is
+    sent in chunks, and the documents of the chunks which were never sent are resubmitted. A failure which reports no
+    item statuses — no response at all, or a status for the bulk request as a whole — leaves it unknown what that
+    request applied, so after one the interrupted bulk is resubmitted whole, the chunks which went through before it
+    included. Resubmission is idempotent for whole-document writes, deletions and `SET` cardinality properties, but
+    the values of a `LIST` cardinality property are appended, so a document resubmitted after such a failure can hold
+    them twice. The same holds for a document one of whose items failed while another item of it had succeeded: it
+    is resubmitted whole. Within one bulk request Elasticsearch answers the items of one document, which share a shard
+    request, alike for the statuses it reattempts by default, so this takes either a per-item status which the
+    operator listed as transient, or a document whose items were split between two chunks.
+-   During an Elasticsearch outage a commit which touches a mixed index now takes up to `storage.write-time` to
+    report the failure instead of failing fast.
+-   While `retry-transport-failures` is enabled every `SSLException` is treated as transient, not only an interrupted
+    handshake, so a write against a persistently misconfigured or untrusted certificate is reattempted for the whole
+    write time before it fails.
+-   Set `index.[X].elasticsearch.retry-error-codes` to an empty list **and**
+    `index.[X].elasticsearch.retry-transport-failures=false` if `LIST` values duplicated after such a failure are less
+    acceptable than a dropped mutation; that restores the previous behavior at both levels. Setting `retry-limit=0`
+    alone disables only the client level and keeps the JanusGraph level.
+
+Deployments which set none of these options get the new behavior. Deployments which set `retry-limit` or
+`retry-error-codes` explicitly keep their values, and those values now also decide what JanusGraph reattempts.
+
+An interrupt is covered by neither option, and its handling changes regardless. Previously `convert` recognised an
+`InterruptedException` only as the exception it was handed directly, and neither the Elasticsearch client nor
+JanusGraph's own retry wait ever hands one over unwrapped, so a cancelled index write was in practice reported as a
+`PermanentBackendException`. It is now recognised anywhere in the cause chain and reported as a
+`TemporaryBackendException`, and the interrupt status of the thread is restored once the `InterruptedException` has
+been consumed, so `BackendOperation` aborts its backoff wait immediately instead of reissuing the request for the
+whole write time budget.
+
+##### An Elasticsearch update which failed because the document is missing is now reported
+
+A bulk request reports item level failures inside an otherwise successful HTTP response. JanusGraph previously treated
+*every* item answered with HTTP 404 as a success, whatever mutation produced it. That is right for a mutation which
+only takes content out of the index — a whole document deletion, or the script which deletes fields — because an
+absent document already satisfies it. It is wrong for a mutation which adds content: there a 404 is a
+`document_missing_exception`, and the write did not happen.
+
+A transaction which takes content out of a document and puts other content in — a property removed and a different one
+set on the same element, or a value of a `LIST` or `SET` cardinality property replaced — sends a field deletion and an
+addition against the same document, and `mutate()` withholds the upsert from the addition once a mutation has deletions.
+So if the Elasticsearch document was already missing, both items were answered with 404, both were discarded, and the
+addition was never indexed. Nothing reported it: the mutation returned normally, so even the
+`<prefix>.indexProvider.<INDEX-NAME>.mutate.exceptions` metric stayed at zero. Changing the value of a `SINGLE`
+cardinality property is not this case: the deletion of the old value is consolidated away because the same field is
+added, so that addition carries an upsert and recreates the document, from the changed field alone.
+
+Such an item is now reported. A 404 is not among the transient status codes of
+`index.[X].elasticsearch.retry-error-codes`, so the failure is classified permanent and the mutation is dropped rather
+than reattempted — reattempting cannot recreate a document whose upsert was withheld. **What a deployment sees changes
+on a graph whose mixed index has already diverged.** The graph commit itself still returns normally, because JanusGraph
+commits the storage backend first and never aborts on a mixed index failure, but the commit now logs the dropped
+mutation at ERROR, counts it in the `<prefix>.indexProvider.<INDEX-NAME>.mutate.exceptions` metric and, where the
+transaction log is enabled, records `SECONDARY_FAILURE` for the transaction, from which transaction log recovery repairs
+the document. That is the intent: the alternative is that the divergence stays invisible. `SchemaAction.REINDEX` repairs
+the affected documents as well.
+
+The same now holds for a removal against an Elasticsearch index which no longer exists. Elasticsearch answers a
+deletion against a missing index with a 404 carrying `index_not_found_exception`, which used to be taken for a success
+like every other 404 of a removal, so the commit passed silently although the index it was meant to update was gone.
+A removal stays exempt from a 404 which says only that the document is missing, since an absent document is the state
+it asked for.
+
+##### Mixed index names on one backing index must now differ in more than case
+
+An index backend derives its own index name from the JanusGraph index name case-insensitively — Elasticsearch
+lowercases it, Lucene names a directory after it — so two mixed indexes on the same backing index whose names differed
+only in case, such as `byName` and `byname`, shared one backend index: each other's documents and mappings, and a
+`SchemaAction.DISCARD_INDEX` of one dropped the other's documents. Creating the second one is now rejected with an
+`IllegalArgumentException` which names the existing index. Existing definitions are not touched: a graph which already
+holds such a pair keeps working as before, and is repaired by discarding one of the two and recreating it under a
+distinct name. Composite indexes have no backend index and are not affected.
+
+##### Index restores are reattempted after a transient failure
+
+`IndexTransaction.restore`, through which `SchemaAction.REINDEX`, stale entry removal, CDC index updates and
+transaction log recovery write their documents, called the index provider directly, so a failure the provider
+classified as transient — for Elasticsearch a 429, a 503 or a dropped connection — failed the batch outright,
+where the same failure during a commit is reattempted. It now runs through `BackendOperation` like a commit does:
+reattempted with backoff for up to `storage.write-time`, and only then reported. A restore writes whole documents, so
+a reattempt is idempotent.
+
+##### Transient Elasticsearch read failures are reattempted
+
+A mixed index query, count or aggregation against Elasticsearch wrapped every failure in a `PermanentBackendException`,
+so a throttled or momentarily unreachable cluster failed the traversal outright — although `BackendTransaction` already
+runs every index read through `BackendOperation`, which reattempts a `TemporaryBackendException` for up to
+`storage.read-time`, as it does for a storage read. The read paths now classify a failure the way the write path has since the retry options were unified: a status
+listed in `index.[X].elasticsearch.retry-error-codes` (`429`, `502`, `503`, `504` by default) and, with
+`index.[X].elasticsearch.retry-transport-failures`, a connection or TLS failure are transient and reattempted with
+backoff within `storage.read-time`; everything else remains permanent. The pages of a scroll are fetched while the
+caller consumes the result stream, outside that budget, and are not covered.
 
 ### Version 1.1.0 (Release Date: November 7, 2024)
 

@@ -21,7 +21,7 @@
         <assembly.descriptor.dir>${project.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
         <assembly.static.dir>${project.basedir}/src/assembly/static</assembly.static.dir>
         <assembly.resources.dir>${project.basedir}/src/assembly/resources</assembly.resources.dir>
-        <assembly.es.dir>${project.build.directory}/elasticsearch-7.17.8</assembly.es.dir>
+        <assembly.es.dir>${project.build.directory}/elasticsearch-7.17.29</assembly.es.dir>
         <assembly.cassandra.dir>${project.build.directory}/apache-cassandra-${cassandra-dist.version}</assembly.cassandra.dir>
 
         <packname.standard>janusgraph-${project.version}</packname.standard>
@@ -202,17 +202,22 @@
                             <goal>wget</goal>
                         </goals>
                         <configuration>
-                            <!-- ElasticSearch Server 8 doesn't support Java 8 and Java 11.
-                            Thus, we use here the latest ElasticSearch Server which supports both Java 8 and Java 11 (which is 7.17.8 as for now).
+                            <!-- Elasticsearch bundled into the janusgraph-full distribution. Elasticsearch 7.17 is the last line
+                            whose JVM can be Java 11: it runs on the JDK shipped inside this Linux x86_64 tarball or, where that
+                            JDK cannot run (for example macOS or Linux on ARM), on JAVA_HOME. Elasticsearch 8 needs Java 17 and
+                            Elasticsearch 9 needs Java 21 for its JVM, and since 9.4 its launcher and native libraries are x86_64
+                            only, so newer lines would make the bundled Elasticsearch Linux x86_64 only.
+                            When this version is updated please also update the sha512 below and regenerate the overlay files in
+                            src/assembly/static/elasticsearch/config from the new tarball.
                             We should probably re-think dist tests and re-develop them using docker containers instead of
                             relying on the JanusGraph running environment.
                             -->
-                            <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.8-linux-x86_64.tar.gz</url>
-                            <outputFileName>elasticsearch-7.17.8-linux-x86_64.tar.gz</outputFileName>
+                            <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.29-linux-x86_64.tar.gz</url>
+                            <outputFileName>elasticsearch-7.17.29-linux-x86_64.tar.gz</outputFileName>
                             <outputDirectory>${project.build.directory}/</outputDirectory>
                             <unpack>true</unpack>
-                            <!-- https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.8-linux-x86_64.tar.gz.sha512 -->
-                            <sha512>cd02b40e8b32e78f17bac12245326e10482214ab452b2e5d1745ddc7944e60a5b07c01c949c68625d78640bdd46806aeece4e8d620788133993055732d388443</sha512>
+                            <!-- https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.29-linux-x86_64.tar.gz.sha512 -->
+                            <sha512>0b3c84966b0af346233c56e96cb87578c2afe37809ff3c375b771589405de796214542bbb9f2294fb4786e52c4a5d7ac79924fe64bee9e6c76788d700ea81e26</sha512>
                             <readTimeOut>1800000</readTimeOut>
                         </configuration>
                     </execution>

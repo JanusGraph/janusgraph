@@ -75,6 +75,7 @@ public class MetricInstrumentedStoreManager implements KeyColumnValueStoreManage
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         if (!txh.getConfiguration().hasGroupName()) {
             backend.mutateMany(mutations,txh);
+            return;
         }
         String prefix = txh.getConfiguration().getGroupName();
 

@@ -272,6 +272,32 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     @Test
+    public void testMixedIndexNamesDifferingOnlyInCaseAreRejected() {
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        //Only this index reaches the backend, so its name is one every index backend under test provides: the Solr
+        //tests upload a config set for a fixed list of collection names only
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).buildMixedIndex(INDEX);
+
+        //The backend derives its own index name from this one case insensitively, so the two would share a backend
+        //index and each other's documents. The rejection happens before the backend is asked for anything
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> mgmt.buildIndex("Mixed", Vertex.class).addKey(age).buildMixedIndex(INDEX));
+        //The message names both the index which was asked for and the one which is in the way
+        assertTrue(e.getMessage().contains("'Mixed'") && e.getMessage().contains("'mixed'"), e.getMessage());
+        //Nor on another element type: the backend index name does not carry it
+        assertThrows(IllegalArgumentException.class,
+            () -> mgmt.buildIndex("MIXED", Edge.class).addKey(age).buildMixedIndex(INDEX));
+
+        //A composite index has no backend index, so it may spell its name any way
+        mgmt.buildIndex("Mixed", Vertex.class).addKey(age).buildCompositeIndex();
+        finishSchema();
+
+        assertTrue(mgmt.getGraphIndex("mixed").isMixedIndex());
+        assertTrue(mgmt.getGraphIndex("Mixed").isCompositeIndex());
+    }
+
+    @Test
     public void testUpdateSchemaChangeNameForPropertyKey() {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).buildMixedIndex(INDEX);

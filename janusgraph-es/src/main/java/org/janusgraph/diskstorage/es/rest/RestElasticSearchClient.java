@@ -39,8 +39,10 @@ import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
+import org.janusgraph.diskstorage.es.ElasticSearchBulkFailureException;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
+import org.janusgraph.diskstorage.es.TransientFailures;
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
 import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
@@ -59,6 +61,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +79,9 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private static final String REQUEST_TYPE_DELETE = "DELETE";
     private static final String REQUEST_TYPE_GET = "GET";
     private static final String REQUEST_TYPE_POST = "POST";
+    //The type Elasticsearch names in the error of a bulk item which was answered with a 404 because the index is gone
+    private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
+    private static final String ERROR_TYPE_KEY = "type";
     private static final String REQUEST_TYPE_PUT = "PUT";
     private static final String REQUEST_TYPE_HEAD = "HEAD";
     private static final String REQUEST_SEPARATOR = "/";
@@ -121,6 +127,10 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private final boolean esVersion7;
 
     private Integer retryOnConflict;
+
+    //Whether a failure which produced no HTTP response is reattempted like a status code in retryOnErrorCodes.
+    //Configured through RestClientSetup from RETRY_TRANSPORT_FAILURES, like the other optional client settings
+    private boolean retryTransportFailures;
 
     private final String retryOnConflictKey;
 
@@ -387,10 +397,9 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     }
 
     @Override
-    public void clearStore(String indexName, String storeName) throws IOException {
-        String name = indexName + "_" + storeName;
-        if (indexExists(name)) {
-            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexName + "_" + storeName, null);
+    public void clearStore(String indexStoreName) throws IOException {
+        if (indexExists(indexStoreName)) {
+            performRequest(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + indexStoreName, null);
         }
     }
 
@@ -398,9 +407,17 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     class RequestBytes {
         final byte [] requestBytes;
         final byte [] requestSource;
+        //Retained so that a failed bulk item can be interpreted against the operation which produced it
+        final boolean removesContentOnly;
+        //The document the item belongs to, so that a failed bulk can say which documents did not apply
+        final String store;
+        final String documentId;
 
         @VisibleForTesting
         RequestBytes(final ElasticSearchMutation request) throws JsonProcessingException {
+            this.removesContentOnly = request.removesContentOnly();
+            this.store = request.getType();
+            this.documentId = request.getId();
             Map<String, Object> requestData = new HashMap<>();
             if (useMappingTypes) {
                 requestData.put("_index", request.getIndex());
@@ -471,14 +488,45 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         for (int itemIndex = 0; itemIndex < bulkResponseItems.size(); itemIndex++) {
             Collection<RestBulkResponse.RestBulkItemResponse> bulkResponseItem = bulkResponseItems.get(itemIndex).values();
             if (bulkResponseItem.size() > 1) {
-                throw new IllegalStateException("There should only be a single item per bulk reponse item entry");
+                throw new IllegalStateException("There should only be a single item per bulk response item entry");
             }
             RestBulkResponse.RestBulkItemResponse item = bulkResponseItem.iterator().next();
-            if (item.getError() != null && item.getStatus() != HttpStatus.SC_NOT_FOUND) {
-                errors.add(Triplet.with(item.getError(), item.getStatus(), submittedBulkRequestItems.get(itemIndex)));
+            final RequestBytes submittedItem = submittedBulkRequestItems.get(itemIndex);
+            if (item.getError() != null && !isAbsentDocumentRemoval(item, submittedItem)) {
+                errors.add(Triplet.with(item.getError(), item.getStatus(), submittedItem));
             }
         }
         return errors;
+    }
+
+    //Removing content which is already absent leaves the index in the state the mutation asked for, so the 404
+    //Elasticsearch answers with is a success. Both a whole document deletion and a script which deletes fields count.
+    //A 404 for a mutation which adds content is a document_missing_exception: the write did not happen, and treating
+    //it as a success drops the mutation with nothing reported.
+    //The one 404 a removal is not exempt from is the index_not_found_exception Elasticsearch answers a deletion
+    //against a missing index with: the whole index being gone is not a state any mutation asked for, and an addition
+    //against the same index is reported, so a removal is too. The reasons a 404 otherwise carries here: a whole
+    //document deletion of an absent document does not reach this method at all, because Elasticsearch answers it
+    //with result not_found and no error; the field deletion script gets a document_missing_exception, which is
+    //exempt; and an update against a missing index, with the default action.auto_create_index, creates the index and
+    //then reports the document as missing
+    private static boolean isAbsentDocumentRemoval(final RestBulkResponse.RestBulkItemResponse item,
+                                                   final RequestBytes submittedItem) {
+        return item.getStatus() == HttpStatus.SC_NOT_FOUND && submittedItem.removesContentOnly
+            && !isIndexNotFound(item.getError());
+    }
+
+    private static Map<String, Set<String>> documentsByStore(final Iterable<RequestBytes> requests) {
+        final Map<String, Set<String>> documentsByStore = new HashMap<>();
+        for (final RequestBytes request : requests) {
+            documentsByStore.computeIfAbsent(request.store, k -> new HashSet<>()).add(request.documentId);
+        }
+        return documentsByStore;
+    }
+
+    //The error of a failed bulk item is a map which names the exception under "type"
+    private static boolean isIndexNotFound(final Object error) {
+        return error instanceof Map && INDEX_NOT_FOUND_EXCEPTION.equals(((Map<?, ?>) error).get(ERROR_TYPE_KEY));
     }
 
     @VisibleForTesting
@@ -492,6 +540,9 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         // size of a HTTP request to 100mb by default
         private final PeekingIterator<RequestBytes> requestIterator;
         private final int[] exceptionallyLargeRequests;
+        //The documents of the oversized requests, by store: never sent, and reported only once every well sized chunk
+        //went through, so a failure before that has to name them as unsent
+        private final Map<String, Set<String>> oversizedDocumentsByStore = new HashMap<>();
 
         @VisibleForTesting
         BulkRequestChunker(List<ElasticSearchMutation> requests) throws JsonProcessingException {
@@ -505,12 +556,24 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                     serializedRequests.add(requestBytes);
                 } else {
                     requestSizesThatWereTooLarge.add(requestSerializedSize);
+                    oversizedDocumentsByStore.computeIfAbsent(request.getType(), k -> new HashSet<>()).add(request.getId());
                 }
             }
             this.requestIterator = Iterators.peekingIterator(serializedRequests.iterator());
             //Condense request sizes that are too large into an int array to remove Boxed & List memory overhead
             this.exceptionallyLargeRequests = requestSizesThatWereTooLarge.isEmpty() ? null :
                 requestSizesThatWereTooLarge.stream().mapToInt(Integer::intValue).toArray();
+        }
+
+        //The documents which have not been sent, by store: those of the chunks not handed out yet, and the oversized
+        //ones. A failure names them as unsent so that a reattempt does not take them for applied and drop them. This
+        //consumes the chunker, so it is asked once, when a failure ends the request
+        Map<String, Set<String>> unsentDocumentsByStore() {
+            final Map<String, Set<String>> unsent = new HashMap<>();
+            requestIterator.forEachRemaining(request ->
+                unsent.computeIfAbsent(request.store, k -> new HashSet<>()).add(request.documentId));
+            oversizedDocumentsByStore.forEach((store, ids) -> unsent.computeIfAbsent(store, k -> new HashSet<>()).addAll(ids));
+            return unsent;
         }
 
         @Override
@@ -568,8 +631,25 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                             retryCount++;
                         } else {
                             final List<Object> errorItems = bulkItemsThatFailed.stream().map(Triplet::getValue0).collect(Collectors.toList());
-                            errorItems.forEach(error -> log.error("Failed to execute ES query: {}", error));
-                            throw new IOException("Failure(s) in Elasticsearch bulk request: " + errorItems);
+                            //Summarise rather than log a line per item: a large batch rejected wholesale would
+                            //otherwise emit thousands of lines, once per reattempt, exactly during the outage the
+                            //reattempts exist for. The level which matches the outcome of the whole mutation is the
+                            //caller's to choose, and the thrown exception carries every failed item on a getter
+                            log.warn("{} of {} items in the Elasticsearch bulk request failed, with statuses {}",
+                                bulkItemsThatFailed.size(), bulkRequestChunk.size(), errorCodes);
+                            if (log.isDebugEnabled()) {
+                                for (final Triplet<Object, Integer, RequestBytes> failedItem : bulkItemsThatFailed) {
+                                    log.debug("Failed to execute ES query with status {}: {}",
+                                        failedItem.getValue1(), failedItem.getValue0());
+                                }
+                            }
+                            final List<RequestBytes> failedRequests = bulkItemsThatFailed.stream()
+                                .map(Triplet::getValue2).collect(Collectors.toList());
+                            //Retain the item statuses so callers can classify the failure as transient or permanent,
+                            //and the documents so that a reattempt can leave out those which applied: the ones whose
+                            //items failed here, and the ones of the chunks this failure stops from being sent at all
+                            throw new ElasticSearchBulkFailureException(errorCodes, errorItems,
+                                documentsByStore(failedRequests), bulkRequestChunker.unsentDocumentsByStore());
                         }
                     } else {
                         //The entire bulk request was successful, leave the loop
@@ -578,6 +658,10 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                 }
             }
         }
+    }
+
+    public void setRetryTransportFailures(boolean retryTransportFailures) {
+        this.retryTransportFailures = retryTransportFailures;
     }
 
     public void setRetryOnConflict(Integer retryOnConflict) {
@@ -711,6 +795,10 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         return performRequest(new Request(method, path), requestData);
     }
 
+    //Reattempts a request which failed transiently, up to retryAttemptLimit times. A status code is transient when
+    //it is listed in retryOnErrorCodes; a failure which produced no response at all - and so has no status code -
+    //is transient when retryTransportFailures is set. Both are the same definition ElasticSearchIndex classifies
+    //the final failure by, so a failure which survives these attempts is handed on rather than contradicted
     private Response performRequestWithRetry(Request request) throws IOException {
         int retryCount = 0;
         while (true) {
@@ -720,8 +808,12 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                 if (!retryOnErrorCodes.contains(e.getResponse().getStatusLine().getStatusCode()) || retryCount >= retryAttemptLimit) {
                     throw e;
                 }
-                performRetryWait(retryCount);
+            } catch (IOException e) {
+                if (!retryTransportFailures || !TransientFailures.hasTransportFailureCause(e) || retryCount >= retryAttemptLimit) {
+                    throw e;
+                }
             }
+            performRetryWait(retryCount);
             retryCount++;
         }
     }
@@ -732,6 +824,9 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         try {
             Thread.sleep(waitDurationMs);
         } catch (InterruptedException interruptedException) {
+            //Thread.sleep cleared the interrupt status when it threw. Put it back so that whoever is waiting above -
+            //BackendOperation, which aborts its own backoff on it - can see the operation was cancelled
+            Thread.currentThread().interrupt();
             throw new RuntimeException(String.format("Thread interrupted while waiting for retry attempt %d of %d", retryCount, retryAttemptLimit), interruptedException);
         }
     }

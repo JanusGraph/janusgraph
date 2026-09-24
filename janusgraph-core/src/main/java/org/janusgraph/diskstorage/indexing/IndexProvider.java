@@ -64,7 +64,11 @@ public interface IndexProvider extends IndexInformation {
      * Mutates the index (adds and removes fields or entire documents)
      *
      * @param mutations Updates to the index. First map contains all the mutations for each store. The inner map contains
-     *                  all changes for each document in an {@link IndexMutation}.
+     *                  all changes for each document in an {@link IndexMutation}. A provider may remove from this map
+     *                  the documents it knows to have applied before it throws a
+     *                  {@link org.janusgraph.diskstorage.TemporaryBackendException}, so that the reattempt which
+     *                  {@link IndexTransaction} makes resends only the rest; a caller must not rely on the map being
+     *                  unchanged after a failure.
      * @param information Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @throws org.janusgraph.diskstorage.BackendException
