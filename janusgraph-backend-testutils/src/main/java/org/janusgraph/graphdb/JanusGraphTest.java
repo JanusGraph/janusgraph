@@ -4639,6 +4639,88 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertEquals(1, mgmt.getVertexLabel("person").mappedConnections().size());
     }
 
+    /**
+     * A transaction which was already open when another one committed a definition edge (here a connection constraint
+     * auto-created under schema.constraints=true) must not keep acting on the definition edges it had loaded: adding
+     * the same kind of edge, it must find the constraint instead of creating a second copy.
+     */
+    @Test
+    public void testAutoCreatedConnectionConstraintIsSeenByTransactionsOpenAtCommit() {
+        clopen(option(SCHEMA_CONSTRAINTS), true);
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makeEdgeLabel("knows").make();
+        finishSchema();
+
+        final JanusGraphTransaction open = graph.newTransaction();
+        assertTrue(open.getVertexLabel("person").mappedConnections().isEmpty());
+
+        final JanusGraphTransaction creator = graph.newTransaction();
+        creator.addVertex("person").addEdge("knows", creator.addVertex("person"));
+        creator.commit();
+
+        open.addVertex("person").addEdge("knows", open.addVertex("person"));
+        open.commit();
+
+        final JanusGraphManagement check = graph.openManagement();
+        try {
+            assertEquals(1, check.getEdgeLabel("knows").mappedConnections().size());
+            assertEquals(1, check.getVertexLabel("person").mappedConnections().size());
+        } finally {
+            check.rollback();
+        }
+    }
+
+    /**
+     * A transaction which had read a relation type's consistency before a management commit changed it must read the
+     * new consistency afterwards: the commit resets the type in the open transactions, and that has to clear the
+     * consistency the type had cached as well.
+     */
+    @Test
+    public void testConsistencyChangeIsSeenByTransactionsOpenAtCommit() {
+        mgmt.makePropertyKey("uid").dataType(String.class).make();
+        finishSchema();
+
+        final JanusGraphTransaction open = graph.newTransaction();
+        try {
+            assertEquals(ConsistencyModifier.DEFAULT,
+                ((InternalRelationType) open.getPropertyKey("uid")).getConsistencyModifier());
+
+            mgmt.setConsistency(mgmt.getPropertyKey("uid"), ConsistencyModifier.LOCK);
+            mgmt.commit();
+
+            assertEquals(ConsistencyModifier.LOCK,
+                ((InternalRelationType) open.getPropertyKey("uid")).getConsistencyModifier());
+        } finally {
+            open.rollback();
+        }
+    }
+
+    /**
+     * Replacing a consistency modifier removes the old modifier vertex. A transaction which had read the old
+     * consistency holds that vertex, and the commit must leave it alone there: it has no definition left to reload,
+     * and reloading it would fail inside the commit's finally block. The transaction reads the new consistency.
+     */
+    @Test
+    public void testConsistencyChangeReplacingAModifierIsSeenByTransactionsOpenAtCommit() {
+        final EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.MULTI).make();
+        mgmt.setConsistency(knows, ConsistencyModifier.LOCK);
+        finishSchema();
+
+        final JanusGraphTransaction open = graph.newTransaction();
+        try {
+            assertEquals(ConsistencyModifier.LOCK,
+                ((InternalRelationType) open.getEdgeLabel("knows")).getConsistencyModifier());
+
+            mgmt.setConsistency(mgmt.getEdgeLabel("knows"), ConsistencyModifier.FORK);
+            mgmt.commit();
+
+            assertEquals(ConsistencyModifier.FORK,
+                ((InternalRelationType) open.getEdgeLabel("knows")).getConsistencyModifier());
+        } finally {
+            open.rollback();
+        }
+    }
+
     private void createStrictSchemaForVertexProperties() {
         clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
         VertexLabel label = mgmt.makeVertexLabel("user").make();

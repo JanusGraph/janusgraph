@@ -109,6 +109,11 @@ public class PreloadedVertex extends CacheVertex {
     }
 
     @Override
+    public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup, long refreshesBefore) {
+        return super.loadRelations(query, accessCheck.retrieveSliceQuery(), refreshesBefore);
+    }
+
+    @Override
     public <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
         accessCheck.accessSetProperty();
         JanusGraphVertexProperty<V> p = mixin.property(cardinality, key, value);

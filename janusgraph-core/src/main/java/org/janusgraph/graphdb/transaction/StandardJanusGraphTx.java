@@ -1351,8 +1351,14 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     public void executeMultiQuery(final Collection<InternalVertex> vertices, final SliceQuery sq, final QueryProfiler profiler) {
         List<Object> vertexIds = new ArrayList<>(vertices.size());
+        //Each vertex's refresh count before the read, so that a refresh which overlaps the read keeps its result out of
+        //the vertex's cache
+        List<Long> refreshesBefore = new ArrayList<>(vertices.size());
         for (InternalVertex v : vertices) {
-            if (!v.isNew() && v.hasId() && (v instanceof CacheVertex) && !v.hasLoadedRelations(sq)) vertexIds.add(v.id());
+            if (!v.isNew() && v.hasId() && (v instanceof CacheVertex) && !v.hasLoadedRelations(sq)) {
+                vertexIds.add(v.id());
+                refreshesBefore.add(((CacheVertex) v).refreshes());
+            }
         }
 
         if (!vertexIds.isEmpty()) {
@@ -1361,7 +1367,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             for (JanusGraphVertex v : vertices) {
                 if (pos<vertexIds.size() && vertexIds.get(pos).equals(v.id())) {
                     final EntryList vresults = results.get(pos);
-                    ((CacheVertex) v).loadRelations(sq, query -> vresults);
+                    ((CacheVertex) v).loadRelations(sq, query -> vresults, refreshesBefore.get(pos));
                     pos++;
                 }
             }
@@ -1371,10 +1377,16 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
     public void executeMultiSliceMultiQuery(final Collection<InternalVertex> vertices, final List<BackendQueryHolder<SliceQuery>> queries, QueryProfiler profiler) {
         MultiKeysQueryGroups<Object, SliceQuery> groupedMultiSliceQueries = MultiSliceQueriesGroupingUtil.toMultiKeysQueryGroups(vertices, queries);
         if (!groupedMultiSliceQueries.getQueryGroups().isEmpty()) {
+            //Each vertex's refresh count before the read, as in executeMultiQuery
+            Map<Object, Long> refreshesBefore = new HashMap<>(vertices.size());
+            for (InternalVertex v : vertices) {
+                if (v instanceof CacheVertex) refreshesBefore.put(v.id(), ((CacheVertex) v).refreshes());
+            }
             Map<SliceQuery, Map<Object, EntryList>> allResults = QueryProfiler.profile(profiler, groupedMultiSliceQueries, true, q -> graph.edgeMultiQuery(q, txHandle));
             Map<Object, JanusGraphVertex> vertexIdToVertexMap = vertices.stream().collect(Collectors.toMap(JanusGraphElement::id, v -> v));
             allResults.forEach((sliceQuery, resultsPerQuery) -> resultsPerQuery.forEach((vertexId, vertexSliceResult) ->
-                ((CacheVertex) vertexIdToVertexMap.get(vertexId)).loadRelations(sliceQuery, query -> vertexSliceResult)));
+                ((CacheVertex) vertexIdToVertexMap.get(vertexId)).loadRelations(sliceQuery, query -> vertexSliceResult,
+                    refreshesBefore.get(vertexId))));
         }
     }
 
@@ -1765,7 +1777,12 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             final InternalVertex v = vertexCache.get(id, externalVertexRetriever);
             if (v instanceof JanusGraphSchemaVertex) {
                 JanusGraphSchemaVertex sv = (JanusGraphSchemaVertex) v;
+                //The vertex also caches the relations its own queries read, getEdges among them, and a query which
+                //this overlaps does not keep what it loaded before, as with the schema caches
+                sv.refresh();
                 sv.resetCache();
+                //A schema vertex the change removed has no definition left to read, and nothing to invalidate for
+                if (!sv.hasDefinition()) return;
                 if (sv.getDefinition().containsKey(TypeDefinitionCategory.INTERNAL_INDEX)) {
                     IndexType indexType = sv.asIndexType();
                     if (indexType.isMixedIndex()) {

@@ -1121,7 +1121,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         final KCVSLog txLog = logTransaction?backend.getSystemTxLog():null;
         final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp, times);
         ModificationSummary commitSummary;
-        final Set<Long> schemaElementsWithChangedDefinitionEdges = collectSchemaElementsWithChangedDefinitionEdges(addedRelations, deletedRelations);
+        final ChangedSchemaVertices changedSchemaVertices = ChangedSchemaVertices.of(addedRelations, deletedRelations);
 
         try {
             //3.1 Log transaction (write-ahead log) if enabled
@@ -1258,27 +1258,71 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         } finally {
             //4. Definition edges written outside of ManagementSystem (e.g. constraints auto-created under
             //   schema.constraints=true) are not broadcast as cache evictions. Expire the local schema cache
-            //   entries of the schema vertices they touch so this instance re-reads them.
-            for (Long schemaId : schemaElementsWithChangedDefinitionEdges) {
-                schemaCache.expireSchemaElement(schemaId);
+            //   entries of the schema vertices they touch so this instance re-reads them, and those vertices in
+            //   the other open transactions, as ManagementSystem does, so that a transaction which was open during
+            //   this commit does not keep acting on the definition edges it had loaded. The committing transaction
+            //   is left out: it wrote the edges itself and is finishing. So are the vertices it removed, which have
+            //   no definition left to reload. The open transactions are only listed once the graph-level entries
+            //   are gone, so that a transaction which is not on the list can only load the new definition edges.
+            //   A management commit which changes definition edges gets the same from ManagementSystem.commit once
+            //   more, at the cost of a re-read.
+            if (!changedSchemaVertices.all.isEmpty()) {
+                for (Long schemaId : changedSchemaVertices.all) {
+                    schemaCache.expireSchemaElement(schemaId);
+                }
+                for (JanusGraphTransaction other : getOpenTransactions()) {
+                    if (other != tx && other.isOpen()) expireSchemaElements(other, changedSchemaVertices.kept);
+                }
             }
         }
     }
 
-    private static Set<Long> collectSchemaElementsWithChangedDefinitionEdges(final Collection<InternalRelation> addedRelations,
-                                                                            final Collection<InternalRelation> deletedRelations) {
-        Set<Long> schemaIds = Collections.emptySet();
-        for (Collection<InternalRelation> relations : Arrays.asList(addedRelations, deletedRelations)) {
-            for (InternalRelation relation : relations) {
-                if (relation.getType() != BaseLabel.SchemaDefinitionEdge) continue;
-                if (schemaIds.isEmpty()) schemaIds = new HashSet<>();
-                for (int pos = 0; pos < relation.getArity(); pos++) {
-                    InternalVertex vertex = relation.getVertex(pos);
-                    if (vertex instanceof JanusGraphSchemaVertex) schemaIds.add(((JanusGraphSchemaVertex) vertex).longId());
-                }
+    //Runs in the finally block of a commit, so a failure is logged instead of thrown, where it would replace the
+    //outcome of the commit. Expiring an element reloads its definition, which can fail like any read; the element's
+    //caches are cleared by then, and it is reloaded when the transaction next uses it.
+    private static void expireSchemaElements(JanusGraphTransaction transaction, Set<Long> schemaIds) {
+        for (Long schemaId : schemaIds) {
+            try {
+                transaction.expireSchemaElement(schemaId);
+            } catch (RuntimeException e) {
+                log.warn("Could not expire schema element {} in transaction {}; it is reloaded when the transaction "
+                    + "next uses it", schemaId, transaction, e);
             }
         }
-        return schemaIds;
+    }
+
+    /**
+     * The schema vertices at the ends of the definition edges a transaction wrote: all of them, whose graph-level
+     * cache entries are expired, and those the transaction did not remove, which the other open transactions reload.
+     * A removed one has no definition left to reload.
+     */
+    private static final class ChangedSchemaVertices {
+        private Set<Long> all = Collections.emptySet();
+        private Set<Long> kept = Collections.emptySet();
+
+        private static ChangedSchemaVertices of(final Collection<InternalRelation> addedRelations,
+                                                final Collection<InternalRelation> deletedRelations) {
+            final ChangedSchemaVertices changed = new ChangedSchemaVertices();
+            for (Collection<InternalRelation> relations : Arrays.asList(addedRelations, deletedRelations)) {
+                for (InternalRelation relation : relations) {
+                    if (relation.getType() != BaseLabel.SchemaDefinitionEdge) continue;
+                    for (int pos = 0; pos < relation.getArity(); pos++) {
+                        InternalVertex vertex = relation.getVertex(pos);
+                        if (vertex instanceof JanusGraphSchemaVertex) changed.add((JanusGraphSchemaVertex) vertex);
+                    }
+                }
+            }
+            return changed;
+        }
+
+        private void add(JanusGraphSchemaVertex vertex) {
+            if (all.isEmpty()) {
+                all = new HashSet<>();
+                kept = new HashSet<>();
+            }
+            all.add(vertex.longId());
+            if (!vertex.isRemoved()) kept.add(vertex.longId());
+        }
     }
 
 
