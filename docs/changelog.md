@@ -27,7 +27,7 @@ All currently supported versions of JanusGraph are listed below.
 
 | JanusGraph | Storage Version | Cassandra | HBase | Bigtable | ScyllaDB | Elasticsearch | Solr | TinkerPop | Spark | Scala |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| 1.2.z | 2 | 3.11.z, 4.0.z, 5.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.y, 7.y, 8.y, 9.y | 8.y | 3.8.z | 3.2.z | 2.12.z |
+| 1.2.z | 2 | 3.11.z, 4.0.z, 5.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.1-6.8.z, 7.y, 8.y, 9.y | 8.y | 3.8.z | 3.2.z | 2.12.z |
 | 1.1.z | 2 | 3.11.z, 4.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.y, 7.y, 8.y | 8.y | 3.7.z | 3.2.z | 2.12.z |
 
 !!! info
@@ -75,7 +75,7 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 * Apache HBase 2.6.0
 * Oracle BerkeleyJE 7.5.11
 * ScyllaDB 6.2.0
-* Elasticsearch 6.0.1, 6.6.0, 7.17.8, 8.15.3, 9.5.4
+* Elasticsearch 6.6.0, 7.17.8, 8.15.3, 9.5.4
 * Apache Lucene 8.11.1
 * Apache Solr 8.11.1
 * Apache TinkerPop 3.8.2
@@ -205,6 +205,15 @@ JDK of the host through `JAVA_HOME`. Elasticsearch 8 requires Java 17 and Elasti
 its JVM, and since 9.4 its launcher and native libraries are x86_64 only, so bundling them would have made the
 embedded Elasticsearch Linux x86_64 only. The native machine learning binaries are no longer part of the
 distribution (machine learning is disabled in the bundled `elasticsearch.yml`).
+
+##### Elasticsearch 6.0 is no longer supported
+
+JanusGraph 1.2.0 no longer supports Elasticsearch 6.0, and its tests no longer run against it. Elasticsearch 6.0
+reached its end of life in 2019, and unlike later versions it does not run the ingest pipeline of a bulk request on
+the upsert of an update: a document which a mutation creates through an upsert, such as one an addition recreates
+because it is missing from the index, skips the pipeline set with
+`index.[X].elasticsearch.ingest-pipeline.[mixedIndexName]`. Upgrade Elasticsearch 6.0 clusters before upgrading
+JanusGraph; the oldest Elasticsearch 6 release tested is 6.6.0.
 
 ##### Zombie instances auto-close during index status update operations
 
