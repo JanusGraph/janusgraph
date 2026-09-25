@@ -664,6 +664,24 @@ recovery has read that status gets its user-log event sent again. Such a transac
 transaction log's final status write (up to `log.tx.max-write-time`) inside `tx.max-commit-time` as well. The log
 identifier is set per transaction, so the warning cannot take it into account.
 
+##### Schema changes committed by ordinary transactions reach the other instances
+
+With `schema.constraints=true` and a schema maker which creates missing constraints, an ordinary transaction adds
+property and connection constraints to the schema, and so do `addConnection(...)` and `addProperties(...)`, on a
+transaction or on the management system, which sent no eviction either. Other JanusGraph instances used to keep the
+definitions they had cached, and so created a second copy of a constraint the first time they used it themselves. Such a
+commit now also sends a cache eviction for the schema elements it changed over the management log, like a management
+commit does, but as one which nothing waits to see acknowledged: an acknowledged eviction registers a trigger which
+waits for every instance to acknowledge once its open transactions have closed, and with
+`graph.management-auto-close-stale-instances` could get an instance with a long-running transaction force-closed because
+of an ordinary write. Every instance which reads the eviction, the sender included, expires the elements from its schema
+cache and its open transactions. A management commit which changes definition edges and sends evictions of its own sends
+both, and receivers expire the elements twice, at the cost of a re-read. Instances of earlier versions process the
+eviction as well and acknowledge it; that acknowledgement is ignored, so a rolling upgrade needs no preparation. During
+the upgrade, each such eviction costs an older instance the thread which waits for its open transactions to close before
+it acknowledges, for up to a minute, and one with a transaction open for longer than that logs the stale-transaction
+error it logs for any eviction it waited that long for.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven

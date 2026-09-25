@@ -57,6 +57,10 @@ public class InMemoryGraphTest extends JanusGraphTest {
     @Override @Test @Disabled
     public void testLocalGraphConfiguration() {}
 
+    // A second in-memory graph does not share the storage of the first
+    @Override @Test @Disabled
+    public void testAutoCreatedConnectionConstraintReachesOtherInstances() {}
+
     @Override @Test @Disabled
     public void testLimitBatchSizeForMultiQueryRepeatStep() {}
 

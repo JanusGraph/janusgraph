@@ -4721,6 +4721,65 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         }
     }
 
+    /**
+     * Definition edges which an ordinary transaction commits on one instance (here a connection constraint
+     * auto-created under schema.constraints=true) must reach the schema cache of another instance. Otherwise that
+     * instance keeps serving the definition edges it had cached, and adding the same kind of edge there creates a
+     * second copy of the constraint.
+     */
+    //A message whose write takes longer than the read lag is missed, as for testIndexUpdatesWithReindexAndRemove
+    @RepeatedIfExceptionsTest(repeats = 3)
+    public void testAutoCreatedConnectionConstraintReachesOtherInstances() throws InterruptedException {
+        //The read lag is left at its default of 500 ms: the test waits for the message anyway, and a shorter lag
+        //would miss it more easily
+        clopen(option(SCHEMA_CONSTRAINTS), true,
+            option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250));
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makeEdgeLabel("knows").make();
+        finishSchema();
+
+        //Opened from the same configuration, which sets no instance id, so the second instance gets one of its own
+        final StandardJanusGraph graph2 = (StandardJanusGraph) JanusGraphFactory.open(config);
+        try {
+            //The second instance caches the vertex label's connections while there are none
+            JanusGraphTransaction tx2 = graph2.newTransaction();
+            assertTrue(tx2.getVertexLabel("person").mappedConnections().isEmpty());
+            tx2.rollback();
+
+            //An ordinary transaction on this instance auto-creates the connection
+            final JanusGraphTransaction creator = graph.newTransaction();
+            creator.addVertex("person").addEdge("knows", creator.addVertex("person"));
+            creator.commit();
+
+            //The second instance learns about it from the management log
+            final long deadline = System.currentTimeMillis() + 30000;
+            int connections;
+            do {
+                Thread.sleep(100);
+                tx2 = graph2.newTransaction();
+                connections = tx2.getVertexLabel("person").mappedConnections().size();
+                tx2.rollback();
+            } while (connections == 0 && System.currentTimeMillis() < deadline);
+            assertEquals(1, connections);
+
+            //...and adding the same kind of edge there does not create a second copy
+            tx2 = graph2.newTransaction();
+            tx2.addVertex("person").addEdge("knows", tx2.addVertex("person"));
+            tx2.commit();
+        } finally {
+            graph2.close();
+        }
+
+        //Read fresh here as well, since this instance's own commit expired the label
+        final JanusGraphManagement check = graph.openManagement();
+        try {
+            assertEquals(1, check.getVertexLabel("person").mappedConnections().size());
+        } finally {
+            check.rollback();
+        }
+    }
+
     private void createStrictSchemaForVertexProperties() {
         clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
         VertexLabel label = mgmt.makeVertexLabel("user").make();
