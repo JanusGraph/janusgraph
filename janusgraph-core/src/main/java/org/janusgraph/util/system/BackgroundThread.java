@@ -27,8 +27,13 @@ public abstract class BackgroundThread extends Thread {
     private static final Logger log =
             LoggerFactory.getLogger(BackgroundThread.class);
 
-    private volatile boolean interruptible = true;
+    //Read and written only under interruptLock
+    private boolean interruptible = true;
     private volatile boolean softInterrupted = false;
+    //close() interrupts only while it holds this lock and the thread is interruptible, and the thread changes
+    //interruptible only while holding it, so that once the thread has turned interruptible off no interrupt of
+    //close() can reach it any more
+    private final Object interruptLock = new Object();
 
     /**
      *
@@ -46,9 +51,8 @@ public abstract class BackgroundThread extends Thread {
     @Override
     public void run() {
 
-        /* We use interrupted() instead of isInterrupted() to guarantee that the
-         * interrupt flag is cleared when we exit this loop. cleanup() can then
-         * run blocking operations without failing due to interruption.
+        /* interrupted() clears the flag as it checks it; an interrupt which
+         * lands later is cleared below, before cleanup().
          */
         while (!interrupted() && !softInterrupted) {
 
@@ -59,21 +63,17 @@ public abstract class BackgroundThread extends Thread {
                 break;
             }
 
-            /* This check could be removed without affecting correctness. At
-             * worst, removing it should just reduce shutdown responsiveness in
-             * a couple of corner cases:
-             *
-             * 1. Rare interruptions are those that occur while this thread is
-             * in the RUNNABLE state
-             *
-             * 2. Odd waitCondition() implementations that swallow an
-             * InterruptedException and set the interrupt status instead of just
-             * propagating the InterruptedException to us
+            /* An interrupt of close() which arrived after the check above, or
+             * one which waitCondition() swallowed and set again, is seen here,
+             * and keeps action() from running interrupted: close() cannot
+             * interrupt the thread between this check and interruptible being
+             * turned off.
              */
-            if (interrupted())
-                break;
-
-            interruptible = false;
+            synchronized (interruptLock) {
+                if (interrupted())
+                    break;
+                interruptible = false;
+            }
             try {
                 action();
             } catch (Throwable e) {
@@ -84,10 +84,23 @@ public abstract class BackgroundThread extends Thread {
                  * we catch Throwable, but it's here as future-proofing in case
                  * the catch-clause type is narrowed in future revisions.
                  */
-                interruptible = true;
+                synchronized (interruptLock) {
+                    interruptible = true;
+                }
             }
         }
 
+        /* The loop can end on softInterrupted after close() has decided to
+         * interrupt this thread but before the interrupt landed. Turning
+         * interruptible off stops any further interrupt of close(), and
+         * clearing the flag afterwards drops one which landed before, so that
+         * cleanup() can run blocking operations - such as flushing messages
+         * through a storage backend - without failing due to interruption.
+         */
+        synchronized (interruptLock) {
+            interruptible = false;
+        }
+        interrupted();
         try {
             cleanup();
         } catch (Throwable e) {
@@ -132,8 +145,10 @@ public abstract class BackgroundThread extends Thread {
 
         softInterrupted = true;
 
-        if (interruptible)
-            interrupt();
+        synchronized (interruptLock) {
+            if (interruptible)
+                interrupt();
+        }
 
         try {
             join(maxWaitMs);

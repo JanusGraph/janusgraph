@@ -79,31 +79,44 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         Preconditions.checkState(isOpen, "Transaction log framework has already been closed");
     }
 
+    //The logs are closed outside the monitor: closing a log waits for its readers, and a processor, which runs on one
+    //of them, may add or remove a log processor meanwhile, which takes the monitor
     @Override
-    public synchronized boolean removeLogProcessor(String logIdentifier) {
-        checkOpen();
-        if (processorLogs.containsKey(logIdentifier)) {
-            try {
-                processorLogs.get(logIdentifier).close();
-            } catch (BackendException e) {
-                throw new JanusGraphException("Could not close transaction log: "+ logIdentifier,e);
-            }
-            processorLogs.remove(logIdentifier);
-            return true;
-        } else return false;
+    public boolean removeLogProcessor(String logIdentifier) {
+        final Log log;
+        synchronized (this) {
+            checkOpen();
+            log = processorLogs.get(logIdentifier);
+        }
+        if (log == null) return false;
+        try {
+            log.close();
+        } catch (BackendException e) {
+            throw new JanusGraphException("Could not close transaction log: "+ logIdentifier,e);
+        }
+        synchronized (this) {
+            processorLogs.remove(logIdentifier, log);
+        }
+        return true;
     }
 
     @Override
-    public synchronized void shutdown() throws JanusGraphException {
-        if (!isOpen) return;
-        isOpen = false;
+    public void shutdown() throws JanusGraphException {
+        final List<Log> logs;
+        synchronized (this) {
+            if (!isOpen) return;
+            isOpen = false;
+            logs = new ArrayList<>(processorLogs.values());
+        }
         try {
             ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
-            for (Log log : processorLogs.values()) {
+            for (Log log : logs) {
                 ExecuteUtil.executeWithCatching(log::close, exceptionWrapper);
             }
             ExecuteUtil.throwIfException(exceptionWrapper);
-            processorLogs.clear();
+            synchronized (this) {
+                processorLogs.clear();
+            }
         } catch (BackendException e) {
             throw new JanusGraphException(e);
         }

@@ -289,7 +289,7 @@ Configuration options for JanusGraph's logging system
 | log.[X].fixed-partition | Whether all log entries are written to one fixed partition even if the backend store is partitioned.This can cause imbalanced loads and should only be used on low volume logs | Boolean | false | GLOBAL_OFFLINE |
 | log.[X].key-consistent | Whether to require consistency for log reading and writing messages to the storage backend | Boolean | false | MASKABLE |
 | log.[X].max-partitions | The maximum number of partitions to use for logging. Setting up this many actual or virtual partitions. Must be bigger than 0and a power of 2. | Integer | (no default value) | FIXED |
-| log.[X].max-read-time | Maximum time in ms to try reading log messages from the backend before failing. | Duration | 4000 ms | MASKABLE |
+| log.[X].max-read-time | Maximum time in ms to try reading log messages from the backend before failing. On a storage backend which does not support interruption, also how often a closing log reports that it is still waiting for its readers to finish, a second at the least. | Duration | 4000 ms | MASKABLE |
 | log.[X].max-write-time | Maximum time in ms to try persisting log messages against the backend before failing. | Duration | 10000 ms | MASKABLE |
 | log.[X].num-buckets | The number of buckets to split log entries into for load balancing | Integer | 1 | GLOBAL_OFFLINE |
 | log.[X].read-batch-size | Maximum number of log messages to read at a time for logging implementations that read messages in batches | Integer | 1024 | MASKABLE |
