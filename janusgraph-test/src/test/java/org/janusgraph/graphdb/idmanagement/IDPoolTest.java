@@ -159,15 +159,19 @@ public class IDPoolTest {
                 return true;
             }
         });
+        // A block of more ids than StandardIDPool keeps in reserve, the larger of its RENEW_ID_COUNT and the renew-buffer
+        // percentage of the block: handing out the block's first id then does not start fetching the next block in the
+        // background, which the strict mock would count as an unexpected third call whenever that fetch got in before
+        // verify()
         expect(mockAuthority.getIDBlock(partition, idNamespace, timeout)).andReturn(new IDBlock() {
             @Override
             public long numIds() {
-                return 2;
+                return 1000;
             }
 
             @Override
             public long getId(long index) {
-                return 200;
+                return 200 + index;
             }
         });
         expect(mockAuthority.supportsInterruption()).andStubReturn(true);
