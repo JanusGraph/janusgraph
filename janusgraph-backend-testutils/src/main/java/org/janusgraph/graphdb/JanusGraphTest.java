@@ -7299,7 +7299,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             assertEquals(4, userChangeCounter.get(Change.REMOVED).get());
         }
 
-        clopen(option(VERBOSE_TX_RECOVERY), true);
+        clopen(option(VERBOSE_TX_RECOVERY), true,
+                option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofMillis(250));
         /*
         Transaction Recovery
          */
