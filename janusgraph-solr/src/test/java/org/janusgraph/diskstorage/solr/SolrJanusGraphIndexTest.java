@@ -14,7 +14,6 @@
 
 package org.janusgraph.diskstorage.solr;
 
-import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
@@ -79,13 +78,6 @@ public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
     @Override @Test @Disabled
     public void testClearStorage() throws Exception {
         super.testClearStorage();
-    }
-
-    // flaky test: https://github.com/JanusGraph/janusgraph/issues/2271
-    @Override
-    @RepeatedIfExceptionsTest(repeats = 10, suspend = 1000L)
-    public void testIndexReplay() throws Exception {
-        super.testIndexReplay();
     }
 
     @Override
