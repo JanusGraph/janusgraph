@@ -18,6 +18,7 @@ import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.CsvReporter;
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.LockFreeExponentiallyDecayingReservoir;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
@@ -48,6 +49,11 @@ public enum MetricManager {
             LoggerFactory.getLogger(MetricManager.class);
 
 
+
+    private static final MetricRegistry.MetricSupplier<Timer> TIMER_SUPPLIER =
+        () -> new Timer(LockFreeExponentiallyDecayingReservoir.builder().build());
+    private static final MetricRegistry.MetricSupplier<Histogram> HISTOGRAM_SUPPLIER =
+        () -> new Histogram(LockFreeExponentiallyDecayingReservoir.builder().build());
 
     private final MetricRegistry registry     = new MetricRegistry();
     private ConsoleReporter consoleReporter   = null;
@@ -315,20 +321,36 @@ public enum MetricManager {
         return getRegistry().counter(MetricRegistry.name(prefix, names));
     }
 
+    /**
+     * Returns the timer registered under {@code name}, creating it on first use.
+     * <p>
+     * A timer created through {@link MetricRegistry#timer(String)} samples its durations into an
+     * {@link com.codahale.metrics.ExponentiallyDecayingReservoir}, which takes the read side of a
+     * {@code ReentrantReadWriteLock} on every update. Every acquisition and release of that lock is a
+     * compare-and-set on one shared word, so the many threads that update the same few timers -
+     * {@code stores.getSlice.time}, {@code stores.mutate.time}, {@code stores.acquireLock.time} -
+     * spin against each other instead of doing storage work. The timers this class hands out use
+     * {@link LockFreeExponentiallyDecayingReservoir} instead: the same forward-decay sampling with the
+     * same defaults, but the reservoir state is swapped atomically rather than guarded by a lock.
+     */
     public Timer getTimer(String name) {
-        return getRegistry().timer(name);
+        return getRegistry().timer(name, TIMER_SUPPLIER);
     }
 
     public Timer getTimer(String prefix, String... names) {
-        return getRegistry().timer(MetricRegistry.name(prefix, names));
+        return getTimer(MetricRegistry.name(prefix, names));
     }
 
+    /**
+     * Returns the histogram registered under {@code name}, creating it on first use. See
+     * {@link #getTimer(String)} for why the histogram samples into a lock-free reservoir.
+     */
     public Histogram getHistogram(String name) {
-        return getRegistry().histogram(name);
+        return getRegistry().histogram(name, HISTOGRAM_SUPPLIER);
     }
 
     public Histogram getHistogram(String prefix, String... names) {
-        return getRegistry().histogram(MetricRegistry.name(prefix, names));
+        return getHistogram(MetricRegistry.name(prefix, names));
     }
 
     public boolean remove(String name) {
