@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -44,7 +45,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.janusgraph.graphdb.database.management.GraphCacheEvictionAction.DO_NOT_EVICT;
 import static org.janusgraph.graphdb.database.management.GraphCacheEvictionAction.EVICT;
@@ -59,6 +60,8 @@ public class ManagementLogger implements MessageReader {
 
     private static final Duration SLEEP_INTERVAL = Duration.ofMillis(100L);
     private static final Duration MAX_WAIT_TIME = Duration.ofSeconds(60L);
+    //The id of an eviction which nobody waits for. Acknowledged evictions take theirs from nextEvictionId(), never this
+    private static final long UNACKNOWLEDGED_EVICTION_ID = 0;
 
     private final StandardJanusGraph graph;
     private final SchemaCache schemaCache;
@@ -69,7 +72,7 @@ public class ManagementLogger implements MessageReader {
      */
     private final TimestampProvider times;
 
-    private final AtomicInteger evictionTriggerCounter = new AtomicInteger(0);
+    private final AtomicLong evictionTriggerCounter = new AtomicLong(0);
     private final ConcurrentMap<Long,EvictionTrigger> evictionTriggerMap = new ConcurrentHashMap<>();
 
     private final Duration ackTimeout;
@@ -105,11 +108,22 @@ public class ManagementLogger implements MessageReader {
                     long typeId = VariableLong.readPositive(in);
                     schemaCache.expireSchemaElement(typeId);
                     for (JanusGraphTransaction tx : graph.getOpenTransactions()) {
-                        tx.expireSchemaElement(typeId);
+                        //Expiring an element reloads its definition, which can fail like any read; the other elements
+                        //and transactions of the message must not be left stale for it
+                        try {
+                            tx.expireSchemaElement(typeId);
+                        } catch (RuntimeException e) {
+                            log.warn("Could not expire schema element {} in transaction {}; it is reloaded when the "
+                                + "transaction next uses it", typeId, tx, e);
+                        }
                     }
                 }
                 final GraphCacheEvictionAction action = serializer.readObjectNotNull(in, GraphCacheEvictionAction.class);
                 Preconditions.checkNotNull(action);
+                if (evictionId == UNACKNOWLEDGED_EVICTION_ID) {
+                    //Nobody waits for an acknowledgement of this one
+                    break;
+                }
                 final Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions(), action, graph.getGraphName()));
                 ack.setDaemon(true);
                 ack.start();
@@ -118,6 +132,10 @@ public class ManagementLogger implements MessageReader {
             case CACHED_TYPE_EVICTION_ACK: {
                 String receiverId = serializer.readObjectNotNull(in, String.class);
                 long evictionId = VariableLong.readPositive(in);
+                if (evictionId == UNACKNOWLEDGED_EVICTION_ID) {
+                    //Instances of earlier versions acknowledge every eviction, this kind included: nothing waits for it
+                    break;
+                }
                 if (receiverId.equals(graph.getConfiguration().getUniqueGraphId())) {
                     //Acknowledgements targeted at this instance
                     EvictionTrigger evictTrigger = evictionTriggerMap.get(evictionId);
@@ -135,12 +153,19 @@ public class ManagementLogger implements MessageReader {
 
     }
 
+    //From 1 up, never UNACKNOWLEDGED_EVICTION_ID: the counter starts over at 1 rather than go negative, as the int
+    //counter before it did after overflowing, and a long takes 2^63 evictions to get there, so an id is never handed
+    //out again while the trigger it went to may still be waiting for acknowledgements
+    private long nextEvictionId() {
+        return evictionTriggerCounter.updateAndGet(id -> id == Long.MAX_VALUE ? 1 : id + 1);
+    }
+
     public void sendCacheEviction(Set<JanusGraphSchemaVertex> updatedTypes,
                                              final boolean evictGraphFromCache,
                                              List<Callable<Boolean>> updatedTypeTriggers,
                                              Set<String> openInstances) {
         Preconditions.checkArgument(CollectionUtils.isNotEmpty(openInstances), "openInstances cannot be null or empty");
-        long evictionId = evictionTriggerCounter.incrementAndGet();
+        long evictionId = nextEvictionId();
         evictionTriggerMap.put(evictionId,new EvictionTrigger(evictionId,updatedTypeTriggers,graph));
         DataOutput out = graph.getDataSerializer().getDataOutput(128);
         out.writeObjectNotNull(MgmtLogType.CACHED_TYPE_EVICTION);
@@ -155,6 +180,32 @@ public class ManagementLogger implements MessageReader {
         } else {
             out.writeObjectNotNull(DO_NOT_EVICT);
         }
+        sysLog.add(out.getStaticBuffer());
+    }
+
+    /**
+     * Tells every instance, this one included, to expire the given schema elements from its schema cache and open
+     * transactions, without anything waiting for acknowledgements. This is for the definition edges no management
+     * eviction covers: constraints auto-created under schema.constraints=true, and connections and properties added
+     * through addConnection and addProperties. An acknowledged eviction would register an eviction trigger for every
+     * such commit, which opens a management transaction to list the open instances and waits for each of them to
+     * acknowledge once its open transactions have closed, and with graph.management-auto-close-stale-instances it
+     * could get an instance with a long-running transaction force-closed for an ordinary write. The message is the one
+     * {@link #sendCacheEviction} sends, with the elements to expire and never an eviction of the graph itself, so
+     * instances of earlier versions process it as well; they acknowledge it, and the acknowledgement is ignored.
+     *
+     * @param schemaIds the ids of the schema elements to expire
+     */
+    public void sendUnacknowledgedCacheEviction(Collection<Long> schemaIds) {
+        Preconditions.checkArgument(!schemaIds.isEmpty(), "Nothing to evict");
+        DataOutput out = graph.getDataSerializer().getDataOutput(64);
+        out.writeObjectNotNull(MgmtLogType.CACHED_TYPE_EVICTION);
+        VariableLong.writePositive(out, UNACKNOWLEDGED_EVICTION_ID);
+        VariableLong.writePositive(out, schemaIds.size());
+        for (long schemaId : schemaIds) {
+            VariableLong.writePositive(out, schemaId);
+        }
+        out.writeObjectNotNull(DO_NOT_EVICT);
         sysLog.add(out.getStaticBuffer());
     }
 

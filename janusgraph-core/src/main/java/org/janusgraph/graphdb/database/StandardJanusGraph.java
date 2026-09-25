@@ -1256,8 +1256,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             }
             throw e;
         } finally {
-            //4. Definition edges written outside of ManagementSystem (e.g. constraints auto-created under
-            //   schema.constraints=true) are not broadcast as cache evictions. Expire the local schema cache
+            //4. Definition edges which no management eviction covers (constraints auto-created under
+            //   schema.constraints=true, connections and properties added through addConnection and addProperties,
+            //   by a transaction or by ManagementSystem) leave the schema caches stale. Expire the local schema cache
             //   entries of the schema vertices they touch so this instance re-reads them, and those vertices in
             //   the other open transactions, as ManagementSystem does, so that a transaction which was open during
             //   this commit does not keep acting on the definition edges it had loaded. The committing transaction
@@ -1265,7 +1266,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             //   no definition left to reload. The open transactions are only listed once the graph-level entries
             //   are gone, so that a transaction which is not on the list can only load the new definition edges.
             //   A management commit which changes definition edges gets the same from ManagementSystem.commit once
-            //   more, at the cost of a re-read.
+            //   more, at the cost of a re-read...
             if (!changedSchemaVertices.all.isEmpty()) {
                 for (Long schemaId : changedSchemaVertices.all) {
                     schemaCache.expireSchemaElement(schemaId);
@@ -1273,6 +1274,15 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 for (JanusGraphTransaction other : getOpenTransactions()) {
                     if (other != tx && other.isOpen()) expireSchemaElements(other, changedSchemaVertices.kept);
                 }
+            }
+            //5. ...and tell the other instances to expire those it did not remove, with an eviction which nothing
+            //   waits to see acknowledged. Every instance expires them when it reads it, this one included, which so
+            //   expires them once more. A removed one (say the old modifier vertex of a consistency which the commit
+            //   replaced) has no definition left for anyone to reload, and nothing looks it up once the types it
+            //   belonged to are reloaded. A management commit which changes definition edges and has management
+            //   evictions of its own sends both.
+            if (!changedSchemaVertices.kept.isEmpty()) {
+                tellInstancesToExpire(changedSchemaVertices.kept);
             }
         }
     }
@@ -1291,10 +1301,25 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         }
     }
 
+    //The instances only need to re-read what they had cached, so nothing waits for them to confirm it, and a failure
+    //to tell them does not fail the commit, which has persisted everything it could by now (and runs this after a
+    //failure as well, since a backend without transaction isolation may have committed its schema part): they catch
+    //up when the elements are evicted next, or when they restart. The management log writes synchronously, so a
+    //struggling backend can hold the commit here for up to its max-write-time.
+    private void tellInstancesToExpire(final Set<Long> schemaIds) {
+        try {
+            managementLogger.sendUnacknowledgedCacheEviction(schemaIds);
+        } catch (Exception e) {
+            log.warn("Could not tell the other instances to expire the schema elements {}, whose definition edges "
+                + "this transaction changed. They keep what they had cached until these are evicted again.",
+                schemaIds, e);
+        }
+    }
+
     /**
      * The schema vertices at the ends of the definition edges a transaction wrote: all of them, whose graph-level
-     * cache entries are expired, and those the transaction did not remove, which the other open transactions reload.
-     * A removed one has no definition left to reload.
+     * cache entries are expired, and those the transaction did not remove, which the other open transactions reload
+     * and the other instances are told to expire. A removed one has no definition left to reload.
      */
     private static final class ChangedSchemaVertices {
         private Set<Long> all = Collections.emptySet();
