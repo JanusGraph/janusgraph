@@ -16,9 +16,9 @@ package org.janusgraph.graphdb.log;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -40,6 +40,7 @@ import org.janusgraph.diskstorage.log.Log;
 import org.janusgraph.diskstorage.log.Message;
 import org.janusgraph.diskstorage.log.MessageReader;
 import org.janusgraph.diskstorage.log.ReadMarker;
+import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.diskstorage.util.time.Durations;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
@@ -104,7 +105,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     // could not be repaired due to any exception
     private final AtomicLong failureTxRepairExceptionCounter = new AtomicLong(0);
 
-    private final Log txLog;
+    private final KCVSLog txLog;
     private final TxLogMessageReader reader;
 
     private final Cache<StandardTransactionId,TxEntry> txCache;
@@ -132,22 +133,48 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         this.persistenceTime = graph.getConfiguration().getMaxWriteTime();
         this.verboseLogging = graph.getConfiguration().getConfiguration()
                 .get(GraphDatabaseConfiguration.VERBOSE_TX_RECOVERY);
+        //A transaction is given up on once the log has been read and processed up to max-commit-time past its first
+        //entry, rather than after some time spent waiting, so that it gets all it may write within max-commit-time
+        //however far apart and however slowly the log is read: the cache's clock is how far the log has been read
+        final Duration waitForCommit = maxTxLength;
+        //A ticker must never go back. The progress does not, each puller's moving forward only, and the start time
+        //stands in for it before the reader is registered; the guard makes that a hard guarantee
+        final AtomicLong tick = new AtomicLong(Long.MIN_VALUE);
         this.txCache = Caffeine.newBuilder()
                 .initialCapacity(100)
-                //No longer than the cache's elapsed-time comparison can reach, where toNanos() used to fail the start
-                .expireAfterWrite(Durations.min(maxTxLength, GraphDatabaseConfiguration.LONGEST_RECOVERY_WAIT))
+                .ticker(() -> tick.accumulateAndGet(epochNanos(readProgress(startTime)), Math::max))
+                .expireAfter(new Expiry<StandardTransactionId, TxEntry>() {
+                    @Override
+                    public long expireAfterCreate(StandardTransactionId key, TxEntry value, long currentTime) {
+                        return nanosUntilExpiry(value.firstEntryTime, waitForCommit, currentTime);
+                    }
+
+                    @Override
+                    public long expireAfterUpdate(StandardTransactionId key, TxEntry value, long currentTime,
+                                                  long currentDuration) {
+                        return currentDuration;
+                    }
+
+                    @Override
+                    public long expireAfterRead(StandardTransactionId key, TxEntry value, long currentTime,
+                                                long currentDuration) {
+                        return currentDuration;
+                    }
+                })
                 .removalListener((RemovalListener<StandardTransactionId, TxEntry>) (key,entry, cause) -> {
                     Preconditions.checkArgument(cause == RemovalCause.EXPIRED,
                         "Unexpected removal cause [%s] for transaction [%s]", cause, key);
                     if (entry.status == LogTxStatus.SECONDARY_FAILURE || entry.status == LogTxStatus.PRIMARY_SUCCESS) {
-                        failureTxCounter.incrementAndGet();
+                        boolean repaired = false;
                         try {
                             fixSecondaryFailure(key, entry);
-                        } catch (Exception e) {
-                            failureTxRepairExceptionCounter.incrementAndGet();
-                            // pass exception up - here the exception is caught only for
-                            // incrementing the failureTxRepairExceptionCounter counter
-                            throw e;
+                            repaired = true;
+                        } finally {
+                            //Only once the repair has been attempted, so that the statistics never run ahead of it, and
+                            //the failure before the exception, so that the third number never exceeds the second; the
+                            //exception itself goes on to the cache's logging
+                            failureTxCounter.incrementAndGet();
+                            if (!repaired) failureTxRepairExceptionCounter.incrementAndGet();
                         }
                     } else {
                         successTxCounter.incrementAndGet();
@@ -169,6 +196,38 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
         cleaner = new BackgroundCleaner();
         cleaner.start();
+    }
+
+    //Up to when the transaction log has been read and processed, or where reading starts while no reader is registered
+    private Instant readProgress(Instant startTime) {
+        final Instant progress = txLog.getReadProgress();
+        return progress == null ? startTime : progress;
+    }
+
+    /**
+     * How much further the transaction log has to be read, and processed, before a transaction is given up on: past
+     * max-commit-time after its first entry, but no further than the cache's elapsed-time comparison can reach. The
+     * read progress is exclusive, an entry written at the progress itself being still unread, so the log has to be
+     * read a nanosecond past the deadline, which no entry can be written within: the log's timestamps are
+     * microseconds.
+     *
+     * @param firstEntryTime when the transaction's first log entry read was written, its commit's start or later
+     * @param maxTxLength how long its commit may take
+     * @param readProgress how far the log has been read, in nanoseconds since the epoch, exclusive
+     * @return the nanoseconds of the log still to be read, not negative
+     */
+    static long nanosUntilExpiry(Instant firstEntryTime, Duration maxTxLength, long readProgress) {
+        final long longest = GraphDatabaseConfiguration.LONGEST_RECOVERY_WAIT.toNanos();
+        final long wait = Durations.min(maxTxLength, GraphDatabaseConfiguration.LONGEST_RECOVERY_WAIT).toNanos();
+        final long ahead = epochNanos(firstEntryTime) - readProgress;
+        //A first entry further past the progress than the longest wait, which no log holds, would wrap the sum
+        final long remaining = ahead > longest ? longest : ahead + wait + 1;
+        return Math.max(0, Math.min(remaining, longest));
+    }
+
+    //Fails for an Instant more than 292 years from the epoch, which no log timestamp is: they are taken from the clock
+    static long epochNanos(Instant instant) {
+        return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), 1_000_000_000L), instant.getNano());
     }
 
     public long[] getStatistics() {
@@ -364,8 +423,6 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
     private class TxLogMessageReader implements MessageReader {
 
-        private final Function<StandardTransactionId, TxEntry> entryFactory = key -> new TxEntry();
-
         @Override
         public void read(Message message) {
             ReadBuffer content = message.getContent().asReadBuffer();
@@ -375,7 +432,9 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             StandardTransactionId transactionId = new StandardTransactionId(senderId,txheader.getId(),
                     txheader.getTimestamp());
 
-            TxEntry entry = txCache.get(transactionId,entryFactory);
+            //Timed from the entry read first, by its timestamp in the log, which the log's read progress is measured
+            //against; a transaction's commit time can be set by hand and be long past
+            TxEntry entry = txCache.get(transactionId, id -> new TxEntry(message.getTimestamp()));
 
             entry.update(txentry);
         }
@@ -386,9 +445,14 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
     private class TxEntry {
 
+        final Instant firstEntryTime;
         LogTxStatus status;
         TransactionLogHeader.Entry entry;
         TransactionLogHeader.SecondaryFailures failures;
+
+        TxEntry(Instant firstEntryTime) {
+            this.firstEntryTime = firstEntryTime;
+        }
 
         synchronized void update(TransactionLogHeader.Entry e) {
             switch (e.getStatus()) {

@@ -645,8 +645,9 @@ transaction logging is enabled, whenever `tx.max-commit-time` does not exceed th
 backends; the warning names the minimum and suggests a management system call, ready to paste, which sets one write
 time more, so a graph with two or more index backends is told what to set, and a graph which commits large
 transactions should allow more still. The default stops there because the transaction recovery
-process keeps every transaction it reads, the content of its modifications included, for `tx.max-commit-time`: a
-recovery process of a write-heavy graph now holds thirty times as much in memory as it did with the old default.
+process keeps every transaction it reads, the content of its modifications included, until it has read the log
+`tx.max-commit-time` past the transaction (see below): a recovery process of a write-heavy graph now holds thirty times
+as much in memory as it did with the old default.
 
 After an upgrade a graph which never set the option resolves the new default as soon as its instances are restarted;
 the value of a `GLOBAL` option is only stored when it is set explicitly. A graph which did set it keeps its value, gets
@@ -654,15 +655,46 @@ the warning if that value is too short, and raises it with the management system
 two index backends at the default write time `mgmt.set("tx.max-commit-time", java.time.Duration.parse("PT6M40S"))`
 followed by `mgmt.commit()`, which a transaction recovery processor picks up when it is next started. The recovery of
 a transaction which really did fail starts correspondingly later. A transaction recovery process waits about 146 years
-at most, half the nanoseconds a `long` holds, so that the time since it read a transaction always compares correctly;
-a longer `tx.max-commit-time` used to keep it from starting at all and now makes it wait up to that limit.
+at most, half the nanoseconds a `long` holds, so that how far it has read past a transaction always compares correctly
+with the wait; a longer `tx.max-commit-time` used to keep it from starting at all and now makes it wait up to that limit.
 
 A transaction which writes a user log (`TransactionBuilder.logIdentifier`) is exposed for longer: its commit writes
 the user-log event after the index writes and only then its final status, and a transaction which expires before
 recovery has read that status gets its user-log event sent again. Such a transaction needs its user-log write (up to
-`log.user.max-write-time` when `log.user.send-delay` is 0; by default the event is sent in the background) and the
-transaction log's final status write (up to `log.tx.max-write-time`) inside `tx.max-commit-time` as well. The log
-identifier is set per transaction, so the warning cannot take it into account.
+`log.user.max-write-time` when `log.user.send-delay` is 0; by default the event is sent in the background) inside
+`tx.max-commit-time` as well; the final status's own write does not count, since its log entry is timed from before
+the write (see below). The log identifier is set per transaction, so the warning cannot take it into account.
+
+##### Transaction recovery no longer gives up on a transaction before reading its final status
+
+Transaction recovery gave up on a transaction `tx.max-commit-time` after it had read the transaction's first log entry.
+It reads the transaction log in polls, though, every `log.tx.read-interval` (5 s by default), each of which can spend up
+to `log.tx.max-read-time` on its reads and stops at the end of the 100 s long chunk of the log it is in, so it could
+read a transaction's final status well after its first entry even when the commit took far less than
+`tx.max-commit-time`. Whenever that came too late, recovery took a transaction which had succeeded for a failed one: it
+restored the index documents of every element the transaction changed, sent its user-log event again, so that user-log
+consumers received it twice, and counted the transaction once more when the final status arrived. The closer
+`tx.max-commit-time` was to the read interval, the likelier this was: with both at 5 s, the least recovery waits, a
+final status read one poll after the transaction's first entry arrived within milliseconds of the expiry, before or
+after it.
+
+Recovery now measures the time it gives a transaction by how far it has read the log rather than by how long it has
+waited: it gives a transaction up once it has read and processed the log up to `tx.max-commit-time` past the
+transaction's first entry, however far apart and however slowly its reads come, so by then it has read everything a
+commit wrote within `tx.max-commit-time` and which became visible within `log.tx.read-lag-time`. A recovery process
+catching up on a backlog no longer holds each transaction for `tx.max-commit-time` of waiting either, and gets through
+the backlog with less in memory. A transaction whose commit does outlast `tx.max-commit-time`, or whose instance fails
+between its user-log write and its final status, still gets its user-log event sent again, the repeat carrying the
+transaction id of the original; the former is counted twice as well, once as failed and once as succeeded when its final
+status arrives. A partition of the log whose reads fail holds the progress back, and with it every expiry, until they
+succeed; one whose reads have failed for good, which stops being read, is left out of the progress once its messages are
+processed, and an error is logged for it. Once that goes for every partition, nothing is read any more, and the progress
+runs on with the clock from where reading stopped, so that recovery still gives the transactions it has in hand up
+rather than hold them for good.
+
+The second of the numbers `getStatistics()` returns, the transactions which failed and whose repair was attempted, now
+counts a transaction once that attempt has finished rather than before it starts, so the repairs of the transactions it
+counts are done and the third number already includes those which could not be repaired.
 
 ##### Schema changes committed by ordinary transactions reach the other instances
 
