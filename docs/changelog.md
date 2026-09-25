@@ -682,6 +682,27 @@ the upgrade, each such eviction costs an older instance the thread which waits f
 it acknowledges, for up to a minute, and one with a transaction open for longer than that logs the stale-transaction
 error it logs for any eviction it waited that long for.
 
+##### Closing a graph on BerkeleyJE no longer interrupts its log readers
+
+`BackgroundThread.close()` could interrupt the thread's `action()` or `cleanup()`, which its contract rules out, when
+the thread was between its checks. A log's send thread flushes its last messages in `cleanup()`, and BerkeleyJE
+invalidates its whole environment when a thread is interrupted in the middle of a file operation, so every later use of
+that environment in the JVM failed: that is how `BerkeleyGraphTest` lost most of its tests on some CI runs. `close()`
+now decides to interrupt, and interrupts, under a lock which the thread holds while it turns its interruptibility off;
+an interrupt pending before `action()` ends the loop instead of reaching it, and one pending before `cleanup()` is
+cleared.
+
+For the same reason, closing a log on a storage backend which does not support interruption, which is BerkeleyJE, no
+longer interrupts the log's reader threads after a second. This covers `graph.close()` and the stop of a recurring
+transaction recovery. The log waits for the readers to finish the pull under way and the messages they have in hand,
+however long that takes, warning every `log.<name>.max-read-time` (a second at the least) after the first second, and it
+does not give that wait up when the closing thread is interrupted. It holds no lock of the log, of its manager or of the
+log processor framework meanwhile, so a reader which opens a log, registers or unregisters a reader, or adds or removes
+a log processor while the log closes finishes. A `MessageReader` which never returns therefore holds `graph.close()` up
+on BerkeleyJE, where it used to be interrupted after a second. A log closed from one of its own reader threads cannot
+wait for them and keeps the second, and so do the logs of other storage backends. The reader threads of every log are
+now named after it.
+
 ### Version 1.1.0 (Release Date: November 7, 2024)
 
 /// tab | Maven

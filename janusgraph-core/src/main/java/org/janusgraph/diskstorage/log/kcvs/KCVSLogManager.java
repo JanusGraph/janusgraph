@@ -241,13 +241,19 @@ public class KCVSLogManager implements LogManager {
     }
 
     @Override
-    public synchronized void close() throws BackendException {
-        /* Copying the map is necessary to avoid ConcurrentModificationException.
-         * The path to ConcurrentModificationException in the absence of a copy is
+    public void close() throws BackendException {
+        /* The logs are closed outside the monitor: closing a log waits for its readers, and a reader may open a log
+         * through this manager meanwhile, as the management log's readers do when they open a management transaction.
+         * Copying the map is necessary anyway to avoid ConcurrentModificationException. The path to
+         * ConcurrentModificationException in the absence of a copy is
          * log.close() -> manager.closedLog(log) -> openLogs.remove(log.getName()).
          */
+        final List<KCVSLog> logs;
+        synchronized (this) {
+            logs = new ArrayList<>(openLogs.values());
+        }
         ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
-        for (KCVSLog log : new ArrayList<>(openLogs.values())) {
+        for (KCVSLog log : logs) {
             executeWithCatching(log::close, exceptionWrapper);
         }
         IOUtils.closeQuietly(serializer);
