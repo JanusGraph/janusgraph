@@ -56,10 +56,29 @@ time, with one write time to spare. A transaction which writes a user
 log (`TransactionBuilder.logIdentifier`) needs more: recovery sends its
 user-log event again when it expires before recovery has read its final
 status, so its user-log write (up to `log.user.max-write-time` when
-`log.user.send-delay` is 0) and the transaction log's final status write
-(up to `log.tx.max-write-time`) have to fit in as well. The recovery
-process keeps every transaction it reads for this long, so its memory
-use grows with the value.
+`log.user.send-delay` is 0) has to fit in as well. The final status's own
+write does not: its log entry is timed from before the write, and has to
+become visible within `log.tx.read-lag-time` like every entry. A transaction
+whose commit does outlast `tx.max-commit-time`, or whose instance fails
+between its user-log write and its final status, still gets its
+user-log event sent again: a consumer which must see each event only
+once can recognise the repeat by its transaction id, the same as the
+original's.
+
+The recovery process gives a transaction up once it has read the
+transaction log up to `tx.max-commit-time` past the transaction's first
+entry, however far apart and however slowly its reads of the log come,
+so by then it has read everything a commit wrote within
+`tx.max-commit-time` and which became visible within
+`log.tx.read-lag-time`. It keeps every transaction it reads until it has
+read that far, so its memory use grows with the value. A partition of
+the log whose reads fail holds the progress back until they succeed; one
+whose reads have failed for good, and which is no longer read, is left
+out of it once its messages are processed, with an error logged. Once
+that goes for every partition, nothing more is read at all, and the
+progress runs on with the clock from where reading stopped, so that
+recovery still gives the transactions it has in hand up, as it did when
+it waited by the clock, rather than hold them for good.
 
 In addition, a separate process must be setup that reads the log to
 identify partially failed transaction and repair any inconsistencies
@@ -82,11 +101,11 @@ only if:
 While the recovery process runs, `recovery.getStatistics()` call provides
 information about the progress of recovery process by returning three numbers:
 
-1. the first number shows how many secondary persistence transaction succeeded
-2. the second number shows how many secondary persistence transaction failed
-and attempted to be recovered
-3. the third number shows how many failed secondary persistence transaction
-could not be recovered
+1. the first number shows how many secondary persistence transactions succeeded
+2. the second number shows how many secondary persistence transactions failed
+   and attempted to be recovered, each counted once the attempt has finished
+3. the third number shows how many failed secondary persistence transactions
+   could not be recovered
 
 Depending on the used `startTime` value and configured `log.tx.read-interval`
 configuration option, the recovery process might need to run for hours in

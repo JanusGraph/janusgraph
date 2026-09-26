@@ -237,8 +237,9 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<>(TRANSACTION_NS,"max-commit-time",
             "Maximum time that a transaction might take to commit against all backends; a value without a unit is in " +
                     "milliseconds. This is used by the distributed " +
-                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed). " +
-                    "Transaction recovery starts its clock at the transaction's first log entry, so a value shorter than the commit " +
+                    "write-ahead log processing to determine when a transaction can be considered failed. Transaction recovery " +
+                    "considers a transaction failed once it has read the transaction log up to this long past the " +
+                    "transaction's first log entry, however long reading the log takes. A value shorter than the commit " +
                     "really takes lets recovery restore the index documents of a transaction which is still committing, underneath " +
                     "the index writes that commit has yet to make. A commit reattempts its storage write and then each of its index " +
                     "writes for up to storage.write-time in turn, so this must exceed storage.write-time multiplied by one plus the " +
@@ -250,8 +251,9 @@ public class GraphDatabaseConfiguration {
                     "the last attempt of each write can run past its write time. So leave headroom for the largest transactions. " +
                     "A transaction which writes a user log (TransactionBuilder.logIdentifier) is exposed for longer: until " +
                     "recovery has read its final status, an expiry makes recovery send its user-log event again, so its " +
-                    "user-log write (up to log.user.max-write-time when log.user.send-delay is 0) and the transaction log's " +
-                    "final status write (up to log.tx.max-write-time) count as well.",
+                    "user-log write (up to log.user.max-write-time when log.user.send-delay is 0) counts as well. The final " +
+                    "status's own write does not: its log entry is timed from before the write, and has to become visible " +
+                    "within log.tx.read-lag-time like every entry.",
             ConfigOption.Type.GLOBAL, Duration.ofSeconds(300));
 
 
@@ -1714,22 +1716,23 @@ public class GraphDatabaseConfiguration {
 
     /**
      * The longest transaction recovery waits for a transaction, about 146 years: half the nanoseconds a long holds.
-     * Its cache compares the nanoseconds elapsed since it read a transaction, a signed difference, with the wait, so a
-     * wait of all a long holds would never be reached, the difference wrapping around first. Recovery waits no longer
-     * than this for a longer {@link #MAX_COMMIT_TIME}.
+     * Its cache times a transaction by the nanoseconds of the log left to read before the wait is over, the wait plus
+     * the transaction's first entry's distance from the read progress, which overflows a long for a longer wait; the
+     * cache caps its own durations at the same value. Recovery waits no longer than this for a longer
+     * {@link #MAX_COMMIT_TIME}.
      * <p>
      * This is an internal limit, not a configuration option: it is public only so that the transaction recovery
      * processor and the check of {@link #MAX_COMMIT_TIME} at graph open share one value.
      */
     public static final Duration LONGEST_RECOVERY_WAIT = Duration.ofNanos(Long.MAX_VALUE >>> 1);
 
-    //Transaction recovery treats a transaction as failed once max-commit-time has elapsed since its first log entry,
-    //and restores the index documents of the elements it changed from the storage backend. While the commit still has
-    //index writes to make, those then land on top of documents which already reflect the transaction. The warning is
-    //for a value which cannot outlast even a commit whose storage write is a single chunk; how much more the largest
-    //transactions need depends on their size and on the backends, which are not known here. A GLOBAL option which was
-    //never set explicitly resolves to the code default, so an existing graph picks a new default up when its instances
-    //restart; only an explicitly stored value survives an upgrade.
+    //Transaction recovery treats a transaction as failed once it has read the log up to max-commit-time past the
+    //transaction's first log entry, and restores the index documents of the elements it changed from the storage
+    //backend. While the commit still has index writes to make, those then land on top of documents which already
+    //reflect the transaction. The warning is for a value which cannot outlast even a commit whose storage write is a
+    //single chunk; how much more the largest transactions need depends on their size and on the backends, which are not
+    //known here. A GLOBAL option which was never set explicitly resolves to the code default, so an existing graph
+    //picks a new default up when its instances restart; only an explicitly stored value survives an upgrade.
     private static void warnIfMaxCommitTimeIsTooShort(Duration maxCommitTime, Duration maxWriteTime, int indexBackends) {
         final int writes = 1 + indexBackends;
         final Optional<Duration> minimum = singleChunkCommitBudget(maxWriteTime, indexBackends);
@@ -1745,7 +1748,8 @@ public class GraphDatabaseConfiguration {
         } else if (maxCommitTime.compareTo(minimum.get()) <= 0) {
             log.warn("{} is {}, which does not exceed the {} for which even a small commit may keep reattempting its "
                 + "writes: {} ({}) for each of its {} writes, the storage write and {} index backend(s). Transaction "
-                + "recovery considers a transaction failed once {} has elapsed, so it can restore the index documents "
+                + "recovery considers a transaction failed once it has read the transaction log {} past the "
+                + "transaction's first entry, so it can restore the index documents "
                 + "of a transaction which is still committing, underneath the index writes that commit has yet to make. "
                 + "Set {} to more than {}, with headroom for transactions whose storage write spans several {} chunks, "
                 + "which create schema elements or which write a user log, through the management system, for "
@@ -1971,11 +1975,12 @@ public class GraphDatabaseConfiguration {
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
         if (logTransactions) {
             //The transaction log's own writes add nothing to the budget of the index documents: the precommit entry is
-            //written before the recovery clock can start, the primary success is committed together with the storage
-            //write, and the secondary status follows the index writes, after which a restore only rewrites documents
-            //which are right. A transaction which writes a user log is the exception: until recovery has read that
-            //status it would send the user-log event again, so the user-log write and the final status write count
-            //for it as well. The log identifier is set per transaction, so the warning cannot take it into account.
+            //written before recovery can read it, the primary success is committed together with the storage write,
+            //and the secondary status follows the index writes, after which a restore only rewrites documents which
+            //are right. A transaction which writes a user log is the exception: until recovery has read that status
+            //it would send the user-log event again, so the user-log write counts for it as well; the final status's
+            //own write does not, its entry being timed from before the write. The log identifier is set per
+            //transaction, so the warning cannot take it into account.
             warnIfMaxCommitTimeIsTooShort(configuration.get(MAX_COMMIT_TIME),
                 configuration.get(STORAGE_WRITE_WAITTIME), configuration.getContainedNamespaces(INDEX_NS).size());
         }

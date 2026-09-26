@@ -29,15 +29,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-//Transaction recovery considers a transaction failed once max-commit-time has elapsed since it read the transaction's
-//first log entry, while the commit may still be reattempting its writes in turn - the storage write, then one per
-//index backend - each for up to write-time. The transaction log's own writes add nothing for the index documents: the
-//first entry is written before recovery can read it, the primary success is committed with the storage write, and the
-//secondary status follows the index writes; only a transaction which writes a user log needs more. That budget is the least a commit may take: several storage chunks, a separate storage
-//write of new schema elements on a backend without transaction isolation, the preparation of the writes and the final
-//attempt of each write only add to it. A graph whose max-commit-time does not outlast even a
-//commit whose storage write is a single chunk is warned at open; these pin when that is, and that the default is not
-//such a value for a graph with one index backend.
+//Transaction recovery considers a transaction failed once it has read the log up to max-commit-time past the
+//transaction's first log entry, while the commit may still be reattempting its writes in turn - the storage write, then
+//one per index backend - each for up to write-time. The transaction log's own writes add nothing for the index
+//documents: the first entry is written before recovery can read it, the primary success is committed with the storage
+//write, and the secondary status follows the index writes; only a transaction which writes a user log needs more. That
+//budget is the least a commit may take: several storage chunks, a separate storage write of new schema elements on a
+//backend without transaction isolation, the preparation of the writes and the final attempt of each write only add to
+//it. A graph whose max-commit-time does not outlast even a commit whose storage write is a single chunk is warned at
+//open; these pin when that is, and that the default is not such a value for a graph with one index backend.
 public class MaxCommitTimeTest {
 
     private static final Duration WRITE_TIME = Duration.ofSeconds(100);
