@@ -148,6 +148,23 @@ mgmt.commit()
 Note that the data will be stored in the index twice, once for exact
 matching and once for fuzzy matching.
 
+## Regular Expression Syntax and Behavior
+
+When using regular expression predicates (`textContainsRegex`, `textRegex`, `textNotContainsRegex`, `textNotRegex`), the underlying index backend (Elasticsearch, Lucene, or Solr) evaluates queries using Lucene's regular expression engine.
+
+### Supported Syntax
+
+The regular expression syntax supports standard regex operators including character classes (`[a-z]`), wildcards (`.`), quantifiers (`*`, `+`, `?`, `{m,n}`), unions (`|`), and grouping (`(...)`). For full details on supported syntax and operators, refer to the [Elasticsearch Regexp Syntax documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/regexp-syntax.html) or [Lucene Regexp Query Syntax documentation](https://lucene.apache.org/core/9_0_0/core/org/apache/lucene/util/automaton/Regexp.html).
+
+### Matching Scope and Anchors
+
+- **Full-Text Regex (`textContainsRegex`)**: Evaluates the regular expression against **individual tokens** produced by tokenization (when using `Mapping.TEXT`).
+  - Anchors like `^` (start of string) and `$` (end of string) match the start and end of **individual tokens**, not the whole field.
+  - Example: `g.V().has('reason', textContainsRegex('^loves'))` matches any token starting with `loves` (equivalent to prefix matching on tokens), regardless of where that word appears in the full text string.
+- **String Regex (`textRegex`)**: Evaluates the regular expression against the **entire un-tokenized string** (when using `Mapping.STRING`).
+  - The regular expression must match the complete string value.
+  - Because Lucene implicitly anchors regex queries to match full terms, adding explicit `^` or `$` anchors is unnecessary and may lead to query evaluation issues depending on the index backend configuration.
+
 ## TinkerPop Text Predicates
 
 It is also possible to use the TinkerPop text predicates with JanusGraph, but these predicates do not make use of
