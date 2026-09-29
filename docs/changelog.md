@@ -460,10 +460,10 @@ With Apache Cassandra storage, set `storage.cql.cdc=true` to create the `edgesto
 mark the mixed index backend with `index.[X].cdc.enabled=true` (and `index.[X].cdc.synchronous=false` for cdc-only
 mode, which skips synchronous index additions; the few relation-document deletions that change events cannot
 identify remain synchronous), and run the new `janusgraph-cdc` worker. Like `storage.cql.cdc`, the
-`index.[X].cdc.*` options are managed cluster-wide (`GLOBAL_OFFLINE`): on an existing graph, change them via
-`mgmt.set(...)` while no other instance is open. The worker consumes the
-Cassandra change stream (e.g. via Debezium and Kafka) and reindexes affected elements from their current graph state,
-which is idempotent and order-independent. See
+`index.[X].cdc.*` options are `MASKABLE`: they can be changed via `mgmt.set(...)` on a running cluster (instances and
+the worker pick up the new value when they next open the graph) or overridden in the local configuration of a process.
+The worker consumes the Cassandra change stream (e.g. via Debezium and Kafka) and reindexes affected elements from their
+current graph state, which is idempotent and order-independent. See
 [CDC Mixed Index Synchronization](advanced-topics/cdc-mixed-index.md) for the full setup.
 
 ##### Transient Elasticsearch failures are retried instead of dropping the index mutation

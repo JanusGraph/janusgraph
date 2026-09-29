@@ -1166,11 +1166,12 @@ public class GraphDatabaseConfiguration {
             "Whether this mixed index backend is maintained via the CDC pipeline (the janusgraph-cdc worker consumes " +
             "Change-Data-Capture events of the graph data and reindexes affected elements) instead of, or in addition " +
             "to, synchronous index writes during the transaction. Has no effect unless an external CDC pipeline " +
-            "(e.g. Cassandra CDC + Debezium + Kafka) and the janusgraph-cdc worker are running. Managed cluster-wide " +
-            "(GLOBAL_OFFLINE) so every JanusGraph instance and the CDC worker agree on who maintains the index: set " +
-            "it in the configuration when the graph is first created, or change it later via " +
-            "mgmt.set(\"index.[X].cdc.enabled\", ...) while no other instance is open.",
-            ConfigOption.Type.GLOBAL_OFFLINE, false);
+            "(e.g. Cassandra CDC + Debezium + Kafka) and the janusgraph-cdc worker are running. The stored value can " +
+            "be changed on a running cluster via mgmt.set(\"index.[X].cdc.enabled\", ...), which JanusGraph " +
+            "instances and the CDC worker pick up when they next open the graph, and the local configuration of an " +
+            "instance overrides it. Keep the instances and the CDC worker consistent: every index an instance " +
+            "writes in cdc-only mode must be maintained by the worker.",
+            ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigOption<Boolean> INDEX_CDC_SYNCHRONOUS = new ConfigOption<>(INDEX_CDC_NS, "synchronous",
             "Only relevant when index.[X].cdc.enabled is true. When true (default), the mixed index is ALSO written " +
@@ -1178,15 +1179,18 @@ public class GraphDatabaseConfiguration {
             "When false, synchronous mixed index additions are skipped (cdc-only mode) and performed by the CDC worker " +
             "instead, which maximizes efficiency at the cost of the index lagging the graph by the CDC propagation " +
             "latency; the few deletions of edge and meta-property documents that change events cannot identify are " +
-            "still applied synchronously. Managed cluster-wide (GLOBAL_OFFLINE), like index.[X].cdc.enabled.",
-            ConfigOption.Type.GLOBAL_OFFLINE, true);
+            "still applied synchronously. Can be changed on a running cluster and overridden by the local " +
+            "configuration of an instance, like index.[X].cdc.enabled.",
+            ConfigOption.Type.MASKABLE, true);
 
     /**
      * The names of the index backends with {@link #INDEX_CDC_ENABLED} true. With {@code cdcOnly}, restricted to those
      * additionally configured with {@link #INDEX_CDC_SYNCHRONOUS} false (cdc-only mode: the synchronous mixed-index
      * write is skipped). The commit-side skip ({@code StandardJanusGraph}) and the CDC worker's index discovery
      * ({@code janusgraph-cdc}) are the two halves of one contract -- every cdc-only index must be worker-managed --
-     * so both derive their sets from this one method.
+     * so both derive their sets from this one method. They only agree when the JanusGraph instances and the worker
+     * run with the same effective index.[X].cdc.* values: the options are MASKABLE, so the local configuration of a
+     * process can override the stored ones.
      */
     public static Set<String> getCdcBackingIndexNames(Configuration configuration, boolean cdcOnly) {
         final Set<String> result = new HashSet<>();

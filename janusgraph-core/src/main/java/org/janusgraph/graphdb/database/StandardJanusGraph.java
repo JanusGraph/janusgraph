@@ -262,8 +262,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             log.warn("Mixed index backend(s) {} are configured cdc-only (index.[X].cdc.enabled=true and "
                 + "index.[X].cdc.synchronous=false): synchronous index additions are SKIPPED for them (only "
                 + "relation-document deletions that CDC events cannot identify are still written synchronously). "
-                + "Ensure the external CDC pipeline and the janusgraph-cdc worker are running, otherwise these "
-                + "indexes will not be updated.",
+                + "Ensure the external CDC pipeline and the janusgraph-cdc worker (running with "
+                + "index.[X].cdc.enabled=true for these backends) are running, otherwise these indexes will not be "
+                + "updated.",
                 cdcOnlyBackingIndexes);
         }
         this.backend = configuration.getBackend();
