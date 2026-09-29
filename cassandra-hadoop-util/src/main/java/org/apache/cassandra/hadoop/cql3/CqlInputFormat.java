@@ -57,6 +57,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -365,7 +366,11 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
         // nodes are up and healthy
         ResultSet resultSet = queryTableEstimates(session, host, keyspace, table, tokenRange);
 
-        Row row = resultSet.one();
+        // Not resultSet.one(): scylla-hadoop-util runs these classes against the Scylla driver, whose ResultSet (since
+        // 3.11.2.5) only inherits one() from the generic PagingIterable, so the Row-returning one() compiled here does
+        // not exist there. iterator() links against both drivers.
+        Iterator<Row> rows = resultSet.iterator();
+        Row row = rows.hasNext() ? rows.next() : null;
 
         long meanPartitionSize = 0;
         long partitionCount = 0;

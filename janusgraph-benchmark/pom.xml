@@ -14,7 +14,6 @@
 
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <jmh.version>1.37</jmh.version>
         <uberjar.name>benchmarks</uberjar.name>
     </properties>
 
@@ -100,7 +99,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-exec</artifactId>
-            <version>1.4.0</version>
+            <version>1.6.0</version>
         </dependency>
     </dependencies>
 

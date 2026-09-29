@@ -113,6 +113,12 @@
                     <groupId>org.ow2.asm</groupId>
                     <artifactId>asm-commons</artifactId>
                 </exclusion>
+                <!-- Since 4.19.2.0 the driver declares SLF4J 2.x, but it only uses the SLF4J 1.x API (Logger and
+                     LoggerFactory). JanusGraph stays on SLF4J 1.7, see the ZooKeeper dependency in the root pom. -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
