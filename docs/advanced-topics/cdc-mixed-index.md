@@ -196,6 +196,19 @@ value.converter=org.apache.kafka.connect.json.JsonConverter
 value.converter.schemas.enable=false
 ```
 
+!!! warning "Debezium 3.6+: put the OpenTelemetry API on the connector classpath"
+    Since Debezium 3.6 the connector calls the OpenTelemetry API for every Kafka record it produces, but its standalone
+    `jar-with-dependencies` does not contain that API. Without it the connector reads the commit log, but its queue
+    processor stops with a `NoClassDefFoundError` and no change reaches Kafka. Add `io.opentelemetry:opentelemetry-api`
+    and its `opentelemetry-context` and `opentelemetry-common` dependencies to the classpath. `java -jar` ignores
+    `-cp`, so start the connector with its main class instead:
+
+    ```bash
+    java -cp debezium-connector-cassandra-4-<version>-jar-with-dependencies.jar:\
+    opentelemetry-api-<otel>.jar:opentelemetry-context-<otel>.jar:opentelemetry-common-<otel>.jar \
+        io.debezium.connector.cassandra.CassandraConnectorTask cassandra-connector.properties
+    ```
+
 The connector publishes to the topic `<topic.prefix>.<keyspace>.edgestore`. Blob columns (JanusGraph's keys/values)
 are Base64-encoded in the JSON events; the worker's decoder decodes them with JanusGraph's own serialization.
 
@@ -211,6 +224,8 @@ JanusGraph distribution** (so deployments that don't use CDC don't pull in Kafka
     <version>{{ latest_version }}</version>
 </dependency>
 ```
+
+The worker uses the Apache Kafka 4 Java client, which works with Kafka brokers 2.1 or newer.
 
 Assemble it (with its dependencies and your storage/index backend modules) onto a classpath and run one or more
 instances (in the same Kafka consumer group, in separate processes, for horizontal scale):
@@ -352,10 +367,10 @@ The complete pipeline — including the Cassandra → Debezium capture hop — i
 Testcontainers, runs the real Debezium Cassandra connector, and asserts ElasticSearch converges to the graph for the
 vertex and edge lifecycle. It is gated behind the `cassandra-cdc-e2e` Maven profile, which **auto-activates on JDK
 17 through 23** (Debezium 3.x requires Java 17+; the embedded `cassandra-all` 4.1.7 does not run on JDK 24+ — CI uses
-17). The profile supplies the Debezium dependency, pins SnakeYAML to 1.x for `cassandra-all`, and adds the JVM
-`--add-opens`/`--add-exports` flags `cassandra-all` needs. Run it on a JDK 17 with Docker available (the first
-command builds the module's dependencies; running `test` directly with `-am` would fail in the upstream modules,
-where no test matches the filter):
+17 and 21). The profile supplies the Debezium dependency together with the OpenTelemetry API and the Jetty 12 version
+the embedded connector needs, pins SnakeYAML to 1.x for `cassandra-all`, and adds the JVM `--add-opens`/`--add-exports`
+flags `cassandra-all` needs. Run it on a JDK 17 with Docker available (the first command builds the module's
+dependencies; running `test` directly with `-am` would fail in the upstream modules, where no test matches the filter):
 
 ```bash
 mvn clean install -DskipTests -pl janusgraph-cdc -am

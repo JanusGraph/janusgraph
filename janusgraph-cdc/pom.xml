@@ -14,9 +14,8 @@
 
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <!-- 3.9.x: latest 3.x client line (still Java 8 compatible); 3.9.1+ carries the fixes for the client-side
-             config CVEs CVE-2025-27817 / CVE-2025-27818 present in <= 3.9.0. -->
-        <kafka.version>3.9.1</kafka.version>
+        <!-- The 4.x clients require Java 11 and Kafka brokers 2.1 or newer. -->
+        <kafka.version>4.3.1</kafka.version>
     </properties>
 
     <dependencies>
@@ -57,7 +56,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Component E2E: real ElasticSearch + Kafka (Testcontainers, require Java 17+ to run) -->
+        <!-- Component E2E: real ElasticSearch + Kafka (Testcontainers, Docker required) -->
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-es</artifactId>
@@ -94,7 +93,7 @@
         </dependency>
         <!-- The root pom excludes Testcontainers' transitive jna; on JVMs below 17 Testcontainers needs it at
              runtime for Docker unix-socket access (JDK 16+ ships native unix-domain-socket support instead), so
-             without it the container tests fail with NoClassDefFoundError: com/sun/jna/Library on the Java 8/11
+             without it the container tests fail with NoClassDefFoundError: com/sun/jna/Library on the Java 11
              jobs. Re-added at test scope like janusgraph-cql and janusgraph-es do. -->
         <dependency>
             <groupId>net.java.dev.jna</groupId>
@@ -115,9 +114,9 @@
             <!-- The two Debezium-dependent test sources compile only on Java 17+ (Debezium 3.x ships Java 17
                  bytecode): the full Cassandra-CDC -> Debezium -> Kafka -> ElasticSearch pipeline test and its
                  connector-starter helper. Exclude them from compilation by default so the module still builds and
-                 tests on Java 8/11; the cassandra-cdc-e2e profile (auto-active on the supported JDK range below)
+                 tests on Java 11; the cassandra-cdc-e2e profile (auto-active on the supported JDK range below)
                  re-includes and runs them. The real Kafka + ElasticSearch worker test (CdcKafkaElasticsearchTest)
-                 has no Debezium dependency and runs on every JVM the worker itself supports (8/11/17), wherever
+                 has no Debezium dependency and runs on every JVM the worker itself supports (Java 11+), wherever
                  Docker is available, same as the repo's other Testcontainers-based suites. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -135,7 +134,7 @@
     <profiles>
         <!-- Full Cassandra-CDC -> Debezium -> Kafka -> ElasticSearch end-to-end test. Auto-activates on Java 17
              up to (excluding) 24: Debezium 3.x requires Java 17+, and the embedded cassandra-all 4.1.7 is not
-             Java-24-compatible, so on JDK 24+ the module simply behaves like Java 8/11 (unit + Kafka/ES container
+             Java-24-compatible, so on JDK 24+ the module simply behaves like Java 11 (unit + Kafka/ES container
              tests, no Debezium pipeline) instead of failing mid-e2e. Pulls the real Debezium Cassandra connector
              (test scope only). -->
         <profile>
@@ -143,6 +142,10 @@
             <activation>
                 <jdk>[17,24)</jdk>
             </activation>
+            <properties>
+                <!-- align with io.debezium:debezium-bom -->
+                <debezium.jetty.version>12.1.11</debezium.jetty.version>
+            </properties>
             <dependencyManagement>
                 <dependencies>
                     <!-- cassandra-all parses cassandra.yaml via SnakeYAML 1.x's CustomClassLoaderConstructor(Class,
@@ -152,16 +155,27 @@
                         <artifactId>snakeyaml</artifactId>
                         <version>1.33</version>
                     </dependency>
-                    <!-- cassandra-all 4.1.7 pins netty-tcnative-boringssl-static 2.0.36, but JanusGraph forces
-                         netty 4.1.118.Final. On Linux that skew throws NoSuchMethodError for
-                         io.netty.internal.tcnative.SSLContext.setCurvesList(long, String[]) when OpenSSL initializes
-                         (on macOS the native is absent so netty silently falls back to the JDK provider, hiding it).
-                         Align tcnative to the release paired with netty 4.1.118 (tcnative.version 2.0.71-SNAPSHOT ->
-                         latest released 2.0.70.Final). -->
+                    <!-- Debezium 3.7 runs the connector's embedded HTTP server on Jetty 12 (Java 17+), while JanusGraph
+                         manages the Jetty 9.4 line for SolrJ 8. Solr isn't used here, so follow Debezium. -->
                     <dependency>
-                        <groupId>io.netty</groupId>
-                        <artifactId>netty-tcnative-boringssl-static</artifactId>
-                        <version>2.0.70.Final</version>
+                        <groupId>org.eclipse.jetty</groupId>
+                        <artifactId>jetty-server</artifactId>
+                        <version>${debezium.jetty.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.eclipse.jetty</groupId>
+                        <artifactId>jetty-http</artifactId>
+                        <version>${debezium.jetty.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.eclipse.jetty</groupId>
+                        <artifactId>jetty-io</artifactId>
+                        <version>${debezium.jetty.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.eclipse.jetty</groupId>
+                        <artifactId>jetty-util</artifactId>
+                        <version>${debezium.jetty.version}</version>
                     </dependency>
                 </dependencies>
             </dependencyManagement>
@@ -169,7 +183,25 @@
                 <dependency>
                     <groupId>io.debezium</groupId>
                     <artifactId>debezium-connector-cassandra-4</artifactId>
-                    <version>3.5.2.Final</version>
+                    <version>3.7.0.Final</version>
+                    <scope>test</scope>
+                    <exclusions>
+                        <!-- cassandra-all's lz4-java; the maintained fork at.yawk.lz4:lz4-java (same net.jpountz
+                             classes) already comes with kafka-clients. -->
+                        <exclusion>
+                            <groupId>org.lz4</groupId>
+                            <artifactId>lz4-java</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+                <!-- Since 3.6 Debezium's KafkaRecordEmitter calls the OpenTelemetry API (TracingUtils) for every
+                     record, but Debezium declares that API as provided (it expects the runtime to supply it). Without
+                     it the embedded connector's queue processor dies with a NoClassDefFoundError and no change reaches
+                     Kafka. Keep the version Debezium is built with. -->
+                <dependency>
+                    <groupId>io.opentelemetry</groupId>
+                    <artifactId>opentelemetry-api</artifactId>
+                    <version>1.62.0</version>
                     <scope>test</scope>
                 </dependency>
                 <dependency>

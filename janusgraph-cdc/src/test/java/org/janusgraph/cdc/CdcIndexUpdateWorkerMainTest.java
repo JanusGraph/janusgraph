@@ -15,7 +15,6 @@
 package org.janusgraph.cdc;
 
 import org.apache.kafka.clients.consumer.MockConsumer;
-import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
@@ -96,7 +95,7 @@ public class CdcIndexUpdateWorkerMainTest {
         CdcIndexUpdateWorkerMain main = null;
         try {
             main = new CdcIndexUpdateWorkerMain(graph, config(3),
-                () -> new MockConsumer<>(OffsetResetStrategy.EARLIEST));
+                () -> new MockConsumer<>("earliest"));
             assertEquals(3, main.getWorkerCount());
             main.start();
         } finally {
@@ -119,7 +118,7 @@ public class CdcIndexUpdateWorkerMainTest {
         CdcIndexUpdateWorkerMain main = null;
         try {
             main = new CdcIndexUpdateWorkerMain(graph, config(2),
-                () -> new MockConsumer<>(OffsetResetStrategy.EARLIEST));
+                () -> new MockConsumer<>("earliest"));
             assertFalse(main.hasAliveWorkers(), "no worker threads exist before start()");
             main.start();
             assertTrue(main.hasAliveWorkers(), "workers report alive after start()");
@@ -142,7 +141,7 @@ public class CdcIndexUpdateWorkerMainTest {
         JanusGraph graph = JanusGraphFactory.open(cfg.getConfiguration());
         try {
             assertThrows(IllegalStateException.class, () -> new CdcIndexUpdateWorkerMain(graph, config(1),
-                () -> new MockConsumer<>(OffsetResetStrategy.EARLIEST)));
+                () -> new MockConsumer<>("earliest")));
         } finally {
             graph.close();
         }
@@ -157,7 +156,7 @@ public class CdcIndexUpdateWorkerMainTest {
                 if (!created.isEmpty()) {
                     throw new RuntimeException("simulated consumer construction failure");
                 }
-                MockConsumer<byte[], byte[]> consumer = new MockConsumer<>(OffsetResetStrategy.EARLIEST);
+                MockConsumer<byte[], byte[]> consumer = new MockConsumer<>("earliest");
                 created.add(consumer);
                 return consumer;
             }));
@@ -175,7 +174,7 @@ public class CdcIndexUpdateWorkerMainTest {
         JanusGraph graph = openCdcEnabledGraph("lucene-nomixed");
         try {
             assertThrows(IllegalStateException.class, () -> new CdcIndexUpdateWorkerMain(graph, config(1),
-                () -> new MockConsumer<>(OffsetResetStrategy.EARLIEST)));
+                () -> new MockConsumer<>("earliest")));
         } finally {
             graph.close();
         }

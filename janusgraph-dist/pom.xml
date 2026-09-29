@@ -148,7 +148,7 @@
         <dependency>
             <groupId>org.apache.velocity</groupId>
             <artifactId>velocity-engine-core</artifactId>
-            <version>2.3</version>
+            <version>2.4.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -191,9 +191,9 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <groupId>io.github.download-maven-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>1.9.0</version>
+                <version>2.1.0</version>
                 <executions>
                     <execution>
                         <id>get-elasticsearch</id>
@@ -631,7 +631,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
-                        <version>3.2.0</version>
+                        <version>3.6.4</version>
                         <executions>
                             <execution>
                                 <id>docker-build</id>

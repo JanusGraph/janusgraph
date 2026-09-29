@@ -6,9 +6,6 @@
     <artifactId>janusgraph</artifactId>
     <version>1.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <prerequisites>
-        <maven>3.2.5</maven>
-    </prerequisites>
     <name>JanusGraph: Distributed Graph Database</name>
     <url>https://janusgraph.org</url>
 
@@ -53,34 +50,40 @@
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.8.2</tinkerpop.version>
-        <avro.version>1.11.4</avro.version>
+        <avro.version>1.11.5</avro.version>
         <junit-platform.version>1.14.4</junit-platform.version>
         <junit.version>5.14.4</junit.version>
-        <mockito.version>5.23.0</mockito.version>
-        <jamm.version>0.3.3</jamm.version>
-        <metrics.version>4.2.37</metrics.version>
+        <mockito.version>5.24.0</mockito.version>
+        <jamm.version>0.4.0</jamm.version>
+        <metrics.version>4.2.40</metrics.version>
         <slf4j.version>1.7.36</slf4j.version>
         <logback.version>1.2.13</logback.version>
         <httpcomponents.httpclient.version>4.5.14</httpcomponents.httpclient.version>
         <httpcomponents.httpcore.version>4.4.16</httpcomponents.httpcore.version>
         <hadoop.version>3.4.3</hadoop.version>
-        <hbase2.version>2.6.0-hadoop3</hbase2.version>
-        <htrace.version>4.1.7</htrace.version>
-        <bigtable.version>1.24.0</bigtable.version>
-        <!-- align with org.apache.spark:spark-core_2.12 -->
-        <jackson2.version>2.17.2</jackson2.version>
-        <lucene-solr.version>8.11.3</lucene-solr.version>
+        <hbase2.version>2.6.6-hadoop3</hbase2.version>
+        <!-- align with the hbase-thirdparty version of org.apache.hbase:hbase -->
+        <htrace.version>4.1.13</htrace.version>
+        <bigtable.version>2.20.2</bigtable.version>
+        <!-- jackson-module-scala_2.12 (used by Spark) only accepts a jackson-databind of its own minor version, which
+             is why it is managed with the same version as the other Jackson 2.x artifacts. -->
+        <jackson2.version>2.22.3</jackson2.version>
+        <!-- Since 2.20 jackson-annotations is released without the patch number (2.20, 2.21, ...). -->
+        <jackson2-annotations.version>2.22</jackson2-annotations.version>
+        <lucene-solr.version>8.11.4</lucene-solr.version>
         <elasticsearch.version>9.5.4</elasticsearch.version>
         <commons.beanutils.version>1.11.0</commons.beanutils.version>
         <commons.collections.version>3.2.2</commons.collections.version>
-        <zookeeper.version>3.9.2</zookeeper.version>
+        <zookeeper.version>3.9.6</zookeeper.version>
         <netty4.version>4.1.138.Final</netty4.version>
-        <jna.version>5.14.0</jna.version>
+        <!-- align with the tcnative.version of io.netty:netty-parent:${netty4.version} -->
+        <netty4-tcnative.version>2.0.84.Final</netty4-tcnative.version>
+        <jna.version>5.19.1</jna.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <janusgraph.testdir>${project.build.directory}/janusgraph-test</janusgraph.testdir>
         <gpg.skip>false</gpg.skip>
-        <maven.gpg.version>3.2.4</maven.gpg.version>
+        <maven.gpg.version>3.2.8</maven.gpg.version>
         <perf.jvm.opts />
         <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts} ${test.jdk.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts} ${test.jdk.jvm.opts}</mem.jvm.opts>
@@ -90,7 +93,7 @@
         <test.skip.default>false</test.skip.default>
         <test.skip.tp>true</test.skip.tp>
         <top.level.basedir>${basedir}</top.level.basedir>
-        <maven.javadoc.version>3.10.0</maven.javadoc.version>
+        <maven.javadoc.version>3.12.0</maven.javadoc.version>
         <!-- Minimum Java version. Compiling with the javac release flag guarantees that builds on newer JDKs (17, 21, 25) do
              not use APIs which are missing on Java 11. -->
         <compiler.release>11</compiler.release>
@@ -103,23 +106,23 @@
         <cassandra-dist.version>5.0.9</cassandra-dist.version>
         <cassandra-dist.version.sha256>eee1460b47ebe188a29521207230617f22aad7f9e1674f5ea454f10c8f344d61</cassandra-dist.version.sha256>
         <cassandra-driver.version>4.19.3</cassandra-driver.version>
-        <scylla-driver.version>4.19.0.9</scylla-driver.version>
+        <scylla-driver.version>4.19.2.1</scylla-driver.version>
         <scylladb.version>6.2.0</scylladb.version>
         <testcontainers.version>2.0.5</testcontainers.version>
-        <easymock.version>5.4.0</easymock.version>
-        <protobuf.version>3.25.5</protobuf.version>
-        <grpc.version>1.66.0</grpc.version>
-        <protoc.version>3.23.4</protoc.version>
-        <gson.version>2.11.0</gson.version>
-        <jcabi.version>2.1.0</jcabi.version>
-        <jmh.version>1.33</jmh.version>
+        <easymock.version>5.7.0</easymock.version>
+        <protobuf.version>3.25.9</protobuf.version>
+        <grpc.version>1.84.0</grpc.version>
+        <protoc.version>3.25.9</protoc.version>
+        <gson.version>2.14.0</gson.version>
+        <jcabi.version>2.2.0</jcabi.version>
+        <jmh.version>1.37</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
-        <jetty.version>9.4.57.v20241219</jetty.version>
-        <log4j2.version>2.23.1</log4j2.version>
+        <jetty.version>9.4.58.v20250814</jetty.version>
+        <log4j2.version>2.26.1</log4j2.version>
         <graalvm-nativeimage.version>24.0.2</graalvm-nativeimage.version>
-        <caffeine.version>3.2.4</caffeine.version>
-        <checker-qual.version>3.46.0</checker-qual.version>
-        <curator.version>5.7.0</curator.version>
+        <caffeine.version>3.3.0</caffeine.version>
+        <checker-qual.version>4.2.3</checker-qual.version>
+        <curator.version>5.9.0</curator.version>
         <autoPublish>false</autoPublish>
         <waitUntil>validated</waitUntil>
     </properties>
@@ -169,7 +172,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.6.3</version>
                 <executions>
                     <execution>
                         <id>enforce-dependency-convergence</id>
@@ -241,7 +244,7 @@
             <plugin>
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
-                <version>0.16.1</version>
+                <version>0.17</version>
                 <executions>
                     <execution>
                         <id>rat-checks</id>
@@ -253,41 +256,48 @@
                 </executions>
                 <configuration>
                     <excludeSubProjects>false</excludeSubProjects>
-                    <excludes>
-                        <exclude>**/target/**</exclude>
-                        <exclude>**/.classpath</exclude>
-                        <exclude>**/.project</exclude>
-                        <exclude>**/.factorypath</exclude>
-                        <exclude>**/.settings/**</exclude>
-                        <exclude>**/src/main/resources/META-INF/services/**</exclude>
-                        <exclude>**/src/test/resources/META-INF/services/**</exclude>
-                        <exclude>**/*.iml</exclude>
-                        <exclude>**/*.json</exclude>
-                        <exclude>**/*.xml</exclude>
-                        <exclude>**/*.xml.releaseBackup</exclude>
-                        <exclude>docs/**</exclude>
-                        <exclude>**/*.md</exclude>
-                        <exclude>**/*.txt</exclude>
-                        <exclude>**/*.log</exclude>
-                        <exclude>**/*.patch</exclude>
-                        <exclude>**/*.crt</exclude>
-                        <exclude>**/*.key</exclude>
-                        <exclude>**/*.sysconfig</exclude>
-                        <exclude>**/*.csv</exclude>
-                        <exclude>**/*.id</exclude>
-                        <exclude>**/*.gz</exclude>
-                        <exclude>.editorconfig</exclude>
-                        <exclude>.github/dependabot.yml</exclude>
-                        <exclude>CC-BY-4.0.txt</exclude>
-                        <exclude>**/cqlshrc</exclude>
-                        <exclude>**/regionservers</exclude>
-                        <exclude>**/jaas_keytab.conf</exclude>
-                        <exclude>**/src/test/resources/excludes</exclude>
-                        <exclude>**/src/test/resources/longTests1</exclude>
-                        <exclude>**/src/test/resources/longTests2</exclude>
-                        <exclude>**/src/test/resources/mockito-extensions/**</exclude>
-                        <exclude>**/src/test/resources/org/janusgraph/hadoop/formats/edgelist/rdf/**</exclude>
-                    </excludes>
+                    <!-- Since 0.17 RAT fails when it finds no license at all, which is the case for the modules without
+                         any file to check (e.g. janusgraph-bigtable only has an excluded pom.xml). -->
+                    <counterMins>
+                        <counterMin>LICENSE_CATEGORIES:0</counterMin>
+                        <counterMin>LICENSE_NAMES:0</counterMin>
+                        <counterMin>STANDARDS:0</counterMin>
+                    </counterMins>
+                    <inputExcludes>
+                        <inputExclude>**/target/**</inputExclude>
+                        <inputExclude>**/.classpath</inputExclude>
+                        <inputExclude>**/.project</inputExclude>
+                        <inputExclude>**/.factorypath</inputExclude>
+                        <inputExclude>**/.settings/**</inputExclude>
+                        <inputExclude>**/src/main/resources/META-INF/services/**</inputExclude>
+                        <inputExclude>**/src/test/resources/META-INF/services/**</inputExclude>
+                        <inputExclude>**/*.iml</inputExclude>
+                        <inputExclude>**/*.json</inputExclude>
+                        <inputExclude>**/*.xml</inputExclude>
+                        <inputExclude>**/*.xml.releaseBackup</inputExclude>
+                        <inputExclude>docs/**</inputExclude>
+                        <inputExclude>**/*.md</inputExclude>
+                        <inputExclude>**/*.txt</inputExclude>
+                        <inputExclude>**/*.log</inputExclude>
+                        <inputExclude>**/*.patch</inputExclude>
+                        <inputExclude>**/*.crt</inputExclude>
+                        <inputExclude>**/*.key</inputExclude>
+                        <inputExclude>**/*.sysconfig</inputExclude>
+                        <inputExclude>**/*.csv</inputExclude>
+                        <inputExclude>**/*.id</inputExclude>
+                        <inputExclude>**/*.gz</inputExclude>
+                        <inputExclude>.editorconfig</inputExclude>
+                        <inputExclude>.github/dependabot.yml</inputExclude>
+                        <inputExclude>CC-BY-4.0.txt</inputExclude>
+                        <inputExclude>**/cqlshrc</inputExclude>
+                        <inputExclude>**/regionservers</inputExclude>
+                        <inputExclude>**/jaas_keytab.conf</inputExclude>
+                        <inputExclude>**/src/test/resources/excludes</inputExclude>
+                        <inputExclude>**/src/test/resources/longTests1</inputExclude>
+                        <inputExclude>**/src/test/resources/longTests2</inputExclude>
+                        <inputExclude>**/src/test/resources/mockito-extensions/**</inputExclude>
+                        <inputExclude>**/src/test/resources/org/janusgraph/hadoop/formats/edgelist/rdf/**</inputExclude>
+                    </inputExcludes>
                 </configuration>
             </plugin>
             <plugin>
@@ -361,7 +371,7 @@
             <plugin>
                 <groupId>org.cyclonedx</groupId>
                 <artifactId>cyclonedx-maven-plugin</artifactId>
-                <version>2.8.1</version>
+                <version>2.9.3</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -379,7 +389,7 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.13.0</version>
+                    <version>3.16.0</version>
                     <configuration>
                         <release>${compiler.release}</release>
                         <compilerArgs>
@@ -391,7 +401,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.3.1</version>
+                    <version>3.5.6</version>
                     <configuration>
                         <argLine>${default.test.jvm.opts}</argLine>
                         <runOrder>alphabetical</runOrder>
@@ -449,15 +459,15 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>3.3.1</version>
+                    <version>3.5.6</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
-                    <version>3.1.3</version>
+                    <version>3.2.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.4.2</version>
+                    <version>3.5.1</version>
                     <configuration>
                         <archive>
                             <manifestEntries>
@@ -471,11 +481,11 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.3.1</version>
+                    <version>3.5.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>3.1.1</version>
+                    <version>3.3.1</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -483,19 +493,19 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.7.1</version>
+                    <version>3.8.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.3.1</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-clean-plugin</artifactId>
                     <version>3.4.0</version>
                 </plugin>
                 <plugin>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>3.5.0</version>
+                </plugin>
+                <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.8.0</version>
+                    <version>3.11.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-gpg-plugin</artifactId>
@@ -504,11 +514,11 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>3.6.4</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-antrun-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.2.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -647,12 +657,12 @@
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm</artifactId>
-                <version>9.7.1</version>
+                <version>9.10.1</version>
             </dependency>
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm-commons</artifactId>
-                <version>9.7.1</version>
+                <version>9.10.1</version>
             </dependency>
 
             <!-- Jackson 2.x -->
@@ -674,7 +684,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>${jackson2.version}</version>
+                <version>${jackson2-annotations.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
@@ -691,6 +701,12 @@
                 <groupId>com.fasterxml.jackson.module</groupId>
                 <artifactId>jackson-module-paranamer</artifactId>
                 <version>${jackson2.version}</version>
+            </dependency>
+            <dependency>
+                <!-- align with com.fasterxml.jackson.module:jackson-module-scala_2.12 -->
+                <groupId>com.thoughtworks.paranamer</groupId>
+                <artifactId>paranamer</artifactId>
+                <version>2.8.3</version>
             </dependency>
             <dependency>
                 <groupId>com.google.code.findbugs</groupId>
@@ -720,7 +736,7 @@
             <dependency>
                 <groupId>commons-net</groupId>
                 <artifactId>commons-net</artifactId>
-                <version>3.11.1</version>
+                <version>3.13.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-beanutils</groupId>
@@ -750,7 +766,7 @@
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
-                <version>2.2</version>
+                <version>2.7</version>
             </dependency>
             <dependency>
                 <groupId>net.oneandone.reflections8</groupId>
@@ -766,6 +782,15 @@
                 <groupId>org.apache.zookeeper</groupId>
                 <artifactId>zookeeper</artifactId>
                 <version>${zookeeper.version}</version>
+                <exclusions>
+                    <!-- Since 3.9.4 ZooKeeper declares SLF4J 2.x, but it only uses the SLF4J 1.x API (Logger,
+                         LoggerFactory and MDC). JanusGraph stays on SLF4J 1.7 because Spark 3.3 (spark-gremlin)
+                         requires an SLF4J 1.x binding (org.slf4j.impl.StaticLoggerBinder). -->
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.zookeeper</groupId>
@@ -882,9 +907,30 @@
                 <version>${netty4.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-classes-epoll</artifactId>
+                <version>${netty4.version}</version>
+            </dependency>
+            <!-- netty-tcnative has to match the Netty version: e.g. cassandra-all 4.1.7 (janusgraph-cdc tests) pins
+                 2.0.36, which throws NoSuchMethodError for
+                 io.netty.internal.tcnative.SSLContext.setCurvesList(long, String[]) when OpenSSL initializes on Linux
+                 (on Apple Silicon macOS the native is absent so netty silently falls back to the JDK provider,
+                 hiding it).
+                 ZooKeeper brings it in as well. -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-tcnative-boringssl-static</artifactId>
+                <version>${netty4-tcnative.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-tcnative-classes</artifactId>
+                <version>${netty4-tcnative.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.objenesis</groupId>
                 <artifactId>objenesis</artifactId>
-                <version>3.4</version>
+                <version>3.6</version>
             </dependency>
 
             <dependency>
@@ -930,7 +976,7 @@
             <dependency>
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
-                <version>1.17.7</version>
+                <version>1.18.14</version>
             </dependency>
             <dependency>
                 <groupId>org.apiguardian</groupId>
@@ -948,7 +994,7 @@
                 -->
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>33.3.0-jre</version>
+                <version>33.7.1-jre</version>
             </dependency>
             <dependency>
                 <groupId>com.google.errorprone</groupId>
@@ -956,9 +1002,15 @@
                 <version>2.50.0</version>
             </dependency>
             <dependency>
+                <!-- align with com.google.guava:guava and com.github.ben-manes.caffeine:caffeine -->
+                <groupId>org.jspecify</groupId>
+                <artifactId>jspecify</artifactId>
+                <version>1.0.1</version>
+            </dependency>
+            <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.22.0</version>
+                <version>1.22.1</version>
             </dependency>
             <dependency>
                 <groupId>commons-cli</groupId>
@@ -973,11 +1025,14 @@
                 <version>0.8</version>
             </dependency>
 
-            <!-- Java Topology Suite (JTS) -->
+            <!-- Java Topology Suite (JTS). 1.18.1 changed the return type of
+                 org.locationtech.jts.io.InStream.read(byte[]), which spatial4j 0.8 (the latest release) implements to
+                 deserialize JTS geometries (JtsBinaryCodec), so newer JTS versions fail with an AbstractMethodError
+                 there until a spatial4j release built against JTS 1.18.1+ is available. -->
             <dependency>
                 <groupId>org.locationtech.jts</groupId>
                 <artifactId>jts-core</artifactId>
-                <version>1.17.0</version>
+                <version>1.18.0</version>
             </dependency>
 
             <!-- Package prefix is org.apache.commons.httpclient -->
@@ -1034,6 +1089,15 @@
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-graphite</artifactId>
                 <version>${metrics.version}</version>
+                <exclusions>
+                    <!-- Since 5.27.0 amqp-client (only used by the GraphiteRabbitMQ sender) depends on Netty 4.2 for
+                         its opt-in Netty frame handler. The default socket based frame handler doesn't need Netty,
+                         so keep the Netty 4.1 line which TinkerPop and the Cassandra driver are built with. -->
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
@@ -1043,7 +1107,7 @@
             <dependency>
                 <groupId>org.jctools</groupId>
                 <artifactId>jctools-core</artifactId>
-                <version>4.0.5</version>
+                <version>4.0.7</version>
             </dependency>
             <dependency>
                 <groupId>com.clearspring.analytics</groupId>
@@ -1053,12 +1117,12 @@
             <dependency>
                 <groupId>org.javassist</groupId>
                 <artifactId>javassist</artifactId>
-                <version>3.30.2-GA</version>
+                <version>3.33.0-GA</version>
             </dependency>
             <dependency>
                 <groupId>com.carrotsearch</groupId>
                 <artifactId>hppc</artifactId>
-                <version>0.9.1</version>
+                <version>0.10.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -1179,7 +1243,7 @@
             <dependency>
                 <groupId>org.xerial.snappy</groupId>
                 <artifactId>snappy-java</artifactId>
-                <version>1.1.10.5</version>
+                <version>1.1.10.8</version>
             </dependency>
             <dependency>
                 <groupId>javax.activation</groupId>
@@ -1194,7 +1258,7 @@
             <dependency>
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.4.2</version>
+                <version>10.10</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -1209,7 +1273,7 @@
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.34</version>
+                <version>1.18.48</version>
             </dependency>
             <dependency>
                 <groupId>org.osgi</groupId>
@@ -1448,12 +1512,12 @@
             <dependency>
                 <groupId>org.codehaus.woodstox</groupId>
                 <artifactId>stax2-api</artifactId>
-                <version>4.2.2</version>
+                <version>4.3.1</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.woodstox</groupId>
                 <artifactId>woodstox-core</artifactId>
-                <version>7.0.0</version>
+                <version>7.3.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hbase.thirdparty</groupId>
@@ -1463,7 +1527,7 @@
             <dependency>
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>
-                <version>20240303</version>
+                <version>20260814</version>
             </dependency>
             <dependency>
                 <groupId>javax.enterprise</groupId>
@@ -1585,7 +1649,7 @@
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.8.0</version>
+                        <version>0.11.0</version>
                         <extensions>true</extensions>
                         <configuration>
                             <!-- The server "id" element from settings to use authentication from -->

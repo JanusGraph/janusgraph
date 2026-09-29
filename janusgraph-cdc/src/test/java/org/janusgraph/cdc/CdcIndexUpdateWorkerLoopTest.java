@@ -17,7 +17,6 @@ package org.janusgraph.cdc;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.MockConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
 import org.janusgraph.graphdb.database.index.CdcElementChange;
 import org.janusgraph.graphdb.internal.ElementCategory;
@@ -57,7 +56,7 @@ public class CdcIndexUpdateWorkerLoopTest {
 
     @BeforeEach
     public void setUp() {
-        consumer = new MockConsumer<>(OffsetResetStrategy.EARLIEST);
+        consumer = new MockConsumer<>("earliest");
         applier = new RecordingApplier();
         config = CdcWorkerConfiguration.builder()
             .bootstrapServers("dummy:9092")
@@ -191,7 +190,7 @@ public class CdcIndexUpdateWorkerLoopTest {
 
     @Test
     public void closeWithoutStartClosesConsumer() {
-        MockConsumer<byte[], byte[]> unusedConsumer = new MockConsumer<>(OffsetResetStrategy.EARLIEST);
+        MockConsumer<byte[], byte[]> unusedConsumer = new MockConsumer<>("earliest");
         CdcIndexUpdateWorker worker = new CdcIndexUpdateWorker(unusedConsumer, decoder, applier, config);
         worker.close(); // never started: run()'s finally never executes, so close() itself must release the consumer
         assertTrue(unusedConsumer.closed(), "consumer of a never-started worker closed on close()");
@@ -203,7 +202,7 @@ public class CdcIndexUpdateWorkerLoopTest {
         // must log, pause, and CONTINUE polling so the rewound batch is redelivered and eventually applied -- this
         // is what makes at-least-once actually converge. A worker that died on the first failed batch would pass
         // every pollOnce()-level test.
-        MockConsumer<byte[], byte[]> subConsumer = new MockConsumer<>(OffsetResetStrategy.EARLIEST);
+        MockConsumer<byte[], byte[]> subConsumer = new MockConsumer<>("earliest");
         CountDownLatch pastSecondCycle = new CountDownLatch(1);
         subConsumer.schedulePollTask(() -> {
             subConsumer.rebalance(Collections.singletonList(TP));
@@ -243,7 +242,7 @@ public class CdcIndexUpdateWorkerLoopTest {
         // An Error (OutOfMemoryError, NoClassDefFoundError, ...) is deliberately NOT swallowed by the poll loop:
         // the thread dies (logged by the uncaught-exception handler), which embedders detect via isAlive() -- the
         // supervision contract CdcIndexUpdateWorkerMain relies on. run()'s finally must still release the consumer.
-        MockConsumer<byte[], byte[]> subConsumer = new MockConsumer<>(OffsetResetStrategy.EARLIEST);
+        MockConsumer<byte[], byte[]> subConsumer = new MockConsumer<>("earliest");
         subConsumer.schedulePollTask(() -> {
             subConsumer.rebalance(Collections.singletonList(TP));
             subConsumer.updateBeginningOffsets(Collections.singletonMap(TP, 0L));
@@ -269,7 +268,7 @@ public class CdcIndexUpdateWorkerLoopTest {
     @Test
     public void startThenCloseStopsCleanly() throws InterruptedException {
         // A fresh, subscription-mode consumer (the shared one is assign-mode for the pollOnce tests).
-        MockConsumer<byte[], byte[]> subConsumer = new MockConsumer<>(OffsetResetStrategy.EARLIEST);
+        MockConsumer<byte[], byte[]> subConsumer = new MockConsumer<>("earliest");
         // The scheduled poll task runs on the worker thread inside its first poll(), so the latch firing proves the
         // worker really entered the poll loop -- deterministic, unlike a fixed sleep.
         CountDownLatch polled = new CountDownLatch(1);

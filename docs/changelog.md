@@ -76,7 +76,7 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 * Oracle BerkeleyJE 7.5.11
 * ScyllaDB 6.2.0
 * Elasticsearch 6.6.0, 7.17.8, 8.15.3, 9.5.4
-* Apache Lucene 8.11.1
+* Apache Lucene 8.11.4
 * Apache Solr 8.11.1
 * Apache TinkerPop 3.8.2
 * Java 11, 17, 21, 25 (OLAP with Apache Spark: Java 11 and 17 only)
@@ -182,6 +182,19 @@ Please review the TinkerPop upgrade documentation for
 [3.8.0](https://tinkerpop.apache.org/docs/3.8.0/upgrade/#_tinkerpop_3_8_0),
 [3.8.1](https://tinkerpop.apache.org/docs/3.8.1/upgrade/#_tinkerpop_3_8_1) and
 [3.8.2](https://tinkerpop.apache.org/docs/3.8.2/upgrade/#_tinkerpop_3_8_2) before upgrading.
+
+##### Updated third-party libraries
+
+JanusGraph 1.2.0 updates its third-party libraries to their latest versions which are compatible with Java 11
+and with the libraries JanusGraph builds on (TinkerPop 3.8, Spark 3.3 and Hadoop 3.4). Applications embedding
+JanusGraph pick these versions up transitively. The most notable updates are:
+
+* Google Cloud Bigtable HBase client 2.20.2 (from 1.24.0) in `janusgraph-bigtable`. The connection settings
+  described in the [Bigtable documentation](storage-backend/bigtable.md) are unchanged.
+* `janusgraph-cdc` (new in 1.2.0) uses the Apache Kafka 4.3.1 clients, which require Kafka brokers 2.1 or newer.
+* Apache HBase client 2.6.6 (from 2.6.0), Apache ZooKeeper 3.9.6 (from 3.9.2), gRPC 1.84.0 (from 1.66.0),
+  Guava 33.7.1 (from 33.3.0), Jackson 2.22 (from 2.17), Log4j 2.26.1 (from 2.23.1), HPPC 0.10.0 (from 0.9.1)
+  and Vavr 1.0.1 (from 0.10.4).
 
 ##### Apache Cassandra 5.0 support
 
