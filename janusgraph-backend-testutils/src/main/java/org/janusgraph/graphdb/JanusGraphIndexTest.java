@@ -140,6 +140,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CDC_ENABLED;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_SELECT_STRATEGY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
@@ -282,6 +283,32 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals("demigod", h.label());
         assertCount(5, h.query().direction(Direction.BOTH).edges());
         graphOfTheGods.tx().commit();
+    }
+
+    @Test
+    public void testCdcIndexOptionsCanBeChangedOnARunningCluster() {
+        final String cdcEnabled = ConfigElement.getPath(INDEX_CDC_ENABLED, INDEX);
+        assertFalse(cdcBackingIndexNames().contains(INDEX));
+
+        // Unlike a GLOBAL_OFFLINE option, the stored value can be changed while another instance is open
+        final JanusGraph otherInstance = JanusGraphFactory.open(config);
+        try {
+            mgmt.set(cdcEnabled, true);
+            mgmt.commit();
+        } finally {
+            otherInstance.close();
+        }
+        clopen();
+        assertTrue(cdcBackingIndexNames().contains(INDEX));
+
+        // The local configuration of an instance overrides the stored value
+        clopen(option(INDEX_CDC_ENABLED, INDEX), false);
+        assertFalse(cdcBackingIndexNames().contains(INDEX));
+        assertEquals("true", mgmt.get(cdcEnabled));
+    }
+
+    private Set<String> cdcBackingIndexNames() {
+        return GraphDatabaseConfiguration.getCdcBackingIndexNames(graph.getConfiguration().getConfiguration(), false);
     }
 
     @Test
