@@ -27,8 +27,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -104,6 +108,41 @@ public class SubqueryIteratorTest {
         assertEquals(Collections.singletonList(ID_IN_EVERY_INDEX), streamedIds(
             Collections.singletonList(ID_IN_EVERY_INDEX),
             Arrays.asList(ID_IN_EVERY_INDEX, ID_IN_EVERY_INDEX), Integer.MAX_VALUE));
+    }
+
+    private SubqueryIterator iteratorOver(Stream<?> indexResults) {
+        final JointIndexQuery.Subquery subQuery = mock(JointIndexQuery.Subquery.class);
+        when(subQuery.getProfiler()).thenReturn(QueryProfiler.NO_OP);
+        final IndexSerializer indexSerializer = mock(IndexSerializer.class);
+        when(indexSerializer.query(any(), any(), any())).thenAnswer(invocation -> indexResults);
+        final SubqueryCache indexCache = mock(SubqueryCache.class);
+        when(indexCache.getIfPresent(any())).thenReturn(null);
+        return new SubqueryIterator(subQuery, indexSerializer, mock(BackendTransaction.class),
+            mock(StandardJanusGraphTx.class), indexCache, Integer.MAX_VALUE, id -> mock(JanusGraphElement.class), null);
+    }
+
+    //An index backend may hold a resource behind its stream, such as an Elasticsearch scroll context, which
+    //closing the stream hands back. A consumer which stops early only ever closes the iterator
+    @Test
+    public void shouldCloseTheIndexStreamWhenClosedBeforeTheEnd() {
+        final AtomicBoolean closed = new AtomicBoolean();
+        final SubqueryIterator iterator = iteratorOver(Stream.of(1L, 2L, 3L).onClose(() -> closed.set(true)));
+
+        iterator.next();
+        assertFalse(closed.get());
+        iterator.close();
+
+        assertTrue(closed.get());
+    }
+
+    @Test
+    public void shouldCloseTheIndexStreamOnceExhausted() {
+        final AtomicBoolean closed = new AtomicBoolean();
+        final SubqueryIterator iterator = iteratorOver(Stream.of(1L, 2L).onClose(() -> closed.set(true)));
+
+        iterator.forEachRemaining(element -> { });
+
+        assertTrue(closed.get());
     }
 
     @Test

@@ -36,6 +36,7 @@ import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
+import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
@@ -68,6 +69,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -148,6 +150,10 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private final long retryMaxWaitMs;
 
     private final int bulkChunkSerializedLimitBytes;
+    //Set once the first rejected scroll release has been logged as a warning. Every scroll of the index backend is
+    //released through this client with the same credentials, so later rejections repeat the same problem and are
+    //logged at debug level. Releases complete on the HTTP client's I/O threads, hence the atomic flag
+    private final AtomicBoolean warnedAboutRejectedScrollRelease = new AtomicBoolean();
 
 public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7,
                                int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
@@ -814,7 +820,43 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public void deleteScroll(String scrollId) throws IOException {
-        delegate.performRequest(new Request(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll" + REQUEST_SEPARATOR + scrollId));
+        final Request request = new Request(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll");
+        //The id goes in the body: the path form has been deprecated since Elasticsearch 7, and an id can outgrow a URL
+        request.setEntity(new ByteArrayEntity(
+            mapWriter.writeValueAsBytes(ImmutableMap.of("scroll_id", ImmutableList.of(scrollId))), ContentType.APPLICATION_JSON));
+        //Releasing the context shouldn't cost the search a round trip, so the request goes out without waiting for
+        //its answer. Should it be lost, the context expires after the keep-alive anyway
+        delegate.performRequestAsync(request, new ResponseListener() {
+            @Override
+            public void onSuccess(Response response) {
+            }
+
+            @Override
+            public void onFailure(Exception exception) {
+                //A release the cluster rejects, for example for want of the privilege to clear scrolls, means every
+                //context this client opens stays open until it expires, which is worth one warning. A lost request,
+                //a cluster which is momentarily unable to answer, or a context which had expired already isn't
+                if (exception instanceof ResponseException
+                    && isRejectedScrollRelease(((ResponseException) exception).getResponse().getStatusLine().getStatusCode())
+                    && !warnedAboutRejectedScrollRelease.getAndSet(true)) {
+                    log.warn("Elasticsearch rejected the release of the scroll {}, so scroll contexts stay open until they " +
+                        "expire after {}. Further rejections are logged at debug level.", scrollId, scrollKeepAlive, exception);
+                } else {
+                    log.debug("Could not release the Elasticsearch scroll {}, which expires after {}", scrollId, scrollKeepAlive, exception);
+                }
+            }
+        });
+    }
+
+    /**
+     * Whether a status answers the release of a scroll with a rejection which every later release will meet as well:
+     * a request the cluster doesn't accept (400, 405) or doesn't permit (401, 403). A context which is gone already
+     * (404), a busy cluster (429), a timed out request (408) or a server error are passing, not the release's.
+     */
+    @VisibleForTesting
+    static boolean isRejectedScrollRelease(int statusCode) {
+        return statusCode == HttpStatus.SC_BAD_REQUEST || statusCode == HttpStatus.SC_UNAUTHORIZED
+            || statusCode == HttpStatus.SC_FORBIDDEN || statusCode == HttpStatus.SC_METHOD_NOT_ALLOWED;
     }
 
     public void setBulkRefresh(String bulkRefresh) {

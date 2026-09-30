@@ -36,6 +36,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
@@ -98,6 +99,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
@@ -1006,5 +1008,167 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         final boolean exists = response.getStatusLine().getStatusCode() == 200;
         IOUtils.closeQuietly(response);
         return exists;
+    }
+
+    /* ---------------------------------------------------------------
+     * Search contexts. The page size of this configuration is 3 (max-result-set-size), so a result of 10
+     * documents is several pages, and these tests watch the cluster's own accounting of its search contexts
+     * ---------------------------------------------------------------
+     */
+
+    private static final int INDEXED_DOCUMENTS = 10;
+
+    private void indexDocuments(String store) throws BackendException {
+        initialize(store);
+        for (int i = 0; i < INDEXED_DOCUMENTS; i++) {
+            final Multimap<String, Object> doc = HashMultimap.create();
+            doc.put(TEXT, "Hello world");
+            doc.put(TIME, (long) i);
+            doc.put(WEIGHT, i < 2 ? 1.5 : 2.5);
+            add(store, "doc" + i, doc, true);
+        }
+        clopen();
+    }
+
+    private IndexQuery allDocuments(String store) {
+        return new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"));
+    }
+
+    private IndexQuery allDocuments(String store, int limit) {
+        return new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), limit);
+    }
+
+    private RawQuery rawAllDocuments(String store) {
+        return new RawQuery(store, "text:\"Hello world\"", new Parameter[0]);
+    }
+
+    @Test
+    public void shouldNotOpenAScrollContextForALimitedQueryLargerThanAPage() throws Exception {
+        final String store = "vertex";
+        indexDocuments(store);
+        final SearchStats before = settledSearchStats();
+
+        assertEquals(7, tx.queryStream(allDocuments(store, 7)).count());
+        assertEquals(INDEXED_DOCUMENTS, tx.queryStream(allDocuments(store, INDEXED_DOCUMENTS)).count());
+        assertEquals(INDEXED_DOCUMENTS, tx.queryStream(allDocuments(store, 5_000)).count());
+        assertEquals(7, tx.queryStream(rawAllDocuments(store).setLimit(7)).count());
+
+        assertEquals(before.scrollTotal, awaitSearchContextsBackAt(before).scrollTotal, "scroll contexts opened");
+    }
+
+    @Test
+    public void shouldNotOpenAScrollContextForAnUnlimitedQueryWhichFitsIntoAPage() throws Exception {
+        final String store = "vertex";
+        indexDocuments(store);
+        final SearchStats before = settledSearchStats();
+
+        assertEquals(2, tx.queryStream(new IndexQuery(store, PredicateCondition.of(WEIGHT, Cmp.EQUAL, 1.5))).count());
+        assertEquals(3, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TIME, Cmp.LESS_THAN, 3L))).count());
+        //Fits into a page after its offset, which the first request applies
+        assertEquals(2, tx.queryStream(rawAllDocuments(store).setOffset(INDEXED_DOCUMENTS - 2)).count());
+
+        assertEquals(before.scrollTotal, awaitSearchContextsBackAt(before).scrollTotal, "scroll contexts opened");
+    }
+
+    @Test
+    public void shouldReleaseTheScrollContextOfAnUnlimitedQueryLargerThanAPage() throws Exception {
+        final String store = "vertex";
+        indexDocuments(store);
+        final SearchStats before = settledSearchStats();
+
+        assertEquals(INDEXED_DOCUMENTS, tx.queryStream(allDocuments(store)).count());
+        assertEquals(INDEXED_DOCUMENTS, tx.queryStream(rawAllDocuments(store)).count());
+
+        final SearchStats after = awaitSearchContextsBackAt(before);
+        assertTrue(after.scrollTotal > before.scrollTotal, "these results are read through a scroll");
+    }
+
+    @Test
+    public void shouldReleaseTheScrollContextWhenTheConsumerStopsBeforeTheEnd() throws Exception {
+        final String store = "vertex";
+        indexDocuments(store);
+        final SearchStats before = settledSearchStats();
+
+        try (Stream<String> firstOnly = tx.queryStream(allDocuments(store))) {
+            assertNotNull(firstOnly.iterator().next());
+        }
+
+        final SearchStats after = awaitSearchContextsBackAt(before);
+        assertTrue(after.scrollTotal > before.scrollTotal, "this result is read through a scroll");
+    }
+
+    //The offset of a limited raw query is applied by Elasticsearch, that of an unlimited one on the client
+    @Test
+    public void shouldApplyOffsetsBeyondAPage() throws Exception {
+        final String store = "vertex";
+        indexDocuments(store);
+
+        assertEquals(4, tx.queryStream(rawAllDocuments(store).setOffset(3).setLimit(4)).count());
+        assertEquals(2, tx.queryStream(rawAllDocuments(store).setOffset(INDEXED_DOCUMENTS - 2).setLimit(5)).count());
+        assertEquals(0, tx.queryStream(rawAllDocuments(store).setOffset(INDEXED_DOCUMENTS).setLimit(5)).count());
+        assertEquals(5, tx.queryStream(rawAllDocuments(store).setOffset(5)).count());
+        assertEquals(0, tx.queryStream(rawAllDocuments(store).setOffset(INDEXED_DOCUMENTS + 2)).count());
+        final List<String> ordered = tx.queryStream(new RawQuery(store, "text:\"Hello world\"",
+            ImmutableList.of(new IndexQuery.OrderEntry(TIME, Order.ASC, Long.class)), new Parameter[0]).setOffset(4))
+            .map(RawQuery.Result::getResult).collect(Collectors.toList());
+        assertEquals(Arrays.asList("doc4", "doc5", "doc6", "doc7", "doc8", "doc9"), ordered);
+    }
+
+    private static final class SearchStats {
+        final long openContexts;
+        final long scrollTotal;
+
+        SearchStats(long openContexts, long scrollTotal) {
+            this.openContexts = openContexts;
+            this.scrollTotal = scrollTotal;
+        }
+    }
+
+    //The cluster's accounting of its search contexts, summed over its nodes. scroll_total counts the scroll
+    //contexts a node has closed, so it grows only for a result read through a scroll
+    private SearchStats searchStats() throws IOException {
+        try (CloseableHttpResponse response = httpClient.execute(host, new HttpGet("_nodes/stats/indices/search"))) {
+            final JsonNode nodes = objectMapper.readTree(EntityUtils.toString(response.getEntity())).get("nodes");
+            long openContexts = 0;
+            long scrollTotal = 0;
+            for (JsonNode node : nodes) {
+                final JsonNode search = node.get("indices").get("search");
+                openContexts += search.get("open_contexts").asLong();
+                scrollTotal += search.get("scroll_total").asLong();
+            }
+            return new SearchStats(openContexts, scrollTotal);
+        }
+    }
+
+    //A context left behind by an earlier test expires after the scroll keep-alive (60 s), and the cluster reaps
+    //expired contexts once a minute
+    private static final Duration CONTEXT_EXPIRY = Duration.ofSeconds(150);
+
+    //A release goes out asynchronously right after the last hit was read or the stream closed. Far below the
+    //keep-alive, so a context which is still open after this wait was left to expire, not released
+    private static final Duration PROMPT_RELEASE = Duration.ofSeconds(10);
+
+    //The accounting a test starts from, read once every context an earlier test left behind is gone. On this
+    //dedicated single-node container that means no open context at all; a context which outlives the wait is the
+    //cluster's own, and the test's contexts are counted on top of it rather than failing the test
+    private SearchStats settledSearchStats() throws Exception {
+        return awaitOpenSearchContexts(0, CONTEXT_EXPIRY);
+    }
+
+    private SearchStats awaitSearchContextsBackAt(SearchStats baseline) throws Exception {
+        final SearchStats stats = awaitOpenSearchContexts(baseline.openContexts, PROMPT_RELEASE);
+        assertTrue(stats.openContexts <= baseline.openContexts,
+            "open search contexts: " + stats.openContexts + " where " + baseline.openContexts + " were open before");
+        return stats;
+    }
+
+    private SearchStats awaitOpenSearchContexts(long atMostOpen, Duration atMost) throws Exception {
+        final long deadline = System.currentTimeMillis() + atMost.toMillis();
+        SearchStats stats = searchStats();
+        while (stats.openContexts > atMostOpen && System.currentTimeMillis() < deadline) {
+            Thread.sleep(100);
+            stats = searchStats();
+        }
+        return stats;
     }
 }

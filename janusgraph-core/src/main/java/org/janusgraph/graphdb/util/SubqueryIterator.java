@@ -48,6 +48,10 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
 
     private Iterator<? extends JanusGraphElement> elementIterator;
 
+    //Kept to be closed: an index backend may hold a resource behind its stream, such as an Elasticsearch scroll
+    //context, which closing the stream hands back
+    private final Stream<?> indexStream;
+
     private List<Object> currentIds;
 
     private QueryProfiler profiler;
@@ -86,6 +90,7 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                 throw new JanusGraphException("Could not call index", e);
             }
         }
+        indexStream = stream;
         //Membership is tested once for every element the first index returns, and otherResults is deliberately
         //unbounded: StandardJanusGraphTx passes NO_LIMIT to processIntersectingRetrievals so that the intersection is
         //complete. Scanning the list for each element would make the intersection cost O(n*m).
@@ -141,6 +146,8 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
             profiler.stopTimer();
             isTimerRunning = false;
         }
+        //After the probe above, which may still read from it. Closing a stream twice is harmless
+        indexStream.close();
     }
 
     /**

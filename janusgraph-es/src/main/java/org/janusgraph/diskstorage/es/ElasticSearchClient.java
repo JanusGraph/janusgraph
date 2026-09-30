@@ -85,6 +85,11 @@ public interface ElasticSearchClient extends Closeable {
 
     ElasticSearchResponse search(String scrollId) throws IOException;
 
+    /**
+     * Releases a scroll context which is no longer read. It is a courtesy to the cluster rather than part of the
+     * search: the context expires after the scroll keep-alive on its own, so an implementation may return before
+     * the cluster has released it, and the caller doesn't fail its search over a release which failed.
+     */
     void deleteScroll(String scrollId) throws IOException;
 
     void addAlias(String alias, String index) throws IOException;
