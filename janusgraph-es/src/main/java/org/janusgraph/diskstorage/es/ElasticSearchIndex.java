@@ -83,20 +83,16 @@ import java.util.Date;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_DOC_KEY;
@@ -450,18 +446,13 @@ public class ElasticSearchIndex implements IndexProvider {
     private static final String MAX_OPEN_SCROLL_CONTEXT_PARAMETER = "search.max_open_scroll_context";
     private static final Map<String, Object> MAX_RESULT_WINDOW = ImmutableMap.of("index.max_result_window", Integer.MAX_VALUE);
 
-    private static final Parameter[] NULL_PARAMETERS = null;
-
-    private static final String TRACK_TOTAL_HITS_PARAMETER = "track_total_hits";
-    private static final Parameter[] TRACK_TOTAL_HITS_DISABLED_PARAMETERS = new Parameter[]{new Parameter<>(TRACK_TOTAL_HITS_PARAMETER, false)};
-    private static final Map<String, Object> TRACK_TOTAL_HITS_DISABLED_REQUEST_BODY = ImmutableMap.of(TRACK_TOTAL_HITS_PARAMETER, false);
-
     private final Function<String, String> generateIndexStoreNameFunction = this::generateIndexStoreName;
     private final Map<String, String> indexStoreNamesCache = new ConcurrentHashMap<>();
     private final boolean indexStoreNameCacheEnabled;
 
     private final AbstractESCompat compat;
     private final ElasticSearchClient client;
+    private final ElasticSearchSearcher searcher;
     private final String indexName;
     private final int batchSize;
     private final boolean useExternalMappings;
@@ -501,6 +492,7 @@ public class ElasticSearchIndex implements IndexProvider {
         checkClusterHealth(config.get(HEALTH_REQUEST_TIMEOUT));
 
         compat = ESCompatUtils.acquireCompatForVersion(client.getMajorVersion());
+        searcher = new ElasticSearchSearcher(client, compat, batchSize);
 
         indexSetting = ElasticSearchSetup.getSettingsFromJanusGraphConf(config);
 
@@ -1551,35 +1543,16 @@ public class ElasticSearchIndex implements IndexProvider {
         if (!query.getOrder().isEmpty()) {
             addOrderToQuery(informations, sr, query.getOrder(), query.getStore());
         }
-        sr.setFrom(0);
-        if (query.hasLimit()) {
-            sr.setSize(Math.min(query.getLimit(), batchSize));
-        } else {
-            sr.setSize(batchSize);
-        }
-
         sr.setDisableSourceRetrieval(true);
 
-        ElasticSearchResponse response;
         try {
-            final String indexStoreName = getIndexStoreName(query.getStore());
-            final boolean useScroll = sr.getSize() >= batchSize;
-            response = client.search(indexStoreName,
-                compat.createRequestBody(sr, useScroll? NULL_PARAMETERS : TRACK_TOTAL_HITS_DISABLED_PARAMETERS),
-                useScroll);
-            log.debug("First Executed query [{}] in {} ms", query.getCondition(), response.getTook());
-            final Iterator<RawQuery.Result<String>> resultIterator = getResultsIterator(useScroll, response, sr.getSize());
-            final Stream<RawQuery.Result<String>> toReturn
-                    = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED), false);
-            return (query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn).map(RawQuery.Result::getResult);
-        } catch (final IOException | UncheckedIOException e) {
+            log.debug("Executing query [{}]", query.getCondition());
+            return searcher.search(getIndexStoreName(query.getStore()), sr, null, 0, query.getLimit())
+                .map(RawQuery.Result::getResult);
+        } catch (final IOException e) {
             //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
             throw convert(e);
         }
-    }
-
-    private Iterator<RawQuery.Result<String>> getResultsIterator(boolean useScroll, ElasticSearchResponse response, int windowSize){
-        return (useScroll)? new ElasticSearchScroll(client, response, windowSize) : response.getResults().iterator();
     }
 
     private String convertToEsDataType(Class<?> dataType, Mapping mapping) {
@@ -1614,35 +1587,6 @@ public class ElasticSearchIndex implements IndexProvider {
         return null;
     }
 
-    private ElasticSearchResponse runCommonQuery(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx, int size,
-                                                 boolean useScroll) throws BackendException{
-        final ElasticSearchRequest sr = new ElasticSearchRequest();
-        sr.setQuery(compat.queryString(query.getQuery()));
-        if (!query.getOrders().isEmpty()) {
-            addOrderToQuery(informations, sr, query.getOrders(), query.getStore());
-        }
-        sr.setFrom(0);
-        sr.setSize(size);
-        sr.setDisableSourceRetrieval(true);
-        try {
-            Map<String, Object> requestBody = compat.createRequestBody(sr, query.getParameters());
-            if(!useScroll) {
-                if (requestBody == null) {
-                    requestBody = TRACK_TOTAL_HITS_DISABLED_REQUEST_BODY;
-                } else {
-                    requestBody.put(TRACK_TOTAL_HITS_PARAMETER, false);
-                }
-            }
-            return client.search(
-                getIndexStoreName(query.getStore()),
-                requestBody,
-                useScroll);
-        } catch (final IOException | UncheckedIOException e) {
-            //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
-            throw convert(e);
-        }
-    }
-
     private long runCountQuery(RawQuery query) throws BackendException{
         try {
             long countTotal = client.countTotal(
@@ -1670,22 +1614,20 @@ public class ElasticSearchIndex implements IndexProvider {
     @Override
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information,
                                                  BaseTransaction tx) throws BackendException {
-        final int size = query.hasLimit() ? Math.min(query.getLimit() + query.getOffset(), batchSize) : batchSize;
-        final boolean useScroll = size >= batchSize;
-        final ElasticSearchResponse response = runCommonQuery(query, information, tx, size, useScroll);
-        log.debug("First Executed query [{}] in {} ms", query.getQuery(), response.getTook());
-        final Iterator<RawQuery.Result<String>> resultIterator;
+        final ElasticSearchRequest sr = new ElasticSearchRequest();
+        sr.setQuery(compat.queryString(query.getQuery()));
+        if (!query.getOrders().isEmpty()) {
+            addOrderToQuery(information, sr, query.getOrders(), query.getStore());
+        }
+        sr.setDisableSourceRetrieval(true);
         try {
-            //A scroll whose first page is also its last is closed right here, which is one more request that can
-            //fail the way the search itself can, so it is classified the same way
-            resultIterator = getResultsIterator(useScroll, response, size);
-        } catch (final UncheckedIOException e) {
+            log.debug("Executing query [{}]", query.getQuery());
+            return searcher.search(getIndexStoreName(query.getStore()), sr, query.getParameters(), query.getOffset(),
+                query.getLimit());
+        } catch (final IOException e) {
+            //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
             throw convert(e);
         }
-        final Stream<RawQuery.Result<String>> toReturn
-                = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED),
-                false).skip(query.getOffset());
-        return query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn;
     }
 
     @Override

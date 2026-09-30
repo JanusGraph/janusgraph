@@ -728,6 +728,27 @@ once, so bulk requests grow with the size of the documents they update; an updat
 `index.[X].elasticsearch.bulk-chunk-size-limit-bytes` is sent without it, as before this change, rather than failing. A
 mixed index on a cdc-only backend, whose documents are written asynchronously, is not affected.
 
+##### Elasticsearch searches open a scroll context only for results larger than a page
+
+Every mixed index query whose limit was at least `index.[X].max-result-set-size` (50 by default), and every query
+without a limit, read its result through the scroll API in pages of that size. A query with a limit whose result had at
+least as many hits also left its scroll context open until `index.[X].elasticsearch.scroll-keep-alive` expired, because
+the result stream stopped at the limit before the last page. So a `limit(1000)` was 20 requests and a 60 s scroll
+context, and a lookup without a limit was two requests, the scroll search and the one which released its context, both
+waited for. Elasticsearch also had to count every match of these queries, as a scroll may not switch the total off.
+JanusGraph now fetches a result whose offset and limit together are within 10,000 hits, Elasticsearch's default
+`index.max_result_window`, in one request of exactly that size and without counting the total, and Elasticsearch
+applies the offset of a direct index query in that request. A query without a limit, or beyond that size, first asks
+for one hit more than a page after the offset, or for what is left up to the 10,000th hit if that is less; only when
+the result is larger, or the offset is 10,000 or more, does a scroll take over, which costs such a result one request
+more than before. The scroll context is released as soon as the result has been read to its end,
+the limit is reached, or the traversal is closed, which JanusGraph Server does after every request; embedded code
+should close a traversal it abandons before its end, otherwise the context expires after the keep-alive as before. The
+release no longer waits for the cluster's answer, and a release which fails no longer fails the query; a release the
+cluster rejects is logged as a warning once. Deployments which set
+`index.[X].elasticsearch.setup-max-open-scroll-contexts` to `false`, such as Amazon OpenSearch Service, are therefore
+far less likely to reach the cluster's limit of open scroll contexts.
+
 ##### `tx.max-commit-time` now defaults to 300 s and is checked against the least a commit may take
 
 `tx.max-commit-time` is the time after which transaction recovery considers a transaction failed and restores the index
