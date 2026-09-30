@@ -27,7 +27,7 @@ All currently supported versions of JanusGraph are listed below.
 
 | JanusGraph | Storage Version | Cassandra | HBase | Bigtable | ScyllaDB | Elasticsearch | Solr | TinkerPop | Spark | Scala |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| 1.2.z | 2 | 3.11.z, 4.0.z, 5.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.1-6.8.z, 7.y, 8.y, 9.y | 8.y | 3.8.z | 3.2.z | 2.12.z |
+| 1.2.z | 2 | 3.11.z, 4.0.z, 5.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.1-6.8.z, 7.y, 8.y, 9.y | 8.11.z, 9.y | 3.8.z | 3.2.z | 2.12.z |
 | 1.1.z | 2 | 3.11.z, 4.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.y, 7.y, 8.y | 8.y | 3.7.z | 3.2.z | 2.12.z |
 
 !!! info
@@ -76,8 +76,8 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 * Oracle BerkeleyJE 7.5.11
 * ScyllaDB 6.2.0
 * Elasticsearch 6.6.0, 7.17.8, 8.15.3, 9.5.4
-* Apache Lucene 8.11.4
-* Apache Solr 8.11.1
+* Apache Lucene 9.12.3
+* Apache Solr 8.11.4, 9.10.1
 * Apache TinkerPop 3.8.2
 * Java 11, 17, 21, 25 (OLAP with Apache Spark: Java 11 and 17 only)
 
@@ -227,6 +227,79 @@ the upsert of an update: a document which a mutation creates through an upsert, 
 because it is missing from the index, skips the pipeline set with
 `index.[X].elasticsearch.ingest-pipeline.[mixedIndexName]`. Upgrade Elasticsearch 6.0 clusters before upgrading
 JanusGraph; the oldest Elasticsearch 6 release tested is 6.6.0.
+
+##### Solr 9 support, Solr 8 is deprecated
+
+JanusGraph 1.2.0 uses SolrJ 9.10.1 and supports Solr 9. Solr 8.11 is still supported and tested, but deprecated: Solr 8
+reached its end of life, and a future JanusGraph version will drop it. SolrJ 10 requires Java 17 (and Solr 10 Java 21),
+which is newer than JanusGraph's minimum Java version, so Solr 10 isn't supported yet.
+
+JanusGraph can be upgraded before the Solr cluster. The configset in `conf/solr` now works with Solr 8.11 and 9.
+
+Solr 9 removed `LatLonType` and the `LRUCache` and `FastLRUCache` caches, which the configset in `conf/solr` of earlier
+JanusGraph distributions used, so Solr 9 can't load the collections created with that configset. Before upgrading the
+Solr cluster to Solr 9, change the configset of these collections and upload it again (`bin/solr zk upconfig`; in the
+HTTP mode, change the files in the `conf` directory of each core):
+
+* Replace the `location` field type (JanusGraph doesn't use it) with
+  `<fieldType name="location" class="solr.LatLonPointSpatialField" docValues="true"/>`. Changing only the class
+  isn't enough, because `LatLonPointSpatialField` rejects the `subFieldSuffix` attribute of `LatLonType`.
+* Change the class of the caches (`filterCache`, `queryResultCache`, `documentCache` and `perSegFilter`) to
+  `solr.CaffeineCache`.
+
+The data of these collections stays readable, because Solr 9 still supports the Trie field types of that configset,
+although it deprecates them. Solr 9 can't open indexes which were created by Solr 7 or older.
+
+The configset in `conf/solr` now uses the Point field types (with doc values) instead of the Trie field types,
+`LatLonPointSpatialField`, `CurrencyFieldType` instead of `CurrencyField`, `CaffeineCache` and `luceneMatchVersion`
+9.12. Use it for new collections. An existing collection can only switch to it by recreating the collection and
+reindexing the mixed index (`SchemaAction.REINDEX`), because the field types of existing data can't change.
+
+Solr 9 removed the `maxShardsPerNode` parameter of the collection creation, and SolrJ 9 no longer offers it. JanusGraph
+still sends `index.[X].solr.max-shards-per-node` when it creates a collection on Solr 8, which puts at most 1 replica of
+a new collection on a node by default. Before JanusGraph creates a collection, it asks Solr for its version. The new
+option `index.[X].solr.major-version` (for example `8` or `9`) takes precedence over the version Solr reports and saves
+that request. If neither is known, JanusGraph assumes Solr 8, because Solr 9 ignores the parameter.
+
+`index.[X].solr.max-shards-per-node` is deprecated, and JanusGraph logs a warning when it is set for Solr 9. After
+upgrading to Solr 9, remove this `GLOBAL_OFFLINE` option from the graph's configuration (for example with
+`mgmt.remove("index.search.solr.max-shards-per-node")` and `mgmt.commit()` while only one JanusGraph instance is open)
+and from the local configuration files.
+
+JanusGraph keeps using the SolrJ clients based on Apache HttpClient (`CloudLegacySolrClient` for SolrCloud, since
+SolrJ 9's `CloudSolrClient.Builder` builds the Jetty based HTTP/2 client), so the Kerberos configuration is
+unchanged. In the HTTP mode, `index.[X].solr.http-connection-timeout` (5 seconds by default) now applies to the
+requests; SolrJ 8's load balancing client connected with its own timeout of 15 seconds. On the Solr server, the
+Kerberos authentication plugin (`org.apache.solr.security.hadoop.KerberosPlugin`) is part of Solr 9's `hadoop-auth`
+module.
+
+SolrJ 9 is built on Jetty 10, so JanusGraph now manages Jetty 10.0.26 instead of 9.4.58. Applications which embed
+JanusGraph and use Jetty 9.4 themselves have to align their Jetty version.
+
+The JanusGraph distribution no longer contains `noggit-0.8.jar`. SolrJ contains its own, newer copy of the `org.noggit`
+classes, and when the `org.noggit:noggit` 0.8 artifact (a dependency of `janusgraph-driver` for Spatial4j's GeoJSON
+reader) comes first on the classpath, SolrJ fails with
+`NoSuchMethodError: 'java.lang.Object org.noggit.ObjectBuilder.getValStrict()'`. Applications which use
+`janusgraph-solr` should exclude `org.noggit:noggit` as well: Spatial4j works with SolrJ's copy.
+
+##### Apache Lucene 9
+
+`janusgraph-lucene` now uses Apache Lucene 9.12.3 instead of 8.11. A JanusGraph installation can contain only one
+Lucene version, and Solr 9 is built on Lucene 9 (Lucene 10 requires Java 21).
+
+Lucene 9 opens indexes which were created by Lucene 8 (JanusGraph 0.6.0 to 1.1.x), so existing Lucene mixed indexes keep
+working without a reindex. Once JanusGraph 1.2.0 has written to such an index, earlier JanusGraph versions can't open it
+anymore. Lucene 9 can't open indexes created by Lucene 7 or older (JanusGraph 0.5.x and older), even if they were
+written by Lucene 8 later. Delete the directories of such indexes and reindex the mixed indexes.
+
+Minimum and maximum aggregations of `Float` properties which the Lucene index computes (for example
+`g.V().has("name", "bob").values("weight").max()`) now return the right values: they used to read the indexed double
+values as floats.
+
+Custom analyzers (the `string-analyzer` and `text-analyzer` mapping parameters of the Lucene and Solr indexes) are
+loaded by class name, so they have to exist in Lucene 9. Lucene 9 renamed the `lucene-analyzers-common` artifact to
+`lucene-analysis-common` and moved a few analyzers to other packages, for example `ClassicAnalyzer` to
+`org.apache.lucene.analysis.classic` and `UAX29URLEmailAnalyzer` to `org.apache.lucene.analysis.email`.
 
 ##### Zombie instances auto-close during index status update operations
 

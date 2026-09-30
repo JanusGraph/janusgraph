@@ -14,6 +14,9 @@
 
 package org.janusgraph.diskstorage.lucene;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Cmp;
@@ -27,13 +30,19 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -82,6 +91,33 @@ public class LuceneIndexTest extends IndexProviderTest {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("lucene"),index);
         return config.restrictTo(index);
+    }
+
+    @Test
+    public void testOrderByStringWithCustomAnalyzerOverManyDocuments() throws Exception {
+        // Once more documents than max(limit, 1000) match, Lucene skips the non-competitive documents of a sort on
+        // doc values through the terms index of the field. The terms of STRING and of the string part of FULL_TEXT
+        // are made by a custom string analyzer and differ from their doc values. TEXT_STRING has no custom string
+        // analyzer, so its sort keeps skipping documents.
+        final String store = "store1";
+        initialize(store);
+        final int numDocs = 1500;
+        for (int i = 0; i < numDocs; i++) {
+            final Multimap<String, Object> doc = HashMultimap.create();
+            doc.put(STRING, String.format("Walking person %04d", numDocs - i));
+            doc.put(FULL_TEXT, String.format("Walking person %04d", numDocs - i));
+            doc.put(TEXT_STRING, String.format("Walking person %04d", numDocs - i));
+            doc.put(TIME, (long) i);
+            add(store, "doc" + i, doc, true);
+        }
+        clopen();
+
+        final List<String> expected = IntStream.range(0, 10).mapToObj(i -> "doc" + (numDocs - 1 - i)).collect(Collectors.toList());
+        for (String key : new String[]{STRING, FULL_TEXT, TEXT_STRING}) {
+            final List<String> docIds = tx.queryStream(new IndexQuery(store, PredicateCondition.of(TIME, Cmp.GREATER_THAN_EQUAL, 0L),
+                ImmutableList.of(new IndexQuery.OrderEntry(key, Order.ASC, String.class)), 10)).collect(Collectors.toList());
+            assertEquals(expected, docIds, key);
+        }
     }
 
     @Test

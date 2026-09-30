@@ -23,7 +23,7 @@
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-            <version>${lucene-solr.version}</version>
+            <version>${lucene.version}</version>
         </dependency>
         <dependency>
             <groupId>org.janusgraph</groupId>

@@ -36,7 +36,7 @@ public enum Mapping {
     PREFIX_TREE,
     // BKD is the default ElasticSearch (geo-shape index strategy)[https://www.elastic.co/guide/en/elasticsearch/reference/8.1/geo-shape.html#geoshape-indexing-approach].
     // (More information about this strategy)[https://github.com/elastic/elasticsearch/issues/32039].
-    // PREFIX_TREE strategy was deprecated in ElasticSearch 7 and was removed in ElasticSearch 8. PREFIX_TREE is available in Solr 8 and Lucene 8.
+    // PREFIX_TREE strategy was deprecated in ElasticSearch 7 and was removed in ElasticSearch 8. PREFIX_TREE is available in Solr and Lucene.
     BKD;
 
     /**

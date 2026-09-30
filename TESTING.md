@@ -91,16 +91,19 @@ mvn clean install -pl janusgraph-solr
 ```
 
 Additional Maven profiles are defined for testing against default versions of other supported major Solr releases.
-(Currently, only Solr 8 are supported.)
+(Currently, Solr 8 and 9 are supported.)
 
 ```bash
 mvn clean install -pl janusgraph-solr -Psolr8
+mvn clean install -pl janusgraph-solr -Psolr9
 ```
 
 Finally the `solr.docker.version` property can be used to test against arbitrary Solr versions.
+For Solr 9, use 9.4 or newer: the tests connect to the embedded ZooKeeper of the Solr container, which Solr 9.0 to
+9.3 only bind to the container's localhost.
 
 ```bash
-mvn clean install -pl janusgraph-solr -Dsolr.docker.version=8.0.0
+mvn clean install -pl janusgraph-solr -Dsolr.docker.version=9.9.0
 ```
 
 ## Running Elasticsearch Tests

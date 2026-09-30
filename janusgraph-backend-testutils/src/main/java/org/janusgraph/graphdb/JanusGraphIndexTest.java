@@ -1241,6 +1241,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertEquals(190, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").max().next());
             assertEquals(25, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("age").max().next());
             assertEquals(170, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").min().next());
+            assertEquals(102.5, ((Number) tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("weight").max().next()).doubleValue(), 0.001);
+            assertEquals(55.3, ((Number) tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("weight").min().next()).doubleValue(), 0.001);
             // since TinkerPop 3.8 sum() retains the number type of the stream (promoted by bulking), so compare the numeric value only
             assertEquals(535L, ((Number) tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").sum().next()).longValue());
             assertEquals(535.0/3, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").mean().next());
