@@ -26,6 +26,14 @@ public interface ElasticSearchClient extends Closeable {
 
     ElasticMajorVersion getMajorVersion();
 
+    /**
+     * Returns whether requests use mapping types: those of Elasticsearch 6, and of Elasticsearch 7 with
+     * {@code use-mapping-for-es7}. The default only knows the major version, so it only covers Elasticsearch 6.
+     */
+    default boolean usesMappingTypes() {
+        return getMajorVersion().getValue() < 7;
+    }
+
     void clusterHealthRequest(String timeout) throws IOException;
 
     boolean indexExists(String indexName) throws IOException;

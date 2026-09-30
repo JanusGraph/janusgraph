@@ -25,6 +25,7 @@ import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.elasticsearch.client.RestClientBuilder.RequestConfigCallback;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.es.ElasticMajorVersion;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchIndex;
 import org.janusgraph.diskstorage.es.rest.util.BasicAuthHttpClientConfigCallback;
@@ -79,8 +80,10 @@ public class RestClientSetup {
         long retryMaxWaitMs = config.getOrDefault(ElasticSearchIndex.RETRY_MAX_WAIT);
         Set<Integer> errorCodesToRetry = ElasticSearchIndex.parseStatusCodes(config.get(ElasticSearchIndex.RETRY_ERROR_CODES));
         int bulkChunkLimitBytes = config.getOrDefault(ElasticSearchIndex.BULK_CHUNK_SIZE_LIMIT_BYTES);
+        final ElasticMajorVersion majorVersion = config.has(ElasticSearchIndex.MAJOR_VERSION)
+            ? ElasticMajorVersion.of(config.get(ElasticSearchIndex.MAJOR_VERSION)) : null;
         final RestElasticSearchClient client = getElasticSearchClient(rc, scrollKeepAlive, useMappingTypesForES7,
-            retryLimit, errorCodesToRetry, retryInitialWaitMs, retryMaxWaitMs, bulkChunkLimitBytes);
+            retryLimit, errorCodesToRetry, retryInitialWaitMs, retryMaxWaitMs, bulkChunkLimitBytes, majorVersion);
         if (config.has(ElasticSearchIndex.BULK_REFRESH)) {
             client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH));
         }
@@ -114,9 +117,10 @@ public class RestClientSetup {
 
     protected RestElasticSearchClient getElasticSearchClient(RestClient rc, int scrollKeepAlive, boolean useMappingTypesForES7,
                                                              int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
-                                                             long retryMaxWaitMs, int bulkChunkSerializedLimit) {
+                                                             long retryMaxWaitMs, int bulkChunkSerializedLimit,
+                                                             ElasticMajorVersion majorVersion) {
         return new RestElasticSearchClient(rc, scrollKeepAlive, useMappingTypesForES7, retryAttemptLimit, retryOnErrorCodes,
-            retryInitialWaitMs, retryMaxWaitMs, bulkChunkSerializedLimit);
+            retryInitialWaitMs, retryMaxWaitMs, bulkChunkSerializedLimit, majorVersion);
     }
 
     /**

@@ -41,6 +41,7 @@ import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
 import org.janusgraph.diskstorage.es.ElasticSearchBulkFailureException;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
+import org.janusgraph.diskstorage.es.ElasticSearchIndex;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
 import org.janusgraph.diskstorage.es.TransientFailures;
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
@@ -124,6 +125,10 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private final boolean useMappingTypes;
 
+    //OpenSearch 2 removed the mapping types which Elasticsearch 7 still supports, and JanusGraph supports OpenSearch 2
+    //and newer only
+    private boolean mappingTypesRemoved;
+
     private final boolean esVersion7;
 
     private Integer retryOnConflict;
@@ -147,11 +152,28 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7,
                                int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
                                long retryMaxWaitMs, int bulkChunkSerializedLimitBytes) {
+        this(delegate, scrollKeepAlive, useMappingTypesForES7, retryAttemptLimit, retryOnErrorCodes, retryInitialWaitMs,
+            retryMaxWaitMs, bulkChunkSerializedLimitBytes, null);
+    }
+
+    /**
+     * @param configuredMajorVersion the major version of the Elasticsearch API to use, or {@code null} to ask the
+     * cluster for it
+     */
+    public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7,
+                                   int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
+                                   long retryMaxWaitMs, int bulkChunkSerializedLimitBytes,
+                                   ElasticMajorVersion configuredMajorVersion) {
         this.delegate = delegate;
-        majorVersion = getMajorVersion();
+        majorVersion = configuredMajorVersion != null ? configuredMajorVersion : getMajorVersion();
         this.scrollKeepAlive = scrollKeepAlive+"s";
         esVersion7 = ElasticMajorVersion.SEVEN.equals(majorVersion);
-        useMappingTypes = majorVersion.getValue() < 7 || (useMappingTypesForES7 && esVersion7);
+        if (useMappingTypesForES7 && mappingTypesRemoved) {
+            log.warn("The option index.[X].elasticsearch.{} is ignored: the cluster is OpenSearch, and OpenSearch 2 and " +
+                "newer have no mapping types.",
+                ElasticSearchIndex.USE_MAPPING_FOR_ES7.getName());
+        }
+        useMappingTypes = majorVersion.getValue() < 7 || (useMappingTypesForES7 && esVersion7 && !mappingTypesRemoved);
         retryOnConflictKey = majorVersion.getValue() >= 7 ? "retry_on_conflict" : "_retry_on_conflict";
         this.retryAttemptLimit = retryAttemptLimit;
         this.retryOnErrorCodes = Collections.unmodifiableSet(retryOnErrorCodes);
@@ -176,13 +198,30 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
             final Response response = delegate.performRequest(INFO_REQUEST);
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 final ClusterInfo info = mapper.readValue(inputStream, ClusterInfo.class);
-                majorVersion = ElasticMajorVersion.parse(info.getVersion() != null ? (String) info.getVersion().get("number") : null);
+                try {
+                    majorVersion = ElasticMajorVersion.fromServerVersion(info.getVersion());
+                } catch (final IllegalArgumentException e) {
+                    throw new IllegalArgumentException(e.getMessage() + ". Set index.[X].elasticsearch." +
+                        ElasticSearchIndex.MAJOR_VERSION.getName() + " if the cluster provides the API of a supported " +
+                        "Elasticsearch major version.", e);
+                }
+                mappingTypesRemoved = ElasticMajorVersion.isOpenSearch(info.getVersion());
+                if (ElasticMajorVersion.isOpenSearch(info.getVersion())) {
+                    log.info("OpenSearch {} provides the Elasticsearch {} API, which JanusGraph uses.",
+                        info.getVersion().get("number"), majorVersion.getValue());
+                }
             }
         } catch (final IOException e) {
-            log.warn("Unable to determine Elasticsearch server version. Default to {}.", majorVersion, e);
+            log.warn("Unable to determine Elasticsearch server version. Default to {}. Set index.[X].elasticsearch.{} to " +
+                "skip the detection.", majorVersion, ElasticSearchIndex.MAJOR_VERSION.getName(), e);
         }
 
         return majorVersion;
+    }
+
+    @Override
+    public boolean usesMappingTypes() {
+        return useMappingTypes;
     }
 
     @Override

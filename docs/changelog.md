@@ -27,7 +27,7 @@ All currently supported versions of JanusGraph are listed below.
 
 | JanusGraph | Storage Version | Cassandra | HBase | Bigtable | ScyllaDB | Elasticsearch | Solr | TinkerPop | Spark | Scala |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| 1.2.z | 2 | 3.11.z, 4.0.z, 5.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.1-6.8.z, 7.y, 8.y, 9.y | 8.11.z, 9.y | 3.8.z | 3.2.z | 2.12.z |
+| 1.2.z | 2 | 3.11.z, 4.0.z, 5.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.1-6.8.z, 7.y, 8.y, 9.y, OpenSearch 2.y, 3.y | 8.11.z, 9.y | 3.8.z | 3.2.z | 2.12.z |
 | 1.1.z | 2 | 3.11.z, 4.0.z | 2.6.z | 1.3.0, 1.4.0, 1.5.z, 1.6.z, 1.7.z, 1.8.z, 1.9.z, 1.10.z, 1.11.z, 1.14.z | 6.y | 6.y, 7.y, 8.y | 8.y | 3.7.z | 3.2.z | 2.12.z |
 
 !!! info
@@ -76,6 +76,7 @@ compile "org.janusgraph:janusgraph-core:1.2.0"
 * Oracle BerkeleyJE 7.5.11
 * ScyllaDB 6.2.0
 * Elasticsearch 6.6.0, 7.17.8, 8.15.3, 9.5.4
+* OpenSearch 2.19.6, 3.9.0
 * Apache Lucene 9.12.3
 * Apache Solr 8.11.4, 9.10.1
 * Apache TinkerPop 3.8.2
@@ -218,6 +219,21 @@ JDK of the host through `JAVA_HOME`. Elasticsearch 8 requires Java 17 and Elasti
 its JVM, and since 9.4 its launcher and native libraries are x86_64 only, so bundling them would have made the
 embedded Elasticsearch Linux x86_64 only. The native machine learning binaries are no longer part of the
 distribution (machine learning is disabled in the bundled `elasticsearch.yml`).
+
+##### OpenSearch 2 and 3 support
+
+Starting from version 1.2.0 JanusGraph supports OpenSearch 2 and 3 with the `elasticsearch` index backend.
+OpenSearch provides the Elasticsearch 7 API, which JanusGraph now uses when the cluster reports an OpenSearch
+version. Before, JanusGraph rejected OpenSearch versions as unsupported Elasticsearch versions, so OpenSearch 2 only
+worked with `compatibility.override_main_response_version`, and OpenSearch 3, which removed that setting, didn't work
+at all. JanusGraph rejects other OpenSearch versions, including OpenSearch 1, which reached its end of life, unless the
+option below is set. When JanusGraph detects OpenSearch, it ignores `index.[X].elasticsearch.use-mapping-for-es7`,
+because OpenSearch 2 removed mapping types.
+
+The new option `index.[X].elasticsearch.major-version` sets the major version of the Elasticsearch API which the
+cluster provides (`7` for OpenSearch). If it is set, JanusGraph doesn't ask the cluster for its version, and so
+doesn't know whether the cluster is OpenSearch. See [OpenSearch](index-backend/elasticsearch.md#opensearch) for
+details, including the settings Amazon OpenSearch Service needs.
 
 ##### Elasticsearch 6.0 is no longer supported
 
