@@ -560,8 +560,9 @@ public class LuceneIndex implements IndexProvider {
     }
 
     private static Sort getSortOrder(List<IndexQuery.OrderEntry> orders, KeyInformation.StoreRetriever information) {
-        final Sort sort = new Sort();
-        if (!orders.isEmpty()) {
+        if (orders.isEmpty()) {
+            return new Sort();
+        } else {
             final SortField[] fields = new SortField[orders.size()];
             for (int i = 0; i < orders.size(); i++) {
                 final IndexQuery.OrderEntry order = orders.get(i);
@@ -571,7 +572,8 @@ public class LuceneIndex implements IndexProvider {
                 else if (AttributeUtils.isWholeNumber(dataType)) sortType = SortField.Type.LONG;
                 else if (AttributeUtils.isDecimal(dataType)) sortType = SortField.Type.DOUBLE;
                 else if (dataType.equals(Instant.class) || dataType.equals(Date.class)) sortType = SortField.Type.LONG;
-                else if (dataType.equals(Boolean.class)) sortType = SortField.Type.LONG;
+                // booleans are indexed as IntPoint, and Lucene rejects a sort type of another width than the points
+                else if (dataType.equals(Boolean.class)) sortType = SortField.Type.INT;
                 else
                     Preconditions.checkArgument(false, "Unsupported order specified on field [%s] with datatype [%s]", order.getKey(), dataType);
                 KeyInformation ki = information.get(order.getKey());
@@ -582,10 +584,14 @@ public class LuceneIndex implements IndexProvider {
                     fieldKey = order.getKey();
                 }
                 fields[i] = new SortField(fieldKey, sortType, order.getOrder() == Order.DESC);
+                if (sortType == SortField.Type.STRING && ParameterType.STRING_ANALYZER.findParameter(ki.getParameters(), null) != null) {
+                    // Lucene skips non-competitive documents through the terms index of the field, which requires the
+                    // terms to equal the doc values. A custom string analyzer makes other terms than the doc values.
+                    fields[i].setOptimizeSortWithIndexedData(false);
+                }
             }
-            sort.setSort(fields);
+            return new Sort(fields);
         }
-        return sort;
     }
 
     @Override
@@ -967,13 +973,16 @@ public class LuceneIndex implements IndexProvider {
         return docs.totalHits.value;
     }
 
+    /**
+     * The sort type has to match how {@link #buildIndexFields} indexes the field: Lucene rejects sorting a field with a
+     * type of another width than its points, and the doc values of decimals are doubles.
+     */
     private SortField.Type sortFieldType(Class fieldType) {
         if (fieldType != null) {
-            if (Long.class.isAssignableFrom(fieldType)) return SortField.Type.LONG;
-            else if (Float.class.isAssignableFrom(fieldType)) return SortField.Type.FLOAT;
-            else if (Double.class.isAssignableFrom(fieldType)) return SortField.Type.DOUBLE;
+            if (AttributeUtils.isDecimal(fieldType)) return SortField.Type.DOUBLE;
+            else if (Boolean.class.equals(fieldType)) return SortField.Type.INT;
         }
-        return SortField.Type.INT;
+        return SortField.Type.LONG;
     }
 
     private Number adaptNumberType(Number value, Class<? extends Number> expectedType) {

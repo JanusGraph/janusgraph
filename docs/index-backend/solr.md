@@ -6,9 +6,9 @@
 > and more. Solr powers the search and navigation features of 
 > many of the world's largest internet sites. 
 >
-> —  [Apache Solr Homepage](https://lucene.apache.org/solr/)
+> —  [Apache Solr Homepage](https://solr.apache.org/)
 
-JanusGraph supports [Apache Solr](https://lucene.apache.org/solr/) as an
+JanusGraph supports [Apache Solr](https://solr.apache.org/) as an
 index backend. Here are some of the Solr features supported by
 JanusGraph:
 
@@ -26,6 +26,13 @@ JanusGraph:
 
 Please see [Version Compatibility](../changelog.md#version-compatibility)
 for details on what versions of Solr will work with JanusGraph.
+JanusGraph 1.2.0 supports Solr 9 and Solr 8.11. The support of Solr 8,
+which reached its end of life, is deprecated.
+
+JanusGraph adapts the requests which Solr 8 and Solr 9 treat differently
+(currently `maxShardsPerNode` when it creates a collection) to the
+version Solr reports. `index.[X].solr.major-version` overrides it, for
+example for a Solr compatible service which doesn't report its version.
 
 ## Solr Configuration Overview
 
@@ -96,7 +103,7 @@ In this example, a collection named `verticesByAge` is created manually
 using the default JanusGraph configuration for Solr that is found in the
 distribution. When the collection is created, the configuration is
 uploaded into Zookeeper, using the same collection name `verticesByAge`
-for the configset name. Refer to the [Solr Reference Guide](https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-CollectionsandCores)
+for the configset name. Refer to the [Solr Reference Guide](https://solr.apache.org/guide/solr/9_10/deployment-guide/solr-control-script-reference.html#collections-and-cores)
 for available parameters.
 
 ```bash
@@ -120,15 +127,11 @@ When using a shared configset, it is most convenient to upload the
 configuration first as a one time operation. In this example, a
 configset named `janusgraph-configset` is uploaded in to Zookeeper using
 the default JanusGraph configuration for Solr that is found in the
-distribution. Refer to the [Solr Reference Guide](https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-CollectionsandCores)
+distribution. Refer to the [Solr Reference Guide](https://solr.apache.org/guide/solr/9_10/deployment-guide/solr-control-script-reference.html#collections-and-cores)
 for available parameters.
 
 ```bash
 # upload the shared configset into Zookeeper
-# Solr 5
-$SOLR_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd upconfig -z localhost:2181 \
-    -d $JANUSGRAPH_HOME/conf/solr -n janusgraph-configset
-# Solr 6 and higher
 $SOLR_HOME/bin/solr zk upconfig -d $JANUSGRAPH_HOME/conf/solr -n janusgraph-configset \
     -z localhost:2181
 ```
@@ -178,7 +181,7 @@ configuration information on the file system. A core must be created
 manually for each mixed index.
 
 To create a core, a `core_name` and a `configuration` directory is
-required. Refer to the [Solr Reference Guide](https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-CollectionsandCores)
+required. Refer to the [Solr Reference Guide](https://solr.apache.org/guide/solr/9_10/deployment-guide/solr-control-script-reference.html#collections-and-cores)
 for available parameters. In this example, a core named `verticesByAge`
 is created using the default JanusGraph configuration for Solr that is
 found in the distribution.
@@ -211,13 +214,16 @@ export JAVA_OPTIONS="-Djava.security.auth.login.config=/absolute/path/jaas.conf"
 $JANUSGRAPH_HOME/bin/gremlin.sh
 ```
 
-For details on the content required in the JAAS configuration file refer to the https://lucene.apache.org/solr/guide/7_0/kerberos-authentication-plugin.html#define-a-jaas-configuration-file[Solr Reference Guide].
+For details on the content required in the JAAS configuration file refer to the [Solr Reference Guide](https://solr.apache.org/guide/solr/9_10/deployment-guide/kerberos-authentication-plugin.html#define-a-jaas-configuration-file).
+Since Solr 9 the Kerberos authentication plugin of the Solr server is part of Solr's `hadoop-auth` module
+(`org.apache.solr.security.hadoop.KerberosPlugin`), which has to be enabled on the Solr nodes, for example with
+`SOLR_MODULES=hadoop-auth`.
 
 ## Solr Schema Design
 
 ### Dynamic Field Definition
 
-By default, JanusGraph uses Solr’s [Dynamic Fields](https://cwiki.apache.org/confluence/display/solr/Dynamic+Fields)
+By default, JanusGraph uses Solr’s [Dynamic Fields](https://solr.apache.org/guide/solr/9_10/indexing-guide/dynamic-fields.html)
 feature to define the field types for all indexed keys. This requires no
 extra configuration when adding property keys to a mixed index backed by
 Solr and provides better performance than schemaless mode.
@@ -275,7 +281,7 @@ definition. This can be achieved in one of two ways:
 ### Schemaless Mode
 
 JanusGraph can also interact with a SolrCloud cluster that is configured
-for [schemaless mode](https://cwiki.apache.org/confluence/display/solr/Schemaless+Mode).
+for [schemaless mode](https://solr.apache.org/guide/solr/9_10/indexing-guide/schemaless-mode.html).
 In this scenario, the configuration option `dyn-fields` should be
 disabled since Solr will infer the field type from the values and not
 the field name.
@@ -311,14 +317,11 @@ information.
     Zookeeper first.
 
 You can verify that the configset and its configuration files are in
-Zookeeper under `/configs`. Refer to the [Solr Reference Guide](https://lucene.apache.org/solr/guide/6_6/solr-control-script-reference.html#SolrControlScriptReference-ZooKeeperOperations)
+Zookeeper under `/configs`. Refer to the [Solr Reference Guide](https://solr.apache.org/guide/solr/9_10/deployment-guide/solr-control-script-reference.html#list-a-zookeeper-znodes-children)
 for other Zookeeper operations.
 
 ```bash
 # verify the configset in Zookeeper
-# Solr 5
-$SOLR_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd list -z localhost:2181
-# Solr 6 and higher
 $SOLR_HOME/bin/solr zk ls -r /configs/configset-name -z localhost:2181
 ```
 
@@ -330,7 +333,7 @@ example of the error:
 ```xml
 20:01:22 ERROR org.janusgraph.diskstorage.solr.SolrIndex  - Unable to save documents
 to Solr as one of the shape objects stored were not compatible with Solr.
-org.apache.solr.client.solrj.impl.HttpSolrClient$RemoteSolrException: Error from server
+org.apache.solr.client.solrj.impl.BaseHttpSolrClient$RemoteSolrException: Error from server
 at http://localhost:8983/solr: Expected mime type application/octet-stream but got text/html.
 <html>
 <head>
@@ -371,7 +374,7 @@ on the Solr daemon’s classpath and a field in schema.xml uses a geo
 type, then Solr may throw a ClassNotFoundException on one of the missing
 JTS classes. The exception can appear when starting Solr using a
 schema.xml file designed to work with JanusGraph, but can also appear
-when invoking `CREATE` in the [Solr CoreAdmin API](https://wiki.apache.org/solr/CoreAdmin). The exception appears in
+when invoking `CREATE` in the [Solr CoreAdmin API](https://solr.apache.org/guide/solr/9_10/configuration-guide/coreadmin-api.html). The exception appears in
 slightly different formats on the client and server sides, although the
 root cause is identical.
 
@@ -410,23 +413,17 @@ org.apache.solr.common.SolrException: com/vividsolutions/jts/geom/Geometry
     ...
 ```
 
-This is resolved by adding the JTS jar to the classpath of JanusGraph
-and/or the Solr server. JTS is not included in JanusGraph distributions
-by default due to its LGPL license. Users must download the [JTS jar file](https://search.maven.org/remotecontent?filepath=com/vividsolutions/jts/1.13/jts-1.13.jar)
-separately and copy it into the JanusGraph and/or Solr server lib
-directory. If using Solr’s built in web server, the JTS jar may be
-copied to the example/solr-webapp/webapp/WEB-INF/lib directory to
-include it in the classpath. Solr can be restarted, and the exception
-should be gone. Solr must be started once with the correct schema.xml
-file in place first, for the example/solr-webapp/webapp/WEB-INF/lib
-directory to exist.
+This is resolved by adding the JTS jar to the classpath of the Solr
+server. The JanusGraph distribution already contains JTS, but Solr
+only bundles Spatial4j. Download the [`org.locationtech.jts:jts-core` jar](https://repo1.maven.org/maven2/org/locationtech/jts/jts-core/1.18.0/jts-core-1.18.0.jar)
+and copy it into the server/solr-webapp/webapp/WEB-INF/lib directory of
+every Solr node, then restart Solr.
 
-To determine the ideal JTS version for Solr server, first check the
-version of Spatial4j in use by the Solr cluster, then determine the
-version of JTS against which that Spatial4j version was compiled.
-Spatial4j declares its target JTS version in the [pom for the `com.spatial4j:spatial4j` artifact](https://search.maven.org/#search|gav|1|g%3A%22com.spatial4j%22%20AND%20a%3A%22spatial4j%22).
-Copy the JTS jar to the server/solr-webapp/webapp/WEB-INF/lib directory
-in your solr installation.
+The JTS version has to fit the Spatial4j version of the Solr server.
+Solr 9 bundles Spatial4j 0.8, which is built against JTS 1.17.0. Use JTS
+1.17.0 or 1.18.0 (the version JanusGraph uses): JTS 1.18.1 changed an
+interface which Spatial4j 0.8 implements. Solr 8.11 bundles Spatial4j
+0.7 together with JTS, so it needs no extra jar.
 
 ## Advanced Solr Configuration
 

@@ -28,7 +28,7 @@ import java.io.IOException;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 
 public class JanusGraphSolrContainer extends SolrContainer {
-    private static final String DEFAULT_SOLR_VERSION = "8.11.1";
+    private static final String DEFAULT_SOLR_VERSION = "9.10.1";
     private static final String DEFAULT_SOLR_IMAGE = "solr";
     private static final String COLLECTIONS = "store1 store2 vertex edge namev namee composite psearch esearch vsearch mi mixed index1 index2 index3 ecategory vcategory pcategory theIndex vertices edges booleanIndex dateIndex instantIndex uuidIndex randomMixedIndex collectionIndex nameidx oridx otheridx lengthidx listPropertyOrdering";
 
@@ -58,7 +58,6 @@ public class JanusGraphSolrContainer extends SolrContainer {
         super(getSolrImage() + ":" + getVersion());
         addFixedExposedPort(SOLR_PORT, SOLR_PORT);
         withClasspathResourceMapping("solr/core-template", "/opt/solr/mydata", BindMode.READ_ONLY);
-        withCopyFileToContainer(GetDependency("spatial4j.jar"), "/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/spatial4j.jar");
         withCopyFileToContainer(GetDependency("jts-core.jar"), "/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/jts-core.jar");
         withZookeeper(true);
     }
