@@ -32,6 +32,7 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.es.ElasticMajorVersion;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
 import org.janusgraph.diskstorage.es.ElasticSearchIndex;
 import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
@@ -65,12 +66,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.same;
@@ -161,7 +164,7 @@ public class RestClientSetupTest {
             when(restClientSetup).getRestClientBuilder(any());
         doReturn(restElasticSearchClientMock).when(restClientSetup).
             getElasticSearchClient(any(RestClient.class), anyInt(), anyBoolean(),
-                anyInt(), anySet(), anyLong(), anyLong(), anyInt());
+                anyInt(), anySet(), anyLong(), anyLong(), anyInt(), nullable(ElasticMajorVersion.class));
 
         return restClientSetup.connect(config.restrictTo(INDEX_NAME));
     }
@@ -192,12 +195,24 @@ public class RestClientSetupTest {
         assertEquals(SCHEME_HTTP, host0.getSchemeName());
         assertEquals(ElasticSearchIndex.HOST_PORT_DEFAULT, host0.getPort());
 
+        //Without a configured major version the client asks the cluster for it
         verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean(),
-            anyInt(), anySet(), anyLong(), anyLong(), anyInt());
+            anyInt(), anySet(), anyLong(), anyLong(), anyInt(), isNull());
         assertEquals(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue().intValue(),
                 scrollKACaptor.getValue().intValue());
 
         verify(restElasticSearchClientMock, never()).setBulkRefresh(anyString());
+    }
+
+    @Test
+    public void testConnectConfiguredMajorVersion() throws Exception {
+        baseHostsConfigTest(ImmutableMap.<String, String>builder().
+                put("index." + INDEX_NAME + ".hostname", ES_HOST_01).
+                put("index." + INDEX_NAME + ".elasticsearch.major-version", "7").
+                build());
+
+        verify(restClientSetup).getElasticSearchClient(same(restClientMock), anyInt(), anyBoolean(),
+            anyInt(), anySet(), anyLong(), anyLong(), anyInt(), eq(ElasticMajorVersion.SEVEN));
     }
 
     @Test
@@ -221,7 +236,7 @@ public class RestClientSetupTest {
 
         verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean(),
             retryAttemptLimitCaptor.capture(), retryErrorCodesCaptor.capture(), retryInitialWaitCaptor.capture(),
-            retryMaxWaitCaptor.capture(), bulkChunkSerializedLimitCaptor.capture());
+            retryMaxWaitCaptor.capture(), bulkChunkSerializedLimitCaptor.capture(), nullable(ElasticMajorVersion.class));
         assertEquals(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue().intValue(),
                 scrollKACaptor.getValue().intValue());
 
@@ -254,7 +269,7 @@ public class RestClientSetupTest {
 
         verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean(),
             retryAttemptLimitCaptor.capture(), retryErrorCodesCaptor.capture(), retryInitialWaitCaptor.capture(),
-            retryMaxWaitCaptor.capture(), bulkChunkSerializedLimitCaptor.capture());
+            retryMaxWaitCaptor.capture(), bulkChunkSerializedLimitCaptor.capture(), nullable(ElasticMajorVersion.class));
         assertEquals(ES_SCROLL_KA,
                 scrollKACaptor.getValue().intValue());
         assertEquals(RETRY_LIMIT,
@@ -288,7 +303,7 @@ public class RestClientSetupTest {
         assertEquals(ElasticSearchIndex.HOST_PORT_DEFAULT, host0.getPort());
 
         verify(restClientSetup).getElasticSearchClient(same(restClientMock), scrollKACaptor.capture(), anyBoolean(),
-            anyInt(), anySet(), anyLong(), anyLong(), anyInt());
+            anyInt(), anySet(), anyLong(), anyLong(), anyInt(), nullable(ElasticMajorVersion.class));
         assertEquals(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE.getDefaultValue().intValue(),
                 scrollKACaptor.getValue().intValue());
 

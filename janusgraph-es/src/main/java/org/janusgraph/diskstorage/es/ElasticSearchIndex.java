@@ -276,12 +276,21 @@ public class ElasticSearchIndex implements IndexProvider {
             "Whether JanusGraph should setup max_open_scroll_context to maximum value for the cluster or not.",
             ConfigOption.Type.MASKABLE, true);
 
+    public static final ConfigOption<Integer> MAJOR_VERSION =
+        new ConfigOption<>(ELASTICSEARCH_NS, "major-version",
+            "Major version of the Elasticsearch API which the index backend provides: 6, 7, 8 or 9. JanusGraph adapts its " +
+                "requests to it. If it isn't set, JanusGraph asks the cluster for its version. OpenSearch provides the " +
+                "Elasticsearch 7 API, which JanusGraph uses when the cluster reports an OpenSearch version. If this option " +
+                "is set for OpenSearch, which has no mapping types since version 2, keep use-mapping-for-es7 disabled.",
+            ConfigOption.Type.MASKABLE, Integer.class, ElasticMajorVersion.supportedNumbers());
+
     public static final ConfigOption<Boolean> USE_MAPPING_FOR_ES7 =
         new ConfigOption<>(ELASTICSEARCH_NS, "use-mapping-for-es7",
             "Mapping types are deprecated in ElasticSearch 7 and JanusGraph will not use mapping types by default " +
                 "for ElasticSearch 7 but if you want to preserve mapping types, you can setup this parameter to true. " +
                 "If you are updating ElasticSearch from 6 to 7 and you don't want to reindex your indexes, you may setup " +
-                "this parameter to true but we do recommend to reindex your indexes and don't use this parameter.",
+                "this parameter to true but we do recommend to reindex your indexes and don't use this parameter. " +
+                "It is ignored when the cluster reports OpenSearch, which has no mapping types since version 2.",
             ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigOption<Long> CLIENT_KEEP_ALIVE =
@@ -461,7 +470,6 @@ public class ElasticSearchIndex implements IndexProvider {
     private final long createSleep;
     private final boolean useAllField;
     private final Map<String, Object> ingestPipelines;
-    private final boolean useMappingForES7;
     private final String parameterizedAdditionScriptId;
     private final String parameterizedDeletionScriptId;
     private final String parameterizedMutationScriptId;
@@ -480,7 +488,6 @@ public class ElasticSearchIndex implements IndexProvider {
         allowMappingUpdate = config.get(ALLOW_MAPPING_UPDATE);
         createSleep = config.get(CREATE_SLEEP);
         ingestPipelines = config.getSubset(ES_INGEST_PIPELINES);
-        useMappingForES7 = config.get(USE_MAPPING_FOR_ES7);
         indexStoreNameCacheEnabled = config.get(ENABLE_INDEX_STORE_NAMES_CACHE);
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query nb result by query to {}", batchSize);
@@ -1838,8 +1845,8 @@ public class ElasticSearchIndex implements IndexProvider {
         return client.getMajorVersion();
     }
 
-    boolean isUseMappingForES7(){
-        return useMappingForES7;
+    boolean usesMappingTypes() {
+        return client.usesMappingTypes();
     }
 
     private static String parameterizedScriptPrepare(String ... lines){

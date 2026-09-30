@@ -48,6 +48,14 @@ jobs:
             name: es6
             java: 11
           - module: es
+            args: "-Popensearch3"
+            name: opensearch3
+            java: 11
+          - module: es
+            args: "-Popensearch2"
+            name: opensearch2
+            java: 11
+          - module: es
             args: "-Pelasticsearch9"
             name: es9-java25
             java: 25
@@ -62,6 +70,14 @@ jobs:
           - module: es
             args: "-Pelasticsearch6"
             name: es6-java25
+            java: 25
+          - module: es
+            args: "-Popensearch3"
+            name: opensearch3-java25
+            java: 25
+          - module: es
+            args: "-Popensearch2"
+            name: opensearch2-java25
             java: 25
     steps:
       - run: 'echo "No build required"'

@@ -130,6 +130,16 @@ mvn clean install -pl janusgraph-es -Delasticsearch.docker.image=elasticsearch
 mvn clean install -pl janusgraph-es -Delasticsearch.docker.version=6.0.0 -Delasticsearch.docker.image=elasticsearch
 ```
 
+The `opensearch2` and `opensearch3` profiles run the Elasticsearch tests against OpenSearch. Other OpenSearch versions
+can be tested with an OpenSearch image. The tests recognize an image whose repository is named `opensearch`; for an
+OpenSearch image with another name, set `elasticsearch.docker.distribution` to `opensearch`.
+
+```bash
+mvn clean install -pl janusgraph-es -Popensearch3
+mvn clean install -pl janusgraph-es -Delasticsearch.docker.image=opensearchproject/opensearch -Delasticsearch.docker.version=2.18.0
+mvn clean install -pl janusgraph-es -Delasticsearch.docker.image=registry.example.com/search -Delasticsearch.docker.version=3.9.0 -Delasticsearch.docker.distribution=opensearch
+```
+
 ## Running CQL Tests
 
 **Note** Running CQL tests require Docker.

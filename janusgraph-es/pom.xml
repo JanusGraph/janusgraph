@@ -18,6 +18,11 @@
         <elasticsearch.docker.version>${elasticsearch9.docker.version}</elasticsearch.docker.version>
         <skip.es.test>${skipTests}</skip.es.test>
         <elasticsearch.docker.image>docker.elastic.co/elasticsearch/elasticsearch</elasticsearch.docker.image>
+        <opensearch2.docker.version>2.19.6</opensearch2.docker.version>
+        <opensearch3.docker.version>3.9.0</opensearch3.docker.version>
+        <opensearch.docker.image>opensearchproject/opensearch</opensearch.docker.image>
+        <!-- elasticsearch or opensearch; empty derives it from the image name -->
+        <elasticsearch.docker.distribution></elasticsearch.docker.distribution>
     </properties>
     <dependencies>
         <dependency>
@@ -169,6 +174,7 @@
                             <systemPropertyVariables>
                                 <elasticsearch.docker.image>${elasticsearch.docker.image}</elasticsearch.docker.image>
                                 <elasticsearch.docker.version>${elasticsearch.docker.version}</elasticsearch.docker.version>
+                                <elasticsearch.docker.distribution>${elasticsearch.docker.distribution}</elasticsearch.docker.distribution>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
@@ -203,6 +209,23 @@
             </activation>
             <properties>
                 <elasticsearch.docker.version>${elasticsearch9.docker.version}</elasticsearch.docker.version>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>opensearch2</id>
+            <properties>
+                <elasticsearch.docker.distribution>opensearch</elasticsearch.docker.distribution>
+                <elasticsearch.docker.image>${opensearch.docker.image}</elasticsearch.docker.image>
+                <elasticsearch.docker.version>${opensearch2.docker.version}</elasticsearch.docker.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>opensearch3</id>
+            <properties>
+                <elasticsearch.docker.distribution>opensearch</elasticsearch.docker.distribution>
+                <elasticsearch.docker.image>${opensearch.docker.image}</elasticsearch.docker.image>
+                <elasticsearch.docker.version>${opensearch3.docker.version}</elasticsearch.docker.version>
             </properties>
         </profile>
 
