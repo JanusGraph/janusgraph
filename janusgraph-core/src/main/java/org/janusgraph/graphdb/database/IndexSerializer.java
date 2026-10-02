@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
@@ -375,7 +376,9 @@ public class IndexSerializer {
         if (index.isCompositeIndex()) {
             Map<String, SliceQuery> inlineQueries = IndexRecordUtil.getInlinePropertiesQueries((CompositeIndexType) index, standardJanusGraphTx);
             final MultiKeySliceQuery sq = query.getCompositeQuery();
-            final List<EntryList> rs = sq.execute(tx);
+            //The transaction's multi-query setting, which query.batch.enabled gives it unless it sets its own, decides for
+            //composite index rows too whether reads are batched
+            final List<EntryList> rs = sq.execute(tx, standardJanusGraphTx.getConfiguration().useMultiQuery());
             final List<Object> results = new ArrayList<>(rs.get(0).size());
             for (final EntryList r : rs) {
                 for (final java.util.Iterator<Entry> iterator = r.reuseIterator(); iterator.hasNext(); ) {
@@ -413,7 +416,8 @@ public class IndexSerializer {
             ksqs.add(new KeySliceQuery(IndexRecordUtil.getIndexKey(index, value, serializer, hashKeys, hashLength),
                 BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(1)));
         }
-        return new MultiKeySliceQuery(ksqs);
+        //Each key of a unique index holds at most one entry: its one column doesn't name the element
+        return new MultiKeySliceQuery(ksqs, index.getCardinality() == Cardinality.SINGLE);
     }
 
     public IndexQuery getQuery(final MixedIndexType index, final Condition condition, final OrderList orders) {

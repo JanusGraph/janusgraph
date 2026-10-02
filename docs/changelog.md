@@ -767,6 +767,23 @@ every later one. An entry with timestamp, TTL or visibility metadata, which the 
 (visibility only on a backend with cell-level visibility), is unaffected: the metadata is a property of the relation, so
 its full parse was already kept. The property map is only allocated for a relation which has properties.
 
+##### Composite index lookups of several values read their index rows together
+
+A composite index lookup of several values, as `has(key, within(values))` makes, or as a composite index on more than
+one key makes for every combination of the values given for its keys, read each of the index rows this gives only after
+the previous one had arrived, so each row cost a round trip to the storage backend. Where the backend supports multi-key
+queries, which the CQL backend (Cassandra, ScyllaDB) and HBase do, the rows are now read together, in calls of up to
+1,000 rows which the backend executes concurrently. That happens without a limit, as every row is read then anyway, and
+with a limit for a unique index, whose rows hold at most one element each, in calls of as many rows as the limit can
+still take. The limits which JanusGraph adds itself count as limits: those of `query.smart-limit` and of a
+`query.hard-max-limit` below its default, and the one an order the index can't serve brings. A lookup with a limit on an
+index which isn't unique, and every lookup on a backend without multi-key queries, such as BerkeleyJE, still reads one
+row after the other and stops at the limit. Either way a lookup asks the storage backend for no row which reading one
+row after the other would not ask for. `query.batch.enabled=false` turns reading rows together off, as it turns off
+batching for traversal steps. Building the condition of a `within()` or `without()` also compared each value with every
+value before it to drop duplicates, so it grew with the square of the number of values; it now takes time in proportion
+to them.
+
 ##### `tx.max-commit-time` now defaults to 300 s and is checked against the least a commit may take
 
 `tx.max-commit-time` is the time after which transaction recovery considers a transaction failed and restores the index
