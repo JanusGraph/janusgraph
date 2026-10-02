@@ -329,7 +329,9 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<>(QUERY_BATCH_NS,"enabled",
         "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
-            "performance improvement if there is a non-trivial latency to the backend. If `false` then all other configuration options under `" +
+            "performance improvement if there is a non-trivial latency to the backend. It also lets a composite index lookup of " +
+            "several values, such as `has(key, within(values))`, read their index rows together on a storage backend with " +
+            "multi-key queries. If `false` then all other configuration options under `" +
             QUERY_BATCH_NS.toStringWithoutRoot()+"` namespace are ignored.",
         ConfigOption.Type.MASKABLE, true);
 

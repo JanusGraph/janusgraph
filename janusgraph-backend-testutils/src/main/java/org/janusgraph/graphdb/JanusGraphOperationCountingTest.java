@@ -35,6 +35,7 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -442,6 +444,63 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME);
     }
 
+
+    //A lookup of several values of a composite index reads their keys in one call where the storage backend has multi-key
+    //queries and no key gets read which reading them one after the other would not: without a limit, and with a limit
+    //on a unique index. Otherwise it reads one key after the other, stopping at the limit
+    @Test
+    public void checkCompositeIndexLookupOfSeveralValues() {
+        PropertyKey uid = makeKey("uid", String.class);
+        PropertyKey group = makeKey("group", String.class);
+        mgmt.buildIndex("uid", Vertex.class).unique().addKey(uid).buildCompositeIndex();
+        mgmt.buildIndex("group", Vertex.class).addKey(group).buildCompositeIndex();
+        finishSchema();
+
+        metricsPrefix = "checkCompositeIndexLookupOfSeveralValues";
+
+        JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        for (int i = 0; i < 5; i++) {
+            tx.addVertex("uid", "v" + i, "group", "g" + (i % 2));
+        }
+        tx.commit();
+        final List<String> uids = Arrays.asList("v0", "v1", "v2", "v3", "v4");
+        final List<String> groups = Arrays.asList("g0", "g1");
+        final boolean together = features.hasMultiQuery();
+
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(5, Iterables.size(tx.query().has("uid", Contain.IN, uids).vertices()));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, together ? 1L : 5L));
+        tx.rollback();
+
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(5, Iterables.size(tx.query().has("group", Contain.IN, groups).vertices()));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, together ? 1L : 2L));
+        tx.rollback();
+
+        //Each key of a unique index holds at most one entry, so the first 3 keys are all a limit of 3 can need
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(3, Iterables.size(tx.query().has("uid", Contain.IN, uids).limit(3).vertices()));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, together ? 1L : 3L));
+        tx.rollback();
+
+        //The first key of an index which isn't unique may already reach the limit, as g0 does
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(2, Iterables.size(tx.query().has("group", Contain.IN, groups).limit(2).vertices()));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1L));
+        tx.rollback();
+
+        //A transaction which doesn't batch, as query.batch.enabled = false makes every transaction, reads one key after
+        //the other
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).multiQuery(false).start();
+        assertEquals(5, Iterables.size(tx.query().has("uid", Contain.IN, uids).vertices()));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 5L));
+        tx.rollback();
+    }
 
     @Test
     public void checkFastPropertyTrue() {

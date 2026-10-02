@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
@@ -207,8 +208,7 @@ public class QueryUtil {
                 final Collection values = (Collection) value;
                 if (predicate == Contain.NOT_IN) {
                     if (values.isEmpty()) continue; //Simply ignore since trivially satisfied
-                    for (final Object inValue : values)
-                        addConstraint(type, Cmp.NOT_EQUAL, inValue, conditions, tx);
+                    addConstraints(type, Cmp.NOT_EQUAL, values, conditions, tx);
                 } else {
                     Preconditions.checkArgument(predicate == Contain.IN);
                     if (values.isEmpty()) {
@@ -217,8 +217,7 @@ public class QueryUtil {
                         addConstraint(type, Cmp.EQUAL, values.iterator().next(), conditions, tx);
                     } else {
                         final Or<E> nested = new Or<>(values.size());
-                        for (final Object invalue : values)
-                            addConstraint(type, Cmp.EQUAL, invalue, nested, tx);
+                        addConstraints(type, Cmp.EQUAL, values, nested, tx);
                         conditions.add(nested);
                     }
                 }
@@ -249,8 +248,7 @@ public class QueryUtil {
                 final Collection childValues = (Collection) values.get(i);
                 if (janusGraphPredicate == Contain.NOT_IN) {
                     if (childValues.isEmpty()) continue; //Simply ignore since trivially satisfied
-                    for (final Object inValue : childValues)
-                        addConstraint(type, Cmp.NOT_EQUAL, inValue, and, tx);
+                    addConstraints(type, Cmp.NOT_EQUAL, childValues, and, tx);
                 } else {
                     Preconditions.checkArgument(janusGraphPredicate == Contain.IN);
                     if (childValues.isEmpty()) {
@@ -260,8 +258,7 @@ public class QueryUtil {
                         addConstraint(type, Cmp.EQUAL, childValues.iterator().next(), and, tx);
                     } else {
                         final Or<E> nested = new Or<>(childValues.size());
-                        for (final Object inValue : childValues)
-                            addConstraint(type, Cmp.EQUAL, inValue, nested, tx);
+                        addConstraints(type, Cmp.EQUAL, childValues, nested, tx);
                         and.add(nested);
                     }
                 }
@@ -296,18 +293,14 @@ public class QueryUtil {
                     // Don't need to handle the case where childValues is empty, because it defaults to
                     // an or(and()) is added, which is a tautology
                     final And<E> nested = new And<>(childValues.size());
-                    for (final Object inValue : childValues) {
-                        addConstraint(type, Cmp.NOT_EQUAL, inValue, nested, tx);
-                    }
+                    addConstraints(type, Cmp.NOT_EQUAL, childValues, nested, tx);
                     or.add(nested);
                 } else {
                     Preconditions.checkArgument(janusGraphPredicate == Contain.IN);
                     if (childValues.isEmpty()) {
                         continue; // Handle any unsatisfiable condition that occurs within an OR statement like it does not exist
                     }
-                    for (final Object inValue : childValues) {
-                        addConstraint(type, Cmp.EQUAL, inValue, or, tx);
-                    }
+                    addConstraints(type, Cmp.EQUAL, childValues, or, tx);
                 }
             } else if (janusGraphPredicate instanceof AndJanusPredicate) {
                 final List<Object> childValues = (List<Object>) (values.get(i));
@@ -329,14 +322,37 @@ public class QueryUtil {
 
     private static <E extends JanusGraphElement> void addConstraint(RelationType type, JanusGraphPredicate predicate,
                                                                Object value, MultiCondition<E> conditions, StandardJanusGraphTx tx) {
+        final PredicateCondition<RelationType, E> pc = constraint(type, predicate, value, tx);
+        if (!conditions.contains(pc)) conditions.add(pc);
+    }
+
+    //Adds the constraint for each of the values which the conditions don't hold yet, as addConstraint does for one value.
+    //A set tells which they hold: looking each one up in the list made a within() or without() quadratic in its values
+    private static <E extends JanusGraphElement> void addConstraints(RelationType type, JanusGraphPredicate predicate,
+                                                                Collection<?> values, MultiCondition<E> conditions,
+                                                                StandardJanusGraphTx tx) {
+        final Set<Condition<E>> held = Sets.newHashSetWithExpectedSize(conditions.size() + values.size());
+        for (final Condition<E> condition : conditions) {
+            //Only an atom can equal an atom, and hashing a nested and() or or() would hash all of its children
+            if (condition instanceof PredicateCondition) held.add(condition);
+        }
+        for (final Object value : values) {
+            final PredicateCondition<RelationType, E> pc = constraint(type, predicate, value, tx);
+            if (held.add(pc)) conditions.add(pc);
+        }
+    }
+
+    private static <E extends JanusGraphElement> PredicateCondition<RelationType, E> constraint(RelationType type,
+                                                                                            JanusGraphPredicate predicate,
+                                                                                            Object value,
+                                                                                            StandardJanusGraphTx tx) {
         if (type.isPropertyKey()) {
             if (value != null)
                 value = tx.verifyAttribute((PropertyKey) type, value);
         } else { //t.isEdgeLabel()
             Preconditions.checkArgument(value instanceof JanusGraphVertex);
         }
-        final PredicateCondition<RelationType, E> pc = new PredicateCondition<>(type, predicate, value);
-        if (!conditions.contains(pc)) conditions.add(pc);
+        return new PredicateCondition<>(type, predicate, value);
     }
 
 
