@@ -17,6 +17,8 @@ package org.janusgraph.util.datastructures;
 import com.carrotsearch.hppc.LongObjectHashMap;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.collect.Iterables;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.janusgraph.graphdb.relations.RelationCache;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -24,6 +26,9 @@ import java.util.Map;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -66,6 +71,39 @@ public class RelationCacheTest {
         final LongObjectHashMap<Object> map = new LongObjectHashMap<>();
         assertEquals(0, map.size());
         assertEquals(0, Iterables.size(map));
+    }
+
+    @Test
+    public void headerOnlyParseIsNotFullyParsed() {
+        final RelationCache cache = new RelationCache(Direction.OUT, 1, 2, 3L);
+        assertFalse(cache.isFullyParsed());
+        assertFalse(cache.hasProperties());
+    }
+
+    //The distinction this repairs: a relation without properties used to look like a header-only parse
+    @Test
+    public void fullParseWithoutPropertiesIsFullyParsed() {
+        final RelationCache cache = RelationCache.withoutProperties(Direction.OUT, 1, 2, 3L);
+        assertTrue(cache.isFullyParsed());
+        assertFalse(cache.hasProperties());
+        assertEquals(0, cache.numProperties());
+        assertEquals(0, Iterables.size(cache));
+        assertNull(cache.get(5));
+
+        final RelationCache emptyMap = new RelationCache(Direction.OUT, 1, 2, 3L, new LongObjectHashMap<>());
+        assertTrue(emptyMap.isFullyParsed());
+        assertFalse(emptyMap.hasProperties());
+    }
+
+    @Test
+    public void fullParseWithPropertiesHasThem() {
+        final LongObjectHashMap<Object> map = new LongObjectHashMap<>();
+        map.put(5, "value");
+        final RelationCache cache = new RelationCache(Direction.IN, 1, 2, 3L, map);
+        assertTrue(cache.isFullyParsed());
+        assertTrue(cache.hasProperties());
+        assertEquals(1, cache.numProperties());
+        assertEquals("value", cache.get(5));
     }
 
     @Test
