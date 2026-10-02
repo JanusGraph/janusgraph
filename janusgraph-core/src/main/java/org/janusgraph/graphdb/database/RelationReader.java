@@ -23,6 +23,14 @@ import org.janusgraph.graphdb.types.TypeInspector;
  */
 public interface RelationReader {
 
+    /**
+     * Parses a relation entry.
+     *
+     * @param parseHeaderOnly whether to parse only the type, direction, id and other end of the relation and leave
+     *                        its properties out. Even then the parse is complete, {@link RelationCache#isFullyParsed()},
+     *                        when the relation can have no property: no bytes follow the header, its type has neither a
+     *                        sort key nor a signature, and the entry carries no metadata which stands for a property
+     */
     RelationCache parseRelation(Entry data, boolean parseHeaderOnly, TypeInspector tx);
 
 }

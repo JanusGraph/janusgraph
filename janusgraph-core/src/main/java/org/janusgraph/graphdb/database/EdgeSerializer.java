@@ -79,7 +79,10 @@ public class EdgeSerializer implements RelationReader {
 
     public RelationCache readRelation(Entry data, boolean parseHeaderOnly, TypeInspector tx) {
         RelationCache map = data.getCache();
-        if (map == null || !(parseHeaderOnly || map.hasProperties())) {
+        //A cached parse serves a header-only read whatever it is, and a full read when it is a full parse. That is
+        //told apart from a header-only parse by whether the properties were parsed, not by whether there are any:
+        //a relation without properties is parsed once like any other
+        if (map == null || !(parseHeaderOnly || map.isFullyParsed())) {
             map = parseRelation(data, parseHeaderOnly, tx);
             data.setCache(map);
         }
@@ -156,7 +159,8 @@ public class EdgeSerializer implements RelationReader {
 
         if (!excludeProperties) {
 
-            LongObjectHashMap<Object> properties = new LongObjectHashMap<>(4);
+            //Allocated by the first property; most relations have none besides their value or other end
+            LongObjectHashMap<Object> properties = null;
 
             if (!multiplicity.isConstrained() && keySignature.length > 0) {
                 int currentPos = in.getPosition();
@@ -166,19 +170,19 @@ public class EdgeSerializer implements RelationReader {
                 in.movePositionTo(startKeyPos);
                 ReadBuffer inKey = in;
                 if (def.getSortOrder() == Order.DESC) inKey = in.subrange(keyLength, true);
-                readInlineTypes(keySignature, properties, inKey, tx, InlineType.KEY);
+                properties = readInlineTypes(keySignature, properties, inKey, tx, InlineType.KEY);
                 in.movePositionTo(currentPos);
             }
 
             //read value signature
-            readInlineTypes(def.getSignature(), properties, in, tx, InlineType.SIGNATURE);
+            properties = readInlineTypes(def.getSignature(), properties, in, tx, InlineType.SIGNATURE);
 
             //Third: read rest
             while (in.hasRemaining()) {
                 PropertyKey type = tx.getExistingPropertyKey(IDHandler.readInlineRelationType(in));
                 Object propertyValue = readInline(in, type, InlineType.NORMAL);
                 assert propertyValue != null;
-                properties.put(type.longId(), propertyValue);
+                properties = put(properties, type.longId(), propertyValue);
             }
 
             if (data.hasMetaData()) {
@@ -186,24 +190,53 @@ public class EdgeSerializer implements RelationReader {
                     ImplicitKey key = ImplicitKey.MetaData2ImplicitKey.get(metas.getKey());
                     if (key != null) {
                         assert metas.getValue() != null;
-                        properties.put(key.longId(), metas.getValue());
+                        properties = put(properties, key.longId(), metas.getValue());
                     }
                 }
             }
 
-            return new RelationCache(dir, typeId, relationId, other, properties);
+            return properties == null
+                ? RelationCache.withoutProperties(dir, typeId, relationId, other)
+                : new RelationCache(dir, typeId, relationId, other, properties);
+        } else if (!in.hasRemaining() && keySignature.length == 0 && def.getSignature().length == 0
+            && !hasPropertyMetaData(data)) {
+            //Nothing is left which a full parse would read: no bytes after the header, no sort key, no signature and
+            //no metadata which stands for a property. The relation has no properties, and this parse is as complete
+            //as a full one, so a later read of the properties doesn't parse the entry again
+            return RelationCache.withoutProperties(dir, typeId, relationId, other);
         } else {
             return new RelationCache(dir, typeId, relationId, other);
         }
     }
 
-    private void readInlineTypes(long[] keyIds, LongObjectHashMap<Object> properties, ReadBuffer in, TypeInspector tx,
-                                 InlineType inlineType) {
+    //Whether the entry carries metadata which a full parse turns into a property, such as a timestamp or a TTL. Other
+    //metadata, such as the row key of a grouped multi-key read, doesn't stand for a property
+    private static boolean hasPropertyMetaData(Entry data) {
+        if (!data.hasMetaData()) {
+            return false;
+        }
+        for (EntryMetaData metaData : data.getMetaData().keySet()) {
+            if (ImplicitKey.MetaData2ImplicitKey.containsKey(metaData)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private LongObjectHashMap<Object> readInlineTypes(long[] keyIds, LongObjectHashMap<Object> properties, ReadBuffer in,
+                                                      TypeInspector tx, InlineType inlineType) {
         for (long keyId : keyIds) {
             PropertyKey keyType = tx.getExistingPropertyKey(keyId);
             Object value = readInline(in, keyType, inlineType);
-            if (value != null) properties.put(keyId, value);
+            if (value != null) properties = put(properties, keyId, value);
         }
+        return properties;
+    }
+
+    private static LongObjectHashMap<Object> put(LongObjectHashMap<Object> properties, long key, Object value) {
+        if (properties == null) properties = new LongObjectHashMap<>(4);
+        properties.put(key, value);
+        return properties;
     }
 
     private Object readInline(ReadBuffer read, PropertyKey key, InlineType inlineType) {

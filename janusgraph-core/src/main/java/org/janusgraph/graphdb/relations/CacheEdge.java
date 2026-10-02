@@ -92,7 +92,8 @@ public class CacheEdge extends AbstractEdge {
 
     private RelationCache getPropertyMap() {
         RelationCache map = data.getCache();
-        if (map == null || !map.hasProperties()) {
+        //A header-only parse has to be completed; a full parse without properties is complete and is kept
+        if (map == null || !map.isFullyParsed()) {
             map = RelationConstructor.readRelationCache(data, tx());
         }
         return map;

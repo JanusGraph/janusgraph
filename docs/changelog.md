@@ -749,6 +749,24 @@ cluster rejects is logged as a warning once. Deployments which set
 `index.[X].elasticsearch.setup-max-open-scroll-contexts` to `false`, such as Amazon OpenSearch Service, are therefore
 far less likely to reach the cluster's limit of open scroll contexts.
 
+##### Relations without properties are parsed once
+
+A loaded relation is deserialized in two steps: its type, direction, id and other end first, and its properties only
+once something asks for them. The deserialized form is cached on the entry, and whether the cache already held the
+properties was told from whether it held any. So a relation without properties, which is the common case for a vertex
+property without meta-properties and for an edge without properties, looked like it had never had its properties parsed,
+and every read of them parsed the whole entry again: every `properties()` of a vertex property, every `property(key)` or
+`has(key)` check on an edge, and every vertex which Gremlin Server returns with its properties, since its serializers
+read the meta-properties of each of them. The cache now records whether the properties were parsed, so each loaded entry
+of a relation is parsed with its properties at most once. Moreover, the first step now finds out when nothing follows
+the header, which is the case for a relation without properties whose type has neither a signature nor a sort key, the
+default, and whose entry carries no timestamp, TTL or visibility metadata. Such an entry is parsed exactly once, where
+it was parsed twice by the first read of its properties before. A relation without properties whose type has a
+signature, or which is read through a vertex-centric index, is still parsed twice by its first read, but no longer by
+every later one. An entry with timestamp, TTL or visibility metadata, which the `storage.meta.*` options enable
+(visibility only on a backend with cell-level visibility), is unaffected: the metadata is a property of the relation, so
+its full parse was already kept. The property map is only allocated for a relation which has properties.
+
 ##### `tx.max-commit-time` now defaults to 300 s and is checked against the least a commit may take
 
 `tx.max-commit-time` is the time after which transaction recovery considers a transaction failed and restores the index
