@@ -291,12 +291,21 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<Long> CLIENT_KEEP_ALIVE =
         new ConfigOption<>(ELASTICSEARCH_NS, "client-keep-alive",
-            "Set a keep-alive timeout (in milliseconds)",
+            "How long (in milliseconds) the Elasticsearch client keeps reusing a connection after a response. " +
+                "Without it the client keeps connections open as long as Elasticsearch does. A load balancer, NAT " +
+                "gateway or firewall between JanusGraph and Elasticsearch may drop a connection which stays idle " +
+                "longer than its own idle timeout, and the next request on it fails. Set this below that timeout.",
             ConfigOption.Type.GLOBAL_OFFLINE, Long.class);
 
     public static final ConfigOption<Integer> RETRY_ON_CONFLICT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry_on_conflict",
-            "Specify how many times should the operation be retried when a conflict occurs.", ConfigOption.Type.MASKABLE, 0);
+            "How many times Elasticsearch reattempts an update of a document which another request changed after " +
+                "the update read it. JanusGraph updates the document of an element which a transaction changes, " +
+                "and transactions which change the same element at the same time conflict this way. Elasticsearch " +
+                "reattempts the update against the latest version of the document. A conflict which survives these " +
+                "attempts fails the update with status 409, which is permanent unless `retry-error-codes` lists it. " +
+                "Set to 0 to leave conflicts unattempted.", ConfigOption.Type.MASKABLE, 3,
+            ConfigOption.nonnegativeInt());
 
     public static final ConfigOption<Boolean> ENABLE_INDEX_STORE_NAMES_CACHE =
         new ConfigOption<>(ELASTICSEARCH_NS, "enable_index_names_cache",
@@ -314,6 +323,46 @@ public class ElasticSearchIndex implements IndexProvider {
             "Sets the maximum socket timeout (in milliseconds).", ConfigOption.Type.MASKABLE,
             Integer.class, RestClientBuilder.DEFAULT_SOCKET_TIMEOUT_MILLIS);
 
+    public static final ConfigOption<Integer> MAX_CONNECTIONS_PER_HOST =
+        new ConfigOption<>(ELASTICSEARCH_NS, "max-connections-per-host",
+            "The most connections the Elasticsearch client of this index backend opens to each Elasticsearch host. " +
+                "A request waits until one of them is free, so this caps the requests which the index backend has " +
+                "in flight at a host at once, its queries and the bulk requests of its commits together. Without " +
+                "this option `max-connections` is divided evenly among the hosts, but each gets at least 10, the " +
+                "limit of the Elasticsearch client on its own. So a single host, such as a load balancer or the " +
+                "endpoint of a hosted cluster, can take all 30 connections by default, while three hosts get 10 " +
+                "each, which keeps a host which stops answering from holding every connection. A JanusGraph Server " +
+                "which runs more Gremlin threads than a host can take may need more.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Integer> MAX_CONNECTIONS =
+        new ConfigOption<>(ELASTICSEARCH_NS, "max-connections",
+            "The most connections the Elasticsearch client of this index backend opens to all Elasticsearch hosts " +
+                "together. A request waits until one of them is free. It caps `max-connections-per-host`, whose " +
+                "default it also gives.", ConfigOption.Type.MASKABLE, Integer.class, 30, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Integer> IO_THREADS =
+        new ConfigOption<>(ELASTICSEARCH_NS, "io-threads",
+            "The number of I/O threads with which the Elasticsearch client of this index backend sends requests " +
+                "and receives responses. They don't wait for Elasticsearch, so a few are enough for many " +
+                "connections. Every index backend of every graph has a client of its own, and without this option " +
+                "each client starts as many I/O threads as the JVM has processors. With `compression` on, a thread " +
+                "compresses each request it sends, and the other requests of the thread wait meanwhile.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Boolean> COMPRESSION =
+        new ConfigOption<>(ELASTICSEARCH_NS, "compression",
+            "Whether the Elasticsearch client compresses the bodies of its requests with gzip, bulk requests above " +
+                "all, and asks Elasticsearch to compress its responses, which saves network traffic at the cost of " +
+                "CPU on both sides. Elasticsearch compresses responses only if its `http.compression` setting " +
+                "allows it, which it does by default on a cluster without TLS. The client compresses a request on " +
+                "one of its I/O threads, whose other requests wait meanwhile, so a large bulk request can delay " +
+                "queries. More `io-threads` make it less likely that a query shares that thread, and a smaller " +
+                "`bulk-chunk-size-limit-bytes` shortens the wait. A compressed request is sent in chunks without a " +
+                "Content-Length header, which some request signers, such as interceptors which sign requests with " +
+                "AWS Signature Version 4, may not handle.",
+            ConfigOption.Type.MASKABLE, false);
+
     public static final ConfigOption<Integer> RETRY_LIMIT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry-limit",
             "Number of times the Elasticsearch client reattempts a request which failed transiently before giving " +
@@ -326,12 +375,16 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<Long> RETRY_INITIAL_WAIT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry-initial-wait",
-            "Sets the initial retry wait time (in milliseconds) before exponential backoff.",
+            "The backoff (in milliseconds) before the first of the `retry-limit` reattempts of the Elasticsearch " +
+                "client. The backoff before each further reattempt is ten times the one before, up to " +
+                "`retry-max-wait`. The client waits a random time between half of the backoff and all of it, so " +
+                "that requests which failed together don't all come back at the same moment.",
             ConfigOption.Type.LOCAL, Long.class, 1L);
 
     public static final ConfigOption<Long> RETRY_MAX_WAIT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry-max-wait",
-            "Sets the max retry wait time (in milliseconds).", ConfigOption.Type.LOCAL,
+            "The largest backoff (in milliseconds) before a reattempt of the Elasticsearch client. See " +
+                "`retry-initial-wait`.", ConfigOption.Type.LOCAL,
             Long.class, 1000L);
 
     public static final ConfigOption<String[]> RETRY_ERROR_CODES =

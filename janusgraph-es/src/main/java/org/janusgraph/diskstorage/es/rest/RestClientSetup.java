@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
@@ -40,6 +41,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -58,19 +61,12 @@ public class RestClientSetup {
     public ElasticSearchClient connect(Configuration config) throws IOException {
         log.debug("Configuring RestClient");
 
-        final List<HttpHost> hosts = new ArrayList<>();
-        final int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
-        final String httpScheme = config.get(ElasticSearchIndex.SSL_ENABLED) ? "https" : "http";
-        for (String host : config.get(INDEX_HOSTS)) {
-            String[] hostStringParts = host.split(":");
-            String hostname = hostStringParts[0];
-            int hostPort = defaultPort;
-            if (hostStringParts.length == 2) hostPort = Integer.parseInt(hostStringParts[1]);
-            log.debug("Configured remote host: {} : {}", hostname, hostPort);
-            hosts.add(new HttpHost(hostname, hostPort, httpScheme));
+        final HttpHost[] hosts = hosts(config);
+        for (HttpHost host : hosts) {
+            log.debug("Configured remote host: {} : {}", host.getHostName(), host.getPort());
         }
 
-        final RestClient rc = getRestClient(hosts.toArray(new HttpHost[hosts.size()]), config);
+        final RestClient rc = getRestClient(hosts, config);
 
         final int scrollKeepAlive = config.get(ElasticSearchIndex.ES_SCROLL_KEEP_ALIVE);
         Preconditions.checkArgument(scrollKeepAlive >= 1, "Scroll keep-alive should be greater than or equal to 1");
@@ -88,11 +84,25 @@ public class RestClientSetup {
             client.setBulkRefresh(config.get(ElasticSearchIndex.BULK_REFRESH));
         }
 
-        Integer retryOnConflict = config.has(ElasticSearchIndex.RETRY_ON_CONFLICT) ? config.get(ElasticSearchIndex.RETRY_ON_CONFLICT) : null;
-        client.setRetryOnConflict(retryOnConflict);
+        client.setRetryOnConflict(config.get(ElasticSearchIndex.RETRY_ON_CONFLICT));
         client.setRetryTransportFailures(config.get(ElasticSearchIndex.RETRY_TRANSPORT_FAILURES));
 
         return client;
+    }
+
+    //The hosts of the index backend, each with the port and scheme it is reached by
+    private static HttpHost[] hosts(Configuration config) {
+        final List<HttpHost> hosts = new ArrayList<>();
+        final int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
+        final String httpScheme = config.get(ElasticSearchIndex.SSL_ENABLED) ? "https" : "http";
+        for (String host : config.get(INDEX_HOSTS)) {
+            String[] hostStringParts = host.split(":");
+            String hostname = hostStringParts[0];
+            int hostPort = defaultPort;
+            if (hostStringParts.length == 2) hostPort = Integer.parseInt(hostStringParts[1]);
+            hosts.add(new HttpHost(hostname, hostPort, httpScheme));
+        }
+        return hosts.toArray(new HttpHost[0]);
     }
 
     protected RestClient getRestClient(HttpHost[] hosts, Configuration config) {
@@ -107,6 +117,8 @@ public class RestClientSetup {
         if (requestConfigCallback != null) {
             restClientBuilder.setRequestConfigCallback(requestConfigCallback);
         }
+
+        restClientBuilder.setCompressionEnabled(config.get(ElasticSearchIndex.COMPRESSION));
 
         return restClientBuilder.build();
     }
@@ -157,8 +169,8 @@ public class RestClientSetup {
 
     /**
      * <p>
-     * Returns the callback for customizing {@link CloseableHttpAsyncClient} or null if no
-     * customization is needed.
+     * Returns the callback for customizing {@link CloseableHttpAsyncClient}: its connection pool and I/O threads,
+     * then its authentication, keep-alive and SSL as configured.
      * </p>
      * <p>
      * See {@link RestClientBuilder#setHttpClientConfigCallback(HttpClientConfigCallback)} for more details.
@@ -166,11 +178,38 @@ public class RestClientSetup {
      *
      * @param config
      *            ES index configuration
-     * @return callback or null if the client customization is not needed
+     * @return callback
      */
     protected HttpClientConfigCallback getHttpClientConfigCallback(Configuration config) {
 
         final List<HttpClientConfigCallback> callbackList = new LinkedList<>();
+
+        //First, so that a custom authenticator can still change them
+        final int maxConnections = config.get(ElasticSearchIndex.MAX_CONNECTIONS);
+        final int maxConnectionsPerHost;
+        if (config.has(ElasticSearchIndex.MAX_CONNECTIONS_PER_HOST)) {
+            maxConnectionsPerHost = config.get(ElasticSearchIndex.MAX_CONNECTIONS_PER_HOST);
+            if (maxConnectionsPerHost > maxConnections) {
+                log.warn("{} is {}, but {} caps the connections to all Elasticsearch hosts together at {}",
+                    ElasticSearchIndex.MAX_CONNECTIONS_PER_HOST.getName(), maxConnectionsPerHost,
+                    ElasticSearchIndex.MAX_CONNECTIONS.getName(), maxConnections);
+            }
+        } else {
+            //The total divided evenly among the hosts, but at least what the Elasticsearch client allows on its own.
+            //The client merges a host which is listed twice, so it counts once
+            final int distinctHosts = new HashSet<>(Arrays.asList(hosts(config))).size();
+            maxConnectionsPerHost = Math.max(RestClientBuilder.DEFAULT_MAX_CONN_PER_ROUTE,
+                maxConnections / Math.max(1, distinctHosts));
+        }
+        final Integer ioThreads = config.has(ElasticSearchIndex.IO_THREADS) ? config.get(ElasticSearchIndex.IO_THREADS) : null;
+        callbackList.add(httpClientBuilder -> {
+            httpClientBuilder.setMaxConnPerRoute(maxConnectionsPerHost);
+            httpClientBuilder.setMaxConnTotal(maxConnections);
+            if (ioThreads != null) {
+                httpClientBuilder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(ioThreads).build());
+            }
+            return httpClientBuilder;
+        });
 
         final HttpAuthTypes authType = ConfigOption.getEnumValue(config.get(ElasticSearchIndex.ES_HTTP_AUTH_TYPE),
                 HttpAuthTypes.class);
@@ -233,10 +272,6 @@ public class RestClientSetup {
             if (configureSSL) {
                 callbackList.add(sslConfCBBuilder.build());
             }
-        }
-
-        if (callbackList.isEmpty()) {
-            return null;
         }
 
         // will execute the chain of individual callbacks

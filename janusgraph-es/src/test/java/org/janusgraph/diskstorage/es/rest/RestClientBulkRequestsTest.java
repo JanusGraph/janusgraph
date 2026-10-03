@@ -21,6 +21,7 @@ import org.apache.http.StatusLine;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
+import org.janusgraph.diskstorage.es.ElasticMajorVersion;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -67,6 +69,38 @@ public class RestClientBulkRequestsTest {
         //There's an initial query to get the ES version we need to accommodate, and then reset for the actual test
         Mockito.reset(restClientMock);
         return clientUnderTest;
+    }
+
+    //The action line of an update carries retry_on_conflict above 0, which is Elasticsearch's own default
+    @Test
+    public void testRetryOnConflictIsSentWithEveryUpdateAboveZero() throws IOException {
+        final ElasticSearchMutation update = ElasticSearchMutation.createUpdateRequest("some_index", "some_type",
+            "some_doc_id", ImmutableMap.builder().put("doc", ImmutableMap.of("name", "value")), null);
+        final ElasticSearchMutation index = ElasticSearchMutation.createIndexRequest("some_index", "some_type",
+            "some_doc_id", ImmutableMap.of("name", "value"));
+        try (RestElasticSearchClient restClientUnderTest = createClient(100_000_000)) {
+            restClientUnderTest.setRetryOnConflict(3);
+            Assertions.assertEquals(3, action(restClientUnderTest.new RequestBytes(update), "update").get("retry_on_conflict"));
+            Assertions.assertFalse(action(restClientUnderTest.new RequestBytes(index), "index").containsKey("retry_on_conflict"));
+
+            restClientUnderTest.setRetryOnConflict(0);
+            Assertions.assertFalse(action(restClientUnderTest.new RequestBytes(update), "update").containsKey("retry_on_conflict"));
+        }
+        //Elasticsearch 6 reads the same key and only deprecates its older name, _retry_on_conflict
+        try (RestElasticSearchClient elasticsearch6 = new RestElasticSearchClient(restClientMock, 0, false, 0,
+            Collections.emptySet(), 0, 0, 100_000_000, ElasticMajorVersion.SIX)) {
+            elasticsearch6.setRetryOnConflict(3);
+            final Map<String, Object> updateAction = action(elasticsearch6.new RequestBytes(update), "update");
+            Assertions.assertEquals(3, updateAction.get("retry_on_conflict"));
+            Assertions.assertFalse(updateAction.containsKey("_retry_on_conflict"));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> action(RestElasticSearchClient.RequestBytes request, String type) throws IOException {
+        final Map<String, Object> actionLine = new ObjectMapper().readValue(request.requestBytes, Map.class);
+        Assertions.assertEquals(Collections.singleton(type), actionLine.keySet());
+        return (Map<String, Object>) actionLine.get(type);
     }
 
     @Test

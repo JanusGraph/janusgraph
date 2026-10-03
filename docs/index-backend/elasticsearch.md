@@ -111,9 +111,34 @@ these options and their accepted values.
 
 ### REST Client Options
 
-The REST client accepts the `index.[X].bulk-refresh` option. This option
+The REST client accepts the `index.[X].elasticsearch.bulk-refresh` option. This option
 controls when changes are made visible to search. See [?refresh documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-refresh.html)
 for more information.
+
+The client of an index backend opens up to `index.[X].elasticsearch.max-connections` connections to all Elasticsearch
+hosts together, 30 by default, and up to `index.[X].elasticsearch.max-connections-per-host` to each host, by default the
+total divided evenly among the hosts, but at least 10. A request waits until a connection is free, so these cap how many
+queries and bulk requests the index backend has in flight at once. A single host, such as a load balancer or the
+endpoint of a hosted cluster, takes all 30 connections by default, while three hosts take 10 each, so that a host which
+stops answering can't hold every connection. A JanusGraph Server which runs more Gremlin threads than that may need
+higher values. Before JanusGraph 1.2.0 the client allowed 10 connections per host, whatever the number of hosts.
+
+The client sends and receives with as many I/O threads as the JVM has processors, unless
+`index.[X].elasticsearch.io-threads` sets another number. They don't wait for Elasticsearch, so a few are enough, which
+matters for a JanusGraph Server with many graphs, as every index backend of every graph has a client of its own.
+
+`index.[X].elasticsearch.compression=true` compresses the bodies of requests with gzip, bulk requests above all, and
+accepts compressed responses, which saves network traffic at the cost of CPU on both sides. The client compresses a
+request on one of its I/O threads, whose other requests wait meanwhile, so a large bulk request can delay queries. More
+I/O threads make it less likely that a query shares that thread, and a smaller
+`index.[X].elasticsearch.bulk-chunk-size-limit-bytes` shortens the wait. A compressed request is sent in chunks without
+a Content-Length header, which some request signers, such as interceptors which sign requests with AWS Signature Version
+4, may not handle.
+
+A load balancer, NAT gateway or firewall between JanusGraph and Elasticsearch may drop a connection which stays idle
+longer than its idle timeout, and the next request on that connection then fails. Set
+`index.[X].elasticsearch.client-keep-alive` below that timeout, so that the client stops reusing a connection before the
+network drops it.
 
 ### REST Client HTTPS Configuration
 
@@ -463,7 +488,7 @@ is reached, so three settings determine reindex throughput:
     an explicit count with `updateIndex(index, SchemaAction.REINDEX, threads)`.
     More threads issue more concurrent bulk requests and scale best when the
     Elasticsearch index has multiple shards spread across data nodes.
--   **Bulk refresh** (`index.[X].bulk-refresh`). With the default value `false`
+-   **Bulk refresh** (`index.[X].elasticsearch.bulk-refresh`). With the default value `false`
     a reindex is throughput-bound. If it is set to `wait_for` (or `true`) every
     bulk request blocks until the next index refresh, which can dominate the
     total reindex time; in that mode batching helps the most, because it
