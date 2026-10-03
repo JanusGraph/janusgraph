@@ -73,6 +73,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOp
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphUnusedMultiQueryRemovalStrategy;
 import org.janusgraph.graphdb.util.MultiSliceQueriesGroupingUtil;
 import org.janusgraph.util.IDUtils;
+import org.janusgraph.util.stats.MetricManager;
 import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
 import org.janusgraph.graphdb.database.util.IndexAppliesToFunction;
@@ -232,6 +233,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     //Runs the jobs of the graph's computers, created idle with the graph
     private final ThreadPoolExecutor computerJobs;
 
+    //The graph's claims on the Metrics reporters which its configuration asks for
+    private final Map<MetricManager.GraphReporter, Object> metricsReporterClaims;
+
     //Shutdown hook
     private volatile ShutdownThread shutdownHook;
 
@@ -338,8 +342,17 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             txCloseWaitTime);
         managementLog.registerReader(ReadMarker.fromNow(), managementLogger);
 
-        shutdownHook = new ShutdownThread(this);
-        Runtime.getRuntime().addShutdownHook(shutdownHook);
+        //Last, so that a graph which fails to open holds no claim; one which opens gives them back when it closes.
+        //A failure from here on, a reporter which can't start or a shutdown hook refused by a JVM which is shutting
+        //down, closes what the graph has opened, as no one else can
+        try {
+            metricsReporterClaims = configuration.startMetricsReporters();
+            shutdownHook = new ShutdownThread(this);
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
+        } catch (RuntimeException | Error e) {
+            closeInternal();
+            throw e;
+        }
         log.debug("Installed shutdown hook {}", shutdownHook, new Throwable("Hook creation trace"));
     }
 
@@ -457,6 +470,10 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             }
         } finally {
             isOpen = false;
+            //null for a graph whose reporters failed to start, which released them itself
+            if (metricsReporterClaims != null) {
+                MetricManager.INSTANCE.releaseGraphReporters(metricsReporterClaims);
+            }
         }
 
         // Throw an exception if at least one transaction failed to close

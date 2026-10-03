@@ -961,6 +961,36 @@ of 326. The setting is off by default, and JanusGraph Server refuses to start wi
 where a virtual thread which waits inside `synchronized`, as JanusGraph transactions do while they commit, keeps its
 platform thread.
 
+##### Threads and Metrics reporters end with the graph or server they belong to
+
+`JanusGraphFactory.drop()` clears the storage through a backend of its own, which never shut down the executor that
+`storage.parallel-backend-ops` creates for storage backends without multi-key queries, such as BerkeleyJE and inmemory.
+With `storage.parallel-backend-executor-service.class=cached`, which starts its core threads at once, every drop left as
+many threads running for good as the core pool size, by default twice the number of processors. The backend now shuts
+the executor down as it clears the storage.
+
+The Metrics reporters a graph starts from its `metrics.*` options kept reporting after the graph closed, and every graph
+opened with `metrics.graphite.*` options started a Graphite reporter of its own, while the earlier ones went on
+reporting. A graph now starts its reporters when it opens, rather than when its configuration is read, graphs share a
+Graphite reporter as they share the other reporters, and a reporter which graphs started stops once every graph which
+uses it has closed; one which other code started keeps running. As a reporter reports the metrics of all graphs of the
+JVM, those of a graph whose configuration asks for no reporter are no longer reported once the graphs which use it have
+closed. A periodic reporter reports one last time as it stops, which the close of the last graph using it waits for, and
+the Graphite reporter connects for that report without a timeout.
+
+`JanusGraphManager` bound the graphs of the `ConfiguredGraphFactory` to Gremlin Server on a thread which never ended and
+kept the JVM from exiting, and which idled from its first failed run on; every run fails without a
+`ConfigurationManagementGraph`. It is now a daemon thread, which ends at its first run after Gremlin Server has stopped,
+the runs starting 20 seconds after the previous one ended, and at a run which finds no `ConfigurationManagementGraph`; a
+run under way opens no further graph once Gremlin Server stops, and a run which fails for another reason is logged, and
+the next one tries again.
+
+Closing a storage backend stops its executors through `ExecuteUtil.gracefulExecutorServiceShutdown`, which now restores
+an interrupt that ends its wait instead of swallowing it. A backend closes its index providers before its storage
+backend, and shuts its own executor down last, so that no step of the close runs on a thread which an earlier step has
+interrupted. A `JanusGraphFactory.drop()` whose thread is interrupted while it closes the graph now fails on BerkeleyJE,
+which can't open the storage again on an interrupted thread, and leaves the storage as it was, rather than clearing it.
+
 ##### `tx.max-commit-time` now defaults to 300 s and is checked against the least a commit may take
 
 `tx.max-commit-time` is the time after which transaction recovery considers a transaction failed and restores the index

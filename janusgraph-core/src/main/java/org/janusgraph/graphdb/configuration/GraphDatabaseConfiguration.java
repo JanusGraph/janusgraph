@@ -80,6 +80,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1627,6 +1628,9 @@ public class GraphDatabaseConfiguration {
     private boolean schemaInitJsonForceCloseOtherInstances;
     private long schemaInitJsonIndexStatusAwaitTimeout;
 
+    //The Metrics reporters which this configuration asks for, with what starts each
+    private final Map<MetricManager.GraphReporter, Runnable> metricsReporters = new EnumMap<>(MetricManager.GraphReporter.class);
+
     private StoreFeatures storeFeatures = null;
 
     public GraphDatabaseConfiguration(ReadConfiguration configurationAtOpen, ModifiableConfiguration localConfiguration,
@@ -1682,6 +1686,30 @@ public class GraphDatabaseConfiguration {
 
     public String getMetricsPrefix() {
         return metricsPrefix;
+    }
+
+    /**
+     * Starts the Metrics reporters which this configuration asks for, unless reporters of their kinds run already, for
+     * a graph which opens with it. The graph gives back the claims it gets with
+     * {@link MetricManager#releaseGraphReporters(Map)} when it closes, which stops the reporters that graphs started
+     * once no graph which uses them is open.
+     *
+     * @return the graph's claims on the reporters, by their kind
+     */
+    public Map<MetricManager.GraphReporter, Object> startMetricsReporters() {
+        final Map<MetricManager.GraphReporter, Object> claims = new EnumMap<>(MetricManager.GraphReporter.class);
+        try {
+            metricsReporters.forEach((reporter, start) -> {
+                final Object claim = MetricManager.INSTANCE.addGraphReporter(reporter, start);
+                if (claim != null) {
+                    claims.put(reporter, claim);
+                }
+            });
+        } catch (RuntimeException | Error e) {
+            MetricManager.INSTANCE.releaseGraphReporters(claims);
+            throw e;
+        }
+        return claims;
     }
 
     public DefaultSchemaMaker getDefaultSchemaMaker() {
@@ -2081,37 +2109,47 @@ public class GraphDatabaseConfiguration {
 
     private void configureMetricsConsoleReporter() {
         if (configuration.has(METRICS_CONSOLE_INTERVAL)) {
-            MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL));
+            addMetricsReporter(MetricManager.GraphReporter.CONSOLE,
+                () -> MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL)));
         }
     }
 
     private void configureMetricsCsvReporter() {
         if (configuration.has(METRICS_CSV_DIR)) {
-            MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR));
+            addMetricsReporter(MetricManager.GraphReporter.CSV,
+                () -> MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR)));
         }
     }
 
     private void configureMetricsJmxReporter() {
         if (configuration.get(METRICS_JMX_ENABLED)) {
-            MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID));
+            addMetricsReporter(MetricManager.GraphReporter.JMX,
+                () -> MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID)));
         }
     }
 
     private void configureMetricsSlf4jReporter() {
         if (configuration.has(METRICS_SLF4J_INTERVAL)) {
             // null loggerName is allowed -- that means Metrics will use its internal default
-            MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
-                configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
+            addMetricsReporter(MetricManager.GraphReporter.SLF4J,
+                () -> MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
+                    configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null));
         }
     }
 
     private void configureMetricsGraphiteReporter() {
         if (configuration.has(GRAPHITE_HOST)) {
-            MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
-                configuration.get(GRAPHITE_PORT),
-                configuration.get(GRAPHITE_PREFIX),
-                configuration.get(GRAPHITE_INTERVAL));
+            addMetricsReporter(MetricManager.GraphReporter.GRAPHITE,
+                () -> MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
+                    configuration.get(GRAPHITE_PORT),
+                    configuration.get(GRAPHITE_PREFIX),
+                    configuration.get(GRAPHITE_INTERVAL)));
         }
+    }
+
+    //Started by the graphs which open with this configuration, see startMetricsReporters()
+    private void addMetricsReporter(MetricManager.GraphReporter reporter, Runnable start) {
+        metricsReporters.put(reporter, start);
     }
 
 }

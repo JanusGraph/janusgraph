@@ -33,7 +33,11 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
@@ -61,6 +65,18 @@ public enum MetricManager {
     private JmxReporter jmxReporter           = null;
     private Slf4jReporter slf4jReporter       = null;
     private GraphiteReporter graphiteReporter = null;
+
+    /**
+     * The reporters which a graph can start from its configuration.
+     */
+    public enum GraphReporter {
+        CONSOLE, CSV, JMX, SLF4J, GRAPHITE
+    }
+
+    //For each reporter which graphs started, the claims of the open graphs which use it. A reporter which runs while no
+    //graph holds a claim on it was started by other code, which stops it. The reporter's remove method ends the claims
+    //on it, so that a claim which outlives its reporter can't stop one started later
+    private final Map<GraphReporter, Set<Object>> graphReporterClaims = new EnumMap<>(GraphReporter.class);
 
     /**
      * Return the JanusGraph Metrics registry.
@@ -99,6 +115,7 @@ public enum MetricManager {
             consoleReporter.stop();
 
         consoleReporter = null;
+        graphReporterClaims.remove(GraphReporter.CONSOLE);
     }
 
     /**
@@ -146,6 +163,7 @@ public enum MetricManager {
             csvReporter.stop();
 
         csvReporter = null;
+        graphReporterClaims.remove(GraphReporter.CSV);
     }
 
     /**
@@ -202,6 +220,7 @@ public enum MetricManager {
             jmxReporter.stop();
 
         jmxReporter = null;
+        graphReporterClaims.remove(GraphReporter.JMX);
     }
 
     /**
@@ -249,6 +268,7 @@ public enum MetricManager {
             slf4jReporter.stop();
 
         slf4jReporter = null;
+        graphReporterClaims.remove(GraphReporter.SLF4J);
     }
 
     /**
@@ -271,6 +291,11 @@ public enum MetricManager {
             String prefix, Duration reportInterval) {
 
         Preconditions.checkNotNull(host);
+
+        if (null != graphiteReporter) {
+            log.debug("Metrics GraphiteReporter already active; not creating another");
+            return;
+        }
 
         Graphite graphite = new Graphite(new InetSocketAddress(host, port));
 
@@ -299,6 +324,7 @@ public enum MetricManager {
             graphiteReporter.stop();
 
         graphiteReporter = null;
+        graphReporterClaims.remove(GraphReporter.GRAPHITE);
     }
 
     /**
@@ -311,6 +337,172 @@ public enum MetricManager {
         removeJmxReporter();
         removeSlf4jReporter();
         removeGraphiteReporter();
+    }
+
+    /**
+     * Lets a graph use a reporter which its configuration asks for. Unless a reporter of the kind is running, it is
+     * started, and the graph gets a claim on a reporter which graphs started, which it gives back with
+     * {@link #releaseGraphReporter(GraphReporter, Object)}: the reporter stops once no claim on it is left. A reporter
+     * which runs while no graph holds a claim on it was started by other code, which stops it: the graph uses it
+     * without a claim.
+     *
+     * @param reporter the kind of reporter
+     * @param start starts the reporter, by calling the {@code add*} method of its kind
+     * @return the graph's claim on the reporter, or null for a reporter which other code started
+     */
+    public Object addGraphReporter(GraphReporter reporter, Runnable start) {
+        Runnable stopFailed = null;
+        Throwable failure = null;
+        synchronized (this) {
+            Set<Object> claims = graphReporterClaims.get(reporter);
+            if (claims == null) {
+                if (isRunning(reporter)) {
+                    log.debug("A graph uses the running {} reporter, which other code started", reporter);
+                    return null;
+                }
+                try {
+                    start.run();
+                    claims = new HashSet<>();
+                    graphReporterClaims.put(reporter, claims);
+                } catch (RuntimeException | Error e) {
+                    //A reporter which began running before the failure would run without a claim: forget it here, and
+                    //stop it as releaseGraphReporter() does, the JMX reporter under the lock, a periodic one outside
+                    final Runnable stop = detach(reporter);
+                    if (reporter == GraphReporter.JMX) {
+                        stopAfterFailedStart(stop, e);
+                        stopFailed = null;
+                    } else {
+                        stopFailed = stop;
+                    }
+                    failure = e;
+                    claims = null;
+                }
+            } else {
+                log.debug("A graph joins the running {} reporter, whose settings stay as they are", reporter);
+            }
+            if (claims != null) {
+                final Object claim = new Object();
+                claims.add(claim);
+                return claim;
+            }
+        }
+        if (stopFailed != null) {
+            stopAfterFailedStart(stopFailed, failure);
+        }
+        if (failure instanceof Error) {
+            throw (Error) failure;
+        }
+        throw (RuntimeException) failure;
+    }
+
+    //Stops a reporter whose start failed. The caller throws the start's failure; a failure of the stop goes with it
+    private static void stopAfterFailedStart(Runnable stop, Throwable startFailure) {
+        try {
+            stop.run();
+        } catch (RuntimeException | Error e) {
+            startFailure.addSuppressed(e);
+        }
+    }
+
+    /**
+     * Gives back a claim which {@link #addGraphReporter(GraphReporter, Runnable)} returned, and stops the reporter
+     * once no claim on it is left. A reporter which reports periodically reports one last time as it stops, on the
+     * calling thread but without holding this manager's lock. Does nothing for a claim which the reporter's
+     * {@code remove*} method has ended.
+     *
+     * @param reporter the kind of reporter
+     * @param claim the claim
+     */
+    public void releaseGraphReporter(GraphReporter reporter, Object claim) {
+        final Runnable stop;
+        synchronized (this) {
+            final Set<Object> claims = graphReporterClaims.get(reporter);
+            if (claims == null || !claims.remove(claim) || !claims.isEmpty()) {
+                return;
+            }
+            graphReporterClaims.remove(reporter);
+            stop = detach(reporter);
+            //The JMX reporter's stop only unregisters its MBeans, and a reporter started meanwhile would register the
+            //same names, so it stops under the lock, as removeJmxReporter() stops it; the periodic reporters report once
+            //more as they stop, which may block, so they stop outside
+            if (reporter == GraphReporter.JMX) {
+                stop.run();
+                return;
+            }
+        }
+        stop.run();
+    }
+
+    /**
+     * Gives back the claims of a graph, each on its own: a reporter whose stop fails with an exception is logged, and
+     * the others are still released; one whose stop fails with an error is logged too, and the error is thrown once
+     * the others have been released.
+     *
+     * @param claims the claims of the graph, by the kind of their reporter
+     */
+    public void releaseGraphReporters(Map<GraphReporter, Object> claims) {
+        Error error = null;
+        for (Map.Entry<GraphReporter, Object> claim : claims.entrySet()) {
+            try {
+                releaseGraphReporter(claim.getKey(), claim.getValue());
+            } catch (RuntimeException e) {
+                log.warn("Could not stop the Metrics {} reporter", claim.getKey(), e);
+            } catch (Error e) {
+                log.warn("Could not stop the Metrics {} reporter", claim.getKey(), e);
+                if (error == null) {
+                    error = e;
+                } else {
+                    error.addSuppressed(e);
+                }
+            }
+        }
+        if (error != null) {
+            throw error;
+        }
+    }
+
+    //Forgets the running reporter of the given kind, and returns what stops it
+    private Runnable detach(GraphReporter reporter) {
+        final Runnable stop;
+        switch (reporter) {
+            case CONSOLE:
+                stop = consoleReporter == null ? null : consoleReporter::stop;
+                consoleReporter = null;
+                break;
+            case CSV:
+                stop = csvReporter == null ? null : csvReporter::stop;
+                csvReporter = null;
+                break;
+            case JMX:
+                stop = jmxReporter == null ? null : jmxReporter::stop;
+                jmxReporter = null;
+                break;
+            case SLF4J:
+                stop = slf4jReporter == null ? null : slf4jReporter::stop;
+                slf4jReporter = null;
+                break;
+            case GRAPHITE:
+                stop = graphiteReporter == null ? null : graphiteReporter::stop;
+                graphiteReporter = null;
+                break;
+            default:
+                throw new AssertionError(reporter);
+        }
+        return stop == null ? () -> { } : stop;
+    }
+
+    /**
+     * Whether a reporter of the given kind runs, for tests and tooling
+     */
+    public synchronized boolean isRunning(GraphReporter reporter) {
+        switch (reporter) {
+            case CONSOLE: return null != consoleReporter;
+            case CSV: return null != csvReporter;
+            case JMX: return null != jmxReporter;
+            case SLF4J: return null != slf4jReporter;
+            case GRAPHITE: return null != graphiteReporter;
+            default: throw new AssertionError(reporter);
+        }
     }
 
     public Counter getCounter(String name) {
