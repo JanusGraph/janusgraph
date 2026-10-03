@@ -195,6 +195,38 @@ As of 1.2.0, when a vertex is removed JanusGraph instead issues a single partiti
 `storage.drop-whole-row-on-vertex-removal` (default `true`). Set it to `false` to restore the previous
 per-column behavior.
 
+### Reattempted and speculative requests
+
+The DataStax driver sends a request again, to the same node or another one, after a closed connection, an overloaded
+node or a server error, asks its retry policy about a write which timed out, and runs speculative executions, only for
+statements which are marked idempotent. JanusGraph's reads are idempotent. Its writes, which it sends in batches, are
+marked idempotent while `graph.assign-timestamp` is `true`, the default, as a write sent again then writes the same
+cells with the same timestamp. With `storage.cql.idempotent-writes=false`, or with `graph.assign-timestamp=false`, which
+the Amazon Keyspaces configuration below sets, writes aren't marked and keep the driver's default idempotence,
+`basic.request.default-idempotence`, which is `false` unless configured otherwise. The driver's default retry policy
+resends a write which timed out only when it was the batch log write of a logged batch, as
+`storage.cql.atomic-batch-mutate=true` sends. A failure which the driver doesn't reattempt reaches JanusGraph, which
+reattempts the whole operation after a backoff while the failure is temporary, for up to `storage.read-time` or
+`storage.write-time`.
+
+Speculative executions are off by default. A policy configured through the internal driver configuration, for example
+
+```properties
+storage.cql.internal.string-configuration=datastax-java-driver { advanced.speculative-execution-policy { class = ConstantSpeculativeExecutionPolicy\, max-executions = 2\, delay = 100 milliseconds } }
+```
+
+sends a request which hasn't been answered after the delay to the next node of its query plan as well, and takes the
+first answer: a read, or an idempotent write. JanusGraph reads a comma in a property value as a list separator, so the
+commas of the driver configuration are escaped. The driver checks for due executions every
+`storage.cql.netty.timer-tick-duration`, 100 milliseconds by default, so a shorter delay needs a shorter tick.
+
+A write which is sent again, whether the driver reattempts it or runs a speculative execution of it, writes the same
+cells with the same timestamp, but an insert with a TTL computes its expiry anew where it applies. Of two copies of a
+cell with the same timestamp Cassandra keeps the one which expires later, so a resend can extend the lifetime of a cell
+with a TTL by the time between the sends, even when the first copy was written. JanusGraph's own reattempts of a write
+could already do the same. Where data with a TTL has to expire exactly on time, leave speculative executions off, or
+set `storage.cql.idempotent-writes=false` to keep them to reads.
+
 ## Global Graph Operations
 
 JanusGraph over Cassandra supports global vertex and edge iteration.

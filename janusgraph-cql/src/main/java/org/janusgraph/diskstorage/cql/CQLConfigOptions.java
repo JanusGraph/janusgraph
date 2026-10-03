@@ -117,6 +117,18 @@ public interface CQLConfigOptions {
             ConfigOption.Type.MASKABLE,
             false);
 
+    ConfigOption<Boolean> IDEMPOTENT_WRITES = new ConfigOption<>(
+            CQL_NS,
+            "idempotent-writes",
+            "Whether JanusGraph marks its writes idempotent while `graph.assign-timestamp` is `true`, so that the " +
+                "driver may send a write again, to the same node or another one, after a closed connection, an " +
+                "overloaded node or a server error, ask its retry policy about a write which timed out, and run " +
+                "speculative executions of it. A write sent again writes the same cells with the same timestamp, but " +
+                "an insert with a TTL sent again can expire later. With `false`, or without assigned timestamps, " +
+                "writes keep the driver's default idempotence, `basic.request.default-idempotence`.",
+            ConfigOption.Type.MASKABLE,
+            true);
+
     // Replication
 
     String SIMPLE_REPLICATION_STRATEGY = "SimpleStrategy";
