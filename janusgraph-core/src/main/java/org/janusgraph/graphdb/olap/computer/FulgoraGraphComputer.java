@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.olap.computer;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
@@ -54,6 +55,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.util.ExceptionFactory;
 import org.janusgraph.graphdb.util.WorkerPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +70,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -94,6 +103,37 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
 
     private ResultGraph resultGraphMode = null;
     private Persist persistMode = null;
+
+    /**
+     * Creates the executor which runs the jobs of a graph's computers, which the graph creates idle and shuts down when
+     * it closes. A job holds its thread for as long as it runs, which a thread of the JVM's common pool, where
+     * {@link CompletableFuture#supplyAsync(java.util.function.Supplier)} used to run the jobs, shouldn't. It runs up to
+     * {@code computer.job-pool-size} jobs at once, or, without that option, as many as the common pool has threads;
+     * further jobs wait. Where the common pool has a single thread, it runs each job on a thread of its own instead, as
+     * supplyAsync does. The threads are daemons, and end after {@code computer.job-keep-alive-time} without a job.
+     *
+     * @param configuration the configuration of the graph
+     * @return the executor, without threads yet
+     */
+    public static ThreadPoolExecutor newJobExecutor(Configuration configuration) {
+        final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+            .setDaemon(true)
+            .setNameFormat("FulgoraGraphComputer-%d")
+            .build();
+        final long keepAliveMillis = configuration.get(GraphDatabaseConfiguration.COMPUTER_JOB_KEEP_ALIVE_TIME).toMillis();
+        final boolean sized = configuration.has(GraphDatabaseConfiguration.COMPUTER_JOB_POOL_SIZE);
+        final int threads = sized ? configuration.get(GraphDatabaseConfiguration.COMPUTER_JOB_POOL_SIZE)
+            : ForkJoinPool.getCommonPoolParallelism();
+        if (sized || threads > 1) {
+            final ThreadPoolExecutor executor = new ThreadPoolExecutor(threads, threads, keepAliveMillis,
+                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
+            executor.allowCoreThreadTimeOut(true);
+            return executor;
+        }
+        //Each on a thread of its own, as supplyAsync runs a task where the common pool has a single thread
+        return new ThreadPoolExecutor(0, Integer.MAX_VALUE, keepAliveMillis, TimeUnit.MILLISECONDS,
+            new SynchronousQueue<>(), threadFactory);
+    }
 
     private static final AtomicInteger computerCounter = new AtomicInteger(0);
     //Close the executors of the job's scans once it has ended
@@ -168,7 +208,12 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
 
         initializeMemory();
 
-        return CompletableFuture.supplyAsync(this::submitAsync);
+        try {
+            return CompletableFuture.supplyAsync(this::submitAsync, graph.getComputerJobExecutor());
+        } catch (RejectedExecutionException e) {
+            //The graph has closed, and shut the executor down: the job fails, as one which ran once it had closed would
+            return CompletableFuture.failedFuture(new IllegalStateException("Graph has been shut down", e));
+        }
     }
 
     private void guardAgainstDuplicateSubmission() {
@@ -204,6 +249,11 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
     }
 
     private ComputerResult submitAsync() {
+        //A job which starts from the queue once its graph has begun to close fails at once, as a transaction of a
+        //closed graph does, rather than race the teardown of the backend
+        if (graph.isClosed()) {
+            ExceptionFactory.graphShutdown();
+        }
         try {
             final long time = System.currentTimeMillis();
             executeVertexProgram();

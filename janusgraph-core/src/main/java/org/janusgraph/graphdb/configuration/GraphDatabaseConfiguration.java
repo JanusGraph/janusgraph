@@ -223,6 +223,18 @@ public class GraphDatabaseConfiguration {
             "How the graph computer should return the computed results. 'persist' for writing them into the graph, " +
                     "'localtx' for writing them into the local transaction, or 'none' (default)", ConfigOption.Type.MASKABLE, "none");
 
+    public static final ConfigOption<Integer> COMPUTER_JOB_POOL_SIZE = new ConfigOption<>(COMPUTER_NS,"job-pool-size",
+            "The number of threads which run the jobs of the graph's computers, a job on each, while further jobs wait. " +
+                "If not set, which is recommended, as many as the JVM's common pool has threads (by default the number of " +
+                "processors less one, at least one), or a thread per job where that is a single thread. Set it to run " +
+                "fewer of the graph's jobs at once, or more.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Duration> COMPUTER_JOB_KEEP_ALIVE_TIME = new ConfigOption<>(COMPUTER_NS,"job-keep-alive-time",
+            "How long a thread which runs the jobs of the graph's computers waits for the next job before it ends. " +
+                "The default is recommended.",
+            ConfigOption.Type.MASKABLE, Duration.class, Duration.ofMinutes(1), d -> d != null && d.toMillis() > 0);
+
 
     // ################ Transaction #######################
     // ################################################
@@ -263,6 +275,18 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> VERBOSE_TX_RECOVERY = new ConfigOption<>(TRANSACTION_RECOVERY_NS,"verbose",
             "Whether the transaction recovery system should print recovered transactions and other activity to standard output",
             ConfigOption.Type.MASKABLE, false);
+
+    public static final ConfigOption<Integer> TX_RECOVERY_REPAIR_POOL_SIZE = new ConfigOption<>(TRANSACTION_RECOVERY_NS,"repair-pool-size",
+            "The number of threads which repair the transactions the recovery finds incomplete: a repair reads the " +
+                "storage backend and writes the index backends and the user log. If not set, which is recommended, as many " +
+                "as the JVM's common pool has threads (by default the number of processors less one, at least one). As the " +
+                "repairs mostly wait for I/O, more threads catch up faster with many incomplete transactions.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Duration> TX_RECOVERY_REPAIR_KEEP_ALIVE_TIME = new ConfigOption<>(TRANSACTION_RECOVERY_NS,"repair-keep-alive-time",
+            "How long a thread which repairs incomplete transactions waits for the next repair before it ends. " +
+                "The default is recommended.",
+            ConfigOption.Type.MASKABLE, Duration.class, Duration.ofMinutes(1), d -> d != null && d.toMillis() > 0);
 
     // ################ Query Processing #######################
     // ################################################
@@ -1035,6 +1059,20 @@ public class GraphDatabaseConfiguration {
             "This helps avoid transaction commits waiting on ID reservation even if the block size is relatively small.",
             ConfigOption.Type.MASKABLE, 0.3);
 
+    public static final ConfigOption<Integer> IDS_RENEW_POOL_SIZE = new ConfigOption<>(IDS_NS,"renew-pool-size",
+            "The number of threads which reserve new ID blocks for the instance's ID pools, each pool one block at a " +
+                "time. If not set, which is recommended, as many as the instance can have pools: three for each partition " +
+                "of cluster.max-partitions (vertices, vertices of unmodifiable labels and relations), one for schema ids " +
+                "and one for partitioned vertices, so that every pool can reserve a block at once. The threads end after " +
+                "ids.renew-keep-alive-time without a reservation. Set it to bound them, at the price of reservations " +
+                "queueing when more pools need blocks at once.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Duration> IDS_RENEW_KEEP_ALIVE_TIME = new ConfigOption<>(IDS_NS,"renew-keep-alive-time",
+            "How long a thread which reserves ID blocks waits for the next reservation before it ends. " +
+                "The default is recommended.",
+            ConfigOption.Type.MASKABLE, Duration.class, Duration.ofMinutes(1), d -> d != null && d.toMillis() > 0);
+
     // ################ IDAUTHORITY ###################
     // ################################################
 
@@ -1232,6 +1270,16 @@ public class GraphDatabaseConfiguration {
             "Maximum time to wait for an instance to acknowledge a schema change before treating it as stale. " +
                 "Only effective when graph.management-auto-close-stale-instances is enabled.",
             ConfigOption.Type.MASKABLE, Duration.ofSeconds(120));
+
+    public static final ConfigOption<Duration> MANAGEMENT_TX_CLOSE_WAIT_TIME = new ConfigOption<>(GRAPH_NS,
+            "management-tx-close-wait-time",
+            "Maximum time an instance waits for the transactions which were open when a schema change reached it to " +
+                "close, before it acknowledges the change. If they are still open by then, it logs a stale transaction " +
+                "alert and doesn't acknowledge the change. The default is recommended; raise it if transactions stay open " +
+                "longer and schema changes should wait for them. With graph.management-auto-close-stale-instances, an " +
+                "instance which hasn't acknowledged a change within graph.management-ack-timeout is force-closed, whether " +
+                "it still waits or has given up, so a value above that timeout gains nothing.",
+            ConfigOption.Type.MASKABLE, Duration.class, Duration.ofSeconds(60), d -> d != null && !d.isNegative());
 
     public static final String MANAGEMENT_LOG = "janusgraph";
     public static final String TRANSACTION_LOG = "tx";

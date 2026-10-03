@@ -14,7 +14,9 @@
 
 package org.janusgraph.hadoop;
 
+import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.janusgraph.JanusGraphCassandraContainer;
@@ -48,9 +50,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
@@ -150,6 +156,36 @@ public class CQLScanJobIT extends JanusGraphBaseTest {
 
         // Should succeed
         assertTrue(job.waitForCompletion(true));
+    }
+
+    @Test
+    public void testSplitThreadsSetting() throws Exception {
+        org.apache.hadoop.conf.Configuration c = new org.apache.hadoop.conf.Configuration();
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cql.keyspace", getClass().getSimpleName().toLowerCase());
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cql");
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.port", String.valueOf(cql.getMappedCQLPort()));
+        c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.Murmur3Partitioner");
+        CqlInputFormat inputFormat = new CqlInputFormat();
+        inputFormat.setConf(c);
+
+        List<String> splits = tokenRanges(inputFormat.getSplits(Job.getInstance(c)));
+        assertFalse(splits.isEmpty());
+
+        // The same splits, all fetched on one thread
+        c.setInt("cassandra.input.split.threads", 1);
+        assertEquals(splits, tokenRanges(inputFormat.getSplits(Job.getInstance(c))));
+
+        c.setInt("cassandra.input.split.threads", 0);
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+            () -> inputFormat.getSplits(Job.getInstance(c)));
+        assertTrue(e.getMessage().contains("cassandra.input.split.threads"), e.getMessage());
+    }
+
+    private static List<String> tokenRanges(List<InputSplit> splits) {
+        return splits.stream()
+            .map(split -> ((ColumnFamilySplit) split).getStartToken() + ".." + ((ColumnFamilySplit) split).getEndToken())
+            .sorted()
+            .collect(Collectors.toList());
     }
 
     private Job getVertexJobWithDefaultMapper(org.apache.hadoop.conf.Configuration c) throws IOException {

@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.collections.CollectionUtils;
 import org.janusgraph.core.JanusGraphManagerUtility;
 import org.janusgraph.core.JanusGraphTransaction;
@@ -26,6 +27,7 @@ import org.janusgraph.diskstorage.log.Message;
 import org.janusgraph.diskstorage.log.MessageReader;
 import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
@@ -45,6 +47,10 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.janusgraph.graphdb.database.management.GraphCacheEvictionAction.DO_NOT_EVICT;
@@ -59,7 +65,8 @@ public class ManagementLogger implements MessageReader {
             LoggerFactory.getLogger(ManagementLogger.class);
 
     private static final Duration SLEEP_INTERVAL = Duration.ofMillis(100L);
-    private static final Duration MAX_WAIT_TIME = Duration.ofSeconds(60L);
+    //How long the thread which sends the acknowledgements waits for more work before it ends
+    private static final long ACK_THREAD_KEEP_ALIVE_SECONDS = 60;
     //The id of an eviction which nobody waits for. Acknowledged evictions take theirs from nextEvictionId(), never this
     private static final long UNACKNOWLEDGED_EVICTION_ID = 0;
 
@@ -76,7 +83,19 @@ public class ManagementLogger implements MessageReader {
     private final ConcurrentMap<Long,EvictionTrigger> evictionTriggerMap = new ConcurrentHashMap<>();
 
     private final Duration ackTimeout;
+    //How long the acknowledgement of an eviction waits for the transactions which were open when it arrived to close
+    private final Duration txCloseWaitTime;
+    /**
+     * How long one write of the log may take, which {@link #close()} waits for an acknowledgement being sent
+     */
+    private final Duration writeTime;
     private final boolean autoCloseStaleInstances;
+
+    //Sends the acknowledgements of the evictions this instance receives, each once the transactions which were open
+    //when its eviction arrived have closed, on one thread for all of them
+    private final ScheduledThreadPoolExecutor ackExecutor;
+    //The acknowledgements of evictions of the graph from the JanusGraphManager which have yet to remove it there
+    private final AtomicInteger pendingGraphEvictions = new AtomicInteger();
 
     public ManagementLogger(StandardJanusGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times) {
         this(graph, sysLog, schemaCache, times, Duration.ofSeconds(120), true);
@@ -84,13 +103,66 @@ public class ManagementLogger implements MessageReader {
 
     public ManagementLogger(StandardJanusGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times,
                             Duration ackTimeout, boolean autoCloseStaleInstances) {
+        this(graph, sysLog, schemaCache, times, ackTimeout, autoCloseStaleInstances,
+            GraphDatabaseConfiguration.MANAGEMENT_TX_CLOSE_WAIT_TIME.getDefaultValue());
+    }
+
+    /**
+     * @param txCloseWaitTime how long the acknowledgement of an eviction waits for the transactions which were open
+     *                        when it arrived to close
+     */
+    public ManagementLogger(StandardJanusGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times,
+                            Duration ackTimeout, boolean autoCloseStaleInstances, Duration txCloseWaitTime) {
         this.graph = graph;
         this.schemaCache = schemaCache;
         this.sysLog = sysLog;
         this.times = times;
         this.ackTimeout = ackTimeout;
         this.autoCloseStaleInstances = autoCloseStaleInstances;
+        this.txCloseWaitTime = Preconditions.checkNotNull(txCloseWaitTime);
+        this.writeTime = graph.getConfiguration().getMaxWriteTime();
         Preconditions.checkNotNull(times);
+        ackExecutor = new ScheduledThreadPoolExecutor(1, new ThreadFactoryBuilder()
+            .setDaemon(true)
+            .setNameFormat("ManagementLogger-ack-%d")
+            .build());
+        ackExecutor.setKeepAliveTime(ACK_THREAD_KEEP_ALIVE_SECONDS, TimeUnit.SECONDS);
+        ackExecutor.allowCoreThreadTimeOut(true);
+        //close() drops the acknowledgements which wait for transactions
+        ackExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    }
+
+    /**
+     * Stops acknowledging evictions, as the graph does when it closes, after it has removed itself from the open
+     * instances, which no longer wait for its acknowledgements then. An acknowledgement which is being sent is waited
+     * for, as long as one write of the log may take, so that the graph closes its backend after it; the
+     * acknowledgements which wait for transactions to close are dropped, and the thread which sends them ends. An
+     * eviction of the graph from the JanusGraphManager among them still removes it there. Evictions which arrive
+     * later are still applied to the caches, but not acknowledged.
+     */
+    public void close() {
+        //Drops the delayed re-checks, and lets a task which is running finish
+        ackExecutor.shutdown();
+        try {
+            if (!ackExecutor.awaitTermination(writeTime.toMillis(), TimeUnit.MILLISECONDS)) {
+                log.warn("An acknowledgement of an eviction did not finish within {}; it goes on while the graph closes",
+                    writeTime);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Interrupted while waiting for an acknowledgement of an eviction to finish");
+        }
+        if (pendingGraphEvictions.get() > 0) {
+            removeGraphFromJanusGraphManager();
+        }
+    }
+
+    private void removeGraphFromJanusGraphManager() {
+        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
+        if (null != jgm) {
+            jgm.removeGraph(graph.getGraphName());
+            log.debug("Graph {} has been removed from the JanusGraphManager graph cache.", graph.getGraphName());
+        }
     }
 
     @Override
@@ -124,9 +196,13 @@ public class ManagementLogger implements MessageReader {
                     //Nobody waits for an acknowledgement of this one
                     break;
                 }
-                final Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions(), action, graph.getGraphName()));
-                ack.setDaemon(true);
-                ack.start();
+                final SendAckOnTxClose ack = new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions(), action, graph.getGraphName());
+                try {
+                    ackExecutor.execute(ack);
+                } catch (RejectedExecutionException e) {
+                    log.debug("Did not acknowledge eviction [{}] from {}: the graph is closing", evictionId, senderId);
+                    ack.dropped();
+                }
                 break;
             }
             case CACHED_TYPE_EVICTION_ACK: {
@@ -298,6 +374,11 @@ public class ManagementLogger implements MessageReader {
         }
     }
 
+    /**
+     * Sends the acknowledgement of an eviction once the transactions which were open when it arrived have closed. Each
+     * run checks them once, and runs again {@link #SLEEP_INTERVAL} later while one is open, for up to
+     * {@code graph.management-tx-close-wait-time}.
+     */
     private class SendAckOnTxClose implements Runnable {
 
         private final long evictionId;
@@ -305,6 +386,7 @@ public class ManagementLogger implements MessageReader {
         private final String originId;
         private final GraphCacheEvictionAction action;
         private final String graphName;
+        private final Timer t;
 
         private SendAckOnTxClose(long evictionId,
                                  String originId,
@@ -316,61 +398,101 @@ public class ManagementLogger implements MessageReader {
             this.originId = originId;
             this.action = action;
             this.graphName = graphName;
+            this.t = times.getTimer().start();
+            if (EVICT.equals(action)) {
+                pendingGraphEvictions.incrementAndGet();
+            }
         }
 
         @Override
         public void run() {
-//            long startTime = Timestamps.MICRO.getTime();
-            Timer t = times.getTimer().start();
-            while (true) {
-                boolean txStillOpen = false;
-                Iterator<? extends JanusGraphTransaction> iterator = openTx.iterator();
-                while (iterator.hasNext()) {
-                    if (iterator.next().isClosed()) {
-                        iterator.remove();
-                    } else {
-                        txStillOpen = true;
-                    }
+            //shutdown() drops the delayed re-checks, but a task queued at no delay still runs after it, and must not
+            //touch the closing graph
+            if (ackExecutor.isShutdown()) {
+                dropped();
+                return;
+            }
+            boolean runsAgain = false;
+            try {
+                runsAgain = acknowledgeOnceTransactionsClosed();
+            } catch (Throwable e) {
+                //Thrown out of the task, it would only be stored in the task's future, which nothing reads
+                log.error("Could not acknowledge eviction [{}]", getId(), e);
+            } finally {
+                if (!runsAgain) {
+                    finished();
                 }
-                final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-                final boolean janusGraphManagerIsInBadState = null == jgm && action.equals(EVICT);
-                if (!txStillOpen && janusGraphManagerIsInBadState) {
-                    log.error("JanusGraphManager should be instantiated on this server, but it is not. " +
-                              "Please restart with proper server settings. " +
-                              "As a result, we could not evict graph {} from the cache.", graphName);
-                    break;
+            }
+        }
+
+        private void finished() {
+            if (EVICT.equals(action)) {
+                pendingGraphEvictions.decrementAndGet();
+            }
+        }
+
+        //The graph is closing and the acknowledgement never runs: an eviction of the graph from the JanusGraphManager
+        //still removes it there
+        private void dropped() {
+            if (EVICT.equals(action)) {
+                removeGraphFromJanusGraphManager();
+            }
+            finished();
+        }
+
+        //Returns whether it runs again, to check the transactions once more
+        private boolean acknowledgeOnceTransactionsClosed() {
+            boolean txStillOpen = false;
+            Iterator<? extends JanusGraphTransaction> iterator = openTx.iterator();
+            while (iterator.hasNext()) {
+                if (iterator.next().isClosed()) {
+                    iterator.remove();
+                } else {
+                    txStillOpen = true;
                 }
-                else if (!txStillOpen) {
-                    //Send ack and finish up
-                    DataOutput out = graph.getDataSerializer().getDataOutput(64);
-                    out.writeObjectNotNull(MgmtLogType.CACHED_TYPE_EVICTION_ACK);
-                    out.writeObjectNotNull(originId);
-                    VariableLong.writePositive(out,evictionId);
-                    if (null != jgm && action.equals(EVICT)) {
-                        jgm.removeGraph(graphName);
-                        log.debug("Graph {} has been removed from the JanusGraphManager graph cache.", graphName);
-                    }
-                    try {
-                        sysLog.add(out.getStaticBuffer());
-                        log.debug("Sent {}: evictionID={} originID={}", MgmtLogType.CACHED_TYPE_EVICTION_ACK, evictionId, originId);
-                    } catch (ResourceUnavailableException e) {
-                        //During shutdown, this event may be triggered but the log is already closed. The failure to send the acknowledgement
-                        //can then be ignored
-                        log.warn("System log has already shut down. Did not sent {}: evictionID={} originID={}",MgmtLogType.CACHED_TYPE_EVICTION_ACK,evictionId,originId);
-                    }
-                    break;
-                }
-                if (MAX_WAIT_TIME.compareTo(t.elapsed()) < 0) {
-                    //Break out if waited too long
-                    log.error("Evicted [{}] from cache but waiting too long for transactions to close. Stale transaction alert on: {}",getId(),openTx);
-                    break;
+            }
+            final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
+            final boolean janusGraphManagerIsInBadState = null == jgm && action.equals(EVICT);
+            if (!txStillOpen && janusGraphManagerIsInBadState) {
+                log.error("JanusGraphManager should be instantiated on this server, but it is not. " +
+                          "Please restart with proper server settings. " +
+                          "As a result, we could not evict graph {} from the cache.", graphName);
+                return false;
+            }
+            else if (!txStillOpen) {
+                //Send ack and finish up
+                DataOutput out = graph.getDataSerializer().getDataOutput(64);
+                out.writeObjectNotNull(MgmtLogType.CACHED_TYPE_EVICTION_ACK);
+                out.writeObjectNotNull(originId);
+                VariableLong.writePositive(out,evictionId);
+                if (null != jgm && action.equals(EVICT)) {
+                    jgm.removeGraph(graphName);
+                    log.debug("Graph {} has been removed from the JanusGraphManager graph cache.", graphName);
                 }
                 try {
-                    times.sleepPast(times.getTime().plus(SLEEP_INTERVAL));
-                } catch (InterruptedException e) {
-                    log.error("Interrupted eviction ack thread for "+getId(),e);
-                    break;
+                    sysLog.add(out.getStaticBuffer());
+                    log.debug("Sent {}: evictionID={} originID={}", MgmtLogType.CACHED_TYPE_EVICTION_ACK, evictionId, originId);
+                } catch (ResourceUnavailableException e) {
+                    //During shutdown, this event may be triggered but the log is already closed. The failure to send the acknowledgement
+                    //can then be ignored
+                    log.warn("System log has already shut down. Did not send {}: evictionID={} originID={}",MgmtLogType.CACHED_TYPE_EVICTION_ACK,evictionId,originId);
                 }
+                return false;
+            }
+            if (txCloseWaitTime.compareTo(t.elapsed()) < 0) {
+                //Break out if waited too long
+                log.error("Evicted [{}] from cache but waiting too long for transactions to close. Stale transaction alert on: {}",getId(),openTx);
+                return false;
+            }
+            try {
+                ackExecutor.schedule(this, SLEEP_INTERVAL.toNanos(), TimeUnit.NANOSECONDS);
+                return true;
+            } catch (RejectedExecutionException e) {
+                log.debug("Did not acknowledge eviction [{}]: the graph is closing", getId());
+                if (EVICT.equals(action)) {
+                    removeGraphFromJanusGraphManager();
+                }
+                return false;
             }
         }
 

@@ -134,6 +134,14 @@ public abstract class BackgroundThread extends Thread {
         //Do nothing by default
     }
 
+    /**
+     * Ends the thread once the current {@link #action()} returns, for an action which finds that nothing is left for
+     * the thread to do. {@link #cleanup()} runs then, as after {@link #close(Duration)}.
+     */
+    protected void stopRunning() {
+        softInterrupted = true;
+    }
+
     public void close(Duration duration) {
 
         if (!isAlive()) {
