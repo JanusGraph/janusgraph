@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.database.idassigner;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
@@ -30,8 +31,12 @@ import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -87,13 +92,27 @@ public class StandardIDPool implements IDPool {
     private volatile IDBlock nextBlock;
     private Future<IDBlock> idBlockFuture;
     private IDBlockGetter idBlockGetter;
-    private final ThreadPoolExecutor exec;
+    //Runs the renewals of this pool's ID blocks, one after the other
+    private final Executor exec;
+    //The thread of this pool's own which runs its renewals, unless they run on a shared executor
+    private final ExecutorService ownExecutor;
 
     private volatile boolean closed;
 
     private final Queue<Future<?>> closeBlockers;
 
     public StandardIDPool(IDAuthority idAuthority, int partition, int idNamespace, long idUpperBound, Duration renewTimeout, double renewBufferPercentage) {
+        this(idAuthority, partition, idNamespace, idUpperBound, renewTimeout, renewBufferPercentage, null);
+    }
+
+    /**
+     * @param renewalExecutor runs the renewals of the pool's ID blocks, which the pool hands it one at a time, so
+     *                        that a renewal starts only once the one before has finished, also when the pool stopped
+     *                        waiting for it. The pools of a graph share the executor of its {@link VertexIDAssigner},
+     *                        which shuts it down. Null for a thread of the pool's own, which {@link #close()} ends.
+     */
+    public StandardIDPool(IDAuthority idAuthority, int partition, int idNamespace, long idUpperBound, Duration renewTimeout,
+                          double renewBufferPercentage, Executor renewalExecutor) {
         Preconditions.checkArgument(idUpperBound > 0);
         this.idAuthority = idAuthority;
         Preconditions.checkArgument(partition>=0);
@@ -112,12 +131,18 @@ public class StandardIDPool implements IDPool {
 
         nextBlock = null;
 
-        // daemon=true would probably be fine too
-        exec = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(), new ThreadFactoryBuilder()
-                        .setDaemon(false)
-                        .setNameFormat("JanusGraphID(" + partition + ")("+idNamespace+")[%d]")
-                        .build());
+        if (renewalExecutor == null) {
+            // daemon=true would probably be fine too
+            ownExecutor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>(), new ThreadFactoryBuilder()
+                            .setDaemon(false)
+                            .setNameFormat("JanusGraphID(" + partition + ")("+idNamespace+")[%d]")
+                            .build());
+            exec = ownExecutor;
+        } else {
+            ownExecutor = null;
+            exec = MoreExecutors.newSequentialExecutor(renewalExecutor);
+        }
         idBlockFuture = null;
 
         closeBlockers = new ArrayDeque<>(4);
@@ -233,16 +258,25 @@ public class StandardIDPool implements IDPool {
                 log.debug("Runaway ID renewer task completed with exception", e);
             }
         }
-        exec.shutdownNow();
+        if (ownExecutor != null) {
+            ownExecutor.shutdownNow();
+        }
     }
 
     private synchronized void startIDBlockGetter() {
         Preconditions.checkArgument(idBlockFuture == null, idBlockFuture);
         if (closed) return; //Don't renew anymore if closed
         //Renew buffer
-        log.debug("Starting id block renewal thread upon {}", currentIndex);
+        log.debug("Starting id block renewal upon {}", currentIndex);
         idBlockGetter = new IDBlockGetter(idAuthority, partition, idNamespace, renewTimeout);
-        idBlockFuture = exec.submit(idBlockGetter);
+        final FutureTask<IDBlock> renewal = new FutureTask<>(idBlockGetter);
+        try {
+            exec.execute(renewal);
+        } catch (RejectedExecutionException e) {
+            throw new JanusGraphException(String.format("ID block allocation on partition(%d)-namespace(%d) could not "
+                + "start: the executor of the renewals has been shut down", partition, idNamespace), e);
+        }
+        idBlockFuture = renewal;
     }
 
     private static class IDBlockGetter implements Callable<IDBlock> {

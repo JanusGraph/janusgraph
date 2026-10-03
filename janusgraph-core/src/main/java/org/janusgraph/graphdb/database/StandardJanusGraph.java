@@ -87,6 +87,7 @@ import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.relations.EdgeDirection;
@@ -133,7 +134,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -142,6 +145,7 @@ import javax.script.ScriptException;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_ACK_TIMEOUT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_AUTO_CLOSE_STALE_INSTANCES;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_TX_CLOSE_WAIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
@@ -225,6 +229,8 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     //Log
     private final ManagementLogger managementLogger;
+    //Runs the jobs of the graph's computers, created idle with the graph
+    private final ThreadPoolExecutor computerJobs;
 
     //Shutdown hook
     private volatile ShutdownThread shutdownHook;
@@ -236,6 +242,12 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     private final GremlinScriptEngine scriptEngine;
 
     private volatile boolean isOpen;
+    /**
+     * Whether the graph's close, through {@link #close()} or the shutdown hook, has begun. The graph is closed to the
+     * outside from then on: no transaction begins to open while it tears down, so a job or a repair which starts
+     * meanwhile fails at once instead of racing the backend's close.
+     */
+    private volatile boolean closing;
     private final AtomicLong txCounter;
 
     private final Set<StandardJanusGraphTx> openTransactions;
@@ -302,6 +314,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         txCounter = new AtomicLong(0);
         openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<>(100, 0.75f, 1));
 
+        //Before the instance registers, so that an invalid option fails the open without leaving the instance among the
+        //open ones; the executor starts without threads
+        computerJobs = FulgoraGraphComputer.newJobExecutor(configuration.getConfiguration());
+        Duration ackTimeout = configuration.getConfiguration().get(MANAGEMENT_ACK_TIMEOUT);
+        boolean autoCloseStaleInstances = configuration.getConfiguration().get(MANAGEMENT_AUTO_CLOSE_STALE_INSTANCES);
+        Duration txCloseWaitTime = configuration.getConfiguration().get(MANAGEMENT_TX_CLOSE_WAIT_TIME);
+
         //Register instance and ensure uniqueness
         String uniqueInstanceId = configuration.getUniqueGraphId();
         ModifiableConfiguration globalConfig = getGlobalSystemConfig(backend);
@@ -315,9 +334,8 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
 
         Log managementLog = backend.getSystemMgmtLog();
-        Duration ackTimeout = configuration.getConfiguration().get(MANAGEMENT_ACK_TIMEOUT);
-        boolean autoCloseStaleInstances = configuration.getConfiguration().get(MANAGEMENT_AUTO_CLOSE_STALE_INSTANCES);
-        managementLogger = new ManagementLogger(this, managementLog, schemaCache, this.times, ackTimeout, autoCloseStaleInstances);
+        managementLogger = new ManagementLogger(this, managementLog, schemaCache, this.times, ackTimeout, autoCloseStaleInstances,
+            txCloseWaitTime);
         managementLog.registerReader(ReadMarker.fromNow(), managementLogger);
 
         shutdownHook = new ShutdownThread(this);
@@ -362,7 +380,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     @Override
     public boolean isOpen() {
-        return isOpen;
+        return isOpen && !closing;
     }
 
     @Override
@@ -372,6 +390,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     @Override
     public synchronized void close() throws JanusGraphException {
+        closing = true;
         try {
             closeInternal();
         } finally {
@@ -400,6 +419,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             } catch (Exception e) {
                 log.warn("Unable to remove graph instance uniqueid {}", uniqueId, e);
             }
+            //The other instances stop waiting for this one's acknowledgements once it has left the open instances, so
+            //those which wait for the transactions closed below are dropped
+            try {
+                managementLogger.close();
+            } catch (Exception e) {
+                log.warn("Unable to close the management logger", e);
+            }
 
             /* Assuming a couple of properties about openTransactions:
              * 1. no concurrent modifications during graph shutdown
@@ -419,6 +445,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
             super.close();
 
+            //Jobs which run or wait go on until they find the graph closed, jobs submitted from now on fail, and the
+            //threads end once idle
+            computerJobs.shutdown();
             IOUtils.closeQuietly(idAssigner);
             IOUtils.closeQuietly(backend);
             IOUtils.closeQuietly(queryCache);
@@ -472,6 +501,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     public IndexSelectionStrategy getIndexSelector() {
         return indexSelector;
+    }
+
+    /**
+     * @return the executor which runs the jobs of the graph's computers
+     */
+    public Executor getComputerJobExecutor() {
+        return computerJobs;
     }
 
     public Backend getBackend() {
@@ -530,7 +566,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     }
 
     public StandardJanusGraphTx newTransaction(final TransactionConfiguration configuration) {
-        if (!isOpen) ExceptionFactory.graphShutdown();
+        if (!isOpen()) ExceptionFactory.graphShutdown();
         try {
             StandardJanusGraphTx tx = new StandardJanusGraphTx(this, configuration);
             tx.setBackendTransaction(openBackendTransaction(tx));
@@ -1363,6 +1399,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         public void start() {
             log.debug("Shutting down graph {} using shutdown hook {}", graph, this);
 
+            graph.closing = true;
             graph.closeInternal();
             graph.shutdownHook = null;
         }

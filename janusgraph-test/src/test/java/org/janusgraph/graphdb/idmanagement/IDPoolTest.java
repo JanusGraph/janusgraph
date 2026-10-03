@@ -32,6 +32,17 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.easymock.EasyMock.expect;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -221,6 +232,211 @@ public class IDPoolTest {
 
     interface IDPoolFactory {
         StandardIDPool get(int partitionID);
+    }
+
+    //An executor of the given number of threads, as a graph's VertexIDAssigner keeps for the renewals of its pools
+    private static ThreadPoolExecutor sharedRenewalExecutor(int threads) {
+        return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+    }
+
+    //Whether the thread came to wait within the time, in the timed wait for a renewal here. The observation is what
+    //counts: a thread in a timed wait is seen runnable for an instant whenever it wakes to check its time
+    private static boolean cameToWait(Thread thread, long timeoutNanos) throws InterruptedException {
+        final long deadline = System.nanoTime() + timeoutNanos;
+        while (System.nanoTime() - deadline < 0) {
+            final Thread.State state = thread.getState();
+            if (state == Thread.State.WAITING || state == Thread.State.TIMED_WAITING) {
+                return true;
+            }
+            Thread.sleep(10);
+        }
+        return false;
+    }
+
+    @Test
+    public void testStandardIDPoolsSharingARenewalExecutor() throws InterruptedException {
+        final MockIDAuthority idAuthority = new MockIDAuthority(200);
+        final ThreadPoolExecutor renewals = sharedRenewalExecutor(2);
+        try {
+            testIDPoolWith(partitionID -> new StandardIDPool(idAuthority, partitionID, partitionID, Integer.MAX_VALUE,
+                Duration.ofMillis(2000), 0.2, renewals), 10, 20, 100000);
+            assertTrue(renewals.getCompletedTaskCount() > 0);
+        } finally {
+            renewals.shutdownNow();
+        }
+    }
+
+    /**
+     * Hands out blocks of ten ids. A call for partition 1 waits until the test lets it through, and the authority
+     * records how many such calls run at once.
+     */
+    private static class GatedIDAuthority extends MockIDAuthority {
+        private final Semaphore gate = new Semaphore(0);
+        private final AtomicInteger running = new AtomicInteger();
+        private final AtomicInteger mostRunning = new AtomicInteger();
+        private final AtomicInteger calls = new AtomicInteger();
+
+        GatedIDAuthority() {
+            super(10);
+        }
+
+        @Override
+        public IDBlock getIDBlock(int partition, int idNamespace, Duration timeout) throws BackendException {
+            if (partition != 1) {
+                return super.getIDBlock(partition, idNamespace, timeout);
+            }
+            calls.incrementAndGet();
+            mostRunning.accumulateAndGet(running.incrementAndGet(), Math::max);
+            try {
+                gate.acquireUninterruptibly();
+                return super.getIDBlock(partition, idNamespace, timeout);
+            } finally {
+                running.decrementAndGet();
+            }
+        }
+
+        @Override
+        public boolean supportsInterruption() {
+            return false;
+        }
+    }
+
+    @Test
+    public void aPoolOnASharedExecutorRenewsOneBlockAtATime() throws Exception {
+        final GatedIDAuthority idAuthority = new GatedIDAuthority();
+        final ThreadPoolExecutor renewals = sharedRenewalExecutor(4);
+        try {
+            //Long enough for the steps below to fit in the wait of the second request, also on a loaded machine
+            final StandardIDPool pool = new StandardIDPool(idAuthority, 1, 1, Integer.MAX_VALUE,
+                Duration.ofSeconds(5), 0.1, renewals);
+
+            //The first renewal hangs, and the pool gives up waiting for it
+            final JanusGraphException timedOut = assertThrows(JanusGraphException.class, pool::nextID);
+            assertTrue(timedOut.getCause() instanceof TimeoutException, String.valueOf(timedOut.getCause()));
+
+            //The next renewal waits for it, although the executor has idle threads, as on a thread of the pool's own
+            final FutureTask<Long> next = new FutureTask<>(pool::nextID);
+            final Thread requester = new Thread(next);
+            requester.start();
+            //Waiting for the renewal it started
+            assertTrue(cameToWait(requester, TimeUnit.SECONDS.toNanos(10)), "the request did not wait for the renewal");
+            Thread.sleep(100);
+            assertEquals(1, idAuthority.calls.get(), "a second renewal of the pool started while the first ran");
+
+            //Another pool's renewals are not held up
+            final StandardIDPool other = new StandardIDPool(idAuthority, 2, 1, Integer.MAX_VALUE,
+                Duration.ofSeconds(2), 0.1, renewals);
+            assertEquals(1, other.nextID());
+            other.close();
+
+            //Lets through the hanging renewal, the next one, and those which follow it
+            idAuthority.gate.release(100);
+            assertEquals(11, next.get(10, TimeUnit.SECONDS), "the first id of the second block");
+            pool.close();
+            assertTrue(idAuthority.calls.get() >= 2);
+            assertEquals(1, idAuthority.mostRunning.get(), "renewals of the pool ran at once");
+        } finally {
+            //A renewal held at the gate can't be interrupted: let it through before the executor is shut down
+            idAuthority.gate.release(100);
+            renewals.shutdownNow();
+        }
+    }
+
+    @Test
+    public void closingAPoolOnASharedExecutorWaitsForARenewalItGaveUpOn() throws Exception {
+        final GatedIDAuthority idAuthority = new GatedIDAuthority();
+        final ThreadPoolExecutor renewals = sharedRenewalExecutor(4);
+        try {
+            final StandardIDPool pool = new StandardIDPool(idAuthority, 1, 1, Integer.MAX_VALUE,
+                Duration.ofMillis(300), 0.1, renewals);
+            assertThrows(JanusGraphException.class, pool::nextID);
+
+            final CompletableFuture<Void> closed = CompletableFuture.runAsync(pool::close);
+            Thread.sleep(500);
+            assertFalse(closed.isDone(), "the pool closed while its renewal ran");
+
+            idAuthority.gate.release();
+            closed.get(10, TimeUnit.SECONDS);
+            assertEquals(0, idAuthority.running.get());
+            assertFalse(renewals.isShutdown(), "the pool shut down the executor it shares");
+        } finally {
+            //A renewal held at the gate can't be interrupted: let it through before the executor is shut down
+            idAuthority.gate.release(100);
+            renewals.shutdownNow();
+        }
+    }
+
+    @Test
+    public void aRenewalCancelledWithAnInterruptLeavesTheNextOneOnTheSameThreadUninterrupted() {
+        final AtomicInteger calls = new AtomicInteger();
+        final AtomicBoolean nextInterrupted = new AtomicBoolean();
+        //Blocks of 1,000 ids, more than a pool keeps in reserve, so that handing out the first id renews nothing
+        final MockIDAuthority idAuthority = new MockIDAuthority(1000) {
+            @Override
+            public IDBlock getIDBlock(int partition, int idNamespace, Duration timeout) throws BackendException {
+                if (calls.incrementAndGet() == 1) {
+                    try {
+                        Thread.sleep(TimeUnit.MINUTES.toMillis(1));
+                    } catch (InterruptedException e) {
+                        throw new TemporaryBackendException("interrupted", e);
+                    }
+                }
+                nextInterrupted.set(Thread.currentThread().isInterrupted());
+                return super.getIDBlock(partition, idNamespace, timeout);
+            }
+        };
+        assertTrue(idAuthority.supportsInterruption());
+        final ThreadPoolExecutor renewals = sharedRenewalExecutor(1);
+        try {
+            final StandardIDPool pool = new StandardIDPool(idAuthority, 1, 1, Integer.MAX_VALUE,
+                Duration.ofMillis(500), 0.1, renewals);
+
+            //The pool gives up on the first renewal, and cancels it with an interrupt
+            assertThrows(JanusGraphException.class, pool::nextID);
+            //The next renewal runs on the same thread
+            assertEquals(1, pool.nextID());
+            assertEquals(2, calls.get());
+            assertFalse(nextInterrupted.get(), "the interrupt of the cancelled renewal reached the next one");
+            pool.close();
+        } finally {
+            renewals.shutdownNow();
+        }
+    }
+
+    @Test
+    public void aFailedRenewalOnASharedExecutorSurfacesAsOnAThreadOfThePoolsOwn() throws BackendException {
+        final IMocksControl ctrl = EasyMock.createNiceControl();
+        final IDAuthority failingAuthority = ctrl.createMock(IDAuthority.class);
+        expect(failingAuthority.getIDBlock(EasyMock.anyInt(), EasyMock.anyInt(), EasyMock.anyObject()))
+            .andThrow(new TemporaryBackendException("storage unavailable")).anyTimes();
+        ctrl.replay();
+        final ThreadPoolExecutor renewals = sharedRenewalExecutor(1);
+        try {
+            final StandardIDPool pool = new StandardIDPool(failingAuthority, 1, 1, Integer.MAX_VALUE,
+                Duration.ofMillis(2000), 0.1, renewals);
+
+            final JanusGraphException failure = assertThrows(JanusGraphException.class, pool::nextID);
+            assertTrue(failure.getCause() instanceof ExecutionException, String.valueOf(failure.getCause()));
+            assertTrue(failure.getCause().getCause().getCause() instanceof TemporaryBackendException,
+                String.valueOf(failure.getCause().getCause()));
+            pool.close();
+        } finally {
+            renewals.shutdownNow();
+        }
+    }
+
+    @Test
+    public void aRenewalOnAShutDownExecutorFailsTheIdRequest() {
+        final ThreadPoolExecutor renewals = sharedRenewalExecutor(1);
+        renewals.shutdown();
+        final StandardIDPool pool = new StandardIDPool(new MockIDAuthority(10), 1, 1, Integer.MAX_VALUE,
+            Duration.ofMillis(2000), 0.1, renewals);
+        try {
+            final JanusGraphException failure = assertThrows(JanusGraphException.class, pool::nextID);
+            assertTrue(failure.getCause() instanceof RejectedExecutionException, String.valueOf(failure.getCause()));
+        } finally {
+            pool.close();
+        }
     }
 
 }

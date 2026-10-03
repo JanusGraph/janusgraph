@@ -26,6 +26,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphTransaction;
@@ -34,6 +35,7 @@ import org.janusgraph.core.log.TransactionRecovery;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.log.Log;
@@ -70,7 +72,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -110,6 +117,12 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
     private final Cache<StandardTransactionId,TxEntry> txCache;
 
+    //Repairs the transactions given up on, on threads of their own. A repair reads the storage backend and writes the
+    //index backends and the user log, reattempting each for up to storage.write-time, so it can't run on the thread
+    //which expires the transaction: one of the JVM's common pool, which the cache runs its maintenance on, the
+    //cleaner, or the log's reader
+    private final ThreadPoolExecutor repairs;
+
     public StandardTransactionLogProcessor(StandardJanusGraph graph,
                                            Instant startTime) {
         this(graph, startTime, false);
@@ -137,6 +150,16 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         //entry, rather than after some time spent waiting, so that it gets all it may write within max-commit-time
         //however far apart and however slowly the log is read: the cache's clock is how far the log has been read
         final Duration waitForCommit = maxTxLength;
+        final Configuration configuration = graph.getConfiguration().getConfiguration();
+        //tx.recovery.repair-pool-size repairs at once, or as many as the common pool, which ran them before, has threads
+        final int repairThreads = configuration.has(GraphDatabaseConfiguration.TX_RECOVERY_REPAIR_POOL_SIZE)
+                ? configuration.get(GraphDatabaseConfiguration.TX_RECOVERY_REPAIR_POOL_SIZE)
+                : ForkJoinPool.getCommonPoolParallelism();
+        this.repairs = new ThreadPoolExecutor(repairThreads, repairThreads,
+                configuration.get(GraphDatabaseConfiguration.TX_RECOVERY_REPAIR_KEEP_ALIVE_TIME).toMillis(),
+                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
+                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("TxLogProcessorRepair-%d").build());
+        this.repairs.allowCoreThreadTimeOut(true);
         //A ticker must never go back. The progress does not, each puller's moving forward only, and the start time
         //stands in for it before the reader is registered; the guard makes that a hard guarantee
         final AtomicLong tick = new AtomicLong(Long.MIN_VALUE);
@@ -161,20 +184,18 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                         return currentDuration;
                     }
                 })
-                .removalListener((RemovalListener<StandardTransactionId, TxEntry>) (key,entry, cause) -> {
+                //Called as the entry expires, so that a repair is handed over before cleanUp() returns, which the
+                //cleaner's last one, at shutdown, relies on
+                .evictionListener((RemovalListener<StandardTransactionId, TxEntry>) (key,entry, cause) -> {
                     Preconditions.checkArgument(cause == RemovalCause.EXPIRED,
                         "Unexpected removal cause [%s] for transaction [%s]", cause, key);
                     if (entry.status == LogTxStatus.SECONDARY_FAILURE || entry.status == LogTxStatus.PRIMARY_SUCCESS) {
-                        boolean repaired = false;
                         try {
-                            fixSecondaryFailure(key, entry);
-                            repaired = true;
-                        } finally {
-                            //Only once the repair has been attempted, so that the statistics never run ahead of it, and
-                            //the failure before the exception, so that the third number never exceeds the second; the
-                            //exception itself goes on to the cache's logging
-                            failureTxCounter.incrementAndGet();
-                            if (!repaired) failureTxRepairExceptionCounter.incrementAndGet();
+                            repairs.execute(() -> repair(key, entry));
+                        } catch (RejectedExecutionException e) {
+                            //Recovery has stopped, through shutdown() or with its graph, but one which isn't
+                            //recurring still reads the log
+                            notRepaired(key);
                         }
                     } else {
                         successTxCounter.incrementAndGet();
@@ -235,7 +256,10 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     }
 
     public synchronized void shutdown() throws JanusGraphException {
-        cleaner.close(CLEAN_SLEEP_TIME);
+        //The cleaner ends by itself once the graph is closed
+        if (cleaner.isAlive()) {
+            cleaner.close(CLEAN_SLEEP_TIME);
+        }
 
         // in recurring mode, the reader needs to be unregistered and the reading process
         // needs to be stopped so resources are not occupied while the log processor is not
@@ -247,6 +271,49 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             } catch (Exception e) {
                 logger.error("Interrupted while waiting for background cleaner to stop. Reader is not unregistered.", e);
             }
+        }
+        //The repairs handed over until now, among them those of the cleaner's last clean-up, still run, and are waited
+        //for, as long as one write of a repair may take, so that a graph closed next doesn't fail them; the threads
+        //end after them
+        repairs.shutdown();
+        try {
+            if (!repairs.awaitTermination(persistenceTime.toMillis(), TimeUnit.MILLISECONDS)) {
+                logger.warn("Transaction recovery has stopped, but its repairs did not finish within {}; they go on in "
+                    + "the background", persistenceTime);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("Interrupted while waiting for the repairs of transaction recovery; they go on in the "
+                + "background");
+        }
+    }
+
+    //A transaction which recovery gave up on after it stopped, or whose repair started after the graph closed, counted
+    //among those it couldn't repair
+    private void notRepaired(StandardTransactionId txId) {
+        logger.warn("Transaction recovery has stopped and does not repair transaction [{}]", txId);
+        failureTxCounter.incrementAndGet();
+        failureTxRepairExceptionCounter.incrementAndGet();
+    }
+
+    private void repair(StandardTransactionId txId, TxEntry entry) {
+        if (graph.isClosed()) {
+            //Handed over before the graph closed, or while it closes: its backends are closed or closing, and a log
+            //which the repair opened anew would outlive the graph
+            notRepaired(txId);
+            return;
+        }
+        boolean repaired = false;
+        try {
+            fixSecondaryFailure(txId, entry);
+            repaired = true;
+        } catch (Throwable e) {
+            logger.error("Could not repair transaction [{}]", txId, e);
+        } finally {
+            //Only once the repair has been attempted, so that the statistics never run ahead of it, and the failure
+            //before the exception, so that the third number never exceeds the second
+            failureTxCounter.incrementAndGet();
+            if (!repaired) failureTxRepairExceptionCounter.incrementAndGet();
         }
     }
 
@@ -495,12 +562,22 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         @Override
         protected void action() {
             lastInvocation = times.getTime();
+            if (graph.isClosed()) {
+                //Recovery ends with its graph, whose close stops the reading of the log, whether shutdown() is called
+                //or not: the cleaner stops, and the repair threads end once the repairs handed over so far have
+                //finished, those which start after the close counted as not repaired
+                repairs.shutdown();
+                stopRunning();
+                return;
+            }
             txCache.cleanUp();
         }
 
         @Override
         protected void cleanup() {
-            txCache.cleanUp();
+            if (!graph.isClosed()) {
+                txCache.cleanUp();
+            }
         }
     }
 

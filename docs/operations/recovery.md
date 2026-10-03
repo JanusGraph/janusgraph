@@ -107,6 +107,11 @@ information about the progress of recovery process by returning three numbers:
 3. the third number shows how many failed secondary persistence transactions
    could not be recovered
 
+A stopped recovery no longer repairs transactions. One which it gives up on
+afterwards, as a recovery which isn't recurring may while it still reads the
+log, or whose repair would only start after the graph has closed, counts in
+the second and third numbers without an attempt.
+
 Depending on the used `startTime` value and configured `log.tx.read-interval`
 configuration option, the recovery process might need to run for hours in
 order to process all relevant entries from the write-ahead log.
