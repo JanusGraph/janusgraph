@@ -40,12 +40,24 @@ public class CQLMutateManyLoggedFunction extends AbstractCQLMutateManyFunction i
 
     private final QueryBackPressure queryBackPressure;
 
+    /**
+     * Marks the batches idempotent whenever timestamps are assigned, as if {@code storage.cql.idempotent-writes} were
+     * on.
+     */
     public CQLMutateManyLoggedFunction(TimestampProvider times, boolean assignTimestamp,
                                        Map<String, CQLKeyColumnValueStore> openStores,
                                        CqlSession session,
                                        ConsumerWithBackendException<DistributedStoreManager.MaskedTimestamp> sleepAfterWriteFunction,
                                        QueryBackPressure queryBackPressure) {
-        super(sleepAfterWriteFunction, assignTimestamp, times, openStores);
+        this(times, assignTimestamp, assignTimestamp, openStores, session, sleepAfterWriteFunction, queryBackPressure);
+    }
+
+    public CQLMutateManyLoggedFunction(TimestampProvider times, boolean assignTimestamp, boolean idempotentWrites,
+                                       Map<String, CQLKeyColumnValueStore> openStores,
+                                       CqlSession session,
+                                       ConsumerWithBackendException<DistributedStoreManager.MaskedTimestamp> sleepAfterWriteFunction,
+                                       QueryBackPressure queryBackPressure) {
+        super(sleepAfterWriteFunction, assignTimestamp, idempotentWrites, times, openStores);
         this.session = session;
         this.queryBackPressure = queryBackPressure;
     }
@@ -58,6 +70,7 @@ public class CQLMutateManyLoggedFunction extends AbstractCQLMutateManyFunction i
 
         BatchStatementBuilder builder = BatchStatement.builder(DefaultBatchType.LOGGED);
         builder.setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel());
+        builder.setIdempotence(batchIdempotence);
 
         mutations.forEach((tableName, tableMutations) -> {
             final CQLKeyColumnValueStore columnValueStore = getColumnValueStore(tableName);

@@ -47,11 +47,22 @@ public class CQLMutateManyUnloggedFunction extends AbstractCQLMutateManyFunction
     private final int batchSize;
     private final QueryBackPressure queryBackPressure;
 
+    /**
+     * Marks the batches idempotent whenever timestamps are assigned, as if {@code storage.cql.idempotent-writes} were
+     * on.
+     */
     public CQLMutateManyUnloggedFunction(int batchSize, CqlSession session, Map<String, CQLKeyColumnValueStore> openStores,
                                          TimestampProvider times, boolean assignTimestamp,
                                          ConsumerWithBackendException<DistributedStoreManager.MaskedTimestamp> sleepAfterWriteFunction,
                                          QueryBackPressure queryBackPressure) {
-        super(sleepAfterWriteFunction, assignTimestamp, times, openStores);
+        this(batchSize, session, openStores, times, assignTimestamp, assignTimestamp, sleepAfterWriteFunction, queryBackPressure);
+    }
+
+    public CQLMutateManyUnloggedFunction(int batchSize, CqlSession session, Map<String, CQLKeyColumnValueStore> openStores,
+                                         TimestampProvider times, boolean assignTimestamp, boolean idempotentWrites,
+                                         ConsumerWithBackendException<DistributedStoreManager.MaskedTimestamp> sleepAfterWriteFunction,
+                                         QueryBackPressure queryBackPressure) {
+        super(sleepAfterWriteFunction, assignTimestamp, idempotentWrites, times, openStores);
         this.session = session;
         this.batchSize = batchSize;
         this.queryBackPressure = queryBackPressure;
@@ -89,6 +100,7 @@ public class CQLMutateManyUnloggedFunction extends AbstractCQLMutateManyFunction
                 BatchStatement.newInstance(DefaultBatchType.UNLOGGED)
                     .addAll(group)
                     .setConsistencyLevel(getTransaction(txh).getWriteConsistencyLevel())
+                    .setIdempotent(batchIdempotence)
             ).whenComplete((asyncResultSet, throwable) -> queryBackPressure.releaseAfterQuery()).toCompletableFuture();
         } catch (RuntimeException e){
             queryBackPressure.releaseAfterQuery();

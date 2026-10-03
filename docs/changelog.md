@@ -831,6 +831,28 @@ behavior. The client's own reattempts of a request, after a backoff which starts
 a random time between half of the backoff and all of it, so that requests which failed together don't all come back at
 the same moment.
 
+##### CQL reads more properties of a vertex per query
+
+With `storage.cql.grouping.slice-allowed`, true by default, the CQL backend reads the properties of a vertex whose keys
+have single cardinality, each one column, together: one query with `column1 IN ?` for up to
+`storage.cql.grouping.slice-limit` of them, 20 by default. Once a vertex had filled such a query, each further property
+was read with a query of its own, so 50 such properties of a vertex took 31 queries instead of 3. A full query is now
+followed by another one. On Cassandra 5, reading 50 properties of each of 1,000 vertices in one batch takes half as
+long.
+
+##### CQL write batches are marked idempotent
+
+The DataStax driver sends a request again, to the same node or another one, after a closed connection, an overloaded
+node or a server error, asks its retry policy about a write which timed out, and runs speculative executions, only for
+statements which are marked idempotent. The query builder with which JanusGraph prepares its statements marks them
+idempotent, but JanusGraph sends its writes in batches, and a batch isn't idempotent unless it is marked. So every such
+failure of a write reached JanusGraph, which reattempted a whole chunk of the mutations of a commit after a backoff of
+at least 25 ms. While `graph.assign-timestamp` is `true`, the default, JanusGraph now marks its batches idempotent, as a
+write sent again then writes the same cells with the same timestamp, and a speculative execution policy configured
+through `storage.cql.internal.*` now applies to its writes too; it already applied to its reads. With the new option
+`storage.cql.idempotent-writes=false`, or without assigned timestamps, writes keep the driver's default idempotence,
+`basic.request.default-idempotence`, as every write did before.
+
 ##### `tx.max-commit-time` now defaults to 300 s and is checked against the least a commit may take
 
 `tx.max-commit-time` is the time after which transaction recovery considers a transaction failed and restores the index
