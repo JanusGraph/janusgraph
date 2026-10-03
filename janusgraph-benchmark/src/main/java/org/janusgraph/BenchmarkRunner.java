@@ -105,6 +105,8 @@ public class BenchmarkRunner {
             builder.include(".*Benchmark");
             builder.exclude(StaticArrayEntryListBenchmark.class.getSimpleName());
             builder.exclude(BackPressureBenchmark.class.getSimpleName());
+            // BackendOperationBenchmark measures in ns/op and us/op, and the results below take ms/op only
+            builder.exclude(BackendOperationBenchmark.class.getSimpleName());
             builder.exclude("CQL.*Benchmark");
             builder.exclude(".*ElasticSearch.*Benchmark.*");
         }

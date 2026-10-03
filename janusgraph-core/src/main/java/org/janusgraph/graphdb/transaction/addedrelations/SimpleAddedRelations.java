@@ -42,9 +42,6 @@ import java.util.stream.Stream;
  */
 
 public class SimpleAddedRelations implements AddedRelationsContainer {
-    private static final int INITIAL_PROP_ADDED_SIZE = 30;
-
-    private static final int INITIAL_EDGE_ADDED_SIZE = 300;
 
     private int propertiesSize = 0;
 
@@ -64,10 +61,12 @@ public class SimpleAddedRelations implements AddedRelationsContainer {
 
     public SimpleAddedRelations(Boolean groupPropertiesByKey) {
         this.groupPropertiesByKey = groupPropertiesByKey;
-        this.propertiesContainer = new ObjectHashSet<>((groupPropertiesByKey) ? 0 : INITIAL_PROP_ADDED_SIZE);
-        this.propertiesMap = new HashMap<>((groupPropertiesByKey) ? INITIAL_PROP_ADDED_SIZE : 0);
-        this.edgesContainer = new ObjectHashSet<>(INITIAL_EDGE_ADDED_SIZE);
-        this.previousRelContainer = new HashMap<>(INITIAL_EDGE_ADDED_SIZE + INITIAL_PROP_ADDED_SIZE);
+        //Every transaction has a container, and so does every vertex which gains relations in it, usually a few, so the
+        //containers start at their default sizes and grow with the relations added
+        this.propertiesContainer = (groupPropertiesByKey) ? new ObjectHashSet<>(0) : new ObjectHashSet<>();
+        this.propertiesMap = new HashMap<>();
+        this.edgesContainer = new ObjectHashSet<>();
+        this.previousRelContainer = new HashMap<>();
     }
 
     @Override
