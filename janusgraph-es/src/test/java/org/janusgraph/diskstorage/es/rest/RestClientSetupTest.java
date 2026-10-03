@@ -25,6 +25,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
@@ -64,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -75,6 +77,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.times;
@@ -98,7 +101,8 @@ public class RestClientSetupTest {
     private static final String ES_BULK_REFRESH =
             String.valueOf(!Boolean.valueOf(ElasticSearchIndex.BULK_REFRESH.getDefaultValue()));
 
-    private static final Integer RETRY_ON_CONFLICT = ElasticSearchIndex.RETRY_ON_CONFLICT.getDefaultValue();
+    //Other than the default, so that the value is seen to come from the configuration
+    private static final Integer RETRY_ON_CONFLICT = 5;
 
     private static final Integer RETRY_LIMIT = ElasticSearchIndex.RETRY_LIMIT.getDefaultValue();
 
@@ -308,7 +312,86 @@ public class RestClientSetupTest {
                 scrollKACaptor.getValue().intValue());
 
         verify(restElasticSearchClientMock, never()).setBulkRefresh(anyString());
-        verify(restElasticSearchClientMock, times(1)).setRetryOnConflict(null);
+        //Updates are reattempted on a version conflict unless configured otherwise
+        verify(restElasticSearchClientMock, times(1)).setRetryOnConflict(3);
+    }
+
+    private HttpAsyncClientBuilder customizedHttpClient(Map<String, String> extraConfigValues) throws Exception {
+        return customizedHttpClient(ES_HOST_01, extraConfigValues);
+    }
+
+    private HttpAsyncClientBuilder customizedHttpClient(String hosts, Map<String, String> extraConfigValues) throws Exception {
+        baseConfigTest(ImmutableMap.<String, String>builder().
+            put("index." + INDEX_NAME + ".hostname", hosts).
+            putAll(extraConfigValues).
+            build());
+        final ArgumentCaptor<HttpClientConfigCallback> hcccCaptor = ArgumentCaptor.forClass(HttpClientConfigCallback.class);
+        verify(restClientBuilderMock).setHttpClientConfigCallback(hcccCaptor.capture());
+        final HttpAsyncClientBuilder hacb = mock(HttpAsyncClientBuilder.class);
+        hcccCaptor.getValue().customizeHttpClient(hacb);
+        return hacb;
+    }
+
+    @Test
+    public void testConnectionPoolDefaults() throws Exception {
+        final HttpAsyncClientBuilder hacb = customizedHttpClient(ImmutableMap.of());
+
+        //A single host may take as many connections as all hosts together, where the Elasticsearch client allows 10
+        verify(hacb).setMaxConnPerRoute(30);
+        verify(hacb).setMaxConnTotal(30);
+        verify(hacb, never()).setDefaultIOReactorConfig(any());
+        verify(restClientBuilderMock).setCompressionEnabled(false);
+    }
+
+    //Without its own option, each host gets an even share of the total
+    @Test
+    public void testConnectionsPerHostDefaultToAShareOfTheTotal() throws Exception {
+        final HttpAsyncClientBuilder hacb = customizedHttpClient(ES_HOST_01 + "," + ES_HOST_02, ImmutableMap.of());
+
+        verify(hacb).setMaxConnPerRoute(15);
+        verify(hacb).setMaxConnTotal(30);
+    }
+
+    //The client merges a host which is listed twice, so it gets all the connections
+    @Test
+    public void testAHostListedTwiceCountsOnce() throws Exception {
+        final HttpAsyncClientBuilder hacb = customizedHttpClient(ES_HOST_01 + "," + ES_HOST_01, ImmutableMap.of());
+
+        verify(hacb).setMaxConnPerRoute(30);
+    }
+
+    //but no fewer connections than the Elasticsearch client allows a host on its own
+    @Test
+    public void testConnectionsPerHostDefaultToAtLeastTen() throws Exception {
+        final HttpAsyncClientBuilder hacb = customizedHttpClient("host1,host2,host3,host4", ImmutableMap.of());
+
+        verify(hacb).setMaxConnPerRoute(10);
+        verify(hacb).setMaxConnTotal(30);
+    }
+
+    @Test
+    public void testConnectionsToASingleHostFollowTheTotal() throws Exception {
+        final HttpAsyncClientBuilder hacb = customizedHttpClient(ImmutableMap.of(
+            "index." + INDEX_NAME + ".elasticsearch.max-connections", "100"));
+
+        verify(hacb).setMaxConnPerRoute(100);
+        verify(hacb).setMaxConnTotal(100);
+    }
+
+    @Test
+    public void testConnectionPoolIoThreadsAndCompression() throws Exception {
+        final HttpAsyncClientBuilder hacb = customizedHttpClient(ImmutableMap.of(
+            "index." + INDEX_NAME + ".elasticsearch.max-connections-per-host", "64",
+            "index." + INDEX_NAME + ".elasticsearch.max-connections", "128",
+            "index." + INDEX_NAME + ".elasticsearch.io-threads", "2",
+            "index." + INDEX_NAME + ".elasticsearch.compression", "true"));
+
+        verify(hacb).setMaxConnPerRoute(64);
+        verify(hacb).setMaxConnTotal(128);
+        final ArgumentCaptor<IOReactorConfig> ioReactorConfig = ArgumentCaptor.forClass(IOReactorConfig.class);
+        verify(hacb).setDefaultIOReactorConfig(ioReactorConfig.capture());
+        assertEquals(2, ioReactorConfig.getValue().getIoThreadCount());
+        verify(restClientBuilderMock).setCompressionEnabled(true);
     }
 
     private HttpClientConfigCallback authTestBase(Map<String, String> extraConfigValues) throws Exception {
@@ -458,6 +541,8 @@ public class RestClientSetupTest {
         assertEquals(1, customAuth.customizeHttpClientHistory.size());
         assertSame(hacb, customAuth.customizeHttpClientHistory.get(0));
         assertArrayEquals(customAuthArgs, customAuth.args);
+        //The connection pool is configured before the authenticator, which can therefore still change it
+        assertTrue(customAuth.connectionPoolConfiguredBefore);
     }
 
     public SSLConfigurationCallback.Builder sslSettingsTestBase(final Map<String, String> extraConfigValues) throws Exception {
@@ -690,6 +775,7 @@ public class RestClientSetupTest {
         private final List<Builder> customizeRequestConfigHistory = new LinkedList<>();
         private final List<HttpAsyncClientBuilder> customizeHttpClientHistory = new LinkedList<>();
         private int numInitCalls = 0;
+        private boolean connectionPoolConfiguredBefore;
 
         public TestCustomAuthenticator(String[] args) {
             this.args = args;
@@ -699,6 +785,8 @@ public class RestClientSetupTest {
         @Override
         public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
             customizeHttpClientHistory.add(httpClientBuilder);
+            connectionPoolConfiguredBefore = mockingDetails(httpClientBuilder).getInvocations().stream()
+                .anyMatch(invocation -> invocation.getMethod().getName().equals("setMaxConnPerRoute"));
             return httpClientBuilder;
         }
 

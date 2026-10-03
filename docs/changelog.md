@@ -365,7 +365,7 @@ Be aware of the following behavior changes when batching is enabled (the default
 To restore the previous storage-page-sized, flush-once-per-segment behavior, set
 `schema.reindex.mixed-index-batch-enabled=false`. See the
 [Elasticsearch reindex tuning guide](index-backend/elasticsearch.md#reindex-optimization) for tuning
-the batch size, reindex threads and `index.[X].bulk-refresh` together.
+the batch size, reindex threads and `index.[X].elasticsearch.bulk-refresh` together.
 
 ##### Faster OLAP scans (signal-based row hand-off)
 
@@ -803,6 +803,33 @@ attempt, from a random generator which all threads shared, although nearly every
 which draw from one generator at the same time contend for its seed. The wait is now drawn only once an operation has
 failed temporarily, from the random generator of its thread, and the waits are the same as before. On the inmemory
 backend, reading a property of 1,000 vertices on each of eight threads takes 18% less time.
+
+##### Elasticsearch clients open up to 30 connections to a single host
+
+The Elasticsearch client of an index backend opened at most 10 connections to each Elasticsearch host and 30 to all
+hosts together, the defaults of the Elasticsearch REST client, which JanusGraph had no option for. A request waits for a
+free connection, so an index backend had no more than 10 queries and bulk requests in flight at a single host, such as a
+load balancer or the endpoint of a hosted cluster, however many threads issued them. The new option
+`index.[X].elasticsearch.max-connections` sets the total, 30 by default, and
+`index.[X].elasticsearch.max-connections-per-host` the connections to each host, by default the total divided evenly
+among the hosts, but at least 10. So a single host now takes all 30 connections and two hosts 15 each, while three or
+more hosts keep 10 each, which keeps a host that stops answering from holding every connection. With 32 threads issuing
+mixed index queries, a single Elasticsearch 9 node on the same machine answers 22% more of them per second, and a host
+which takes 20 ms to answer three times as many. The new option `index.[X].elasticsearch.io-threads` sets the number of
+I/O threads of each client, which is otherwise the number of processors, for every index backend of every graph, and
+`index.[X].elasticsearch.compression` compresses requests and responses with gzip.
+
+##### Conflicting Elasticsearch updates are reattempted
+
+Transactions which change the same element concurrently also update its document in a mixed index concurrently, and
+Elasticsearch fails an update which finds that the document changed after the update read it, with status 409.
+JanusGraph treats that status as permanent, so the change was missing from the mixed index unless transaction recovery
+repaired it. `index.[X].elasticsearch.retry_on_conflict` now defaults to 3, where it was not sent unless set, so
+Elasticsearch reattempts such an update against the latest version of the document. Set it to 0 for the previous
+behavior. The client's own reattempts of a request, after a backoff which starts at
+`index.[X].elasticsearch.retry-initial-wait` and grows tenfold up to `index.[X].elasticsearch.retry-max-wait`, now wait
+a random time between half of the backoff and all of it, so that requests which failed together don't all come back at
+the same moment.
 
 ##### `tx.max-commit-time` now defaults to 300 s and is checked against the least a commit may take
 

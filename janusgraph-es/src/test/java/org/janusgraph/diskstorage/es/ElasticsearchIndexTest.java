@@ -630,6 +630,38 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(ImmutableMap.of(TEXT, large, WEIGHT, 2.5), source("vertex", "large"));
     }
 
+    //Elasticsearch takes bulk requests and searches compressed with gzip, an update among them, which carries
+    //retry_on_conflict by default, and the client reads a response whether Elasticsearch compressed it or not
+    @Test
+    public void testCompressedRequests() throws Exception {
+        initialize("vertex");
+        final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
+        cc.set("index.es.elasticsearch.compression", "true");
+        final ElasticSearchIndex compressing = new ElasticSearchIndex(makeESTestConfig("es", cc));
+        try {
+            final IndexTransaction insert = new IndexTransaction(compressing, indexRetriever,
+                StandardBaseTransactionConfig.of(TimestampProviders.MILLI), Duration.ofSeconds(5));
+            insert.add("vertex", "compressed", TEXT, "zipped words", true);
+            insert.commit();
+            final IndexTransaction update = new IndexTransaction(compressing, indexRetriever,
+                StandardBaseTransactionConfig.of(TimestampProviders.MILLI), Duration.ofSeconds(5));
+            update.add("vertex", "compressed", WEIGHT, 2.5, false);
+            update.commit();
+            final IndexTransaction read = new IndexTransaction(compressing, indexRetriever,
+                StandardBaseTransactionConfig.of(TimestampProviders.MILLI), Duration.ofSeconds(5));
+            try {
+                assertEquals(Collections.singletonList("compressed"), read.queryStream(new IndexQuery("vertex",
+                    PredicateCondition.of(TEXT, Text.CONTAINS, "zipped"))).collect(Collectors.toList()));
+            } finally {
+                read.rollback();
+            }
+        } finally {
+            compressing.close();
+        }
+
+        assertEquals(ImmutableMap.of(TEXT, "zipped words", WEIGHT, 2.5), source("vertex", "compressed"));
+    }
+
     //Up to Elasticsearch 6 a document is addressed through its mapping type, which JanusGraph names after the store
     private static String documentPath(String store, String documentId) {
         final String type = JanusGraphElasticsearchContainer.getEsMajorVersion().value <= 6 ? store : "_doc";

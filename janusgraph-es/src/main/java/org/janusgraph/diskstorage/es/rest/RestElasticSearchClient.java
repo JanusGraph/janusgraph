@@ -69,6 +69,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -139,8 +140,6 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     //Configured through RestClientSetup from RETRY_TRANSPORT_FAILURES, like the other optional client settings
     private boolean retryTransportFailures;
 
-    private final String retryOnConflictKey;
-
     private final int retryAttemptLimit;
 
     private final Set<Integer> retryOnErrorCodes;
@@ -180,7 +179,6 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                 ElasticSearchIndex.USE_MAPPING_FOR_ES7.getName());
         }
         useMappingTypes = majorVersion.getValue() < 7 || (useMappingTypesForES7 && esVersion7 && !mappingTypesRemoved);
-        retryOnConflictKey = majorVersion.getValue() >= 7 ? "retry_on_conflict" : "_retry_on_conflict";
         this.retryAttemptLimit = retryAttemptLimit;
         this.retryOnErrorCodes = Collections.unmodifiableSet(retryOnErrorCodes);
         this.retryInitialWaitMs = retryInitialWaitMs;
@@ -473,8 +471,11 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                 requestData.put("_id", request.getId());
             }
 
-            if (retryOnConflict != null && request.getRequestType() == ElasticSearchMutation.RequestType.UPDATE) {
-                requestData.put(retryOnConflictKey, retryOnConflict);
+            //Elasticsearch's own default is 0, so a request needs the key only above it. Every supported version
+            //reads retry_on_conflict; Elasticsearch 6 merely deprecated the _retry_on_conflict it also accepted
+            if (retryOnConflict != null && retryOnConflict > 0
+                && request.getRequestType() == ElasticSearchMutation.RequestType.UPDATE) {
+                requestData.put("retry_on_conflict", retryOnConflict);
             }
 
             this.requestBytes =  mapWriter.writeValueAsBytes(ImmutableMap.of(request.getRequestType().name().toLowerCase(), requestData));
@@ -906,8 +907,16 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
     }
 
+    //Anywhere from half of the backoff to all of it, so that requests which failed together, as they do when
+    //Elasticsearch is overloaded, don't all come back at the same moment
+    @VisibleForTesting
+    long retryWaitMs(int retryCount) {
+        final long backoffMs = Math.min((long) (retryInitialWaitMs * Math.pow(10, retryCount)), retryMaxWaitMs);
+        return backoffMs / 2 + ThreadLocalRandom.current().nextLong(backoffMs - backoffMs / 2 + 1);
+    }
+
     private void performRetryWait(int retryCount) {
-        long waitDurationMs = Math.min((long) (retryInitialWaitMs * Math.pow(10, retryCount)), retryMaxWaitMs);
+        final long waitDurationMs = retryWaitMs(retryCount);
         log.warn("Retrying Elasticsearch request in {} ms. Attempt {} of {}", waitDurationMs, retryCount, retryAttemptLimit);
         try {
             Thread.sleep(waitDurationMs);
