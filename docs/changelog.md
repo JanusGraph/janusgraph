@@ -784,6 +784,26 @@ batching for traversal steps. Building the condition of a `within()` or `without
 value before it to drop duplicates, so it grew with the square of the number of values; it now takes time in proportion
 to them.
 
+##### A vertex which gains relations in a transaction allocates about 2 KB less
+
+Every vertex which gains a relation in a transaction keeps the relations it gained, and since JanusGraph 1.1.0 it sized
+the set of its edges for 300 edges up front, about 2 KB (4 KB on heaps of 32 GB or more), whether it gained one relation
+or hundreds. Once one of its existing relations was replaced by a copy, as setting a property of an existing edge or a
+meta-property of an existing vertex property does, it also sized a table for 330 replaced relations, about 2 KB more.
+Every transaction allocated such a set as well, read-only ones included. The sets and tables now start small and grow
+with the relations added. On the inmemory backend, a transaction which adds 1,000 vertices with two properties and an
+edge each allocates 9% less, one which sets a property of 1,000 existing vertices 24% less, and one which sets a
+property of an edge of each 22% less.
+
+##### Storage operations no longer contend for one random generator
+
+Nearly every storage operation, among them every read of a transaction and every mutation its commit writes, runs
+through a loop which reattempts temporary failures after randomized waits. It drew its first wait before the first
+attempt, from a random generator which all threads shared, although nearly every operation succeeds at once, and threads
+which draw from one generator at the same time contend for its seed. The wait is now drawn only once an operation has
+failed temporarily, from the random generator of its thread, and the waits are the same as before. On the inmemory
+backend, reading a property of 1,000 vertices on each of eight threads takes 18% less time.
+
 ##### `tx.max-commit-time` now defaults to 300 s and is checked against the least a commit may take
 
 `tx.max-commit-time` is the time after which transaction recovery considers a transaction failed and restores the index
