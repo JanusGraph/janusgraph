@@ -76,7 +76,6 @@ JanusGraph supports the following Metrics reporters:
 
 -   [Console](#console-reporter)
 -   [CSV](#csv-file-reporter)
--   [Ganglia](#ganglia-reporter)
 -   [Graphite](#graphite-reporter)
 -   [JMX](#jmx-reporter)
 -   [Slf4j](#slf4j-reporter)
@@ -87,6 +86,25 @@ For example, it’s possible to configure JMX and Slf4j Metrics
 reporters to operate simultaneously. Just set all their respective
 configuration keys in janusgraph.properties (and enable metrics as
 directed above).
+
+The graphs of a JVM share one reporter of each type, as they share the
+`MetricRegistry` it reports, so a reporter reports the metrics of every
+graph, also of those whose configuration asks for no reporter. A graph
+starts the reporters its configuration asks for when it opens, unless a
+reporter of the type runs already: then it uses the running reporter,
+with the settings it was started with. A reporter which graphs started
+stops once every graph which uses it has been closed, and the metrics of
+the graphs which are still open, but don't ask for it, are no longer
+reported then. A reporter which other code started, for instance
+through `org.janusgraph.util.stats.MetricManager`, while no graph used
+one of its type keeps running.
+
+A reporter which reports periodically reports one last time as it
+stops, and closing the last graph which uses it waits for that report.
+The Graphite reporter connects to Graphite for it without a timeout, so
+while the host doesn't answer, the close waits until the operating
+system gives the connection attempt up, also when the JVM's shutdown
+hook closes the graph as the JVM exits.
 
 ### Console Reporter
 

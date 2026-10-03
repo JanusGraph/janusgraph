@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.management;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutor;
 import org.apache.tinkerpop.gremlin.jsr223.GremlinScriptEngineManager;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalSource;
@@ -23,6 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.ConfiguredGraphFactory;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
 import org.janusgraph.graphdb.management.utils.JanusGraphManagerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -51,10 +54,13 @@ public class JanusGraphManager implements GraphManager {
     public static final String JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG
             = "Gremlin Server must be configured to use the JanusGraphManager.";
 
+    private static final String GRAPH_BINDER_THREAD_NAME = "JanusGraphManager-graph-binder";
+
     private final Map<String, Graph> graphs = new ConcurrentHashMap<>();
     private final Map<String, TraversalSource> traversalSources = new ConcurrentHashMap<>();
     private final Object instantiateGraphLock = new Object();
     private GremlinExecutor gremlinExecutor = null;
+    private ScheduledExecutorService graphBinder = null;
 
     private static JanusGraphManager instance = null;
     private static final String CONFIGURATION_MANAGEMENT_GRAPH_KEY = ConfigurationManagementGraph.class.getSimpleName();
@@ -91,43 +97,145 @@ public class JanusGraphManager implements GraphManager {
 
     // To be used for testing purposes only, so we can run tests in parallel
     public static void resetInstance() {
-        instance = null;
+        shutdownJanusGraphManager();
     }
 
-    public void configureGremlinExecutor(GremlinExecutor gremlinExecutor) {
+    /**
+     * Binds the graphs of the {@link ConfiguredGraphFactory} and their traversal sources to the script engine of the
+     * given executor now and 20 seconds after the end of each run, on a daemon thread. Binding stops, and the thread
+     * ends, at the first run after the executor service of the given executor has been shut down, as Gremlin Server
+     * does when it stops, at a run which finds no {@link ConfigurationManagementGraph} configured, and when this method
+     * is called again. A run under way opens no further graph once the executor service has been shut down, since
+     * Gremlin Server closes its graphs after that. A run which fails to list the graphs for another reason is logged,
+     * and the next one tries again.
+     *
+     * @param gremlinExecutor the Gremlin executor of the server
+     */
+    public synchronized void configureGremlinExecutor(GremlinExecutor gremlinExecutor) {
         this.gremlinExecutor = gremlinExecutor;
-        final ScheduledExecutorService bindExecutor = Executors.newScheduledThreadPool(1);
+        stopGraphBinder();
+        final ScheduledExecutorService binder = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
+            .setDaemon(true)
+            .setNameFormat(GRAPH_BINDER_THREAD_NAME)
+            .build());
+        graphBinder = binder;
         // Dynamically created graphs created with the ConfiguredGraphFactory are
         // bound across all nodes in the cluster and in the face of server restarts
-        bindExecutor.scheduleWithFixedDelay(new GremlinExecutorGraphBinder(this, this.gremlinExecutor), 0, 20L, TimeUnit.SECONDS);
+        binder.scheduleWithFixedDelay(new GremlinExecutorGraphBinder(this, this.gremlinExecutor, binder), 0, 20L, TimeUnit.SECONDS);
+    }
+
+    // Lets a run under way finish, without interrupting it: a graph it opens may be reading its storage
+    private synchronized void stopGraphBinder() {
+        if (graphBinder != null) {
+            graphBinder.shutdown();
+            graphBinder = null;
+        }
+    }
+
+    // Ends binding from a binder's own run. A binder which configureGremlinExecutor() has replaced since is not the
+    // manager's any more, so the manager's stays
+    private synchronized void endGraphBinder(ExecutorService binder) {
+        binder.shutdown();
+        if (graphBinder == binder) {
+            graphBinder = null;
+        }
     }
 
     private class GremlinExecutorGraphBinder implements Runnable {
         final JanusGraphManager graphManager;
         final GremlinExecutor gremlinExecutor;
+        final ExecutorService binder;
 
-        public GremlinExecutorGraphBinder(JanusGraphManager graphManager, GremlinExecutor gremlinExecutor) {
+        public GremlinExecutorGraphBinder(JanusGraphManager graphManager, GremlinExecutor gremlinExecutor,
+                                          ExecutorService binder) {
             this.graphManager = graphManager;
             this.gremlinExecutor = gremlinExecutor;
+            this.binder = binder;
         }
 
         @Override
         public void run() {
-            ConfiguredGraphFactory.getGraphNames().forEach(it -> {
+            final ExecutorService gremlinExecutorService = gremlinExecutor.getExecutorService();
+            if (serverStopped(gremlinExecutorService)) {
+                return;
+            }
+            final Set<String> graphNames;
+            try {
+                graphNames = ConfiguredGraphFactory.getGraphNames();
+            } catch (RuntimeException e) {
+                if (hasCause(e, ConfigurationManagementGraphNotEnabledException.class)) {
+                    // There are no such graphs to bind
+                    log.info("Stopped binding the graphs of the ConfiguredGraphFactory: no ConfigurationManagementGraph is configured");
+                    log.debug("The ConfiguredGraphFactory has no ConfigurationManagementGraph", e);
+                    graphManager.endGraphBinder(binder);
+                } else {
+                    log.warn("Could not list the graphs of the ConfiguredGraphFactory to bind them; trying again in 20 seconds", e);
+                }
+                return;
+            }
+            for (final String graphName : graphNames) {
+                // The server closes its graphs after it has shut the executor service down: a graph opened from then
+                // on would stay open
+                if (serverStopped(gremlinExecutorService)) {
+                    return;
+                }
                 try {
-                    final Graph graph = ConfiguredGraphFactory.open(it);
-                    updateTraversalSource(it, graph, this.gremlinExecutor, this.graphManager);
+                    final Graph graph = ConfiguredGraphFactory.open(graphName);
+                    // The server may have stopped while the graph opened, and closed its graphs before this one was
+                    // among them
+                    if (serverStopped(gremlinExecutorService)) {
+                        closeGraphOpenedTooLate(graphName, graph);
+                        return;
+                    }
+                    updateTraversalSource(graphName, graph, this.gremlinExecutor, this.graphManager);
                 } catch (Exception e) {
                     // cannot open graph, do nothing
-                    log.error(String.format("Failed to open graph %s with the following error:\n %s.\n" +
-                    "Thus, it and its traversal will not be bound on this server.", it, e));
+                    log.error("Failed to open graph {}: it and its traversal will not be bound on this server", graphName, e);
                 }
-            });
+            }
         }
+
+        private void closeGraphOpenedTooLate(String graphName, Graph graph) {
+            log.info("Closing graph {}, which opened after Gremlin Server stopped", graphName);
+            try {
+                graph.close();
+            } catch (Exception e) {
+                log.warn("Could not close graph {}, which opened after Gremlin Server stopped", graphName, e);
+            }
+            try {
+                //As ConfiguredGraphFactory.close() unbinds a graph: the graph and its traversal source
+                graphManager.removeGraph(graphName);
+                graphManager.removeTraversalSource(ConfiguredGraphFactory.toTraversalSourceName(graphName));
+            } catch (RuntimeException e) {
+                log.warn("Could not unbind graph {}, which opened after Gremlin Server stopped", graphName, e);
+            }
+        }
+
+        // Gremlin Server shuts the executor service of its Gremlin executor down when it stops, and binding ends then
+        private boolean serverStopped(ExecutorService gremlinExecutorService) {
+            if (gremlinExecutorService != null && gremlinExecutorService.isShutdown()) {
+                graphManager.endGraphBinder(binder);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    private static boolean hasCause(Throwable throwable, Class<? extends Throwable> causeClass) {
+        for (Throwable cause = throwable; cause != null; cause = cause.getCause()) {
+            if (causeClass.isInstance(cause)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // To be used for testing purposes
     protected static void shutdownJanusGraphManager() {
+        final JanusGraphManager current = instance;
+        if (current != null) {
+            current.stopGraphBinder();
+        }
         instance = null;
     }
 

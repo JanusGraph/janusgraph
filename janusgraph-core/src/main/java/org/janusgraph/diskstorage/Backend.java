@@ -637,12 +637,14 @@ public class Backend implements LockerProvider, AutoCloseable {
             if (idAuthority != null) executeWithCatching(idAuthority::close, exceptionWrapper);
             if (systemConfig != null) executeWithCatching(systemConfig::close, exceptionWrapper);
             if (userConfig != null) executeWithCatching(userConfig::close, exceptionWrapper);
-            executeWithCatching(storeManager::close, exceptionWrapper);
-            gracefulExecutorServiceShutdown(threadPool, threadPoolShutdownMaxWaitTime);
-            //Indexes
+            //The index providers before the store manager, whose close may shut executors down and so restore an
+            //interrupt which ended its wait (the CQL store manager does), and the pool last for the same reason: an
+            //interrupt can break the I/O of the steps after it
             for (IndexProvider index : indexes.values()){
                 executeWithCatching(index::close, exceptionWrapper);
             }
+            executeWithCatching(storeManager::close, exceptionWrapper);
+            gracefulExecutorServiceShutdown(threadPool, threadPoolShutdownMaxWaitTime);
             throwIfException(exceptionWrapper);
         } else {
             log.debug("Backend {} has already been closed or cleared", this);
@@ -660,23 +662,32 @@ public class Backend implements LockerProvider, AutoCloseable {
         if (!hasAttemptedClose) {
             hasAttemptedClose = true;
 
-            managementLogManager.close();
-            txLogManager.close();
-            userLogManager.close();
+            //Every step runs, as in close(), so that a provider which fails to clear leaves none of the others open or
+            //uncleared; the first failure is thrown afterwards, the others suppressed
+            ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
+            try {
+                executeWithCatching(() -> managementLogManager.close(), exceptionWrapper);
+                executeWithCatching(() -> txLogManager.close(), exceptionWrapper);
+                executeWithCatching(() -> userLogManager.close(), exceptionWrapper);
 
-            scanner.close();
-            edgeStore.close();
-            indexStore.close();
-            idAuthority.close();
-            systemConfig.close();
-            userConfig.close();
-            storeManager.clearStorage();
-            storeManager.close();
-            //Indexes
-            for (IndexProvider index : indexes.values()) {
-                index.clearStorage();
-                index.close();
+                executeWithCatching(() -> scanner.close(), exceptionWrapper);
+                executeWithCatching(() -> edgeStore.close(), exceptionWrapper);
+                executeWithCatching(() -> indexStore.close(), exceptionWrapper);
+                executeWithCatching(() -> idAuthority.close(), exceptionWrapper);
+                executeWithCatching(() -> systemConfig.close(), exceptionWrapper);
+                executeWithCatching(() -> userConfig.close(), exceptionWrapper);
+                //The index providers before the store manager, as in close()
+                for (IndexProvider index : indexes.values()) {
+                    executeWithCatching(index::clearStorage, exceptionWrapper);
+                    executeWithCatching(index::close, exceptionWrapper);
+                }
+                executeWithCatching(storeManager::clearStorage, exceptionWrapper);
+                executeWithCatching(storeManager::close, exceptionWrapper);
+            } finally {
+                //A later close() does nothing, so the threads of the pool end here, however the clearing went
+                gracefulExecutorServiceShutdown(threadPool, threadPoolShutdownMaxWaitTime);
             }
+            throwIfException(exceptionWrapper);
         } else {
             log.debug("Backend {} has already been closed or cleared", this);
         }
