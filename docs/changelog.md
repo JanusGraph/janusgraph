@@ -853,6 +853,21 @@ through `storage.cql.internal.*` now applies to its writes too; it already appli
 `storage.cql.idempotent-writes=false`, or without assigned timestamps, writes keep the driver's default idempotence,
 `basic.request.default-idempotence`, as every write did before.
 
+##### The Gremlin pool of JanusGraph Server can run on virtual threads
+
+JanusGraph Server evaluates requests in the Gremlin pool of Gremlin Server, `gremlinPool` platform threads, by default
+one per processor, and a pool thread stays with its request while the request waits for the storage and index backends.
+The pool therefore evaluated only as many requests per second as its threads could wait for, however idle the processors
+were, and a larger pool meant as many platform threads. On Java 24 or later, the new JanusGraph Server setting
+`gremlinPoolVirtualThreads: true` runs the pool on virtual threads. The pool keeps its bounds, `gremlinPool` requests
+evaluated at once, `maxWorkQueueSize` more waiting and rejection beyond, but a request which waits for a
+backend releases its platform thread, so `gremlinPool` can be raised to the wanted concurrency. With Cassandra on the
+same 18-processor machine, 256 virtual threads answered 20,900 requests per second at 256 requests in flight, against
+16,800 for 256 platform threads and 5,480 for the default pool, while the server kept about 90 platform threads instead
+of 326. The setting is off by default, and JanusGraph Server refuses to start with it on Java versions older than 24,
+where a virtual thread which waits inside `synchronized`, as JanusGraph transactions do while they commit, keeps its
+platform thread.
+
 ##### `tx.max-commit-time` now defaults to 300 s and is checked against the least a commit may take
 
 `tx.max-commit-time` is the time after which transaction recovery considers a transaction failed and restores the index
