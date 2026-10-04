@@ -24,11 +24,13 @@ import org.janusgraph.graphdb.grpc.JanusGraphContextHandler;
 import org.janusgraph.graphdb.grpc.JanusGraphManagerServiceImpl;
 import org.janusgraph.graphdb.grpc.schema.SchemaManagerImpl;
 import org.janusgraph.graphdb.management.JanusGraphManager;
+import org.janusgraph.graphdb.server.util.VirtualThreadGremlinPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 public class JanusGraphServer {
     private static final Logger logger = LoggerFactory.getLogger(JanusGraphServer.class);
@@ -82,7 +84,7 @@ public class JanusGraphServer {
         try {
             logger.info("Configuring JanusGraph Server from {}", confPath);
             janusGraphSettings = JanusGraphSettings.read(confPath);
-            gremlinServer = new GremlinServer(janusGraphSettings);
+            gremlinServer = createGremlinServer(janusGraphSettings);
             CompletableFuture<Void> grpcServerFuture = CompletableFuture.completedFuture(null);
             if (janusGraphSettings.getGrpcServer().isEnabled()) {
                 grpcServerFuture = CompletableFuture.runAsync(() -> {
@@ -102,6 +104,20 @@ public class JanusGraphServer {
             serverStarted.completeExceptionally(ex);
         }
         return serverStarted;
+    }
+
+    private static GremlinServer createGremlinServer(JanusGraphSettings settings) {
+        if (!settings.isGremlinPoolVirtualThreads()) {
+            // Gremlin Server creates its Gremlin pool of platform threads
+            return new GremlinServer(settings);
+        }
+        ExecutorService gremlinPool = VirtualThreadGremlinPool.create(settings);
+        try {
+            return new GremlinServer(settings, gremlinPool);
+        } catch (RuntimeException | Error e) {
+            gremlinPool.shutdownNow();
+            throw e;
+        }
     }
 
     private static void configure(ServerGremlinExecutor serverGremlinExecutor) {
