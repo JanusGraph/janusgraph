@@ -21,7 +21,9 @@ import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.JanusGraphVertexQuery;
 import org.janusgraph.core.VertexList;
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.database.idhandling.IDHandler;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
@@ -49,6 +51,16 @@ import java.util.List;
  */
 public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<VertexCentricQueryBuilder> implements JanusGraphVertexQuery<VertexCentricQueryBuilder> {
 
+    //The slice query with which the properties of a vertex are preloaded, as a vertex caches it
+    //Shared, and never mutated: it is only handed to hasLoadedRelations, which reads it, so that the fast path allocates
+    //no query per access
+    static final SliceQuery ALL_PROPERTIES_SLICE = allPropertiesQuery();
+
+    private static SliceQuery allPropertiesQuery() {
+        final StaticBuffer[] bounds = IDHandler.getBounds(RelationCategory.PROPERTY, false);
+        return new SliceQuery(bounds[0], bounds[1]);
+    }
+
     /**
     The base vertex of this query
      */
@@ -75,8 +87,10 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
         if (bq.isEmpty()) return resultConstructor.emptyResult();
         boolean prefetchAllVertexProperties = returnType==RelationCategory.PROPERTY && hasSingleType() && !hasQueryOnlyLoaded()
             && tx.getConfiguration().hasPropertyPrefetching();
-        if (prefetchAllVertexProperties) {
-            //Preload properties
+        //Preload properties, unless the vertex holds them already: the preload is a query of its own, which costs more
+        //than the read of one property it is meant to serve. A partitioned vertex keeps its properties on its canonical
+        //representative, which the query for one property reads
+        if (prefetchAllVertexProperties && !propertiesLoaded(vertex)) {
             vertex.query().properties().iterator().hasNext();
         }
 
@@ -104,6 +118,11 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
             }
         }
         return resultConstructor.getResult(vertex,bq);
+    }
+
+    private boolean propertiesLoaded(InternalVertex vertex) {
+        final InternalVertex holder = isPartitionedVertex(vertex) ? tx.getCanonicalVertex(vertex) : vertex;
+        return holder.hasLoadedRelations(ALL_PROPERTIES_SLICE);
     }
 
     //#### RELATIONS
