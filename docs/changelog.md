@@ -804,6 +804,17 @@ every later one. An entry with timestamp, TTL or visibility metadata, which the 
 (visibility only on a backend with cell-level visibility), is unaffected: the metadata is a property of the relation, so
 its full parse was already kept. The property map is only allocated for a relation which has properties.
 
+##### Reading one property of a vertex no longer preloads all of them each time
+
+With `query.fast-property`, on by default, a query for one property key of a vertex first loads all the vertex's
+properties in one slice, so that the keys read next come from the vertex's cache. The preload ran on every such query,
+even on a vertex whose properties were loaded already, as a query of its own which built its slice, looked it up in the
+cache and checked that it had a first entry, so reading one property of a loaded vertex took longer than reading all of
+them. The preload now runs only while the vertex doesn't hold the slice of its properties. In addition, a query of one
+type resolved the type's name three times, with a schema cache lookup and a vertex cache lookup each; it resolves it
+once. On an inmemory graph, reading one property of a vertex with 20 loaded properties takes 361 ns instead of 628, and
+reading its 20 properties one by one 7.7 µs instead of 13.0.
+
 ##### Composite index lookups of several values read their index rows together
 
 A composite index lookup of several values, as `has(key, within(values))` makes, or as a composite index on more than

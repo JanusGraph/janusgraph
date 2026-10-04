@@ -508,6 +508,15 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return query;
     }
 
+    //As QueryUtil.getType, but a query of one type has resolved it already
+    private InternalRelationType resolveType(String typeName) {
+        final RelationType type = types.length == 1 ? singleType() : tx.getRelationType(typeName);
+        if (type == null && !tx.getConfiguration().getAutoSchemaMaker().ignoreUndefinedQueryTypes()) {
+            throw new IllegalArgumentException("Undefined type used in query: " + typeName);
+        }
+        return (InternalRelationType) type;
+    }
+
     protected BaseVertexCentricQuery constructQuery(RelationCategory returnType) {
         QueryProfiler optProfiler = profiler.addNested(QueryProfiler.OPTIMIZATION);
         optProfiler.startTimer();
@@ -593,7 +602,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
             for (String typeName : types) {
                 if (typeName == null) continue;
-                InternalRelationType type = QueryUtil.getType(tx, typeName);
+                InternalRelationType type = resolveType(typeName);
                 if (type==null) continue;
                 Preconditions.checkArgument(!querySystem || (type instanceof SystemRelationType),
                         "Can only query for system types: %s", type);
