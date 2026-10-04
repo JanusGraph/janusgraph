@@ -853,6 +853,21 @@ through `storage.cql.internal.*` now applies to its writes too; it already appli
 `storage.cql.idempotent-writes=false`, or without assigned timestamps, writes keep the driver's default idempotence,
 `basic.request.default-idempotence`, as every write did before.
 
+##### Small CQL read results are deserialized without a thread hand-off
+
+The CQL backend turned every read result into entries on its executor service (`storage.cql.executor-service.*`),
+even a result of one row or none: the driver's I/O thread, which receives the result, handed it to the executor
+service, whose thread deserialized it and woke the reader waiting for it, so every read cost a second thread hand-off,
+and each row was read by the name of its columns. A result which is one page of at most
+`storage.cql.executor-service.max-inline-rows` rows, 100 by default, is now turned into entries on the I/O thread,
+copied once into arrays of the exact size, and the reader is woken directly; a larger result, or one of several pages,
+is still handed to the executor service page by page, as the I/O threads have to stay free for the other requests they
+serve. The rows of every result are read by the index of their columns, resolved once from the first result of each
+prepared statement. On Cassandra 5, a read of 10 or 100 rows took 8% less on average with one reader, within the
+run-to-run error, and 8% to 15% less with eight, beyond it; reading 50 properties of each of 1,000 vertices in one batch
+took 7% less. `storage.cql.executor-service.max-inline-rows=0` hands every result with a
+row to the executor service, as before.
+
 ##### The Gremlin pool of JanusGraph Server can run on virtual threads
 
 JanusGraph Server evaluates requests in the Gremlin pool of Gremlin Server, `gremlinPool` platform threads, by default

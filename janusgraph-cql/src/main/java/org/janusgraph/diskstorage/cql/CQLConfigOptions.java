@@ -753,6 +753,18 @@ public interface CQLConfigOptions {
         Long.class,
         60000L);
 
+    ConfigOption<Integer> EXECUTOR_SERVICE_MAX_INLINE_ROWS = new ConfigOption<>(
+        EXECUTOR_SERVICE,
+        "max-inline-rows",
+        "The most rows the result of a slice query may have for the driver's I/O thread, which receives it, to turn " +
+            "it into entries itself, which spares the hand-off to the executor service and a thread wake-up for " +
+            "every such read. A result of more rows, or one of several pages (the driver's `basic.request.page-size`, " +
+            "5000 by default), is handed to the executor service page by page, as the driver's threads have to stay " +
+            "free for the other requests they serve. 0 hands every result with a row to the executor service.",
+        ConfigOption.Type.LOCAL,
+        100,
+        ConfigOption.nonnegativeInt());
+
     ConfigOption<Integer> SESSION_LEAK_THRESHOLD = new ConfigOption<>(
         CQL_NS,
         "session-leak-threshold",

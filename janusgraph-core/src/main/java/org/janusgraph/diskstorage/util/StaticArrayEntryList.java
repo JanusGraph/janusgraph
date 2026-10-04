@@ -419,6 +419,16 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     }
 
     /**
+     * As {@link #supplyEntryList(ChunkedJobDefinition, StaticArrayEntry.GetColVal, ExecutorService)}, for elements whose
+     * column and value are {@link ByteBuffer}s, which are copied from their position on without being consumed.
+     */
+    public static <E> void supplyEntryListOfByteBuffer(ChunkedJobDefinition<Iterator<E>, EntryListComputationContext, EntryList> chunkedJobDefinition,
+                                                       StaticArrayEntry.GetColVal<E,ByteBuffer> getter,
+                                                       ExecutorService executorService) {
+        supplyEntryList(chunkedJobDefinition, getter, StaticArrayEntry.ByteBufferHandler.INSTANCE, executorService);
+    }
+
+    /**
      * Non-blocking method which adds data chunks processing job to the provided `executorService` and returns immediately.
      */
     private static <E,D> void supplyEntryList(ChunkedJobDefinition<Iterator<E>, EntryListComputationContext, EntryList> chunkedJobDefinition,

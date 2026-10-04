@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.IDEMPOTENT_WRITES;
@@ -127,9 +128,25 @@ public class CQLStatementIdempotenceTest {
         return statement.getPreparedStatement().getQuery().trim().toUpperCase();
     }
 
+    //A full scan filters by column, and a scan of a token range or an ordered one selects by token
+    private static boolean isScan(String query) {
+        return query.contains("ALLOW FILTERING") || query.contains("TOKEN(");
+    }
+
+    //The driver tells the tracker of a request only after it has completed the request's result, which the traversal
+    //may have taken by then. The scan which ends readAndWrite is its last request, so the checks wait for it to be told
+    private static void awaitScan() throws InterruptedException {
+        final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (RecordingRequestTracker.requests.stream().noneMatch(request -> request instanceof BoundStatement
+                && isScan(query((BoundStatement) request))) && System.nanoTime() < deadline) {
+            Thread.sleep(10);
+        }
+    }
+
     //Checks the idempotence of every read and write the driver completed, and that there were reads, scans, insertions,
     //insertions with a TTL and deletions to check
-    private static void assertIdempotence(Boolean writes) {
+    private static void assertIdempotence(Boolean writes) throws InterruptedException {
+        awaitScan();
         final List<String> reads = new ArrayList<>();
         final List<String> writesSent = new ArrayList<>();
         for (Request request : RecordingRequestTracker.requests) {
@@ -155,16 +172,14 @@ public class CQLStatementIdempotenceTest {
             }
         }
         assertTrue(reads.stream().anyMatch(query -> query.contains(" IN ")), "no read of several columns: " + reads);
-        //A full scan filters by column, and a scan of a token range or an ordered one selects by token
-        assertTrue(reads.stream().anyMatch(query -> query.contains("ALLOW FILTERING") || query.contains("TOKEN(")),
-            "no scan: " + reads);
+        assertTrue(reads.stream().anyMatch(CQLStatementIdempotenceTest::isScan), "no scan: " + reads);
         assertTrue(writesSent.stream().anyMatch(query -> query.startsWith("INSERT")), "no insertion: " + writesSent);
         assertTrue(writesSent.stream().anyMatch(query -> query.contains(" TTL ")), "no insertion with a TTL: " + writesSent);
         assertTrue(writesSent.stream().anyMatch(query -> query.startsWith("DELETE")), "no deletion: " + writesSent);
     }
 
     @Test
-    public void shouldMarkReadsAndWritesWithJanusGraphsTimestampsIdempotent() {
+    public void shouldMarkReadsAndWritesWithJanusGraphsTimestampsIdempotent() throws InterruptedException {
         open("idempotent_unlogged", true, true, false);
         RecordingRequestTracker.requests.clear();
         readAndWrite();
@@ -172,7 +187,7 @@ public class CQLStatementIdempotenceTest {
     }
 
     @Test
-    public void shouldMarkLoggedBatchesWithJanusGraphsTimestampsIdempotent() {
+    public void shouldMarkLoggedBatchesWithJanusGraphsTimestampsIdempotent() throws InterruptedException {
         open("idempotent_logged", true, true, true);
         RecordingRequestTracker.requests.clear();
         readAndWrite();
@@ -181,7 +196,7 @@ public class CQLStatementIdempotenceTest {
 
     //Without JanusGraph's timestamps a write sent again may get a newer one, so writes keep the driver's default
     @Test
-    public void shouldLeaveWritesWithoutJanusGraphsTimestampsToTheDriversDefault() {
+    public void shouldLeaveWritesWithoutJanusGraphsTimestampsToTheDriversDefault() throws InterruptedException {
         open("idempotent_driver_timestamps", false, true, false);
         RecordingRequestTracker.requests.clear();
         readAndWrite();
@@ -190,7 +205,7 @@ public class CQLStatementIdempotenceTest {
 
     //With storage.cql.idempotent-writes off, writes keep the driver's default even with JanusGraph's timestamps
     @Test
-    public void shouldLeaveWritesToTheDriversDefaultWithIdempotentWritesOff() {
+    public void shouldLeaveWritesToTheDriversDefaultWithIdempotentWritesOff() throws InterruptedException {
         open("idempotent_writes_off_unlogged", true, false, false);
         RecordingRequestTracker.requests.clear();
         readAndWrite();
@@ -198,7 +213,7 @@ public class CQLStatementIdempotenceTest {
     }
 
     @Test
-    public void shouldLeaveLoggedBatchesToTheDriversDefaultWithIdempotentWritesOff() {
+    public void shouldLeaveLoggedBatchesToTheDriversDefaultWithIdempotentWritesOff() throws InterruptedException {
         open("idempotent_writes_off_logged", true, false, true);
         RecordingRequestTracker.requests.clear();
         readAndWrite();

@@ -25,12 +25,20 @@ import java.nio.ByteBuffer;
 
 public class CQLColValGetter implements GetColVal<Tuple3<StaticBuffer, StaticBuffer, Row>, StaticBuffer> {
 
-    private static final StaticArrayBuffer EMPTY_KEY = StaticArrayBuffer.of(new byte[0]);
+    static final StaticArrayBuffer EMPTY_KEY = StaticArrayBuffer.of(new byte[0]);
 
     private final EntryMetaData[] schema;
 
     CQLColValGetter(final EntryMetaData[] schema) {
         this.schema = schema;
+    }
+
+    /**
+     * @return the meta data read with each entry, in the order it is written; the array is shared, like the one
+     *         {@link #getMetaSchema} returns, and must not be modified
+     */
+    public EntryMetaData[] getSchema() {
+        return schema;
     }
 
     @Override
