@@ -723,8 +723,17 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public long countTotal(String indexName, Map<String, Object> requestData) throws IOException {
+        return countTotal(indexName, requestData, 0);
+    }
+
+    @Override
+    public long countTotal(String indexName, Map<String, Object> requestData, int atMost) throws IOException {
 
         final Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_count");
+        if (atMost > 0) {
+            // each shard stops collecting at the bound, so a count which only has to reach a limit doesn't count everything
+            request.addParameter("terminate_after", String.valueOf(atMost));
+        }
 
         final byte[] requestDataBytes = mapper.writeValueAsBytes(requestData);
         if (log.isDebugEnabled()) {
@@ -755,6 +764,9 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         final Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_search");
 
         requestData.put("aggs", ImmutableMap.of("agg_result", ImmutableMap.of(agg, ImmutableMap.of("field", fieldName))));
+        // only the aggregation is wanted: no hits, which would come with their sources, and no count of the matches
+        requestData.put("size", 0);
+        requestData.put("track_total_hits", false);
         final byte[] requestDataBytes = mapper.writeValueAsBytes(requestData);
         if (log.isDebugEnabled()) {
             log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestData));

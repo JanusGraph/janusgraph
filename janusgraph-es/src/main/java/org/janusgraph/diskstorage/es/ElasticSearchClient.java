@@ -73,6 +73,15 @@ public interface ElasticSearchClient extends Closeable {
 
     long countTotal(String indexName, Map<String,Object> requestData) throws IOException;
 
+    /**
+     * Counts the documents which match the query, with a bound when {@code atMost} is positive: the count is then
+     * exact below the bound and at least the bound above it, which suits a caller that wants no more than the bound,
+     * as it clamps the count to its limit anyway. This default counts everything, which satisfies that.
+     */
+    default long countTotal(String indexName, Map<String,Object> requestData, int atMost) throws IOException {
+        return countTotal(indexName, requestData);
+    }
+
     Number min(String indexName, Map<String,Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException;
 
     Number max(String indexName, Map<String,Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException;

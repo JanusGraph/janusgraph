@@ -60,6 +60,7 @@ import org.janusgraph.diskstorage.util.DefaultTransaction;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
@@ -1641,10 +1642,14 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private long runCountQuery(RawQuery query) throws BackendException{
+        if (countsNothing(query)) {
+            return 0;
+        }
         try {
             long countTotal = client.countTotal(
                 getIndexStoreName(query.getStore()),
-                compat.createRequestBody(compat.queryString(query.getQuery()), query.getParameters()));
+                compat.createRequestBody(compat.queryString(query.getQuery()), query.getParameters()),
+                countBound(query.getOffset(), query));
             return QueryUtil.applyOffsetWithQueryLimitAfterCount(countTotal, query.getOffset(), query);
         } catch (final IOException | UncheckedIOException e) {
             //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
@@ -1692,7 +1697,7 @@ public class ElasticSearchIndex implements IndexProvider {
             final String indexName = getIndexStoreName(query.getStore());
             final Map<String,Object> requestData = compat.createRequestBody(sr, null);
             switch (aggregation.getType()) {
-                case COUNT: return QueryUtil.applyQueryLimitAfterCount(client.countTotal(indexName, requestData), query);
+                case COUNT: return countsNothing(query) ? 0L : QueryUtil.applyQueryLimitAfterCount(client.countTotal(indexName, requestData, countBound(0, query)), query);
                 case MIN: return client.min(indexName, requestData, aggregation.getFieldName(), aggregation.getDataType());
                 case MAX: return client.max(indexName, requestData, aggregation.getFieldName(), aggregation.getDataType());
                 case AVG: return client.avg(indexName, requestData, aggregation.getFieldName());
@@ -1703,6 +1708,29 @@ public class ElasticSearchIndex implements IndexProvider {
             //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
             throw convert(e);
         }
+    }
+
+    /**
+     * Whether a count of the given query is 0 before any match is counted: with a limit of 0, which the count would be
+     * clamped to, there is nothing to ask Elasticsearch.
+     */
+    @VisibleForTesting
+    static boolean countsNothing(Query query) {
+        return query.hasLimit() && query.getLimit() <= 0;
+    }
+
+    /**
+     * The most matches a count of the given query has to find: its offset and limit, which the count is clamped to
+     * afterwards, or 0, no bound, without a limit, and also where the two don't fit an int, as a bound no count
+     * reaches would only keep Elasticsearch from answering a count from its statistics.
+     */
+    @VisibleForTesting
+    static int countBound(int offset, Query query) {
+        if (!query.hasLimit()) {
+            return 0;
+        }
+        final long bound = (long) offset + query.getLimit();
+        return bound < Integer.MAX_VALUE ? (int) bound : 0;
     }
 
     @Override
