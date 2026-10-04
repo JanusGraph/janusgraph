@@ -883,6 +883,16 @@ behavior. The client's own reattempts of a request, after a backoff which starts
 a random time between half of the backoff and all of it, so that requests which failed together don't all come back at
 the same moment.
 
+##### Elasticsearch counts and aggregations do less work
+
+A count of the documents which a mixed index query matches, for `totals()` and for the `COUNT` aggregation behind
+`count()`, counted every match, even where the caller only needed to know whether there were as many as its
+offset and limit, to which it clamped the count afterwards. Such a count now tells each shard to stop at the offset plus
+the limit (`terminate_after`), which keeps the count exact below that bound and at least the bound above it, so the
+clamped result is what it was. The aggregations `min`, `max`, `avg` and `sum` fetched the first ten matching documents
+with their sources along with the aggregation, and counted the matches; they now ask for the aggregation alone. The line
+which `IndexSerializer` logged at INFO for every raw index query it converted is logged at DEBUG.
+
 ##### CQL reads more properties of a vertex per query
 
 With `storage.cql.grouping.slice-allowed`, true by default, the CQL backend reads the properties of a vertex whose keys

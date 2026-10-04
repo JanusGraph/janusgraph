@@ -1129,6 +1129,19 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertTrue(after.scrollTotal > before.scrollTotal, "this result is read through a scroll");
     }
 
+    //A count which a limit of 0 bounds is 0, the totals of a raw query and the COUNT aggregation of an index query
+    //alike; the same counts without the limit find every document
+    @Test
+    public void shouldCountZeroForALimitOfZero() throws Exception {
+        final String store = "vertex";
+        indexDocuments(store);
+
+        assertEquals(INDEXED_DOCUMENTS, (long) tx.totals(rawAllDocuments(store)));
+        assertEquals(0L, (long) tx.totals(rawAllDocuments(store).setLimit(0)));
+        assertEquals(INDEXED_DOCUMENTS, tx.queryAggregation(allDocuments(store), Aggregation.COUNT).longValue());
+        assertEquals(0L, tx.queryAggregation(allDocuments(store, 0), Aggregation.COUNT).longValue());
+    }
+
     //The offset of a limited raw query is applied by Elasticsearch, that of an unlimited one on the client
     @Test
     public void shouldApplyOffsetsBeyondAPage() throws Exception {
