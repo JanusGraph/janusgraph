@@ -21,6 +21,7 @@ import org.janusgraph.graphdb.types.TypeUtil;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,7 +70,7 @@ public abstract class SystemTypeManager {
 
     public static void throwIfSystemName(JanusGraphSchemaCategory category, String name) {
         TypeUtil.checkTypeName(category, name);
-        if (SystemTypeManager.isSystemType(name.toLowerCase()) || Token.isSystemName(name))
+        if (SystemTypeManager.isSystemType(name.toLowerCase(Locale.ROOT)) || Token.isSystemName(name))
             throw new IllegalArgumentException("Name cannot be in protected namespace: "+name);
         for (char c : RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name contains reserved character %s: %s", c, name);

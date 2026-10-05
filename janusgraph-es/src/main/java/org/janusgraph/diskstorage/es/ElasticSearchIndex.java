@@ -85,6 +85,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -105,6 +106,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
+import static org.janusgraph.util.StringUtils.lowerCaseCodePoints;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -903,7 +905,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private String generateIndexStoreName(String store){
-        return indexName + INDEX_NAME_SEPARATOR + store.toLowerCase();
+        return indexName + INDEX_NAME_SEPARATOR + store.toLowerCase(Locale.ROOT);
     }
 
     private String getIndexStoreName(String store) {
@@ -1426,20 +1428,20 @@ public class ElasticSearchIndex implements IndexProvider {
                         compat.boolMustNot(compat.matchPhrase(fieldName, value))));
                 } else if (predicate == Text.CONTAINS_PREFIX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
-                        value = ((String) value).toLowerCase();
+                        value = lowerCaseCodePoints((String) value);
                     return compat.prefix(fieldName, value);
                 } else if (predicate == Text.NOT_CONTAINS_PREFIX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
-                        value = ((String) value).toLowerCase();
+                        value = lowerCaseCodePoints((String) value);
                     return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
                         compat.boolMustNot(compat.prefix(fieldName, value))));
                 } else if (predicate == Text.CONTAINS_REGEX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
-                        value = ((String) value).toLowerCase();
+                        value = lowerCaseCodePoints((String) value);
                     return compat.regexp(fieldName, value);
                 } else if (predicate == Text.NOT_CONTAINS_REGEX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
-                        value = ((String) value).toLowerCase();
+                        value = lowerCaseCodePoints((String) value);
                     return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
                         compat.boolMustNot(compat.regexp(fieldName, value))));
                 } else if (predicate == Text.PREFIX) {
@@ -1665,7 +1667,7 @@ public class ElasticSearchIndex implements IndexProvider {
             final Mapping mapping = Mapping.getMapping(information);
             final Class<?> datatype = orderEntry.getDatatype();
             final String key = hasDualStringMapping(information) ? getDualMappingName(orderEntry.getKey()) : orderEntry.getKey();
-            sr.addSort(key, order.toLowerCase(), convertToEsDataType(datatype, mapping));
+            sr.addSort(key, order.toLowerCase(Locale.ROOT), convertToEsDataType(datatype, mapping));
         }
     }
 

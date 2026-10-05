@@ -30,6 +30,8 @@ import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
 import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
 
+import java.util.Locale;
+
 /**
 * @author Matthias Broecheler (me@matthiasb.com)
 */
@@ -87,7 +89,7 @@ public enum ElementCategory {
     }
 
     public String getName() {
-        return toString().toLowerCase();
+        return toString().toLowerCase(Locale.ROOT);
     }
 
     public JanusGraphElement retrieve(Object elementId, JanusGraphTransaction tx) {

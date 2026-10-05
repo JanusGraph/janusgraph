@@ -317,6 +317,26 @@ loaded by class name, so they have to exist in Lucene 9. Lucene 9 renamed the `l
 `lucene-analysis-common` and moved a few analyzers to other packages, for example `ClassicAnalyzer` to
 `org.apache.lucene.analysis.classic` and `UAX29URLEmailAnalyzer` to `org.apache.lucene.analysis.email`.
 
+##### Names, dates and searched text no longer depend on the default locale
+
+JanusGraph converts the case of the names it reads and writes in the root locale, and lower-cases the text it searches
+case-insensitively one code point at a time, as the analyzers of the index backends do. Both followed the JVM's default
+locale. In a Turkish or Azerbaijani locale `I` lower-cases to a dotless `ı` and `i` upper-cases to a dotted `İ`, so with
+such a default locale JanusGraph didn't know a mapping given by its name in lower case (`string`), the type of a
+geoshape built from a JTS geometry (`MultiPoint`), a time unit in upper case (`MINUTES`) or the shorthand of a storage
+backend in upper case (`INMEMORY`), and it let a key or a label be named `ID`, a name which other JVMs reject as a
+system name. It sent Elasticsearch geo queries with relations which Elasticsearch rejects (`wıthın`), named the
+Elasticsearch index of a store whose name holds an `I` otherwise than other JVMs do, and didn't wait for Solr replicas
+which were recovering. The dates sent to Solr are formatted in the root locale too, where a Thai default locale
+formatted them in its own calendar.
+
+Text predicates evaluated in memory, and the text values which JanusGraph lower-cases for Elasticsearch queries and for
+Lucene, now turn the dotted capital `İ` into `i` and a capital sigma at the end of a word into `σ` in every locale, as
+the analyzers do: `String.toLowerCase` made an `i` followed by a combining dot above, and a final sigma, `ς`. A Lucene
+index needs a reindex for queries to find text values holding a dotted capital `İ` or a word-final capital sigma, or an
+`I` written by a JVM with a Turkish or Azerbaijani default locale. A mixed index on Elasticsearch whose store name holds
+an `I` or a dotted capital `İ`, and whose index such a JVM created, needs one too.
+
 ##### Zombie instances auto-close during index status update operations
 
 Starting from version 1.2.0 JanusGraph can automatically force-close JanusGraph instances that are unreachable
