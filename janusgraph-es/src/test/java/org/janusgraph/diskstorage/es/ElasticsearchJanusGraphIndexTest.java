@@ -16,10 +16,13 @@ package org.janusgraph.diskstorage.es;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
@@ -41,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.stream.IntStream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
@@ -330,4 +334,27 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
             .toList().stream().anyMatch(vertex -> addedVertex.id().equals(vertex.id()) && circle.equals(vertex.value("foo")));
     }
 
+    //Elasticsearch answers a geoContains of a geo_shape of several values in BKD by leaving out a document which holds a
+    //value that falls within the shape asked about, while in memory one value which contains the shape is enough: a
+    //query in a transaction finds a vertex once the transaction removed such a value
+    @Test
+    public void testTransactionFindsAVertexWhichARemovalMadeContainAShape() {
+        final PropertyKey shapes = mgmt.makePropertyKey("shapes").dataType(Geoshape.class).cardinality(Cardinality.SET)
+            .make();
+        mgmt.buildIndex("byShapes", Vertex.class).addKey(shapes, Mapping.BKD.asParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex vertex = tx.addVertex();
+        vertex.property(VertexProperty.Cardinality.set, "shapes", Geoshape.box(0, 0, 10, 10));
+        vertex.property(VertexProperty.Cardinality.set, "shapes", Geoshape.point(5, 5));
+        final Object id = vertex.id();
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(id).properties("shapes").hasValue(Geoshape.point(5, 5)).drop().iterate();
+        Assertions.assertEquals(Collections.singletonList(id),
+            g.V().has("shapes", Geo.geoContains(Geoshape.box(4, 4, 6, 6))).id().toList());
+        tx.rollback();
+    }
 }

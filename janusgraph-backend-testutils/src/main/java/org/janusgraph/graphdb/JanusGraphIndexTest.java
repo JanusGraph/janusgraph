@@ -126,6 +126,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -5321,5 +5322,148 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 tListDateFilter, v6, v4, v2
             );
         }
+    }
+
+    //The indexes hold what the vertices held before the transaction: a query in the transaction finds a vertex which a
+    //change made match, whatever the order of its conditions and whichever index holds the changed key, and not under
+    //its old values
+    @Test
+    public void testTransactionFindsVerticesWhichItsChangesMadeMatch() {
+        makeKey("uid", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("byUid", Vertex.class).addKey(mgmt.getPropertyKey("uid")).buildCompositeIndex();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object changed = tx.addVertex("uid", "u1", "name", "a", "age", 20).id();
+        final Object other = tx.addVertex("uid", "u2", "name", "c", "age", 40).id();
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(changed).property("name", "b").property("age", 30).iterate();
+        assertEquals(Collections.singletonList(changed), g.V().has("uid", "u1").has("name", "b").id().toList());
+        assertEquals(Collections.singletonList(changed), g.V().has("name", "b").has("uid", "u1").id().toList());
+        assertEquals(Collections.singletonList(changed), g.V().has("age", P.between(25, 35)).id().toList());
+        //Not counted: a count which the mixed index answers on its own counts what the index holds
+        assertFalse(g.V().has("name", "a").hasNext());
+        assertFalse(g.V().has("uid", "u1").has("name", "a").hasNext());
+        //The index returns the changed vertex too, under its old age: it comes once
+        assertEquals(Arrays.asList(changed, other), g.V().has("age", P.gt(10)).order().by("age").id().toList());
+        tx.rollback();
+    }
+
+    //An index which sorts what it returns sorts the vertices by what they held before the transaction: a query in the
+    //transaction orders the vertices whose order key it changed by what they hold now
+    @Test
+    public void testTransactionOrdersVerticesByWhatItChanged() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object raised = tx.addVertex("kind", "x", "age", 1).id();
+        final Object kept = tx.addVertex("kind", "x", "age", 30).id();
+        final Object lowered = tx.addVertex("kind", "x", "age", 50).id();
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(raised).property("age", 100).iterate();
+        g.V(lowered).property("age", 5).iterate();
+        assertEquals(Collections.singletonList(raised),
+            g.V().has("kind", "x").order().by("age", desc).limit(1).id().toList());
+        assertEquals(Arrays.asList(raised, kept, lowered),
+            g.V().has("kind", "x").order().by("age", desc).id().toList());
+        assertEquals(Arrays.asList(lowered, kept, raised),
+            g.V().has("kind", "x").order().by("age", asc).id().toList());
+        tx.rollback();
+    }
+
+    //A vertex with several values of a key can't be ordered by the key in memory, which an index that sorts by such a
+    //key does on its own: a change of the key in the transaction, or of another order key of the query, leaves the
+    //vertices where the index places them, without failing
+    @Test
+    public void testTransactionKeepsTheIndexOrderOfAKeyOfSeveralValues() {
+        if (!supportsOrderingListProperty) {
+            return;
+        }
+        final PropertyKey gender = makeKey("gender", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        final PropertyKey names = mgmt.makePropertyKey("names").dataType(String.class).cardinality(Cardinality.LIST)
+            .make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(gender, getStringMapping()).addKey(age)
+            .addKey(names, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex two = tx.addVertex("gender", "female", "age", 20);
+        two.property(VertexProperty.Cardinality.list, "names", "a");
+        two.property(VertexProperty.Cardinality.list, "names", "b");
+        final JanusGraphVertex one = tx.addVertex("gender", "female", "age", 30);
+        one.property(VertexProperty.Cardinality.list, "names", "c");
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        final Set<Object> both = new HashSet<>(Arrays.asList(one.id(), two.id()));
+        g.V(one.id()).property(VertexProperty.Cardinality.list, "names", "d").iterate();
+        assertEquals(both, new HashSet<>(g.V().has("gender", "female").order().by("names", desc).id().toList()));
+        //An order key of one value which the transaction changed on a vertex with several values of the first
+        g.V(two.id()).property("age", 40).iterate();
+        assertEquals(both,
+            new HashSet<>(g.V().has("gender", "female").order().by("names", desc).by("age").id().toList()));
+        tx.rollback();
+    }
+
+    //A disjunction, which an index that takes any condition is given whole, finds the vertices which the transaction's
+    //changes made match too
+    @Test
+    public void testTransactionFindsVerticesOfADisjunctionWhichItsChangesMadeMatch() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey tag = makeKey("tag", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).addKey(tag, getStringMapping())
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object bob = tx.addVertex("name", "bob").id();
+        final Object renamed = tx.addVertex("name", "alice").id();
+        tx.addVertex("name", "carol");
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(renamed).property("name", "bob").property("tag", "t2").iterate();
+        final Object added = g.addV().property("tag", "t").next().id();
+        assertEquals(new HashSet<>(Arrays.asList(bob, renamed, added)),
+            new HashSet<>(g.V().or(__.has("name", "bob"), __.has("tag", "t")).id().toList()));
+        assertEquals(new HashSet<>(Arrays.asList(renamed, added)),
+            new HashSet<>(g.V().or(__.has("name", "bob").has("tag", "t2"), __.has("tag", "t")).id().toList()));
+        tx.rollback();
+    }
+
+    //An index may answer a not-equal by leaving out the elements which hold the value, as the vertex did before the
+    //transaction: a query in the transaction finds a vertex once the transaction removed the value
+    @Test
+    public void testTransactionFindsAVertexWhichARemovalMadeMatch() {
+        if (!indexFeatures.supportsCardinality(Cardinality.SET)) {
+            return;
+        }
+        final PropertyKey tags = mgmt.makePropertyKey("tags").dataType(String.class).cardinality(Cardinality.SET)
+            .make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(tags, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex vertex = tx.addVertex();
+        vertex.property(VertexProperty.Cardinality.set, "tags", "red");
+        vertex.property(VertexProperty.Cardinality.set, "tags", "blue");
+        final Object id = vertex.id();
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(id).properties("tags").hasValue("red").drop().iterate();
+        assertEquals(Collections.singletonList(id), g.V().has("tags", P.neq("red")).id().toList());
+        tx.rollback();
     }
 }

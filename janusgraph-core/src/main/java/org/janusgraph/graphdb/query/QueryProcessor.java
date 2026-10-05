@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.QueryException;
+import org.janusgraph.graphdb.query.graph.GraphCentricQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.util.CloseableIteratorUtils;
 
@@ -73,13 +74,23 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
         boolean hasDeletions = executor.hasDeletions(query);
         Iterator<R> newElements = executor.getNew(query);
         if (query.isSorted()) {
+            //An element which this transaction changed may come from the backend of a graph query as well as among
+            //the new elements, so the backend's are left out where they are among those, as below for an unsorted
+            //query. A vertex-centric query's backend returns the relations stored before the transaction, none of which
+            //is new, and of which one the transaction replaced is deleted
+            final List<R> allNew = new ArrayList<>();
+            newElements.forEachRemaining(allNew::add);
+            final Set<R> allNewSet = allNew.isEmpty() || !(query instanceof GraphCentricQuery)
+                ? Collections.emptySet() : new HashSet<>(allNew);
             for (int i = query.numSubQueries() - 1; i >= 0; i--) {
                 BackendQueryHolder<B> subquery = query.getSubQuery(i);
-                CloseableIterator<R> subqueryIterator = getFilterIterator((subquery.isSorted())
-                                                            ? new LimitAdjustingIterator(subquery)
-                                                            : new PreSortingIterator(subquery),
-                                                         hasDeletions,
-                                                         !subquery.isFitted());
+                CloseableIterator<R> subqueryIterator = subquery.isSorted()
+                    ? new LimitAdjustingIterator(subquery) : new PreSortingIterator(subquery);
+                if (!allNewSet.isEmpty()) {
+                    //Left out before they are checked, as the new elements stand for them
+                    subqueryIterator = CloseableIteratorUtils.filter(subqueryIterator, r -> !allNewSet.contains(r));
+                }
+                subqueryIterator = getFilterIterator(subqueryIterator, hasDeletions, !subquery.isFitted());
 
                 iterator = (iterator == null)
                         ? subqueryIterator
@@ -88,9 +99,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
 
             Preconditions.checkArgument(iterator != null);
 
-            if (newElements.hasNext()) {
-                final List<R> allNew = new ArrayList<>();
-                newElements.forEachRemaining(allNew::add);
+            if (!allNew.isEmpty()) {
                 allNew.sort(query.getSortOrder());
                 iterator = new ResultMergeSortIterator<>(allNew.iterator(), iterator,
                     query.getSortOrder(), query.hasDuplicateResults());
