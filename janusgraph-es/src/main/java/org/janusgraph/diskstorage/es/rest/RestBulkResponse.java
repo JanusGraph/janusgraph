@@ -51,10 +51,19 @@ public class RestBulkResponse {
 
         private Object error;
 
+        /**
+         * @deprecated JanusGraph asks Elasticsearch for the errors and the status and error of each item only, so a bulk
+         * response which it reads has no result: this is always {@code null}.
+         */
+        @Deprecated
         public String getResult() {
             return result;
         }
 
+        /**
+         * @deprecated see {@link #getResult()}.
+         */
+        @Deprecated
         public void setResult(String result) {
             this.result = result;
         }

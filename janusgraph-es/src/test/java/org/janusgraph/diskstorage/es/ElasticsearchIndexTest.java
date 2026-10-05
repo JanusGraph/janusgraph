@@ -18,6 +18,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -365,6 +366,33 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         final Object error = failure.getFailedItems().get(0);
         assertTrue(error instanceof Map, String.valueOf(error));
         assertEquals("index_not_found_exception", ((Map<?, ?>) error).get("type"), String.valueOf(error));
+    }
+
+    //A bulk response carries only the fields which the client reads, and every item keeps its status, so the items
+    //still line up with the requests they answer: the documents reported are those whose items failed, whatever
+    //succeeded around them
+    @Test
+    public void testTheFailedItemsOfABulkResponseAreReportedForTheirOwnDocuments() throws Exception {
+        final String indexName = INDEX_NAME.getDefaultValue() + "_bulk_items";
+        final List<ElasticSearchMutation> requests = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            //Even ones create their document. Odd ones update a document which isn't there, without an upsert, which
+            //Elasticsearch answers with a 404 document_missing_exception
+            requests.add(i % 2 == 0
+                ? ElasticSearchMutation.createIndexRequest(indexName, "store", "doc" + i, ImmutableMap.of("field", i))
+                : ElasticSearchMutation.createUpdateRequest(indexName, "store", "doc" + i,
+                    ImmutableMap.builder().put("doc", ImmutableMap.of("field", i)), null));
+        }
+        try (ElasticSearchClient client = ElasticSearchSetup.REST_CLIENT.connect(getESTestConfig()).getClient()) {
+            final ElasticSearchBulkFailureException failure = assertThrows(ElasticSearchBulkFailureException.class,
+                () -> client.bulkRequest(requests, null));
+            assertEquals(Collections.singletonMap("store", ImmutableSet.of("doc1", "doc3", "doc5")),
+                failure.getFailedDocumentsByStore());
+            assertEquals(Collections.singleton(HttpStatus.SC_NOT_FOUND), failure.getFailedItemStatusCodes());
+            assertEquals(3, failure.getFailedItems().size(), failure.getFailedItems().toString());
+        } finally {
+            IOUtils.closeQuietly(httpClient.execute(host, new HttpDelete(indexName)));
+        }
     }
 
     //A read failure whose status is listed in retry-error-codes is classified transient, the way a write failure is,

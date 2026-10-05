@@ -21,11 +21,12 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
+import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
+import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParseException;
-import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonMappingException;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
@@ -49,7 +50,6 @@ import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
 import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
 import org.janusgraph.diskstorage.es.script.ESScriptResponse;
-import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +66,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -73,6 +74,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
 
@@ -95,6 +97,21 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     public static final String INCLUDE_TYPE_NAME_PARAMETER = "include_type_name";
 
     private static final byte[] NEW_LINE_BYTES = "\n".getBytes(UTF8_CHARSET);
+
+    //Room for the action line of an item whose index name and id are of usual lengths, without growing
+    private static final int ACTION_LINE_SIZE = 128;
+
+    //The fields of a bulk response which the client asks for: each item's status and error, and errors, which tells
+    //whether any item failed. Every item keeps its status, so the items still line up with the requests they answer;
+    //everything else Elasticsearch writes for each item (index, id, version, result, shards, sequence number, primary
+    //term) would only be transferred and parsed to be thrown away. The actions are named rather than matched with a
+    //wildcard, so that the query string holds no asterisk, which a request signer would have to percent-encode the way
+    //the cluster does for the signature to match
+    private static final String BULK_RESPONSE_FILTER = "errors,"
+        + Arrays.stream(ElasticSearchMutation.RequestType.values())
+            .map(RestElasticSearchClient::action)
+            .flatMap(action -> Stream.of("items." + action + ".status", "items." + action + ".error"))
+            .collect(Collectors.joining(","));
 
     private static final Request INFO_REQUEST = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR);
 
@@ -457,33 +474,40 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         final String documentId;
 
         @VisibleForTesting
-        RequestBytes(final ElasticSearchMutation request) throws JsonProcessingException {
+        RequestBytes(final ElasticSearchMutation request) throws IOException {
             this.removesContentOnly = request.removesContentOnly();
             this.store = request.getType();
             this.documentId = request.getId();
-            Map<String, Object> requestData = new HashMap<>();
-            if (useMappingTypes) {
-                requestData.put("_index", request.getIndex());
-                requestData.put("_type", request.getType());
-                requestData.put("_id", request.getId());
-            } else {
-                requestData.put("_index", request.getIndex());
-                requestData.put("_id", request.getId());
-            }
-
-            //Elasticsearch's own default is 0, so a request needs the key only above it. Every supported version
-            //reads retry_on_conflict; Elasticsearch 6 merely deprecated the _retry_on_conflict it also accepted
-            if (retryOnConflict != null && retryOnConflict > 0
-                && request.getRequestType() == ElasticSearchMutation.RequestType.UPDATE) {
-                requestData.put("retry_on_conflict", retryOnConflict);
-            }
-
-            this.requestBytes =  mapWriter.writeValueAsBytes(ImmutableMap.of(request.getRequestType().name().toLowerCase(), requestData));
+            this.requestBytes = actionLine(request);
             if (request.getSource() != null) {
                 this.requestSource = mapWriter.writeValueAsBytes(request.getSource());
             } else {
                 this.requestSource = null;
             }
+        }
+
+        //The action line, written field by field. Serializing a map of its fields through the object mapper cost a map,
+        //a serializer lookup and its own generator for each item, about as much as the item's source
+        private byte[] actionLine(final ElasticSearchMutation request) throws IOException {
+            final ByteArrayOutputStream line = new ByteArrayOutputStream(ACTION_LINE_SIZE);
+            try (JsonGenerator generator = mapper.getFactory().createGenerator(line)) {
+                generator.writeStartObject();
+                generator.writeObjectFieldStart(action(request.getRequestType()));
+                generator.writeStringField("_index", request.getIndex());
+                if (useMappingTypes) {
+                    generator.writeStringField("_type", request.getType());
+                }
+                generator.writeStringField("_id", request.getId());
+                //Elasticsearch's own default is 0, so a request needs the key only above it. Every supported version
+                //reads retry_on_conflict; Elasticsearch 6 merely deprecated the _retry_on_conflict it also accepted
+                if (retryOnConflict != null && retryOnConflict > 0
+                    && request.getRequestType() == ElasticSearchMutation.RequestType.UPDATE) {
+                    generator.writeNumberField("retry_on_conflict", retryOnConflict);
+                }
+                generator.writeEndObject();
+                generator.writeEndObject();
+            }
+            return line.toByteArray();
         }
 
         @VisibleForTesting
@@ -507,12 +531,12 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
     }
 
-    private Pair<String, byte[]> buildBulkRequestInput(List<RequestBytes> requests, String ingestPipeline) throws IOException {
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        for (final RequestBytes request : requests) {
-            request.writeTo(outputStream);
-        }
+    //The name of an action in a bulk request, in the root locale: in a Turkish one INDEX lower-cases to ındex
+    private static String action(final ElasticSearchMutation.RequestType requestType) {
+        return requestType.name().toLowerCase(Locale.ROOT);
+    }
 
+    private String bulkRequestPath(String ingestPipeline) {
         final StringBuilder bulkRequestQueryParameters = new StringBuilder();
         if (ingestPipeline != null) {
             APPEND_OP.apply(bulkRequestQueryParameters).append("pipeline=").append(ingestPipeline);
@@ -520,8 +544,170 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         if (bulkRefreshEnabled) {
             APPEND_OP.apply(bulkRequestQueryParameters).append("refresh=").append(bulkRefresh);
         }
-        final String bulkRequestPath = REQUEST_SEPARATOR + "_bulk" + bulkRequestQueryParameters;
-        return Pair.with(bulkRequestPath, outputStream.toByteArray());
+        return REQUEST_SEPARATOR + "_bulk" + bulkRequestQueryParameters;
+    }
+
+    //The body of a bulk request, which it writes from the items' serialized bytes as they are. Copying them into one
+    //array first, through a ByteArrayOutputStream which grows by doubling and then copies itself once more, held up to
+    //three more copies of the body at once, for each attempt. It can be sent again, to another node or by a
+    //reattempt, and it knows its length up front
+    @VisibleForTesting
+    static final class BulkRequestEntity extends AbstractHttpEntity {
+        private final List<RequestBytes> requests;
+        private final long contentLength;
+
+        BulkRequestEntity(final List<RequestBytes> requests) {
+            this.requests = requests;
+            long length = 0;
+            for (final RequestBytes request : requests) {
+                length += request.getSerializedSize();
+            }
+            this.contentLength = length;
+            setContentType(ContentType.APPLICATION_JSON.toString());
+        }
+
+        @Override
+        public boolean isRepeatable() {
+            return true;
+        }
+
+        @Override
+        public long getContentLength() {
+            return contentLength;
+        }
+
+        @Override
+        public InputStream getContent() {
+            return new BulkRequestInputStream(requests, contentLength);
+        }
+
+        @Override
+        public void writeTo(final OutputStream outputStream) throws IOException {
+            for (final RequestBytes request : requests) {
+                request.writeTo(outputStream);
+            }
+        }
+
+        @Override
+        public boolean isStreaming() {
+            return false;
+        }
+    }
+
+    //Reads the items' bytes in the order the entity writes them: each item's action line and a new line, then its
+    //source and another new line if it has one. It behaves as a ByteArrayInputStream over the whole body would: a read
+    //fills as much of the buffer as it can, across items, available() counts what is left, and it supports mark and
+    //reset, which request signers such as those of the AWS SDK use to hash the body before it is sent
+    private static final class BulkRequestInputStream extends InputStream {
+        //The parts of an item: its action line, a new line, its source and a new line. An item without a source has
+        //only the first two
+        private static final int ACTION = 0;
+        private static final int SOURCE = 2;
+        private static final int PARTS = 4;
+
+        private final List<RequestBytes> requests;
+        //Where the stream is: the item, -1 before the first, its part, PARTS before the first and at the end, the
+        //position in the part, and the bytes left
+        private int request = -1;
+        private int part = PARTS;
+        private int position;
+        private long remaining;
+        private byte[] current;
+        //Where reset() goes back to, the start unless mark() was called
+        private int markedRequest = -1;
+        private int markedPart = PARTS;
+        private int markedPosition;
+        private long markedRemaining;
+
+        private BulkRequestInputStream(final List<RequestBytes> requests, final long contentLength) {
+            this.requests = requests;
+            this.remaining = contentLength;
+            this.markedRemaining = contentLength;
+        }
+
+        private byte[] partBytes() {
+            if (request < 0 || part == PARTS) {
+                return null;
+            }
+            final RequestBytes item = requests.get(request);
+            return part == ACTION ? item.requestBytes : part == SOURCE ? item.requestSource : NEW_LINE_BYTES;
+        }
+
+        //Moves on to the next part which has bytes left; false at the end of the body
+        private boolean hasRemaining() {
+            while (current == null || position == current.length) {
+                if (request >= 0 && part < PARTS) {
+                    part++;
+                    if (part == SOURCE && requests.get(request).requestSource == null) {
+                        part = PARTS;
+                    }
+                }
+                if (part == PARTS) {
+                    if (request + 1 >= requests.size()) {
+                        return false;
+                    }
+                    request++;
+                    part = ACTION;
+                }
+                current = partBytes();
+                position = 0;
+            }
+            return true;
+        }
+
+        @Override
+        public int read() {
+            if (!hasRemaining()) {
+                return -1;
+            }
+            remaining--;
+            return current[position++] & 0xFF;
+        }
+
+        @Override
+        public int read(final byte[] buffer, final int offset, final int length) {
+            Objects.checkFromIndexSize(offset, length, buffer.length);
+            if (length == 0) {
+                return 0;
+            }
+            int read = 0;
+            while (read < length && hasRemaining()) {
+                final int count = Math.min(length - read, current.length - position);
+                System.arraycopy(current, position, buffer, offset + read, count);
+                position += count;
+                read += count;
+            }
+            remaining -= read;
+            return read == 0 ? -1 : read;
+        }
+
+        @Override
+        public int available() {
+            return (int) Math.min(remaining, Integer.MAX_VALUE);
+        }
+
+        @Override
+        public boolean markSupported() {
+            return true;
+        }
+
+        //The whole body is in memory, so a mark holds however far the stream is read after it
+        @Override
+        public void mark(final int readLimit) {
+            markedRequest = request;
+            markedPart = part;
+            markedPosition = position;
+            markedRemaining = remaining;
+        }
+
+        @Override
+        public void reset() {
+            request = markedRequest;
+            part = markedPart;
+            position = markedPosition;
+            remaining = markedRemaining;
+            current = partBytes();
+        }
     }
 
     private List<Triplet<Object, Integer, RequestBytes>> pairErrorsWithSubmittedMutation(
@@ -591,7 +777,7 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         private final Map<String, Set<String>> oversizedDocumentsByStore = new HashMap<>();
 
         @VisibleForTesting
-        BulkRequestChunker(List<ElasticSearchMutation> requests) throws JsonProcessingException {
+        BulkRequestChunker(List<ElasticSearchMutation> requests) throws IOException {
             List<RequestBytes> serializedRequests = new ArrayList<>(requests.size());
             List<Integer> requestSizesThatWereTooLarge = new ArrayList<>();
             for (ElasticSearchMutation request : requests) {
@@ -664,13 +850,15 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public void bulkRequest(final List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException {
+        final String bulkRequestPath = bulkRequestPath(ingestPipeline);
         BulkRequestChunker bulkRequestChunker = new BulkRequestChunker(requests);
         while (bulkRequestChunker.hasNext()) {
             List<RequestBytes> bulkRequestChunk = bulkRequestChunker.next();
             int retryCount = 0;
             while (true) {
-                final Pair<String, byte[]> bulkRequestInput = buildBulkRequestInput(bulkRequestChunk, ingestPipeline);
-                final Response response = performRequest(REQUEST_TYPE_POST, bulkRequestInput.getValue0(), bulkRequestInput.getValue1());
+                final Request bulkRequest = new Request(REQUEST_TYPE_POST, bulkRequestPath);
+                bulkRequest.addParameter("filter_path", BULK_RESPONSE_FILTER);
+                final Response response = performRequestWithEntity(bulkRequest, new BulkRequestEntity(bulkRequestChunk));
                 try (final InputStream inputStream = response.getEntity().getContent()) {
                     final RestBulkResponse bulkResponse = mapper.readValue(inputStream, RestBulkResponse.class);
                     List<Triplet<Object, Integer, RequestBytes>> bulkItemsThatFailed = pairErrorsWithSubmittedMutation(bulkResponse.getItems(), bulkRequestChunk);
@@ -929,8 +1117,11 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     }
 
     private Response performRequest(Request request, byte[] requestData) throws IOException {
+        return performRequestWithEntity(request,
+            requestData != null ? new ByteArrayEntity(requestData, ContentType.APPLICATION_JSON) : null);
+    }
 
-        final HttpEntity entity = requestData != null ? new ByteArrayEntity(requestData, ContentType.APPLICATION_JSON) : null;
+    private Response performRequestWithEntity(Request request, HttpEntity entity) throws IOException {
 
         request.setEntity(entity);
 

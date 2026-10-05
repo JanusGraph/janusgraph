@@ -819,6 +819,24 @@ which takes 20 ms to answer three times as many. The new option `index.[X].elast
 I/O threads of each client, which is otherwise the number of processors, for every index backend of every graph, and
 `index.[X].elasticsearch.compression` compresses requests and responses with gzip.
 
+##### Elasticsearch bulk requests take less memory
+
+Without compression, the Elasticsearch client sends the body of a bulk request from the documents' serialized bytes as
+they are. It used to copy them into one array first, through a buffer which grows by doubling, so that a chunk of a bulk
+request, up to `index.[X].elasticsearch.bulk-chunk-size-limit-bytes` (100 MB by default), held up to three more copies
+of its body on the heap, on every attempt. With `index.[X].elasticsearch.compression` the client still holds the
+compressed body. A bulk request also asks Elasticsearch only for each item's status and error and for whether any item
+failed (`filter_path`), about a seventh of the response, and writes the action line of each document without building
+a map for it. A bulk of 50,000 documents of 1 KB each completes in a heap of 144 MB, where it needed 320 MB or more, and
+allocates a third as much.
+
+The action of a document is now named in the root locale. Under a Turkish default locale, the client named the
+index action `ındex`, with a dotless i, and Elasticsearch rejected the whole bulk request which held it: every bulk
+request with a new document, or with documents restored by a reindex, failed.
+
+`RestBulkResponse.RestBulkItemResponse.getResult()` is deprecated. A bulk response no longer carries the result of an
+item, so it returns `null`.
+
 ##### Conflicting Elasticsearch updates are reattempted
 
 Transactions which change the same element concurrently also update its document in a mixed index concurrently, and
