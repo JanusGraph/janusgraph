@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
+import org.apache.http.entity.ContentType;
+import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
@@ -33,10 +35,14 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.IntStream;
 
@@ -101,6 +107,195 @@ public class RestClientBulkRequestsTest {
         final Map<String, Object> actionLine = new ObjectMapper().readValue(request.requestBytes, Map.class);
         Assertions.assertEquals(Collections.singleton(type), actionLine.keySet());
         return (Map<String, Object>) actionLine.get(type);
+    }
+
+    //The action line names the operation, the index, the mapping type up to Elasticsearch 6 and the id, whatever
+    //characters they hold, and whatever the JVM's default locale makes of the operation's name: Turkish lower cases the
+    //I of INDEX to a dotless i
+    @Test
+    public void testTheActionLineOfEachOperation() throws IOException {
+        final String id = "quote\" backslash\\ bullet\u2022";
+        final Locale defaultLocale = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+        try (RestElasticSearchClient restClientUnderTest = createClient(100_000_000)) {
+            restClientUnderTest.setRetryOnConflict(3);
+            Assertions.assertEquals(ImmutableMap.of("index", ImmutableMap.of("_index", "some_index", "_id", id)),
+                actionLine(restClientUnderTest.new RequestBytes(ElasticSearchMutation.createIndexRequest("some_index",
+                    "some_type", id, ImmutableMap.of("name", "value")))));
+            Assertions.assertEquals(ImmutableMap.of("update",
+                    ImmutableMap.of("_index", "some_index", "_id", id, "retry_on_conflict", 3)),
+                actionLine(restClientUnderTest.new RequestBytes(ElasticSearchMutation.createUpdateRequest("some_index",
+                    "some_type", id, ImmutableMap.of("doc", ImmutableMap.of("name", "value"))))));
+            Assertions.assertEquals(ImmutableMap.of("delete", ImmutableMap.of("_index", "some_index", "_id", id)),
+                actionLine(restClientUnderTest.new RequestBytes(ElasticSearchMutation.createDeleteRequest("some_index",
+                    "some_type", id))));
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
+        try (RestElasticSearchClient elasticsearch6 = new RestElasticSearchClient(restClientMock, 0, false, 0,
+            Collections.emptySet(), 0, 0, 100_000_000, ElasticMajorVersion.SIX)) {
+            Assertions.assertEquals(ImmutableMap.of("delete",
+                    ImmutableMap.of("_index", "some_index", "_type", "some_type", "_id", "some_doc_id")),
+                actionLine(elasticsearch6.new RequestBytes(ElasticSearchMutation.createDeleteRequest("some_index",
+                    "some_type", "some_doc_id"))));
+        }
+    }
+
+    private static Map<?, ?> actionLine(RestElasticSearchClient.RequestBytes request) throws IOException {
+        return new ObjectMapper().readValue(request.requestBytes, Map.class);
+    }
+
+    //An item of every shape: with a source (an index request and an update's script), without one (a deletion), and
+    //values outside ASCII, whose bytes are more than their characters
+    private static List<RestElasticSearchClient.RequestBytes> requestsOfEveryShape(RestElasticSearchClient client)
+        throws IOException {
+        return Arrays.asList(
+            client.new RequestBytes(ElasticSearchMutation.createIndexRequest("some_index", "some_type", "doc1",
+                ImmutableMap.of("name", "\u00fcml\u00e4ut", "count", 3))),
+            client.new RequestBytes(ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "doc2")),
+            client.new RequestBytes(ElasticSearchMutation.createUpdateRequest("some_index", "some_type", "doc3",
+                ImmutableMap.of("script", ImmutableMap.of("id", "some_script", "params", ImmutableMap.of("v", 1))))),
+            client.new RequestBytes(ElasticSearchMutation.createDeleteRequest("some_index", "some_type", "doc4")));
+    }
+
+    //What the ByteArrayOutputStream which the entity replaces put together: each item's action line and a new line,
+    //then its source and another new line if it has one
+    private static byte[] concatenated(List<RestElasticSearchClient.RequestBytes> requests) throws IOException {
+        final ByteArrayOutputStream body = new ByteArrayOutputStream();
+        for (final RestElasticSearchClient.RequestBytes request : requests) {
+            body.write(request.requestBytes);
+            body.write('\n');
+            if (request.requestSource != null) {
+                body.write(request.requestSource);
+                body.write('\n');
+            }
+        }
+        return body.toByteArray();
+    }
+
+    @Test
+    public void testTheBodyIsTheItemsBytesInTheirOrder() throws IOException {
+        try (RestElasticSearchClient restClientUnderTest = createClient(100_000_000)) {
+            final List<RestElasticSearchClient.RequestBytes> requests = requestsOfEveryShape(restClientUnderTest);
+            final byte[] expected = concatenated(requests);
+            final RestElasticSearchClient.BulkRequestEntity entity = new RestElasticSearchClient.BulkRequestEntity(requests);
+
+            Assertions.assertEquals(expected.length, entity.getContentLength());
+            Assertions.assertEquals(ContentType.APPLICATION_JSON.toString(), entity.getContentType().getValue());
+            Assertions.assertTrue(entity.isRepeatable());
+            Assertions.assertFalse(entity.isStreaming());
+            final ByteArrayOutputStream written = new ByteArrayOutputStream();
+            entity.writeTo(written);
+            Assertions.assertArrayEquals(expected, written.toByteArray());
+            //Read twice, as a reattempt against another node would
+            Assertions.assertArrayEquals(expected, EntityUtils.toByteArray(entity));
+            Assertions.assertArrayEquals(expected, EntityUtils.toByteArray(entity));
+
+            final RestElasticSearchClient.BulkRequestEntity empty = new RestElasticSearchClient.BulkRequestEntity(
+                Collections.emptyList());
+            Assertions.assertEquals(0, empty.getContentLength());
+            Assertions.assertEquals(-1, empty.getContent().read());
+        }
+    }
+
+    //The HTTP client reads the body through a channel, which stops at the first read after which nothing is
+    //available, so a read fills what it can across items and available() counts what is left
+    @Test
+    public void testTheBodyIsReadAcrossItemsInBuffersOfAnySize() throws IOException {
+        try (RestElasticSearchClient restClientUnderTest = createClient(100_000_000)) {
+            final byte[] expected = concatenated(requestsOfEveryShape(restClientUnderTest));
+            final RestElasticSearchClient.BulkRequestEntity entity =
+                new RestElasticSearchClient.BulkRequestEntity(requestsOfEveryShape(restClientUnderTest));
+            for (final int bufferSize : new int[] {1, 2, 3, 7, 64, expected.length, expected.length + 10}) {
+                final ByteArrayOutputStream read = new ByteArrayOutputStream();
+                try (InputStream content = entity.getContent()) {
+                    Assertions.assertEquals(expected.length, content.available());
+                    //The bytes go behind an offset, to see that reads respect it
+                    final byte[] buffer = new byte[bufferSize + 2];
+                    int count;
+                    while ((count = content.read(buffer, 2, bufferSize)) != -1) {
+                        //Every read fills the buffer, whatever the items' boundaries, but the last
+                        Assertions.assertTrue(count == bufferSize || read.size() + count == expected.length,
+                            "a read of " + count + " into " + bufferSize);
+                        read.write(buffer, 2, count);
+                        Assertions.assertEquals(expected.length - read.size(), content.available());
+                    }
+                    Assertions.assertEquals(-1, content.read(buffer, 2, bufferSize));
+                    Assertions.assertEquals(-1, content.read());
+                    Assertions.assertEquals(0, content.read(buffer, 0, 0));
+                }
+                Assertions.assertArrayEquals(expected, read.toByteArray(), "buffers of " + bufferSize);
+            }
+            final ByteArrayOutputStream byteByByte = new ByteArrayOutputStream();
+            try (InputStream content = entity.getContent()) {
+                int b;
+                while ((b = content.read()) != -1) {
+                    byteByByte.write(b);
+                    Assertions.assertEquals(expected.length - byteByByte.size(), content.available());
+                }
+            }
+            Assertions.assertArrayEquals(expected, byteByByte.toByteArray());
+        }
+    }
+
+    //Request signers, such as those of the AWS SDK, mark the body, read it whole to hash it and reset it before it is
+    //sent, which a ByteArrayInputStream over the body supported
+    @Test
+    public void testTheBodyCanBeReadAgainFromAMark() throws IOException {
+        try (RestElasticSearchClient restClientUnderTest = createClient(100_000_000)) {
+            final byte[] expected = concatenated(requestsOfEveryShape(restClientUnderTest));
+            final RestElasticSearchClient.BulkRequestEntity entity =
+                new RestElasticSearchClient.BulkRequestEntity(requestsOfEveryShape(restClientUnderTest));
+            try (InputStream content = entity.getContent()) {
+                Assertions.assertTrue(content.markSupported());
+                //Without a mark, reset goes back to the start
+                Assertions.assertArrayEquals(expected, content.readAllBytes());
+                content.reset();
+                Assertions.assertEquals(expected.length, content.available());
+                Assertions.assertArrayEquals(expected, content.readAllBytes());
+            }
+            //From every position: in the middle of a part, at the end of one, and at the end of the body
+            for (int marked = 0; marked <= expected.length; marked++) {
+                final byte[] rest = Arrays.copyOfRange(expected, marked, expected.length);
+                try (InputStream content = entity.getContent()) {
+                    Assertions.assertArrayEquals(Arrays.copyOfRange(expected, 0, marked), content.readNBytes(marked));
+                    content.mark(0);
+                    Assertions.assertArrayEquals(rest, content.readAllBytes(), "read from " + marked);
+                    Assertions.assertEquals(0, content.available());
+                    content.reset();
+                    Assertions.assertEquals(rest.length, content.available(), "available again from " + marked);
+                    Assertions.assertArrayEquals(rest, content.readAllBytes(), "read again from " + marked);
+                }
+            }
+        }
+    }
+
+    //A bulk request sends its items' bytes, and asks for the fields of the response which the client reads
+    @Test
+    public void testABulkRequestAsksForTheFieldsOfTheResponseWhichItReads() throws IOException {
+        when(statusLine.getStatusCode()).thenReturn(200);
+        final HttpEntity responseEntity = mock(HttpEntity.class);
+        when(responseEntity.getContent()).thenReturn(new ByteArrayInputStream(
+            "{\"errors\":false,\"items\":[{\"index\":{\"status\":201}}]}".getBytes(StandardCharsets.UTF_8)));
+        when(response.getEntity()).thenReturn(responseEntity);
+        when(response.getStatusLine()).thenReturn(statusLine);
+        final ElasticSearchMutation mutation = ElasticSearchMutation.createIndexRequest("some_index", "some_type",
+            "some_doc_id", Collections.singletonMap("someKey", "value"));
+        try (RestElasticSearchClient restClientUnderTest = createClient(100_000_000)) {
+            when(restClientMock.performRequest(any())).thenReturn(response);
+            restClientUnderTest.bulkRequest(Collections.singletonList(mutation), "some_pipeline");
+
+            verify(restClientMock).performRequest(requestCaptor.capture());
+            final Request request = requestCaptor.getValue();
+            Assertions.assertEquals("POST", request.getMethod());
+            Assertions.assertEquals("/_bulk?pipeline=some_pipeline", request.getEndpoint());
+            Assertions.assertEquals(Collections.singletonMap("filter_path", "errors,items.index.status,items.index.error,"
+                    + "items.update.status,items.update.error,items.delete.status,items.delete.error"),
+                request.getParameters());
+            Assertions.assertArrayEquals(
+                concatenated(Collections.singletonList(restClientUnderTest.new RequestBytes(mutation))),
+                EntityUtils.toByteArray(request.getEntity()));
+        }
     }
 
     @Test

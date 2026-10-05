@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
+import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
@@ -128,6 +129,10 @@ public class RestClientRetryTest {
             //Verify that despite only calling bulkRequest once, we had 2 calls to the underlying rest client's
             //perform request (due to the retried failure)
             verify(restClientMock, times(2)).performRequest(requestCaptor.capture());
+            //The reattempt sends the failed item alone
+            final String reattempt = EntityUtils.toString(requestCaptor.getAllValues().get(1).getEntity());
+            Assertions.assertTrue(reattempt.contains("some_doc_id2"), reattempt);
+            Assertions.assertFalse(reattempt.contains("some_doc_id1") || reattempt.contains("some_doc_id3"), reattempt);
         }
     }
 
