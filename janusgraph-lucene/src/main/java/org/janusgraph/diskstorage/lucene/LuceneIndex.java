@@ -134,6 +134,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.janusgraph.util.StringUtils.lowerCaseCodePoints;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -455,7 +457,7 @@ public class LuceneIndex implements IndexProvider {
         } else if (AttributeUtils.isString(value)) {
             Mapping mapping = Mapping.getMapping(ki);
             if (mapping == Mapping.DEFAULT || mapping == Mapping.TEXT || mapping == Mapping.TEXTSTRING) {
-                converted = ((String) value).toLowerCase();
+                converted = lowerCaseCodePoints((String) value);
             } else {
                 converted = (String) value;
             }
@@ -489,7 +491,7 @@ public class LuceneIndex implements IndexProvider {
                 case TEXTSTRING:
                 case TEXT:
                     // lowering the case for case insensitive text search
-                    field = new TextField(fieldName, str.toLowerCase(), Field.Store.YES);
+                    field = new TextField(fieldName, lowerCaseCodePoints(str), Field.Store.YES);
                     break;
                 case STRING:
                     // if this field uses a custom analyzer, it must be stored as a TextField
@@ -709,7 +711,7 @@ public class LuceneIndex implements IndexProvider {
                 if (mapping == Mapping.STRING) {
                     term = new Term(key, value);
                 } else {
-                    term = new Term(key, value.toLowerCase());
+                    term = new Term(key, lowerCaseCodePoints(value));
                 }
                 params.addQuery(new PrefixQuery(term), BooleanClause.Occur.MUST);
             }
@@ -727,7 +729,7 @@ public class LuceneIndex implements IndexProvider {
             } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
                 List<String> preparedTerms = new ArrayList<>(terms.get(0));
                 if (mapping != Mapping.STRING) {
-                    preparedTerms = terms.get(0).stream().map(String::toLowerCase).collect(Collectors.toList());
+                    preparedTerms = terms.get(0).stream().map(term -> lowerCaseCodePoints(term)).collect(Collectors.toList());
                 }
                 params.addQuery(combineTerms(key, preparedTerms, PrefixQuery::new), BooleanClause.Occur.MUST);
             } else throw new IllegalArgumentException("LuceneIndex does not support this predicate with 1 token : " + janusgraphPredicate);
@@ -848,7 +850,7 @@ public class LuceneIndex implements IndexProvider {
                     if (map == Mapping.STRING && Text.HAS_CONTAINS.contains(janusgraphPredicate))
                         throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusgraphPredicate);
                     if (janusgraphPredicate == Text.CONTAINS) {
-                        tokenize(params, map, delegatingAnalyzer, ((String) value).toLowerCase(), key, janusgraphPredicate);
+                        tokenize(params, map, delegatingAnalyzer, lowerCaseCodePoints((String) value), key, janusgraphPredicate);
                     } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
                         tokenize(params, map, delegatingAnalyzer, (String) value, key, janusgraphPredicate);
                     } else if (janusgraphPredicate == Text.PREFIX) {
@@ -859,14 +861,14 @@ public class LuceneIndex implements IndexProvider {
                     } else if (janusgraphPredicate == Text.CONTAINS_REGEX) {
                         // This is terrible -- there is probably a better way
                         // putting this to lowercase because Text search is supposed to be case insensitive
-                        final RegexpQuery rq = new RegexpQuery(new Term(key, ".*" + (((String) value).toLowerCase()) + ".*"));
+                        final RegexpQuery rq = new RegexpQuery(new Term(key, ".*" + lowerCaseCodePoints((String) value) + ".*"));
                         params.addQuery(rq);
                     } else if (janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Cmp.NOT_EQUAL) {
                         tokenize(params, map, delegatingAnalyzer, (String) value, stringFieldKey, janusgraphPredicate);
                     } else if (janusgraphPredicate == Text.FUZZY) {
                         params.addQuery(new FuzzyQuery(new Term(stringFieldKey, (String) value), Text.getMaxEditDistance((String) value)));
                     } else if (janusgraphPredicate == Text.CONTAINS_FUZZY) {
-                        value = ((String) value).toLowerCase();
+                        value = lowerCaseCodePoints((String) value);
                         final Builder b = new BooleanQuery.Builder();
                         for (final String term : Text.tokenize((String) value)) {
                             b.add(new FuzzyQuery(new Term(key, term), Text.getMaxEditDistance(term)), BooleanClause.Occur.MUST);

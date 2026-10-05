@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.solr;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
@@ -118,6 +119,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -1109,9 +1111,17 @@ public class SolrIndex implements IndexProvider {
         }
     }
 
-    private String toIsoDate(Date value) {
+    /**
+     * A date as Solr reads it: an ISO 8601 instant in UTC, with milliseconds, in the Gregorian calendar of the root
+     * locale whatever the calendar of the default locale is.
+     *
+     * @param value the date
+     * @return the date as {@code yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}
+     */
+    @VisibleForTesting
+    static String toIsoDate(Date value) {
         final TimeZone tz = TimeZone.getTimeZone("UTC");
-        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
         df.setTimeZone(tz);
         return df.format(value);
     }
@@ -1478,7 +1488,7 @@ public class SolrIndex implements IndexProvider {
                for (final Map.Entry<String, Slice> entry : slices.entrySet()) {
                     final Map<String, Replica> shards = entry.getValue().getReplicasMap();
                     for (final Map.Entry<String, Replica> shard : shards.entrySet()) {
-                        final String state = shard.getValue().getStr(ZkStateReader.STATE_PROP).toUpperCase();
+                        final String state = shard.getValue().getStr(ZkStateReader.STATE_PROP).toUpperCase(Locale.ROOT);
                         if ((Replica.State.RECOVERING.name().equals(state) || Replica.State.DOWN.name().equals(state))
                                 && clusterState.liveNodesContain(shard.getValue().getStr(
                                 ZkStateReader.NODE_NAME_PROP))) {

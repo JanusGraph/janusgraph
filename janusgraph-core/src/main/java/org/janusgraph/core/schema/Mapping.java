@@ -18,6 +18,8 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.graphdb.types.ParameterType;
 
+import java.util.Locale;
+
 /**
  * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
  * {@link JanusGraphManagement#addIndexKey(JanusGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}.
@@ -55,7 +57,7 @@ public enum Mapping {
         else {
             Preconditions.checkArgument((value instanceof Mapping || value instanceof String),"Invalid mapping specified: %s",value);
             if (value instanceof String) {
-                value = Mapping.valueOf(value.toString().toUpperCase());
+                value = Mapping.valueOf(value.toString().toUpperCase(Locale.ROOT));
             }
             return (Mapping)value;
         }

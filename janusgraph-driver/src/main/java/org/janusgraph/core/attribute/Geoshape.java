@@ -54,6 +54,7 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -108,7 +109,7 @@ public class Geoshape {
         }
 
         public static Type fromGson(String gsonShape) {
-            return Type.valueOf(gsonShape.toUpperCase());
+            return Type.valueOf(gsonShape.toUpperCase(Locale.ROOT));
         }
 
         @Override

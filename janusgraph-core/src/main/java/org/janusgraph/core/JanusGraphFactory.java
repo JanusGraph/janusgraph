@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.regex.Pattern;
@@ -326,7 +327,7 @@ public class JanusGraphFactory {
             int pos = shortcutOrFile.indexOf(':');
             if (pos<0) pos = shortcutOrFile.length();
             String backend = shortcutOrFile.substring(0,pos);
-            Preconditions.checkArgument(StandardStoreManager.getAllManagerClasses().containsKey(backend.toLowerCase()), "Backend shorthand unknown: %s", backend);
+            Preconditions.checkArgument(StandardStoreManager.getAllManagerClasses().containsKey(backend.toLowerCase(Locale.ROOT)), "Backend shorthand unknown: %s", backend);
             String secondArg = null;
             if (pos+1<shortcutOrFile.length()) secondArg = shortcutOrFile.substring(pos + 1).trim();
             BaseConfiguration config = ConfigurationUtil.createBaseConfiguration();

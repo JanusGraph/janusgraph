@@ -26,6 +26,7 @@ import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -192,7 +193,7 @@ public abstract class AbstractESCompat {
     }
 
     public Map<String,Object> geoShape(String key, Map<String,Object> geoShape, Geo predicate) {
-        final String relation = predicate == Geo.INTERSECT ? "intersects" : predicate.name().toLowerCase();
+        final String relation = predicate == Geo.INTERSECT ? "intersects" : predicate.name().toLowerCase(Locale.ROOT);
         return filter(ImmutableMap.of("geo_shape", ImmutableMap.of(key, ImmutableMap.of("shape", geoShape, "relation", relation))));
     }
 

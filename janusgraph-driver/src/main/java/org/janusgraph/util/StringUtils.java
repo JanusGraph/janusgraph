@@ -58,4 +58,33 @@ public class StringUtils {
     private static <E> String join(Stream<E> elements, String separator) {
         return elements.map(String::valueOf).collect(Collectors.joining(separator));
     }
+
+    /**
+     * Lower-cases text the way the analyzers of the index backends do: one code point at a time, with
+     * {@link Character#toLowerCase(int)}, as Lucene's {@code LowerCaseFilter} does in the standard analyzers of
+     * Elasticsearch, Solr and Lucene. {@link String#toLowerCase(java.util.Locale)} differs from it in any locale for the
+     * dotted capital I, U+0130, which it turns into an i followed by a combining dot above, and for a capital sigma at
+     * the end of a word, which it turns into a final sigma; and in a Turkish or Azerbaijani locale it turns I into a
+     * dotless i.
+     *
+     * @param text the text to lower-case
+     * @return the text lower-cased, the same instance if it holds nothing to lower-case
+     */
+    public static String lowerCaseCodePoints(String text) {
+        final int length = text.length();
+        for (int i = 0; i < length; ) {
+            final int codePoint = text.codePointAt(i);
+            if (Character.toLowerCase(codePoint) != codePoint) {
+                final StringBuilder lowerCased = new StringBuilder(length).append(text, 0, i);
+                for (int j = i; j < length; ) {
+                    final int next = text.codePointAt(j);
+                    lowerCased.appendCodePoint(Character.toLowerCase(next));
+                    j += Character.charCount(next);
+                }
+                return lowerCased.toString();
+            }
+            i += Character.charCount(codePoint);
+        }
+        return text;
+    }
 }

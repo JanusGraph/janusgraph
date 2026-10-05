@@ -74,6 +74,7 @@ import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -554,8 +555,9 @@ public class Backend implements LockerProvider, AutoCloseable {
     }
 
     public static <T> T getImplementationClass(Configuration config, String className, Map<String, String> registeredImplementations) {
-        if (registeredImplementations.containsKey(className.toLowerCase())) {
-            className = registeredImplementations.get(className.toLowerCase());
+        final String shorthand = className.toLowerCase(Locale.ROOT);
+        if (registeredImplementations.containsKey(shorthand)) {
+            className = registeredImplementations.get(shorthand);
         }
 
         return ConfigurationUtil.instantiate(className, new Object[]{config}, new Class[]{Configuration.class});
@@ -692,7 +694,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         if (null == shorthand)
             return null;
 
-        shorthand = shorthand.toLowerCase();
+        shorthand = shorthand.toLowerCase(Locale.ROOT);
 
         for (StandardStoreManager m : STORE_SHORTHAND_OPTIONS.keySet()) {
             if (m.getShorthands().contains(shorthand))

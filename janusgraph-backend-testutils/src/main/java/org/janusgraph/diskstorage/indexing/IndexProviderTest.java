@@ -48,6 +48,8 @@ import org.junit.Assume;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
@@ -60,6 +62,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -1311,6 +1314,48 @@ public abstract class IndexProviderTest {
 
     protected long getDocCountByPredicate(JanusGraphPredicate predicate, String field, String condition) throws BackendException {
         return tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(field, predicate, condition))).count();
+    }
+
+    // The analyzers of the index backends lower-case one code point at a time, which turns the dotted capital I into an
+    // i. String.toLowerCase, which JanusGraph used on the text it lower-cases itself, turns it into an i followed by a
+    // combining dot above, which neither matches the analyzed tokens nor keeps a token whole
+    @Test
+    public void textQueriesFindTheDottedCapitalI() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Multimap<String, Object> doc = HashMultimap.create();
+        doc.put(TEXT, "\u0130STANBUL \u0130ZM\u0130R");
+        add(store, "doc1", doc, true);
+        clopen();
+        assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS, "istanbul"));
+        assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS, "\u0130stanbul"));
+        assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS_PREFIX, "izm"));
+        assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS_PREFIX, "\u0130zm"));
+    }
+
+    // A Turkish default locale lower-cases I to a dotless i, which the analyzers of the index backends don't. The
+    // document is written in the default locale of the test; the queries run in a Turkish one
+    @Test
+    @ResourceLock(Resources.LOCALE)
+    public void textQueriesFindTheCapitalIInATurkishDefaultLocale() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Multimap<String, Object> doc = HashMultimap.create();
+        doc.put(TEXT, "ISPARTA");
+        add(store, "doc1", doc, true);
+        clopen();
+        final Locale defaultLocale = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+        try {
+            assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS, "ISPARTA"));
+            assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS_PREFIX, "ISP"));
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
+    }
+
+    private List<String> textQuery(String store, JanusGraphPredicate predicate, String value) throws BackendException {
+        return tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, predicate, value))).collect(Collectors.toList());
     }
 
     private void testPredicateByCount(long expectation, JanusGraphPredicate predicate, String field, String condition) throws BackendException {

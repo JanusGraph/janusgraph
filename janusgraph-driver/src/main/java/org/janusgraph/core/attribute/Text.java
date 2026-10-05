@@ -29,6 +29,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.janusgraph.util.StringUtils.lowerCaseCodePoints;
+
 /**
  * Comparison relations for text objects. These comparisons are based on a tokenized representation
  * of the text, i.e. the text is considered as a set of word tokens.
@@ -51,9 +53,9 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean evaluateRaw(String value, String terms) {
-            Set<String> tokens = new HashSet<>(tokenize(value.toLowerCase()));
+            Set<String> tokens = new HashSet<>(tokenize(lowerCaseCodePoints(value)));
             terms = terms.trim();
-            List<String> tokenTerms = tokenize(terms.toLowerCase());
+            List<String> tokenTerms = tokenize(lowerCaseCodePoints(terms));
             if (!terms.isEmpty() && tokenTerms.isEmpty()) return false;
             for (String term : tokenTerms) {
                 if (!tokens.contains(term)) return false;
@@ -134,8 +136,9 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean evaluateRaw(String value, String prefix) {
-            for (String token : tokenize(value.toLowerCase())) {
-                if (PREFIX.evaluateRaw(token,prefix.toLowerCase())) return true;
+            final String lowerCasePrefix = lowerCaseCodePoints(prefix);
+            for (String token : tokenize(lowerCaseCodePoints(value))) {
+                if (PREFIX.evaluateRaw(token, lowerCasePrefix)) return true;
             }
             return false;
         }
@@ -213,7 +216,7 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean evaluateRaw(String value, String regex) {
-            for (String token : tokenize(value.toLowerCase())) {
+            for (String token : tokenize(lowerCaseCodePoints(value))) {
                 if (REGEX.evaluateRaw(token,regex)) return true;
             }
             return false;
@@ -528,8 +531,9 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean evaluateRaw(String value, String term) {
-            for (String token : tokenize(value.toLowerCase())) {
-                if (isFuzzy(term.toLowerCase(), token)) return true;
+            final String lowerCaseTerm = lowerCaseCodePoints(term);
+            for (String token : tokenize(lowerCaseCodePoints(value))) {
+                if (isFuzzy(lowerCaseTerm, token)) return true;
             }
             return false;
         }
@@ -611,8 +615,8 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean evaluateRaw(String value, String terms) {
-            List<String> valueTerms = tokenize(value.trim().toLowerCase());
-            List<String> tokenTerms = tokenize(terms.trim().toLowerCase());
+            List<String> valueTerms = tokenize(lowerCaseCodePoints(value.trim()));
+            List<String> tokenTerms = tokenize(lowerCaseCodePoints(terms.trim()));
             if (!terms.isEmpty() && tokenTerms.isEmpty()) return false;
             return (Collections.indexOfSubList(valueTerms, tokenTerms) != -1);
         }
