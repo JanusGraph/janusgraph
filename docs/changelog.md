@@ -1000,6 +1000,14 @@ The second of the numbers `getStatistics()` returns, the transactions which fail
 counts a transaction once that attempt has finished rather than before it starts, so the repairs of the transactions it
 counts are done and the third number already includes those which could not be repaired.
 
+##### The first traversal no longer waits for a scan of the class path
+
+JanusGraph's optimized steps tell whether a traverser counts loops by the traverser's class, which they used to look up
+in sets filled by a scan of the class path for implementations of `Traverser`, when the first traversal in a JVM used
+them: on a graph of the `inmemory` backend the first traversal in a JVM took 220–244 ms, and takes 35 ms now that a
+class is looked at when one of its traversers is first seen. The sets were also written by any thread which saw a
+traverser of a class the scan had missed, without synchronization, while other threads read them.
+
 ##### Schema changes committed by ordinary transactions reach the other instances
 
 With `schema.constraints=true` and a schema maker which creates missing constraints, an ordinary transaction adds
