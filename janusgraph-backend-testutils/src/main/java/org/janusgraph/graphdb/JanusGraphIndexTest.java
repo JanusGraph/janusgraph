@@ -2285,6 +2285,37 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     /**
+     * A count which a mixed index answers is exact past a thousand matches, beyond which the total hits of a Lucene
+     * search are only a lower bound, and so is a mean which Lucene divides by it
+     */
+    @Test
+    public void testMixedIndexCountsPastAThousandMatches() {
+        final int vertices = 2500;
+        final int matches = 2000;
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+        for (int i = 0; i < vertices; i++) {
+            tx.addVertex("age", i);
+        }
+        tx.commit();
+        // an update leaves the old document deleted, where Lucene can't count from the index statistics
+        newTx();
+        tx.traversal().V().has("age", 0).property("age", 1).iterate();
+        tx.commit();
+
+        // the ages 0 to matches - 1 sum up to matches * (matches - 1) / 2, plus the 1 of the update
+        final double mean = ((long) matches * (matches - 1) / 2 + 1) / (double) matches;
+        newTx();
+        assertTrue(tx.traversal().V().has("age", P.lt(matches)).count().profile().next().getMetrics().stream()
+            .anyMatch(metrics -> metrics.getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName())),
+            "the count isn't answered by the index");
+        assertEquals(matches, (long) tx.traversal().V().has("age", P.lt(matches)).count().next());
+        assertEquals(matches, graph.indexQuery("mixed", "v.age:[0 TO " + (matches - 1) + "]").vertexTotals());
+        assertEquals(mean, ((Number) tx.traversal().V().has("age", P.lt(matches)).values("age").mean().next()).doubleValue(), 0.0001);
+    }
+
+    /**
      * Tests index parameters (mapping and names) with raw indexQuery
      */
     @Test
