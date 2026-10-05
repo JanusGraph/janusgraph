@@ -786,6 +786,22 @@ cluster rejects is logged as a warning once. Deployments which set
 `index.[X].elasticsearch.setup-max-open-scroll-contexts` to `false`, such as Amazon OpenSearch Service, are therefore
 far less likely to reach the cluster's limit of open scroll contexts.
 
+##### Elasticsearch results larger than a page are read through a point in time
+
+A result larger than a page (`index.[X].max-result-set-size`, 50 by default) was read through a scroll, whose context
+counts against the cluster's `search.max_open_scroll_context`, whose pages count the total number of hits because
+Elasticsearch requires it, and which may skip a page when the request for one is sent again after a transient failure. On
+Elasticsearch 7.12 and later such a result is now read through a point in time and `search_after`: the point in time holds the state of the index while the pages are read, each page is asked for after
+the last hit of the one before, and none counts the total. A graph query without a limit and without an order reads its
+pages in the order of the index; a limited one, and a direct index query without a sort of its own, in the order of
+their scores, as a single request does. The point in time is closed as soon as the result has been
+read, the limit is reached or the traversal is closed, as the scroll context was, and
+`index.[X].elasticsearch.scroll-keep-alive` bounds its life as well. An older cluster, a cluster whose version isn't
+asked for (`index.[X].elasticsearch.major-version` 7) or can't be, OpenSearch, whose point in time lacks the tiebreaker
+`search_after` needs, and every cluster with the new option `index.[X].elasticsearch.point-in-time` set to `false`
+scroll as before. On Elasticsearch 9.5.4, a result of 100,000 hits read in pages of 50 takes 0.8 s through a point in time
+in the order of the index, where a scroll took 0.95 s, and 1.9 s in the order of scores.
+
 ##### Relations without properties are parsed once
 
 A loaded relation is deserialized in two steps: its type, direction, id and other end first, and its properties only

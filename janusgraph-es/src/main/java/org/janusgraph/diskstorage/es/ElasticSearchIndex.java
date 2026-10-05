@@ -182,7 +182,18 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<Integer> ES_SCROLL_KEEP_ALIVE =
             new ConfigOption<>(ELASTICSEARCH_NS, "scroll-keep-alive",
-            "How long (in seconds) elasticsearch should keep alive the scroll context.", ConfigOption.Type.GLOBAL_OFFLINE, 60);
+            "How long (in seconds) elasticsearch should keep alive the scroll context, or the point in time, of a result " +
+                "which is read in pages.", ConfigOption.Type.GLOBAL_OFFLINE, 60);
+
+    public static final ConfigOption<Boolean> POINT_IN_TIME =
+            new ConfigOption<>(ELASTICSEARCH_NS, "point-in-time",
+            "Whether a result larger than a page is read with a point in time and `search_after` on Elasticsearch 7.12 " +
+                "and later, instead of a scroll. A point in time isn't counted against `search.max_open_scroll_context`, " +
+                "its pages don't count the total number of hits, and a page which is sent again after a failure comes " +
+                "back the same, where a scroll may skip it. A cluster which reports an older version scrolls, as does one " +
+                "whose version isn't asked for (`major-version` 7) or can't be, and OpenSearch, whose point in time lacks " +
+                "the tiebreaker `search_after` needs. Set to `false` to scroll on every cluster.",
+            ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigNamespace ES_INGEST_PIPELINES =
             new ConfigNamespace(ELASTICSEARCH_NS, "ingest-pipeline", "Ingest pipeline applicable to a store of an index.");
@@ -1677,6 +1688,8 @@ public class ElasticSearchIndex implements IndexProvider {
         if (!query.getOrders().isEmpty()) {
             addOrderToQuery(information, sr, query.getOrders(), query.getStore());
         }
+        //The hits of a raw query carry their scores, and come in their order
+        sr.setRelevanceOrdered(true);
         sr.setDisableSourceRetrieval(true);
         try {
             log.debug("Executing query [{}]", query.getQuery());
