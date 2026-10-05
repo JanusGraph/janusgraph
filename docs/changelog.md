@@ -1097,6 +1097,16 @@ the upgrade, each such eviction costs an older instance the thread which waits f
 it acknowledges, for up to a minute, and one with a transaction open for longer than that logs the stale-transaction
 error it logs for any eviction it waited that long for.
 
+##### Closing a graph no longer fails on a transaction which another thread closes meanwhile
+
+Closing a graph rolls back the transactions which are still open. If another thread closed one of them after the graph
+had listed it, the graph's rollback found it closed, and `close()` threw
+`IllegalStateException: Unable to close transaction`, caused by `The transaction has already been closed`, although the
+graph had closed. The reader of the management log is such a thread until the graph closes the log: when it applies a
+schema eviction, which a commit that changes schema definitions sends, it reloads the definitions it expires through
+short-lived transactions of its own, and while an eviction of this instance waits for acknowledgements, it opens a
+management transaction on each poll. The graph now skips a transaction which closed before it could roll it back.
+
 ##### Closing a graph on BerkeleyJE no longer interrupts its log readers
 
 `BackgroundThread.close()` could interrupt the thread's `action()` or `cleanup()`, which its contract rules out, when

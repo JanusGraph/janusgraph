@@ -1744,6 +1744,21 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         }
     }
 
+    /**
+     * Rolls the transaction back unless it is closed already. Another thread may close it at any time, also after it
+     * was found open; commit and rollback hold the transaction's monitor, as this method does, so the transaction
+     * can't close between the check and the rollback.
+     *
+     * @return whether the transaction was open and has been rolled back
+     */
+    public synchronized boolean rollbackIfOpen() {
+        if (!isOpen()) {
+            return false;
+        }
+        rollback();
+        return true;
+    }
+
     private void releaseTransaction() {
         isOpen = false;
         graph.closeTransaction(this);
