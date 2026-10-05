@@ -1309,6 +1309,39 @@ public abstract class IndexProviderTest {
         return supportsPredicateFor(mapping, String.class, Cardinality.SINGLE, predicate);
     }
 
+    // Comparisons of decimals reach zero and the negative values, and comparisons of whole numbers reach the extremes of
+    // long, where a strict bound has nothing beyond it
+    @Test
+    public void rangeQueriesReachTheEndsOfTheirType() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Object[][] values = {{"negative", -2.5, Long.MIN_VALUE}, {"zero", 0.0, 0L}, {"positive", 3.5, Long.MAX_VALUE}};
+        for (final Object[] value : values) {
+            final Multimap<String, Object> doc = HashMultimap.create();
+            doc.put(WEIGHT, value[1]);
+            doc.put(TIME, value[2]);
+            add(store, (String) value[0], doc, true);
+        }
+        clopen();
+        assertEquals(ImmutableSet.of("negative", "zero"), rangeQuery(store, WEIGHT, Cmp.LESS_THAN, 0.01));
+        assertEquals(ImmutableSet.of("negative", "zero"), rangeQuery(store, WEIGHT, Cmp.LESS_THAN_EQUAL, 0.0));
+        assertEquals(ImmutableSet.of("negative", "zero"), rangeQuery(store, WEIGHT, Cmp.NOT_EQUAL, 3.5));
+        assertEquals(ImmutableSet.of("zero", "positive"), rangeQuery(store, WEIGHT, Cmp.GREATER_THAN, -1.0));
+        assertEquals(ImmutableSet.of("negative", "zero", "positive"), rangeQuery(store, WEIGHT, Cmp.GREATER_THAN_EQUAL, -2.5));
+
+        assertEquals(ImmutableSet.of("negative", "zero"), rangeQuery(store, TIME, Cmp.NOT_EQUAL, Long.MAX_VALUE));
+        assertEquals(ImmutableSet.of("zero", "positive"), rangeQuery(store, TIME, Cmp.NOT_EQUAL, Long.MIN_VALUE));
+        assertEquals(ImmutableSet.of(), rangeQuery(store, TIME, Cmp.GREATER_THAN, Long.MAX_VALUE));
+        assertEquals(ImmutableSet.of(), rangeQuery(store, TIME, Cmp.LESS_THAN, Long.MIN_VALUE));
+        assertEquals(ImmutableSet.of("positive"), rangeQuery(store, TIME, Cmp.GREATER_THAN_EQUAL, Long.MAX_VALUE));
+        assertEquals(ImmutableSet.of("negative"), rangeQuery(store, TIME, Cmp.LESS_THAN_EQUAL, Long.MIN_VALUE));
+        assertEquals(ImmutableSet.of("negative", "zero"), rangeQuery(store, TIME, Cmp.LESS_THAN, 1L));
+    }
+
+    protected Set<String> rangeQuery(String store, String key, Cmp relation, Object value) throws BackendException {
+        return tx.queryStream(new IndexQuery(store, PredicateCondition.of(key, relation, value))).collect(Collectors.toSet());
+    }
+
     protected long getDocCountByPredicate(JanusGraphPredicate predicate, String field, String condition) throws BackendException {
         return tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(field, predicate, condition))).count();
     }
