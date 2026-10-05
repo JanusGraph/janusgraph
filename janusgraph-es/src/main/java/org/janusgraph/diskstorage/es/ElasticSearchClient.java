@@ -86,7 +86,8 @@ public interface ElasticSearchClient extends Closeable {
 
     Number max(String indexName, Map<String,Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException;
 
-    double avg(String indexName, Map<String,Object> requestData, String fieldName) throws IOException;
+    // null when no matching document holds a value of the field, as min, max and sum are
+    Double avg(String indexName, Map<String,Object> requestData, String fieldName) throws IOException;
 
     Number sum(String indexName, Map<String,Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException;
 

@@ -26,7 +26,7 @@ public interface MixedIndexAggQuery extends ProfileObservable {
      * Fire an aggregation query against index backend to retrieve aggregated result of satisfying elements
      *
      * @param aggregation aggregation operation to perform on elements that match the query
-     * @return the result of the aggregation operation
+     * @return the result of the aggregation operation, null for a minimum, maximum, mean or sum of no values
      */
     Number execute(Aggregation aggregation);
 }

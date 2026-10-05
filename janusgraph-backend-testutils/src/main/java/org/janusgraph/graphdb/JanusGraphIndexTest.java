@@ -99,6 +99,7 @@ import org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexAggStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.IndexField;
@@ -133,12 +134,14 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HARD_MAX_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CDC_ENABLED;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
@@ -5050,6 +5053,179 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 graph.traversal().V().has(namePropKeyStr, nameValue).limit(limit).count().next()
             );
         }
+    }
+
+    /**
+     * The aggregations which a mixed index answers are those TinkerPop computes from the values the matching elements
+     * hold, with no result when there is no value. A traversal aggregates in memory what the index can't answer alike:
+     * a minimum, maximum, sum or mean after a limit or an offset, as the index aggregates every match, the changes of
+     * its transaction to the keys it reads, which the index doesn't hold, and a key the index doesn't hold the values of
+     * yet
+     */
+    @Test
+    public void testMixedIndexAggregationsOfTheValuesThereAre() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey height = makeKey("height", Integer.class);
+        final PropertyKey weight = makeKey("weight", Double.class);
+        final PropertyKey big = makeKey("big", Long.class);
+        makeKey("length", Integer.class);
+        final PropertyKey scores = mgmt.makePropertyKey("scores").dataType(Integer.class).cardinality(Cardinality.LIST).make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).addKey(height).addKey(weight).addKey(big)
+            .addKey(scores).buildMixedIndex(INDEX);
+        final PropertyKey code = makeKey("code", Integer.class);
+        mgmt.buildIndex("codes", Vertex.class).addKey(code).buildCompositeIndex();
+        finishSchema();
+
+        final JanusGraphVertex first = tx.addVertex("name", "some", "height", 170, "weight", -10.5, "code", 1, "length", 30);
+        first.property("scores", 3);
+        first.property("scores", -7);
+        tx.addVertex("name", "some", "height", 190, "scores", 10);
+        tx.addVertex("name", "some");
+        tx.addVertex("name", "none");
+        // each vertex without the value before the one with it, which holds the value an index may sort a missing one as
+        tx.addVertex("name", "greatest");
+        tx.addVertex("name", "least");
+        tx.commit();
+        newTx();
+        tx.addVertex("name", "greatest", "big", Long.MAX_VALUE);
+        tx.addVertex("name", "least", "big", Long.MIN_VALUE);
+        tx.commit();
+
+        newTx();
+        assertAggregations("some", "height", 170, 190, 360, 180.0);
+        assertAggregations("some", "weight", -10.5, -10.5, -10.5, -10.5);
+        assertAggregations("some", "scores", -7, 10, 6, 2.0);
+        assertAggregations("none", "height", null, null, null, null);
+        assertAggregations("nobody", "height", null, null, null, null);
+        assertAggregation(Long.MAX_VALUE, true, g -> g.V().has("name", "greatest").values("big").min());
+        assertAggregation(Long.MIN_VALUE, true, g -> g.V().has("name", "least").values("big").max());
+
+        // the index aggregates every match: a count stops at the limit of the traversal and leaves out the offset of
+        // a range, while the other aggregations aggregate in memory after a limit or an offset
+        assertAggregation(2, true, g -> g.V().has("name", "some").limit(2).count());
+        assertAggregation(2, true, g -> g.V().has("name", "some").range(1, 3).count());
+        assertAggregation(0, true, g -> g.V().has("name", "some").range(5, 10).count());
+        assertAggregation(170, false, g -> g.V().has("name", "some").order().by("height", asc).limit(1).values("height").sum());
+        assertAggregation(190, false, g -> g.V().has("name", "some").order().by("height", asc).range(1, 2).values("height").min());
+
+        // the index doesn't hold the changes of the transaction, which the traversal sees, to a key of the condition
+        tx.addVertex("name", "some", "height", 200);
+        assertAggregation(4, false, g -> g.V().has("name", "some").count());
+        assertAggregation(200, false, g -> g.V().has("name", "some").values("height").max());
+        tx.rollback();
+        // or to the aggregated key; a change which can't change the result leaves it to the index
+        newTx();
+        tx.addVertex("length", 5);
+        assertAggregation(3, true, g -> g.V().has("name", "some").count());
+        assertAggregation(190, true, g -> g.V().has("name", "some").values("height").max());
+        tx.addVertex("height", 300);
+        assertAggregation(3, true, g -> g.V().has("name", "some").count());
+        assertAggregation(190, false, g -> g.V().has("name", "some").values("height").max());
+        tx.rollback();
+        // a vertex removed in the transaction takes its properties with it
+        newTx();
+        tx.traversal().V().has("name", "some").has("height", 170).drop().iterate();
+        assertAggregation(2, false, g -> g.V().has("name", "some").count());
+        assertAggregation(190, false, g -> g.V().has("name", "some").values("height").max());
+        tx.rollback();
+
+        // nor the values of the elements it indexed before a key was added to it, until the key is enabled
+        newTx();
+        mgmt.addIndexKey(mgmt.getGraphIndex("mixed"), mgmt.getPropertyKey("length"));
+        finishSchema();
+        assertAggregation(30, false, g -> g.V().has("name", "some").values("length").max());
+
+        // a key which doesn't exist leaves no mixed index query to aggregate on, and neither does a composite index
+        assertFalse(tx.traversal().V().has("nokey", 1).values("height").max().hasNext());
+        assertEquals(170, tx.traversal().V().has("code", 1).values("height").max().next());
+        assertFalse(tx.traversal().V().has("code", 1).values("height").max().profile().next().getMetrics().stream()
+            .anyMatch(metrics -> metrics.getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName())));
+
+        // a count covers every match, where query.hard-max-limit only caps the index queries which fetch them
+        clopen(option(HARD_MAX_LIMIT), 1);
+        assertAggregation(3, true, g -> g.V().has("name", "some").count());
+    }
+
+    private void assertAggregations(String name, String key, Number min, Number max, Number sum, Number mean) {
+        assertAggregation(min, true, g -> g.V().has("name", name).values(key).min());
+        assertAggregation(max, true, g -> g.V().has("name", name).values(key).max());
+        assertAggregation(sum, true, g -> g.V().has("name", name).values(key).sum());
+        assertAggregation(mean, true, g -> g.V().has("name", name).values(key).mean());
+    }
+
+    // The result of the traversal, by the index when byIndex, and in memory, is the expected value, or none for null
+    private void assertAggregation(Number expected, boolean byIndex, Function<GraphTraversalSource, GraphTraversal<Vertex, ?>> aggregation) {
+        assertEquals(byIndex, aggregation.apply(tx.traversal()).profile().next().getMetrics().stream()
+            .anyMatch(metrics -> metrics.getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName())));
+        final List<?> optimized = aggregation.apply(tx.traversal()).toList();
+        final List<?> inMemory = aggregation.apply(tx.traversal()
+            .withoutStrategies(JanusGraphMixedIndexAggStrategy.class, JanusGraphMixedIndexCountStrategy.class)).toList();
+        for (final List<?> result : Arrays.asList(inMemory, optimized)) {
+            if (expected == null) {
+                assertEquals(Collections.emptyList(), result);
+            } else {
+                assertEquals(1, result.size(), result.toString());
+                if (expected instanceof Double) {
+                    assertEquals(expected.doubleValue(), ((Number) result.get(0)).doubleValue(), 0.0001);
+                } else {
+                    // whole numbers exactly, as doubles can't tell those beyond 2^53 apart
+                    assertEquals(expected.longValue(), ((Number) result.get(0)).longValue());
+                }
+            }
+        }
+    }
+
+    /**
+     * A mixed index orders the elements without the key last, whichever the direction, as JanusGraph does when it
+     * orders them in memory
+     */
+    @Test
+    public void testMixedIndexOrdersElementsWithoutTheKeyLast() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey height = makeKey("height", Integer.class);
+        final PropertyKey weight = makeKey("weight", Double.class);
+        final PropertyKey tag = makeKey("tag", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).addKey(height).addKey(weight)
+            .addKey(tag, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object low = tx.addVertex("name", "x", "height", -10, "weight", -10.5, "tag", "a").id();
+        final Object middle = tx.addVertex("name", "x", "height", 5, "weight", 5.5, "tag", "b").id();
+        final Object without = tx.addVertex("name", "x").id();
+        final Object high = tx.addVertex("name", "x", "height", 30, "weight", 30.5, "tag", "c").id();
+        tx.commit();
+
+        newTx();
+        for (final String key : Arrays.asList("height", "weight", "tag")) {
+            assertEquals(Arrays.asList(low, middle, high, without),
+                tx.traversal().V().has("name", "x").order().by(key, asc).id().toList(), key);
+            assertEquals(Arrays.asList(high, middle, low, without),
+                tx.traversal().V().has("name", "x").order().by(key, desc).id().toList(), key);
+            assertEquals(Arrays.asList(low, middle),
+                tx.traversal().V().has("name", "x").order().by(key, asc).limit(2).id().toList(), key);
+            assertEquals(Arrays.asList(high, middle),
+                tx.traversal().V().has("name", "x").order().by(key, desc).limit(2).id().toList(), key);
+        }
+    }
+
+    // A boolean sorts as an int in Lucene, and the elements without it come last in either direction as well
+    @Test
+    public void testMixedIndexOrdersElementsWithoutABooleanKeyLast() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey active = makeKey("active", Boolean.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).addKey(active).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object off = tx.addVertex("name", "x", "active", false).id();
+        final Object on = tx.addVertex("name", "x", "active", true).id();
+        final Object without = tx.addVertex("name", "x").id();
+        tx.commit();
+
+        newTx();
+        assertEquals(Arrays.asList(off, on, without), tx.traversal().V().has("name", "x").order().by("active", asc).id().toList());
+        assertEquals(Arrays.asList(on, off, without), tx.traversal().V().has("name", "x").order().by("active", desc).id().toList());
+        assertEquals(Arrays.asList(off), tx.traversal().V().has("name", "x").order().by("active", asc).limit(1).id().toList());
+        assertEquals(Arrays.asList(on), tx.traversal().V().has("name", "x").order().by("active", desc).limit(1).id().toList());
     }
 
     @Test

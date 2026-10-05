@@ -1771,6 +1771,30 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         return !addedRelations.isEmpty() || !deletedRelations.isEmpty();
     }
 
+    /**
+     * Whether this transaction added or removed a property of one of the given keys on an element of the given
+     * category: an uncommitted change which the indexes don't hold, and which can make an element match a condition on
+     * those keys or stop matching it, or change the values of those keys which an index aggregates. A removed element
+     * counts by the properties removed with it, and a changed edge, which the transaction replaces, by its own. For
+     * elements of another category, whether the transaction changed anything.
+     */
+    public boolean hasChangedProperties(ElementCategory category, Collection<PropertyKey> keys) {
+        if (!hasModifications()) {
+            return false;
+        }
+        final Predicate<InternalRelation> changed;
+        if (category == ElementCategory.VERTEX) {
+            changed = relation -> relation.isProperty() && keys.contains(relation.getType());
+        } else if (category == ElementCategory.EDGE) {
+            changed = relation -> relation.isEdge()
+                && Iterables.any(relation.getPropertyKeysDirect(), keys::contains);
+        } else {
+            return true;
+        }
+        return addedRelations.getView(changed).iterator().hasNext()
+            || deletedRelations.values().stream().anyMatch(changed::apply);
+    }
+
     @Override
     public void expireSchemaElement(final long id) {
         if (vertexCache.contains(id)) {

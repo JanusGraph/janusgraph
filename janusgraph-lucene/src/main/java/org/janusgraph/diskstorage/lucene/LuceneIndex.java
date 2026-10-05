@@ -47,6 +47,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -593,7 +594,7 @@ public class LuceneIndex implements IndexProvider {
                 } else {
                     fieldKey = order.getKey();
                 }
-                fields[i] = new SortField(fieldKey, sortType, order.getOrder() == Order.DESC);
+                fields[i] = sortField(fieldKey, sortType, order.getOrder() == Order.DESC);
                 if (sortType == SortField.Type.STRING && ParameterType.STRING_ANALYZER.findParameter(ki.getParameters(), null) != null) {
                     // Lucene skips non-competitive documents through the terms index of the field, which requires the
                     // terms to equal the doc values. A custom string analyzer makes other terms than the doc values.
@@ -602,6 +603,33 @@ public class LuceneIndex implements IndexProvider {
             }
             return new Sort(fields);
         }
+    }
+
+    // A sort which puts the documents without the field after those with a value, in either direction, as JanusGraph
+    // does when it orders elements in memory and as Elasticsearch does; Lucene sorts them as 0 by default, and strings
+    // without a value first when ascending. A number has no value past the range of its sort type, so these documents
+    // sort as that type's greatest value when ascending and its least when descending. So documents which hold that
+    // very value may come after them, and so may, when ascending, documents with a NaN decimal, which Lucene sorts
+    // above every other double.
+    private static SortField sortField(String field, SortField.Type type, boolean descending) {
+        final SortField sortField = new SortField(field, type, descending);
+        switch (type) {
+            case STRING:
+                sortField.setMissingValue(descending ? SortField.STRING_FIRST : SortField.STRING_LAST);
+                break;
+            case LONG:
+                sortField.setMissingValue(descending ? Long.MIN_VALUE : Long.MAX_VALUE);
+                break;
+            case DOUBLE:
+                sortField.setMissingValue(descending ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
+                break;
+            case INT:
+                sortField.setMissingValue(descending ? Integer.MIN_VALUE : Integer.MAX_VALUE);
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected sort type: " + type);
+        }
+        return sortField;
     }
 
     @Override
@@ -1000,14 +1028,17 @@ public class LuceneIndex implements IndexProvider {
         try {
             final IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
             if (searcher == null) {
-                return 0L; //Index does not yet exist
+                //Index does not yet exist: nothing to count, and no values to aggregate
+                return aggregation.getType() == Aggregation.Type.COUNT ? 0L : null;
             }
             Query q = searchParams.getQuery();
 
             switch (aggregation.getType()) {
                 case COUNT: return QueryUtil.applyQueryLimitAfterCount(executeCount(searcher, q), query);
-                case MIN: return executeMin(searcher, q, aggregation.getFieldName(), aggregation.getDataType());
-                case MAX: return executeMax(searcher, q, aggregation.getFieldName(), aggregation.getDataType());
+                case MIN: return executeMin(searcher, q, aggregation.getFieldName(), aggregation.getDataType(),
+                    isSingleValued(information, store, aggregation.getFieldName()));
+                case MAX: return executeMax(searcher, q, aggregation.getFieldName(), aggregation.getDataType(),
+                    isSingleValued(information, store, aggregation.getFieldName()));
                 case AVG: return executeAvg(searcher, q, aggregation.getFieldName());
                 case SUM: return executeSum(searcher, q, aggregation.getFieldName(), aggregation.getDataType());
                 default: throw new UnsupportedOperationException();
@@ -1038,7 +1069,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     private Number adaptNumberType(Number value, Class<? extends Number> expectedType) {
-        if (expectedType == null) return value;
+        if (value == null || expectedType == null) return value;
         else if (Byte.class.isAssignableFrom(expectedType)) return value.byteValue();
         else if (Short.class.isAssignableFrom(expectedType)) return value.shortValue();
         else if (Integer.class.isAssignableFrom(expectedType)) return value.intValue();
@@ -1048,31 +1079,59 @@ public class LuceneIndex implements IndexProvider {
         else return value.doubleValue();
     }
 
-    private Number executeMin(IndexSearcher searcher, Query query, String fieldName, Class fieldType) throws IOException {
-        final TopFieldDocs docs = searcher.search(query, 1, new Sort(new SortField(fieldName, sortFieldType(fieldType))));
+    // Only a field of single values has the doc values to sort the documents by
+    private static boolean isSingleValued(KeyInformation.IndexRetriever information, String store, String fieldName) {
+        return information.get(store, fieldName).getCardinality() == Cardinality.SINGLE;
+    }
+
+    // The minimum and maximum are null when no matching document has a value, as those of no values are none
+    private Number executeMin(IndexSearcher searcher, Query query, String fieldName, Class fieldType, boolean singleValued) throws IOException {
+        return singleValued ? executeFirst(searcher, query, fieldName, fieldType, false)
+            : adaptNumberType(executeStats(searcher, query, fieldName).getMin(), fieldType);
+    }
+
+    private Number executeMax(IndexSearcher searcher, Query query, String fieldName, Class fieldType, boolean singleValued) throws IOException {
+        return singleValued ? executeFirst(searcher, query, fieldName, fieldType, true)
+            : adaptNumberType(executeStats(searcher, query, fieldName).getMax(), fieldType);
+    }
+
+    // The value of the first, by the field, of the matching documents which have one: null when none has. Only those
+    // are searched, as the documents without a value may tie with an extreme value in the sort
+    private Number executeFirst(IndexSearcher searcher, Query query, String fieldName, Class fieldType, boolean descending)
+            throws IOException {
+        final Query withValue = new BooleanQuery.Builder().add(query, BooleanClause.Occur.FILTER)
+            .add(new FieldExistsQuery(fieldName), BooleanClause.Occur.FILTER).build();
+        final TopFieldDocs docs = searcher.search(withValue, 1, new Sort(sortField(fieldName, sortFieldType(fieldType), descending)));
+        if (docs.scoreDocs.length == 0) {
+            return null;
+        }
         final IndexableField field = searcher.doc(docs.scoreDocs[0].doc, Sets.newHashSet(fieldName)).getField(fieldName);
         return adaptNumberType(field.numericValue(), fieldType);
     }
 
-    private Number executeMax(IndexSearcher searcher, Query query, String fieldName, Class fieldType) throws IOException {
-        final TopFieldDocs docs = searcher.search(query, 1, new Sort(new SortField(fieldName, sortFieldType(fieldType), true)));
-        final IndexableField field = searcher.doc(docs.scoreDocs[0].doc, Sets.newHashSet(fieldName)).getField(fieldName);
-        return adaptNumberType(field.numericValue(), fieldType);
-    }
-
-
-    private Number executeSum(IndexSearcher searcher, Query query, String fieldName, Class fieldType) throws IOException {
-        SumCollector collector = new SumCollector(fieldName, searcher);
+    private StatsCollector executeStats(IndexSearcher searcher, Query query, String fieldName) throws IOException {
+        final StatsCollector collector = new StatsCollector(fieldName, searcher);
         searcher.search(query, collector);
+        return collector;
+    }
+
+    // The sum of the values of the matching documents, null when none has a value, as the sum of no values is none
+    private Number executeSum(IndexSearcher searcher, Query query, String fieldName, Class fieldType) throws IOException {
+        final StatsCollector stats = executeStats(searcher, query, fieldName);
+        if (stats.getCount() == 0) {
+            return null;
+        }
 
         if (Float.class.isAssignableFrom(fieldType) || Double.class.isAssignableFrom(fieldType))
-            return collector.getValue();
+            return stats.getSum();
         else
-            return (long)collector.getValue();
+            return (long)stats.getSum();
     }
 
-    private double executeAvg(IndexSearcher searcher, Query query, String fieldName) throws IOException {
-        return ((double)executeSum(searcher, query, fieldName, Double.class)) / executeCount(searcher, query);
+    // The mean of the values, over the values rather than the matching documents, which may not all have one
+    private Double executeAvg(IndexSearcher searcher, Query query, String fieldName) throws IOException {
+        final StatsCollector stats = executeStats(searcher, query, fieldName);
+        return stats.getCount() == 0 ? null : stats.getSum() / stats.getCount();
     }
 
     @Override
