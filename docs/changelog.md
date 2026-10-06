@@ -375,6 +375,27 @@ fast backends (notably CQL/Cassandra) this removes per-row hand-off latency that
 dominate scan wall-clock time, speeding up single-node reindex and other full scans by a large factor.
 No configuration or user action is required.
 
+##### OLAP jobs end their transactions, and jobs which run at once create their compute keys
+
+The OLAP jobs of `FulgoraGraphComputer` left transactions open until the graph closed: their scans started one for each
+processor and work block of each iteration, which nothing closed, the job's thread kept the one in which it attached the
+elements of the job's memory, and a new result graph is a transaction, which closing the job's `ComputerResult` didn't
+end. An instance acknowledges a schema change only once the transactions which were open when the change arrived have
+closed, so a graph which had run a job could no longer register a new index: the index stayed `INSTALLED`. A job now
+ends the transactions of its scans and of its thread once it has ended, and closing a `ComputerResult` rolls back the
+transaction of its new result graph, which can't be used afterwards. The vertices and edges among the values of a job's
+memory, which the side effects of a traversal collect, are detached from the scans' transactions when the job ends, with
+their properties, so that a later job of the traversal and the user can still read them; the elements of a traversal's
+results are read in the reading thread's own transaction, which it opens on demand and should close. Close the
+`ComputerResult` of a job whose result graph is new once done with `result.graph()`, as its transaction holds up the
+acknowledgement of schema changes until then.
+
+Of the jobs which ran at once and created the same compute key, all but one failed: the lock of the key's name failed
+their commits, and an `IllegalArgumentException` saying that the transaction had already been closed hid that failure. A
+job whose commit fails on such a lock, of JanusGraph's own locker, now waits twice `storage.lock.wait-time`, then twice
+as long each time, and creates the keys which are still missing, making up to `storage.lock.retries` attempts.
+`JanusGraphManagement.rollback()` no longer throws after a commit which failed.
+
 ##### Opt-in parallel token-range scan for CQL full scans
 
 CQL full-table scans (used by reindex and other OLAP jobs) can optionally be split into several

@@ -27,6 +27,7 @@ import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.olap.QueryContainer;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.VertexScanJob;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.janusgraph.util.datastructures.Retriever;
 import org.slf4j.Logger;
@@ -36,6 +37,9 @@ import java.io.Closeable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -142,14 +146,31 @@ public class VertexMapJob implements VertexScanJob {
 
     public static class Executor extends VertexJobConverter implements Closeable {
 
+        //The transactions of the clones which the scanner's processors work with, one per processor and work block.
+        //The elements read in them outlive the clones' work, in what the map emitters hold for the reduce phase and in
+        //the memory, so they end only when this executor closes, after the computer's job
+        private final Queue<StandardJanusGraphTx> cloneTransactions;
+        //Whether the executor has closed, shared with the clones like the queue
+        private final AtomicBoolean closed;
+
         private Executor(JanusGraph graph, VertexMapJob job) {
             super(graph, job);
             open(this.graph.get().getConfiguration().getConfiguration());
+            cloneTransactions = new ConcurrentLinkedQueue<>();
+            closed = new AtomicBoolean();
         }
 
         private Executor(final Executor copy) {
             super(copy);
             open(this.graph.get().getConfiguration().getConfiguration());
+            cloneTransactions = copy.cloneTransactions;
+            closed = copy.closed;
+            cloneTransactions.add(tx);
+            //Cloned by a processor which outlived the scan, after the close: the transaction is this clone's to roll
+            //back if the close's rollback hasn't taken it from the queue, and the close's otherwise
+            if (closed.get() && cloneTransactions.remove(tx)) {
+                tx.rollback();
+            }
         }
 
         @Override
@@ -176,7 +197,12 @@ public class VertexMapJob implements VertexScanJob {
 
         @Override
         public void close() {
-            super.close();
+            closed.set(true);
+            try {
+                rollbackAll(cloneTransactions);
+            } finally {
+                super.close();
+            }
         }
 
     }

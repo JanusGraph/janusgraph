@@ -271,7 +271,10 @@ public class ManagementSystem implements JanusGraphManagement {
     public synchronized void rollback() {
         ensureOpen();
         transactionalConfig.rollback();
-        transaction.rollback();
+        //A commit which failed, or the graph's close, has closed the transaction already
+        if (transaction.isOpen()) {
+            transaction.rollback();
+        }
         close();
     }
 
