@@ -21,6 +21,7 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
+import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
@@ -47,6 +48,8 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.locking.PermanentLockingException;
+import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -55,6 +58,7 @@ import org.janusgraph.graphdb.util.WorkerPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,6 +96,8 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
     private Persist persistMode = null;
 
     private static final AtomicInteger computerCounter = new AtomicInteger(0);
+    //Close the executors of the job's scans once it has ended
+    private final List<Runnable> scanClosers = new ArrayList<>();
     private final String name;
     private String jobId;
 
@@ -198,17 +204,47 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
     }
 
     private ComputerResult submitAsync() {
-        final long time = System.currentTimeMillis();
-        executeVertexProgram();
+        try {
+            final long time = System.currentTimeMillis();
+            executeVertexProgram();
 
-        Map<MapReduce, FulgoraMapEmitter> mapJobs = collectMapJobs();
-        executeMapJobs(mapJobs);
+            Map<MapReduce, FulgoraMapEmitter> mapJobs = collectMapJobs();
+            executeMapJobs(mapJobs);
 
-        Graph resultgraph = writeMutatedPropertiesBackIntoGraph();
-        // update runtime and return the newly computed graph
-        this.memory.setRuntime(System.currentTimeMillis() - time);
-        this.memory.complete();
-        return new DefaultComputerResult(resultgraph, this.memory);
+            Graph resultgraph = writeMutatedPropertiesBackIntoGraph();
+            // update runtime and return the newly computed graph
+            this.memory.setRuntime(System.currentTimeMillis() - time);
+            this.memory.complete();
+            //While the scans' transactions are open, in which the memory's elements were read
+            this.memory.detachElements();
+            return new FulgoraComputerResult(resultgraph, this.memory);
+        } finally {
+            endTransactions();
+        }
+    }
+
+    /**
+     * Ends the transactions of the job's scans, which hold the elements read in the scans until the job has ended, and
+     * the transaction of this thread, which attaching the memory's reference elements to the graph opens, and which
+     * rolls back as it changed nothing. Elements attached in the latter go on in the transaction of whichever thread
+     * reads them, as they are bound to their thread.
+     */
+    private void endTransactions() {
+        for (Runnable scanCloser : scanClosers) {
+            try {
+                scanCloser.run();
+            } catch (RuntimeException e) {
+                log.warn("Could not end the transactions of a scan of job [{}]", name, e);
+            }
+        }
+        scanClosers.clear();
+        try {
+            if (graph.tx().isOpen()) {
+                graph.tx().rollback();
+            }
+        } catch (RuntimeException e) {
+            log.warn("Could not end the transaction of job [{}]", name, e);
+        }
     }
 
     private void executeVertexProgram() {
@@ -217,18 +253,18 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
         vertexMemory = new FulgoraVertexMemory(expectedNumVertices, graph.getIDManager(), vertexProgram);
         vertexProgram.setup(memory);
 
-        try (VertexProgramScanJob.Executor job = VertexProgramScanJob.getVertexProgramScanJob(graph, memory, vertexMemory, vertexProgram)) {
-            for (int iteration = 1; ; iteration++) {
-                memory.completeSubRound();
-                executeIterationOfJob(job, iteration);
-                memory.completeSubRound();
-                try {
-                    if (this.vertexProgram.terminate(this.memory)) {
-                        break;
-                    }
-                } finally {
-                    memory.incrIteration();
+        final VertexProgramScanJob.Executor job = VertexProgramScanJob.getVertexProgramScanJob(graph, memory, vertexMemory, vertexProgram);
+        scanClosers.add(job::close);
+        for (int iteration = 1; ; iteration++) {
+            memory.completeSubRound();
+            executeIterationOfJob(job, iteration);
+            memory.completeSubRound();
+            try {
+                if (this.vertexProgram.terminate(this.memory)) {
+                    break;
                 }
+            } finally {
+                memory.incrIteration();
             }
         }
     }
@@ -302,10 +338,10 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
 
     private void executeMapJobs(Map<MapReduce, FulgoraMapEmitter> mapJobs) {
         jobId = name + "#map";
-        try (VertexMapJob.Executor job = VertexMapJob.getVertexMapJob(graph, vertexMemory, mapJobs)) {
-            executeMapJob(job);
-            executeReducePhase(mapJobs);
-        }
+        final VertexMapJob.Executor job = VertexMapJob.getVertexMapJob(graph, vertexMemory, mapJobs);
+        scanClosers.add(job::close);
+        executeMapJob(job);
+        executeReducePhase(mapJobs);
         memory.attachReferenceElements(graph);
     }
 
@@ -366,20 +402,7 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
             resultgraph = EmptyGraph.instance();
         } else if (persistMode != Persist.NOTHING && vertexProgram != null && !vertexProgram.getVertexComputeKeys().isEmpty()) {
             //First, create property keys in graph if they don't already exist
-            JanusGraphManagement management = graph.openManagement();
-            try {
-                for (VertexComputeKey key : vertexProgram.getVertexComputeKeys()) {
-                    if (!management.containsPropertyKey(key.getKey())) {
-                        log.warn("Property key [{}] is not part of the schema and will be created. It is advised to initialize all keys.", key.getKey());
-                    }
-                    management.getOrCreatePropertyKey(key.getKey());
-                }
-                management.commit();
-            } finally {
-                if (management != null && management.isOpen()) {
-                    management.rollback();
-                }
-            }
+            createMissingComputeKeys();
 
             //TODO: Filter based on VertexProgram
             HaltedTraverserStrategy haltedTraverserStrategy = HaltedTraverserStrategy.reference();
@@ -423,21 +446,122 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
                     throw new JanusGraphException("Could not persist program results to graph. Check log for details.");
                 }
             } else if (resultGraphMode == ResultGraph.NEW) {
-                resultgraph = graph.newTransaction();
-                for (Map.Entry<Long, Map<String, Object>> vertexProperty : mutatedProperties.entrySet()) {
-                    Vertex v = resultgraph.vertices(vertexProperty.getKey()).next();
-                    for (Map.Entry<String, Object> prop : vertexProperty.getValue().entrySet()) {
-                        if (prop.getValue() instanceof List) {
-                            ((List) prop.getValue())
-                                .forEach(value -> v.property(VertexProperty.Cardinality.list, prop.getKey(), value));
-                        } else {
-                            v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
+                final JanusGraphTransaction newResultGraph = graph.newTransaction();
+                try {
+                    for (Map.Entry<Long, Map<String, Object>> vertexProperty : mutatedProperties.entrySet()) {
+                        Vertex v = newResultGraph.vertices(vertexProperty.getKey()).next();
+                        for (Map.Entry<String, Object> prop : vertexProperty.getValue().entrySet()) {
+                            if (prop.getValue() instanceof List) {
+                                ((List) prop.getValue())
+                                    .forEach(value -> v.property(VertexProperty.Cardinality.list, prop.getKey(), value));
+                            } else {
+                                v.property(VertexProperty.Cardinality.single, prop.getKey(), prop.getValue());
+                            }
                         }
                     }
+                } catch (RuntimeException e) {
+                    newResultGraph.rollback();
+                    throw e;
                 }
+                resultgraph = newResultGraph;
             }
         }
         return resultgraph;
+    }
+
+    /**
+     * Creates the property keys of the program's compute keys which the schema lacks. Another job, of this instance or
+     * another, may create some of them at the same time, and the commit of whichever comes second fails on the lock of
+     * a key's name. After such a failure, it waits for the other commit, which holds the lock for at least
+     * {@code storage.lock.wait-time}, twice that time and then twice as long each time, and tries again with the keys
+     * which are still missing, making up to {@code storage.lock.retries} attempts. Any other failure fails the job.
+     */
+    private void createMissingComputeKeys() {
+        final Configuration configuration = graph.getConfiguration().getConfiguration();
+        final int attempts = Math.max(1, configuration.get(GraphDatabaseConfiguration.LOCK_RETRY));
+        Duration wait = configuration.get(GraphDatabaseConfiguration.LOCK_WAIT);
+        Set<String> missing = missingComputeKeys();
+        for (String key : missing) {
+            log.warn("Property key [{}] is not part of the schema and will be created. It is advised to initialize all keys.", key);
+        }
+        RuntimeException earlierFailure = null;
+        for (int attempt = 1; !missing.isEmpty(); attempt++) {
+            final JanusGraphManagement management = graph.openManagement();
+            try {
+                for (String key : missing) {
+                    management.getOrCreatePropertyKey(key);
+                }
+                management.commit();
+                return;
+            } catch (RuntimeException e) {
+                if (earlierFailure != null) {
+                    e.addSuppressed(earlierFailure);
+                }
+                if (attempt >= attempts || !isLockingFailure(e)) {
+                    throw e;
+                }
+                earlierFailure = e;
+                log.debug("Could not take the lock of a property key among {}, which another job may be creating; " +
+                    "trying again", missing, e);
+            } finally {
+                if (management.isOpen()) {
+                    management.rollback();
+                }
+            }
+            wait = wait.multipliedBy(2);
+            try {
+                Thread.sleep(wait.toMillis());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                final JanusGraphException interrupted = new JanusGraphException("Interrupted while creating the property keys " + missing, e);
+                interrupted.addSuppressed(earlierFailure);
+                throw interrupted;
+            }
+            missing = missingComputeKeys();
+        }
+    }
+
+    private static boolean isLockingFailure(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof PermanentLockingException || cause instanceof TemporaryLockingException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Set<String> missingComputeKeys() {
+        final JanusGraphManagement management = graph.openManagement();
+        try {
+            final Set<String> missing = new HashSet<>();
+            for (VertexComputeKey key : vertexProgram.getVertexComputeKeys()) {
+                if (!management.containsPropertyKey(key.getKey())) {
+                    missing.add(key.getKey());
+                }
+            }
+            return missing;
+        } finally {
+            management.rollback();
+        }
+    }
+
+    /**
+     * The result of a job, whose close ends the transaction which holds the computed properties of a new result graph,
+     * where {@link DefaultComputerResult#close()} does nothing.
+     */
+    private static final class FulgoraComputerResult extends DefaultComputerResult {
+
+        private FulgoraComputerResult(Graph graph, Memory memory) {
+            super(graph, memory);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            if (graph instanceof JanusGraphTransaction && ((JanusGraphTransaction) graph).isOpen()) {
+                ((JanusGraphTransaction) graph).rollback();
+            }
+        }
     }
 
     private class VertexPropertyWriter implements Runnable {

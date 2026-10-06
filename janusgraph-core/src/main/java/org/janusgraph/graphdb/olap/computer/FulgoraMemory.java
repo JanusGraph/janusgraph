@@ -26,8 +26,11 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceEdge;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +46,8 @@ import java.util.stream.Collectors;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class FulgoraMemory implements Memory.Admin {
+
+    private static final Logger log = LoggerFactory.getLogger(FulgoraMemory.class);
 
     public final Map<String, MemoryComputeKey> memoryKeys = new HashMap<>();
     public Map<String, Optional<Object>> previousMap;
@@ -149,6 +154,35 @@ public class FulgoraMemory implements Memory.Admin {
     private void checkKey(final String key) {
         if (!this.memoryKeys.containsKey(key))
             throw GraphComputer.Exceptions.providedKeyIsNotAMemoryComputeKey(key);
+    }
+
+    /**
+     * Detaches the elements among the values of the completed memory from the transactions of the job's scans, which
+     * end with the job, so that the values stay usable afterwards: the side effects of a traversal collect the
+     * vertices and edges which its scans read, as {@code group()} or {@code aggregate()} do, and a later job of the
+     * traversal, or the user, reads them once the scans have ended. The elements are detached with their properties,
+     * as {@link DetachedFactory#detach(Object, boolean)} does for the values of the traversers which reach the master
+     * traversal, and the lists, sets and maps around them are rebuilt as the kinds that method makes. A value which
+     * holds a vertex adjacent to a scanned one stays as it is: neither the label nor the properties of such a vertex
+     * can be read in an OLAP job. The traversers of the program are left alone: it detaches the halted ones itself,
+     * and {@link #attachReferenceElements(Graph)} attaches theirs to the graph.
+     */
+    protected void detachElements() {
+        for (Map.Entry<String, Optional<Object>> entry : previousMap.entrySet()) {
+            final Object value = entry.getValue().orElse(null);
+            if (value == null || value instanceof TraverserSet) {
+                continue;
+            }
+            try {
+                final Object detached = DetachedFactory.detach(value, true);
+                if (detached != value) {
+                    entry.setValue(Optional.of(detached));
+                }
+            } catch (RuntimeException e) {
+                log.debug("The elements in the value of memory key [{}] can't be detached and stay as they are",
+                    entry.getKey(), e);
+            }
+        }
     }
 
     protected void attachReferenceElements(Graph graph) {
