@@ -30,6 +30,7 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphAlreadyInstantiatedException;
 import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
+import org.janusgraph.graphdb.management.utils.ConfigurationManagementGraphSettingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +78,11 @@ public class ConfigurationManagementGraph {
     // but for now, leaving open for testing purposes
     public ConfigurationManagementGraph(StandardJanusGraph graph) {
         initialize();
+        if (graph.getConfiguration().allowVertexIdSetting()) {
+            final String errMsg = "ConfigurationManagementGraph prohibits usage of custom vertex ID config. " +
+                "Note: ConfigurationManagementGraph and actual graphs can have different configs.";
+            throw new ConfigurationManagementGraphSettingException(errMsg);
+        }
         this.graph = graph;
         createIndexIfDoesNotExist(GRAPH_NAME_INDEX, PROPERTY_GRAPH_NAME, String.class, true);
         createIndexIfDoesNotExist(TEMPLATE_INDEX, PROPERTY_TEMPLATE, Boolean.class, false);
