@@ -179,9 +179,19 @@ public class LuceneIndex implements IndexProvider {
     private final String basePath;
 
     /**
-     * lazy cache for the delegating analyzers used for writing or querrying for each store
+     * The delegating analyzer of each store. It belongs to the store's index writer, so it outlives the transactions,
+     * and serves the store's queries too; it resolves the key of each field through {@link #scopedKeyInformation}.
      */
-    private final Map<String, LuceneCustomAnalyzer> delegatingAnalyzers = new HashMap<>();
+    private final Map<String, LuceneCustomAnalyzer> delegatingAnalyzers = new ConcurrentHashMap<>();
+
+    /**
+     * The key information of the transaction on whose behalf the current thread writes to or queries a store, set
+     * for the length of the call: a store's analyzer has to resolve fields through the key information of the
+     * transaction which analyzes, not of the one which first used the store, which may have closed since, after
+     * which its key information can't read the schema, and knows nothing of the keys added to the index after it
+     * last read them.
+     */
+    private final ThreadLocal<KeyInformation.IndexRetriever> scopedKeyInformation = new ThreadLocal<>();
 
     public LuceneIndex(Configuration config) {
         final String dir = config.get(GraphDatabaseConfiguration.INDEX_DIRECTORY);
@@ -208,11 +218,11 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
-    private IndexWriter getWriter(String store, KeyInformation.IndexRetriever informations) throws BackendException {
+    private IndexWriter getWriter(String store) throws BackendException {
         Preconditions.checkArgument(writerLock.isHeldByCurrentThread());
         IndexWriter writer = writers.get(store);
         if (writer == null) {
-            final LuceneCustomAnalyzer analyzer = delegatingAnalyzerFor(store, informations);
+            final LuceneCustomAnalyzer analyzer = delegatingAnalyzerFor(store);
             final IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
             iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
             try {
@@ -273,7 +283,7 @@ public class LuceneIndex implements IndexProvider {
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         final Transaction ltx = (Transaction) tx;
         writerLock.lock();
-        try {
+        try (KeyInformationScope ignored = analyzeWith(information)) {
             for (final Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 mutateStores(stores, information);
             }
@@ -289,7 +299,7 @@ public class LuceneIndex implements IndexProvider {
         IndexReader reader = null;
         try {
             final String storeName = stores.getKey();
-            final IndexWriter writer = getWriter(storeName, information);
+            final IndexWriter writer = getWriter(storeName);
             reader = DirectoryReader.open(writer, true, true);
             final IndexSearcher searcher = new IndexSearcher(reader);
             final KeyInformation.StoreRetriever storeRetriever = information.get(storeName);
@@ -332,12 +342,12 @@ public class LuceneIndex implements IndexProvider {
     @Override
     public void restore(Map<String, Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         writerLock.lock();
-        try {
+        try (KeyInformationScope ignored = analyzeWith(information)) {
             for (final Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
                 IndexReader reader = null;
                 try {
                     final String store = stores.getKey();
-                    final IndexWriter writer = getWriter(store, information);
+                    final IndexWriter writer = getWriter(store);
                     final KeyInformation.StoreRetriever storeRetriever = information.get(store);
                     reader = DirectoryReader.open(writer, true, true);
                     final IndexSearcher searcher = new IndexSearcher(reader);
@@ -598,8 +608,7 @@ public class LuceneIndex implements IndexProvider {
     public Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         //Construct query
         final String store = query.getStore();
-        final LuceneCustomAnalyzer delegatingAnalyzer = delegatingAnalyzerFor(store, information);
-        final SearchParams searchParams = convertQuery(query.getCondition(), information.get(store), delegatingAnalyzer);
+        final SearchParams searchParams = searchParams(query.getCondition(), information, store);
 
         try {
             final IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
@@ -760,11 +769,48 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
-    private LuceneCustomAnalyzer delegatingAnalyzerFor(String store, KeyInformation.IndexRetriever information2) {
-        if (!delegatingAnalyzers.containsKey(store)) {
-            delegatingAnalyzers.put(store, new LuceneCustomAnalyzer(store, information2, Analyzer.PER_FIELD_REUSE_STRATEGY));
+    private LuceneCustomAnalyzer delegatingAnalyzerFor(String store) {
+        return delegatingAnalyzers.computeIfAbsent(store,
+            s -> new LuceneCustomAnalyzer(s, this::keyInformationInScope, Analyzer.PER_FIELD_REUSE_STRATEGY));
+    }
+
+    private KeyInformation.IndexRetriever keyInformationInScope() {
+        final KeyInformation.IndexRetriever information = scopedKeyInformation.get();
+        Preconditions.checkState(information != null, "No key information in scope: a field is analyzed outside " +
+            "a call of the index, which sets the key information of its transaction");
+        return information;
+    }
+
+    /**
+     * Sets the key information through which the analyzers resolve the fields the current thread analyzes, until
+     * the returned scope is closed, which restores the previous one
+     */
+    private KeyInformationScope analyzeWith(KeyInformation.IndexRetriever information) {
+        Preconditions.checkNotNull(information);
+        final KeyInformation.IndexRetriever before = scopedKeyInformation.get();
+        scopedKeyInformation.set(information);
+        return () -> {
+            if (before == null) {
+                scopedKeyInformation.remove();
+            } else {
+                scopedKeyInformation.set(before);
+            }
+        };
+    }
+
+    private interface KeyInformationScope extends AutoCloseable {
+        @Override
+        void close();
+    }
+
+    /**
+     * Converts a condition with the key information of the transaction it belongs to, through which the analyzers of
+     * the store's text fields resolve the fields
+     */
+    private SearchParams searchParams(Condition<?> condition, KeyInformation.IndexRetriever information, String store) {
+        try (KeyInformationScope ignored = analyzeWith(information)) {
+            return convertQuery(condition, information.get(store), delegatingAnalyzerFor(store));
         }
-        return delegatingAnalyzers.get(store);
     }
 
     private SearchParams convertQuery(Condition<?> condition, final KeyInformation.StoreRetriever information, final LuceneCustomAnalyzer delegatingAnalyzer) {
@@ -893,21 +939,28 @@ public class LuceneIndex implements IndexProvider {
     }
 
     private QueryParser getQueryParser(String store, KeyInformation.IndexRetriever information) {
-        final Analyzer analyzer = delegatingAnalyzerFor(store, information);
+        final Analyzer analyzer = delegatingAnalyzerFor(store);
         final NumericTranslationQueryParser parser = new NumericTranslationQueryParser(information.get(store), "_all", analyzer);
         parser.setAllowLeadingWildcard(true);
         return parser;
     }
 
-    @Override
-    public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
-        final Query q;
-        try {
-            q = getQueryParser(query.getStore(), information).parse(query.getQuery());
-            // Lucene query parser does not take additional parameters so any parameters on the RawQuery are ignored.
+    /**
+     * Parses a raw query with the key information of the transaction it belongs to, through which the analyzers of
+     * the store's text fields resolve the fields
+     */
+    private Query parse(RawQuery query, KeyInformation.IndexRetriever information) throws PermanentBackendException {
+        try (KeyInformationScope ignored = analyzeWith(information)) {
+            return getQueryParser(query.getStore(), information).parse(query.getQuery());
         } catch (final ParseException e) {
             throw new PermanentBackendException("Could not parse raw query: " + query.getQuery(), e);
         }
+    }
+
+    @Override
+    public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
+        // Lucene query parser does not take additional parameters so any parameters on the RawQuery are ignored.
+        final Query q = parse(query, information);
 
         try {
             final IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
@@ -942,8 +995,7 @@ public class LuceneIndex implements IndexProvider {
     public Number queryAggregation(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx, Aggregation aggregation) throws BackendException {
         //Construct query
         final String store = query.getStore();
-        final LuceneCustomAnalyzer delegatingAnalyzer = delegatingAnalyzerFor(store, information);
-        final SearchParams searchParams = convertQuery(query.getCondition(), information.get(store), delegatingAnalyzer);
+        final SearchParams searchParams = searchParams(query.getCondition(), information, store);
 
         try {
             final IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
@@ -1025,12 +1077,7 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public Long totals(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
-        final Query q;
-        try {
-            q = getQueryParser(query.getStore(), information).parse(query.getQuery());
-        } catch (final ParseException e) {
-            throw new PermanentBackendException("Could not parse raw query: " + query.getQuery(), e);
-        }
+        final Query q = parse(query, information);
 
         try {
             final IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
