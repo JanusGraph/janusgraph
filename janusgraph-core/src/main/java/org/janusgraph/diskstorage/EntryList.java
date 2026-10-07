@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage;
 
+import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.Iterator;
 import java.util.List;
@@ -45,7 +46,7 @@ public interface EntryList extends List<Entry> {
 
     EmptyList EMPTY_LIST = new EmptyList();
 
-    class EmptyList extends AbstractList<Entry> implements EntryList {
+    class EmptyList extends AbstractList<Entry> implements EntryList, Serializable {
 
         @Override
         public Entry get(int index) {

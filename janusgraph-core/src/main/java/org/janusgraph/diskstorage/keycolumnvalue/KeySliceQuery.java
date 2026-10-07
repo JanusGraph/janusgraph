@@ -17,6 +17,7 @@ package org.janusgraph.diskstorage.keycolumnvalue;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.StaticBuffer;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -24,7 +25,7 @@ import java.util.Objects;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class KeySliceQuery extends SliceQuery {
+public class KeySliceQuery extends SliceQuery implements Serializable {
 
     private final StaticBuffer key;
 

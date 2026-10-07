@@ -23,6 +23,7 @@ import org.janusgraph.diskstorage.util.EntryArrayList;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +38,7 @@ import java.util.Objects;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
+public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery>, Serializable {
 
     private final StaticBuffer sliceStart;
     private final StaticBuffer sliceEnd;
