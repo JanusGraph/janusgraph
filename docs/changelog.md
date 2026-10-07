@@ -367,6 +367,22 @@ To restore the previous storage-page-sized, flush-once-per-segment behavior, set
 [Elasticsearch reindex tuning guide](index-backend/elasticsearch.md#reindex-optimization) for tuning
 the batch size, reindex threads and `index.[X].elasticsearch.bulk-refresh` together.
 
+##### Lucene analyzes each field with the key information of the transaction at hand
+
+The analyzer of a Lucene store kept the key information of the transaction which first wrote to or queried the store,
+and resolved every field through it from then on. Once that transaction had closed, its key information could no
+longer read the schema: when a schema change to the index, such as disabling or re-enabling it, had reached the
+transaction after its last use of the store and before it closed, the store's next write or query failed, with an
+`AssertionError` in `StandardJanusGraphTx.getSchemaVertex` where assertions are enabled and otherwise with
+`Index with name [...] is unknown or not configured properly`. And a key added to the index after that transaction
+had last read the index's keys was unknown to it, so its values were indexed with the standard analyzer instead of
+the one configured for its mapping or its `TEXT_ANALYZER` or `STRING_ANALYZER` parameter. Text keys stayed
+consistent between writes and queries until the instance restarted, after which the new instance's analyzer knew the
+key and queries no longer found the values indexed before; string-mapped and UUID keys were missed within the same
+instance already, as their exact, prefix, regex, fuzzy and range queries compare the raw value with what the
+standard analyzer indexed. The analyzer now resolves each field through the key information of the transaction on
+whose behalf the field is analyzed.
+
 ##### Faster OLAP scans (signal-based row hand-off)
 
 The OLAP scan pipeline behind reindex and other scan jobs now hands rows between its internal threads
