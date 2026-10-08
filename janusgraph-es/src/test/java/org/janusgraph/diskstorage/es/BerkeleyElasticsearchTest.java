@@ -42,6 +42,12 @@ public class BerkeleyElasticsearchTest extends ElasticsearchJanusGraphIndexTest 
         return getBerkeleyJEConfiguration();
     }
 
+    //Every result larger than a page through a point in time on a cluster which has them, sorted, limited or not
+    @Override
+    protected ElasticSearchPagingMode getPagingMode() {
+        return ElasticSearchPagingMode.POINT_IN_TIME;
+    }
+
     // flaky test: https://github.com/JanusGraph/janusgraph/issues/3960
     @RepeatedIfExceptionsTest(repeats = 3)
     @Override

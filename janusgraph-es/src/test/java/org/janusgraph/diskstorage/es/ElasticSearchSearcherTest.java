@@ -60,7 +60,14 @@ public class ElasticSearchSearcherTest {
     @BeforeEach
     public void setUp() {
         client = mock(ElasticSearchClient.class);
-        searcher = new ElasticSearchSearcher(client, new ES7Compat(), PAGE_SIZE);
+        //Pages through a point in time wherever the cluster has one; the tests of the other modes make a searcher of
+        //their own
+        searcher = searcher(PAGE_SIZE, ElasticSearchPagingMode.POINT_IN_TIME);
+    }
+
+    //The bounds of the adaptive mode by default: one shard and pages of up to 500
+    private ElasticSearchSearcher searcher(int pageSize, ElasticSearchPagingMode pagingMode) {
+        return new ElasticSearchSearcher(client, new ES7Compat(), pageSize, pagingMode, 1, 500);
     }
 
     @Test
@@ -246,7 +253,7 @@ public class ElasticSearchSearcherTest {
     @Test
     public void shouldStopTheScrollAtTheLimitAndReleaseIt() throws IOException {
         final int pageSize = ElasticSearchSearcher.MAX_SEARCH_SIZE;
-        searcher = new ElasticSearchSearcher(client, new ES7Compat(), pageSize);
+        searcher = searcher(pageSize, ElasticSearchPagingMode.POINT_IN_TIME);
         when(client.search(eq(INDEX), any(), eq(false))).thenReturn(response(page(0, pageSize), null));
         when(client.search(eq(INDEX), any(), eq(true))).thenReturn(response(page(0, pageSize), "scroll-1"));
         when(client.search("scroll-1")).thenReturn(response(page(pageSize, pageSize), "scroll-2"));
@@ -263,7 +270,7 @@ public class ElasticSearchSearcherTest {
     //for whole, and a result which stays below it needs no scroll
     @Test
     public void shouldAskForTheWholeWindowWhenAPageIsAsLargeAsIt() throws IOException {
-        searcher = new ElasticSearchSearcher(client, new ES7Compat(), ElasticSearchSearcher.MAX_SEARCH_SIZE);
+        searcher = searcher(ElasticSearchSearcher.MAX_SEARCH_SIZE, ElasticSearchPagingMode.POINT_IN_TIME);
         when(client.search(eq(INDEX), any(), eq(false))).thenReturn(response(hits("a", "b"), null));
 
         assertEquals(ids(hits("a", "b").stream()), ids(searcher.search(INDEX, request(), NO_PARAMETERS, 0, Query.NO_LIMIT)));
@@ -377,7 +384,7 @@ public class ElasticSearchSearcherTest {
     }
 
     /* ---------------------------------------------------------------
-     * A cluster with points in time reads the pages of a result larger than a page through one, never through a scroll
+     * In point in time mode a cluster with points in time reads the pages of a result through one, never through a scroll
      * ---------------------------------------------------------------
      */
 
@@ -431,7 +438,7 @@ public class ElasticSearchSearcherTest {
         when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(page(0, 2_500), "pit-1"));
 
         //Pages of 2,500: five hold the 10,001 hits of offset and limit
-        searcher = new ElasticSearchSearcher(client, new ES7Compat(), 2_500);
+        searcher = searcher(2_500, ElasticSearchPagingMode.POINT_IN_TIME);
         assertEquals(2, searcher.search(INDEX, request(), NO_PARAMETERS, 9_999, 2).count());
 
         @SuppressWarnings("unchecked")
@@ -532,7 +539,7 @@ public class ElasticSearchSearcherTest {
             pitPage(page(2_500, 2_500), "pit-1"), pitPage(page(5_000, 2_500), "pit-1"),
             pitPage(page(7_500, 2_500), "pit-1"), pitPage(page(10_000, 2_500), "pit-1"));
 
-        searcher = new ElasticSearchSearcher(client, new ES7Compat(), 2_500);
+        searcher = searcher(2_500, ElasticSearchPagingMode.POINT_IN_TIME);
         assertEquals(Arrays.asList("9999", "10000"), ids(searcher.search(INDEX, request(), NO_PARAMETERS, 9_999, 2)));
 
         //Five pages of 2,500 hold the 10,001 hits of offset and limit; none beyond them is asked for
@@ -561,5 +568,139 @@ public class ElasticSearchSearcherTest {
 
         verify(client).closePointInTime("pit-1");
         verify(client, times(1)).searchPointInTime(any(), any());
+    }
+
+    /* ---------------------------------------------------------------
+     * The paging mode decides which results a cluster with points in time reads through one; the others scroll
+     * ---------------------------------------------------------------
+     */
+
+    //The probe comes back full from an index of the shards given, on a cluster which can read the pages through a point
+    //in time or a scroll; either reads the hits a and b
+    private void givenAResultLargerThanAPageOfAnIndexOf(int shards) throws IOException {
+        when(client.supportsPointInTime()).thenReturn(true);
+        final ElasticSearchResponse probe = response(hits("a", "b", "c", "d"), null);
+        probe.setTotalShards(shards);
+        when(client.search(eq(INDEX), any(), eq(false))).thenReturn(probe);
+        when(client.openPointInTime(INDEX)).thenReturn("pit-1");
+        when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(hits("a", "b"), "pit-1"));
+        when(client.search(eq(INDEX), any(), eq(true))).thenReturn(response(hits("a", "b"), "scroll-1"));
+    }
+
+    private void assertScrolled(ElasticSearchRequest request, Parameter[] parameters, int limit) throws IOException {
+        assertEquals(Arrays.asList("a", "b"), ids(searcher.search(INDEX, request, parameters, 0, limit)));
+        verify(client).search(eq(INDEX), any(), eq(true));
+        verify(client, never()).openPointInTime(anyString());
+    }
+
+    private void assertReadThroughAPointInTimeInTheOrderOfTheIndex() throws IOException {
+        assertEquals(Arrays.asList("a", "b"),
+            ids(searcher.search(INDEX, request(), NO_PARAMETERS, 0, Query.NO_LIMIT)));
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, Object>> body = ArgumentCaptor.forClass(Map.class);
+        verify(client).searchPointInTime(eq("pit-1"), body.capture());
+        assertEquals(Collections.singletonList(Collections.singletonMap("_shard_doc", "asc")),
+            body.getValue().get("sort"));
+        verify(client).closePointInTime("pit-1");
+        verify(client, never()).search(anyString(), any(), eq(true));
+    }
+
+    private ElasticSearchSearcher adaptiveSearcher(int maxShards, int maxPageSize) {
+        return new ElasticSearchSearcher(client, new ES7Compat(), PAGE_SIZE,
+            ElasticSearchPagingMode.ADAPTIVE_POINT_IN_TIME, maxShards, maxPageSize);
+    }
+
+    @Test
+    public void shouldScrollInScrollModeWhereTheClusterHasPointsInTime() throws IOException {
+        givenAResultLargerThanAPageOfAnIndexOf(1);
+        searcher = searcher(PAGE_SIZE, ElasticSearchPagingMode.SCROLL);
+        assertScrolled(request(), NO_PARAMETERS, Query.NO_LIMIT);
+    }
+
+    //Small pages of one shard in the order of the index come as fast through a point in time as through a scroll
+    @Test
+    public void shouldReadAResultInTheOrderOfTheIndexThroughAPointInTimeInAdaptiveMode() throws IOException {
+        givenAResultLargerThanAPageOfAnIndexOf(1);
+        searcher = adaptiveSearcher(1, PAGE_SIZE);
+        assertReadThroughAPointInTimeInTheOrderOfTheIndex();
+    }
+
+    @Test
+    public void shouldReadAnIndexOfAsManyShardsAsItsBoundThroughAPointInTimeInAdaptiveMode() throws IOException {
+        givenAResultLargerThanAPageOfAnIndexOf(2);
+        searcher = adaptiveSearcher(2, 500);
+        assertReadThroughAPointInTimeInTheOrderOfTheIndex();
+    }
+
+    //A limited query may be executed again with a larger limit, so a point in time would read its pages by score
+    @Test
+    public void shouldScrollALimitedResultInAdaptiveMode() throws IOException {
+        givenAResultLargerThanAPageOfAnIndexOf(1);
+        searcher = adaptiveSearcher(1, 500);
+        assertScrolled(request(), NO_PARAMETERS, ElasticSearchSearcher.MAX_SEARCH_SIZE + 1);
+    }
+
+    @Test
+    public void shouldScrollARelevanceOrderedResultInAdaptiveMode() throws IOException {
+        givenAResultLargerThanAPageOfAnIndexOf(1);
+        searcher = adaptiveSearcher(1, 500);
+        final ElasticSearchRequest request = request();
+        request.setRelevanceOrdered(true);
+        assertScrolled(request, NO_PARAMETERS, Query.NO_LIMIT);
+    }
+
+    //Whether the query sorts or a parameter does
+    @Test
+    public void shouldScrollASortedResultInAdaptiveMode() throws IOException {
+        givenAResultLargerThanAPageOfAnIndexOf(1);
+        searcher = adaptiveSearcher(1, 500);
+        final ElasticSearchRequest request = request();
+        request.addSort("time", "asc", "long");
+        assertScrolled(request, NO_PARAMETERS, Query.NO_LIMIT);
+
+        setUp();
+        givenAResultLargerThanAPageOfAnIndexOf(1);
+        searcher = adaptiveSearcher(1, 500);
+        assertScrolled(request(), new Parameter[]{new Parameter<>("sort", "time")}, Query.NO_LIMIT);
+    }
+
+    //A response which doesn't tell its shards may come from any number of them
+    @Test
+    public void shouldScrollAnIndexOfMoreShardsThanItsBoundInAdaptiveMode() throws IOException {
+        for (final int shards : new int[]{2, 0}) {
+            setUp();
+            givenAResultLargerThanAPageOfAnIndexOf(shards);
+            searcher = adaptiveSearcher(1, 500);
+            assertScrolled(request(), NO_PARAMETERS, Query.NO_LIMIT);
+        }
+    }
+
+    //An offset which leaves no room for the first request leaves the shards untold, so the search scrolls at once
+    @Test
+    public void shouldScrollInAdaptiveModeWhenTheOffsetLeavesNoRoomForTheFirstRequest() throws IOException {
+        givenAResultLargerThanAPageOfAnIndexOf(1);
+        searcher = adaptiveSearcher(1, 500);
+
+        assertEquals(0, searcher.search(INDEX, request(), NO_PARAMETERS, ElasticSearchSearcher.MAX_SEARCH_SIZE,
+            Query.NO_LIMIT).count());
+
+        verify(client, never()).search(anyString(), any(), eq(false));
+        verify(client).search(eq(INDEX), any(), eq(true));
+        verify(client, never()).openPointInTime(anyString());
+    }
+
+    @Test
+    public void shouldScrollInAdaptiveModeWhereTheClusterHasNoPointsInTime() throws IOException {
+        givenAResultLargerThanAPageOfAnIndexOf(1);
+        when(client.supportsPointInTime()).thenReturn(false);
+        searcher = adaptiveSearcher(1, 500);
+        assertScrolled(request(), NO_PARAMETERS, Query.NO_LIMIT);
+    }
+
+    @Test
+    public void shouldScrollPagesLargerThanTheirBoundInAdaptiveMode() throws IOException {
+        givenAResultLargerThanAPageOfAnIndexOf(1);
+        searcher = adaptiveSearcher(1, PAGE_SIZE - 1);
+        assertScrolled(request(), NO_PARAMETERS, Query.NO_LIMIT);
     }
 }

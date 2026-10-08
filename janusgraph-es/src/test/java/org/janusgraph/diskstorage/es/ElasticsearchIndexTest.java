@@ -81,6 +81,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -120,7 +121,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Testcontainers
 public class ElasticsearchIndexTest extends IndexProviderTest {
 
-    private static Boolean pagesWithPointInTime;
+    private static Boolean canPageWithPointInTime;
+
+    //The paging mode of the index a test opens: the option's default, unless the test chooses another before it
+    //(re)opens the index
+    private ElasticSearchPagingMode pagingMode = ElasticSearchPagingMode.SCROLL;
 
     @Container
     public static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer();
@@ -180,6 +185,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         final String index = "es";
         final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
         cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
+        cc.set("index." + index + ".elasticsearch.paging-mode", pagingMode.getConfigName());
         return makeESTestConfig(index, cc);
     }
 
@@ -1078,8 +1084,8 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
 
     /* ---------------------------------------------------------------
      * Search contexts. The page size of this configuration is 3 (max-result-set-size), so a result of 10
-     * documents is several pages, read through a point in time on a cluster which has them and through a scroll
-     * otherwise, and these tests watch the cluster's own accounting of its search contexts
+     * documents is several pages, read through a scroll, or through a point in time where the paging mode says so and
+     * the cluster has them, and these tests watch the cluster's own accounting of its search contexts
      * ---------------------------------------------------------------
      */
 
@@ -1137,10 +1143,15 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertNoPages(before, awaitSearchContextsBackAt(before));
     }
 
-    @Test
-    public void shouldReleaseTheContextOfAnUnlimitedQueryLargerThanAPage() throws Exception {
+    @ParameterizedTest
+    @EnumSource(ElasticSearchPagingMode.class)
+    public void shouldReleaseTheContextOfAnUnlimitedQueryLargerThanAPage(ElasticSearchPagingMode mode)
+            throws Exception {
+        pagingMode = mode;
         final String store = "vertex";
         indexDocuments(store);
+        //A direct index query finds every document as well, by relevance, before the graph query is read
+        assertEquals(INDEXED_DOCUMENTS, tx.queryStream(rawAllDocuments(store)).count());
         final SearchStats before = settledSearchStats();
 
         final SearchStats whileReading;
@@ -1158,13 +1169,14 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         }
         assertEquals(INDEXED_DOCUMENTS, read.size(), "hits read: " + read);
         assertEquals(indexed, new HashSet<>(read));
-        assertEquals(INDEXED_DOCUMENTS, tx.queryStream(rawAllDocuments(store)).count());
 
-        assertReadInPages(before, whileReading, awaitSearchContextsBackAt(before));
+        assertReadInPages(before, whileReading, awaitSearchContextsBackAt(before), mode);
     }
 
-    @Test
-    public void shouldReleaseTheContextWhenTheConsumerStopsBeforeTheEnd() throws Exception {
+    @ParameterizedTest
+    @EnumSource(ElasticSearchPagingMode.class)
+    public void shouldReleaseTheContextWhenTheConsumerStopsBeforeTheEnd(ElasticSearchPagingMode mode) throws Exception {
+        pagingMode = mode;
         final String store = "vertex";
         indexDocuments(store);
         final SearchStats before = settledSearchStats();
@@ -1175,7 +1187,29 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
             whileReading = searchStats();
         }
 
-        assertReadInPages(before, whileReading, awaitSearchContextsBackAt(before));
+        assertReadInPages(before, whileReading, awaitSearchContextsBackAt(before), mode);
+    }
+
+    //On this index of one shard, read in pages of 3, the adaptive mode reads a graph query without a limit and without
+    //an order through a point in time, and a direct index query, whose hits come by relevance, through a scroll
+    @Test
+    public void shouldReadOnlyAResultInTheOrderOfTheIndexThroughAPointInTimeInAdaptiveMode() throws Exception {
+        pagingMode = ElasticSearchPagingMode.ADAPTIVE_POINT_IN_TIME;
+        final String store = "vertex";
+        indexDocuments(store);
+
+        final SearchStats before = settledSearchStats();
+        assertEquals(INDEXED_DOCUMENTS, tx.queryStream(allDocuments(store)).count());
+        final SearchStats afterGraphQuery = awaitSearchContextsBackAt(before);
+        if (clusterCanPageWithPointInTime()) {
+            assertEquals(before.scrollTotal, afterGraphQuery.scrollTotal, "the graph query scrolled");
+        } else {
+            assertTrue(afterGraphQuery.scrollTotal > before.scrollTotal, "the graph query is read through a scroll");
+        }
+
+        assertEquals(INDEXED_DOCUMENTS, tx.queryStream(rawAllDocuments(store)).count());
+        assertTrue(awaitSearchContextsBackAt(afterGraphQuery).scrollTotal > afterGraphQuery.scrollTotal,
+            "the direct index query is read through a scroll");
     }
 
     //A count which a limit of 0 bounds is 0, the totals of a raw query and the COUNT aggregation of an index query
@@ -1191,9 +1225,12 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(0L, tx.queryAggregation(allDocuments(store, 0), Aggregation.COUNT).longValue());
     }
 
-    //The offset of a limited raw query is applied by Elasticsearch, that of an unlimited one on the client
-    @Test
-    public void shouldApplyOffsetsBeyondAPage() throws Exception {
+    //The offset of a limited raw query is applied by Elasticsearch, that of an unlimited one on the client, in every
+    //paging mode; the adaptive mode scrolls a direct index query, which wants its hits by relevance
+    @ParameterizedTest
+    @EnumSource(ElasticSearchPagingMode.class)
+    public void shouldApplyOffsetsBeyondAPage(ElasticSearchPagingMode mode) throws Exception {
+        pagingMode = mode;
         final String store = "vertex";
         indexDocuments(store);
 
@@ -1235,28 +1272,31 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         }
     }
 
-    //Whether the cluster pages with a point in time, by the version it reports, as the client decides it; asked once
-    //for the class, whose container is the one cluster of the run
-    private boolean clusterPagesWithPointInTime() throws IOException {
+    //Whether the cluster can page with a point in time, by the version it reports, as the client decides it; asked
+    //once for the class, whose container is the one cluster of the run
+    private boolean clusterCanPageWithPointInTime() throws IOException {
         synchronized (ElasticsearchIndexTest.class) {
-            if (pagesWithPointInTime == null) {
+            if (canPageWithPointInTime == null) {
                 try (CloseableHttpResponse response = httpClient.execute(host, new HttpGet("/"))) {
                     final JsonNode version = objectMapper.readTree(EntityUtils.toString(response.getEntity())).get("version");
                     @SuppressWarnings("unchecked")
                     final Map<String, Object> versionMap = objectMapper.convertValue(version, Map.class);
-                    pagesWithPointInTime = RestElasticSearchClient.clusterSupportsPointInTime(versionMap);
+                    canPageWithPointInTime = RestElasticSearchClient.clusterSupportsPointInTime(versionMap);
                 }
             }
-            return pagesWithPointInTime;
+            return canPageWithPointInTime;
         }
     }
 
-    //A result read in pages holds a context while it is read, which the cluster counts among its open ones: a point in
-    //time on a cluster which has them, which it counts as it closes no scroll, a scroll context on an older one
-    private void assertReadInPages(SearchStats before, SearchStats whileReading, SearchStats after) throws IOException {
+    //A result of a graph query read in pages holds a context while it is read, which the cluster counts among its
+    //open ones: a point in time on a cluster which has them, unless the mode scrolls, which the cluster counts as it
+    //closes no scroll, and a scroll context otherwise. On this index of one shard, read in pages of 3, the adaptive
+    //mode reads a graph query without a limit and without an order through a point in time
+    private void assertReadInPages(SearchStats before, SearchStats whileReading, SearchStats after,
+                                   ElasticSearchPagingMode mode) throws IOException {
         assertTrue(whileReading.openContexts > before.openContexts, "no context was open while the pages were read");
-        if (clusterPagesWithPointInTime()) {
-            assertEquals(before.scrollTotal, after.scrollTotal, "scroll contexts opened on a cluster with points in time");
+        if (mode != ElasticSearchPagingMode.SCROLL && clusterCanPageWithPointInTime()) {
+            assertEquals(before.scrollTotal, after.scrollTotal, "scroll contexts opened in mode " + mode);
         } else {
             assertTrue(after.scrollTotal > before.scrollTotal, "this result is read through a scroll");
         }
