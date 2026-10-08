@@ -333,9 +333,13 @@ index.search.elasticsearch.http.auth.basic.password=<password>
 
 JanusGraph raises the cluster setting `search.max_open_scroll_context` when it opens the index. If the
 JanusGraph user may not update cluster settings (`cluster:admin/settings/update`), set
-`index.[X].elasticsearch.setup-max-open-scroll-contexts` to `false`. Only a result larger than a page holds a
-scroll context, and it is released as soon as the result has been read or its traversal is closed (see
-[Search Requests](#search-requests)), so the default limit of 500 open contexts per node is rarely reached.
+`index.[X].elasticsearch.setup-max-open-scroll-contexts` to `false`. On Elasticsearch 7.12 and later a
+result larger than a page is read through a point in time, which this setting doesn't limit. A scroll context
+holds such a result on an older cluster, on OpenSearch, and on Elasticsearch where
+`index.[X].elasticsearch.point-in-time` is `false`, where `index.[X].elasticsearch.major-version` is 7, or
+where JanusGraph can't ask the cluster for its version. Such a context is released as soon as the result has
+been read or its traversal is closed (see [Search Requests](#search-requests)), so the default limit of 500
+open contexts per node is rarely reached.
 
 Amazon OpenSearch Service domains which use IAM based access control need signed requests, which a
 [custom authenticator](#rest-client-custom-http-authentication) can provide. These domains don't allow
@@ -420,25 +424,42 @@ JanusGraph fetches the result of a mixed index query with as few requests as it 
 * A query without a limit, or beyond that size, first asks for one hit more than a page after the offset, or
   for what is left up to the 10,000th hit if that is less. The page size is `index.[X].max-result-set-size`
   (50 by default). When fewer hits come back than were asked for, that is the whole result. Only a larger
-  result is read through the
-  [scroll API](https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html#scroll-search-results),
-  from its first hit on and in pages of that size, which costs such a result one request more than the pages
-  alone. An offset of 10,000 or more leaves nothing to ask for first, and such a query is read through a
-  scroll at once, however small its result.
+  result is read in pages of that size, from its first hit on, which costs such a result one request more than
+  the pages alone: on Elasticsearch 7.12 and later through a
+  [point in time](https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html) and
+  `search_after`, on an older cluster and on OpenSearch through the
+  [scroll API](https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html#scroll-search-results).
+  An offset of 10,000 or more leaves nothing to ask for first, and such a query is read in pages at once,
+  however small its result.
 
-A scroll context is released as soon as the result has been read to its end, the limit is reached, or the
-traversal is closed, which JanusGraph Server does after every request. Embedded code which abandons a traversal
-before its end should close it, for example with try-with-resources; otherwise the context expires after
-`index.[X].elasticsearch.scroll-keep-alive` seconds (60 by default), as it did before JanusGraph 1.2.0. A
-release which the cluster rejects, for example for want of the privilege to clear scrolls, is logged as a
-warning once. Neither the single request nor the first request of an unlimited query counts the total number
-of hits; the pages of a scroll do, because Elasticsearch requires it. On an index which JanusGraph did not
-create, `index.max_result_window` must allow 10,000 hits, which is its default; JanusGraph lifts it on the
-indexes it creates.
+A point in time holds the state of the index while the pages are read, so that they agree, and each page is
+asked for after the last hit of the one before. A graph query without a limit and without an order reads its
+pages in the order of the index, which Elasticsearch pages through without scoring. A limited graph query, which
+JanusGraph may execute again with a larger limit, skipping the hits delivered so far, reads them in the order of
+their scores, as its single request does and as a [direct index query](direct-index-query.md) which doesn't sort
+does; that costs each page the scoring of the whole result, about twice the time of a scroll's page. A query
+which sorts keeps its sort. Unlike a scroll
+context, a point in time isn't counted against `search.max_open_scroll_context`, its pages don't count the total
+number of hits, and a page which is sent again after a transient failure comes back the same, where a scroll may
+skip it. `index.[X].elasticsearch.point-in-time` set to `false` makes every cluster scroll. A
+cluster whose version JanusGraph doesn't ask for (`index.[X].elasticsearch.major-version` 7), or can't, scrolls
+as well, since not every Elasticsearch 7 release has points in time, and so does OpenSearch: its point in time API
+lacks the `_shard_doc` tiebreaker and the sort values for a search sorted by score which `search_after` needs
+to page a query that doesn't sort by a field.
+
+A point in time or a scroll context is released as soon as the result has been read to its end, the limit is
+reached, or the traversal is closed, which JanusGraph Server does after every request. Embedded code which
+abandons a traversal before its end should close it, for example with try-with-resources; otherwise the
+context expires after `index.[X].elasticsearch.scroll-keep-alive` seconds (60 by default), as a scroll context
+did before JanusGraph 1.2.0. A release which the cluster rejects, for example for want of the privilege, is
+logged as a warning once. Neither the single request nor the first request of an unlimited query counts the
+total number of hits, nor do the pages of a point in time; the pages of a scroll do, because Elasticsearch
+requires it. On an index which JanusGraph did not create, `index.max_result_window` must allow 10,000 hits,
+which is its default; JanusGraph lifts it on the indexes it creates.
 
 If large results are common, a larger `index.[X].max-result-set-size` trades the size of one response for the
-number of requests: a result of 5,000 hits is about 100 scroll pages of 50, and one request when it is limited
-to 5,000.
+number of requests: a result of 5,000 hits is about 100 pages of 50, and one request when it is limited to
+5,000.
 
 ### Write Optimization
 

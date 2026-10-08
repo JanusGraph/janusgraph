@@ -98,17 +98,17 @@ public class RestClientScrollTest {
     //error are passing, and must not use the warning up
     @Test
     public void shouldWarnOnlyForARejectionWhichWillRepeat() {
-        assertTrue(RestElasticSearchClient.isRejectedScrollRelease(400));
-        assertTrue(RestElasticSearchClient.isRejectedScrollRelease(401));
-        assertTrue(RestElasticSearchClient.isRejectedScrollRelease(403));
-        assertTrue(RestElasticSearchClient.isRejectedScrollRelease(405));
-        assertFalse(RestElasticSearchClient.isRejectedScrollRelease(404));
-        assertFalse(RestElasticSearchClient.isRejectedScrollRelease(408));
-        assertFalse(RestElasticSearchClient.isRejectedScrollRelease(429));
-        assertFalse(RestElasticSearchClient.isRejectedScrollRelease(500));
-        assertFalse(RestElasticSearchClient.isRejectedScrollRelease(502));
-        assertFalse(RestElasticSearchClient.isRejectedScrollRelease(503));
-        assertFalse(RestElasticSearchClient.isRejectedScrollRelease(504));
+        assertTrue(RestElasticSearchClient.isRejectedRelease(400));
+        assertTrue(RestElasticSearchClient.isRejectedRelease(401));
+        assertTrue(RestElasticSearchClient.isRejectedRelease(403));
+        assertTrue(RestElasticSearchClient.isRejectedRelease(405));
+        assertFalse(RestElasticSearchClient.isRejectedRelease(404));
+        assertFalse(RestElasticSearchClient.isRejectedRelease(408));
+        assertFalse(RestElasticSearchClient.isRejectedRelease(429));
+        assertFalse(RestElasticSearchClient.isRejectedRelease(500));
+        assertFalse(RestElasticSearchClient.isRejectedRelease(502));
+        assertFalse(RestElasticSearchClient.isRejectedRelease(503));
+        assertFalse(RestElasticSearchClient.isRejectedRelease(504));
     }
 
     //A rejected release (for example for want of the privilege to clear scrolls) is worth a warning, and still not

@@ -95,6 +95,40 @@ public interface ElasticSearchClient extends Closeable {
     ElasticSearchResponse search(String scrollId) throws IOException;
 
     /**
+     * Whether the cluster pages a result with a point in time and {@code search_after}, as Elasticsearch 7.12 and later
+     * do, where an older cluster, and OpenSearch, scrolls. The default knows no such cluster.
+     */
+    default boolean supportsPointInTime() {
+        return false;
+    }
+
+    /**
+     * Opens a point in time on an index, kept alive for as long as a scroll context would be.
+     *
+     * @return the id of the point in time
+     */
+    default String openPointInTime(String indexName) throws IOException {
+        throw new UnsupportedOperationException("This client doesn't page with a point in time");
+    }
+
+    /**
+     * Searches a point in time: the request names no index, the point in time does. The request body may carry a
+     * {@code search_after} position, and the response carries the id the next search of the point in time has to use.
+     * The point in time is set in the given body, which changes: a caller sends the same body for each page, with the
+     * position of the page.
+     */
+    default ElasticSearchResponse searchPointInTime(String pitId, Map<String, Object> request) throws IOException {
+        throw new UnsupportedOperationException("This client doesn't page with a point in time");
+    }
+
+    /**
+     * Closes a point in time, as {@link #deleteScroll(String)} releases a scroll context.
+     */
+    default void closePointInTime(String pitId) throws IOException {
+        throw new UnsupportedOperationException("This client doesn't page with a point in time");
+    }
+
+    /**
      * Releases a scroll context which is no longer read. It is a courtesy to the cluster rather than part of the
      * search: the context expires after the scroll keep-alive on its own, so an implementation may return before
      * the cluster has released it, and the caller doesn't fail its search over a release which failed.

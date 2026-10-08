@@ -27,6 +27,10 @@ public class ElasticSearchResponse {
 
     private List<RawQuery.Result<String>> results;
 
+    private String pitId;
+
+    private List<Object> lastSort;
+
     public long getTook() {
         return took;
     }
@@ -53,5 +57,29 @@ public class ElasticSearchResponse {
 
     public void setScrollId(String scrollId) {
         this.scrollId = scrollId;
+    }
+
+    /**
+     * The id of the point in time a search of one has to use next, which may differ from the one it was given.
+     */
+    public String getPitId() {
+        return pitId;
+    }
+
+    public void setPitId(String pitId) {
+        this.pitId = pitId;
+    }
+
+    /**
+     * The sort values of the last hit, after which the next page of a search of a point in time is asked for; null
+     * without hits or sort values. A response read from Elasticsearch takes them from its last hit; the setter serves
+     * another implementation, and tests.
+     */
+    public List<Object> getLastSort() {
+        return lastSort;
+    }
+
+    public void setLastSort(List<Object> lastSort) {
+        this.lastSort = lastSort;
     }
 }

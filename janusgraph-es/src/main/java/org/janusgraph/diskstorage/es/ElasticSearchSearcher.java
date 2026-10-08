@@ -15,6 +15,8 @@
 package org.janusgraph.diskstorage.es;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.es.compat.AbstractESCompat;
 import org.janusgraph.diskstorage.indexing.RawQuery;
@@ -23,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -36,8 +39,10 @@ import java.util.stream.StreamSupport;
  * with the offset applied by Elasticsearch and without counting the total. Otherwise the first request asks for one
  * hit more than a page after the offset, or for what is left up to {@link #MAX_SEARCH_SIZE} if that is less: when
  * fewer come back, that is the whole result and no scroll context is opened. Only when it comes back full, or when
- * the offset leaves nothing to ask for, does a scroll over the same search take its place, and that scroll stops as
- * soon as the consumer does or the limit is reached, so that its context is released instead of being left to expire.
+ * the offset leaves nothing to ask for, is the same search read in pages: through a point in time and
+ * {@code search_after} on a cluster which has them, through a scroll on an older one. Either stops as soon as the
+ * consumer does or the limit is reached, so that the point in time or the scroll context is released instead of being
+ * left to expire.
  */
 class ElasticSearchSearcher {
 
@@ -56,7 +61,7 @@ class ElasticSearchSearcher {
     private final int pageSize;
 
     /**
-     * @param pageSize the size of the first request of a result which no limit bounds, and of every page of a scroll
+     * @param pageSize the size of the first request of a result which no limit bounds, and of every page read after it
      */
     ElasticSearchSearcher(ElasticSearchClient client, AbstractESCompat compat, int pageSize) {
         this.client = client;
@@ -69,8 +74,8 @@ class ElasticSearchSearcher {
      * @param parameters further parameters of the request body, or null
      * @param offset     hits to skip
      * @param limit      hits wanted after the offset, {@link Query#NO_LIMIT} for all of them
-     * @return the hits after the offset, at most the limit of them. Closing the stream releases the scroll context
-     * of a consumer which stops before the end
+     * @return the hits after the offset, at most the limit of them. Closing the stream releases the point in time or
+     * scroll context of a consumer which stops before the end
      */
     Stream<RawQuery.Result<String>> search(String indexStoreName, ElasticSearchRequest request, Parameter[] parameters,
                                            int offset, int limit) throws IOException {
@@ -93,14 +98,69 @@ class ElasticSearchSearcher {
                 return limit(response.getResults(), limit);
             }
         }
-        //A scroll starts at the first hit, so the offset is skipped here
+        //The pages start at the first hit, so the offset is skipped here
         request.setFrom(0);
         request.setSize(pageSize);
+        final long pagesLimit = scrollLimit(offset, limit);
+        final Stream<RawQuery.Result<String>> pages = client.supportsPointInTime()
+            ? pointInTime(indexStoreName, request, parameters, pagesLimit, limit == Query.NO_LIMIT)
+            : scroll(indexStoreName, request, parameters, pagesLimit);
+        return limit(pages.skip(offset), limit);
+    }
+
+    private Stream<RawQuery.Result<String>> scroll(String indexStoreName, ElasticSearchRequest request,
+                                                   Parameter[] parameters, long limit) throws IOException {
         final ElasticSearchResponse firstPage = search(indexStoreName, request, parameters, true);
-        final ElasticSearchScroll scroll = new ElasticSearchScroll(client, firstPage, pageSize, scrollLimit(offset, limit));
-        return limit(StreamSupport.stream(Spliterators.spliteratorUnknownSize(scroll, Spliterator.ORDERED), false)
-            .onClose(scroll::close)
-            .skip(offset), limit);
+        final ElasticSearchScroll scroll = new ElasticSearchScroll(client, firstPage, pageSize, limit);
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(scroll, Spliterator.ORDERED), false)
+            .onClose(scroll::close);
+    }
+
+    /**
+     * Reads the pages through a point in time, which holds the state of the index so that the pages agree, each asked
+     * for after the last hit of the one before. The pages need a sort. A request which has none, neither of its own
+     * nor as a parameter, is sorted by score, the order of a single request, so that the pages of a limited query
+     * come in the order its single request would have: a limited query may be executed again with a larger limit,
+     * skipping the hits delivered so far, which needs the same order each time. A raw query's hits are wanted by score
+     * either way. A query without a limit is executed once, and its pages are sorted by {@code _shard_doc}, the order
+     * of the index, which Elasticsearch pages through without scoring, where a sort by score costs every page the
+     * scoring of the whole result. Elasticsearch adds the {@code _shard_doc} tiebreaker to every sort of a search of a
+     * point in time, so the sort values of a hit identify it, and the sort by score with that tiebreaker is the order
+     * of a single request. No page counts the total number of hits, which a scroll can't do without.
+     *
+     * @param unbounded whether the query has no limit, so that it is never executed again with a larger one
+     */
+    private Stream<RawQuery.Result<String>> pointInTime(String indexStoreName, ElasticSearchRequest request,
+                                                        Parameter[] parameters, long limit, boolean unbounded)
+            throws IOException {
+        final String pitId = client.openPointInTime(indexStoreName);
+        try {
+            final Map<String, Object> requestBody = compat.createRequestBody(request, parameters);
+            requestBody.put(TRACK_TOTAL_HITS_PARAMETER, false);
+            //search_after takes the place of the offset
+            requestBody.remove("from");
+            //A sort given as a parameter may be a list, a single field name or an object; only none, or an empty list,
+            //leaves the pages without one
+            final Object sort = requestBody.get("sort");
+            if (sort == null || (sort instanceof Collection && ((Collection<?>) sort).isEmpty())) {
+                final boolean byScore = request.isRelevanceOrdered() || !unbounded;
+                requestBody.put("sort", ImmutableList.of(byScore
+                    ? ImmutableMap.of("_score", "desc") : ImmutableMap.of("_shard_doc", "asc")));
+            }
+            final ElasticSearchResponse firstPage = client.searchPointInTime(pitId, requestBody);
+            log.debug("Executed search of size {} in {} ms", request.getSize(), firstPage.getTook());
+            final ElasticSearchPointInTime pages = new ElasticSearchPointInTime(client, pitId, requestBody, firstPage,
+                pageSize, limit);
+            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(pages, Spliterator.ORDERED), false)
+                .onClose(pages::close);
+        } catch (IOException | RuntimeException e) {
+            try {
+                client.closePointInTime(pitId);
+            } catch (IOException | RuntimeException closeFailure) {
+                e.addSuppressed(closeFailure);
+            }
+            throw e;
+        }
     }
 
     private ElasticSearchResponse search(String indexStoreName, ElasticSearchRequest request, Parameter[] parameters,

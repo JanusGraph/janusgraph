@@ -54,6 +54,7 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.es.rest.RestElasticSearchClient;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
@@ -96,9 +97,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -115,6 +119,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @Testcontainers
 public class ElasticsearchIndexTest extends IndexProviderTest {
+
+    private static Boolean pagesWithPointInTime;
 
     @Container
     public static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer();
@@ -1072,7 +1078,8 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
 
     /* ---------------------------------------------------------------
      * Search contexts. The page size of this configuration is 3 (max-result-set-size), so a result of 10
-     * documents is several pages, and these tests watch the cluster's own accounting of its search contexts
+     * documents is several pages, read through a point in time on a cluster which has them and through a scroll
+     * otherwise, and these tests watch the cluster's own accounting of its search contexts
      * ---------------------------------------------------------------
      */
 
@@ -1103,7 +1110,7 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     }
 
     @Test
-    public void shouldNotOpenAScrollContextForALimitedQueryLargerThanAPage() throws Exception {
+    public void shouldNotOpenAContextForALimitedQueryLargerThanAPage() throws Exception {
         final String store = "vertex";
         indexDocuments(store);
         final SearchStats before = settledSearchStats();
@@ -1113,11 +1120,11 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(INDEXED_DOCUMENTS, tx.queryStream(allDocuments(store, 5_000)).count());
         assertEquals(7, tx.queryStream(rawAllDocuments(store).setLimit(7)).count());
 
-        assertEquals(before.scrollTotal, awaitSearchContextsBackAt(before).scrollTotal, "scroll contexts opened");
+        assertNoPages(before, awaitSearchContextsBackAt(before));
     }
 
     @Test
-    public void shouldNotOpenAScrollContextForAnUnlimitedQueryWhichFitsIntoAPage() throws Exception {
+    public void shouldNotOpenAContextForAnUnlimitedQueryWhichFitsIntoAPage() throws Exception {
         final String store = "vertex";
         indexDocuments(store);
         final SearchStats before = settledSearchStats();
@@ -1127,34 +1134,48 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         //Fits into a page after its offset, which the first request applies
         assertEquals(2, tx.queryStream(rawAllDocuments(store).setOffset(INDEXED_DOCUMENTS - 2)).count());
 
-        assertEquals(before.scrollTotal, awaitSearchContextsBackAt(before).scrollTotal, "scroll contexts opened");
+        assertNoPages(before, awaitSearchContextsBackAt(before));
     }
 
     @Test
-    public void shouldReleaseTheScrollContextOfAnUnlimitedQueryLargerThanAPage() throws Exception {
+    public void shouldReleaseTheContextOfAnUnlimitedQueryLargerThanAPage() throws Exception {
         final String store = "vertex";
         indexDocuments(store);
         final SearchStats before = settledSearchStats();
 
-        assertEquals(INDEXED_DOCUMENTS, tx.queryStream(allDocuments(store)).count());
+        final SearchStats whileReading;
+        final List<String> read = new ArrayList<>();
+        try (Stream<String> hits = tx.queryStream(allDocuments(store))) {
+            final Iterator<String> iterator = hits.iterator();
+            read.add(iterator.next());
+            whileReading = searchStats();
+            iterator.forEachRemaining(read::add);
+        }
+        //Every document once, across the pages: as many hits as documents, and each of them
+        final Set<String> indexed = new HashSet<>();
+        for (int i = 0; i < INDEXED_DOCUMENTS; i++) {
+            indexed.add("doc" + i);
+        }
+        assertEquals(INDEXED_DOCUMENTS, read.size(), "hits read: " + read);
+        assertEquals(indexed, new HashSet<>(read));
         assertEquals(INDEXED_DOCUMENTS, tx.queryStream(rawAllDocuments(store)).count());
 
-        final SearchStats after = awaitSearchContextsBackAt(before);
-        assertTrue(after.scrollTotal > before.scrollTotal, "these results are read through a scroll");
+        assertReadInPages(before, whileReading, awaitSearchContextsBackAt(before));
     }
 
     @Test
-    public void shouldReleaseTheScrollContextWhenTheConsumerStopsBeforeTheEnd() throws Exception {
+    public void shouldReleaseTheContextWhenTheConsumerStopsBeforeTheEnd() throws Exception {
         final String store = "vertex";
         indexDocuments(store);
         final SearchStats before = settledSearchStats();
 
+        final SearchStats whileReading;
         try (Stream<String> firstOnly = tx.queryStream(allDocuments(store))) {
             assertNotNull(firstOnly.iterator().next());
+            whileReading = searchStats();
         }
 
-        final SearchStats after = awaitSearchContextsBackAt(before);
-        assertTrue(after.scrollTotal > before.scrollTotal, "this result is read through a scroll");
+        assertReadInPages(before, whileReading, awaitSearchContextsBackAt(before));
     }
 
     //A count which a limit of 0 bounds is 0, the totals of a raw query and the COUNT aggregation of an index query
@@ -1197,8 +1218,9 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         }
     }
 
-    //The cluster's accounting of its search contexts, summed over its nodes. scroll_total counts the scroll
-    //contexts a node has closed, so it grows only for a result read through a scroll
+    //The cluster's accounting of its search contexts, summed over its nodes: open_contexts counts the contexts
+    //open right now, a point in time among them, and scroll_total the scroll contexts a node has closed, so it grows
+    //only for a result read through a scroll
     private SearchStats searchStats() throws IOException {
         try (CloseableHttpResponse response = httpClient.execute(host, new HttpGet("_nodes/stats/indices/search"))) {
             final JsonNode nodes = objectMapper.readTree(EntityUtils.toString(response.getEntity())).get("nodes");
@@ -1211,6 +1233,39 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
             }
             return new SearchStats(openContexts, scrollTotal);
         }
+    }
+
+    //Whether the cluster pages with a point in time, by the version it reports, as the client decides it; asked once
+    //for the class, whose container is the one cluster of the run
+    private boolean clusterPagesWithPointInTime() throws IOException {
+        synchronized (ElasticsearchIndexTest.class) {
+            if (pagesWithPointInTime == null) {
+                try (CloseableHttpResponse response = httpClient.execute(host, new HttpGet("/"))) {
+                    final JsonNode version = objectMapper.readTree(EntityUtils.toString(response.getEntity())).get("version");
+                    @SuppressWarnings("unchecked")
+                    final Map<String, Object> versionMap = objectMapper.convertValue(version, Map.class);
+                    pagesWithPointInTime = RestElasticSearchClient.clusterSupportsPointInTime(versionMap);
+                }
+            }
+            return pagesWithPointInTime;
+        }
+    }
+
+    //A result read in pages holds a context while it is read, which the cluster counts among its open ones: a point in
+    //time on a cluster which has them, which it counts as it closes no scroll, a scroll context on an older one
+    private void assertReadInPages(SearchStats before, SearchStats whileReading, SearchStats after) throws IOException {
+        assertTrue(whileReading.openContexts > before.openContexts, "no context was open while the pages were read");
+        if (clusterPagesWithPointInTime()) {
+            assertEquals(before.scrollTotal, after.scrollTotal, "scroll contexts opened on a cluster with points in time");
+        } else {
+            assertTrue(after.scrollTotal > before.scrollTotal, "this result is read through a scroll");
+        }
+    }
+
+    //No scroll context was held; a point in time leaves no count behind once closed, so the caller's check that the
+    //open contexts are back at the baseline is what covers it
+    private static void assertNoPages(SearchStats before, SearchStats after) {
+        assertEquals(before.scrollTotal, after.scrollTotal, "scroll contexts opened");
     }
 
     //A context left behind by an earlier test expires after the scroll keep-alive (60 s), and the cluster reaps

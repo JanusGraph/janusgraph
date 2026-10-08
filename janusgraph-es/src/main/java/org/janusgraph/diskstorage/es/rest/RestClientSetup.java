@@ -86,6 +86,7 @@ public class RestClientSetup {
 
         client.setRetryOnConflict(config.get(ElasticSearchIndex.RETRY_ON_CONFLICT));
         client.setRetryTransportFailures(config.get(ElasticSearchIndex.RETRY_TRANSPORT_FAILURES));
+        client.setPointInTimeEnabled(config.get(ElasticSearchIndex.POINT_IN_TIME));
 
         return client;
     }

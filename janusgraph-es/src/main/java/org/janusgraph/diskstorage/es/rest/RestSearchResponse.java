@@ -19,6 +19,7 @@ import org.apache.tinkerpop.shaded.jackson.annotation.JsonProperty;
 import org.janusgraph.diskstorage.es.ElasticSearchResponse;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 @JsonIgnoreProperties(ignoreUnknown=true)
@@ -77,5 +78,18 @@ public class RestSearchResponse extends ElasticSearchResponse {
     @Override
     public void setScrollId(String scrollId) {
         this.scrollId = scrollId;
+    }
+
+    //The point in time is the parent's field; the annotation names it in the response
+    @Override
+    @JsonProperty("pit_id")
+    public void setPitId(String pitId) {
+        super.setPitId(pitId);
+    }
+
+    @Override
+    public List<Object> getLastSort() {
+        final List<RestSearchHit> hitList = hits.getHits();
+        return hitList.isEmpty() ? null : hitList.get(hitList.size() - 1).getSort();
     }
 }

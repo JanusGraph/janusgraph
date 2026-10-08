@@ -72,6 +72,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -114,6 +116,9 @@ public class RestElasticSearchClient implements ElasticSearchClient {
             .collect(Collectors.joining(","));
 
     private static final Request INFO_REQUEST = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR);
+
+    //The major and minor number of a version the cluster reports, such as 7.17.8 or 8.0.0-SNAPSHOT
+    private static final Pattern VERSION_NUMBER = Pattern.compile("(\\d+)\\.(\\d+).*");
 
     private static final ObjectMapper mapper;
     private static final ObjectReader mapReader;
@@ -166,10 +171,18 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private final long retryMaxWaitMs;
 
     private final int bulkChunkSerializedLimitBytes;
-    //Set once the first rejected scroll release has been logged as a warning. Every scroll of the index backend is
-    //released through this client with the same credentials, so later rejections repeat the same problem and are
-    //logged at debug level. Releases complete on the HTTP client's I/O threads, hence the atomic flag
-    private final AtomicBoolean warnedAboutRejectedScrollRelease = new AtomicBoolean();
+    //Set once the first rejected release of a scroll or a point in time has been logged as a warning. Every one of
+    //the index backend is released through this client with the same credentials, so later rejections repeat the
+    //same problem and are logged at debug level. Releases complete on the HTTP client's I/O threads, hence the atomic
+    //flag
+    private final AtomicBoolean warnedAboutRejectedRelease = new AtomicBoolean();
+
+    //Whether the cluster pages a result with a point in time: Elasticsearch 7.12 introduced the implicit _shard_doc
+    //tiebreaker which search_after over a point in time relies on
+    private boolean pointInTimeSupported;
+
+    //Whether a point in time is used where the cluster supports it, through ElasticSearchIndex.POINT_IN_TIME
+    private boolean pointInTimeEnabled = true;
 
 public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7,
                                int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
@@ -187,7 +200,14 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                                    long retryMaxWaitMs, int bulkChunkSerializedLimitBytes,
                                    ElasticMajorVersion configuredMajorVersion) {
         this.delegate = delegate;
-        majorVersion = configuredMajorVersion != null ? configuredMajorVersion : getMajorVersion();
+        if (configuredMajorVersion != null) {
+            majorVersion = configuredMajorVersion;
+            //Without asking the cluster, only a major version whose every release has the point in time API is known
+            //to have it
+            pointInTimeSupported = supportsPointInTimeThroughout(configuredMajorVersion);
+        } else {
+            majorVersion = getMajorVersion();
+        }
         this.scrollKeepAlive = scrollKeepAlive+"s";
         esVersion7 = ElasticMajorVersion.SEVEN.equals(majorVersion);
         if (useMappingTypesForES7 && mappingTypesRemoved) {
@@ -215,6 +235,8 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
 
         majorVersion = DEFAULT_VERSION;
+        //A cluster whose version can't be asked for isn't known to have a point in time, so it scrolls
+        pointInTimeSupported = false;
         try {
             final Response response = delegate.performRequest(INFO_REQUEST);
             try (final InputStream inputStream = response.getEntity().getContent()) {
@@ -226,6 +248,7 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                         ElasticSearchIndex.MAJOR_VERSION.getName() + " if the cluster provides the API of a supported " +
                         "Elasticsearch major version.", e);
                 }
+                pointInTimeSupported = clusterSupportsPointInTime(info.getVersion());
                 mappingTypesRemoved = ElasticMajorVersion.isOpenSearch(info.getVersion());
                 if (ElasticMajorVersion.isOpenSearch(info.getVersion())) {
                     log.info("OpenSearch {} provides the Elasticsearch {} API, which JanusGraph uses.",
@@ -233,8 +256,9 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                 }
             }
         } catch (final IOException e) {
-            log.warn("Unable to determine Elasticsearch server version. Default to {}. Set index.[X].elasticsearch.{} to " +
-                "skip the detection.", majorVersion, ElasticSearchIndex.MAJOR_VERSION.getName(), e);
+            log.warn("Unable to determine Elasticsearch server version. Default to {}, and to scrolls for results larger " +
+                "than a page. Set index.[X].elasticsearch.{} to skip the detection.", majorVersion,
+                ElasticSearchIndex.MAJOR_VERSION.getName(), e);
         }
 
         return majorVersion;
@@ -243,6 +267,64 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     @Override
     public boolean usesMappingTypes() {
         return useMappingTypes;
+    }
+
+    /**
+     * Whether a cluster with the given {@code version} object of its root endpoint pages a result with a point in time:
+     * Elasticsearch 7.12 introduced the implicit {@code _shard_doc} tiebreaker which {@code search_after} over a point
+     * in time relies on. OpenSearch has a point in time API since 2.4, but neither the tiebreaker nor sort values for
+     * a search sorted by score, so {@code search_after} can't page a query which doesn't sort by a field of its own
+     * there, and OpenSearch scrolls (verified on OpenSearch 2.19 and 3.9).
+     */
+    public static boolean clusterSupportsPointInTime(Map<String, Object> version) {
+        if (ElasticMajorVersion.isOpenSearch(version)) {
+            return false;
+        }
+        final Object number = version != null ? version.get("number") : null;
+        final Matcher matcher = number instanceof String ? VERSION_NUMBER.matcher((String) number) : null;
+        if (matcher == null || !matcher.matches()) {
+            return false;
+        }
+        final int major = Integer.parseInt(matcher.group(1));
+        final int minor = Integer.parseInt(matcher.group(2));
+        return major > 7 || (major == 7 && minor >= 12);
+    }
+
+    //Whether every release of an Elasticsearch major version has the point in time API: 8 and later
+    private static boolean supportsPointInTimeThroughout(ElasticMajorVersion majorVersion) {
+        return majorVersion.getValue() >= 8;
+    }
+
+    @Override
+    public boolean supportsPointInTime() {
+        return pointInTimeEnabled && pointInTimeSupported;
+    }
+
+    public void setPointInTimeEnabled(boolean pointInTimeEnabled) {
+        this.pointInTimeEnabled = pointInTimeEnabled;
+    }
+
+    @Override
+    public String openPointInTime(String indexName) throws IOException {
+        final Request request = new Request(REQUEST_TYPE_POST, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_pit");
+        request.addParameter("keep_alive", scrollKeepAlive);
+        final Response response = performRequest(request, null);
+        try (final InputStream inputStream = response.getEntity().getContent()) {
+            return mapper.readValue(inputStream, RestPointInTimeResponse.class).getId();
+        }
+    }
+
+    @Override
+    public RestSearchResponse searchPointInTime(String pitId, Map<String, Object> requestData) throws IOException {
+        //A search of a point in time names its indexes through the point in time, not in the path
+        requestData.put("pit", ImmutableMap.of("id", pitId, "keep_alive", scrollKeepAlive));
+        return search(requestData, REQUEST_SEPARATOR + "_search");
+    }
+
+    @Override
+    public void closePointInTime(String pitId) throws IOException {
+        release(new Request(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_pit"), ImmutableMap.of("id", pitId),
+            "point in time", pitId);
     }
 
     @Override
@@ -1021,12 +1103,15 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public void deleteScroll(String scrollId) throws IOException {
-        final Request request = new Request(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll");
         //The id goes in the body: the path form has been deprecated since Elasticsearch 7, and an id can outgrow a URL
-        request.setEntity(new ByteArrayEntity(
-            mapWriter.writeValueAsBytes(ImmutableMap.of("scroll_id", ImmutableList.of(scrollId))), ContentType.APPLICATION_JSON));
-        //Releasing the context shouldn't cost the search a round trip, so the request goes out without waiting for
-        //its answer. Should it be lost, the context expires after the keep-alive anyway
+        release(new Request(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll"),
+            ImmutableMap.of("scroll_id", ImmutableList.of(scrollId)), "scroll", scrollId);
+    }
+
+    //Releases a scroll context or a point in time. Releasing shouldn't cost the search a round trip, so the request
+    //goes out without waiting for its answer. Should it be lost, the context expires after the keep-alive anyway
+    private void release(Request request, Map<String, Object> body, String kind, String id) throws IOException {
+        request.setEntity(new ByteArrayEntity(mapWriter.writeValueAsBytes(body), ContentType.APPLICATION_JSON));
         delegate.performRequestAsync(request, new ResponseListener() {
             @Override
             public void onSuccess(Response response) {
@@ -1038,24 +1123,25 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
                 //context this client opens stays open until it expires, which is worth one warning. A lost request,
                 //a cluster which is momentarily unable to answer, or a context which had expired already isn't
                 if (exception instanceof ResponseException
-                    && isRejectedScrollRelease(((ResponseException) exception).getResponse().getStatusLine().getStatusCode())
-                    && !warnedAboutRejectedScrollRelease.getAndSet(true)) {
-                    log.warn("Elasticsearch rejected the release of the scroll {}, so scroll contexts stay open until they " +
-                        "expire after {}. Further rejections are logged at debug level.", scrollId, scrollKeepAlive, exception);
+                    && isRejectedRelease(((ResponseException) exception).getResponse().getStatusLine().getStatusCode())
+                    && !warnedAboutRejectedRelease.getAndSet(true)) {
+                    log.warn("Elasticsearch rejected the release of the {} {}, so such contexts stay open until they " +
+                        "expire after {}. Further rejections are logged at debug level.", kind, id, scrollKeepAlive, exception);
                 } else {
-                    log.debug("Could not release the Elasticsearch scroll {}, which expires after {}", scrollId, scrollKeepAlive, exception);
+                    log.debug("Could not release the Elasticsearch {} {}, which expires after {}", kind, id, scrollKeepAlive, exception);
                 }
             }
         });
     }
 
     /**
-     * Whether a status answers the release of a scroll with a rejection which every later release will meet as well:
+     * Whether a status answers the release of a scroll context or a point in time with a rejection which every later
+     * release will meet as well:
      * a request the cluster doesn't accept (400, 405) or doesn't permit (401, 403). A context which is gone already
      * (404), a busy cluster (429), a timed out request (408) or a server error are passing, not the release's.
      */
     @VisibleForTesting
-    static boolean isRejectedScrollRelease(int statusCode) {
+    static boolean isRejectedRelease(int statusCode) {
         return statusCode == HttpStatus.SC_BAD_REQUEST || statusCode == HttpStatus.SC_UNAUTHORIZED
             || statusCode == HttpStatus.SC_FORBIDDEN || statusCode == HttpStatus.SC_METHOD_NOT_ALLOWED;
     }

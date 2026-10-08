@@ -24,6 +24,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -372,5 +374,192 @@ public class ElasticSearchSearcherTest {
         verify(client, never()).search(anyString(), any(), eq(true));
         verify(client, never()).search(anyString());
         verify(client, never()).deleteScroll(anyString());
+    }
+
+    /* ---------------------------------------------------------------
+     * A cluster with points in time reads the pages of a result larger than a page through one, never through a scroll
+     * ---------------------------------------------------------------
+     */
+
+    private static ElasticSearchResponse pitPage(List<RawQuery.Result<String>> hits, String pitId) {
+        final ElasticSearchResponse response = new ElasticSearchResponse();
+        response.setResults(hits);
+        response.setPitId(pitId);
+        response.setLastSort(hits.isEmpty() ? null : Arrays.asList(1f, hits.size()));
+        return response;
+    }
+
+    //The probe comes back full: the result is larger than a page, and the point in time pit-1 opens
+    private void givenAResultLargerThanAPageOnAClusterWithPointsInTime() throws IOException {
+        when(client.supportsPointInTime()).thenReturn(true);
+        when(client.search(eq(INDEX), any(), eq(false))).thenReturn(response(hits("a", "b", "c", "d"), null));
+        when(client.openPointInTime(INDEX)).thenReturn("pit-1");
+    }
+
+    @Test
+    public void shouldPageThroughAPointInTimeWhereTheClusterHasOne() throws IOException {
+        givenAResultLargerThanAPageOnAClusterWithPointsInTime();
+        when(client.searchPointInTime(eq("pit-1"), any()))
+            .thenReturn(pitPage(hits("a", "b", "c"), "pit-1"), pitPage(hits("d", "e"), "pit-1"));
+
+        final List<String> found = ids(searcher.search(INDEX, request(), NO_PARAMETERS, 0, Query.NO_LIMIT));
+
+        assertEquals(Arrays.asList("a", "b", "c", "d", "e"), found);
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, Object>> body = ArgumentCaptor.forClass(Map.class);
+        verify(client, times(2)).searchPointInTime(eq("pit-1"), body.capture());
+        //Both pages share the body: a page of the page size, no offset, no count of the total, sorted in the order of
+        //the index where the query doesn't sort, and the second asked for after the last hit of the first
+        final Map<String, Object> pageBody = body.getValue();
+        assertEquals(PAGE_SIZE, pageBody.get("size"));
+        assertNull(pageBody.get("from"));
+        assertEquals(false, pageBody.get("track_total_hits"));
+        assertEquals(Collections.singletonList(Collections.singletonMap("_shard_doc", "asc")), pageBody.get("sort"));
+        assertEquals(Arrays.asList(1f, 3), pageBody.get("search_after"));
+        verify(client).closePointInTime("pit-1");
+        verifyNoScroll();
+    }
+
+    //A limited query may be executed again with a larger limit, skipping the hits delivered so far, so its pages keep
+    //the order of its single request, by score; only a query without a limit pages in the order of the index
+    @Test
+    public void shouldPageALimitedResultByScore() throws IOException {
+        when(client.supportsPointInTime()).thenReturn(true);
+        //Offset 9,999 and limit 2 reach beyond the first 10,000 hits: the probe may ask for one hit, and gets it
+        when(client.search(eq(INDEX), any(), eq(false))).thenReturn(response(hits("x"), null));
+        when(client.openPointInTime(INDEX)).thenReturn("pit-1");
+        when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(page(0, 2_500), "pit-1"));
+
+        //Pages of 2,500: five hold the 10,001 hits of offset and limit
+        searcher = new ElasticSearchSearcher(client, new ES7Compat(), 2_500);
+        assertEquals(2, searcher.search(INDEX, request(), NO_PARAMETERS, 9_999, 2).count());
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, Object>> body = ArgumentCaptor.forClass(Map.class);
+        verify(client, times(5)).searchPointInTime(eq("pit-1"), body.capture());
+        assertEquals(Collections.singletonList(Collections.singletonMap("_score", "desc")), body.getValue().get("sort"));
+    }
+
+    //A sort given as a parameter of a raw query is the query's own
+    @Test
+    public void shouldKeepASortGivenAsAParameter() throws IOException {
+        givenAResultLargerThanAPageOnAClusterWithPointsInTime();
+        when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(hits("a", "b"), "pit-1"));
+        final Parameter[] parameters = {new Parameter<>("sort", Collections.singletonList(Collections.singletonMap("time", "asc")))};
+
+        assertEquals(2, searcher.search(INDEX, request(), parameters, 0, Query.NO_LIMIT).count());
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, Object>> body = ArgumentCaptor.forClass(Map.class);
+        verify(client).searchPointInTime(eq("pit-1"), body.capture());
+        assertEquals(Collections.singletonList(Collections.singletonMap("time", "asc")), body.getValue().get("sort"));
+    }
+
+    //A sort may be given as a field name or as an object as well as a list; any of them is kept
+    @Test
+    public void shouldKeepASortGivenAsAFieldNameOrAnObject() throws IOException {
+        for (final Object sort : Arrays.asList("time", Collections.singletonMap("time", "asc"))) {
+            setUp();
+            givenAResultLargerThanAPageOnAClusterWithPointsInTime();
+            when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(hits("a", "b"), "pit-1"));
+            final Parameter[] parameters = {new Parameter<>("sort", sort)};
+
+            assertEquals(2, searcher.search(INDEX, request(), parameters, 0, Query.NO_LIMIT).count());
+
+            @SuppressWarnings("unchecked")
+            final ArgumentCaptor<Map<String, Object>> body = ArgumentCaptor.forClass(Map.class);
+            verify(client).searchPointInTime(eq("pit-1"), body.capture());
+            assertEquals(sort, body.getValue().get("sort"), String.valueOf(sort));
+        }
+    }
+
+    //A raw query's hits come in the order of their scores, which the pages of a point in time keep
+    @Test
+    public void shouldPageARelevanceOrderedResultByScore() throws IOException {
+        givenAResultLargerThanAPageOnAClusterWithPointsInTime();
+        when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(hits("a", "b"), "pit-1"));
+        final ElasticSearchRequest request = request();
+        request.setRelevanceOrdered(true);
+
+        assertEquals(2, searcher.search(INDEX, request, NO_PARAMETERS, 0, Query.NO_LIMIT).count());
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, Object>> body = ArgumentCaptor.forClass(Map.class);
+        verify(client).searchPointInTime(eq("pit-1"), body.capture());
+        assertEquals(Collections.singletonList(Collections.singletonMap("_score", "desc")), body.getValue().get("sort"));
+    }
+
+    @Test
+    public void shouldKeepTheQuerysSortWhenPagingThroughAPointInTime() throws IOException {
+        givenAResultLargerThanAPageOnAClusterWithPointsInTime();
+        when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(hits("a", "b"), "pit-1"));
+        final ElasticSearchRequest request = request();
+        request.addSort("time", "asc", "long");
+
+        assertEquals(2, searcher.search(INDEX, request, NO_PARAMETERS, 0, Query.NO_LIMIT).count());
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, Object>> body = ArgumentCaptor.forClass(Map.class);
+        verify(client).searchPointInTime(eq("pit-1"), body.capture());
+        assertEquals(request.getSorts(), body.getValue().get("sort"));
+    }
+
+    @Test
+    public void shouldSkipTheOffsetOfAPointInTimeOnTheClient() throws IOException {
+        when(client.supportsPointInTime()).thenReturn(true);
+        //The probe asks for a page and one hit after the offset of 2, and comes back full
+        when(client.search(eq(INDEX), any(), eq(false))).thenReturn(response(hits("c", "d", "e", "f"), null));
+        when(client.openPointInTime(INDEX)).thenReturn("pit-1");
+        when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(hits("a", "b", "c"), "pit-1"),
+            pitPage(hits("d", "e", "f"), "pit-1"), pitPage(hits("g"), "pit-1"));
+
+        //The pages start at the first hit; the offset is skipped here
+        assertEquals(Arrays.asList("c", "d", "e", "f", "g"),
+            ids(searcher.search(INDEX, request(), NO_PARAMETERS, 2, Query.NO_LIMIT)));
+
+        verify(client, times(3)).searchPointInTime(eq("pit-1"), any());
+        verify(client).closePointInTime("pit-1");
+    }
+
+    //A limit within the first 10,000 hits is one request; beyond them the pages stop once they hold offset and limit
+    @Test
+    public void shouldStopThePagesOfAPointInTimeAtTheLimit() throws IOException {
+        when(client.supportsPointInTime()).thenReturn(true);
+        //Offset 9,999: the probe may ask for one hit only, and it comes back
+        when(client.search(eq(INDEX), any(), eq(false))).thenReturn(response(hits("x"), null));
+        when(client.openPointInTime(INDEX)).thenReturn("pit-1");
+        when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(page(0, 2_500), "pit-1"),
+            pitPage(page(2_500, 2_500), "pit-1"), pitPage(page(5_000, 2_500), "pit-1"),
+            pitPage(page(7_500, 2_500), "pit-1"), pitPage(page(10_000, 2_500), "pit-1"));
+
+        searcher = new ElasticSearchSearcher(client, new ES7Compat(), 2_500);
+        assertEquals(Arrays.asList("9999", "10000"), ids(searcher.search(INDEX, request(), NO_PARAMETERS, 9_999, 2)));
+
+        //Five pages of 2,500 hold the 10,001 hits of offset and limit; none beyond them is asked for
+        verify(client, times(5)).searchPointInTime(eq("pit-1"), any());
+        verify(client).closePointInTime("pit-1");
+    }
+
+    @Test
+    public void shouldClosePointInTimeWhenTheFirstPageFails() throws IOException {
+        givenAResultLargerThanAPageOnAClusterWithPointsInTime();
+        when(client.searchPointInTime(eq("pit-1"), any())).thenThrow(new IOException("search rejected"));
+
+        assertThrows(IOException.class, () -> searcher.search(INDEX, request(), NO_PARAMETERS, 0, Query.NO_LIMIT));
+
+        verify(client).closePointInTime("pit-1");
+    }
+
+    @Test
+    public void shouldReleaseThePointInTimeWhenTheStreamIsClosed() throws IOException {
+        givenAResultLargerThanAPageOnAClusterWithPointsInTime();
+        when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(hits("a", "b", "c"), "pit-1"));
+
+        try (Stream<RawQuery.Result<String>> hits = searcher.search(INDEX, request(), NO_PARAMETERS, 0, Query.NO_LIMIT)) {
+            assertEquals("a", hits.iterator().next().getResult());
+        }
+
+        verify(client).closePointInTime("pit-1");
+        verify(client, times(1)).searchPointInTime(any(), any());
     }
 }
