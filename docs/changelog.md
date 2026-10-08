@@ -298,6 +298,15 @@ reader) comes first on the classpath, SolrJ fails with
 `NoSuchMethodError: 'java.lang.Object org.noggit.ObjectBuilder.getValStrict()'`. Applications which use
 `janusgraph-solr` should exclude `org.noggit:noggit` as well: Spatial4j works with SolrJ's copy.
 
+##### Lucene counts more than a thousand matches exactly
+
+A `count()` which a Lucene mixed index answers, such as `g.V().has('age', lt(2000)).count()`, and the totals of a direct
+index query, `vertexTotals()`, `edgeTotals()` and `propertyTotals()`, took the total hits of a search for one document,
+which Lucene computes exactly only up to 1000 hits: past that threshold it may skip the documents which can't make the
+top, and the total is only a lower bound, so a count of more than a thousand matches could come out as low as 1001. A
+`mean()` which the index answers divided its sum by that count, and could come out too high. Lucene now counts the
+matches. Elasticsearch and Solr counted exactly already.
+
 ##### Apache Lucene 9
 
 `janusgraph-lucene` now uses Apache Lucene 9.12.3 instead of 8.11. A JanusGraph installation can contain only one
