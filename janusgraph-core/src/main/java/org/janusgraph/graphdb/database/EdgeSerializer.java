@@ -67,7 +67,6 @@ public class EdgeSerializer implements RelationReader {
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(EdgeSerializer.class);
 
-
     private static final int DEFAULT_COLUMN_CAPACITY = 60;
     private static final int DEFAULT_CAPACITY = 128;
 
