@@ -785,6 +785,17 @@ once, so bulk requests grow with the size of the documents they update; an updat
 `index.[X].elasticsearch.bulk-chunk-size-limit-bytes` is sent without it, as before this change, rather than failing. A
 mixed index on a cdc-only backend, whose documents are written asynchronously, is not affected.
 
+##### The complete document of an updated element no longer takes two queries per field
+
+The complete indexed content of an element, which a commit reads for every existing element it updates in a mixed index
+and which reindexing, transaction recovery and CDC synchronization restore, was read with two queries for each field of
+the index. It is now read with one query of the index's keys. A vertex in a transaction with property prefetching
+(`query.fast-property`, on by default) is first accessed by a single key, which reads all its properties in one slice,
+as before, and that slice answers the query of the keys. On in-memory storage, building the content of a vertex takes
+about a fifth of the time it took with 20 indexed fields, and a quarter with 5, at a commit which changed the vertex,
+and half when reindexing, recovering or synchronizing an unchanged one. With `query.fast-property` off, the query reads
+a slice for each of the index's keys, as before, which CQL now reads together rather than one after the other.
+
 ##### Elasticsearch searches open a scroll context only for results larger than a page
 
 Every mixed index query whose limit was at least `index.[X].max-result-set-size` (50 by default), and every query

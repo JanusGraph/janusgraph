@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphRelation;
@@ -90,6 +91,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -320,19 +323,52 @@ public class IndexSerializer {
     }
 
     //The complete indexed content of the element in this index, as a restore writes the document: every value of
-    //every enabled field key. Empty when the index does not apply to the element or nothing it indexes is set
+    //every enabled field key, field after field in the order of the index. Empty when the index does not apply to the
+    //element or nothing it indexes is set. A query of the index's keys reads it, see documentProperties
     public List<IndexEntry> getCompleteDocument(JanusGraphElement element, MixedIndexType index) {
         if (!indexAppliesTo(index, element))
             return Collections.emptyList();
+        final ParameterIndexField[] fields = index.getFieldKeys();
+        final Set<String> keys = new LinkedHashSet<>();
+        for (final ParameterIndexField field : fields) {
+            if (field.getStatus() != SchemaStatus.DISABLED) {
+                keys.add(field.getFieldKey().name());
+            }
+        }
+        if (keys.isEmpty())
+            return Collections.emptyList();
+        final Map<String,List<Object>> valuesByKey = new HashMap<>();
+        documentProperties(element, keys.toArray(new String[0])).forEachRemaining(property ->
+            valuesByKey.computeIfAbsent(property.key(), k -> new ArrayList<>()).add(property.value()));
         final List<IndexEntry> entries = new ArrayList<>();
-        for (final ParameterIndexField field: index.getFieldKeys()) {
-            final PropertyKey key = field.getFieldKey();
-            if (field.getStatus()==SchemaStatus.DISABLED) continue;
-            if (element.properties(key.name()).hasNext()) {
-                element.values(key.name()).forEachRemaining(value->entries.add(new IndexEntry(key2Field(field), value)));
+        for (final ParameterIndexField field : fields) {
+            //Only the enabled fields have values: a key is in one field of an index at most
+            final List<Object> values = valuesByKey.get(field.getFieldKey().name());
+            if (values != null) {
+                final String fieldName = key2Field(field);
+                for (final Object value : values) entries.add(new IndexEntry(fieldName, value));
             }
         }
         return entries;
+    }
+
+    //The properties which hold an element's document: one query of the index's keys. A relation has its properties
+    //at hand. A vertex's properties are read as by its first property access: in one slice which then answers the
+    //query, in a transaction with property prefetching (query.fast-property), and otherwise in a slice for each key,
+    //which CQL reads together. A query of property keys reads the canonical representative of a partitioned vertex,
+    //which holds its properties
+    private static Iterator<? extends Property<Object>> documentProperties(JanusGraphElement element, String[] keys) {
+        if (keys.length > 1 && element instanceof InternalVertex
+            && ((InternalVertex) element).tx().getConfiguration().hasPropertyPrefetching()) {
+            prefetchProperties(element, keys[0]);
+        }
+        return element.properties(keys);
+    }
+
+    //A query of a single property key prefetches all of the vertex's properties in one slice, see
+    //VertexCentricQueryBuilder.execute, which a query of several keys doesn't
+    private static void prefetchProperties(JanusGraphElement vertex, String key) {
+        vertex.properties(key).hasNext();
     }
 
     private Map<String,List<IndexEntry>> getDocuments(Map<String,Map<String,List<IndexEntry>>> documentsPerStore, MixedIndexType index) {
