@@ -922,6 +922,20 @@ which draw from one generator at the same time contend for its seed. The wait is
 failed temporarily, from the random generator of its thread, and the waits are the same as before. On the inmemory
 backend, reading a property of 1,000 vertices on each of eight threads takes 18% less time.
 
+##### An index query result too large for the transaction's cache is no longer put into it
+
+A transaction keeps the ids its index queries return in a cache, so that it answers the same query again without the
+index, up to a weight of half of `cache.tx-cache-size`, where a result weighs 2 more than its number of ids: by default
+10,000 in all, and 9,998 ids for a single result. A larger result was put into the cache all the same, which dropped it,
+and with it the result the cache held for the same query under a smaller limit. And the ids a query streams from an
+index were collected for the cache as they were read, however many there were, so a query which streamed more of them
+held every one until its end. Such a result is no longer put into the cache, and its ids stop being collected as soon as
+there are more than the cache keeps, which saves the memory they took where an index streams its results, as
+Elasticsearch and Solr do: a query which streamed 500,000 ids from Elasticsearch held about 16 MB more by its end, some
+31 bytes per id. The cache is also maintained by the thread which uses it, rather than in a task of the common pool
+after every change, so that a hundred index queries of one result each in a transaction take 0.71 ms instead of 0.89 on
+one thread, and 1.1 ms instead of 3.1 with eight threads running such transactions at once, on the inmemory backend.
+
 ##### ID blocks of different partitions and namespaces are claimed in parallel
 
 `ConsistentKeyIDAuthority` claimed one ID block at a time per JanusGraph instance, whatever the partition and the id
