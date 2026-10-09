@@ -18,6 +18,7 @@ package org.janusgraph.graphdb.transaction.indexcache;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,6 +36,8 @@ public class EmptyIndexCacheTest {
 
     @Test
     public void getReturnsEmpty() {
-        assertFalse(EmptyIndexCache.getInstance().get(null, null).iterator().hasNext());
+        assertFalse(EmptyIndexCache.getInstance().get(null, null, true).iterator().hasNext());
+        assertFalse(EmptyIndexCache.getInstance().getAll(null, false).iterator().hasNext());
+        assertEquals(0, EmptyIndexCache.getInstance().count(null, null, true));
     }
 }

@@ -902,6 +902,38 @@ with the relations added. On the inmemory backend, a transaction which adds 1,00
 edge each allocates 9% less, one which sets a property of 1,000 existing vertices 24% less, and one which sets a
 property of an edge of each 22% less.
 
+##### Graph queries in a transaction find the vertices it changed, whatever the order of their conditions
+
+A graph query in a transaction which had changed vertices could miss a vertex which those changes made match: with a
+composite index on `name` and `age`, a transaction which changed a vertex's `age` from 1 to 2 found it with
+`g.V().has("age", 2).has("name", "alice")` but not with `g.V().has("name", "alice").has("age", 2)`. The indexes hold
+what the vertices held before the transaction, so the query adds the vertices which the transaction changed, and with an
+equality on a composite-indexed key it added only those with the value of the first such equality, here `name`, which
+the transaction hadn't changed. The same could happen with any query reading an index on a key whose change it didn't
+look at, for example a composite index on `uid` and a mixed index on `name`, where a transaction which changed `name`
+found the vertex in neither order. Such a query now adds the vertices which the transaction changed on a key of the
+indexes it reads on which it has a condition, the only change which can make it match, for an equality those which
+gained the asked value, and the new vertices with the values of one of its equalities. Two more cases are fixed. An
+ordered query which an index sorts placed a vertex whose order key the transaction changed where its old value goes:
+after the transaction raised a vertex's `age` above the others,
+`g.V().has("kind", "x").order().by("age", desc).limit(1)` returned another vertex. It now places such a vertex by what
+it holds, where every order key has one value, and returns a changed vertex once when the index returns it too. And a
+query with a disjunction, such as `g.V().or(has("name", "bob"), has("tag", "t"))`, threw an `IllegalArgumentException`
+in a transaction with any change on Lucene, Elasticsearch and OpenSearch, which are given such a condition whole.
+
+The vertices changed by an added property come from an index of the properties which the transaction added, by key and
+value, which a key gets on its first lookup. A query without an equality on a composite-indexed key, for example one on
+a key of a mixed index, scanned every relation which the transaction had added, and a transaction which looked vertices
+up that way before creating them was quadratic in its size: on an inmemory graph with a Lucene index on the key, 20,000
+lookups, each followed by the creation of a vertex when it finds none, took 6.5 minutes in one transaction, and takes
+1.7 s now. A range or other condition which isn't an equality still looks at every property of its key which the
+transaction added to existing vertices, as it has to, and at every relation it removed for a negation, an absence or a
+predicate which an index may answer by leaving out the elements of which a value matches its negation, such as a
+not-equal. A query which an index sorts by keys of one value looks at the properties of its order keys which the
+transaction added to existing vertices and at every relation it removed, and checks every vertex they changed against
+its condition, whatever its limit. A query without an equality on an indexed key still looks at every new vertex with a
+property of one of its keys.
+
 ##### Storage operations no longer contend for one random generator
 
 Nearly every storage operation, among them every read of a transaction and every mutation its commit writes, runs
