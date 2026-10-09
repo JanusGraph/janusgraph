@@ -440,13 +440,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 log.warn("Unable to close the management logger", e);
             }
 
-            /* Assuming a couple of properties about openTransactions:
-             * 1. no concurrent modifications during graph shutdown
-             * 2. all contained txs are open
+            /* Other threads may close the open transactions meanwhile, such as the reader of the management log, which
+             * opens and closes transactions of its own until the backend closes the log below: only the rollback of a
+             * transaction which closes before this rolls it back is skipped, as its close does nothing to a closed one.
              */
             for (StandardJanusGraphTx otx : openTransactions) {
                 try {
-                    otx.rollback();
+                    otx.rollbackIfOpen();
                     otx.close();
                 } catch (RuntimeException e) {
                     // Catch and store these exceptions, but proceed wit the loop
