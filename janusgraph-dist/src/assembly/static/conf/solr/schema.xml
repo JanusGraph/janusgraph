@@ -205,20 +205,22 @@
     <!--
       Numeric field types that index values using KD-trees.
       Point fields need doc values for sorting, faceting and function queries.
+      The numeric and date types sort the documents without the field last, in either direction, as JanusGraph orders
+      the elements without a property key last when it orders them in memory.
     -->
-    <fieldType name="int" class="solr.IntPointField" docValues="true"/>
-    <fieldType name="float" class="solr.FloatPointField" docValues="true"/>
-    <fieldType name="long" class="solr.LongPointField" docValues="true"/>
-    <fieldType name="double" class="solr.DoublePointField" docValues="true"/>
+    <fieldType name="int" class="solr.IntPointField" docValues="true" sortMissingLast="true"/>
+    <fieldType name="float" class="solr.FloatPointField" docValues="true" sortMissingLast="true"/>
+    <fieldType name="long" class="solr.LongPointField" docValues="true" sortMissingLast="true"/>
+    <fieldType name="double" class="solr.DoublePointField" docValues="true" sortMissingLast="true"/>
 
     <!--
      The Trie based field types (TrieIntField, ...), whose precisionStep made range queries faster, are deprecated.
      Point fields are fast for range queries, so these names stay as aliases of the Point based types above.
     -->
-    <fieldType name="tint" class="solr.IntPointField" docValues="true"/>
-    <fieldType name="tfloat" class="solr.FloatPointField" docValues="true"/>
-    <fieldType name="tlong" class="solr.LongPointField" docValues="true"/>
-    <fieldType name="tdouble" class="solr.DoublePointField" docValues="true"/>
+    <fieldType name="tint" class="solr.IntPointField" docValues="true" sortMissingLast="true"/>
+    <fieldType name="tfloat" class="solr.FloatPointField" docValues="true" sortMissingLast="true"/>
+    <fieldType name="tlong" class="solr.LongPointField" docValues="true" sortMissingLast="true"/>
+    <fieldType name="tdouble" class="solr.DoublePointField" docValues="true" sortMissingLast="true"/>
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
          is a more restricted form of the canonical representation of dateTime
@@ -240,10 +242,10 @@
 
          Consult the DatePointField javadocs for more information.
       -->
-    <fieldType name="date" class="solr.DatePointField" docValues="true"/>
+    <fieldType name="date" class="solr.DatePointField" docValues="true" sortMissingLast="true"/>
 
     <!-- Alias of the date type, it was a Trie based date field before JanusGraph 1.2 -->
-    <fieldType name="tdate" class="solr.DatePointField" docValues="true"/>
+    <fieldType name="tdate" class="solr.DatePointField" docValues="true" sortMissingLast="true"/>
 
 
     <!--Binary data type. The data should be sent/retrieved in as Base64 encoded Strings -->

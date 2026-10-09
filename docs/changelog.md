@@ -757,6 +757,54 @@ like every other 404 of a removal, so the commit passed silently although the in
 A removal stays exempt from a 404 which says only that the document is missing, since an absent document is the state
 it asked for.
 
+##### Fixes to the aggregations and orders which a mixed index answers
+
+JanusGraph answers a `count()`, `min()`, `max()`, `sum()` or `mean()` which follows a query that a single mixed index
+answers, such as `g.V().has('name', 'x').values('age').max()`, from the index. A minimum, maximum, sum or mean now
+covers the values the matching elements hold, every value of a `LIST` or `SET` key included, and when there is none,
+because no element matches or none of those which do holds the key, the traversal has no result, as when TinkerPop
+aggregates the values itself. Elasticsearch answered 0 there, Lucene and Solr a sum of 0 and a mean of NaN, or failed.
+Code which takes such a result with `next()` now gets a `NoSuchElementException` in place of the 0, and `tryNext()` an
+empty `Optional`.
+
+The index aggregates every match it holds, so the traversal now aggregates in memory where the index can't give the
+same answer: after a `limit()` or the offset of a `range()`, which a minimum, maximum, sum or mean ignored; in a
+transaction whose uncommitted changes, which the index doesn't hold, add or remove a property of a key of the query's
+condition or of the aggregated key, removing an element included, so that such a transaction fetches every match to
+aggregate it, while changes of other keys leave the aggregation to the index; and for a key whose field in the index
+isn't `ENABLED`, such as one added to an existing index and not yet reindexed, whose values the index may lack. A count still comes from the index
+after a limit or a range, but now stops at the limit of the traversal and leaves out the offset of the range. It left
+out no offset, and stopped at the limit of the query the index answered, which `query.hard-max-limit` and
+`query.smart-limit` can make smaller than the number of matches. As before, an aggregation the index answers sees
+committed changes only once the index has made them visible, which Elasticsearch does after its refresh interval with
+the default `index.[X].elasticsearch.bulk-refresh` of `false`.
+
+Lucene also failed with a `NullPointerException` when some matching elements lacked the key: always for a sum or a
+mean, and for a minimum or a maximum when such an element came first in the index's order, which sorted it as 0. Its
+minimum and maximum of a `LIST` or `SET` key failed with an `IllegalStateException`, and its sum and mean took only the
+first value of each element. And on every backend, a minimum, maximum, sum or mean after a `has()` which names a key
+that doesn't exist, or whose conditions a composite index answers, failed with an `IndexOutOfBoundsException` or a
+`ClassCastException` while JanusGraph optimized the traversal; it now aggregates in memory. A sum keeps the number type
+the index gives it, a `Long` for whole numbers and a `Double` for decimals, where TinkerPop keeps the type of the values
+unless the sum outgrows it. As before, Elasticsearch and Solr aggregate in doubles, and Lucene sums in doubles, which
+hold whole numbers exactly only up to 2^53.
+
+Lucene, and Solr with the example schema of earlier versions, sorted the elements without the key of an
+`order().by(key)` which the index answers among the others: as if their value were 0 for numbers and dates, and in
+Lucene for booleans too, while Lucene put strings without a value first when ascending. JanusGraph places these elements
+last, whether the order is ascending or descending, when it orders elements itself, and Elasticsearch does too. Lucene
+now places them last as well, except where they tie with the value they sort as, the greatest `Long` or date value or
+positive infinity when ascending and the least ones or negative infinity when descending, and except that they come
+before NaN when ascending. Solr places them as its schema says: the numeric and date field types of the example
+`conf/solr/schema.xml` now declare `sortMissingLast="true"`, as its string and boolean types did already. To have an
+existing collection order these elements in the same way, add the attribute to those types in its schema and reload the
+collection.
+
+For code built on these classes: `ElasticSearchClient.avg` returns a `Double`, and `RestAggValue.getValue()` and
+`setValue()` give and take one; `ElasticSearchClient.min`, `max`, `avg` and `sum`, `IndexProvider.queryAggregation` and
+`MixedIndexAggQuery.execute` return null when there is no value to aggregate; and Lucene's `SumCollector` is now
+`StatsCollector`.
+
 ##### Mixed index names on one backing index must now differ in more than case
 
 An index backend derives its own index name from the JanusGraph index name case-insensitively — Elasticsearch

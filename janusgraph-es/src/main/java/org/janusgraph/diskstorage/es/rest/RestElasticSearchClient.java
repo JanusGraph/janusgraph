@@ -1024,12 +1024,12 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
      *
      * @param indexName the name of the ElasticSearch index on which the aggregation is executed
      * @param requestData the filter query
-     * @param agg the name of the aggregation operation (min, max, avg, sum)
+     * @param agg the name of the aggregation operation (min, max, avg, stats)
      * @param fieldName the name of the field on which the aggregation is computed
      * @return the result of the aggregation
      * @throws IOException
      */
-    private double executeAggs(String indexName, Map<String, Object> requestData, String agg, String fieldName) throws IOException {
+    private RestAggValue executeAggs(String indexName, Map<String, Object> requestData, String agg, String fieldName) throws IOException {
 
         final Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_search");
 
@@ -1044,11 +1044,14 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
         final Response response = performRequest(request, requestDataBytes);
         try (final InputStream inputStream = response.getEntity().getContent()) {
-            return mapper.readValue(inputStream, RestAggResponse.class).getAggregations().getAggResult().getValue();
+            return mapper.readValue(inputStream, RestAggResponse.class).getAggregations().getAggResult();
         }
     }
 
-    private Number adaptNumberType(double value, Class<? extends Number> expectedType) {
+    // null for null, which Elasticsearch answers for the minimum, maximum or mean of no values
+    private Number adaptNumberType(Double result, Class<? extends Number> expectedType) {
+        if (result == null) return null;
+        final double value = result;
         if (expectedType == null) return value;
         else if (Byte.class.isAssignableFrom(expectedType)) return (byte)value;
         else if (Short.class.isAssignableFrom(expectedType)) return (short)value;
@@ -1060,23 +1063,26 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public Number min(String indexName, Map<String, Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException {
-        return adaptNumberType(executeAggs(indexName, requestData, "min", fieldName), expectedType);
+        return adaptNumberType(executeAggs(indexName, requestData, "min", fieldName).getValue(), expectedType);
     }
 
     @Override
     public Number max(String indexName, Map<String, Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException {
-        return adaptNumberType(executeAggs(indexName, requestData, "max", fieldName), expectedType);
+        return adaptNumberType(executeAggs(indexName, requestData, "max", fieldName).getValue(), expectedType);
     }
 
     @Override
-    public double avg(String indexName, Map<String, Object> requestData, String fieldName) throws IOException {
-        return executeAggs(indexName, requestData, "avg", fieldName);
+    public Double avg(String indexName, Map<String, Object> requestData, String fieldName) throws IOException {
+        return executeAggs(indexName, requestData, "avg", fieldName).getValue();
     }
 
     @Override
     public Number sum(String indexName, Map<String, Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException {
-        Class<? extends Number> returnType;
-        double sum = executeAggs(indexName, requestData, "sum", fieldName);
+        // Elasticsearch answers a sum of no values with 0, so the statistics tell by their count that there is none
+        final RestAggValue stats = executeAggs(indexName, requestData, "stats", fieldName);
+        if (stats.getCount() == null || stats.getCount() == 0)
+            return null;
+        final double sum = stats.getSum();
         if (Float.class.isAssignableFrom(expectedType) || Double.class.isAssignableFrom(expectedType))
             return sum;
         else
