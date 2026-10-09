@@ -641,41 +641,112 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
+    // A whole number is a long point and a decimal a double point. A range runs to the end of its type: Long.MIN_VALUE or
+    // Long.MAX_VALUE, and an infinity for a decimal, as Double.MIN_VALUE is the smallest positive double, which left out
+    // zero and every negative value. A strict bound at the end of its type has nothing beyond it, and matches nothing.
+    // A decimal comparison finds what it finds in memory, as Cmp.test has it: a zero bound finds the same values
+    // whichever sign the zero has, and NaN, which Lucene orders above positive infinity, equals NaN alone and compares
+    // to no other value. An equality or an inclusive comparison with NaN finds NaN, a strict one nothing, a not-equal
+    // every other value, and a not-equal of any other value finds NaN too
     private static Query numericQuery(String key, Cmp relation, Number value) {
+        if (AttributeUtils.isWholeNumber(value)) {
+            final long bound = value.longValue();
+            switch (relation) {
+                case EQUAL:
+                    return LongPoint.newExactQuery(key, bound);
+                case NOT_EQUAL:
+                    return disjunction(longsBelow(key, bound), longsAbove(key, bound));
+                case LESS_THAN:
+                    return longsBelow(key, bound);
+                case LESS_THAN_EQUAL:
+                    return LongPoint.newRangeQuery(key, Long.MIN_VALUE, bound);
+                case GREATER_THAN:
+                    return longsAbove(key, bound);
+                case GREATER_THAN_EQUAL:
+                    return LongPoint.newRangeQuery(key, bound, Long.MAX_VALUE);
+                default:
+                    throw new IllegalArgumentException("Unexpected relation: " + relation);
+            }
+        }
+        final double bound = value.doubleValue();
+        if (Double.isNaN(bound)) {
+            switch (relation) {
+                case EQUAL:
+                case LESS_THAN_EQUAL:
+                case GREATER_THAN_EQUAL:
+                    return DoublePoint.newExactQuery(key, Double.NaN);
+                case NOT_EQUAL:
+                    return DoublePoint.newRangeQuery(key, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+                case LESS_THAN:
+                case GREATER_THAN:
+                    return new MatchNoDocsQuery();
+                default:
+                    throw new IllegalArgumentException("Unexpected relation: " + relation);
+            }
+        }
         switch (relation) {
             case EQUAL:
-                return AttributeUtils.isWholeNumber(value) ?
-                    LongPoint.newRangeQuery(key, value.longValue(), value.longValue()) :
-                    DoublePoint.newRangeQuery(key, value.doubleValue(), value.doubleValue());
+                return DoublePoint.newExactQuery(key, bound);
             case NOT_EQUAL:
-                final BooleanQuery.Builder q = new BooleanQuery.Builder();
-                if (AttributeUtils.isWholeNumber(value)) {
-                    q.add(LongPoint.newRangeQuery(key, Long.MIN_VALUE, Math.addExact(value.longValue(), -1)), BooleanClause.Occur.SHOULD);
-                    q.add(LongPoint.newRangeQuery(key, Math.addExact(value.longValue(), 1), Long.MAX_VALUE), BooleanClause.Occur.SHOULD);
-                } else {
-                    q.add(DoublePoint.newRangeQuery(key, Double.MIN_VALUE, DoublePoint.nextDown(value.doubleValue())), BooleanClause.Occur.SHOULD);
-                    q.add(DoublePoint.newRangeQuery(key, DoublePoint.nextUp(value.doubleValue()), Double.MAX_VALUE), BooleanClause.Occur.SHOULD);
-                }
-                return q.build();
+                return disjunction(doublesBelow(key, bound), doublesAbove(key, bound),
+                    DoublePoint.newExactQuery(key, Double.NaN));
             case LESS_THAN:
-                return (AttributeUtils.isWholeNumber(value)) ?
-                    LongPoint.newRangeQuery(key, Long.MIN_VALUE, Math.addExact(value.longValue(), -1)) :
-                    DoublePoint.newRangeQuery(key, Double.MIN_VALUE, DoublePoint.nextDown(value.doubleValue()));
+                return doublesBelow(key, lowerZero(bound));
             case LESS_THAN_EQUAL:
-                return (AttributeUtils.isWholeNumber(value)) ?
-                    LongPoint.newRangeQuery(key, Long.MIN_VALUE, value.longValue()) :
-                    DoublePoint.newRangeQuery(key, Double.MIN_VALUE, value.doubleValue());
+                return DoublePoint.newRangeQuery(key, Double.NEGATIVE_INFINITY, upperZero(bound));
             case GREATER_THAN:
-                return (AttributeUtils.isWholeNumber(value)) ?
-                    LongPoint.newRangeQuery(key, Math.addExact(value.longValue(), 1), Long.MAX_VALUE) :
-                    DoublePoint.newRangeQuery(key, DoublePoint.nextUp(value.doubleValue()), Double.MAX_VALUE);
+                return doublesAbove(key, upperZero(bound));
             case GREATER_THAN_EQUAL:
-                return (AttributeUtils.isWholeNumber(value)) ?
-                    LongPoint.newRangeQuery(key, value.longValue(), Long.MAX_VALUE) :
-                    DoublePoint.newRangeQuery(key, value.doubleValue(), Double.MAX_VALUE);
+                return DoublePoint.newRangeQuery(key, lowerZero(bound), Double.POSITIVE_INFINITY);
             default:
                 throw new IllegalArgumentException("Unexpected relation: " + relation);
         }
+    }
+
+    // Lucene orders -0.0 below +0.0, while a comparison, as AttributeUtils.compare, holds them equal, and only
+    // equality, as Double.equals, tells them apart. A comparison's bound at either zero spans both: an inclusive bound
+    // moves to the zero on its far side and a strict one to the zero on its near side, beyond which Lucene's neighbour
+    // skips both
+    private static double lowerZero(double bound) {
+        return bound == 0.0 ? -0.0 : bound;
+    }
+
+    private static double upperZero(double bound) {
+        return bound == 0.0 ? 0.0 : bound;
+    }
+
+    private static Query longsBelow(String key, long bound) {
+        return bound == Long.MIN_VALUE ? new MatchNoDocsQuery() : LongPoint.newRangeQuery(key, Long.MIN_VALUE, bound - 1);
+    }
+
+    private static Query longsAbove(String key, long bound) {
+        return bound == Long.MAX_VALUE ? new MatchNoDocsQuery() : LongPoint.newRangeQuery(key, bound + 1, Long.MAX_VALUE);
+    }
+
+    private static Query doublesBelow(String key, double bound) {
+        return bound == Double.NEGATIVE_INFINITY ? new MatchNoDocsQuery()
+            : DoublePoint.newRangeQuery(key, Double.NEGATIVE_INFINITY, DoublePoint.nextDown(bound));
+    }
+
+    private static Query doublesAbove(String key, double bound) {
+        return bound == Double.POSITIVE_INFINITY ? new MatchNoDocsQuery()
+            : DoublePoint.newRangeQuery(key, DoublePoint.nextUp(bound), Double.POSITIVE_INFINITY);
+    }
+
+    // The documents any of the queries matches; a query which matches nothing is left out
+    private static Query disjunction(Query... queries) {
+        final List<Query> clauses = new ArrayList<>(queries.length);
+        for (final Query query : queries) {
+            if (!(query instanceof MatchNoDocsQuery)) {
+                clauses.add(query);
+            }
+        }
+        if (clauses.size() <= 1) {
+            return clauses.isEmpty() ? new MatchNoDocsQuery() : clauses.get(0);
+        }
+        final BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        clauses.forEach(clause -> builder.add(clause, BooleanClause.Occur.SHOULD));
+        return builder.build();
     }
 
     // adapted from SolrIndex

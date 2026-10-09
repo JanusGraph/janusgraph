@@ -363,6 +363,20 @@ graph.management-ack-timeout=240000 ms
 ```
 This is a breaking change for users who use the `JanusGraphIndexStatusUpdate` interface.
 
+##### Lucene range queries reach zero, negative decimals, the infinities and the ends of `long`
+
+A comparison of decimals on a Lucene mixed index, `lt`, `lte` or `neq`, didn't find zero or any negative value, as its
+range started from the smallest positive double, and `gt`, `gte` or `neq` didn't find positive infinity: a vertex with
+a score of 0 wasn't found by `has("score", lt(0.01))`. A strict comparison of whole numbers at an end of the range of
+`long`, such as `neq(Long.MAX_VALUE)` or `lt(Long.MIN_VALUE)`, threw an `ArithmeticException`, and so did a raw query
+such as `time:{9223372036854775807 TO *]`. Now these comparisons find what they should, a strict bound with nothing
+beyond it finds nothing, and an open end of a raw range in an exclusive bracket, as in `{5 TO *}`, keeps the end of the
+type. A comparison with a zero bound, such as `lt(0.0)` or `gte(-0.0)`, finds the same vertices whichever sign its zero
+has, as it does without the index, whereas Lucene orders `-0.0` below `0.0`. A comparison with NaN, which Lucene
+stores and orders above positive infinity, also finds what it does without the index: `eq`, `lte` and `gte` of NaN find
+NaN, `lt` and `gt` of NaN nothing, and `neq` of any other value finds NaN as well. A raw range reaches NaN by a NaN
+bound, as in `score:[5 TO NaN]`.
+
 ##### Faster mixed-index reindex with batched document restores
 
 Mixed-index reindex jobs (`SchemaAction.REINDEX` against an Elasticsearch, Solr or Lucene index) now
