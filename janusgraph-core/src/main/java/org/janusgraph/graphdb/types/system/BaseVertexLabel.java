@@ -46,6 +46,11 @@ public class BaseVertexLabel extends EmptyVertex implements InternalVertexLabel 
     }
 
     @Override
+    public boolean isProxy() {
+        return false;
+    }
+
+    @Override
     public String name() {
         return name;
     }

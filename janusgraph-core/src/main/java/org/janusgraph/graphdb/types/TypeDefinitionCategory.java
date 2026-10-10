@@ -67,6 +67,7 @@ public enum TypeDefinitionCategory {
     //Vertex Label
     PARTITIONED(Boolean.class),
     STATIC(Boolean.class),
+    PROXY(Boolean.class),
 
     //Schema Edges
     RELATIONTYPE_INDEX(),
@@ -81,7 +82,7 @@ public enum TypeDefinitionCategory {
     public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE)));
     public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL)));
     public static final Set<TypeDefinitionCategory> INDEX_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(STATUS, ELEMENT_CATEGORY,INDEX_CARDINALITY,INTERNAL_INDEX, BACKING_INDEX,INDEXSTORE_NAME)));
-    public static final Set<TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(PARTITIONED, STATIC)));
+    public static final Set<TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(PARTITIONED, STATIC, PROXY)));
     public static final Set<TypeDefinitionCategory> TYPE_MODIFIER_DEFINITION_CATEGORIES = Collections.unmodifiableSet(Stream.of(ModifierType.values()).map(ModifierType::getCategory).collect(Collectors.toSet()));
 
     private final RelationCategory relationCategory;

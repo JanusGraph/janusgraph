@@ -43,6 +43,8 @@ public interface VertexLabel extends JanusGraphVertex, JanusGraphSchemaType {
      */
     boolean isStatic();
 
+    boolean isProxy();
+
     //TTL
 
     /**
