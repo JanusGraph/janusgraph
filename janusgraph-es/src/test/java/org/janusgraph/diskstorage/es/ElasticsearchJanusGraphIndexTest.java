@@ -48,6 +48,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IN
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PROPERTY_PREFETCHING;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -77,15 +78,27 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
     //findable by the property it had just changed and by nothing else. The update now recreates the whole document
     @Test
     public void testAnUpdateRecreatesAMissingDocumentWhole() throws Exception {
+        assertAnUpdateRecreatesAMissingDocumentWhole(true);
+    }
+
+    //A transaction which doesn't prefetch the properties of a vertex reads those of the index's keys alone for the
+    //document, rather than all of them
+    @Test
+    public void testAnUpdateWithoutPropertyPrefetchingRecreatesAMissingDocumentWhole() throws Exception {
+        assertAnUpdateRecreatesAMissingDocumentWhole(false);
+    }
+
+    private void assertAnUpdateRecreatesAMissingDocumentWhole(boolean prefetching) throws Exception {
         final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.makePropertyKey("note").dataType(String.class).make();
         mgmt.buildIndex("byNameAndAge", Vertex.class).addKey(name, Mapping.STRING.asParameter()).addKey(age)
             .buildMixedIndex(INDEX);
         finishSchema();
 
-        final Object vertexId = graph.addVertex("name", "whole", "age", 1).id();
+        final Object vertexId = graph.addVertex("name", "whole", "age", 1, "note", "not indexed").id();
         graph.tx().commit();
-        clopen(option(FORCE_INDEX_USAGE), true);
+        clopen(option(FORCE_INDEX_USAGE), true, option(PROPERTY_PREFETCHING), prefetching);
         assertTrue(graph.traversal().V().has("name", "whole").hasNext());
 
         esr.deleteDocument(INDEX_NAME.getDefaultValue() + "_bynameandage", "byNameAndAge",
