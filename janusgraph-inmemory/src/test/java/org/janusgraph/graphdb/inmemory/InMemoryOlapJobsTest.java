@@ -22,18 +22,26 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.config.Property;
+import org.apache.tinkerpop.gremlin.process.computer.Computer;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.PageRank;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.ShortestPath;
+import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.TraversalVertexProgramStep;
+import org.apache.tinkerpop.gremlin.process.computer.util.EmptyMemory;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -155,6 +163,66 @@ public class InMemoryOlapJobsTest {
         //The traversal attaches the results to this thread's transaction, which is the caller's to end
         graph.tx().rollback();
         assertEquals(before, openTransactions());
+    }
+
+    @Test
+    public void aTraversalWhoseScansCloneItsProgramAtOnceKeepsTheIdsOfItsBarriers() {
+        //Work blocks of 10 vertices on eight processors: each processor clones the job, and the traversal's program
+        //with it, for every block, so they often clone it at the same time. The order step is a barrier whose id each
+        //clone's traversal must keep, as the job's memory holds it under that id
+        graph = openGraph(graphBuilder().set("storage.buffer-size", 1), VERTICES);
+        final List<String> names = IntStream.range(0, VERTICES).mapToObj(i -> "v" + i).sorted()
+            .collect(Collectors.toList());
+
+        for (int i = 0; i < 3; i++) {
+            final List<Vertex> vertices = graph.traversal().withComputer(Computer.compute().workers(8)).V()
+                .order().by("name").toList();
+
+            assertEquals(names, vertices.stream().map(vertex -> vertex.<String>value("name"))
+                .collect(Collectors.toList()));
+            graph.tx().rollback();
+        }
+    }
+
+    @Test
+    public void theJobsOfProgramsWhichShareATraversalKeepTheIdsOfTheirBarriers() throws Exception {
+        //A traversal with a lambda can't be serialized, so each program holds its copy of the traversal as is, and every
+        //copy which a clone of a program makes numbers its steps with the StepPosition that all copies of the traversal
+        //share: the processors of all jobs number copies with it, so the clones of the programs take turns across the
+        //jobs. The programs are made one after the other, as TinkerPop numbers the steps of a program's traversal while
+        //it makes the program, before the job starts
+        graph = openGraph(graphBuilder().set("storage.buffer-size", 1), VERTICES);
+        final List<String> names = IntStream.range(0, VERTICES).mapToObj(i -> "v" + i).sorted()
+            .collect(Collectors.toList());
+        final Traversal.Admin<Vertex, String> traversal = graph.traversal().withComputer(Computer.compute().workers(8))
+            .V().filter(traverser -> true).order().by("name").<String>values("name").asAdmin();
+        traversal.applyStrategies();
+
+        for (int round = 0; round < 3; round++) {
+            //Each program from a clone of the traversal, whose program step makes it as the step would for a job
+            final List<VertexProgram<?>> programs = new ArrayList<>();
+            for (int i = 0; i < 4; i++) {
+                programs.add(TraversalHelper.getFirstStepOfAssignableClass(TraversalVertexProgramStep.class,
+                    traversal.clone()).get().generateProgram(graph, EmptyMemory.instance()));
+            }
+            final List<Future<ComputerResult>> jobs = new ArrayList<>();
+            for (VertexProgram<?> program : programs) {
+                jobs.add(graph.compute().workers(8).program(program).submit());
+            }
+            for (Future<ComputerResult> job : jobs) {
+                try (ComputerResult result = job.get()) {
+                    final TraverserSet<String> halted = result.memory().get(TraversalVertexProgram.HALTED_TRAVERSERS);
+                    final List<String> values = new ArrayList<>();
+                    halted.forEach(traverser -> {
+                        for (long i = 0; i < traverser.bulk(); i++) {
+                            values.add(traverser.get());
+                        }
+                    });
+                    Collections.sort(values);
+                    assertEquals(names, values);
+                }
+            }
+        }
     }
 
     @Test
