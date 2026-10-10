@@ -321,6 +321,27 @@ public class GraphDatabaseConfiguration {
                     MultiQueryHasStepStrategyMode.NONE.getConfigName()+"` mode is used.",
             ConfigOption.Type.MASKABLE, true);
 
+    public static final ConfigOption<Integer> FAST_PROPERTY_LOOKUP_LIMIT = new ConfigOption<>(QUERY_NS, "fast-property-lookup-limit",
+            "The most cells of a vertex (one for its existence marker, one for its label and one for each property " +
+                    "value) which a traversal's lookup of vertices by id (`g.V(ids)`, `g.V().hasId(ids)`) reads " +
+                    "along with the existence of each, in a transaction which verifies that its vertices exist. The " +
+                    "lookup reads what is read of each vertex right after it anyway, in the same backend read " +
+                    "instead of another one: the label for `label()`, `hasLabel(...)` and `elementMap(keys)`; the " +
+                    "label and all properties for `valueMap()`, `elementMap()`, `values()` and `properties()` " +
+                    "without keys, or with two keys or more and `query.batch.properties-mode` `all_properties`, and " +
+                    "for a `has(...)` on a property where the has step reads all properties (`query.fast-property`, " +
+                    "or `query.batch.has-step-mode` `all_properties`) and no `hasLabel(...)` or `hasId(...)` next to " +
+                    "it may leave the vertex out first. Has steps folded into the lookup " +
+                    "(`g.V().hasId(ids).has(...)`) count alone, as they may leave a vertex out before the next step " +
+                    "gets it. It reads the existence alone, as before, where the next step reads neither, such as " +
+                    "`out()`, or only some properties, such as `values(key)`; where several ids are looked up and " +
+                    "the next step doesn't read all of them in one batch; for more ids at once than " +
+                    "`query.batch.limited-size`; with `cache.db-cache`; and outside a traversal, for " +
+                    "`tx.getVertex(id)` and `graph.vertices(ids)`. A vertex with at least this many cells in the " +
+                    "slice discards the cells the lookup read, and the step reads them again. 0 reads the existence " +
+                    "alone.",
+            ConfigOption.Type.MASKABLE, 1000, ConfigOption.nonnegativeInt());
+
     public static final ConfigOption<Boolean> ADJUST_LIMIT = new ConfigOption<>(QUERY_NS,"smart-limit",
             "Whether the query optimizer should try to guess a smart limit for the query to ensure responsiveness in " +
                     "light of possibly large result sets. Those will be loaded incrementally if this option is enabled.",
@@ -1605,6 +1626,7 @@ public class GraphDatabaseConfiguration {
     private Boolean useMultiQuery;
     private boolean limitedBatch;
     private int limitedBatchSize;
+    private int fastPropertyLookupLimit;
     private MultiQueryStrategyRepeatStepMode repeatStepMode;
     private boolean optimizerBackendAccess;
     private IndexSelectionStrategy indexSelectionStrategy;
@@ -1734,6 +1756,10 @@ public class GraphDatabaseConfiguration {
 
     public Duration getMaxWriteTime() {
         return configuration.get(STORAGE_WRITE_WAITTIME);
+    }
+
+    public int fastPropertyLookupLimit() {
+        return fastPropertyLookupLimit;
     }
 
     public boolean hasPropertyPrefetching() {
@@ -2031,6 +2057,7 @@ public class GraphDatabaseConfiguration {
         }
 
         propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
+        fastPropertyLookupLimit = configuration.get(FAST_PROPERTY_LOOKUP_LIMIT);
         useMultiQuery = configuration.get(USE_MULTIQUERY);
         limitedBatch = configuration.get(LIMITED_BATCH);
         limitedBatchSize = configuration.get(LIMITED_BATCH_SIZE);

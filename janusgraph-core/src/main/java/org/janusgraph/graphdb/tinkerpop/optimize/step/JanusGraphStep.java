@@ -42,6 +42,7 @@ import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.QueryInfo;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.util.VertexLookupUtil;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.janusgraph.graphdb.util.MultiDistinctOrderedIterator;
 import org.janusgraph.graphdb.util.MultiDistinctUnorderedIterator;
@@ -80,8 +81,12 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
                 return Collections.emptyIterator();
             } else if (this.ids.length > 0) {
                 final Graph graph = (Graph)traversal.asAdmin().getGraph().get();
-                return iteratorList((Iterator<E>) (Vertex.class.isAssignableFrom(getReturnClass())
-                    ? graph.vertices(ids) : graph.edges(ids)));
+                if (!Vertex.class.isAssignableFrom(getReturnClass())) {
+                    return iteratorList((Iterator<E>) graph.edges(ids));
+                }
+                //Along with the existence of each vertex, the lookup reads what the has containers read of it anyway,
+                //or without any, what the next step reads
+                return iteratorList((Iterator<E>) VertexLookupUtil.vertices(this, getHasContainers(), ids));
             }
 
             buildGlobalGraphCentricQuery();

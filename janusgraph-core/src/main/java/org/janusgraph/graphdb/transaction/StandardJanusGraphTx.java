@@ -520,6 +520,20 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     @Override
     public Iterable<JanusGraphVertex> getVertices(Object... ids) {
+        return getVertices(VertexLookup.EXISTENCE, ids);
+    }
+
+    /**
+     * Looks the vertices of the given ids up as {@link #getVertices(Object...)} does, and reads of each vertex which
+     * isn't cached what the lookup asks for along with its existence, in the same backend read, see
+     * {@link VertexLookup}. That happens where the lookup slices are on ({@code query.fast-property-lookup-limit}
+     * above 0, without {@code cache.db-cache}), the transaction verifies the existence of the vertices it is given and
+     * doesn't bring its own data, the ids are no more than a batch of a multi-query reads at once
+     * ({@code query.batch.limited-size}) and all of them are ids of user vertices; the existence alone is read
+     * otherwise.
+     */
+    @Override
+    public Iterable<JanusGraphVertex> getVertices(VertexLookup lookup, Object... ids) {
         verifyOpen();
         if (ids==null || ids.length==0) return (Iterable)getInternalVertices();
 
@@ -549,11 +563,31 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         }
         if (!vertexIds.isEmpty()) {
             if (externalVertexRetriever.hasVerifyExistence()) {
-                List<EntryList> existence = graph.edgeMultiQuery(vertexIds,graph.vertexExistenceQuery,txHandle);
-                for (int i = 0; i < vertexIds.size(); i++) {
-                    if (!existence.get(i).isEmpty()) {
-                        Object id = vertexIds.get(i);
-                        result.add(vertexCache.get(id, existingVertexRetriever));
+                //One read of the lookup slice for all of them, as long as they are no more than a batch of a
+                //multi-query reads at once, and all of them user vertices, the only ones whose relations may be kept
+                //without the refresh guard, see keepLookedUpRelations
+                if (graph.vertexLookupSlice(lookup) != null && !config.hasPreloadedData()
+                    && vertexIds.size() <= graph.getConfiguration().limitedBatchSize()
+                    && vertexIds.stream().allMatch(idInspector::isUserVertexId)) {
+                    final List<EntryList> lookedUp = graph.edgeMultiQuery(vertexIds, graph.vertexLookupQuery(lookup), txHandle);
+                    for (int i = 0; i < vertexIds.size(); i++) {
+                        final EntryList relations = lookedUp.get(i);
+                        if (graph.vertexExistsIn(relations)) {
+                            final Object id = vertexIds.get(i);
+                            final InternalVertex vertex = vertexCache.get(id, existingVertexRetriever);
+                            result.add(vertex);
+                            if (graph.vertexLookupIsComplete(relations, lookup)) {
+                                keepLookedUpRelations(vertex, relations, lookup);
+                            }
+                        }
+                    }
+                } else {
+                    List<EntryList> existence = graph.edgeMultiQuery(vertexIds, graph.vertexExistenceQuery, txHandle);
+                    for (int i = 0; i < vertexIds.size(); i++) {
+                        if (!existence.get(i).isEmpty()) {
+                            Object id = vertexIds.get(i);
+                            result.add(vertexCache.get(id, existingVertexRetriever));
+                        }
                     }
                 }
             } else {
@@ -567,6 +601,19 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         //method has already passed verifyOpen(), so guard against null entries the same way getVertex() does.
         result.removeIf(v -> v == null || v.isRemoved());
         return result;
+    }
+
+    /**
+     * Keeps the relations which a lookup read along with a vertex's existence, the whole slice of the lookup, in the
+     * vertex's relation cache, from which the relations within the slice are then read. They go in without the refresh
+     * guard of {@link CacheVertex#loadRelations(SliceQuery, Retriever, long)}: {@link #expireSchemaElement} refreshes
+     * schema vertices alone, and only user vertices are seeded.
+     */
+    private void keepLookedUpRelations(InternalVertex vertex, EntryList relations, VertexLookup lookup) {
+        Preconditions.checkArgument(graph.vertexLookupIsComplete(relations, lookup), "A lookup cut off at its limit can't stand for the relations");
+        if (vertex instanceof CacheVertex) {
+            ((CacheVertex) vertex).addToQueryCache(graph.vertexLookupSlice(lookup), relations);
+        }
     }
 
     private InternalVertex getExistingVertex(Object vertexId) {

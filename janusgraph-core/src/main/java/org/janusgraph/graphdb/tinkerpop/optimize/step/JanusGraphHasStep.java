@@ -106,6 +106,20 @@ public class JanusGraphHasStep<S extends Element> extends HasStep<S> implements 
         return super.filter(traverser);
     }
 
+    /**
+     * Whether the step reads the vertices of its traversers in batches, see {@link #setUseMultiQuery(boolean)}.
+     */
+    public boolean isUseMultiQuery() {
+        return useMultiQuery;
+    }
+
+    /**
+     * The most vertices a batch of the step reads at once.
+     */
+    public int getBatchSize() {
+        return getFetcherBatchSize();
+    }
+
     @Override
     public void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = useMultiQuery;

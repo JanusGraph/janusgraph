@@ -34,6 +34,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.transaction.VertexLookup;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 
 import java.util.Arrays;
@@ -155,6 +156,14 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
 
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
+        return vertices(VertexLookup.EXISTENCE, vertexIds);
+    }
+
+    /**
+     * The vertices of the given ids or vertices, as {@link #vertices(Object...)} looks them up, reading of each what the
+     * lookup asks for along with its existence, see {@link #getVertices(VertexLookup, Object...)}.
+     */
+    public Iterator<Vertex> vertices(VertexLookup lookup, Object... vertexIds) {
         if (vertexIds==null || vertexIds.length==0) return (Iterator)getVertices().iterator();
         Object[] ids = new Object[vertexIds.length];
         int pos = 0;
@@ -164,7 +173,15 @@ public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTrans
         }
         if (pos==0) return Collections.emptyIterator();
         if (pos<ids.length) ids = Arrays.copyOf(ids,pos);
-        return (Iterator)getVertices(ids).iterator();
+        return (Iterator)getVertices(lookup, ids).iterator();
+    }
+
+    /**
+     * {@link #getVertices(Object...)}, reading of each vertex what the lookup asks for along with its existence, in the
+     * same backend read, see {@link VertexLookup}. This implementation reads the existence alone.
+     */
+    public Iterable<JanusGraphVertex> getVertices(VertexLookup lookup, Object... ids) {
+        return getVertices(ids);
     }
 
     @Override

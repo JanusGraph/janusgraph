@@ -326,6 +326,13 @@ public class Backend implements LockerProvider, AutoCloseable {
 
 
     /**
+     * Whether the database-level cache, {@code cache.db-cache}, holds the slices read from the edgestore.
+     */
+    public boolean isCacheEnabled() {
+        return cacheEnabled;
+    }
+
+    /**
      * Initializes this backend with the given configuration. Must be called before this Backend can be used
      *
      * @param config

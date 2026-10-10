@@ -88,6 +88,7 @@ import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
+import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
@@ -106,6 +107,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphStepStrategy
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
+import org.janusgraph.graphdb.transaction.VertexLookup;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
@@ -225,6 +227,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     //Caches
     public final SliceQuery vertexExistenceQuery;
+    //The queries a vertex looked up by id is read with along with its existence, see VertexLookup, limited to
+    //query.fast-property-lookup-limit cells, and their slices without the limit; null when the limit is 0, and with
+    //cache.db-cache, which holds the slices the steps read and would hold the lookup slices as further copies
+    private final SliceQuery vertexLabelLookupQuery;
+    private final SliceQuery vertexLabelLookupSlice;
+    private final SliceQuery vertexPropertiesLookupQuery;
+    private final SliceQuery vertexPropertiesLookupSlice;
     private final RelationQueryCache queryCache;
     private final SchemaCache schemaCache;
 
@@ -301,6 +310,24 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         this.indexSerializer = new IndexSerializer(configuration.getConfiguration(), this.edgeSerializer, this.serializer,
                 this.backend.getIndexInformation(), storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
         this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0]).setLimit(1);
+        final int lookupLimit = configuration.fastPropertyLookupLimit();
+        if (lookupLimit > 0 && !backend.isCacheEnabled()) {
+            //The system relations, the system properties first, whose first marks the existence, then the system edges,
+            //among them the label; then the user properties, which end where the edges begin, see
+            //IDHandler.DirectionID.getPrefix
+            final SliceQuery systemRelations = edgeSerializer.getQuery(RelationCategory.RELATION, true);
+            final StaticBuffer start = systemRelations.getSliceStart();
+            final StaticBuffer propertiesEnd = edgeSerializer.getQuery(RelationCategory.PROPERTY, false).getSliceEnd();
+            this.vertexLabelLookupSlice = new SliceQuery(start, systemRelations.getSliceEnd());
+            this.vertexLabelLookupQuery = new SliceQuery(start, systemRelations.getSliceEnd()).setLimit(lookupLimit);
+            this.vertexPropertiesLookupSlice = new SliceQuery(start, propertiesEnd);
+            this.vertexPropertiesLookupQuery = new SliceQuery(start, propertiesEnd).setLimit(lookupLimit);
+        } else {
+            this.vertexLabelLookupSlice = null;
+            this.vertexLabelLookupQuery = null;
+            this.vertexPropertiesLookupSlice = null;
+            this.vertexPropertiesLookupQuery = null;
+        }
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
         this.times = configuration.getTimestampProvider();
@@ -674,6 +701,54 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 throw new UnsupportedOperationException("Removal not supported");
             }
         };
+    }
+
+    /**
+     * The query a vertex looked up by id is read with along with its existence, for what the lookup reads of it: the
+     * existence marker first, then the label, then the properties, up to {@code query.fast-property-lookup-limit}
+     * cells. The existence alone with that limit at 0, and with {@code cache.db-cache}.
+     */
+    public SliceQuery vertexLookupQuery(VertexLookup lookup) {
+        switch (lookup) {
+            case EXISTENCE: return vertexExistenceQuery;
+            case LABEL: return vertexLabelLookupQuery == null ? vertexExistenceQuery : vertexLabelLookupQuery;
+            case LABEL_AND_PROPERTIES:
+                return vertexPropertiesLookupQuery == null ? vertexExistenceQuery : vertexPropertiesLookupQuery;
+            default: throw new IllegalArgumentException("Unknown lookup: " + lookup);
+        }
+    }
+
+    /**
+     * The slice of {@link #vertexLookupQuery(VertexLookup)} without its limit, under which a whole result of the query
+     * goes into the vertex's relation cache, which then answers every query within the slice; null where the lookup
+     * reads the existence alone.
+     */
+    public SliceQuery vertexLookupSlice(VertexLookup lookup) {
+        switch (lookup) {
+            case EXISTENCE: return null;
+            case LABEL: return vertexLabelLookupSlice;
+            case LABEL_AND_PROPERTIES: return vertexPropertiesLookupSlice;
+            default: throw new IllegalArgumentException("Unknown lookup: " + lookup);
+        }
+    }
+
+    /**
+     * Whether a result of {@link #vertexLookupQuery(VertexLookup)} shows that the vertex exists, by the property which
+     * marks the existence of every vertex. Its column is the first a vertex can have, so the limit of the query never
+     * cuts it off.
+     */
+    public boolean vertexExistsIn(EntryList lookedUp) {
+        //The first entry of the row, as the marker is the first cell of a vertex which exists; nothing is copied
+        return !lookedUp.isEmpty() && vertexExistenceQuery.contains(lookedUp.get(0).getColumnAs(StaticBuffer.STATIC_FACTORY));
+    }
+
+    /**
+     * Whether a result of {@link #vertexLookupQuery(VertexLookup)} holds the whole slice of the lookup: a result as
+     * large as the query's limit may have been cut off, and only a whole slice may stand for the vertex's relations.
+     */
+    public boolean vertexLookupIsComplete(EntryList lookedUp, VertexLookup lookup) {
+        final SliceQuery slice = vertexLookupSlice(lookup);
+        return slice != null && lookedUp.size() < vertexLookupQuery(lookup).getLimit();
     }
 
     public EntryList edgeQuery(Object vid, SliceQuery query, BackendTransaction tx) {
