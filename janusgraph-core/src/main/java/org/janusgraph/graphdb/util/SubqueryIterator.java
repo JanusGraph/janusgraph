@@ -52,7 +52,13 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
     //context, which closing the stream hands back
     private final Stream<?> indexStream;
 
+    //The ids read from the index, collected for the cache while it could keep them. Null once there are more than the
+    //cache keeps, as the cache would drop the list, and null when the result came from the cache or the cache keeps
+    //no list
     private List<Object> currentIds;
+
+    //How many ids were read from the index, for the profile
+    private long readCount;
 
     private QueryProfiler profiler;
 
@@ -82,10 +88,11 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
             stream = cacheResponse.stream();
         } else {
             try {
-                currentIds = new ArrayList<>();
+                final int maximumCachedResultSize = indexCache.maximumCachedResultSize();
+                currentIds = maximumCachedResultSize >= 0 ? new ArrayList<>() : null;
                 profiler = QueryProfiler.startProfile(subQuery.getProfiler(), subQuery);
                 isTimerRunning = true;
-                stream = indexSerializer.query(subQuery, backendTx, tx).peek(r -> currentIds.add(r));
+                stream = indexSerializer.query(subQuery, backendTx, tx).peek(r -> collect(r, maximumCachedResultSize));
             } catch (final Exception e) {
                 throw new JanusGraphException("Could not call index", e);
             }
@@ -112,6 +119,17 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                 .iterator();
     }
 
+    private void collect(Object id, int maximumCachedResultSize) {
+        readCount++;
+        if (currentIds != null) {
+            if (currentIds.size() < maximumCachedResultSize) {
+                currentIds.add(id);
+            } else {
+                currentIds = null;
+            }
+        }
+    }
+
     @Override
     protected JanusGraphElement computeNext() {
         if (elementIterator.hasNext()) {
@@ -133,21 +151,32 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
      */
     @Override
     public void close() {
-        if (isTimerRunning) {
-            assert currentIds != null;
-            //computeNext records the stream ending, which spares the probe below on the common path. The probe is
-            //still needed when it did not: a caller which took exactly as many elements as the limit allowed stops
-            //without ever driving the iterator to its end, and that result is complete and worth caching. Asking
-            //hasNext is the only way to tell that apart from a caller which stopped early by choice
-            if ((exhausted || !elementIterator.hasNext()) && isSafeToCache()) {
-                indexCache.put(subQuery, currentIds);
+        try {
+            if (isTimerRunning) {
+                isTimerRunning = false;
+                try {
+                    //computeNext records the stream ending, which spares the probe below on the common path. The probe
+                    //is still needed when it did not: a caller which took exactly as many elements as the limit
+                    //allowed stops without ever driving the iterator to its end, and that result is complete and
+                    //worth caching. Asking hasNext is the only way to tell that apart from a caller which stopped
+                    //early by choice. Ids the cache wouldn't keep aren't worth the probe
+                    if (currentIds != null && (exhausted || !elementIterator.hasNext())) {
+                        //The probe may have read on past what the cache keeps, which drops the ids
+                        final List<Object> ids = currentIds;
+                        if (ids != null && isSafeToCache()) {
+                            indexCache.put(subQuery, ids);
+                        }
+                    }
+                } finally {
+                    profiler.setResultSize(readCount);
+                    profiler.stopTimer();
+                }
             }
-            profiler.setResultSize(currentIds.size());
-            profiler.stopTimer();
-            isTimerRunning = false;
+        } finally {
+            //After the probe above, which may still read from it, and whether or not it failed: an index backend may
+            //hold a resource behind its stream. Closing a stream twice is harmless
+            indexStream.close();
         }
-        //After the probe above, which may still read from it. Closing a stream twice is harmless
-        indexStream.close();
     }
 
     /**

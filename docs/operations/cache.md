@@ -81,7 +81,10 @@ cache makes no difference.
 
 Each entry in the index cache is given a weight equal to
 `2 + result set size` and the total weight of the cache will not exceed
-half of the transaction cache size.
+half of the transaction cache size. A result set whose entry alone
+would weigh more than that, one of more than `cache.tx-cache-size / 2 - 2`
+elements (9,998 with the default transaction cache size of 20,000), is
+not cached.
 
 ## Database Level Caching
 

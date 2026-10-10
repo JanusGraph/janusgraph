@@ -27,8 +27,8 @@ import java.util.concurrent.Callable;
  * For example, suppose the cache is empty at the beginning. Firstly, prop1_idx:multiKSQ[1]@100 query leads to a cache
  * miss, and then results are loaded into cache. Secondly, prop1_idx:multiKSQ[1]@20 query leads to a cache hit, and
  * then first 20 results of cached responses are returned. Thirdly, prop1_idx:multiKSQ[1]@2000 leads to a cache miss,
- * then results are loaded into cache, and initial results saved by prop1_idx:multiKSQ[1]@100 query are overriden by
- * the new results.
+ * then results are loaded into cache, and initial results saved by prop1_idx:multiKSQ[1]@100 query are overridden by
+ * the new results, as long as they are no more than {@link #maximumCachedResultSize()}: a longer list is left out.
  * <p>
  * Internally, raw query results are encapsulated in {@link SubqueryResult} object together with limit of the query.
  * Meanwhile, keys are stored without limit (or with a dummy limit). Whenever there is a hit for key, the limit of
@@ -59,6 +59,11 @@ public abstract class SubsetSubqueryCache implements SubqueryCache {
 
     @Override
     public void put(JointIndexQuery.Subquery key, List<Object> values) {
+        //A list longer than the cache keeps would be dropped, and would take the result held for the same query under
+        //another limit with it, as both are kept under the query without its limit
+        if (values.size() > maximumCachedResultSize()) {
+            return;
+        }
         int limit = key.getLimit();
         JointIndexQuery.Subquery noLimitKey = key.updateLimit(0);
         put(noLimitKey, new SubqueryResult(values, limit));
