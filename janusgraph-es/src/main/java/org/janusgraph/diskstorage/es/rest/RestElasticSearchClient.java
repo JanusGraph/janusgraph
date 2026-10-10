@@ -177,12 +177,9 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     //flag
     private final AtomicBoolean warnedAboutRejectedRelease = new AtomicBoolean();
 
-    //Whether the cluster pages a result with a point in time: Elasticsearch 7.12 introduced the implicit _shard_doc
+    //Whether the cluster can page a result with a point in time: Elasticsearch 7.12 introduced the implicit _shard_doc
     //tiebreaker which search_after over a point in time relies on
     private boolean pointInTimeSupported;
-
-    //Whether a point in time is used where the cluster supports it, through ElasticSearchIndex.POINT_IN_TIME
-    private boolean pointInTimeEnabled = true;
 
 public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7,
                                int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
@@ -270,11 +267,11 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     }
 
     /**
-     * Whether a cluster with the given {@code version} object of its root endpoint pages a result with a point in time:
-     * Elasticsearch 7.12 introduced the implicit {@code _shard_doc} tiebreaker which {@code search_after} over a point
-     * in time relies on. OpenSearch has a point in time API since 2.4, but neither the tiebreaker nor sort values for
-     * a search sorted by score, so {@code search_after} can't page a query which doesn't sort by a field of its own
-     * there, and OpenSearch scrolls (verified on OpenSearch 2.19 and 3.9).
+     * Whether a cluster with the given {@code version} object of its root endpoint can page a result with a point in
+     * time: Elasticsearch 7.12 introduced the implicit {@code _shard_doc} tiebreaker which {@code search_after} over a
+     * point in time relies on. OpenSearch has a point in time API since 2.4, but neither the tiebreaker nor sort values
+     * for a search sorted by score, so {@code search_after} can't page a query which doesn't sort by a field of its own
+     * there, and OpenSearch scrolls in every paging mode (verified on OpenSearch 2.19 and 3.9).
      */
     public static boolean clusterSupportsPointInTime(Map<String, Object> version) {
         if (ElasticMajorVersion.isOpenSearch(version)) {
@@ -297,11 +294,7 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public boolean supportsPointInTime() {
-        return pointInTimeEnabled && pointInTimeSupported;
-    }
-
-    public void setPointInTimeEnabled(boolean pointInTimeEnabled) {
-        this.pointInTimeEnabled = pointInTimeEnabled;
+        return pointInTimeSupported;
     }
 
     @Override

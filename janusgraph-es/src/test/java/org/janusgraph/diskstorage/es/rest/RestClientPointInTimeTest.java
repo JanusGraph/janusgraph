@@ -107,7 +107,7 @@ public class RestClientPointInTimeTest {
     }
 
     @Test
-    public void shouldKnowWhichVersionsPageWithAPointInTime() {
+    public void shouldKnowWhichVersionsCanPageWithAPointInTime() {
         assertFalse(RestElasticSearchClient.clusterSupportsPointInTime(version(null, "7.11.2")));
         assertTrue(RestElasticSearchClient.clusterSupportsPointInTime(version(null, "7.12.0")));
         assertTrue(RestElasticSearchClient.clusterSupportsPointInTime(version(null, "7.17.8")));
@@ -120,7 +120,7 @@ public class RestClientPointInTimeTest {
     }
 
     @Test
-    public void shouldPageWithAPointInTimeWhereTheClusterReportsOne() throws IOException {
+    public void shouldSupportPointsInTimeWhereTheClusterReportsAVersionWithThem() throws IOException {
         try (RestElasticSearchClient client = clientOf(rootResponse(null, "7.17.8"))) {
             assertTrue(client.supportsPointInTime());
         }
@@ -134,7 +134,7 @@ public class RestClientPointInTimeTest {
 
     //A cluster whose version can't be asked for isn't known to have the API
     @Test
-    public void shouldScrollWhereTheClustersVersionCannotBeAsked() throws IOException {
+    public void shouldNotSupportPointsInTimeWhereTheClustersVersionCannotBeAsked() throws IOException {
         when(restClientMock.performRequest(any())).thenThrow(new IOException("connection refused"));
         try (RestElasticSearchClient client = new RestElasticSearchClient(restClientMock, 60, false, 0,
             Collections.emptySet(), 0, 0, 100_000_000)) {
@@ -145,7 +145,7 @@ public class RestClientPointInTimeTest {
 
     //Without asking the cluster, only a major version whose every release has the API is known to have it
     @Test
-    public void shouldPageWithAPointInTimeForAConfiguredMajorVersionOfEightOrLater() throws IOException {
+    public void shouldSupportPointsInTimeForAConfiguredMajorVersionOfEightOrLater() throws IOException {
         try (RestElasticSearchClient client = new RestElasticSearchClient(restClientMock, 60, false, 0,
             Collections.emptySet(), 0, 0, 100_000_000, ElasticMajorVersion.SEVEN)) {
             assertFalse(client.supportsPointInTime());
@@ -153,8 +153,6 @@ public class RestClientPointInTimeTest {
         try (RestElasticSearchClient client = new RestElasticSearchClient(restClientMock, 60, false, 0,
             Collections.emptySet(), 0, 0, 100_000_000, ElasticMajorVersion.EIGHT)) {
             assertTrue(client.supportsPointInTime());
-            client.setPointInTimeEnabled(false);
-            assertFalse(client.supportsPointInTime());
         }
         verify(restClientMock, never()).performRequest(any());
     }
@@ -177,6 +175,7 @@ public class RestClientPointInTimeTest {
     public void shouldSearchAPointInTimeWithoutAnIndexInThePath() throws IOException {
         try (RestElasticSearchClient client = clientOf(rootResponse(null, "8.19.0"))) {
             final Response stubbed = response(200, "{\"took\":3,\"pit_id\":\"pit-2\","
+                + "\"_shards\":{\"total\":3,\"successful\":3,\"skipped\":0,\"failed\":0},"
                 + "\"hits\":{\"hits\":[{\"_id\":\"a\",\"_score\":1.5,\"sort\":[1.5,7]},"
                 + "{\"_id\":\"b\",\"_score\":1.0,\"sort\":[1.0,12]}]}}");
             when(restClientMock.performRequest(any())).thenReturn(stubbed);
@@ -193,6 +192,7 @@ public class RestClientPointInTimeTest {
             assertEquals("pit-2", searchResponse.getPitId());
             assertEquals(2, searchResponse.numResults());
             assertEquals(Arrays.asList(1.0, 12), searchResponse.getLastSort());
+            assertEquals(3, searchResponse.getTotalShards());
         }
     }
 

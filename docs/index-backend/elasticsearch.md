@@ -333,13 +333,11 @@ index.search.elasticsearch.http.auth.basic.password=<password>
 
 JanusGraph raises the cluster setting `search.max_open_scroll_context` when it opens the index. If the
 JanusGraph user may not update cluster settings (`cluster:admin/settings/update`), set
-`index.[X].elasticsearch.setup-max-open-scroll-contexts` to `false`. On Elasticsearch 7.12 and later a
-result larger than a page is read through a point in time, which this setting doesn't limit. A scroll context
-holds such a result on an older cluster, on OpenSearch, and on Elasticsearch where
-`index.[X].elasticsearch.point-in-time` is `false`, where `index.[X].elasticsearch.major-version` is 7, or
-where JanusGraph can't ask the cluster for its version. Such a context is released as soon as the result has
-been read or its traversal is closed (see [Search Requests](#search-requests)), so the default limit of 500
-open contexts per node is rarely reached.
+`index.[X].elasticsearch.setup-max-open-scroll-contexts` to `false`. A scroll context holds a result larger
+than a page while it is read, unless `index.[X].elasticsearch.paging-mode` has it read through a point in time,
+which this setting doesn't limit (see [Search Requests](#search-requests)). Such a context is released as soon
+as the result has been read or its traversal is closed, so the default limit of 500 open contexts per node is
+rarely reached.
 
 Amazon OpenSearch Service domains which use IAM based access control need signed requests, which a
 [custom authenticator](#rest-client-custom-http-authentication) can provide. These domains don't allow
@@ -425,27 +423,46 @@ JanusGraph fetches the result of a mixed index query with as few requests as it 
   for what is left up to the 10,000th hit if that is less. The page size is `index.[X].max-result-set-size`
   (50 by default). When fewer hits come back than were asked for, that is the whole result. Only a larger
   result is read in pages of that size, from its first hit on, which costs such a result one request more than
-  the pages alone: on Elasticsearch 7.12 and later through a
+  the pages alone: through the
+  [scroll API](https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html#scroll-search-results),
+  or through a
   [point in time](https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html) and
-  `search_after`, on an older cluster and on OpenSearch through the
-  [scroll API](https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html#scroll-search-results).
-  An offset of 10,000 or more leaves nothing to ask for first, and such a query is read in pages at once,
-  however small its result.
+  `search_after` where `index.[X].elasticsearch.paging-mode` says so. An offset of 10,000 or more leaves
+  nothing to ask for first, and such a query is read in pages at once, however small its result.
+
+`index.[X].elasticsearch.paging-mode` decides how the pages are read:
+
+* `scroll`, the default, reads every result through a scroll.
+* `point_in_time` reads every result through a point in time.
+* `adaptive_point_in_time` reads a result through a point in time only where that is about as fast as a scroll
+  or faster, and every other result through a scroll.
 
 A point in time holds the state of the index while the pages are read, so that they agree, and each page is
-asked for after the last hit of the one before. A graph query without a limit and without an order reads its
-pages in the order of the index, which Elasticsearch pages through without scoring. A limited graph query, which
-JanusGraph may execute again with a larger limit, skipping the hits delivered so far, reads them in the order of
-their scores, as its single request does and as a [direct index query](direct-index-query.md) which doesn't sort
-does; that costs each page the scoring of the whole result, about twice the time of a scroll's page. A query
-which sorts keeps its sort. Unlike a scroll
-context, a point in time isn't counted against `search.max_open_scroll_context`, its pages don't count the total
-number of hits, and a page which is sent again after a transient failure comes back the same, where a scroll may
-skip it. `index.[X].elasticsearch.point-in-time` set to `false` makes every cluster scroll. A
-cluster whose version JanusGraph doesn't ask for (`index.[X].elasticsearch.major-version` 7), or can't, scrolls
-as well, since not every Elasticsearch 7 release has points in time, and so does OpenSearch: its point in time API
-lacks the `_shard_doc` tiebreaker and the sort values for a search sorted by score which `search_after` needs
-to page a query that doesn't sort by a field.
+asked for after the last hit of the one before. Unlike a scroll context, a point in time isn't counted against
+`search.max_open_scroll_context`, its pages don't count the total number of hits, and a page which is sent again
+after a transient failure comes back the same, where a scroll may skip it. A graph query without a limit and
+without an order reads its pages in the order of the index, which Elasticsearch pages through without scoring. A
+limited graph query, which JanusGraph may execute again with a larger limit, skipping the hits delivered so far,
+reads them in the order of their scores, as its single request does and as a
+[direct index query](direct-index-query.md) which doesn't sort does. A query which sorts keeps its sort.
+
+A point in time isn't always as fast as a scroll, though. On Elasticsearch 9.5.4, with 100,000 documents, it read
+the pages of a graph query without a limit and without an order up to 17% faster than a scroll with the default
+pages of 50, and about as fast with pages of up to 500, but only on an index of one shard. It took longer for such
+a query with pages of 1,000, 3% to 6% longer for a query which sorts, 11% to 38% longer in the order of scores,
+and 4% to 37% longer on an index of two or three shards, whatever the order. So `adaptive_point_in_time`
+reads through a point in time only a graph query without a limit and without an order, on an index of at most
+`index.[X].elasticsearch.adaptive-point-in-time-max-shards` shards (1 by default), as the first request of the
+result reports them, and with pages of at most `index.[X].elasticsearch.adaptive-point-in-time-max-page-size`
+hits (500 by default). A graph query is executed with a limit where its traversal has one, where
+`query.smart-limit` is on, and where `query.hard-max-limit` is lowered from its default: such a query is read
+by score through a point in time, and through a scroll in the adaptive mode.
+
+A cluster which reports an Elasticsearch version older than 7.12 scrolls in every mode. So does a cluster whose
+version JanusGraph doesn't ask for (`index.[X].elasticsearch.major-version` 7), or can't, since not every
+Elasticsearch 7 release has points in time, and so does OpenSearch: its point in time API lacks the `_shard_doc`
+tiebreaker and the sort values for a search sorted by score which `search_after` needs to page a query that
+doesn't sort by a field.
 
 A point in time or a scroll context is released as soon as the result has been read to its end, the limit is
 reached, or the traversal is closed, which JanusGraph Server does after every request. Embedded code which

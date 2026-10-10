@@ -66,11 +66,17 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
         ModifiableConfiguration config =  esr.setConfiguration(getStorageConfiguration(), indexBackends);
         for (String indexBackend : indexBackends) {
             config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, indexBackend);
+            config.set(ElasticSearchIndex.PAGING_MODE, getPagingMode().getConfigName(), indexBackend);
         }
         return config.getConfiguration();
     }
 
     public abstract ModifiableConfiguration getStorageConfiguration();
+
+    //How a result larger than a page of 3 is read: the suites of the storage backends cover different modes
+    protected ElasticSearchPagingMode getPagingMode() {
+        return ElasticSearchPagingMode.SCROLL;
+    }
 
     //An element's document can be missing from the index while the element exists: an index write lost earlier, a
     //document removed by hand. A later update used to recreate it from the fields it touched alone, so the vertex was

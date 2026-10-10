@@ -187,15 +187,49 @@ public class ElasticSearchIndex implements IndexProvider {
             "How long (in seconds) elasticsearch should keep alive the scroll context, or the point in time, of a result " +
                 "which is read in pages.", ConfigOption.Type.GLOBAL_OFFLINE, 60);
 
-    public static final ConfigOption<Boolean> POINT_IN_TIME =
-            new ConfigOption<>(ELASTICSEARCH_NS, "point-in-time",
-            "Whether a result larger than a page is read with a point in time and `search_after` on Elasticsearch 7.12 " +
-                "and later, instead of a scroll. A point in time isn't counted against `search.max_open_scroll_context`, " +
-                "its pages don't count the total number of hits, and a page which is sent again after a failure comes " +
-                "back the same, where a scroll may skip it. A cluster which reports an older version scrolls, as does one " +
-                "whose version isn't asked for (`major-version` 7) or can't be, and OpenSearch, whose point in time lacks " +
-                "the tiebreaker `search_after` needs. Set to `false` to scroll on every cluster.",
-            ConfigOption.Type.MASKABLE, true);
+    public static final ConfigOption<String> PAGING_MODE =
+            new ConfigOption<>(ELASTICSEARCH_NS, "paging-mode",
+            String.format("How a result larger than a page (`index.[X].max-result-set-size`) is read.<br>" +
+                "Supported modes:<br>" +
+                "- `%s` - Every result is read through a scroll.<br>" +
+                "- `%s` - Every result is read through a point in time and `search_after`. A point in time isn't " +
+                "counted against `search.max_open_scroll_context`, its pages don't count the total number of hits, " +
+                "and a page which is sent again after a failure comes back the same, where a scroll may skip it. But " +
+                "it reads the pages more slowly than a scroll unless they come in the order of the index, on an " +
+                "index of one shard and in pages of up to about 500 hits; the Elasticsearch page of the " +
+                "documentation has the measurements.<br>" +
+                "- `%s` - A result is read through a point in time where that is about as fast as a scroll or " +
+                "faster: the result of a graph query without a limit and without an order, whose pages come in the " +
+                "order of the index, on an index of at most `%s` shards and with pages of at most `%s` hits. A graph " +
+                "query is limited where its traversal limits it, where `query.smart-limit` is on, and where " +
+                "`query.hard-max-limit` is lowered. Every other result is read through a scroll.<br>" +
+                "A cluster which reports an Elasticsearch version older than 7.12 scrolls in every mode, as does one " +
+                "whose version isn't asked for (`major-version` 7) or can't be, and OpenSearch, whose point in time " +
+                "lacks the tiebreaker `search_after` needs.",
+                ElasticSearchPagingMode.SCROLL.getConfigName(), ElasticSearchPagingMode.POINT_IN_TIME.getConfigName(),
+                ElasticSearchPagingMode.ADAPTIVE_POINT_IN_TIME.getConfigName(), "adaptive-point-in-time-max-shards",
+                "adaptive-point-in-time-max-page-size"),
+            ConfigOption.Type.MASKABLE, ElasticSearchPagingMode.SCROLL.getConfigName(),
+            mode -> ElasticSearchPagingMode.fromConfigName(mode) != null);
+
+    public static final ConfigOption<Integer> ADAPTIVE_POINT_IN_TIME_MAX_SHARDS =
+            new ConfigOption<>(ELASTICSEARCH_NS, "adaptive-point-in-time-max-shards",
+            "The most shards an index may have, as the first request of a result reports them, for `paging-mode` " +
+                "`adaptive_point_in_time` to read the result through a point in time. 1 is the recommended value: " +
+                "on Elasticsearch 9.5.4, reading the pages of an index of two or three shards through a point in " +
+                "time took 4% to 37% longer than through a scroll, even in the order of the index. Raise it only " +
+                "where a point in time keeps up with a scroll on indexes of more shards.",
+            ConfigOption.Type.MASKABLE, 1, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Integer> ADAPTIVE_POINT_IN_TIME_MAX_PAGE_SIZE =
+            new ConfigOption<>(ELASTICSEARCH_NS, "adaptive-point-in-time-max-page-size",
+            "The largest page size (`index.[X].max-result-set-size`) with which `paging-mode` " +
+                "`adaptive_point_in_time` reads a result through a point in time. 500 is the recommended value: on " +
+                "Elasticsearch 9.5.4, a point in time read the pages of an index of one shard in the order of the " +
+                "index about as fast as a scroll or faster with pages of up to 500 hits, and more slowly with pages " +
+                "of 1,000. Lower it where a point in time falls behind a scroll with smaller pages, raise it where " +
+                "it keeps up with larger ones.",
+            ConfigOption.Type.MASKABLE, 500, ConfigOption.positiveInt());
 
     public static final ConfigNamespace ES_INGEST_PIPELINES =
             new ConfigNamespace(ELASTICSEARCH_NS, "ingest-pipeline", "Ingest pipeline applicable to a store of an index.");
@@ -559,7 +593,13 @@ public class ElasticSearchIndex implements IndexProvider {
         checkClusterHealth(config.get(HEALTH_REQUEST_TIMEOUT));
 
         compat = ESCompatUtils.acquireCompatForVersion(client.getMajorVersion());
-        searcher = new ElasticSearchSearcher(client, compat, batchSize);
+        //The option's verification rejects any other value as the configuration is read; this names it all the same
+        final String pagingModeName = config.get(PAGING_MODE);
+        final ElasticSearchPagingMode pagingMode = ElasticSearchPagingMode.fromConfigName(pagingModeName);
+        Preconditions.checkArgument(pagingMode != null, "Unknown %s: %s", PAGING_MODE.toStringWithoutRoot(),
+            pagingModeName);
+        searcher = new ElasticSearchSearcher(client, compat, batchSize, pagingMode,
+            config.get(ADAPTIVE_POINT_IN_TIME_MAX_SHARDS), config.get(ADAPTIVE_POINT_IN_TIME_MAX_PAGE_SIZE));
 
         indexSetting = ElasticSearchSetup.getSettingsFromJanusGraphConf(config);
 

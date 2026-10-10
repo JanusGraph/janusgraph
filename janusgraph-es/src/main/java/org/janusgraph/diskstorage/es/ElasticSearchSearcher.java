@@ -15,6 +15,7 @@
 package org.janusgraph.diskstorage.es;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.janusgraph.core.schema.Parameter;
@@ -39,10 +40,10 @@ import java.util.stream.StreamSupport;
  * with the offset applied by Elasticsearch and without counting the total. Otherwise the first request asks for one
  * hit more than a page after the offset, or for what is left up to {@link #MAX_SEARCH_SIZE} if that is less: when
  * fewer come back, that is the whole result and no scroll context is opened. Only when it comes back full, or when
- * the offset leaves nothing to ask for, is the same search read in pages: through a point in time and
- * {@code search_after} on a cluster which has them, through a scroll on an older one. Either stops as soon as the
- * consumer does or the limit is reached, so that the point in time or the scroll context is released instead of being
- * left to expire.
+ * the offset leaves nothing to ask for, is the same search read in pages: through a scroll, or through a point in time
+ * and {@code search_after} where the {@link ElasticSearchPagingMode} says so and the cluster has them. Either stops as
+ * soon as the consumer does or the limit is reached, so that the point in time or the scroll context is released
+ * instead of being left to expire.
  */
 class ElasticSearchSearcher {
 
@@ -59,14 +60,28 @@ class ElasticSearchSearcher {
     private final ElasticSearchClient client;
     private final AbstractESCompat compat;
     private final int pageSize;
+    private final ElasticSearchPagingMode pagingMode;
+    private final int adaptiveMaxShards;
+    private final int adaptiveMaxPageSize;
 
     /**
-     * @param pageSize the size of the first request of a result which no limit bounds, and of every page read after it
+     * @param pageSize            the size of the first request of a result which no limit bounds, and of every page
+     *                            read after it
+     * @param pagingMode          how a result larger than a page is read where the cluster can page through a point
+     *                            in time
+     * @param adaptiveMaxShards   the most shards of an index which
+     *                            {@link ElasticSearchPagingMode#ADAPTIVE_POINT_IN_TIME} reads through a point in time
+     * @param adaptiveMaxPageSize the largest page size with which
+     *                            {@link ElasticSearchPagingMode#ADAPTIVE_POINT_IN_TIME} reads through a point in time
      */
-    ElasticSearchSearcher(ElasticSearchClient client, AbstractESCompat compat, int pageSize) {
+    ElasticSearchSearcher(ElasticSearchClient client, AbstractESCompat compat, int pageSize,
+                          ElasticSearchPagingMode pagingMode, int adaptiveMaxShards, int adaptiveMaxPageSize) {
         this.client = client;
         this.compat = compat;
         this.pageSize = pageSize;
+        this.pagingMode = Preconditions.checkNotNull(pagingMode, "A paging mode is required");
+        this.adaptiveMaxShards = adaptiveMaxShards;
+        this.adaptiveMaxPageSize = adaptiveMaxPageSize;
     }
 
     /**
@@ -90,6 +105,8 @@ class ElasticSearchSearcher {
         //One hit more than a page after the offset, but never beyond the last hit a request may reach, tells whether
         //what comes back is the whole result: it is when fewer come back than were asked for
         final int probeSize = (int) Math.min(pageSize + 1L, MAX_SEARCH_SIZE - (long) offset);
+        //The shards the search runs on, as the first request reports them; 0 without one
+        int shards = 0;
         if (probeSize > 0) {
             request.setFrom(offset);
             request.setSize(probeSize);
@@ -97,15 +114,40 @@ class ElasticSearchSearcher {
             if (response.numResults() < probeSize) {
                 return limit(response.getResults(), limit);
             }
+            shards = response.getTotalShards();
         }
         //The pages start at the first hit, so the offset is skipped here
         request.setFrom(0);
         request.setSize(pageSize);
         final long pagesLimit = scrollLimit(offset, limit);
-        final Stream<RawQuery.Result<String>> pages = client.supportsPointInTime()
-            ? pointInTime(indexStoreName, request, parameters, pagesLimit, limit == Query.NO_LIMIT)
+        final boolean unbounded = limit == Query.NO_LIMIT;
+        final boolean pointInTimeMayRead = pagingMode == ElasticSearchPagingMode.POINT_IN_TIME
+            || (pagingMode == ElasticSearchPagingMode.ADAPTIVE_POINT_IN_TIME && mayKeepUp(request, unbounded, shards));
+        //The body tells whether the pages have a sort of their own, which leaves ADAPTIVE_POINT_IN_TIME to a scroll, so
+        //it is built only where a point in time may read them, and a point in time which reads them takes it
+        final Map<String, Object> requestBody = pointInTimeMayRead && client.supportsPointInTime()
+            ? compat.createRequestBody(request, parameters) : null;
+        final Stream<RawQuery.Result<String>> pages = requestBody != null
+                && (pagingMode == ElasticSearchPagingMode.POINT_IN_TIME || !hasSort(requestBody))
+            ? pointInTime(indexStoreName, request, requestBody, pagesLimit, unbounded)
             : scroll(indexStoreName, request, parameters, pagesLimit);
         return limit(pages.skip(offset), limit);
+    }
+
+    //Whether ADAPTIVE_POINT_IN_TIME may read the pages through a point in time, which is about as fast as a scroll or
+    //faster where it reads them in the order of the index: the query has no limit and doesn't want its hits by
+    //relevance, on an index of few shards (the first request has to have told them) and in small pages; then the pages
+    //must have no sort of their own. In any other order, through more shards or in larger pages, a point in time pages
+    //more slowly than a scroll
+    private boolean mayKeepUp(ElasticSearchRequest request, boolean unbounded, int shards) {
+        return unbounded && !request.isRelevanceOrdered()
+            && shards > 0 && shards <= adaptiveMaxShards && pageSize <= adaptiveMaxPageSize;
+    }
+
+    //A sort parameter may be a list, a field name or an object; only none, or an empty list, is no sort
+    private static boolean hasSort(Map<String, Object> requestBody) {
+        final Object sort = requestBody.get("sort");
+        return sort != null && !(sort instanceof Collection && ((Collection<?>) sort).isEmpty());
     }
 
     private Stream<RawQuery.Result<String>> scroll(String indexStoreName, ElasticSearchRequest request,
@@ -131,18 +173,14 @@ class ElasticSearchSearcher {
      * @param unbounded whether the query has no limit, so that it is never executed again with a larger one
      */
     private Stream<RawQuery.Result<String>> pointInTime(String indexStoreName, ElasticSearchRequest request,
-                                                        Parameter[] parameters, long limit, boolean unbounded)
+                                                        Map<String, Object> requestBody, long limit, boolean unbounded)
             throws IOException {
         final String pitId = client.openPointInTime(indexStoreName);
         try {
-            final Map<String, Object> requestBody = compat.createRequestBody(request, parameters);
             requestBody.put(TRACK_TOTAL_HITS_PARAMETER, false);
             //search_after takes the place of the offset
             requestBody.remove("from");
-            //A sort given as a parameter may be a list, a single field name or an object; only none, or an empty list,
-            //leaves the pages without one
-            final Object sort = requestBody.get("sort");
-            if (sort == null || (sort instanceof Collection && ((Collection<?>) sort).isEmpty())) {
+            if (!hasSort(requestBody)) {
                 final boolean byScore = request.isRelevanceOrdered() || !unbounded;
                 requestBody.put("sort", ImmutableList.of(byScore
                     ? ImmutableMap.of("_score", "desc") : ImmutableMap.of("_shard_doc", "asc")));
