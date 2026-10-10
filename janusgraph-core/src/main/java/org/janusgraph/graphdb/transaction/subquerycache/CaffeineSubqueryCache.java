@@ -23,12 +23,29 @@ import org.janusgraph.graphdb.query.graph.JointIndexQuery;
  * @author Boxuan Li (liboxuan@connect.hku.hk)
  */
 public class CaffeineSubqueryCache extends SubsetSubqueryCache {
+    //An entry weighs the size of its list of results plus this
+    private static final int ENTRY_OVERHEAD = 2;
+
     private final Cache<JointIndexQuery.Subquery, SubqueryResult> caffeineCache;
+
+    private final int maximumCachedResultSize;
 
     public CaffeineSubqueryCache(long maximumWeight) {
         caffeineCache = Caffeine.newBuilder()
-            .weigher((Weigher<JointIndexQuery.Subquery, SubqueryResult>) (q, r) -> 2 + r.size())
-            .maximumWeight(maximumWeight).build();
+            .weigher((Weigher<JointIndexQuery.Subquery, SubqueryResult>) (q, r) -> ENTRY_OVERHEAD + r.size())
+            .maximumWeight(maximumWeight)
+            //Maintained on the thread which uses it, as the vertex cache of a transaction is, rather than in a task of
+            //the common pool after every change
+            .executor(Runnable::run)
+            .build();
+        //Caffeine drops an entry heavier than the maximum weight when it maintains the cache, and may keep one which
+        //weighs no more
+        maximumCachedResultSize = (int) Math.min(Integer.MAX_VALUE, maximumWeight - ENTRY_OVERHEAD);
+    }
+
+    @Override
+    public int maximumCachedResultSize() {
+        return maximumCachedResultSize;
     }
 
     @Override

@@ -57,6 +57,17 @@ public interface SubqueryCache {
     List<Object> get(JointIndexQuery.Subquery query, Callable<? extends List<Object>> valueLoader) throws Exception;
 
     /**
+     * The most results a list may hold for the cache to keep it. A longer list is never kept, so a caller need not
+     * collect the results of a query which turns out to have more; negative when the cache keeps no list at all, not
+     * even an empty one.
+     *
+     * @return the most results of a list the cache keeps, {@link Integer#MAX_VALUE} by default, which bounds nothing
+     */
+    default int maximumCachedResultSize() {
+        return Integer.MAX_VALUE;
+    }
+
+    /**
      * Closes the cache which allows the cache to release allocated memory.
      * Calling any of the other methods after closing a cache has undetermined behavior.
      */

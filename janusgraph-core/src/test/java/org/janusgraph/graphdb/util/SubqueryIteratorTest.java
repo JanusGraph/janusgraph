@@ -58,6 +58,9 @@ public class SubqueryIteratorTest {
         //A mock returns an empty List rather than null, which would look like a cache hit holding no results
         final SubqueryCache indexCache = mock(SubqueryCache.class);
         when(indexCache.getIfPresent(any())).thenReturn(null);
+        //Unstubbed, maximumCachedResultSize() would return 0, which drops the ids at once: this stands for a cache
+        //without a bound
+        when(indexCache.maximumCachedResultSize()).thenReturn(Integer.MAX_VALUE);
 
         final List<Object> returnedIds = new ArrayList<>();
         try (SubqueryIterator iterator = new SubqueryIterator(subQuery, indexSerializer,
@@ -117,6 +120,9 @@ public class SubqueryIteratorTest {
         when(indexSerializer.query(any(), any(), any())).thenAnswer(invocation -> indexResults);
         final SubqueryCache indexCache = mock(SubqueryCache.class);
         when(indexCache.getIfPresent(any())).thenReturn(null);
+        //Unstubbed, maximumCachedResultSize() would return 0, which drops the ids at once: this stands for a cache
+        //without a bound
+        when(indexCache.maximumCachedResultSize()).thenReturn(Integer.MAX_VALUE);
         return new SubqueryIterator(subQuery, indexSerializer, mock(BackendTransaction.class),
             mock(StandardJanusGraphTx.class), indexCache, Integer.MAX_VALUE, id -> mock(JanusGraphElement.class), null);
     }
