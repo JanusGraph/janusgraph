@@ -840,21 +840,34 @@ cluster rejects is logged as a warning once. Deployments which set
 `index.[X].elasticsearch.setup-max-open-scroll-contexts` to `false`, such as Amazon OpenSearch Service, are therefore
 far less likely to reach the cluster's limit of open scroll contexts.
 
-##### Elasticsearch results larger than a page are read through a point in time
+##### Elasticsearch results larger than a page can be read through a point in time
 
-A result larger than a page (`index.[X].max-result-set-size`, 50 by default) was read through a scroll, whose context
-counts against the cluster's `search.max_open_scroll_context`, whose pages count the total number of hits because
-Elasticsearch requires it, and which may skip a page when the request for one is sent again after a transient failure. On
-Elasticsearch 7.12 and later such a result is now read through a point in time and `search_after`: the point in time holds the state of the index while the pages are read, each page is asked for after
-the last hit of the one before, and none counts the total. A graph query without a limit and without an order reads its
-pages in the order of the index; a limited one, and a direct index query without a sort of its own, in the order of
-their scores, as a single request does. The point in time is closed as soon as the result has been
-read, the limit is reached or the traversal is closed, as the scroll context was, and
-`index.[X].elasticsearch.scroll-keep-alive` bounds its life as well. An older cluster, a cluster whose version isn't
-asked for (`index.[X].elasticsearch.major-version` 7) or can't be, OpenSearch, whose point in time lacks the tiebreaker
-`search_after` needs, and every cluster with the new option `index.[X].elasticsearch.point-in-time` set to `false`
-scroll as before. On Elasticsearch 9.5.4, a result of 100,000 hits read in pages of 50 takes 0.8 s through a point in time
-in the order of the index, where a scroll took 0.95 s, and 1.9 s in the order of scores.
+A result larger than a page (`index.[X].max-result-set-size`, 50 by default) was read through a scroll. A scroll's
+context counts against the cluster's `search.max_open_scroll_context`, its pages count the total number of hits
+because Elasticsearch requires it, and it may skip a page when the request for one is sent again after a transient
+failure. The new option `index.[X].elasticsearch.paging-mode` reads such results through a point in time and
+`search_after` on Elasticsearch 7.12 and later where that pays: the point in time holds the state of the index while
+the pages are read, each page is asked for after the last hit of the one before, and none counts the total.
+`adaptive_point_in_time`, the default, reads through a point in time only the results for which that is about as fast
+as a scroll or faster, and every other result through a scroll; `scroll` reads every result through a scroll, as
+before; and `point_in_time` reads every result through a point in time. A graph query without a limit and without an order reads its pages in the order of the index; a limited one,
+and a direct index query without a sort of its own, in the order of their scores, as a single request does. The point
+in time is closed as soon as the result has been read, the limit is reached or the traversal is closed, as a scroll
+context is, and `index.[X].elasticsearch.scroll-keep-alive` bounds its life as well. An older cluster, a cluster whose
+version isn't asked for (`index.[X].elasticsearch.major-version` 7) or can't be, and OpenSearch, whose point in time
+lacks the tiebreaker `search_after` needs, scroll in every mode.
+
+On Elasticsearch 9.5.4, with 100,000 documents, a point in time read the pages of a graph query without a limit and
+without an order up to 17% faster than a scroll with pages of 50, and about as fast with pages of up to 500, on an
+index of one shard. In every other case it took longer: 3% to 6% for a query which sorts, 11% to 38% in the order of
+scores, and 4% to 37% on an index of two or three shards. So `adaptive_point_in_time` reads through a point in time
+only a graph query without a limit and without an order, on an index of at most
+`index.[X].elasticsearch.adaptive-point-in-time-max-shards` shards (1 by default) and with pages of at most
+`index.[X].elasticsearch.adaptive-point-in-time-max-page-size` hits (500 by default). A graph query is limited where its
+traversal limits it, where `query.smart-limit` is on, and where `query.hard-max-limit` is lowered. Through a graph query
+on an index of one shard, a result of 100,000 hits in the default pages of 50 takes 0.91 s in the adaptive mode, through
+a point in time, against 1.13 s through a scroll, and in pages of 10,000, which the adaptive mode scrolls, 118 ms against
+131 ms through a point in time.
 
 ##### Relations without properties are parsed once
 

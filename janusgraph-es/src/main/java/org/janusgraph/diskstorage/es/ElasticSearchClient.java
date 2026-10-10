@@ -95,8 +95,9 @@ public interface ElasticSearchClient extends Closeable {
     ElasticSearchResponse search(String scrollId) throws IOException;
 
     /**
-     * Whether the cluster pages a result with a point in time and {@code search_after}, as Elasticsearch 7.12 and later
-     * do, where an older cluster, and OpenSearch, scrolls. The default knows no such cluster.
+     * Whether the cluster can page a result with a point in time and {@code search_after}, as Elasticsearch 7.12 and
+     * later can, where an older cluster, and OpenSearch, can only scroll; {@link ElasticSearchIndex#PAGING_MODE} decides
+     * whether a result is read that way. The default knows no such cluster.
      */
     default boolean supportsPointInTime() {
         return false;

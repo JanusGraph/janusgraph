@@ -20,6 +20,7 @@ import org.janusgraph.diskstorage.es.ElasticSearchResponse;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 @JsonIgnoreProperties(ignoreUnknown=true)
@@ -78,6 +79,13 @@ public class RestSearchResponse extends ElasticSearchResponse {
     @Override
     public void setScrollId(String scrollId) {
         this.scrollId = scrollId;
+    }
+
+    //Of the shards the search ran on, only their number is read
+    @JsonProperty("_shards")
+    public void setShards(Map<String, Object> shards) {
+        final Object total = shards == null ? null : shards.get("total");
+        setTotalShards(total instanceof Number ? ((Number) total).intValue() : 0);
     }
 
     //The point in time is the parent's field; the annotation names it in the response

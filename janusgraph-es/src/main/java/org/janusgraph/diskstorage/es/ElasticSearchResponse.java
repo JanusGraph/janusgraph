@@ -31,6 +31,8 @@ public class ElasticSearchResponse {
 
     private List<Object> lastSort;
 
+    private int totalShards;
+
     public long getTook() {
         return took;
     }
@@ -81,5 +83,16 @@ public class ElasticSearchResponse {
 
     public void setLastSort(List<Object> lastSort) {
         this.lastSort = lastSort;
+    }
+
+    /**
+     * The number of shards the search ran on, 0 where the response doesn't tell.
+     */
+    public int getTotalShards() {
+        return totalShards;
+    }
+
+    public void setTotalShards(int totalShards) {
+        this.totalShards = totalShards;
     }
 }
