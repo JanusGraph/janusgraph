@@ -26,8 +26,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 
 public class AsyncCQLMultiKeySliceFunction extends AsyncCQLFunction<MultiKeysSingleSliceQuery>{
-    public AsyncCQLMultiKeySliceFunction(CqlSession session, PreparedStatement getSlice, CQLColValGetter getter, ExecutorService executorService, QueryBackPressure queryBackPressure) {
-        super(session, getSlice, getter, executorService, queryBackPressure);
+    public AsyncCQLMultiKeySliceFunction(CqlSession session, PreparedStatement getSlice, CQLColValGetter getter, ExecutorService executorService, QueryBackPressure queryBackPressure, int maxInlineRows) {
+        super(session, getSlice, getter, executorService, queryBackPressure, maxInlineRows);
     }
 
     @Override

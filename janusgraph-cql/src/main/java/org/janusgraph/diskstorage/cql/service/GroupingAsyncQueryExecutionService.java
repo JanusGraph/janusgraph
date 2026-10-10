@@ -60,6 +60,7 @@ import java.util.function.Function;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.EXECUTOR_SERVICE_MAX_INLINE_ROWS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYS_GROUPING_ALLOWED;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYS_GROUPING_CLASS;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.KEYS_GROUPING_LIMIT;
@@ -111,6 +112,7 @@ public class GroupingAsyncQueryExecutionService implements AsyncQueryExecutionSe
         CqlSession session = storeManager.getSession();
         ExecutorService executorService = storeManager.getExecutorService();
         QueryBackPressure queryBackPressure = storeManager.getQueriesBackPressure();
+        int maxInlineRows = configuration.get(EXECUTOR_SERVICE_MAX_INLINE_ROWS);
 
         // @formatter:off
         final Select getSliceSelect = selectFrom(keyspaceName, tableName)
@@ -123,7 +125,7 @@ public class GroupingAsyncQueryExecutionService implements AsyncQueryExecutionSe
             )
             .limit(bindMarker(LIMIT_BINDING));
         PreparedStatement getSlice = session.prepare(addTTLFunction.apply(addTimestampFunction.apply(getSliceSelect)).build());
-        cqlSingleKeySliceFunction = new AsyncCQLSingleKeySliceFunction(session, getSlice, singleKeyGetter, executorService, queryBackPressure);
+        cqlSingleKeySliceFunction = new AsyncCQLSingleKeySliceFunction(session, getSlice, singleKeyGetter, executorService, queryBackPressure, maxInlineRows);
 
         if(sliceGroupingAllowed){
             // @formatter:off
@@ -136,7 +138,7 @@ public class GroupingAsyncQueryExecutionService implements AsyncQueryExecutionSe
                 )
                 .limit(bindMarker(LIMIT_BINDING));
             PreparedStatement getMultiColumn = session.prepare(addTTLFunction.apply(addTimestampFunction.apply(getMultiColumnSelect)).build());
-            cqlSingleKeyMultiColumnFunction = new AsyncCQLSingleKeyMultiColumnFunction(session, getMultiColumn, singleKeyGetter, executorService, queryBackPressure);
+            cqlSingleKeyMultiColumnFunction = new AsyncCQLSingleKeyMultiColumnFunction(session, getMultiColumn, singleKeyGetter, executorService, queryBackPressure, maxInlineRows);
         } else {
             cqlSingleKeyMultiColumnFunction = null;
         }
@@ -154,7 +156,7 @@ public class GroupingAsyncQueryExecutionService implements AsyncQueryExecutionSe
                 )
                 .perPartitionLimit(bindMarker(LIMIT_BINDING));
             PreparedStatement getMultiKeySlice = session.prepare(addTTLFunction.apply(addTimestampFunction.apply(getMultiKeySliceSelect)).build());
-            cqlMultiKeySliceFunction = new AsyncCQLMultiKeySliceFunction(session, getMultiKeySlice, multiKeysGetter, executorService, queryBackPressure);
+            cqlMultiKeySliceFunction = new AsyncCQLMultiKeySliceFunction(session, getMultiKeySlice, multiKeysGetter, executorService, queryBackPressure, maxInlineRows);
 
             if(sliceGroupingAllowed){
                 // @formatter:off
@@ -168,7 +170,7 @@ public class GroupingAsyncQueryExecutionService implements AsyncQueryExecutionSe
                     )
                     .perPartitionLimit(bindMarker(LIMIT_BINDING));
                 PreparedStatement getMultiKeyMultiColumn = session.prepare(addTTLFunction.apply(addTimestampFunction.apply(getMultiKeyMultiColumnSelect)).build());
-                cqlMultiKeyMultiColumnFunction = new AsyncCQLMultiKeyMultiColumnFunction(session, getMultiKeyMultiColumn, multiKeysGetter, executorService, queryBackPressure);
+                cqlMultiKeyMultiColumnFunction = new AsyncCQLMultiKeyMultiColumnFunction(session, getMultiKeyMultiColumn, multiKeysGetter, executorService, queryBackPressure, maxInlineRows);
             } else {
                 cqlMultiKeyMultiColumnFunction = null;
             }
