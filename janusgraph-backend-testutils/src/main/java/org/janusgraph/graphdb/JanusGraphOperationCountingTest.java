@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import io.github.artsok.RepeatedIfExceptionsTest;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -38,6 +40,7 @@ import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
@@ -49,6 +52,10 @@ import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryHasStepStrategyMode;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.transaction.VertexLookup;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.util.stats.MetricManager;
@@ -63,6 +70,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static org.janusgraph.diskstorage.Backend.EDGESTORE_NAME;
 import static org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME;
@@ -77,10 +85,15 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_TIME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FAST_PROPERTY_LOOKUP_LIMIT;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HAS_STEP_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LIMITED_BATCH_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PROPERTIES_BATCH_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PROPERTY_PREFETCHING;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCHEMA_CONSTRAINTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USE_MULTIQUERY;
 import static org.janusgraph.graphdb.database.cache.MetricInstrumentedSchemaCache.METRICS_NAME;
 import static org.janusgraph.graphdb.database.cache.MetricInstrumentedSchemaCache.METRICS_RELATIONS;
 import static org.janusgraph.graphdb.database.cache.MetricInstrumentedSchemaCache.METRICS_TYPENAME;
@@ -359,6 +372,239 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 3L));
         verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of(M_GET_SLICE, 2L));
         tx.commit();
+    }
+
+    /**
+     * Runs the traversal in a transaction of the counted group and checks the reads of the edgestore it took
+     */
+    private void assertTraversalReads(long reads, Consumer<GraphTraversalSource> traversal) {
+        assertTraversalReads(reads, -1, traversal);
+    }
+
+    /**
+     * Runs the traversal in a transaction of the counted group and checks the reads of the edgestore it took, and the
+     * cells they returned unless that is negative
+     */
+    private void assertTraversalReads(long reads, long cells, Consumer<GraphTraversalSource> traversal) {
+        resetMetrics();
+        final JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        try {
+            traversal.accept(tx.traversal());
+            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, reads));
+            if (cells >= 0) {
+                assertEquals(cells, metric.getCounter(metricsPrefix, EDGESTORE_NAME, M_GET_SLICE,
+                    MetricInstrumentedStore.M_ENTRIES_COUNT).getCount(), "cells returned");
+            }
+        } finally {
+            tx.rollback();
+        }
+    }
+
+    //A person with two properties and an edge, a person with one property, the id of a removed person, and a vertex
+    //with the default label and one property
+    private Object[] makeLookedUpPeople() {
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.makeEdgeLabel("knows").make();
+        finishSchema();
+        final JanusGraphVertex v = tx.addVertex("person");
+        v.property("name", "john");
+        v.property("age", 25);
+        final JanusGraphVertex u = tx.addVertex("person");
+        u.property("name", "mary");
+        final JanusGraphVertex w = tx.addVertex("person");
+        final JanusGraphVertex x = tx.addVertex();
+        x.property("name", "max");
+        v.addEdge("knows", u);
+        tx.commit();
+        graph.traversal().V(w.id()).drop().iterate();
+        graph.tx().commit();
+        return new Object[]{v.id(), u.id(), w.id(), x.id()};
+    }
+
+    @Test
+    public void testVertexLookupReadsWhatTheNextStepReadsAlongWithTheExistence() {
+        metricsPrefix = "testVertexLookupReadsWhatTheNextStepReads";
+        final Object[] people = makeLookedUpPeople();
+        final Object v = people[0];
+        final Object u = people[1];
+        final Object w = people[2];
+        final Object x = people[3];
+        clopen(option(PROPERTY_PREFETCHING), true);
+
+        //A step which reads all properties of a vertex, or its label, has them read along with the existence
+        assertTraversalReads(1, g -> assertEquals(2, g.V(v).valueMap().next().size()));
+        assertTraversalReads(1, g -> assertEquals(4, g.V(v).elementMap().next().size()));
+        assertTraversalReads(1, g -> assertEquals(2, g.V(v).values().toList().size()));
+        assertTraversalReads(1, g -> assertEquals("person", g.V(v).label().next()));
+        //A vertex with the default label has no label edge, which the slice tells as well
+        assertTraversalReads(1, 1, g -> assertEquals("vertex", g.V(x).label().next()));
+        assertTraversalReads(1, g -> assertEquals(1, g.V(v).hasLabel("person").count().next()));
+        //A has container on a property reads all properties with query.fast-property
+        assertTraversalReads(1, g -> assertEquals(1, g.V(v).has("name", "john").count().next()));
+        //Beside a has container on the label, the has step reads them, only of a vertex whose label passes
+        assertTraversalReads(2, g -> assertEquals(1, g.V(v).hasLabel("person").has("name", "john").count().next()));
+        //Ids which hasId() gave, the same
+        assertTraversalReads(1, g -> assertEquals(2, g.V().hasId(v).valueMap().next().size()));
+        assertTraversalReads(1, g -> assertEquals(1, g.V().hasId(v).has("name", "john").count().next()));
+        //The label of an elementMap with keys comes along, its keys are read on their own
+        assertTraversalReads(2, g -> assertEquals(3, g.V(v).elementMap("name").next().size()));
+        //A removed vertex is no vertex
+        assertTraversalReads(1, g -> assertFalse(g.V(w).valueMap().hasNext()));
+
+        //Steps which read only some properties, or none, read what they read after the existence, as before
+        assertTraversalReads(2, g -> assertEquals("john", g.V(v).values("name").next()));
+        assertTraversalReads(2, g -> assertEquals(1, g.V(v).valueMap("name").next().size()));
+        assertTraversalReads(2, g -> assertEquals(1, g.V(v).out("knows").count().next()));
+        //The properties weren't read along with the existence there, and are read when asked for
+        assertTraversalReads(3, g -> assertEquals("john", g.V(v).as("a").out("knows").select("a").values("name").next()));
+        //A lookup in the middle of a traversal reads what its next step reads
+        assertTraversalReads(2, g -> assertEquals(1, g.V(v).V(u).valueMap().next().size()));
+
+        //Several vertices: one read of the slice for all of them where the backend reads several keys at once, which
+        //tells the removed one apart
+        final long threeKeys = features.hasMultiQuery() ? 1L : 3L;
+        assertTraversalReads(threeKeys, g -> assertEquals(2, g.V(v, u, w).valueMap().toList().size()));
+        assertTraversalReads(threeKeys, g -> assertEquals(Arrays.asList("person", "person"), g.V(v, u, w).label().toList()));
+    }
+
+    @Test
+    public void testVertexLookupReadsNoMoreThanTheNextStepWould() {
+        metricsPrefix = "testVertexLookupReadsNoMore";
+        final Object[] people = makeLookedUpPeople();
+        final Object v = people[0];
+        final Object u = people[1];
+
+        //Without query.fast-property a has container reads its property alone, and the label is read along with the
+        //existence: the cells are those read before, the existence marker, the label and the property
+        clopen(option(PROPERTY_PREFETCHING), false);
+        assertTraversalReads(2, 2, g -> assertEquals(1, g.V(v).has("name", "john").count().next()));
+        assertTraversalReads(2, 3, g -> assertEquals(1, g.V(v).hasLabel("person").has("name", "john").count().next()));
+        //The containers which hasId() folded in decide alone: a vertex which fails them has nothing else read
+        assertTraversalReads(2, 2, g -> assertFalse(g.V().hasId(v).has("name", "nobody").valueMap().hasNext()));
+        clopen(option(PROPERTY_PREFETCHING), true);
+        assertTraversalReads(1, 2, g -> assertFalse(g.V().hasId(v).hasLabel("vertex").valueMap().hasNext()));
+        //Steps which read some properties, or none, have nothing more read
+        assertTraversalReads(2, 2, g -> assertEquals("john", g.V(v).values("name").next()));
+        assertTraversalReads(2, 2, g -> assertEquals(1, g.V(v).out("knows").count().next()));
+        //unless the has step reads all properties of its vertices in batches
+        clopen(option(PROPERTY_PREFETCHING), false,
+            option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertTraversalReads(1, g -> assertEquals(1, g.V(v).has("name", "john").count().next()));
+
+        //A step which reads all properties of its vertices in batches where it asks for two keys or more; one key alone
+        //otherwise
+        clopen(option(PROPERTY_PREFETCHING), true,
+            option(PROPERTIES_BATCH_MODE), MultiQueryPropertiesStrategyMode.ALL_PROPERTIES.getConfigName());
+        assertTraversalReads(1, g -> assertEquals(2, g.V(v).values("name", "age").toList().size()));
+        assertTraversalReads(2, g -> assertEquals("john", g.V(v).values("name").next()));
+
+        //A properties step with a limit reads that many properties alone
+        clopen(option(PROPERTY_PREFETCHING), true);
+        assertTraversalReads(2, g -> assertEquals(1, g.V(v).local(__.properties().limit(1)).count().next()));
+
+        //A step which reads its vertices one after the other may stop before the last of several, so only one vertex
+        //is read along with its existence
+        clopen(option(PROPERTY_PREFETCHING), true, option(USE_MULTIQUERY), false);
+        assertTraversalReads(1, g -> assertEquals(2, g.V(v).valueMap().next().size()));
+        final long twoKeys = features.hasMultiQuery() ? 1L : 2L;
+        assertTraversalReads(twoKeys + 2, g -> assertEquals(2, g.V(v, u).valueMap().toList().size()));
+
+        //More ids at once than a batch of a multi-query reads: the existence alone, in one read where the backend reads
+        //several keys at once, then the step's batches of one vertex each
+        clopen(option(PROPERTY_PREFETCHING), true, option(LIMITED_BATCH_SIZE), 1);
+        assertTraversalReads(twoKeys + 2, g -> assertEquals(2, g.V(v, u).valueMap().toList().size()));
+
+        //A transaction which doesn't verify that the vertices exist reads nothing for the lookup
+        clopen(option(PROPERTY_PREFETCHING), true);
+        resetMetrics();
+        final JanusGraphTransaction unverified = graph.buildTransaction().checkExternalVertexExistence(false)
+            .groupName(metricsPrefix).start();
+        assertEquals(2, unverified.traversal().V(v).valueMap().next().size());
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1L));
+        unverified.rollback();
+    }
+
+    @Test
+    public void testVertexLookupOutsideATraversalReadsTheExistenceAlone() {
+        metricsPrefix = "testVertexLookupOutsideATraversal";
+        final Object[] people = makeLookedUpPeople();
+        final Object v = people[0];
+        final Object u = people[1];
+        clopen(option(PROPERTY_PREFETCHING), true);
+
+        resetMetrics();
+        JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        final JanusGraphVertex vertex = tx.getVertex(v);
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1L));
+        assertEquals("john", vertex.value("name"));
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L));
+        assertEquals("person", vertex.label());
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 3L));
+        tx.rollback();
+
+        final long twoKeys = features.hasMultiQuery() ? 1L : 2L;
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(2, Iterables.size(tx.getVertices(v, u)));
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, twoKeys));
+        tx.rollback();
+    }
+
+    @Test
+    public void testVertexLookupWithASchemaVertexReadsTheExistenceAlone() {
+        metricsPrefix = "testVertexLookupWithASchemaVertex";
+        final Object v = makeLookedUpPeople()[0];
+        final JanusGraphManagement management = graph.openManagement();
+        final Object personId = management.getVertexLabel("person").id();
+        management.rollback();
+        clopen(option(PROPERTY_PREFETCHING), true);
+
+        //A schema vertex keeps no relations it is read with, so among its ids the lookup reads the existence alone, and
+        //the properties of the user vertex are read when asked for
+        final long twoKeys = features.hasMultiQuery() ? 1L : 2L;
+        resetMetrics();
+        StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.buildTransaction().groupName(metricsPrefix).start();
+        try {
+            assertEquals(2, Iterables.size(tx.getVertices(VertexLookup.LABEL_AND_PROPERTIES, v, personId)));
+            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, twoKeys));
+            assertEquals("john", tx.getVertex(v).value("name"));
+            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, twoKeys + 1));
+        } finally {
+            tx.rollback();
+        }
+
+        //The user vertex alone has its label and properties read along with its existence
+        resetMetrics();
+        tx = (StandardJanusGraphTx) graph.buildTransaction().groupName(metricsPrefix).start();
+        try {
+            assertEquals(1, Iterables.size(tx.getVertices(VertexLookup.LABEL_AND_PROPERTIES, v)));
+            final JanusGraphVertex vertex = tx.getVertex(v);
+            assertEquals("john", vertex.value("name"));
+            assertEquals("person", vertex.label());
+            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1L));
+        } finally {
+            tx.rollback();
+        }
+    }
+
+    @Test
+    public void testVertexLookupBeyondTheLimitReadsAsBefore() {
+        metricsPrefix = "testVertexLookupBeyondTheLimit";
+        final Object v = makeLookedUpPeople()[0];
+
+        //The vertex has four cells, the existence marker, the label and two properties, which don't stay below a limit
+        //of four: the slice is cut off, and the step reads the properties itself
+        clopen(option(PROPERTY_PREFETCHING), true, option(FAST_PROPERTY_LOOKUP_LIMIT), 4);
+        assertTraversalReads(2, g -> assertEquals(2, g.V(v).valueMap().next().size()));
+        //Below a limit of five, the slice is whole
+        clopen(option(PROPERTY_PREFETCHING), true, option(FAST_PROPERTY_LOOKUP_LIMIT), 5);
+        assertTraversalReads(1, g -> assertEquals(2, g.V(v).valueMap().next().size()));
+        //A limit of 0 reads the existence alone
+        clopen(option(PROPERTY_PREFETCHING), true, option(FAST_PROPERTY_LOOKUP_LIMIT), 0);
+        assertTraversalReads(2, g -> assertEquals(2, g.V(v).valueMap().next().size()));
+        assertTraversalReads(2, g -> assertEquals("person", g.V(v).label().next()));
     }
 
     @Test

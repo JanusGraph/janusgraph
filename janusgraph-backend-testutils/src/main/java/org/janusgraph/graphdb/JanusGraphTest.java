@@ -88,6 +88,7 @@ import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -153,6 +154,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryLabelStepStr
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryPropertiesStrategyMode;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.MultiQueryStrategyRepeatStepMode;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.transaction.VertexLookup;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
@@ -228,6 +230,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_STEP_BATCH_MODE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FAST_PROPERTY_LOOKUP_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HARD_MAX_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HAS_STEP_BATCH_MODE;
@@ -6929,11 +6932,17 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     protected TraversalMetrics testLimitedBatch(Supplier<GraphTraversal<?, ?>> traversal, Object... settings){
         assertEqualResultWithAndWithoutLimitBatchSize(traversal);
+        // The start vertices are looked up by id, which must not read their properties along with their existence, or
+        // the steps under test would have nothing left to read in batches
+        final Object[] withoutLookupPrefetch = Arrays.copyOf(settings, settings.length + 2);
+        withoutLookupPrefetch[settings.length] = option(FAST_PROPERTY_LOOKUP_LIMIT);
+        withoutLookupPrefetch[settings.length + 1] = 0;
         if(settings.length == 0){
             clopen(option(USE_MULTIQUERY), true, option(LIMITED_BATCH), true,
-                option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName());
+                option(HAS_STEP_BATCH_MODE), MultiQueryHasStepStrategyMode.ALL_PROPERTIES.getConfigName(),
+                option(FAST_PROPERTY_LOOKUP_LIMIT), 0);
         } else {
-            clopen(settings);
+            clopen(withoutLookupPrefetch);
         }
         return traversal.get().profile().next();
     }
@@ -9712,6 +9721,52 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
         // running it again, no vertex is removed
         assertEquals(0, mgmt.removeGhostVertices().get().getCustom(GhostVertexRemover.REMOVED_VERTEX_COUNT));
+    }
+
+    /**
+     * A vertex which one transaction removes while another adds a property to it is left as a row with the property but
+     * without the existence marker, a ghost. A traversal's lookup by id reads a vertex's label and properties along
+     * with its marker where the next step reads them (see {@code query.fast-property-lookup-limit}), and must not take
+     * them for the vertex.
+     */
+    @Test
+    public void testGhostVertexIsNotFoundById() {
+        final StandardJanusGraph standardGraph = (StandardJanusGraph) graph;
+        if (features.hasLocking() || standardGraph.vertexLookupSlice(VertexLookup.LABEL_AND_PROPERTIES) == null) return;
+
+        JanusGraphVertex v = tx.addVertex("test");
+        v.property("name", "john");
+        tx.commit();
+
+        JanusGraphTransaction tx1 = graph.newTransaction();
+        tx1.getVertex(v.id()).property("prop", "val");
+        JanusGraphTransaction tx2 = graph.newTransaction();
+        tx2.getVertex(v.id()).remove();
+        tx2.commit();
+        tx1.commit();
+
+        newTx();
+        //The row holds the property, and no marker
+        final EntryList row = standardGraph.edgeQuery(v.id(), standardGraph.vertexLookupQuery(VertexLookup.LABEL_AND_PROPERTIES),
+            ((StandardJanusGraphTx) tx).getTxHandle());
+        assertEquals(1, row.size());
+        assertFalse(standardGraph.vertexExistsIn(row));
+        //Each lookup in a transaction of its own, which has nothing of the vertex cached
+        final List<Predicate<JanusGraphTransaction>> lookups = Arrays.asList(
+            t -> t.getVertex(v.id()) != null,
+            t -> t.getVertices(v.id()).iterator().hasNext(),
+            t -> t.traversal().V(v.id()).hasNext(),
+            t -> t.traversal().V(v.id()).valueMap().hasNext(),
+            t -> t.traversal().V(v.id()).label().hasNext(),
+            t -> t.traversal().V().hasId(v.id()).has("prop", "val").hasNext());
+        for (Predicate<JanusGraphTransaction> lookup : lookups) {
+            final JanusGraphTransaction lookupTx = graph.newTransaction();
+            try {
+                assertFalse(lookup.test(lookupTx));
+            } finally {
+                lookupTx.rollback();
+            }
+        }
     }
 
     @Test
