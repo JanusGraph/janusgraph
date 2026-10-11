@@ -23,6 +23,8 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import org.janusgraph.diskstorage.keycolumnvalue.KCVSProxy;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
@@ -60,7 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * An ID authority claims blocks of different partitions, or of different id namespaces, in parallel, and blocks of one
- * partition and namespace one at a time. The inmemory store isn't distributed, so a claim neither waits
+ * partition and namespace one at a time; on a store with locking of its own which isn't distributed, as BerkeleyJE,
+ * all blocks one at a time. The inmemory store isn't distributed, so a claim neither waits
  * {@code ids.authority.wait-time} nor fails as too slow, whatever the test holds its write up for. The one-at-a-time
  * test holds a claim's write open and checks that a second claim of the same partition and namespace waits for the
  * lock instead of writing as well; the lock covers the write along with the reads around it. Without a lock which all
@@ -81,13 +84,34 @@ public class ConsistentKeyIDAuthorityLockingTest {
 
     @BeforeEach
     public void setUp() throws BackendException {
-        manager = new InMemoryStoreManager();
+        useStore(new InMemoryStoreManager(), null);
+        claimants = Executors.newFixedThreadPool(CLAIMANTS);
+    }
+
+    //The authority on a new store, with ids.authority.wait-time if given
+    private void useStore(InMemoryStoreManager storeManager, Duration waitTime) throws BackendException {
+        manager = storeManager;
         idStore = new ClaimObservingStore(manager.openDatabase("ids"));
         final ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "authority");
+        if (waitTime != null) {
+            config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, waitTime);
+        }
         authority = new ConsistentKeyIDAuthority(idStore, manager, config);
         authority.setIDBlockSizer(sizer(BLOCK_SIZE));
-        claimants = Executors.newFixedThreadPool(CLAIMANTS);
+    }
+
+    //The inmemory store, but with locking of its own, as BerkeleyJE has, and distributed or not
+    private static InMemoryStoreManager storeWithLocking(boolean distributed) {
+        return new InMemoryStoreManager() {
+            private final StoreFeatures features = new StandardStoreFeatures.Builder(super.getFeatures()).locking(true)
+                .distributed(distributed).build();
+
+            @Override
+            public StoreFeatures getFeatures() {
+                return features;
+            }
+        };
     }
 
     private static IDBlockSizer sizer(long blockSize) {
@@ -167,13 +191,13 @@ public class ConsistentKeyIDAuthorityLockingTest {
         final Future<IDBlock> first = claimants.submit(() -> authority.getIDBlock(3, 0, TIMEOUT));
         assertTrue(idStore.heldWrites.tryAcquire(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS), "the first claim didn't write");
         assertTrue(claimsSized.tryAcquire(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
-        final Future<IDBlock> second = claimWhichWaitsForTheLock(claimsSized);
+        final Future<IDBlock> second = claimWhichWaitsForTheLock(claimsSized, 3, 0);
 
         //The first claim's write goes on, and the second claim's is held in its turn
         final CountDownLatch secondWrite = idStore.holdClaimWrites();
         firstWrite.countDown();
         assertTrue(idStore.heldWrites.tryAcquire(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS), "the second claim didn't write");
-        final Future<IDBlock> third = claimWhichWaitsForTheLock(claimsSized);
+        final Future<IDBlock> third = claimWhichWaitsForTheLock(claimsSized, 3, 0);
 
         secondWrite.countDown();
         final Set<Long> firstIds = new HashSet<>();
@@ -185,14 +209,15 @@ public class ConsistentKeyIDAuthorityLockingTest {
         assertNoLockLeft();
     }
 
-    //Submits a claim on partition 3 and namespace 0 while another claim's write is held open, and returns it once it
-    //waits for the lock: it has sized its block, which leaves the lock as all that is left before its read and write,
-    //and that it waits for the lock shows only in its state, which it reaches within the moment after sizing
-    private Future<IDBlock> claimWhichWaitsForTheLock(Semaphore claimsSized) throws Exception {
+    //Submits a claim while another claim's write is held open, and returns it once it waits for the lock: it has sized
+    //its block, which leaves the lock as all that is left before its read and write, and that it waits for the lock
+    //shows only in its state, which it reaches within the moment after sizing
+    private Future<IDBlock> claimWhichWaitsForTheLock(Semaphore claimsSized, int partition, int namespace)
+            throws Exception {
         final AtomicReference<Thread> claimant = new AtomicReference<>();
         final Future<IDBlock> claim = claimants.submit(() -> {
             claimant.set(Thread.currentThread());
-            return authority.getIDBlock(3, 0, TIMEOUT);
+            return authority.getIDBlock(partition, namespace, TIMEOUT);
         });
         assertTrue(claimsSized.tryAcquire(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS), "the claim didn't size its block");
         final long deadline = System.nanoTime() + TIMEOUT.toNanos();
@@ -200,8 +225,42 @@ public class ConsistentKeyIDAuthorityLockingTest {
             assertTrue(System.nanoTime() < deadline, "the claim neither waited for the lock nor wrote");
             Thread.sleep(1);
         }
-        assertEquals(1, idStore.claimWritesInFlight.get(), "claims of one partition and namespace wrote at once");
+        assertEquals(1, idStore.claimWritesInFlight.get(), "claims which share a lock wrote at once");
         return claim;
+    }
+
+    //On a store with locking of its own which isn't distributed, a claim of another partition and namespace waits for
+    //the lock while a claim's write is held open, where it would write as well on a store without it
+    @Test
+    public void claimsOnAStoreWithLockingOfItsOwnRunOneAtATime() throws Exception {
+        authority.close();
+        manager.close();
+        useStore(storeWithLocking(false), null);
+        final Semaphore claimsSized = new Semaphore(0);
+        authority.setIDBlockSizer(sizer(BLOCK_SIZE, claimsSized));
+        final CountDownLatch firstWrite = idStore.holdClaimWrites();
+        final Future<IDBlock> first = claimants.submit(() -> authority.getIDBlock(0, 0, TIMEOUT));
+        assertTrue(idStore.heldWrites.tryAcquire(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS),
+            "the first claim didn't write");
+        assertTrue(claimsSized.tryAcquire(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
+        final Future<IDBlock> other = claimWhichWaitsForTheLock(claimsSized, 1, 1);
+
+        firstWrite.countDown();
+        assertNotNull(first.get(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
+        assertNotNull(other.get(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
+        assertEquals(1, idStore.mostClaimWritesAtOnce.get(), "claims on a store with locking wrote at once");
+        assertNoLockLeft();
+    }
+
+    //A distributed store with locking of its own, as CQL with storage.cql.use-external-locking, makes each claim wait
+    //ids.authority.wait-time, and the claims of different partitions and namespaces run in parallel there; the wait is
+    //long enough for a write which waits for the other's not to count as too slow
+    @Test
+    public void claimsOnADistributedStoreWithLockingOfItsOwnRunInParallel() throws Exception {
+        authority.close();
+        manager.close();
+        useStore(storeWithLocking(true), Duration.ofSeconds(2));
+        assertClaimsMeet(0, 0, 1, 0);
     }
 
     @Test

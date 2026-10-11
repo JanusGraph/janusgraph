@@ -122,8 +122,19 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
      * they run in parallel, each with its own wait of {@code ids.authority.wait-time}. One lock per partition and
      * namespace with a claim under way or waiting, which counts those claims and leaves the map once the last of them
      * has finished: the map holds at most as many locks as there are claims in flight.
+     * <p>
+     * On a store with locking of its own which isn't distributed, such as BerkeleyJE, all the claims of the instance
+     * share one lock instead, and run one at a time as they always did. A BerkeleyJE transaction keeps the records it
+     * reads locked until it ends, at the default isolation level, and the rows of the claims of different partitions
+     * and namespaces are neighbours in the id store: the read of a row with fewer claims than it asks for, as on a new
+     * graph, reaches the newest claim of the next row, and waits for that claim's commit if it is being written, which
+     * fails the read where the commit takes longer than the lock timeout. Such a store makes its claims without the
+     * wait of {@code ids.authority.wait-time}, so claims in parallel would have no wait to overlap.
      */
     private final ConcurrentMap<Long, ClaimLock> blockClaimLocks = new ConcurrentHashMap<>();
+
+    //Whether all claims share one lock, on a store with locking of its own which isn't distributed
+    private final boolean claimsOneAtATime;
 
     /**
      * The lock of the claims of one partition and namespace, held by the claim which runs and counted by the claims
@@ -155,6 +166,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         Preconditions.checkNotNull(times);
 
         supportsInterruption = manager.getFeatures().supportsInterruption();
+        claimsOneAtATime = manager.getFeatures().hasLocking() && !manager.getFeatures().isDistributed();
 
         partitionBitWidth = NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS));
         Preconditions.checkArgument(partitionBitWidth >=0 && partitionBitWidth <=16);
@@ -256,7 +268,8 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         final long blockSize = getBlockSize(idNamespace);
         final long idUpperBound = getIdUpperBound(idNamespace);
 
-        final long lockKey = ((long) partition << Integer.SIZE) | Integer.toUnsignedLong(idNamespace);
+        final long lockKey = claimsOneAtATime
+            ? 0L : ((long) partition << Integer.SIZE) | Integer.toUnsignedLong(idNamespace);
         final ClaimLock lock = blockClaimLocks.compute(lockKey, (key, existing) -> (existing == null ? new ClaimLock() : existing).claimed());
         try {
             synchronized (lock) {

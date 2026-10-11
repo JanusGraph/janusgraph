@@ -984,10 +984,14 @@ partition, so when transactions on several threads needed blocks at the same tim
 taking writes or when the pools renew their blocks, their claims queued behind one another and the last of N waited
 about N times that wait. The lock has to keep two threads of one process from claiming the same block of one partition
 and namespace at the same timestamp, where both would write the same claim and both take the block; claims on another
-partition or namespace go to another row and never meet. The authority now locks per partition and namespace, so those
-claims run in parallel, each with its own wait. On Cassandra, 32 claims on 32 partitions at once take 0.35 s instead of
-11.2 s, and the first transactions of ten threads, 100 vertices each on a fresh graph, take 1.4 s instead of 7.0 s; the
-first transaction of a single thread takes the same 6–7 s as before, its claims following one another.
+partition or namespace go to another row. The authority now locks per partition and namespace, so those claims run in
+parallel, each with its own wait. On a store with locking of its own which isn't distributed, such as BerkeleyJE, the
+claims of an instance still run one at a time: a BerkeleyJE transaction keeps the records it reads locked until it ends,
+and a claim's read of a row with few claims, as on a new graph, reaches the newest claim of the next row, so claims in
+parallel would wait for each other's commits and fail on a commit slower than the lock timeout. Such a store makes its
+claims without the wait, so it has none to overlap. On Cassandra, 32 claims on 32 partitions at once take 0.35 s instead
+of 11.2 s, and the first transactions of ten threads, 100 vertices each on a fresh graph, take 1.4 s instead of 7.0 s;
+the first transaction of a single thread takes the same 6–7 s as before, its claims following one another.
 
 ##### Elasticsearch clients open up to 30 connections to a single host
 
