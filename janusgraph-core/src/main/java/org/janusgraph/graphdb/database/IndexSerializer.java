@@ -414,7 +414,8 @@ public class IndexSerializer {
             final MultiKeySliceQuery sq = query.getCompositeQuery();
             //The transaction's multi-query setting, which query.batch.enabled gives it unless it sets its own, decides for
             //composite index rows too whether reads are batched
-            final List<EntryList> rs = sq.execute(tx, standardJanusGraphTx.getConfiguration().useMultiQuery());
+            final List<EntryList> rs = sq.execute(tx, standardJanusGraphTx.getConfiguration().useMultiQuery(),
+                standardJanusGraphTx.getGraph().getConfiguration().maxKeysPerRead());
             final List<Object> results = new ArrayList<>(rs.get(0).size());
             for (final EntryList r : rs) {
                 for (final java.util.Iterator<Entry> iterator = r.reuseIterator(); iterator.hasNext(); ) {

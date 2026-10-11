@@ -913,7 +913,7 @@ row after the other and stops at the limit. Either way a lookup asks the storage
 row after the other would not ask for. `query.batch.enabled=false` turns reading rows together off, as it turns off
 batching for traversal steps. Building the condition of a `within()` or `without()` also compared each value with every
 value before it to drop duplicates, so it grew with the square of the number of values; it now takes time in proportion
-to them.
+to them. `query.batch.max-keys-per-read` sets the most rows a call reads, 1,000 by default.
 
 ##### A vertex which gains relations in a transaction allocates about 2 KB less
 
@@ -934,6 +934,20 @@ attempt, from a random generator which all threads shared, although nearly every
 which draw from one generator at the same time contend for its seed. The wait is now drawn only once an operation has
 failed temporarily, from the random generator of its thread, and the waits are the same as before. On the inmemory
 backend, reading a property of 1,000 vertices on each of eight threads takes 18% less time.
+
+##### A commit reads the labels its index updates check together
+
+An index restricted to a vertex label (`indexOnly`) applies to a vertex only if the vertex has that label, so a commit
+which changes a property such an index covers checks the label of every vertex whose property changed. For an existing
+vertex whose label the transaction hadn't loaded - as one which changes vertices it looked up by id hasn't - the check
+read the label with a query of its own. On a storage backend with multi-key queries, such as CQL and HBase, the commit
+now reads the labels of those vertices together before it computes its index updates, as many per read as the new
+option `query.batch.max-keys-per-read` allows, 1,000 by default, which also bounds the reads of a composite index
+lookup of several values. `query.batch.enabled`, or a transaction's own multi-query setting, turns this off, and a
+backend without multi-key queries, such as BerkeleyJE, still reads each label on its own. On a single-node Cassandra, a
+transaction which changes an indexed property of 1,000 vertices it looked up by id takes 29 ms instead of 282, and of
+100 vertices 8 ms instead of 45; with the labels loaded already, or without an index restricted to a label, it takes as
+long as before.
 
 ##### An index query result too large for the transaction's cache is no longer put into it
 

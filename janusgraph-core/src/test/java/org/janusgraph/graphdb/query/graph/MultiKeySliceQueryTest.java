@@ -24,6 +24,7 @@ import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.EntryArrayList;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -51,6 +52,8 @@ public class MultiKeySliceQueryTest {
 
     private static final boolean UNIQUE = true;
     private static final boolean NOT_UNIQUE = false;
+    //query.batch.max-keys-per-read by default
+    private static final int MAX_KEYS_PER_READ = GraphDatabaseConfiguration.MAX_KEYS_PER_READ.getDefaultValue();
 
     //An index store behind a mocked transaction: each key holds the entries given, and a read returns the first of them
     //up to the limit of its slice, as a storage backend does. It records the reads
@@ -136,15 +139,23 @@ public class MultiKeySliceQueryTest {
     //Runs the query reading keys together where it may, checks it against reading them one after the other, and
     //returns the store it read from
     private static Store runBothWays(MultiKeySliceQuery query, Store together, Store oneByOne) {
-        assertSameResult(query, together, oneByOne);
+        return runBothWays(query, together, oneByOne, MAX_KEYS_PER_READ);
+    }
+
+    private static Store runBothWays(MultiKeySliceQuery query, Store together, Store oneByOne, int maxKeysPerRead) {
+        assertSameResult(query, together, oneByOne, maxKeysPerRead);
         assertTrue(together.keysRead() <= oneByOne.keysRead(), "read keys which reading one after the other doesn't");
         return together;
     }
 
     private static void assertSameResult(MultiKeySliceQuery query, Store together, Store oneByOne) {
-        final List<EntryList> expected = query.execute(oneByOne.transaction(false), true);
+        assertSameResult(query, together, oneByOne, MAX_KEYS_PER_READ);
+    }
+
+    private static void assertSameResult(MultiKeySliceQuery query, Store together, Store oneByOne, int maxKeysPerRead) {
+        final List<EntryList> expected = query.execute(oneByOne.transaction(false), true, maxKeysPerRead);
         assertTrue(oneByOne.multiKeyReads.isEmpty());
-        final List<EntryList> actual = query.execute(together.transaction(true), true);
+        final List<EntryList> actual = query.execute(together.transaction(true), true, maxKeysPerRead);
         assertEquals(contents(expected), contents(actual));
     }
 
@@ -192,8 +203,15 @@ public class MultiKeySliceQueryTest {
     public void shouldReadAtMostAThousandKeysPerCall() {
         final Store store = runBothWays(query(NOT_UNIQUE, keys(2_500)), store(), store());
 
-        assertEquals(1_000, MultiKeySliceQuery.MAX_KEYS_PER_READ);
+        assertEquals(1_000, MAX_KEYS_PER_READ);
         assertEquals(Arrays.asList(1_000, 1_000, 500), callSizes(store));
+    }
+
+    @Test
+    public void shouldReadAtMostTheConfiguredNumberOfKeysPerCall() {
+        final Store store = runBothWays(query(NOT_UNIQUE, keys(2_500)), store(), store(), 300);
+
+        assertEquals(Arrays.asList(300, 300, 300, 300, 300, 300, 300, 300, 100), callSizes(store));
     }
 
     @Test
@@ -233,7 +251,8 @@ public class MultiKeySliceQueryTest {
     @Test
     public void shouldReadOneKeyAfterTheOtherWhenTheTransactionDoesNotBatch() {
         final Store store = store();
-        final List<EntryList> together = query(NOT_UNIQUE, 1, 2, 3, 4, 5).execute(store.transaction(true), false);
+        final List<EntryList> together =
+            query(NOT_UNIQUE, 1, 2, 3, 4, 5).execute(store.transaction(true), false, MAX_KEYS_PER_READ);
 
         assertEquals(5, together.size());
         assertTrue(store.multiKeyReads.isEmpty());
@@ -284,7 +303,8 @@ public class MultiKeySliceQueryTest {
     @Test
     public void shouldReadOneKeyAfterTheOtherWithoutMultiKeyQueries() {
         final Store store = store();
-        final List<EntryList> result = query(NOT_UNIQUE, 1, 2, 3, 4, 5).execute(store.transaction(false), true);
+        final List<EntryList> result =
+            query(NOT_UNIQUE, 1, 2, 3, 4, 5).execute(store.transaction(false), true, MAX_KEYS_PER_READ);
 
         assertEquals(5, result.size());
         assertTrue(store.multiKeyReads.isEmpty());

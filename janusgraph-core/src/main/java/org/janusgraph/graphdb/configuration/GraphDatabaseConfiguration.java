@@ -354,10 +354,13 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<>(QUERY_BATCH_NS,"enabled",
         "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
-            "performance improvement if there is a non-trivial latency to the backend. It also lets a composite index lookup of " +
-            "several values, such as `has(key, within(values))`, read their index rows together on a storage backend with " +
-            "multi-key queries. If `false` then all other configuration options under `" +
-            QUERY_BATCH_NS.toStringWithoutRoot()+"` namespace are ignored.",
+            "performance improvement if there is a non-trivial latency to the backend. It also lets a composite " +
+            "index lookup of several values, such as `has(key, within(values))`, read their index rows together, and " +
+            "a commit read the labels which the index updates of its vertices check together, on a storage backend " +
+            "with multi-key queries. It is the default of each transaction's own multi-query setting, which " +
+            "`TransactionBuilder.multiQuery(boolean)` can change for a transaction; where that setting is `false`, " +
+            "all other configuration options under `" + QUERY_BATCH_NS.toStringWithoutRoot() + "` namespace are " +
+            "ignored.",
         ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigOption<Boolean> LIMITED_BATCH = new ConfigOption<>(QUERY_BATCH_NS,"limited",
@@ -373,6 +376,16 @@ public class GraphDatabaseConfiguration {
             "barrier step either. This option is used only when `"+LIMITED_BATCH.toStringWithoutRoot()+"` is `true`. " +
             "Notice, value `"+Integer.MAX_VALUE+"` is considered to be unlimited.",
         ConfigOption.Type.MASKABLE, 2500);
+
+    public static final ConfigOption<Integer> MAX_KEYS_PER_READ = new ConfigOption<>(QUERY_BATCH_NS,"max-keys-per-read",
+        "The most keys which one read of several keys at once asks the storage backend for, where JanusGraph splits " +
+            "such a read on its own: a composite index lookup of several values, such as `has(key, within(values))`, " +
+            "reading their index rows, and a commit reading the labels which the index updates of its vertices " +
+            "check. A read which fails temporarily is reattempted whole, and its results are held all at once, so " +
+            "a smaller value makes smaller reads, and more of them. The default is the recommended value. Used only " +
+            "where reads are batched (`" + USE_MULTIQUERY.toStringWithoutRoot() + "`, unless a transaction sets its " +
+            "own multi-query setting), on a storage backend with multi-key queries.",
+        ConfigOption.Type.MASKABLE, 1000, ConfigOption.positiveInt());
 
     public static final ConfigOption<String> REPEAT_STEP_BATCH_MODE = new ConfigOption<>(QUERY_BATCH_NS,"repeat-step-mode",
         String.format("Batch mode for `repeat` step. Used only when "+USE_MULTIQUERY.toStringWithoutRoot()+" is `true`.<br>" +
@@ -1603,6 +1616,7 @@ public class GraphDatabaseConfiguration {
     private boolean adjustQueryLimit;
     private int hardMaxLimit;
     private Boolean useMultiQuery;
+    private int maxKeysPerRead;
     private boolean limitedBatch;
     private int limitedBatchSize;
     private MultiQueryStrategyRepeatStepMode repeatStepMode;
@@ -1754,6 +1768,10 @@ public class GraphDatabaseConfiguration {
 
     public int limitedBatchSize() {
         return limitedBatchSize;
+    }
+
+    public int maxKeysPerRead() {
+        return maxKeysPerRead;
     }
 
     public MultiQueryStrategyRepeatStepMode repeatStepMode() {
@@ -2034,6 +2052,7 @@ public class GraphDatabaseConfiguration {
         useMultiQuery = configuration.get(USE_MULTIQUERY);
         limitedBatch = configuration.get(LIMITED_BATCH);
         limitedBatchSize = configuration.get(LIMITED_BATCH_SIZE);
+        maxKeysPerRead = configuration.get(MAX_KEYS_PER_READ);
         repeatStepMode = selectExactConfig(REPEAT_STEP_BATCH_MODE, MultiQueryStrategyRepeatStepMode.values());
         hasStepStrategyMode = selectExactConfig(HAS_STEP_BATCH_MODE, MultiQueryHasStepStrategyMode.values());
         propertiesStrategyMode = selectExactConfig(PROPERTIES_BATCH_MODE, MultiQueryPropertiesStrategyMode.values());

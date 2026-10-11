@@ -304,6 +304,111 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
 
 
     @Test
+    public void testCommitReadsTheLabelsItChecksForAnIndexTogether() {
+        metricsPrefix = "testCommitReadsTheLabelsItChecksForAnIndexTogether";
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        final VertexLabel person = mgmt.makeVertexLabel("person").make();
+        mgmt.buildIndex("personByName", Vertex.class).addKey(name).indexOnly(person).buildCompositeIndex();
+        finishSchema();
+
+        final int numVertices = 5;
+        final Object[] ids = new Object[numVertices];
+        for (int i = 0; i < numVertices; i++) {
+            ids[i] = tx.addVertex("person").property("name", "round0 " + i).element().id();
+        }
+        final Object removed = tx.addVertex("person").property("name", "removed").element().id();
+        final Object removedAlone = tx.addVertex("person").property("name", "removed alone").element().id();
+        tx.commit();
+
+        // At commit, a store without locking of its own reads back the values a removal locked, to check them: these
+        // are the reads of a commit which only removes such a vertex
+        JanusGraphTransaction tx = graph.buildTransaction().checkExternalVertexExistence(false).groupName(metricsPrefix)
+            .start();
+        tx.getVertex(removedAlone).remove();
+        resetMetrics();
+        tx.commit();
+        final long removalReads = edgeStoreReads();
+
+        // Changes the indexed name of vertices it looked up by id, whose labels it hasn't read: the index is restricted
+        // to persons, so the commit checks the label of each. The labels are read with one read of several keys, where
+        // the store can make one. A vertex added and one removed in the same transaction cost no read of their labels
+        final boolean together = features.hasMultiQuery();
+        tx = changeNames(ids, 1, true, 0);
+        tx.addVertex("person").property("name", "added");
+        tx.getVertex(removed).remove();
+        resetMetrics();
+        tx.commit();
+        verifyEdgeStoreReads((together ? 1 : numVertices) + removalReads);
+        verifyIndexedNames(ids, 1);
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        evaluateQuery(tx.query().has("name", Cmp.EQUAL, "added").has(LABEL_NAME, "person"),
+            ElementCategory.VERTEX, 1, new boolean[]{true, true}, "personByName");
+        evaluateQuery(tx.query().has("name", Cmp.EQUAL, "removed").has(LABEL_NAME, "person"),
+            ElementCategory.VERTEX, 0, new boolean[]{true, true}, "personByName");
+        tx.rollback();
+
+        // The labels of two of them read already: those are not read again
+        tx = changeNames(ids, 2, true, 2);
+        resetMetrics();
+        tx.commit();
+        verifyEdgeStoreReads(together ? 1 : numVertices - 2);
+        verifyIndexedNames(ids, 2);
+
+        // Without multi-queries in the transaction, each label is read on its own
+        tx = changeNames(ids, 3, false, 0);
+        resetMetrics();
+        tx.commit();
+        verifyEdgeStoreReads(numVertices);
+        verifyIndexedNames(ids, 3);
+
+        // With at most two keys per read, the labels of the five take three reads
+        clopen(option(GraphDatabaseConfiguration.MAX_KEYS_PER_READ), 2);
+        tx = changeNames(ids, 4, true, 0);
+        resetMetrics();
+        tx.commit();
+        verifyEdgeStoreReads(together ? 3 : numVertices);
+        verifyIndexedNames(ids, 4);
+    }
+
+    // The reads of the edge store since the metrics were reset
+    private long edgeStoreReads() {
+        return metric.getCounter(metricsPrefix, EDGESTORE_NAME, M_GET_SLICE, MetricInstrumentedStore.M_CALLS)
+            .getCount();
+    }
+
+    private void verifyEdgeStoreReads(long expected) {
+        assertEquals(expected, edgeStoreReads(), "reads of the edge store");
+    }
+
+    // A transaction which looks the vertices up by id and gives them the names of the round, having read the labels of
+    // the first labelsRead of them
+    private JanusGraphTransaction changeNames(Object[] ids, int round, boolean multiQuery, int labelsRead) {
+        final JanusGraphTransaction tx = graph.buildTransaction().checkExternalVertexExistence(false)
+            .multiQuery(multiQuery).groupName(metricsPrefix).start();
+        for (int i = 0; i < labelsRead; i++) {
+            assertEquals("person", tx.getVertex(ids[i]).label());
+        }
+        for (int i = 0; i < ids.length; i++) {
+            tx.getVertex(ids[i]).property("name", "round" + round + " " + i);
+        }
+        return tx;
+    }
+
+    // The index finds the vertices by the names of the round, and no longer by those of the round before
+    private void verifyIndexedNames(Object[] ids, int round) {
+        final JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        for (int i = 0; i < ids.length; i++) {
+            evaluateQuery(tx.query().has("name", Cmp.EQUAL, "round" + round + " " + i).has(LABEL_NAME, "person"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "personByName");
+            assertEquals(ids[i], getOnlyElement(tx.query().has("name", "round" + round + " " + i)
+                .has(LABEL_NAME, "person").vertices()).id());
+            evaluateQuery(tx.query().has("name", Cmp.EQUAL, "round" + (round - 1) + " " + i).has(LABEL_NAME, "person"),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "personByName");
+        }
+        tx.rollback();
+    }
+
+    @Test
     public void testEdgeByIdDoesNotReadTypeVertex() {
         metricsPrefix = "testEdgeByIdDoesNotReadTypeVertex";
         final String schemaPrefix = GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT;

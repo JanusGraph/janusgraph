@@ -91,6 +91,8 @@ import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
+import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryUtil;
+import org.janusgraph.graphdb.query.vertex.MultiVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.relations.EdgeDirection;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
@@ -109,6 +111,7 @@ import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
+import org.janusgraph.graphdb.types.indextype.IndexReferenceType;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.types.system.BaseRelationType;
@@ -1011,9 +1014,64 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     private void prepareCommitVertexIndexUpdates(final ListMultimap<InternalVertex, InternalRelation> mutatedProperties,
                                                  final StandardJanusGraphTx tx,
                                                  final List<IndexUpdate> indexUpdates) {
+        //The transaction's multi-query setting decides, as it does for a composite index lookup of several values,
+        //whether the labels are read together; a store without multi-key queries reads them one key at a time anyway
+        if (tx.getConfiguration().useMultiQuery() && backend.getStoreFeatures().hasMultiQuery()) {
+            loadLabelsCheckedByIndexes(mutatedProperties, tx, config.maxKeysPerRead());
+        }
         indexUpdates.addAll(mutatedProperties.keySet().parallelStream()
             .flatMap(v -> indexSerializer.getIndexUpdates(v, mutatedProperties.get(v), commitIndexAppliesToFilter, tx))
             .collect(Collectors.toList()));
+    }
+
+    /**
+     * Loads the labels which the index updates of the changed vertices check, with multi-queries of up to
+     * {@code query.batch.max-keys-per-read} vertices each. An index restricted to a vertex label applies to a vertex
+     * only if it has that label, and the check reads the label of an existing vertex which the transaction hasn't
+     * loaded - as one which changes vertices it looked up by id hasn't - with a query of its own. New vertices hold
+     * their labels, and removed ones are left to the check as before; a single vertex reads its label with a query of
+     * its own either way.
+     */
+    private static void loadLabelsCheckedByIndexes(
+        final ListMultimap<InternalVertex, InternalRelation> mutatedProperties, final StandardJanusGraphTx tx,
+        final int maxKeysPerRead) {
+        List<JanusGraphVertex> vertices = null;
+        for (InternalVertex vertex : mutatedProperties.keySet()) {
+            if (!vertex.isNew() && !vertex.isRemoved() && checksLabel(vertex, mutatedProperties.get(vertex))) {
+                if (vertices == null) {
+                    vertices = new ArrayList<>();
+                }
+                vertices.add(vertex);
+            }
+        }
+        if (vertices == null || vertices.size() < 2) {
+            return;
+        }
+        for (int from = 0; from < vertices.size(); from += maxKeysPerRead) {
+            final List<JanusGraphVertex> chunk =
+                vertices.subList(from, Math.min(vertices.size(), from + maxKeysPerRead));
+            //The query vertexLabel() makes, which then finds the label in the vertex's cache. A vertex whose label is
+            //loaded already is not read again
+            final MultiVertexCentricQueryBuilder labels = new MultiVertexCentricQueryBuilder(tx, chunk.size());
+            labels.addAllVertices(chunk);
+            BasicVertexCentricQueryUtil.withLabelVertices(labels).vertices();
+        }
+    }
+
+    //Whether an index of a changed property is one the vertex's label decides on: an index of vertices restricted to a
+    //label, which the index updates ask the vertex's label about
+    private static boolean checksLabel(final InternalVertex vertex, final List<InternalRelation> changedProperties) {
+        for (InternalRelation property : changedProperties) {
+            final InternalRelationType key = (InternalRelationType) property.getType();
+            for (IndexReferenceType indexRef : key.getKeyIndexesReferences()) {
+                final IndexType index = indexRef.getIndexType();
+                if (index.hasSchemaTypeConstraint()
+                    && IndexRecordUtil.indexAppliesToWithoutConstraints(index, vertex)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
