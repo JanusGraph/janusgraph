@@ -37,12 +37,6 @@ import java.util.Set;
  */
 public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<MultiKeySliceQuery>  {
 
-    /**
-     * The most keys one call to the storage backend reads. A retry, a timeout and an interruption then concern a bounded
-     * part of a long {@code within()}, and so does what the backend holds in memory for the call.
-     */
-    static final int MAX_KEYS_PER_READ = 1_000;
-
     private final List<KeySliceQuery> queries;
     private final boolean atMostOneEntryPerKey;
     private final boolean sharesOneSlice;
@@ -80,10 +74,10 @@ public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<MultiK
 
     /**
      * Reads the entries of the keys one after the other, in the order of the keys and no more than the limit of them,
-     * as this method always has. {@link #execute(BackendTransaction, boolean)} can read keys together.
+     * as this method always has. {@link #execute(BackendTransaction, boolean, int)} can read keys together.
      */
     public List<EntryList> execute(final BackendTransaction tx) {
-        return execute(tx, false);
+        return executeOneByOne(tx);
     }
 
     /**
@@ -92,16 +86,20 @@ public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<MultiK
      * Where the storage backend has multi-key queries and reading together is allowed, keys are read together when
      * that reads no key which reading them one after the other would not: without a limit, which needs every key
      * anyway, and with a limit when each key holds at most one entry, as many keys per call as the limit can still take.
-     * A call reads at most {@link #MAX_KEYS_PER_READ} keys. Otherwise the keys are read one after the other, so that
-     * reading stops at the key which reaches the limit.
+     * A call reads at most {@code maxKeysPerRead} keys, so that a retry, a timeout and an interruption concern a
+     * bounded part of a long {@code within()}, and so does what the backend holds in memory for the call. Otherwise the
+     * keys are read one after the other, so that reading stops at the key which reaches the limit.
      *
      * @param readKeysTogether whether keys may be read together: the multi-query setting of the graph transaction,
      *                         which {@code query.batch.enabled} gives it unless the transaction sets its own
+     * @param maxKeysPerRead the most keys one call reads, {@code query.batch.max-keys-per-read}
      */
-    public List<EntryList> execute(final BackendTransaction tx, final boolean readKeysTogether) {
+    public List<EntryList> execute(final BackendTransaction tx, final boolean readKeysTogether,
+                                   final int maxKeysPerRead) {
+        Preconditions.checkArgument(maxKeysPerRead > 0, "A read takes at least one key, not %s", maxKeysPerRead);
         if (readKeysTogether && queries.size() > 1 && sharesOneSlice && tx.hasMultiKeyIndexQueries()
             && (!hasLimit() || (atMostOneEntryPerKey && getLimit() > 0))) {
-            return executeTogether(tx);
+            return executeTogether(tx, maxKeysPerRead);
         }
         return executeOneByOne(tx);
     }
@@ -118,7 +116,7 @@ public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<MultiK
         return result;
     }
 
-    private List<EntryList> executeTogether(final BackendTransaction tx) {
+    private List<EntryList> executeTogether(final BackendTransaction tx, final int maxKeysPerRead) {
         final KeySliceQuery first = queries.get(0);
         final SliceQuery slice = new SliceQuery(first.getSliceStart(), first.getSliceEnd());
         final List<EntryList> result = new ArrayList<>(Math.min(getLimit(), queries.size()));
@@ -129,7 +127,7 @@ public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<MultiK
             //most one entry, so a call for as many keys as the limit can still take reads none which reading one after
             //the other would not
             final long wanted = hasLimit() ? getLimit() - total : queries.size() - next;
-            final int end = (int) Math.min(queries.size(), next + Math.min(wanted, MAX_KEYS_PER_READ));
+            final int end = (int) Math.min(queries.size(), next + Math.min(wanted, maxKeysPerRead));
             //A limit of zero reads one key after the other, so each call takes at least one key
             Preconditions.checkState(end > next, "No key to read with %s wanted", wanted);
             final Map<StaticBuffer, EntryList> read = tx.indexStoreMultiQuery(distinctKeys(next, end),
