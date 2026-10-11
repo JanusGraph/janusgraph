@@ -455,6 +455,17 @@ job whose commit fails on such a lock, of JanusGraph's own locker, now waits twi
 as long each time, and creates the keys which are still missing, making up to `storage.lock.retries` attempts.
 `JanusGraphManagement.rollback()` no longer throws after a commit which failed.
 
+##### OLAP traversals no longer fail or lose results when the processors of a scan clone their program at once
+
+An OLAP traversal could fail with `Failed to process [N] vertices in vertex program iteration [K]`, where each vertex
+which failed logged `The provided key is not a memory compute key` or a `NullPointerException`, or return too few
+results without an error. The processors of a scan clone the job, and the traversal's `TraversalVertexProgram` with it,
+for each work block of `10 × storage.buffer-size` vertices, 10,240 by default, so in a scan of more than two blocks on
+several processors they may clone the program at the same time. Each clone numbers the steps of its own copy of the
+traversal, and TinkerPop's copies of a traversal share the counter with which they are numbered: copies numbered at the
+same time got mixed-up step ids, which the job's memory and the other clones didn't know, or knew as other steps. Vertex
+programs are now cloned one at a time.
+
 ##### Opt-in parallel token-range scan for CQL full scans
 
 CQL full-table scans (used by reindex and other OLAP jobs) can optionally be split into several

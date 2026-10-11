@@ -52,6 +52,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class VertexProgramScanJob<M> implements VertexScanJob {
 
     private static final MessageScope.Global globalScope = MessageScope.Global.instance();
+    //Held by every clone of a program, of any job, as a clone may number the steps of a copied traversal, see clone()
+    private static final Object STEP_NUMBERING_LOCK = new Object();
     private final IDManager idManager;
     private final FulgoraMemory memory;
     private final FulgoraVertexMemory<M> vertexMemory;
@@ -65,10 +67,26 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         this.vertexProgram = vertexProgram;
     }
 
+    /*
+     * The processors of a scan may clone the job at the same time, each for a work block of its own. A
+     * TraversalVertexProgram's clone applies the traversal's strategies to a copy of the traversal, which numbers its
+     * steps with the StepPosition that every copy of a TinkerPop traversal shares with the traversal it was copied
+     * from, and the program of a job whose traversal can't be serialized is handed the traversal itself, which other
+     * jobs may share. Copies numbered at the same time get mixed-up step ids, by which a clone finds a barrier in the
+     * job's memory and the step of each traverser it receives: it fails, or sends a traverser to another step. So
+     * programs are cloned one at a time, those of every kind, as any program may copy a traversal in its clone. A
+     * processor clones the job only when it starts a work block, never while it processes a vertex. TinkerPop also
+     * numbers the steps of a program's own copy of the traversal while it makes the program, before the job starts and
+     * out of this lock's reach, so jobs whose programs share a traversal may still mix up ids when one of them starts
+     * while another one runs; only TinkerPop can stop its copies sharing the StepPosition.
+     */
     @Override
     public VertexProgramScanJob<M> clone() {
-        return new VertexProgramScanJob<>(this.idManager, this.memory, this.vertexMemory, this.vertexProgram
-                .clone());
+        final VertexProgram<M> program;
+        synchronized (STEP_NUMBERING_LOCK) {
+            program = this.vertexProgram.clone();
+        }
+        return new VertexProgramScanJob<>(this.idManager, this.memory, this.vertexMemory, program);
     }
 
     @Override
