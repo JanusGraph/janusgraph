@@ -15,11 +15,13 @@
 package org.janusgraph.graphdb.transaction.addedrelations;
 
 import com.google.common.base.Predicate;
+import org.janusgraph.core.RelationType;
 import org.janusgraph.graphdb.internal.InternalRelation;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -32,6 +34,19 @@ public interface AddedRelationsContainer {
     boolean remove(InternalRelation relation);
 
     Iterable<InternalRelation> getView(Predicate<InternalRelation> filter);
+
+    /**
+     * The relations which pass the filter, read only among those of the given types where the container keeps its
+     * relations by type. The view may hold relations of other types as well, so a caller which needs only the given
+     * types turns the others away itself, with the filter or afterwards.
+     *
+     * @param types the types of the relations to read, or null for relations of any type
+     * @param filter the relations to keep
+     * @return the relations which pass the filter, of the given types and possibly of others
+     */
+    default Iterable<InternalRelation> getView(Set<? extends RelationType> types, Predicate<InternalRelation> filter) {
+        return getView(filter);
+    }
 
     Iterable<InternalRelation> getViewOfProperties(Predicate<InternalRelation> filter);
 
