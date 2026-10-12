@@ -35,6 +35,11 @@ import java.util.List;
 import java.util.Map;
 
 public class BenchmarkRunner {
+    // The milliseconds in each unit of time per operation which JMH reports, as the results are all given in ms/op,
+    // whatever unit a benchmark measures in
+    private static final Map<String, Double> MILLISECONDS_PER_UNIT = Map.of(
+        "ns/op", 1e-6, "us/op", 1e-3, "ms/op", 1.0, "s/op", 1e3, "min/op", 6e4, "hr/op", 3.6e6, "day/op", 8.64e7);
+
     private static void transformResults(Collection<RunResult> results, List<Map<String, Object>> outputs) {
         Map<String, Double> metrics = new HashMap<>();
         for (RunResult result : results) {
@@ -42,11 +47,13 @@ public class BenchmarkRunner {
             String benchmark = result.getParams().getBenchmark();
             double score = primaryResult.getScore();
             String unit = primaryResult.getScoreUnit();
-            if (!"ms/op".equals(unit)) {
-                throw new IllegalArgumentException("Please use ms/op as measurement for benchmark " + benchmark);
+            Double millisecondsPerUnit = MILLISECONDS_PER_UNIT.get(unit);
+            if (millisecondsPerUnit == null) {
+                throw new IllegalArgumentException("Please measure the time per operation of benchmark " + benchmark
+                    + ", not " + unit);
             }
             // we sum up results with different params against same benchmark
-            metrics.put(benchmark, metrics.getOrDefault(benchmark, 0d) + score);
+            metrics.put(benchmark, metrics.getOrDefault(benchmark, 0d) + score * millisecondsPerUnit);
         }
         for (Map.Entry<String, Double> entry : metrics.entrySet()) {
             outputs.add(new HashMap() {{
@@ -105,8 +112,8 @@ public class BenchmarkRunner {
             builder.include(".*Benchmark");
             builder.exclude(StaticArrayEntryListBenchmark.class.getSimpleName());
             builder.exclude(BackPressureBenchmark.class.getSimpleName());
-            // BackendOperationBenchmark measures in ns/op and us/op, and the results below take ms/op only
-            builder.exclude(BackendOperationBenchmark.class.getSimpleName());
+            // IndexQueryResultBenchmark's mixed index runs on an Elasticsearch server, which this run doesn't start
+            builder.exclude(IndexQueryResultBenchmark.class.getSimpleName());
             builder.exclude("CQL.*Benchmark");
             builder.exclude(".*ElasticSearch.*Benchmark.*");
         }
