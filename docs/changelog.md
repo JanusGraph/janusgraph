@@ -974,6 +974,20 @@ Elasticsearch and Solr do: a query which streamed 500,000 ids from Elasticsearch
 after every change, so that a hundred index queries of one result each in a transaction take 0.71 ms instead of 0.89 on
 one thread, and 1.1 ms instead of 3.1 with eight threads running such transactions at once, on the inmemory backend.
 
+##### Queries of a vertex read only the relations of their types among those it gained in the transaction
+
+A query of the relations of a vertex, such as its edges of some labels or its properties of some keys, reads the
+relations which the vertex gained in the open transaction besides those that are stored. It read all of them and kept
+those of the queried types, and in a transaction which isn't bound to a thread (`graph.newTransaction()`, which several
+threads may share) it first copied all of them under a lock of the vertex. A vertex which gained many relations in a
+transaction therefore made every query of it slower, and the threads which queried it waited for each other. A vertex
+now keeps the edges it gains by label as well, once it has more than 32 of them: a query of some labels reads only the
+new edges of those, and a query of some keys only the new properties of the vertex. On the inmemory backend, of a vertex
+which gained 10,000 edges of one label and 10 of another in a transaction bound to its thread, the 10 edges are read in
+7.7 µs instead of 273 and a property in 5.1 µs instead of 277; with eight threads querying the vertex in a transaction
+they share, in 12 µs instead of 2.2 ms and 8.8 µs instead of 42 ms. The edges of the label with 10,000 are read 5 to 19%
+faster, and the queries of a vertex which gained only a few relations 5 to 35% faster.
+
 ##### ID blocks of different partitions and namespaces are claimed in parallel
 
 `ConsistentKeyIDAuthority` claimed one ID block at a time per JanusGraph instance, whatever the partition and the id

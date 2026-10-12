@@ -15,7 +15,9 @@
 package org.janusgraph.graphdb.query;
 
 import org.janusgraph.StorageSetup;
+import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.RelationType;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -24,8 +26,10 @@ import org.janusgraph.graphdb.predicate.AndJanusPredicate;
 import org.janusgraph.graphdb.predicate.OrJanusPredicate;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
+import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.query.condition.RelationTypeCondition;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,11 +39,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith(MockitoExtension.class)
 public class QueryUtilTest {
@@ -124,6 +131,39 @@ public class QueryUtilTest {
         } finally {
             graph.close();
         }
+    }
+
+    //A vertex-centric query of some types holds a condition on the type of its relations, alone or in a conjunction,
+    //which tells the types any relation it matches has
+    @Test
+    void testRelationTypesOfACondition() {
+        final RelationType a = Mockito.mock(RelationType.class);
+        final RelationType b = Mockito.mock(RelationType.class);
+        final RelationType c = Mockito.mock(RelationType.class);
+        final Condition<JanusGraphRelation> other = new PredicateCondition<>("since", Cmp.EQUAL, 1);
+
+        assertEquals(Set.of(a), QueryUtil.getRelationTypes(type(a)));
+        assertEquals(Set.of(a, b), QueryUtil.getRelationTypes(Or.of(type(a), type(b))));
+        assertEquals(Set.of(a), QueryUtil.getRelationTypes(And.of(other, type(a))));
+        assertEquals(Set.of(a, b), QueryUtil.getRelationTypes(And.of(Or.of(type(a), type(b)), other)));
+        assertEquals(Set.of(b), QueryUtil.getRelationTypes(And.of(Or.of(type(a), type(b)), Or.of(type(b), type(c)))));
+        assertEquals(Set.of(b), QueryUtil.getRelationTypes(And.of(Or.of(type(a), type(b)), And.of(other, type(b)))));
+        //No relation has two types
+        assertEquals(Collections.emptySet(), QueryUtil.getRelationTypes(And.of(type(a), type(b))));
+
+        //Conditions which don't tell the type, and no condition
+        assertNull(QueryUtil.getRelationTypes(null));
+        assertNull(QueryUtil.getRelationTypes(other));
+        assertNull(QueryUtil.getRelationTypes(And.of(other)));
+        assertNull(QueryUtil.getRelationTypes(new And<JanusGraphRelation>()));
+        assertNull(QueryUtil.getRelationTypes(Or.of(type(a), other)));
+        //A disjunction without children holds for every relation
+        assertNull(QueryUtil.getRelationTypes(new Or<JanusGraphRelation>()));
+        assertNull(QueryUtil.getRelationTypes(new Not<>(type(a))));
+    }
+
+    private static Condition<JanusGraphRelation> type(RelationType type) {
+        return new RelationTypeCondition<>(type);
     }
 
     @SafeVarargs

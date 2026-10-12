@@ -1405,9 +1405,11 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         }
 
         private Iterator<JanusGraphRelation> getMatchedRelations(final VertexCentricQuery query, final InternalVertex vertex) {
+            //Only the relations of the types the query asks for, where the vertex keeps them by type
+            final Set<RelationType> types = QueryUtil.getRelationTypes(query.getCondition());
             // Need to filter out self-loops if query only asks for one direction
             return new Iterator<JanusGraphRelation>() {
-                Iterator<InternalRelation> iterator = vertex.getAddedRelations(t -> true).iterator();
+                Iterator<InternalRelation> iterator = vertex.getAddedRelations(types, t -> true).iterator();
                 InternalRelation loop = null;
                 InternalRelation current = null;
 
@@ -1474,8 +1476,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     //Search only in added properties, this might be faster in case of high number of edges
                     return !Iterables.isEmpty(vertex.findAddedProperty(predicate));
                 } else {
-                    //Search in all added relations
-                    return !Iterables.isEmpty(vertex.getAddedRelations(predicate));
+                    //Search in the added relations of its type
+                    return !Iterables.isEmpty(vertex.getAddedRelations(Collections.singleton(type), predicate));
                 }
             }
             return false;

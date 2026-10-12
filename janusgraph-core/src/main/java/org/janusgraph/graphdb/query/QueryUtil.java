@@ -35,11 +35,13 @@ import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.query.condition.RelationTypeCondition;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -161,6 +163,54 @@ public class QueryUtil {
 
     public static boolean isEmpty(Condition<?> condition) {
         return condition.getType() != Condition.Type.LITERAL && condition.numChildren() == 0;
+    }
+
+    /**
+     * The types one of which every relation that matches the condition has, or null when the condition doesn't tell:
+     * the type of a {@link RelationTypeCondition}, the types of a disjunction of conditions which each tell theirs, and
+     * the types which all of the children of a conjunction that tell theirs have in common.
+     *
+     * @param condition a condition on relations, or null for no condition
+     * @return the types of the relations which may match the condition, or null for relations of any type
+     */
+    public static Set<RelationType> getRelationTypes(Condition<?> condition) {
+        if (condition == null) {
+            return null;
+        }
+        if (condition instanceof RelationTypeCondition) {
+            return Collections.singleton(((RelationTypeCondition<?>) condition).getRelationType());
+        }
+        if (condition instanceof Or) {
+            //A disjunction without children holds for every relation
+            if (!condition.hasChildren()) return null;
+            final Set<RelationType> types = new HashSet<>();
+            for (final Condition<?> child : condition.getChildren()) {
+                final Set<RelationType> childTypes = getRelationTypes(child);
+                if (childTypes == null) return null;
+                types.addAll(childTypes);
+            }
+            return types;
+        }
+        if (condition instanceof And) {
+            //The types of the one child that tells them, as is: a vertex-centric query's condition has a single one
+            Set<RelationType> types = null;
+            boolean copied = false;
+            for (final Condition<?> child : condition.getChildren()) {
+                final Set<RelationType> childTypes = getRelationTypes(child);
+                if (childTypes == null) continue;
+                if (types == null) {
+                    types = childTypes;
+                } else {
+                    if (!copied) {
+                        types = new HashSet<>(types);
+                        copied = true;
+                    }
+                    types.retainAll(childTypes);
+                }
+            }
+            return types;
+        }
+        return null;
     }
 
     /**
