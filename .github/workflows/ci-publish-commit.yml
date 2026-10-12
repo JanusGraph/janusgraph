@@ -39,6 +39,8 @@ jobs:
           distribution: 'zulu'
           java-version: "11.0.20+1"
           java-package: jdk
+      # Maven 3.9 for central-publishing-maven-plugin 0.11.0, which can't publish under Maven 3.10 (see the action)
+      - uses: ./.github/actions/setup-maven
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
