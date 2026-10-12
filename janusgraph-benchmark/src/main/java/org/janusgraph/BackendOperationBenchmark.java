@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * Every read of a transaction and every write of its commit runs through {@link BackendOperation}, which reattempts
  * temporary failures. Measures that for operations which succeed at once, as nearly all do: on their own, on one
  * thread and on eight, and as part of reading a property of 1,000 vertices on the inmemory backend, two operations per
- * vertex. {@link BenchmarkRunner} leaves it out of its default run, which takes ms/op only.
+ * vertex.
  */
 @BenchmarkMode(Mode.AverageTime)
 @Fork(1)
