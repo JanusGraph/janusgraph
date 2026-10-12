@@ -18,13 +18,33 @@ import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class RestAggValue {
-    private double value;
+    // null when no document holds a value of the field, as Elasticsearch answers a minimum, maximum or mean of none
+    private Double value;
+    // the number of values and their sum, which only the stats aggregation answers
+    private Long count;
+    private Double sum;
 
-    public double getValue() {
+    public Double getValue() {
         return value;
     }
 
-    public void setValue(double value) {
+    public void setValue(Double value) {
         this.value = value;
+    }
+
+    public Long getCount() {
+        return count;
+    }
+
+    public void setCount(Long count) {
+        this.count = count;
+    }
+
+    public Double getSum() {
+        return sum;
+    }
+
+    public void setSum(Double sum) {
+        this.sum = sum;
     }
 }

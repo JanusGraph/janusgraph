@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
@@ -788,28 +789,39 @@ public class SolrIndex implements IndexProvider {
         else return value.doubleValue();
     }
 
+    // Whether any matching document holds a value of the field: the minimum, maximum, sum or mean of no values is none
+    private static boolean hasValues(FieldStatsInfo stats) {
+        return stats != null && stats.getCount() != null && stats.getCount() > 0;
+    }
+
     private Number executeMax(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName, Class fieldType) throws SolrServerException, IOException {
         final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
-        solrQuery.setGetFieldStatistics("{!max=true}" + key);
+        solrQuery.setGetFieldStatistics("{!max=true count=true}" + key);
         final QueryResponse response = solrClient.query(collection, solrQuery);
         logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
-        return adaptNumberType((Number)response.getFieldStatsInfo().get(key).getMax(), fieldType);
+        final FieldStatsInfo stats = response.getFieldStatsInfo().get(key);
+        return hasValues(stats) ? adaptNumberType((Number) stats.getMax(), fieldType) : null;
     }
 
     private Number executeMin(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName, Class fieldType) throws SolrServerException, IOException {
         final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
-        solrQuery.setGetFieldStatistics("{!min=true}" + key);
+        solrQuery.setGetFieldStatistics("{!min=true count=true}" + key);
         final QueryResponse response = solrClient.query(collection, solrQuery);
         logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
-        return adaptNumberType((Number)response.getFieldStatsInfo().get(key).getMin(), fieldType);
+        final FieldStatsInfo stats = response.getFieldStatsInfo().get(key);
+        return hasValues(stats) ? adaptNumberType((Number) stats.getMin(), fieldType) : null;
     }
 
     private Number executeSum(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName, Class fieldType) throws SolrServerException, IOException {
         final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
-        solrQuery.setGetFieldStatistics("{!sum=true}" + key);
+        solrQuery.setGetFieldStatistics("{!sum=true count=true}" + key);
         final QueryResponse response = solrClient.query(collection, solrQuery);
         logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
-        Number sum = ((Number)response.getFieldStatsInfo().get(key).getSum());
+        final FieldStatsInfo stats = response.getFieldStatsInfo().get(key);
+        if (!hasValues(stats)) {
+            return null;
+        }
+        Number sum = (Number) stats.getSum();
         if (Float.class.isAssignableFrom(fieldType) || Double.class.isAssignableFrom(fieldType))
             return sum.doubleValue();
         else
@@ -818,11 +830,11 @@ public class SolrIndex implements IndexProvider {
 
     private Number executeAvg(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName) throws SolrServerException, IOException {
         final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
-        solrQuery.setGetFieldStatistics(key);
-        solrQuery.setGetFieldStatistics("{!mean=true}" + key);
+        solrQuery.setGetFieldStatistics("{!mean=true count=true}" + key);
         final QueryResponse response = solrClient.query(collection, solrQuery);
         logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
-        return ((Number)response.getFieldStatsInfo().get(key).getMean()).doubleValue();
+        final FieldStatsInfo stats = response.getFieldStatsInfo().get(key);
+        return hasValues(stats) ? ((Number) stats.getMean()).doubleValue() : null;
     }
 
     @Override

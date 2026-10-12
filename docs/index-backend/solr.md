@@ -290,6 +290,20 @@ Note, however, that schemaless mode is recommended only for prototyping
 and initial application development and NOT recommended for production
 use.
 
+### Ordering Elements without a Value
+
+When JanusGraph orders the elements of a query itself, for example for
+`order().by('age')`, it places the elements which hold no value of the
+key last, whether the order is ascending or descending. When Solr orders
+them, for an order which a mixed index answers, it places the documents
+without a value of a field as the `sortMissingLast` and
+`sortMissingFirst` attributes of the field, or of its type, say. If
+neither is declared, Solr sorts the documents without a numeric or date
+value as if their value were 0. The string, boolean, numeric and date
+types of the example `schema.xml` declare `sortMissingLast="true"`, and
+a schema of your own needs it as well to order these elements as
+JanusGraph does.
+
 ## Troubleshooting
 
 ### Collection Does Not Exist
