@@ -1330,11 +1330,22 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         return stats;
     }
 
+    //When a node frees a scroll context it updates scroll_total and open_contexts one after the other, and it reports
+    //them one after the other, so the first reading which finds the contexts released may lack the scroll just freed.
+    //The next one, a round trip later, has it: two readings in a row within the bound are taken, the second returned
     private SearchStats awaitOpenSearchContexts(long atMostOpen, Duration atMost) throws Exception {
         final long deadline = System.currentTimeMillis() + atMost.toMillis();
+        boolean releasedBefore = false;
         SearchStats stats = searchStats();
-        while (stats.openContexts > atMostOpen && System.currentTimeMillis() < deadline) {
-            Thread.sleep(100);
+        while (!releasedBefore || stats.openContexts > atMostOpen) {
+            final boolean released = stats.openContexts <= atMostOpen;
+            if (!released) {
+                if (System.currentTimeMillis() >= deadline) {
+                    return stats;
+                }
+                Thread.sleep(100);
+            }
+            releasedBefore = released;
             stats = searchStats();
         }
         return stats;
