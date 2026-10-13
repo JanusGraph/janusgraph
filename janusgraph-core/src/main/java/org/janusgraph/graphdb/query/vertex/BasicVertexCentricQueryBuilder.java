@@ -814,6 +814,9 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 if (orEqual!=null) {
                     type = orEqual.getKey();
                     newInterval = new PointInterval(orEqual.getValue());
+                    //The conditions on the same key before it narrow it, as it narrows those after it
+                    Interval interval = constraintMap.get(type);
+                    if (interval!=null) newInterval = intersect(interval, newInterval);
                 }
             } else if (condition instanceof PredicateCondition) {
                 PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)condition;
@@ -861,7 +864,27 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             }
         } else return null;
         assert newInt!=null;
-        return pint!=null?pint.intersect(newInt):newInt;
+        return pint!=null?intersect(pint, newInt):newInt;
+    }
+
+    //The intersection of the intervals, or null where their values are of different types, as those of a key of any
+    //type may be: the conditions compare numbers of different types, which the intervals don't
+    private static Interval intersect(Interval interval, Interval other) {
+        final Class<?> type = valueType(interval);
+        return type != null && type == valueType(other) ? interval.intersect(other) : null;
+    }
+
+    //The type of the values of the interval, or null where they are of several types
+    private static Class<?> valueType(Interval<?> interval) {
+        final Collection<?> values = interval instanceof PointInterval ? interval.getPoints()
+            : Arrays.asList(interval.getStart(), interval.getEnd());
+        Class<?> type = null;
+        for (Object value : values) {
+            if (value == null) continue;
+            if (type == null) type = value.getClass();
+            else if (type != value.getClass()) return null;
+        }
+        return type;
     }
 
     /**

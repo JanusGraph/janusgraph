@@ -16,6 +16,7 @@ package org.janusgraph.graphdb;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -131,6 +132,7 @@ import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
 import org.janusgraph.graphdb.olap.job.StaleIndexEntryRemoveJob;
+import org.janusgraph.graphdb.predicate.AndJanusPredicate;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
@@ -2959,6 +2961,242 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         } catch (IllegalArgumentException ignored) {
         }
 
+    }
+
+    @Test
+    public void testEdgesOfAVertexHasIdWithin() {
+        JanusGraphVertex v = graph.addVertex(), u = graph.addVertex(), w = graph.addVertex();
+        Edge e1 = v.addEdge("knows", u);
+        Edge e2 = v.addEdge("knows", u);
+        Edge e3 = v.addEdge("knows", w);
+        Edge e4 = u.addEdge("knows", v);
+        Edge other = u.addEdge("knows", w);
+
+        assertEdgesOfAVertexHasIdWithin(graph.traversal(), v, e1, e2, e3, e4, other);
+        graph.tx().commit();
+        assertEdgesOfAVertexHasIdWithin(graph.traversal(), v, e1, e2, e3, e4, other);
+    }
+
+    private void assertEdgesOfAVertexHasIdWithin(GraphTraversalSource g, Vertex v, Edge e1, Edge e2, Edge e3, Edge e4,
+                                                 Edge other) {
+        RelationIdentifier missing = RelationIdentifier.get(new Object[]{4L, 5L, 6L, 7L});
+
+        assertEquals(ImmutableSet.of(e1.id()), g.V(v).bothE().hasId(e1.id()).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id()), g.V(v).bothE().hasId(P.within(e1.id())).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id(), e2.id()), g.V(v).outE().hasId(P.within(e1.id(), e2.id())).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id(), e2.id()),
+            g.V(v).outE("knows").hasId(P.within(e1.id(), e2.id())).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id()), g.V(v).outE().hasId(P.within(e1.id(), e4.id())).id().toSet());
+        assertEquals(ImmutableSet.of(e4.id()), g.V(v).inE().hasId(P.within(e1.id(), e4.id())).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id(), e4.id()), g.V(v).bothE().hasId(P.within(e1.id(), e4.id())).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id()), g.V(v).bothE().hasId(P.within(e1.id(), e1.id())).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id(), e2.id()),
+            g.V(v).bothE().hasId(P.within(e1.id().toString(), e2.id())).id().toSet());
+        assertEquals(ImmutableSet.of(e3.id()), g.V(v).bothE().hasId(P.within(e3.id(), other.id(), missing)).id().toSet());
+        assertEquals(ImmutableSet.of(), g.V(v).bothE().hasId(P.within(other.id(), missing)).id().toSet());
+        assertEquals(ImmutableSet.of(), g.V(v).bothE().hasId(P.within()).id().toSet());
+
+        assertEquals(ImmutableSet.of(e3.id(), e4.id()), g.V(v).bothE().hasId(P.without(e1.id(), e2.id())).id().toSet());
+        assertEquals(ImmutableSet.of(e2.id(), e3.id()), g.V(v).outE().hasId(P.without(e1.id(), e4.id())).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id(), e2.id(), e3.id(), e4.id()),
+            g.V(v).bothE().hasId(P.without(other.id(), missing)).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id(), e2.id(), e3.id(), e4.id()),
+            g.V(v).bothE().hasId(P.without()).id().toSet());
+
+        //Several ids or a collection of them, which TinkerPop turns into within
+        assertEquals(ImmutableSet.of(e1.id(), e2.id()), g.V(v).bothE().hasId(e1.id(), e2.id()).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id(), e2.id()),
+            g.V(v).bothE().hasId(Arrays.asList(e1.id(), e2.id())).id().toSet());
+        //Connective predicates, each of whose predicates compares ids
+        assertEquals(ImmutableSet.of(e1.id(), e2.id()),
+            g.V(v).bothE().hasId(P.eq(e1.id()).or(P.eq(e2.id()))).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id(), e2.id(), e3.id()),
+            g.V(v).bothE().hasId(P.within(e1.id(), e2.id()).or(P.eq(e3.id()))).id().toSet());
+        assertEquals(ImmutableSet.of(e1.id(), e3.id()),
+            g.V(v).bothE().hasId(P.within(e1.id(), e2.id(), e3.id()).and(P.without(e2.id()))).id().toSet());
+    }
+
+    @Test
+    public void testEdgesOfAVertexHasIdWithinOnSortKeyAndConstrainedLabels() {
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("rated")).sortKey(time).make();
+        mgmt.makeEdgeLabel("manager").multiplicity(Multiplicity.MANY2ONE).make();
+        finishSchema();
+
+        JanusGraphVertex v = graph.addVertex(), u = graph.addVertex(), w = graph.addVertex();
+        Edge rated1 = v.addEdge("rated", u, "time", 1);
+        Edge rated2 = v.addEdge("rated", u, "time", 2);
+        Edge rated3 = v.addEdge("rated", w, "time", 2);
+        Edge manager = v.addEdge("manager", w);
+        graph.tx().commit();
+
+        GraphTraversalSource g = graph.traversal();
+        assertEquals(ImmutableSet.of(rated1.id(), rated3.id()),
+            g.V(v).outE("rated").hasId(P.within(rated1.id(), rated3.id())).id().toSet());
+        assertEquals(ImmutableSet.of(rated3.id()),
+            g.V(v).outE("rated").has("time", 2).hasId(P.within(rated1.id(), rated3.id())).id().toSet());
+        assertEquals(ImmutableSet.of(rated2.id()),
+            g.V(v).outE("rated").hasId(P.without(rated1.id(), rated3.id())).id().toSet());
+        assertEquals(ImmutableSet.of(manager.id()),
+            g.V(v).outE("manager").hasId(P.within(manager.id(), rated1.id())).id().toSet());
+        assertEquals(ImmutableSet.of(), g.V(v).outE("manager").hasId(P.without(manager.id())).id().toSet());
+        assertEquals(ImmutableSet.of(rated2.id(), manager.id()),
+            g.V(v).outE("rated", "manager").hasId(P.within(rated2.id(), manager.id())).id().toSet());
+    }
+
+    //With an adjacent vertex, the ids of the edges of a label of several edges between two vertices are part of the
+    //columns which the query reads, so a collection of them narrows the read itself
+    @Test
+    public void testEdgesOfAVertexToAnAdjacentVertexHasIdWithin() {
+        JanusGraphVertex v = graph.addVertex(), u = graph.addVertex(), w = graph.addVertex();
+        JanusGraphEdge e1 = v.addEdge("knows", u);
+        JanusGraphEdge e2 = v.addEdge("knows", u);
+        JanusGraphEdge e3 = v.addEdge("knows", w);
+        graph.tx().commit();
+
+        assertEquals(ImmutableSet.of(e1.id()), edgeIds(v.query().adjacent(u).direction(OUT).labels("knows")
+            .has(ID_NAME, Contain.IN, ImmutableList.of(e1.id(), e3.id())).edges()));
+        assertEquals(ImmutableSet.of(e2.id()), edgeIds(v.query().adjacent(u).direction(OUT).labels("knows")
+            .has(ID_NAME, Contain.NOT_IN, ImmutableList.of(e1.id(), e3.id())).edges()));
+        assertEquals(ImmutableSet.of(e1.id(), e2.id()), edgeIds(v.query().adjacent(u).direction(BOTH).labels("knows")
+            .has(ID_NAME, Contain.IN, ImmutableList.of(e1.id(), e2.id(), e3.id())).edges()));
+    }
+
+    //Conditions on the same key of a vertex-centric query narrow each other, also where they narrow its read
+    @Test
+    public void testConditionsOnTheSameKeyOfAVertexCentricQueryNarrowEachOther() {
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("rated")).sortKey(time).make();
+        mgmt.makePropertyKey("payload").dataType(byte[].class).make();
+        mgmt.makePropertyKey("any").dataType(Object.class).make();
+        finishSchema();
+
+        JanusGraphVertex v = graph.addVertex(), u = graph.addVertex();
+        JanusGraphEdge e1 = v.addEdge("knows", u, "payload", new byte[]{1});
+        JanusGraphEdge e2 = v.addEdge("knows", u, "any", 2L);
+        JanusGraphEdge e3 = v.addEdge("knows", u);
+        for (int i = 1; i <= 3; i++) {
+            v.addEdge("rated", u, "time", i);
+        }
+        graph.tx().commit();
+
+        assertEquals(ImmutableSet.of(e2.id()), edgeIds(v.query().adjacent(u).direction(OUT).labels("knows")
+            .has(ID_NAME, Contain.IN, ImmutableList.of(e1.id(), e2.id()))
+            .has(ID_NAME, Contain.IN, ImmutableList.of(e2.id(), e3.id())).edges()));
+        assertEquals(ImmutableSet.of(e2.id()), edgeIds(v.query().adjacent(u).direction(OUT).labels("knows")
+            .has(ID_NAME, new AndJanusPredicate(Arrays.asList(Contain.IN, Contain.IN)),
+                Arrays.asList(ImmutableList.of(e1.id(), e2.id()), ImmutableList.of(e2.id(), e3.id()))).edges()));
+        assertEquals(ImmutableSet.of(), edgeIds(v.query().adjacent(u).direction(OUT).labels("knows")
+            .has(ID_NAME, Contain.IN, ImmutableList.of(e1.id()))
+            .has(ID_NAME, Contain.IN, ImmutableList.of(e3.id())).edges()));
+
+        GraphTraversalSource g = graph.traversal();
+        assertEquals(ImmutableList.of(2),
+            g.V(v).outE("rated").has("time", P.within(1, 2)).has("time", P.within(2, 3)).values("time").toList());
+        assertEquals(ImmutableList.of(2),
+            g.V(v).outE("rated").has("time", P.gt(1)).has("time", P.within(1, 2)).values("time").toList());
+        assertEquals(ImmutableList.of(2),
+            g.V(v).outE("rated").has("time", P.within(1, 2)).has("time", P.gt(1)).values("time").toList());
+
+        //Arrays are equal by their contents, as the conditions compare them, not by identity
+        assertEquals(ImmutableSet.of(e1.id()), edgeIds(v.query().labels("knows")
+            .has("payload", Contain.IN, Arrays.asList(new byte[]{1}, new byte[]{2}))
+            .has("payload", Contain.IN, Arrays.asList(new byte[]{1}, new byte[]{3})).edges()));
+        assertEquals(ImmutableSet.of(e1.id()), edgeIds(v.query().labels("knows")
+            .has("payload", new byte[]{1}).has("payload", new byte[]{1}).edges()));
+
+        //The values of a key of any type may be numbers of different types, which the conditions compare
+        assertEquals(ImmutableSet.of(e2.id()), edgeIds(v.query().labels("knows")
+            .has("any", Cmp.GREATER_THAN, 1).has("any", Contain.IN, Arrays.asList(2L, 3L)).edges()));
+        assertEquals(ImmutableSet.of(e2.id()), edgeIds(v.query().labels("knows")
+            .has("any", Contain.IN, Arrays.asList(2L, 3L)).has("any", Cmp.GREATER_THAN, 1).edges()));
+        assertEquals(ImmutableSet.of(e2.id()), edgeIds(v.query().labels("knows")
+            .has("any", Cmp.GREATER_THAN, 1).has("any", Cmp.LESS_THAN, 5L).edges()));
+    }
+
+    //A branch of a disjunction which no value satisfies, such as within() of nothing, leaves the other branches, and a
+    //disjunction of such branches alone is satisfied by none
+    @Test
+    public void testDisjunctionsOfConditionsWithBranchesWhichNothingSatisfies() {
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("rated")).sortKey(time).make();
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+
+        JanusGraphVertex v = graph.addVertex("name", "a"), u = graph.addVertex("name", "b");
+        Edge e1 = v.addEdge("knows", u);
+        Edge e2 = v.addEdge("knows", u);
+        v.addEdge("rated", u, "time", 1);
+        v.addEdge("rated", u, "time", 2);
+        graph.tx().commit();
+
+        GraphTraversalSource g = graph.traversal();
+        assertEquals(ImmutableSet.of(), g.V(v).outE().hasId(P.within().or(P.within())).id().toSet());
+        assertEquals(ImmutableSet.of(e2.id()),
+            g.V(v).outE().hasId(P.within().and(P.eq(e1.id())).or(P.eq(e2.id()))).id().toSet());
+        assertEquals(ImmutableSet.of(e2.id()),
+            g.V(v).outE().hasId(P.eq(e2.id()).or(P.within().and(P.eq(e1.id())))).id().toSet());
+
+        assertEquals(ImmutableList.of(), g.V(v).outE("rated").has("time", P.within().or(P.within())).toList());
+        assertEquals(ImmutableList.of(2),
+            g.V(v).outE("rated").has("time", P.within().and(P.eq(1)).or(P.eq(2))).values("time").toList());
+
+        assertEquals(ImmutableList.of(), g.V().has("name", P.within().or(P.within())).toList());
+        assertEquals(ImmutableList.of("b"),
+            g.V().has("name", P.within().and(P.eq("a")).or(P.eq("b"))).values("name").toList());
+        assertEquals(ImmutableList.of("b"),
+            g.V().has("name", P.eq("b").or(P.within().and(P.eq("a")))).values("name").toList());
+    }
+
+    @Test
+    public void testPropertiesOfAVertexHasIdWithin() {
+        mgmt.makePropertyKey("nickname").dataType(String.class).cardinality(Cardinality.LIST).make();
+        finishSchema();
+
+        JanusGraphVertex v = graph.addVertex();
+        VertexProperty<?> a = v.property(VertexProperty.Cardinality.list, "nickname", "a");
+        VertexProperty<?> b = v.property(VertexProperty.Cardinality.list, "nickname", "b");
+        VertexProperty<?> c = v.property(VertexProperty.Cardinality.list, "nickname", "c");
+        graph.tx().commit();
+
+        GraphTraversalSource g = graph.traversal();
+        assertEquals(ImmutableSet.of("a", "c"),
+            g.V(v).properties("nickname").hasId(P.within(a.id(), c.id())).value().toSet());
+        assertEquals(ImmutableSet.of("b"),
+            g.V(v).properties("nickname").hasId(P.without(a.id(), c.id())).value().toSet());
+        assertEquals(ImmutableSet.of("a", "b"), g.V(v).properties().hasId(a.id(), b.id()).value().toSet());
+    }
+
+    @Test
+    public void testVertexCentricQueryHasIdCollection() {
+        JanusGraphVertex v = graph.addVertex(), u = graph.addVertex();
+        JanusGraphEdge e1 = v.addEdge("knows", u);
+        JanusGraphEdge e2 = v.addEdge("knows", u);
+        JanusGraphEdge e3 = v.addEdge("knows", u);
+        graph.tx().commit();
+
+        assertEquals(ImmutableSet.of(e1.id(), e2.id()), edgeIds(v.query().direction(OUT)
+            .has(ID_NAME, Contain.IN, ImmutableList.of(e1, e2.id().toString())).edges()));
+        assertEquals(ImmutableSet.of(e3.id()), edgeIds(v.query().direction(OUT)
+            .has(ID_NAME, Contain.NOT_IN, ImmutableList.of(e1.id(), e2.id())).edges()));
+        assertEquals(ImmutableSet.of(e3.id()), edgeIds(u.query().direction(IN).labels("knows")
+            .has(ID_NAME, Contain.IN, ImmutableList.of(e3.id())).edges()));
+        assertEquals(ImmutableSet.of(), edgeIds(v.query().direction(OUT)
+            .has(ID_NAME, Contain.IN, ImmutableList.of()).edges()));
+
+        //An id which isn't one, among several or alone
+        IllegalArgumentException invalid = assertThrows(IllegalArgumentException.class,
+            () -> v.query().has(ID_NAME, Contain.IN, ImmutableList.of(e1.id(), "notAnEdgeId")));
+        assertTrue(invalid.getMessage().contains("notAnEdgeId"), invalid::getMessage);
+        //A predicate other than within and without compares one id, not a collection of them
+        assertThrows(IllegalArgumentException.class,
+            () -> v.query().has(ID_NAME, Cmp.EQUAL, ImmutableList.of(e1.id(), e2.id())));
+    }
+
+    private static Set<Object> edgeIds(Iterable<JanusGraphEdge> edges) {
+        final Set<Object> ids = new HashSet<>();
+        edges.forEach(edge -> ids.add(edge.id()));
+        return ids;
     }
 
     @Test

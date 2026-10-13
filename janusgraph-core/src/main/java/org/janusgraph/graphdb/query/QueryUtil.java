@@ -330,7 +330,15 @@ public class QueryUtil {
         return and;
     }
 
+    //Returns the disjunction with the branches of the predicate, or null where nothing satisfies any of them
     private static <E extends JanusGraphElement> Or<E> addConstraint(final RelationType type, OrJanusPredicate predicate, List<Object> values, Or<E> or, StandardJanusGraphTx tx) {
+        addBranches(type, predicate, values, or, tx);
+        //An empty disjunction would hold for every element
+        return or.hasChildren() ? or : null;
+    }
+
+    //Adds the branches of the predicate to the disjunction, leaving out each branch which nothing satisfies
+    private static <E extends JanusGraphElement> void addBranches(final RelationType type, OrJanusPredicate predicate, List<Object> values, Or<E> or, StandardJanusGraphTx tx) {
         for (int i = 0 ; i < values.size(); i++) {
             final JanusGraphPredicate janusGraphPredicate = predicate.get(i);
             if (janusGraphPredicate instanceof Contain) {
@@ -355,19 +363,15 @@ public class QueryUtil {
             } else if (janusGraphPredicate instanceof AndJanusPredicate) {
                 final List<Object> childValues = (List<Object>) (values.get(i));
                 final And<E> nested = addConstraint(type, (AndJanusPredicate) janusGraphPredicate, childValues, new And<>(childValues.size()), tx);
-                if (nested == null) {
-                    return null;
+                if (nested != null) {
+                    or.add(nested);
                 }
-                or.add(nested);
             } else if (janusGraphPredicate instanceof OrJanusPredicate) {
-                if (addConstraint(type, (OrJanusPredicate) janusGraphPredicate, (List<Object>) (values.get(i)), or, tx) == null) {
-                    return null;
-                }
+                addBranches(type, (OrJanusPredicate) janusGraphPredicate, (List<Object>) (values.get(i)), or, tx);
             } else {
                 addConstraint(type, janusGraphPredicate, values.get(i), or, tx);
             }
         }
-        return or;
     }
 
     private static <E extends JanusGraphElement> void addConstraint(RelationType type, JanusGraphPredicate predicate,
