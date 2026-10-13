@@ -123,6 +123,51 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
     }
 
     /**
+     * Compares two values of an order key in the order of a graph query, which a mixed index sorts the query by when
+     * it can: a missing value, {@code null}, comes last in either direction, two strings are compared by code point,
+     * and any other values by their natural order. Elasticsearch, OpenSearch, Lucene and Solr sort strings by their
+     * UTF-8 bytes, which is the order of their code points, where {@link String#compareTo} compares UTF-16 code units;
+     * so the elements a transaction added, and those sorted in memory, come where the index puts the others, as long as
+     * the strings are valid UTF-16 and the index's field sorts them as they are, without a normalizer.
+     */
+    public static int compareOrderValues(Object value1, Object value2, Order order) {
+        if (value1 == null) {
+            return value2 == null ? 0 : 1;
+        } else if (value2 == null) {
+            return -1;
+        }
+        return order.modulateNaturalOrder(value1 instanceof String && value2 instanceof String
+            ? compareByCodePoint((String) value1, (String) value2) : ((Comparable) value1).compareTo(value2));
+    }
+
+    /*
+     * UTF-16 code units order like code points except where, at the first unit in which the strings differ, one has a
+     * surrogate (U+D800 to U+DFFF), a unit of a character from U+10000 up, and the other a unit from U+E000 to U+FFFF:
+     * the surrogate is the smaller unit, but its character the greater code point. Placing the surrogates after U+FFFF,
+     * and the units from U+E000 where the surrogates were, gives the order of the code points. A surrogate without its
+     * pair isn't valid UTF-16 and is placed in the same way, which may not be where an index puts it: an index can't
+     * keep it as it is, Lucene for one stores U+FFFD instead.
+     */
+    static int compareByCodePoint(String s1, String s2) {
+        final int length = Math.min(s1.length(), s2.length());
+        for (int i = 0; i < length; i++) {
+            final char c1 = s1.charAt(i);
+            final char c2 = s2.charAt(i);
+            if (c1 != c2) {
+                if (c1 >= Character.MIN_SURROGATE && c2 >= Character.MIN_SURROGATE) {
+                    return codePointPlace(c1) - codePointPlace(c2);
+                }
+                return c1 - c2;
+            }
+        }
+        return s1.length() - s2.length();
+    }
+
+    private static int codePointPlace(char unit) {
+        return unit > Character.MAX_SURROGATE ? unit - 0x800 : unit + 0x2000;
+    }
+
+    /**
      * @author Matthias Broecheler (me@matthiasb.com)
      */
 
@@ -153,15 +198,7 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
 
         @Override
         public int compare(JanusGraphElement o1, JanusGraphElement o2) {
-            Object v1 = o1.valueOrNull(key);
-            Object v2 = o2.valueOrNull(key);
-            if (v1 == null || v2 == null) {
-                if (v1 == null && v2 == null) return 0;
-                else if (v1 == null) return 1;
-                else return -1; //v2==null
-            } else {
-                return order.modulateNaturalOrder(((Comparable) v1).compareTo(v2));
-            }
+            return compareOrderValues(o1.valueOrNull(key), o2.valueOrNull(key), order);
         }
 
         @Override

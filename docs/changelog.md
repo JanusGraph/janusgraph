@@ -816,6 +816,41 @@ For code built on these classes: `ElasticSearchClient.avg` returns a `Double`, a
 `MixedIndexAggQuery.execute` return null when there is no value to aggregate; and Lucene's `SumCollector` is now
 `StatsCollector`.
 
+##### The strings of an ordered graph query come in the order of their code points
+
+A graph query ordered by a string key, such as `g.V().has('kind', 'k').order().by('name')`, now orders the strings by
+their code points whoever sorts them: Elasticsearch, OpenSearch, Lucene and Solr sort strings by their UTF-8 bytes,
+which is that order, while JanusGraph compared them by UTF-16 code unit, as `String.compareTo` does, where it ordered
+elements itself. The two orders differ only where the first character in which two strings differ is one from U+10000
+up, such as an emoji, in one of them and one from U+E000 to U+FFFF, such as a private use character or a halfwidth or
+fullwidth form, in the other: by code point the first comes after the second, by UTF-16 unit before it. Strings like
+these came out of order:
+
+* the vertices and edges which a transaction had added or changed, merged into what an index returned for the query;
+* in a query which no index sorts, such as one ordered by a key which the index doesn't hold, which sorted them unlike
+  a query which an index sorts;
+* in a traversal whose `or()` branches JanusGraph answers by queries of their own, as it does when no index answers
+  the `or()`, and in most cases when a branch has a `range()` or a `limit()` of its own, which merged the results of
+  those queries by UTF-16 unit. That merge also failed with an `IllegalStateException` when it compared an element
+  without the order key with one of another branch; such an element now comes last, as in any ordered graph query
+  which JanusGraph answers.
+
+An `order()` which JanusGraph doesn't fold into its query, such as one by a traversal, is TinkerPop's and still compares
+strings by UTF-16 unit, and so does the order of a vertex's edges or properties by a key, in which the storage backend
+holds them. A partitioned vertex put an edge without the key of a descending order of its edges out of place among the
+edges which its representatives hold, where a vertex which isn't partitioned puts it first; it now merges them as each
+representative orders them.
+
+Conditions on strings which JanusGraph checks in memory, such as a `gt()` in a query which no mixed index answers or
+against the vertices a transaction changed, still compare by UTF-16 unit, while an index compares by code point. So
+where JanusGraph checks such a condition in memory, it can disagree with the order: paging with
+`has(key, gt(last)).order().by(key)` can skip strings like these, as with a composite index on `kind` and the names
+`a`, U+E000, U+FFFF and U+1F600, of which the page after U+E000 leaves out U+1F600. The conditions stay as they are,
+as they also select the edges and properties of a vertex, which the storage backend holds in UTF-16 order.
+
+For code built on these classes: `MultiDistinctOrderedIterator` takes the `Comparator` to merge by in place of a list
+of `HasStepFolder.OrderEntry`.
+
 ##### Mixed index names on one backing index must now differ in more than case
 
 An index backend derives its own index name from the JanusGraph index name case-insensitively — Elasticsearch

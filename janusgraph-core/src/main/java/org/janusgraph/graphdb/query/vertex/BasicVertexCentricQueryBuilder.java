@@ -345,13 +345,18 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             if (!hasAllCanonicalTypes()) {
                 InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
                 Iterable<JanusGraphRelation> merge = null;
+                //Each representative returns its relations in the order of a RelationComparator, which compares them
+                //by the query's orders first
+                final OrderList relationOrders = baseQuery.getOrders();
+                final Comparator<JanusGraphRelation> byOrders =
+                    (r1, r2) -> RelationComparator.compareOnOrders(r1, r2, relationOrders);
 
                 for (InternalVertex rep : representatives) {
                     Iterable<JanusGraphRelation> iterable = executeIndividualRelations(rep,baseQuery);
                     if (merge==null) {
                         merge = iterable;
                     } else {
-                        merge = ResultMergeSortIterator.mergeSort(merge, iterable, (Comparator) orders, false);
+                        merge = ResultMergeSortIterator.mergeSort(merge, iterable, byOrders, false);
                     }
                 }
                 return ResultSetIterator.wrap(merge,baseQuery.getLimit());
