@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -101,13 +102,22 @@ public class PointInterval<T> implements Interval<T> {
     public Interval<T> intersect(Interval<T> other) {
         Preconditions.checkArgument(other!=null);
         if (other instanceof PointInterval) {
-            Sets.newHashSet(points);
-            points.retainAll(((PointInterval)other).points);
-            return new PointInterval<>(points);
+            final Set<T> otherPoints = ((PointInterval<T>) other).points;
+            return new PointInterval<>(Sets.newHashSet(Iterables.filter(points, p -> holds(otherPoints, p))));
         } else if (other instanceof RangeInterval) {
             final RangeInterval<T> rint = (RangeInterval)other;
             return new PointInterval<>(Sets.newHashSet(Iterables.filter(points, rint::containsPoint)));
         } else throw new AssertionError("Unexpected interval: " + other);
+    }
+
+    //Whether the points hold the given one, comparing arrays by their contents as the conditions do
+    private static boolean holds(Set<?> points, Object point) {
+        if (points.contains(point)) return true;
+        if (point == null || !point.getClass().isArray()) return false;
+        for (Object other : points) {
+            if (Objects.deepEquals(point, other)) return true;
+        }
+        return false;
     }
 
     @Override
