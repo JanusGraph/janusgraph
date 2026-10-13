@@ -2448,6 +2448,112 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             .forEachOrdered(e -> assertEquals(vertices.get(idx.getAndDecrement()), e));
     }
 
+    //A comparison of a TEXTSTRING key, a range or a not-equal, compares its strings whole, in the order the index
+    //sorts them by, and not the words or phrases of its text, which are in lower case
+    @Test
+    public void testComparisonsOfADualMappedKeyCompareTheStringsWhole() {
+        if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return;
+
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.TEXTSTRING.asParameter()).addKey(age)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Map<Object, String> names = addNamedVertices();
+        //Without a name, which no comparison of names finds
+        tx.addVertex("age", 30);
+        clopen();
+
+        //The mixed index answers them alone, without memory
+        evaluateQuery(tx.query().has("name", Cmp.LESS_THAN, "Long Zed"), ElementCategory.VERTEX,
+            4, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Cmp.GREATER_THAN_EQUAL, "Long Little Lewis"), ElementCategory.VERTEX,
+            4, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Cmp.NOT_EQUAL, "Long John Don"), ElementCategory.VERTEX,
+            6, new boolean[]{true, true}, "mixed");
+        assertNamesFound(names, P.lt("Long Zed"));
+        assertNamesFound(names, P.lte("Middle Sister Mabel"));
+        assertNamesFound(names, P.gt("Middle Sister Mabel"));
+        assertNamesFound(names, P.gte("Long Little Lewis"));
+        assertNamesFound(names, P.between("Long", "Middle"));
+        assertNamesFound(names, P.neq("Long John Don"));
+        assertEquals(Arrays.asList("Long John Don", "Long John Don Jr", "Long Little Lewis"), tx.traversal().V()
+            .has("name", P.between("Long", "Middle")).order().by("name", asc).values("name").toList());
+    }
+
+    //The text predicates on a TEXTSTRING key which an index may leave to memory, the negated ones and
+    //textContainsPhrase, find what they match either way
+    @Test
+    public void testNegatedAndPhraseTextPredicatesOfADualMappedKey() {
+        if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return;
+
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.TEXTSTRING.asParameter()).addKey(age)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Map<Object, String> names = addNamedVertices();
+        tx.addVertex("age", 30);
+        clopen();
+
+        assertNamesFound(names, Text.textNotPrefix("Long"));
+        assertNamesFound(names, Text.textNotRegex("Long.*"));
+        assertNamesFound(names, Text.textNotFuzzy("Zod"));
+        assertNamesFound(names, Text.textContainsPhrase("john don"));
+        assertNamesFound(names, Text.textNotContains("long"));
+        assertNamesFound(names, Text.textNotContainsPrefix("lit"));
+        assertNamesFound(names, Text.textNotContainsRegex("lit.*"));
+        assertNamesFound(names, Text.textNotContainsFuzzy("lewys"));
+        assertNamesFound(names, Text.textNotContainsPhrase("john don"));
+    }
+
+    //Removing one value of a TEXTSTRING key of several values removes it from both of its fields: from the words, which
+    //textContains reads, and from the whole strings, which equalities and ranges read
+    @ParameterizedTest
+    @ValueSource(strings = {"LIST", "SET"})
+    public void testRemovedValueOfADualMappedKeyOfSeveralValuesIsNotFound(Cardinality cardinality) {
+        if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)
+                || !indexFeatures.supportsCardinality(cardinality)) return;
+
+        final PropertyKey alias = mgmt.makePropertyKey("alias").dataType(String.class).cardinality(cardinality).make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(alias, Mapping.TEXTSTRING.asParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex vertex = tx.addVertex();
+        vertex.property(cardinality.convert(), "alias", "Marko");
+        final Object id = vertex.id();
+        clopen();
+
+        tx.traversal().V(id).properties("alias").hasValue("Marko").drop().iterate();
+        tx.traversal().V(id).property(cardinality.convert(), "alias", "zed").iterate();
+        clopen();
+
+        assertFalse(tx.traversal().V().has("alias", Text.textContains("marko")).hasNext());
+        assertFalse(tx.traversal().V().has("alias", P.lt("N")).hasNext());
+        assertFalse(tx.traversal().V().has("alias", "Marko").hasNext());
+        assertEquals(Collections.singletonList(id), tx.traversal().V().has("alias", "zed").id().toList());
+    }
+
+    //Vertices with names of mixed case and several words, by their ids
+    private Map<Object, String> addNamedVertices() {
+        final Map<Object, String> names = new HashMap<>();
+        for (final String n : Arrays.asList("Long John Don", "Don John Long", "Long John Don Jr", "Long Little Lewis",
+                "Middle Sister Mabel", "big brother bob", "Zed")) {
+            names.put(tx.addVertex("name", n).id(), n);
+        }
+        return names;
+    }
+
+    //The vertices which a predicate on names finds, against those whose names match it
+    @SuppressWarnings("unchecked")
+    private <V> void assertNamesFound(Map<Object, String> names, P<V> predicate) {
+        final Set<Object> expected = names.entrySet().stream().filter(e -> predicate.test((V) e.getValue()))
+            .map(Map.Entry::getKey).collect(Collectors.toSet());
+        assertEquals(expected, tx.traversal().V().has("name", predicate).id().toSet(), predicate.toString());
+    }
+
     @Test
     public void testDualMapping() {
         if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return;

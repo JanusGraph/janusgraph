@@ -134,9 +134,17 @@ filtering in memory which can be very costly.
 
 ### Full text and string search
 
-If you are using Elasticsearch it is possible to index properties as
-both text and string allowing you to use all of the predicates for exact
-and fuzzy matching.
+Elasticsearch, OpenSearch, Solr and Lucene can index properties as
+both text and string, `Mapping.TEXTSTRING`, allowing you to use all of
+the predicates for exact and fuzzy matching. The full-text search
+predicates match the words of the text, case-insensitively, and the
+string search predicates, as well as `lt`, `lte`, `gt`, `gte` and
+`between`, match the whole string, case-sensitively. A key with a
+custom string analyzer
+([`ParameterType.STRING_ANALYZER`](field-mapping.md#custom-analyzer))
+is the exception: `eq` and `neq` first split their value with that
+analyzer, and the other string predicates and the ranges compare their
+value with the terms which the analyzer gives.
 
 ```groovy
 mgmt = graph.openManagement()
