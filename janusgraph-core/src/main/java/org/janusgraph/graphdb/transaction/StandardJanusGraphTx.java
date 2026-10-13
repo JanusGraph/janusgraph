@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -40,12 +41,17 @@ import org.janusgraph.core.RelationType;
 import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Geo;
+import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.CompositeIndexInfo;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.EdgeLabelMaker;
 import org.janusgraph.core.schema.JanusGraphSchemaElement;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.core.schema.SchemaInspector;
+import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.VertexLabelMaker;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BackendTransaction;
@@ -71,15 +77,18 @@ import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.MetricsQueryExecutor;
 import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.query.QueryExecutor;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.query.condition.ConditionUtil;
+import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.graph.GraphCentricQuery;
 import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
@@ -120,6 +129,9 @@ import org.janusgraph.graphdb.transaction.vertexcache.EmptyVertexCache;
 import org.janusgraph.graphdb.transaction.vertexcache.VertexCache;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
+import org.janusgraph.graphdb.types.MixedIndexType;
+import org.janusgraph.graphdb.types.ParameterIndexField;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
 import org.janusgraph.graphdb.types.StandardVertexLabelMaker;
@@ -154,9 +166,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -171,7 +185,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -243,10 +256,10 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      */
     private SubqueryCache indexCache;
     /**
-     * Builds an inverted index for newly added properties so they can be considered in index queries.
-     * This cache my not release elements since that would entail an expensive linear scan over addedRelations
+     * The vertex properties which this transaction added, by key and value, of the keys its graph queries look up, from
+     * which a graph query finds the vertices which the transaction changed so that they may now match
      */
-    private IndexCache newVertexIndexEntries;
+    private IndexCache addedPropertyIndex;
 
     //######## Lock applications
     /**
@@ -316,11 +329,11 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         if (config.isSingleThreaded()) {
             addedRelations = new SimpleAddedRelations(false);
             newTypeCache = new HashMap<>();
-            newVertexIndexEntries = new SimpleIndexCache();
+            addedPropertyIndex = new SimpleIndexCache(addedRelations);
         } else {
             addedRelations = new ConcurrentAddedRelations(false);
             newTypeCache = new NonBlockingHashMap<>();
-            newVertexIndexEntries = new ConcurrentIndexCache();
+            addedPropertyIndex = new ConcurrentIndexCache(addedRelations);
         }
 
         boolean preloadedData = config.hasPreloadedData();
@@ -756,7 +769,9 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         //Update transaction data structures
         if (relation.isNew()) {
             addedRelations.remove(relation);
-            if (TypeUtil.hasSimpleInternalVertexKeyIndex(relation)) newVertexIndexEntries.remove((JanusGraphVertexProperty) relation);
+            if (relation instanceof JanusGraphVertexProperty) {
+                addedPropertyIndex.remove((JanusGraphVertexProperty) relation);
+            }
         } else {
             Preconditions.checkArgument(relation.isLoaded());
             Map<Long, InternalRelation> result = deletedRelations;
@@ -933,8 +948,8 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 vertexCache.add(vertex, vertex.id());
             }
         }
-        if (TypeUtil.hasSimpleInternalVertexKeyIndex(r)) {
-            newVertexIndexEntries.add((JanusGraphVertexProperty) r);
+        if (r instanceof JanusGraphVertexProperty) {
+            addedPropertyIndex.add((JanusGraphVertexProperty) r);
         }
     }
 
@@ -1497,23 +1512,27 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         }
     };
 
+    //A predicate of a graph query's condition, and whether a negation wraps it
+    private static final class QueryPredicate {
+        final PredicateCondition<RelationType, JanusGraphElement> condition;
+        final boolean negated;
+
+        QueryPredicate(PredicateCondition<RelationType, JanusGraphElement> condition, boolean negated) {
+            this.condition = condition;
+            this.negated = negated;
+        }
+    }
+
+    //The predicates which hold when one value matches them, in an index as in memory, so that removing a property never
+    //makes them hold; see elementProcessorImpl.holdsAfterARemoval
+    private static final Set<JanusGraphPredicate> MATCHED_BY_ONE_VALUE = ImmutableSet.of(Cmp.LESS_THAN,
+        Cmp.LESS_THAN_EQUAL, Cmp.GREATER_THAN, Cmp.GREATER_THAN_EQUAL, Text.CONTAINS, Text.CONTAINS_PREFIX,
+        Text.CONTAINS_REGEX, Text.CONTAINS_FUZZY, Text.CONTAINS_PHRASE, Text.PREFIX, Text.REGEX, Text.FUZZY,
+        Geo.INTERSECT);
+
     public final QueryExecutor<GraphCentricQuery, JanusGraphElement, JointIndexQuery> elementProcessor;
 
     public final QueryExecutor<GraphCentricQuery, JanusGraphElement, JointIndexQuery> elementProcessorImpl = new QueryExecutor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>() {
-
-        private PredicateCondition<PropertyKey, JanusGraphElement> getEqualityCondition(Condition<JanusGraphElement> condition) {
-            if (condition instanceof PredicateCondition) {
-                final PredicateCondition<PropertyKey, JanusGraphElement> pc = (PredicateCondition) condition;
-                if (pc.getPredicate() == Cmp.EQUAL && TypeUtil.hasSimpleInternalVertexKeyIndex(pc.getKey())) return pc;
-            } else if (condition instanceof And) {
-                for (final Condition<JanusGraphElement> child : condition.getChildren()) {
-                    final PredicateCondition<PropertyKey, JanusGraphElement> p = getEqualityCondition(child);
-                    if (p != null) return p;
-                }
-            }
-            return null;
-        }
-
 
         @Override
         public Iterator<JanusGraphElement> getNew(final GraphCentricQuery query) {
@@ -1523,47 +1542,253 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             Preconditions.checkArgument(query.getCondition().hasChildren(),"If the query is non-empty it needs to have a condition");
 
             if (query.getResultType() == ElementCategory.VERTEX && hasModifications()) {
-                Preconditions.checkArgument(QueryUtil.isQueryNormalForm(query.getCondition()));
-                PredicateCondition<PropertyKey, JanusGraphElement> standardIndexKey = getEqualityCondition(query.getCondition());
-                Iterator<JanusGraphVertex> vertices;
-                if (standardIndexKey == null) {
-                    final Set<PropertyKey> keys = new HashSet<>();
-                    ConditionUtil.traversal(query.getCondition(), cond -> {
-                        Preconditions.checkArgument(cond.getType() != Condition.Type.LITERAL || cond instanceof PredicateCondition);
-                        if (cond instanceof PredicateCondition) {
-                            keys.add(((PredicateCondition<PropertyKey, JanusGraphElement>) cond).getKey());
-                        }
-                        return true;
-                    });
-                    Preconditions.checkArgument(!keys.isEmpty(), "Invalid query condition: %s", query.getCondition());
-                    Set<JanusGraphVertex> vertexSet = new HashSet<>();
-                    for (final JanusGraphRelation r : addedRelations.getView(relation -> keys.contains(relation.getType()))) {
-                        vertexSet.add(((JanusGraphVertexProperty) r).element());
-                    }
-                    for (JanusGraphRelation r : deletedRelations.values()) {
-                        if (keys.contains(r.getType())) {
-                            JanusGraphVertex v = ((JanusGraphVertexProperty) r).element();
-                            if (!v.isRemoved()) vertexSet.add(v);
-                        }
-                    }
-                    vertices = vertexSet.iterator();
-                } else {
-                    vertices = com.google.common.collect.Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getValue(), standardIndexKey.getKey()).iterator(), new com.google.common.base.Function<JanusGraphVertexProperty, JanusGraphVertex>() {
-                        @Nullable
-                        @Override
-                        public JanusGraphVertex apply(final JanusGraphVertexProperty o) {
-                            return o.element();
-                        }
-                    });
-                }
-
-                return (Iterator) com.google.common.collect.Iterators.filter(vertices, query::matches);
+                //The condition needn't be in normal form: an index which takes any condition, as Lucene and
+                //Elasticsearch do, is given a disjunction of conjunctions whole
+                final List<QueryPredicate> predicates = new ArrayList<>();
+                collectPredicates(query.getCondition(), false, predicates);
+                Preconditions.checkArgument(!predicates.isEmpty(), "Invalid query condition: %s", query.getCondition());
+                //The vertices which may match come from what the transaction holds at the call, and are checked only
+                //once the query reaches them, each once: an unordered query whose limit the first of them fill doesn't
+                //check the others, and the caller may have removed a vertex by the time the query reaches it
+                final List<Iterable<JanusGraphVertex>> candidates = new ArrayList<>();
+                addNewVertices(query, predicates, candidates);
+                addLoadedVertices(query, predicates, candidates);
+                final Set<JanusGraphElement> seen = new HashSet<>();
+                return com.google.common.collect.Iterators.filter(
+                    Iterables.<JanusGraphElement>concat(candidates).iterator(),
+                    vertex -> !vertex.isRemoved() && seen.add(vertex) && query.matches(vertex));
             } else if ( (query.getResultType() == ElementCategory.EDGE || query.getResultType()==ElementCategory.PROPERTY)
                                         && !addedRelations.isEmpty()) {
-                return (Iterator) addedRelations.getView(relation -> query.getResultType().isInstance(relation) && !relation.isInvisible() && query.matches(relation)).iterator();
+                //Copied before they are checked, as an unordered query checks a relation only once it reaches it, by
+                //which time the caller may have changed the transaction's added relations
+                final List<JanusGraphElement> relations = new ArrayList<>();
+                addedRelations.getView(relation -> query.getResultType().isInstance(relation)
+                    && !relation.isInvisible()).forEach(relations::add);
+                return com.google.common.collect.Iterators.filter(relations.iterator(),
+                    relation -> !relation.isRemoved() && query.matches(relation));
             } else return Collections.emptyIterator();
         }
 
+        /*
+         * The new vertices which may match the query. A new vertex holds an equality only through a property which this
+         * transaction added with the value, so the new vertices with the added properties of one conjunct of the query
+         * which is an equality, or a disjunction of equalities, are enough: those of such a conjunct on keys of the
+         * indexes the query reads which has the fewest. Without such a conjunct, the new vertices with an added
+         * property of any key of the query are.
+         */
+        private void addNewVertices(GraphCentricQuery query, List<QueryPredicate> predicates,
+                                    List<Iterable<JanusGraphVertex>> candidates) {
+            final Condition<JanusGraphElement> condition = query.getCondition();
+            Condition<JanusGraphElement> fewest = null;
+            int fewestCount = Integer.MAX_VALUE;
+            for (final Condition<JanusGraphElement> conjunct : condition instanceof And
+                    ? condition.getChildren() : Collections.singletonList(condition)) {
+                final int count = countNewVertexEqualityProperties(conjunct, query);
+                if (count >= 0 && count < fewestCount) {
+                    fewest = conjunct;
+                    fewestCount = count;
+                    if (count == 0) {
+                        break;
+                    }
+                }
+            }
+            if (fewest != null) {
+                for (final Condition<JanusGraphElement> equality : equalities(fewest)) {
+                    final PredicateCondition<RelationType, JanusGraphElement> predicate = (PredicateCondition) equality;
+                    candidates.add(verticesOf(
+                        addedPropertyIndex.get((PropertyKey) predicate.getKey(), predicate.getValue(), true)));
+                }
+            } else {
+                final Set<PropertyKey> keys = new HashSet<>();
+                for (final QueryPredicate predicate : predicates) {
+                    if (predicate.condition.getKey() instanceof PropertyKey) {
+                        keys.add((PropertyKey) predicate.condition.getKey());
+                    }
+                }
+                for (final PropertyKey key : keys) {
+                    candidates.add(verticesOf(addedPropertyIndex.getAll(key, true)));
+                }
+            }
+        }
+
+        //How many properties of new vertices match a conjunct which is an equality, or a disjunction of equalities, on
+        //keys of the indexes the query reads; -1 for any other conjunct
+        private int countNewVertexEqualityProperties(Condition<JanusGraphElement> conjunct, GraphCentricQuery query) {
+            //A disjunction of nothing holds for every vertex, as Or.evaluate has it, so it can't stand for the new ones
+            if (conjunct instanceof Or && !conjunct.hasChildren()) {
+                return -1;
+            }
+            int count = 0;
+            for (final Condition<JanusGraphElement> equality : equalities(conjunct)) {
+                if (!(equality instanceof PredicateCondition)) {
+                    return -1;
+                }
+                final PredicateCondition<RelationType, JanusGraphElement> predicate = (PredicateCondition) equality;
+                if (!isEqualityToAValue(predicate) || !isIndexed(predicate.getKey(), query)) {
+                    return -1;
+                }
+                count += addedPropertyIndex.count((PropertyKey) predicate.getKey(), predicate.getValue(), true);
+            }
+            return count;
+        }
+
+        private Iterable<Condition<JanusGraphElement>> equalities(Condition<JanusGraphElement> conjunct) {
+            return conjunct instanceof Or ? conjunct.getChildren() : Collections.singletonList(conjunct);
+        }
+
+        /*
+         * The vertices loaded before this transaction which may match the query although the indexes the query reads
+         * don't return them, because those indexes hold what the vertices held before the transaction: the vertices
+         * whose properties of a key of those indexes, on which the query has a condition, the transaction changed. An
+         * equality to a value which isn't negated holds now and didn't before only through a property which the
+         * transaction added with that value; any other condition through a property of its key which the transaction
+         * added, or, for a condition which a removal can make hold, removed. The vertices which the indexes do return
+         * are checked against what they hold now, so a condition on any other key needs no vertices of its own here.
+         * An index which sorts what it returns sorts the vertices by the values they held before the transaction, so
+         * where every order key has one value, the vertices whose value of an order key the transaction changed are
+         * taken too, which the query then places by what they hold now instead of where the index has them.
+         */
+        private void addLoadedVertices(GraphCentricQuery query, List<QueryPredicate> predicates,
+                                       List<Iterable<JanusGraphVertex>> candidates) {
+            //The keys of which every property the transaction added, or removed, may make a vertex match or move
+            final Set<PropertyKey> keysOfAdditions = new HashSet<>();
+            final Set<PropertyKey> keysOfRemovals = new HashSet<>();
+            for (final QueryPredicate predicate : predicates) {
+                if (!isIndexed(predicate.condition.getKey(), query)) {
+                    continue;
+                }
+                final PropertyKey key = (PropertyKey) predicate.condition.getKey();
+                if (predicate.negated || !isEqualityToAValue(predicate.condition)) {
+                    keysOfAdditions.add(key);
+                    if (holdsAfterARemoval(predicate)) {
+                        keysOfRemovals.add(key);
+                    }
+                } else {
+                    candidates.add(verticesOf(addedPropertyIndex.get(key, predicate.condition.getValue(), false)));
+                }
+            }
+            if (isSortedByAnIndex(query) && hasOrderKeysOfOneValue(query)) {
+                final OrderList orders = query.getOrder();
+                for (int i = 0; i < orders.size(); i++) {
+                    final PropertyKey key = orders.getKey(i);
+                    if (isIndexed(key, query)) {
+                        keysOfAdditions.add(key);
+                        keysOfRemovals.add(key);
+                    }
+                }
+            }
+            for (final PropertyKey key : keysOfAdditions) {
+                candidates.add(verticesOf(addedPropertyIndex.getAll(key, false)));
+            }
+            if (!keysOfRemovals.isEmpty()) {
+                final List<JanusGraphVertex> removedFrom = new ArrayList<>();
+                for (final JanusGraphRelation relation : deletedRelations.values()) {
+                    if (keysOfRemovals.contains(relation.getType())) {
+                        final JanusGraphVertex vertex = ((JanusGraphVertexProperty) relation).element();
+                        if (!vertex.isRemoved()) removedFrom.add(vertex);
+                    }
+                }
+                candidates.add(removedFrom);
+            }
+        }
+
+        //The vertices of the properties, each turned into its vertex only once it is iterated
+        private Iterable<JanusGraphVertex> verticesOf(Iterable<JanusGraphVertexProperty> properties) {
+            return Iterables.transform(properties, JanusGraphVertexProperty::element);
+        }
+
+        //Whether the backend sorts the results of a subquery of the query, which it does by the values they held before
+        //this transaction
+        private boolean isSortedByAnIndex(GraphCentricQuery query) {
+            if (!query.isSorted()) {
+                return false;
+            }
+            for (int i = 0; i < query.numSubQueries(); i++) {
+                if (query.getSubQuery(i).isSorted()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /*
+         * Whether every order key of the query has one value at most. The vertices which the query places itself are
+         * compared by each of its order keys, and a vertex with several values of a key can't be ordered by it in
+         * memory. So where a key of several values orders the query, which only an index can sort by, the vertices
+         * whose order key the transaction changed keep the places which the index gives them, as the query leaves
+         * them to it.
+         */
+        private boolean hasOrderKeysOfOneValue(GraphCentricQuery query) {
+            final OrderList orders = query.getOrder();
+            for (int i = 0; i < orders.size(); i++) {
+                if (orders.getKey(i).cardinality() != Cardinality.SINGLE) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /*
+         * Whether removing a property can make a condition hold, so that it holds now although the indexes, which hold
+         * what the vertices held before, don't return the vertex. In memory a condition holds when one of the values
+         * matches it, which a removal can't bring about; but a negation holds when none does, an absence when there
+         * is none, and an index may answer other predicates by excluding the elements of which a value matches their
+         * negation, as Elasticsearch answers a not-equal, a negated text predicate, or a geoWithin or geoContains of a
+         * geo_shape of several values. So every predicate except those which every index, too, answers by one matching
+         * value is one.
+         */
+        private boolean holdsAfterARemoval(QueryPredicate predicate) {
+            if (predicate.negated) {
+                return true;
+            }
+            final JanusGraphPredicate p = predicate.condition.getPredicate();
+            if (p == Cmp.EQUAL || p == Cmp.NOT_EQUAL) {
+                //An equality to nothing is an absence; a not-equal to nothing is a presence, and a not-equal to a value
+                //may be answered by excluding the elements which hold it
+                return (p == Cmp.EQUAL) == (predicate.condition.getValue() == null);
+            }
+            return !MATCHED_BY_ONE_VALUE.contains(p);
+        }
+
+        //Whether a predicate is an equality to a value which the index of added properties can look up: an array
+        //equals another one only element by element
+        private boolean isEqualityToAValue(PredicateCondition<RelationType, JanusGraphElement> condition) {
+            return condition.getPredicate() == Cmp.EQUAL && condition.getValue() != null
+                && !condition.getValue().getClass().isArray();
+        }
+
+        //Whether an index which the query reads holds the property key, and so holds what the vertices held for it
+        //before this transaction; a condition on any other type, such as an edge label, isn't indexed
+        private boolean isIndexed(RelationType key, GraphCentricQuery query) {
+            if (!(key instanceof PropertyKey)) {
+                return false;
+            }
+            for (int i = 0; i < query.numSubQueries(); i++) {
+                final JointIndexQuery indexQuery = query.getSubQuery(i).getBackendQuery();
+                for (int j = 0; j < indexQuery.size(); j++) {
+                    if (indexQuery.getQuery(j).getIndex().indexesKey((PropertyKey) key)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        //The predicates of a condition, however its conjunctions, disjunctions and negations nest, each with whether an
+        //odd number of negations wraps it
+        private void collectPredicates(Condition<JanusGraphElement> condition, boolean negated,
+                                       List<QueryPredicate> predicates) {
+            if (condition.getType() == Condition.Type.LITERAL) {
+                Preconditions.checkArgument(condition instanceof PredicateCondition);
+                predicates.add(new QueryPredicate((PredicateCondition<RelationType, JanusGraphElement>) condition,
+                    negated));
+            } else {
+                final boolean negatesChildren = negated != (condition.getType() == Condition.Type.NOT);
+                for (final Condition<JanusGraphElement> child : condition.getChildren()) {
+                    collectPredicates(child, negatesChildren, predicates);
+                }
+            }
+        }
 
         @Override
         public boolean hasDeletions(GraphCentricQuery query) {
@@ -1584,6 +1809,35 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 //check for this case and consider the relations deleted
                 return result.isNew() && !query.matches(result);
             } else throw new IllegalArgumentException("Unexpected type: " + query.getResultType());
+        }
+
+        /*
+         * The index query without the results whose value of the query's first order key comes after the given value:
+         * its first subquery, which reads the mixed index that sorts the results, takes a range on that key along with
+         * its condition, at least the value for a descending order and at most it for an ascending one. Elements
+         * without a value of the key, which the range leaves out, come last. The range is taken only for a key of one
+         * value, on a field whose values every index compares with the given one as memory orders them
+         * (isRangedAsOrdered), and where the index can take it.
+         */
+        @Override
+        public JointIndexQuery withoutResultsAfter(GraphCentricQuery query, JointIndexQuery indexQuery, Object value) {
+            if (indexQuery.isEmpty() || !indexQuery.getQuery(0).getIndex().isMixedIndex()
+                    || indexQuery.getQuery(0).getMixedQuery().getOrder().isEmpty()) {
+                return indexQuery;
+            }
+            final MixedIndexType index = (MixedIndexType) indexQuery.getQuery(0).getIndex();
+            final PropertyKey key = query.getOrder().getKey(0);
+            final boolean descending = query.getOrder().getOrder(0) == Order.DESC;
+            final ParameterIndexField field = index.getField(key);
+            if (field == null || key.cardinality() != Cardinality.SINGLE
+                    || !isRangedAsOrdered(value, field, descending)) {
+                return indexQuery;
+            }
+            final Cmp range = descending ? Cmp.GREATER_THAN_EQUAL : Cmp.LESS_THAN_EQUAL;
+            if (!indexSerializer.supports(index, field, range)) {
+                return indexQuery;
+            }
+            return indexQuery.narrowFirst(new PredicateCondition<>(IndexRecordUtil.key2Field(field), range, value));
         }
 
         @Override
@@ -1638,6 +1892,62 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         }
 
     };
+
+    /*
+     * Whether every index compares the value with those of the field as memory orders them, so that a range from the
+     * value in the direction of the order leaves out only elements which memory orders after it. That holds on an
+     * enabled field without custom parameters, which may map it otherwise, for a long, int, short, byte or date; for an
+     * instant of whole milliseconds, as the indexes keep instants by the millisecond and Solr takes no finer one; for a
+     * float or double in an ascending order, as a descending one puts NaN first, which no range holds; and for a
+     * string with no character at or above U+D800 on a field mapped as STRING without an analyzer. Memory orders
+     * strings by code point, as the indexes do, but an index holds a surrogate without its pair as U+FFFD, which a
+     * string below U+D800 can't hold; an index may compare a TEXTSTRING field by its analyzed terms, and an analyzer
+     * may change the terms which a range compares.
+     */
+    static boolean isRangedAsOrdered(Object value, ParameterIndexField field, boolean descending) {
+        if (field.getStatus() != SchemaStatus.ENABLED) {
+            return false;
+        }
+        for (final Parameter parameter : field.getParameters()) {
+            if (parameter.key().startsWith(ParameterType.CUSTOM_PARAMETER_PREFIX)) {
+                return false;
+            }
+        }
+        if (value instanceof Double || value instanceof Float) {
+            return !descending && !Double.isNaN(((Number) value).doubleValue());
+        }
+        if (value instanceof String) {
+            return isComparedWhole(field) && isBelowTheSurrogates((String) value);
+        }
+        if (value instanceof Instant) {
+            return ((Instant) value).getNano() % 1_000_000 == 0;
+        }
+        return value instanceof Long || value instanceof Integer || value instanceof Short || value instanceof Byte
+            || value instanceof Date;
+    }
+
+    //Whether a string field's values are compared whole, as they are sorted: mapped as STRING, without an analyzer
+    private static boolean isComparedWhole(ParameterIndexField field) {
+        if (Mapping.getMapping(IndexRecordUtil.getKeyInformation(field)) != Mapping.STRING) {
+            return false;
+        }
+        for (final Parameter parameter : field.getParameters()) {
+            if (ParameterType.STRING_ANALYZER.getName().equalsIgnoreCase(parameter.key())
+                    || ParameterType.TEXT_ANALYZER.getName().equalsIgnoreCase(parameter.key())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isBelowTheSurrogates(String string) {
+        for (int i = 0; i < string.length(); i++) {
+            if (string.charAt(i) >= Character.MIN_SURROGATE) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public Function<Object, ? extends JanusGraphElement> getConversionFunction(final ElementCategory elementCategory) {
         switch (elementCategory) {
@@ -1769,7 +2079,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         addedRelations = EmptyAddedRelations.getInstance();
         deletedRelations = Collections.emptyMap();
         uniqueLocks = Collections.emptyMap();
-        newVertexIndexEntries = EmptyIndexCache.getInstance();
+        addedPropertyIndex = EmptyIndexCache.getInstance();
         newTypeCache = Collections.emptyMap();
     }
 

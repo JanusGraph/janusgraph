@@ -123,6 +123,29 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
     }
 
     /**
+     * The values of the element by which this order compares it, one for each of its keys, read once, so that
+     * {@link #compareValues(Object[], Object[])} compares elements without reading them again.
+     */
+    public Object[] values(JanusGraphElement element) {
+        final Object[] values = new Object[list.size()];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = element.valueOrNull(list.get(i).getKey());
+        }
+        return values;
+    }
+
+    /**
+     * Compares two elements by their {@link #values(JanusGraphElement)}, as {@link #compare} compares them.
+     */
+    public int compareValues(Object[] values1, Object[] values2) {
+        for (int i = 0; i < list.size(); i++) {
+            final int cmp = list.get(i).compareValues(values1[i], values2[i]);
+            if (cmp != 0) return cmp;
+        }
+        return 0;
+    }
+
+    /**
      * Compares two values of an order key in the order of a graph query, which a mixed index sorts the query by when
      * it can: a missing value, {@code null}, comes last in either direction, two strings are compared by code point,
      * and any other values by their natural order. Elasticsearch, OpenSearch, Lucene and Solr sort strings by their
@@ -198,7 +221,12 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
 
         @Override
         public int compare(JanusGraphElement o1, JanusGraphElement o2) {
-            return compareOrderValues(o1.valueOrNull(key), o2.valueOrNull(key), order);
+            return compareValues(o1.valueOrNull(key), o2.valueOrNull(key));
+        }
+
+        //A missing value comes last, in either direction, and strings compare by code point
+        int compareValues(Object v1, Object v2) {
+            return compareOrderValues(v1, v2, order);
         }
 
         @Override
