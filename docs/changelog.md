@@ -928,6 +928,39 @@ on an index of one shard, a result of 100,000 hits in the default pages of 50 ta
 a point in time, against 1.13 s through a scroll, and in pages of 10,000, which the adaptive mode scrolls, 118 ms against
 131 ms through a point in time.
 
+##### Elasticsearch reads a limited result beyond 10,000 hits in larger pages
+
+An index query whose offset and limit together go beyond 10,000 hits was read after its first request in pages of
+`index.[X].max-result-set-size` (50 by default), like an index query without a limit. Index queries get such limits from
+a traversal's own limit; from the offset and limit of a direct index query; from a lowered `query.hard-max-limit`, which
+every traversal without a limit then takes as the limit of its index query; from `query.smart-limit`, under which the
+index query of a traversal without a limit starts at 1,000 hits and doubles as the traversal reads on; from an order
+which the index can't sort, which JanusGraph sorts in memory after reading up to 1,000,000 hits; and from JanusGraph
+executing a limited query again with a doubled limit when it leaves out too many of the index's hits, for example those
+of vertices which the transaction removed or changed so that they no longer match, which the index still holds as they
+were. Each execution reads the hits from the first one on. Such a result is now read in as few pages as the new option
+`index.[X].elasticsearch.limited-result-max-page-size` (250 by default) allows, all of one size, so that the last page
+reads hardly more than the limit needs, and never in pages smaller than `max-result-set-size`. The first request still
+asks for one hit more than a page, so a small result needs no scroll context or point in time, and an index query
+without a limit keeps its pages of `max-result-set-size`. `index.[X].elasticsearch.scroll-keep-alive` must cover
+consuming one page, as each page renews it: with its default of 60 s, a page of 250 hits leaves 240 ms for each hit, a
+page of 1,000 hits 60 ms, and a page of 10,000 hits, the practical ceiling of the option, 6 ms. A consumer which takes
+longer loses the scroll context or point in time: the next page fails, or, where the index's shards sit on several
+nodes, comes back with the hits of only some shards, which ends the result early or leaves hits out without an error. A
+slower consumer can lower the option in its local configuration, to `max-result-set-size` or below for the pages of
+earlier versions, or raise `scroll-keep-alive`, which is GLOBAL_OFFLINE.
+
+On Elasticsearch 9.5.4, with 50,000 vertices in an index of one shard, a
+`has("kind", "k").order().by("updatedAt", desc).limit(10)` in a transaction which had changed the `kind` of 20,000 of
+them took 155 requests and 0.57 s instead of 721 requests and 0.95 s, and of all 50,000 of them 399 requests and 1.21 s
+instead of 1,937 and 2.14 s. A traversal limited to 100,000 which reads all 50,000 hits took 202 requests and 221 ms
+instead of 1,002 and 864 ms, and one which stops after the first hit 1.7 ms against 1.8 ms. In the same session, pages
+of up to 1,000 took 49 requests and 0.46 s, 111 and 0.97 s, 52 and 120 ms, and 2.7 ms, and pages of up to 10,000 took 17
+and 0.37 s, 25 and 0.72 s, 7 and 67 ms, and 10.3 ms. Under load, with 16 threads at once, reads which stop after the
+first hit ran at 3,879 a second instead of 4,197, and the reads after 20,000 changed vertices at 17.7 a second instead
+of 9.9; with 32 threads, at 5,331 instead of 6,900, and at 18.3 instead of 11.7. Pages of up to 1,000 cost the reads
+which stop early about half their rate or more there.
+
 ##### Relations without properties are parsed once
 
 A loaded relation is deserialized in two steps: its type, direction, id and other end first, and its properties only

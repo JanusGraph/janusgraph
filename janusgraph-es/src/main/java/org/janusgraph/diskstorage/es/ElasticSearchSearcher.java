@@ -43,7 +43,10 @@ import java.util.stream.StreamSupport;
  * the offset leaves nothing to ask for, is the same search read in pages: through a scroll, or through a point in time
  * and {@code search_after} where the {@link ElasticSearchPagingMode} says so and the cluster has them. Either stops as
  * soon as the consumer does or the limit is reached, so that the point in time or the scroll context is released
- * instead of being left to expire.
+ * instead of being left to expire. A result without a limit is read in pages of the page size, a limited one in as few
+ * pages as the largest page of a limited result allows, but in pages no smaller than the page size: JanusGraph executes
+ * a limited query again with a doubled limit when it leaves out too many of the hits, and each execution reads them
+ * from the first one on.
  */
 class ElasticSearchSearcher {
 
@@ -60,13 +63,16 @@ class ElasticSearchSearcher {
     private final ElasticSearchClient client;
     private final AbstractESCompat compat;
     private final int pageSize;
+    private final int limitedMaxPageSize;
     private final ElasticSearchPagingMode pagingMode;
     private final int adaptiveMaxShards;
     private final int adaptiveMaxPageSize;
 
     /**
-     * @param pageSize            the size of the first request of a result which no limit bounds, and of every page
-     *                            read after it
+     * @param pageSize            the size of the pages of a result without a limit, and the least of a limited one;
+     *                            the first request of a result which may need pages asks for one hit more
+     * @param limitedMaxPageSize  the largest page of a limited result too large for one request, unless the page size
+     *                            is larger
      * @param pagingMode          how a result larger than a page is read where the cluster can page through a point
      *                            in time
      * @param adaptiveMaxShards   the most shards of an index which
@@ -74,11 +80,16 @@ class ElasticSearchSearcher {
      * @param adaptiveMaxPageSize the largest page size with which
      *                            {@link ElasticSearchPagingMode#ADAPTIVE_POINT_IN_TIME} reads through a point in time
      */
-    ElasticSearchSearcher(ElasticSearchClient client, AbstractESCompat compat, int pageSize,
+    ElasticSearchSearcher(ElasticSearchClient client, AbstractESCompat compat, int pageSize, int limitedMaxPageSize,
                           ElasticSearchPagingMode pagingMode, int adaptiveMaxShards, int adaptiveMaxPageSize) {
+        //Only the largest page is checked, which the size of the pages of a limited result divides by; the page size is
+        //index.[X].max-result-set-size, which is left to be checked, or not, as it was before
+        Preconditions.checkArgument(limitedMaxPageSize > 0, "The largest page of a limited result must be positive: %s",
+            limitedMaxPageSize);
         this.client = client;
         this.compat = compat;
         this.pageSize = pageSize;
+        this.limitedMaxPageSize = limitedMaxPageSize;
         this.pagingMode = Preconditions.checkNotNull(pagingMode, "A paging mode is required");
         this.adaptiveMaxShards = adaptiveMaxShards;
         this.adaptiveMaxPageSize = adaptiveMaxPageSize;
@@ -118,9 +129,9 @@ class ElasticSearchSearcher {
         }
         //The pages start at the first hit, so the offset is skipped here
         request.setFrom(0);
-        request.setSize(pageSize);
         final long pagesLimit = scrollLimit(offset, limit);
         final boolean unbounded = limit == Query.NO_LIMIT;
+        request.setSize(unbounded ? pageSize : limitedPageSize(pagesLimit, pageSize, limitedMaxPageSize));
         final boolean pointInTimeMayRead = pagingMode == ElasticSearchPagingMode.POINT_IN_TIME
             || (pagingMode == ElasticSearchPagingMode.ADAPTIVE_POINT_IN_TIME && mayKeepUp(request, unbounded, shards));
         //The body tells whether the pages have a sort of their own, which leaves ADAPTIVE_POINT_IN_TIME to a scroll, so
@@ -153,7 +164,8 @@ class ElasticSearchSearcher {
     private Stream<RawQuery.Result<String>> scroll(String indexStoreName, ElasticSearchRequest request,
                                                    Parameter[] parameters, long limit) throws IOException {
         final ElasticSearchResponse firstPage = search(indexStoreName, request, parameters, true);
-        final ElasticSearchScroll scroll = new ElasticSearchScroll(client, firstPage, pageSize, limit);
+        //Every page of the scroll asks for as many hits as its first, so a page which brings fewer is the last
+        final ElasticSearchScroll scroll = new ElasticSearchScroll(client, firstPage, request.getSize(), limit);
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(scroll, Spliterator.ORDERED), false)
             .onClose(scroll::close);
     }
@@ -187,8 +199,9 @@ class ElasticSearchSearcher {
             }
             final ElasticSearchResponse firstPage = client.searchPointInTime(pitId, requestBody);
             log.debug("Executed search of size {} in {} ms", request.getSize(), firstPage.getTook());
+            //Every page sends the body again, and asks for as many hits as the first
             final ElasticSearchPointInTime pages = new ElasticSearchPointInTime(client, pitId, requestBody, firstPage,
-                pageSize, limit);
+                request.getSize(), limit);
             return StreamSupport.stream(Spliterators.spliteratorUnknownSize(pages, Spliterator.ORDERED), false)
                 .onClose(pages::close);
         } catch (IOException | RuntimeException e) {
@@ -218,6 +231,18 @@ class ElasticSearchSearcher {
     @VisibleForTesting
     static long scrollLimit(int offset, int limit) {
         return limit == Query.NO_LIMIT ? Long.MAX_VALUE : (long) offset + limit;
+    }
+
+    //The size of the pages of a limited result too large for one request, which read the hits up to the end of its
+    //limit, the offset among them: as few pages as the largest page allows, all of one size, which splits those hits
+    //evenly so that the last page reads hardly more than the result needs, but never smaller than a page of a result
+    //without a limit. The hits are those of a limit, so neither none nor the unbounded Long.MAX_VALUE of a scroll
+    //without one
+    @VisibleForTesting
+    static int limitedPageSize(long hits, int pageSize, int maxPageSize) {
+        Preconditions.checkArgument(hits > 0 && hits < Long.MAX_VALUE, "Not the hits of a limited result: %s", hits);
+        final long pages = (hits + maxPageSize - 1) / maxPageSize;
+        return (int) Math.max(pageSize, (hits + pages - 1) / pages);
     }
 
     private static Stream<RawQuery.Result<String>> limit(Stream<RawQuery.Result<String>> hits, int limit) {

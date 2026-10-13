@@ -81,6 +81,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
@@ -126,6 +127,9 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     //The paging mode of the index a test opens: the option's default, unless the test chooses another before it
     //(re)opens the index
     private ElasticSearchPagingMode pagingMode = ElasticSearchPagingMode.SCROLL;
+
+    //The largest page of a limited result of the index a test opens: the option's default where null
+    private Integer limitedResultMaxPageSize;
 
     @Container
     public static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer();
@@ -186,6 +190,9 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         final CommonsConfiguration cc = new CommonsConfiguration(ConfigurationUtil.createBaseConfiguration());
         cc.set("index." + index + ".elasticsearch.ingest-pipeline.ingestvertex", "pipeline_1");
         cc.set("index." + index + ".elasticsearch.paging-mode", pagingMode.getConfigName());
+        if (limitedResultMaxPageSize != null) {
+            cc.set("index." + index + ".elasticsearch.limited-result-max-page-size", limitedResultMaxPageSize);
+        }
         return makeESTestConfig(index, cc);
     }
 
@@ -1239,36 +1246,74 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(0, tx.queryStream(rawAllDocuments(store).setOffset(INDEXED_DOCUMENTS).setLimit(5)).count());
         assertEquals(5, tx.queryStream(rawAllDocuments(store).setOffset(5)).count());
         assertEquals(0, tx.queryStream(rawAllDocuments(store).setOffset(INDEXED_DOCUMENTS + 2)).count());
+        //A limit beyond the first 10,000 hits is read in pages too, which skip the offset on the client
+        final int beyondOneRequest = ElasticSearchSearcher.MAX_SEARCH_SIZE;
+        assertEquals(5, tx.queryStream(rawAllDocuments(store).setOffset(5).setLimit(beyondOneRequest)).count());
+        assertEquals(0,
+            tx.queryStream(rawAllDocuments(store).setOffset(INDEXED_DOCUMENTS + 2).setLimit(beyondOneRequest)).count());
         final List<String> ordered = tx.queryStream(new RawQuery(store, "text:\"Hello world\"",
             ImmutableList.of(new IndexQuery.OrderEntry(TIME, Order.ASC, Long.class)), new Parameter[0]).setOffset(4))
             .map(RawQuery.Result::getResult).collect(Collectors.toList());
         assertEquals(Arrays.asList("doc4", "doc5", "doc6", "doc7", "doc8", "doc9"), ordered);
     }
 
+    //A limited query whose limit reaches beyond the first 10,000 hits is read after its first request in as few pages
+    //as its largest page allows, never smaller than a page of 3, in every paging mode; a result without a limit is
+    //read in pages of 3 whatever that largest page. Each request of the index of one shard is one query the index
+    //counts, the first request and every page, of a scroll or of a point in time, alike. The 10 documents take one
+    //page of 244 by default, three pages of 4, or four pages of 3, the size of a page of an unlimited result
+    @ParameterizedTest
+    @CsvSource({"SCROLL,,2", "POINT_IN_TIME,,2", "ADAPTIVE_POINT_IN_TIME,,2", "SCROLL,4,4", "POINT_IN_TIME,4,4",
+        "SCROLL,1,5", "POINT_IN_TIME,1,5"})
+    public void shouldReadALimitedResultBeyondOneRequestInAsFewPagesAsItsLargestPageAllows(
+            ElasticSearchPagingMode mode, Integer largestPage, int queries) throws Exception {
+        pagingMode = mode;
+        limitedResultMaxPageSize = largestPage;
+        final String store = "vertex";
+        indexDocuments(store);
+        final SearchStats before = settledSearchStats();
+
+        assertEquals(INDEXED_DOCUMENTS,
+            tx.queryStream(allDocuments(store, ElasticSearchSearcher.MAX_SEARCH_SIZE + 1)).count());
+        final SearchStats afterLimited = awaitSearchContextsBackAt(before);
+        assertEquals(queries, afterLimited.queryTotal - before.queryTotal, "queries of the limited result");
+
+        assertEquals(INDEXED_DOCUMENTS, tx.queryStream(allDocuments(store)).count());
+        assertEquals(5, awaitSearchContextsBackAt(afterLimited).queryTotal - afterLimited.queryTotal,
+            "queries of the result without a limit");
+    }
+
     private static final class SearchStats {
         final long openContexts;
         final long scrollTotal;
+        final long queryTotal;
 
-        SearchStats(long openContexts, long scrollTotal) {
+        SearchStats(long openContexts, long scrollTotal, long queryTotal) {
             this.openContexts = openContexts;
             this.scrollTotal = scrollTotal;
+            this.queryTotal = queryTotal;
         }
     }
 
     //The cluster's accounting of its search contexts, summed over its nodes: open_contexts counts the contexts
     //open right now, a point in time among them, and scroll_total the scroll contexts a node has closed, so it grows
-    //only for a result read through a scroll
+    //only for a result read through a scroll. query_total counts the queries the shards of the test's indexes ran,
+    //one for each request of an index of one shard, and none of the cluster's own
     private SearchStats searchStats() throws IOException {
+        long openContexts = 0;
+        long scrollTotal = 0;
         try (CloseableHttpResponse response = httpClient.execute(host, new HttpGet("_nodes/stats/indices/search"))) {
             final JsonNode nodes = objectMapper.readTree(EntityUtils.toString(response.getEntity())).get("nodes");
-            long openContexts = 0;
-            long scrollTotal = 0;
             for (JsonNode node : nodes) {
                 final JsonNode search = node.get("indices").get("search");
                 openContexts += search.get("open_contexts").asLong();
                 scrollTotal += search.get("scroll_total").asLong();
             }
-            return new SearchStats(openContexts, scrollTotal);
+        }
+        try (CloseableHttpResponse response = httpClient.execute(host, new HttpGet("janusgraph*/_stats/search"))) {
+            final JsonNode all = objectMapper.readTree(EntityUtils.toString(response.getEntity())).get("_all");
+            final long queryTotal = all.get("total").get("search").get("query_total").asLong();
+            return new SearchStats(openContexts, scrollTotal, queryTotal);
         }
     }
 
