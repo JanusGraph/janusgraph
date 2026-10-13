@@ -5046,6 +5046,38 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         }
     }
 
+    @Test
+    public void testEdgeLabelMappedConnectionsSharingOutVertexLabel() {
+        VertexLabel transaction = mgmt.makeVertexLabel("transaction").make();
+        VertexLabel person = mgmt.makeVertexLabel("person").make();
+        VertexLabel entity = mgmt.makeVertexLabel("entity").make();
+        VertexLabel account = mgmt.makeVertexLabel("account").make();
+        EdgeLabel from = mgmt.makeEdgeLabel("from").make();
+        mgmt.addConnection(from, person, transaction);
+        mgmt.addConnection(from, entity, transaction);
+        EdgeLabel to = mgmt.makeEdgeLabel("to").make();
+        mgmt.addConnection(to, transaction, person);
+        mgmt.addConnection(to, transaction, entity);
+        mgmt.addConnection(to, transaction, account);
+        //Each connection once, also before the schema is committed: three connections sharing their outgoing vertex
+        //label came nine times
+        assertEquals(3, to.mappedConnections().size());
+        finishSchema();
+
+        assertEquals(Arrays.asList("entity->transaction", "person->transaction"),
+            connections(mgmt.getEdgeLabel("from")));
+        assertEquals(Arrays.asList("transaction->account", "transaction->entity", "transaction->person"),
+            connections(mgmt.getEdgeLabel("to")));
+    }
+
+    //The connections of the edge label as outgoing->incoming vertex label names, in alphabetical order
+    private static List<String> connections(EdgeLabel label) {
+        return label.mappedConnections().stream()
+            .map(c -> c.getOutgoingVertexLabel().name() + "->" + c.getIncomingVertexLabel().name())
+            .sorted()
+            .collect(Collectors.toList());
+    }
+
     private void createStrictSchemaForConnections() {
         clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
         VertexLabel user = mgmt.makeVertexLabel("user").make();
