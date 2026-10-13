@@ -5037,6 +5037,140 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(2, graph.indexQuery(indexName, nameIndexField+":"+nameValue).edgeTotals());
         // Check that Gremlin query doesn't return a stale edge and doesn't skip edges after a stale one
         assertEquals(1, tx.traversal().E().has(namePropKeyStr, nameValue).toList().size());
+        // Nor does a query whose limit the stale edge alone fills in the index: it reads on past it
+        assertEquals(1, tx.traversal().E().has(namePropKeyStr, nameValue).limit(1).toList().size());
+    }
+
+    //The index still holds the edges which the transaction removed, and a query leaves them out of what the index
+    //returns: one with a limit reads on past them, and a direct index query neither fails on them nor returns them
+    @Test
+    public void testLimitedQueriesOfEdgesReadPastTheEdgesWhichTheTransactionRemoved() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey weight = makeKey("weight", Long.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("edges", Edge.class).addKey(kind, getStringMapping()).addKey(weight).buildMixedIndex(INDEX);
+        finishSchema();
+        //The edges which the transaction removes have the lowest weights, which an index sorting by weight returns
+        //first. They are also committed first, so an index which returns its hits in the order it got them, as one
+        //which ranks them all alike may, returns them first without an order too. The assertions hold either way
+        Vertex from = tx.addVertex();
+        Vertex to = tx.addVertex();
+        for (long w = 1; w <= 15; w++) {
+            from.addEdge("road", to, "kind", "paved", "weight", w);
+        }
+        newTx();
+        from = tx.traversal().V(from).next();
+        to = tx.traversal().V(to).next();
+        for (long w = 16; w <= 30; w++) {
+            from.addEdge("road", to, "kind", "paved", "weight", w);
+        }
+        newTx();
+        tx.traversal().E().has("weight", P.lte(12L)).toList().forEach(Edge::remove);
+
+        assertEquals(Arrays.asList(13L, 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L, 22L),
+            tx.traversal().E().has("kind", "paved").order().by("weight", asc).limit(10).values("weight").toList());
+        assertEquals(Arrays.asList(13L, 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L, 22L),
+            ImmutableList.copyOf(tx.query().has("kind", "paved").orderBy("weight", asc).limit(10).edges()).stream()
+                .map(edge -> edge.<Long>value("weight")).collect(Collectors.toList()));
+        final List<Edge> anyTen = tx.traversal().E().has("kind", "paved").limit(10).toList();
+        assertEquals(10, anyTen.stream().distinct().count());
+        for (final Edge edge : anyTen) {
+            assertTrue(edge.<Long>value("weight") > 12);
+        }
+        final List<Long> found = tx.indexQuery("edges", "e.kind:\"paved\"").edgeStream()
+            .map(result -> result.getElement().<Long>value("weight")).collect(Collectors.toList());
+        assertEquals(18, found.size());
+        for (final long w : found) {
+            assertTrue(w > 12);
+        }
+    }
+
+    //As above, for the vertex properties which a property index holds by their meta-properties
+    @Test
+    public void testLimitedQueriesOfPropertiesReadPastThePropertiesWhichTheTransactionRemoved() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey weight = makeKey("weight", Long.class);
+        mgmt.makePropertyKey("tag").dataType(String.class).cardinality(Cardinality.LIST).make();
+        mgmt.buildIndex("psearch", JanusGraphVertexProperty.class).addKey(kind, getStringMapping()).addKey(weight)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+        Vertex vertex = tx.addVertex();
+        for (long w = 1; w <= 15; w++) {
+            vertex.property(VertexProperty.Cardinality.list, "tag", "t" + w, "kind", "paved", "weight", w);
+        }
+        newTx();
+        vertex = tx.traversal().V(vertex).next();
+        for (long w = 16; w <= 30; w++) {
+            vertex.property(VertexProperty.Cardinality.list, "tag", "t" + w, "kind", "paved", "weight", w);
+        }
+        newTx();
+        tx.traversal().V(vertex).properties("tag").has("weight", P.lte(12L)).toList()
+            .forEach(property -> property.remove());
+
+        assertEquals(Arrays.asList(13L, 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L, 22L),
+            ImmutableList.copyOf(tx.query().has("kind", "paved").orderBy("weight", asc).limit(10).properties()).stream()
+                .map(property -> property.<Long>value("weight")).collect(Collectors.toList()));
+        final List<JanusGraphVertexProperty> anyTen =
+            ImmutableList.copyOf(tx.query().has("kind", "paved").limit(10).properties());
+        assertEquals(10, anyTen.stream().distinct().count());
+        for (final JanusGraphVertexProperty property : anyTen) {
+            assertTrue(property.<Long>value("weight") > 12);
+        }
+        final List<Long> found = tx.indexQuery("psearch", "p.kind:\"paved\"").propertyStream()
+            .map(result -> result.getElement().<Long>value("weight")).collect(Collectors.toList());
+        assertEquals(18, found.size());
+        for (final long w : found) {
+            assertTrue(w > 12);
+        }
+    }
+
+    //A query which removes the edges it reads, as it reads them, gets each of its edges once: a read under a larger
+    //limit skips what the index returned before, rather than as many edges as were returned, which are removed by then
+    @Test
+    public void testLimitedQueriesOfEdgesWhichTheTransactionRemovesAsItReadsThem() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey weight = makeKey("weight", Long.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("edges", Edge.class).addKey(kind, getStringMapping()).addKey(weight).buildMixedIndex(INDEX);
+        finishSchema();
+        Vertex from = tx.addVertex();
+        Vertex to = tx.addVertex();
+        for (long w = 1; w <= 15; w++) {
+            from.addEdge("road", to, "kind", "paved", "weight", w);
+        }
+        newTx();
+        from = tx.traversal().V(from).next();
+        to = tx.traversal().V(to).next();
+        for (long w = 16; w <= 30; w++) {
+            from.addEdge("road", to, "kind", "paved", "weight", w);
+        }
+        newTx();
+
+        //Only the edges of weight 9 to 15 are left, which the query reads before it reads on and finds no more
+        tx.traversal().E().has("weight", P.lte(8L)).toList().forEach(Edge::remove);
+        tx.traversal().E().has("weight", P.gte(16L)).toList().forEach(Edge::remove);
+        final AtomicInteger read = new AtomicInteger();
+        for (final Edge edge : tx.query().has("kind", "paved").limit(10).edges()) {
+            edge.remove();
+            read.incrementAndGet();
+        }
+        assertEquals(7, read.get());
+        assertFalse(tx.traversal().E().has("kind", "paved").hasNext());
+        tx.rollback();
+        newTx();
+
+        tx.traversal().E().has("weight", P.lte(8L)).toList().forEach(Edge::remove);
+        tx.traversal().E().has("weight", P.gte(16L)).toList().forEach(Edge::remove);
+        tx.traversal().E().has("kind", "paved").limit(10).drop().iterate();
+        assertFalse(tx.traversal().E().has("kind", "paved").hasNext());
+        tx.rollback();
+        newTx();
+
+        //The first ten by weight of those left are those of weight 9 to 18, of which 16 to 18 come after a read on
+        tx.traversal().E().has("weight", P.lte(8L)).toList().forEach(Edge::remove);
+        tx.traversal().E().has("kind", "paved").order().by("weight", asc).limit(10).drop().iterate();
+        assertEquals(Arrays.asList(19L, 20L, 21L, 22L, 23L, 24L, 25L, 26L, 27L, 28L, 29L, 30L),
+            tx.traversal().E().has("kind", "paved").order().by("weight", asc).values("weight").toList());
     }
 
     @Test
