@@ -67,6 +67,8 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
         ModifiableConfiguration config =  esr.setConfiguration(getStorageConfiguration(), indexBackends);
         for (String indexBackend : indexBackends) {
             config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, indexBackend);
+            // A limited result beyond 10,000 hits, as a query the index can't sort reads, in many pages of 3 as well
+            config.set(ElasticSearchIndex.LIMITED_RESULT_MAX_PAGE_SIZE, 3, indexBackend);
             config.set(ElasticSearchIndex.PAGING_MODE, getPagingMode().getConfigName(), indexBackend);
         }
         return config.getConfiguration();

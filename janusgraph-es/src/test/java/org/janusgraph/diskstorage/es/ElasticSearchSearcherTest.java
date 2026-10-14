@@ -65,9 +65,14 @@ public class ElasticSearchSearcherTest {
         searcher = searcher(PAGE_SIZE, ElasticSearchPagingMode.POINT_IN_TIME);
     }
 
-    //The bounds of the adaptive mode by default: one shard and pages of up to 500
+    //Pages of a limited result of up to 10,000 hits, the most a request may return, and the bounds of the adaptive
+    //mode by default: one shard and pages of up to 500
     private ElasticSearchSearcher searcher(int pageSize, ElasticSearchPagingMode pagingMode) {
-        return new ElasticSearchSearcher(client, new ES7Compat(), pageSize, pagingMode, 1, 500);
+        return searcher(pageSize, ElasticSearchSearcher.MAX_SEARCH_SIZE, pagingMode);
+    }
+
+    private ElasticSearchSearcher searcher(int pageSize, int limitedMaxPageSize, ElasticSearchPagingMode pagingMode) {
+        return new ElasticSearchSearcher(client, new ES7Compat(), pageSize, limitedMaxPageSize, pagingMode, 1, 500);
     }
 
     @Test
@@ -233,9 +238,11 @@ public class ElasticSearchSearcherTest {
         verify(client).deleteScroll("scroll-1");
     }
 
-    //A limit beyond what one request may return is served like an unlimited result, and the scroll stops at it
+    //A limit beyond what one request may return is read in pages after a first request, as a result without one is,
+    //and the scroll stops at it. Its pages are as large as a page here, the largest a limited result may take
     @Test
     public void shouldScrollALimitBeyondTheLargestSingleRequest() throws IOException {
+        searcher = searcher(PAGE_SIZE, PAGE_SIZE, ElasticSearchPagingMode.POINT_IN_TIME);
         when(client.search(eq(INDEX), any(), eq(false))).thenReturn(response(hits("a", "b", "c", "d"), null));
         when(client.search(eq(INDEX), any(), eq(true))).thenReturn(response(hits("a", "b", "c"), "scroll-1"));
         when(client.search("scroll-1")).thenReturn(response(hits("d", "e", "f"), "scroll-2"));
@@ -247,6 +254,93 @@ public class ElasticSearchSearcherTest {
         assertEquals(ids(hits("b", "c", "d", "e", "f").stream()), found);
         assertEquals(PAGE_SIZE + 1, onlySearchBody(false).get("size"));
         assertEquals(PAGE_SIZE, onlySearchBody(true).get("size"));
+    }
+
+    //A limited result too large for one request reads the hits up to the end of its limit in as few pages as its
+    //largest page allows, all of one size: with pages of up to 10,000 hits, two of 5,001 hold the 10,001 hits of offset
+    //1 and limit 10,000. Every page asks for that many, so one which brings fewer is the last
+    @Test
+    public void shouldScrollALimitBeyondTheLargestSingleRequestInPagesAsLargeAsItNeeds() throws IOException {
+        when(client.search(eq(INDEX), any(), eq(false))).thenReturn(response(hits("a", "b", "c", "d"), null));
+        when(client.search(eq(INDEX), any(), eq(true))).thenReturn(response(page(0, 5_001), "scroll-1"));
+        when(client.search("scroll-1")).thenReturn(response(page(5_001, 4_000), "scroll-2"));
+        when(client.search("scroll-2")).thenReturn(response(hits(), "scroll-3"));
+
+        final List<String> found = ids(searcher.search(INDEX, request(), NO_PARAMETERS, 1,
+            ElasticSearchSearcher.MAX_SEARCH_SIZE));
+
+        assertEquals(ids(page(1, 9_000).stream()), found);
+        assertEquals(PAGE_SIZE + 1, onlySearchBody(false).get("size"));
+        assertEquals(5_001, onlySearchBody(true).get("size"));
+        verify(client, never()).search("scroll-2");
+        verify(client).deleteScroll("scroll-2");
+    }
+
+    //A smaller largest page is kept to: pages of 4, of which one of three hits is the last
+    @Test
+    public void shouldReadALimitedResultInPagesOfAtMostTheLargestPage() throws IOException {
+        searcher = searcher(PAGE_SIZE, 4, ElasticSearchPagingMode.POINT_IN_TIME);
+        when(client.search(eq(INDEX), any(), eq(false))).thenReturn(response(hits("a", "b", "c", "d"), null));
+        when(client.search(eq(INDEX), any(), eq(true))).thenReturn(response(hits("a", "b", "c", "d"), "scroll-1"));
+        when(client.search("scroll-1")).thenReturn(response(hits("e", "f", "g"), "scroll-2"));
+        when(client.search("scroll-2")).thenReturn(response(hits(), "scroll-3"));
+
+        assertEquals(ids(hits("a", "b", "c", "d", "e", "f", "g").stream()),
+            ids(searcher.search(INDEX, request(), NO_PARAMETERS, 0, ElasticSearchSearcher.MAX_SEARCH_SIZE + 1)));
+
+        assertEquals(4, onlySearchBody(true).get("size"));
+        verify(client, never()).search("scroll-2");
+        verify(client).deleteScroll("scroll-2");
+    }
+
+    //A page of a limited result is never smaller than one of a result without a limit, however small its largest page
+    @Test
+    public void shouldNotReadALimitedResultInPagesSmallerThanAPage() throws IOException {
+        searcher = searcher(PAGE_SIZE, 1, ElasticSearchPagingMode.POINT_IN_TIME);
+        when(client.search(eq(INDEX), any(), eq(false))).thenReturn(response(hits("a", "b", "c", "d"), null));
+        when(client.search(eq(INDEX), any(), eq(true))).thenReturn(response(hits("a", "b"), "scroll-1"));
+
+        assertEquals(2, searcher.search(INDEX, request(), NO_PARAMETERS, 0, ElasticSearchSearcher.MAX_SEARCH_SIZE + 1)
+            .count());
+
+        assertEquals(PAGE_SIZE, onlySearchBody(true).get("size"));
+    }
+
+    //An offset which leaves no room for the first request reads a limited result in pages at once, which hold the
+    //offset too: two pages of 5,003 for offset 10,000 and limit 5
+    @Test
+    public void shouldReadALimitedResultInLargePagesWhenTheOffsetLeavesNoRoomForTheFirstRequest() throws IOException {
+        final int offset = ElasticSearchSearcher.MAX_SEARCH_SIZE;
+        when(client.search(eq(INDEX), any(), eq(true))).thenReturn(response(page(0, 5_003), "scroll-1"));
+        when(client.search("scroll-1")).thenReturn(response(page(5_003, 5_003), "scroll-2"));
+
+        assertEquals(ids(page(offset, 5).stream()), ids(searcher.search(INDEX, request(), NO_PARAMETERS, offset, 5)));
+
+        verify(client, never()).search(anyString(), any(), eq(false));
+        assertEquals(5_003, onlySearchBody(true).get("size"));
+        verify(client, never()).search("scroll-2");
+        verify(client).deleteScroll("scroll-2");
+    }
+
+    //The hits up to the end of the limit, in as few pages as the largest page allows, all of one size, so that the last
+    //page reads hardly more than they; never smaller than a page of a result without a limit
+    @Test
+    public void shouldSplitTheHitsOfALimitedResultIntoPagesOfOneSize() {
+        assertEquals(5_001, ElasticSearchSearcher.limitedPageSize(10_001, 50, 10_000));
+        assertEquals(6_827, ElasticSearchSearcher.limitedPageSize(20_480, 50, 10_000));
+        assertEquals(10_000, ElasticSearchSearcher.limitedPageSize(30_000, 50, 10_000));
+        assertEquals(9_103, ElasticSearchSearcher.limitedPageSize(81_920, 50, 10_000));
+        assertEquals(10_001, ElasticSearchSearcher.limitedPageSize(10_001, 50, 50_000));
+        assertEquals(4, ElasticSearchSearcher.limitedPageSize(10_001, 3, 4));
+        assertEquals(6_000, ElasticSearchSearcher.limitedPageSize(10_001, 6_000, 10_000));
+        assertEquals(50, ElasticSearchSearcher.limitedPageSize(10_001, 50, 1));
+        //The largest offset and limit together
+        assertEquals(10_000, ElasticSearchSearcher.limitedPageSize(
+            ElasticSearchSearcher.scrollLimit(Integer.MAX_VALUE, Integer.MAX_VALUE - 1), 50, 10_000));
+        //Neither no hits nor the hits of a result without a limit are a limited result's
+        assertThrows(IllegalArgumentException.class, () -> ElasticSearchSearcher.limitedPageSize(0, 50, 10_000));
+        assertThrows(IllegalArgumentException.class, () -> ElasticSearchSearcher.limitedPageSize(
+            ElasticSearchSearcher.scrollLimit(0, Query.NO_LIMIT), 50, 10_000));
     }
 
     //A limit too large for one request still bounds the scroll: the pages beyond it are never requested
@@ -437,8 +531,8 @@ public class ElasticSearchSearcherTest {
         when(client.openPointInTime(INDEX)).thenReturn("pit-1");
         when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(page(0, 2_500), "pit-1"));
 
-        //Pages of 2,500: five hold the 10,001 hits of offset and limit
-        searcher = searcher(2_500, ElasticSearchPagingMode.POINT_IN_TIME);
+        //Pages of 2,500, the largest a limited result takes here: five hold the 10,001 hits of offset and limit
+        searcher = searcher(2_500, 2_500, ElasticSearchPagingMode.POINT_IN_TIME);
         assertEquals(2, searcher.search(INDEX, request(), NO_PARAMETERS, 9_999, 2).count());
 
         @SuppressWarnings("unchecked")
@@ -539,12 +633,32 @@ public class ElasticSearchSearcherTest {
             pitPage(page(2_500, 2_500), "pit-1"), pitPage(page(5_000, 2_500), "pit-1"),
             pitPage(page(7_500, 2_500), "pit-1"), pitPage(page(10_000, 2_500), "pit-1"));
 
-        searcher = searcher(2_500, ElasticSearchPagingMode.POINT_IN_TIME);
+        searcher = searcher(2_500, 2_500, ElasticSearchPagingMode.POINT_IN_TIME);
         assertEquals(Arrays.asList("9999", "10000"), ids(searcher.search(INDEX, request(), NO_PARAMETERS, 9_999, 2)));
 
         //Five pages of 2,500 hold the 10,001 hits of offset and limit; none beyond them is asked for
         verify(client, times(5)).searchPointInTime(eq("pit-1"), any());
         verify(client).closePointInTime("pit-1");
+    }
+
+    //Through a point in time as well, the pages of a limited result are as large as its limit needs, up to the largest
+    //page: with pages of up to 10,000 hits, a limit of 10,001 is two pages of 5,001, which every page of the point in
+    //time asks for, so one which brings fewer is the last
+    @Test
+    public void shouldReadALimitedResultThroughAPointInTimeInPagesAsLargeAsItNeeds() throws IOException {
+        givenAResultLargerThanAPageOnAClusterWithPointsInTime();
+        when(client.searchPointInTime(eq("pit-1"), any())).thenReturn(pitPage(page(0, 5_001), "pit-1"),
+            pitPage(page(5_001, 4_000), "pit-1"), pitPage(hits(), "pit-1"));
+
+        assertEquals(ids(page(0, 9_001).stream()),
+            ids(searcher.search(INDEX, request(), NO_PARAMETERS, 0, ElasticSearchSearcher.MAX_SEARCH_SIZE + 1)));
+
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Map<String, Object>> body = ArgumentCaptor.forClass(Map.class);
+        verify(client, times(2)).searchPointInTime(eq("pit-1"), body.capture());
+        assertEquals(5_001, body.getValue().get("size"));
+        verify(client).closePointInTime("pit-1");
+        verifyNoScroll();
     }
 
     @Test
@@ -606,7 +720,7 @@ public class ElasticSearchSearcherTest {
     }
 
     private ElasticSearchSearcher adaptiveSearcher(int maxShards, int maxPageSize) {
-        return new ElasticSearchSearcher(client, new ES7Compat(), PAGE_SIZE,
+        return new ElasticSearchSearcher(client, new ES7Compat(), PAGE_SIZE, ElasticSearchSearcher.MAX_SEARCH_SIZE,
             ElasticSearchPagingMode.ADAPTIVE_POINT_IN_TIME, maxShards, maxPageSize);
     }
 

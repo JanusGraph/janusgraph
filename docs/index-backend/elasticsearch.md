@@ -422,13 +422,17 @@ JanusGraph fetches the result of a mixed index query with as few requests as it 
 * A query without a limit, or beyond that size, first asks for one hit more than a page after the offset, or
   for what is left up to the 10,000th hit if that is less. The page size is `index.[X].max-result-set-size`
   (50 by default). When fewer hits come back than were asked for, that is the whole result. Only a larger
-  result is read in pages of that size, from its first hit on, which costs such a result one request more than
-  the pages alone: through the
+  result is read in pages, from its first hit on, which costs such a result one request more than the pages
+  alone: through the
   [scroll API](https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html#scroll-search-results),
   or through a
   [point in time](https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html) and
   `search_after` where `index.[X].elasticsearch.paging-mode` says so. An offset of 10,000 or more leaves
   nothing to ask for first, and such a query is read in pages at once, however small its result.
+* A query without a limit is read in pages of `index.[X].max-result-set-size`. A query whose offset and limit
+  together go beyond 10,000 hits reads the hits up to the end of its limit, the offset among them, in as few
+  pages as `index.[X].elasticsearch.limited-result-max-page-size` (250 by default) allows, all of one size,
+  but never in pages smaller than `max-result-set-size`: a limit of 15,360 is 62 pages of 248.
 
 `index.[X].elasticsearch.paging-mode` decides how the pages are read:
 
@@ -472,11 +476,47 @@ did before JanusGraph 1.2.0. A release which the cluster rejects, for example fo
 logged as a warning once. Neither the single request nor the first request of an unlimited query counts the
 total number of hits, nor do the pages of a point in time; the pages of a scroll do, because Elasticsearch
 requires it. On an index which JanusGraph did not create, `index.max_result_window` must allow 10,000 hits,
-which is its default; JanusGraph lifts it on the indexes it creates.
+which is its default, and a page of `index.[X].elasticsearch.limited-result-max-page-size` hits; JanusGraph lifts
+it on the indexes it creates.
 
 If large results are common, a larger `index.[X].max-result-set-size` trades the size of one response for the
 number of requests: a result of 5,000 hits is about 100 pages of 50, and one request when it is limited to
 5,000.
+
+An index query gets a limit beyond 10,000 hits from:
+
+* a traversal's own limit;
+* the offset and limit of a [direct index query](direct-index-query.md);
+* `query.hard-max-limit`, once lowered, which every traversal without a limit takes as the limit of its index
+  query;
+* `query.smart-limit`, under which the index query of a traversal without a limit starts at 1,000 hits and
+  doubles, to 16,000 and beyond, as the traversal reads on;
+* an order which the index can't sort, which JanusGraph sorts in memory after reading up to 1,000,000 hits;
+* JanusGraph executing a limited query again with a doubled limit, skipping the hits it delivered before, when it
+  leaves out too many of the index's hits. These include the hits of vertices which the transaction changed or
+  removed, which the index still holds as they were, and hits which fail a condition the index doesn't cover.
+
+Each execution reads the hits from the first one on. A `limit(10)`, whose index query starts at 15 hits in a
+transaction with changes, took 721 requests in pages of 50 to read past 20,000 hits which the transaction had
+changed; in pages of up to 250, the default of `index.[X].elasticsearch.limited-result-max-page-size`, it takes 155,
+in pages of up to 1,000, 49, and in pages of up to 10,000, 17. Larger pages take a larger response each, though, and
+a traversal which stops after the first hits of such a query still reads its whole first page: with 16 or 32 threads
+at once, that cost such reads 8% to 23% of their rate at the default, and about half or more with pages of 1,000.
+Pages of one size can also take one request more than pages of the largest size where the result ends before its
+limit: with a largest page of 10,000, a result of 9,000 hits under a limit of 15,360 takes two pages of 7,680 where
+one page of 10,000 would do.
+
+`index.[X].elasticsearch.scroll-keep-alive` must cover consuming one page. Each page renews the keep-alive of its
+scroll context or point in time, and a consumer which takes longer over a page lets it expire. The next page then
+fails, or, where the index's shards sit on several nodes, comes back with the hits of only some shards, which ends
+the result early or leaves hits out without an error. With the default keep-alive of 60 s, a page of 250 hits, the
+default, leaves 240 ms for each hit, a page of 1,000 hits 60 ms, a page of 10,000 hits 6 ms, and a page of 50 hits
+1.2 s: think of JanusGraph Server streaming a result to a slow client, or of a traversal which reads more for each
+vertex. A slower consumer can lower
+`limited-result-max-page-size` in its local configuration, as it is MASKABLE, to `max-result-set-size` or below for
+the pages of earlier versions, or raise `scroll-keep-alive`, which is GLOBAL_OFFLINE. 10,000 is the practical
+ceiling of `limited-result-max-page-size`: `index.max_result_window` is 10,000 by default on an index which
+JanusGraph did not create, and on the indexes JanusGraph creates, the time a consumer has for each hit bounds it.
 
 ### Write Optimization
 

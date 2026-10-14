@@ -231,6 +231,25 @@ public class ElasticSearchIndex implements IndexProvider {
                 "it keeps up with larger ones.",
             ConfigOption.Type.MASKABLE, 500, ConfigOption.positiveInt());
 
+    public static final ConfigOption<Integer> LIMITED_RESULT_MAX_PAGE_SIZE =
+            new ConfigOption<>(ELASTICSEARCH_NS, "limited-result-max-page-size",
+            "The largest page of an index query with a limit which is too large for a single request, one whose " +
+                "offset and limit together go beyond 10,000 hits. Such a result is read from its first hit on in as " +
+                "few pages as this allows, all of one size, which split the hits up to the end of its limit evenly, " +
+                "but never in pages smaller than `index.[X].max-result-set-size`, the page size of a query without " +
+                "a limit. Larger pages take fewer round trips and a larger response each. `scroll-keep-alive` must " +
+                "cover consuming one page: each page renews it, and a consumer which takes longer over a page than " +
+                "the keep-alive loses the scroll context or point in time. The next page then fails, or, where the " +
+                "index's shards sit on several nodes, comes back with the hits of only some shards, which ends the " +
+                "result early or leaves hits out without an error. A slower consumer can lower this option in its " +
+                "local configuration, as it is MASKABLE, or raise `scroll-keep-alive`, which is GLOBAL_OFFLINE. " +
+                "10,000 is the practical ceiling: Elasticsearch accepts at most `index.max_result_window` hits in a " +
+                "page of a scroll or of a point in time, 10,000 by default, which JanusGraph lifts only on the " +
+                "indexes it creates; on those, the time a consumer has for each hit bounds it. A value no larger " +
+                "than `max-result-set-size` reads such results in pages of `max-result-set-size`, as earlier " +
+                "versions did.",
+            ConfigOption.Type.MASKABLE, 250, ConfigOption.positiveInt());
+
     public static final ConfigNamespace ES_INGEST_PIPELINES =
             new ConfigNamespace(ELASTICSEARCH_NS, "ingest-pipeline", "Ingest pipeline applicable to a store of an index.");
 
@@ -598,8 +617,9 @@ public class ElasticSearchIndex implements IndexProvider {
         final ElasticSearchPagingMode pagingMode = ElasticSearchPagingMode.fromConfigName(pagingModeName);
         Preconditions.checkArgument(pagingMode != null, "Unknown %s: %s", PAGING_MODE.toStringWithoutRoot(),
             pagingModeName);
-        searcher = new ElasticSearchSearcher(client, compat, batchSize, pagingMode,
-            config.get(ADAPTIVE_POINT_IN_TIME_MAX_SHARDS), config.get(ADAPTIVE_POINT_IN_TIME_MAX_PAGE_SIZE));
+        searcher = new ElasticSearchSearcher(client, compat, batchSize, config.get(LIMITED_RESULT_MAX_PAGE_SIZE),
+            pagingMode, config.get(ADAPTIVE_POINT_IN_TIME_MAX_SHARDS),
+            config.get(ADAPTIVE_POINT_IN_TIME_MAX_PAGE_SIZE));
 
         indexSetting = ElasticSearchSetup.getSettingsFromJanusGraphConf(config);
 

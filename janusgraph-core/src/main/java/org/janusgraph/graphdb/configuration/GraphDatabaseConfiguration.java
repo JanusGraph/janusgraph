@@ -1204,7 +1204,9 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Integer> INDEX_MAX_RESULT_SET_SIZE = new ConfigOption<>(INDEX_NS, "max-result-set-size",
             "Maximum number of results to return if no limit is specified. For index backends that support scrolling, it represents " +
-                    "the number of results in each batch",
+                    "the number of results in each batch, except that Elasticsearch reads a query with a limit " +
+                    "too large for a single request in batches of up to " +
+                    "`index.[X].elasticsearch.limited-result-max-page-size` results, though never smaller than this",
             ConfigOption.Type.MASKABLE, 50);
 
     public static final ConfigOption<Boolean> INDEX_NAME_MAPPING = new ConfigOption<>(INDEX_NS,"map-name",
