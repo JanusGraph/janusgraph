@@ -44,10 +44,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.not;
 import static org.janusgraph.testutil.JanusGraphAssert.assertBackendHit;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
@@ -61,6 +65,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class QueryTest {
+
+    //Strings in the order of their code points, in which the index backends sort them: U+E000 to U+FFFF come before
+    //the characters from U+10000, which String.compareTo puts first, as their first UTF-16 unit is a surrogate
+    private static final String[] BY_CODE_POINT = {"a", "z", "\uD7FF", "\uE000", "\uE000a", "\uFFFF", "\uD800\uDC00",
+        "\uD83D\uDE00", "\uD83D\uDE00a", "\uD83D\uDE01", "\uDBFF\uDC00", "\uDBFF\uDFFF"};
 
     private JanusGraph graph;
     private JanusGraphTransaction tx;
@@ -258,6 +267,133 @@ public class QueryTest {
         assertTrue(ol3.compare(v2,v3)>0);
         assertTrue(ol3.compare(v1,v3)>0);
 
+    }
+
+    @Test
+    public void testOrderListComparesStringsByCodePoint() {
+        for (int i = 0; i < BY_CODE_POINT.length; i++) {
+            for (int j = 0; j < BY_CODE_POINT.length; j++) {
+                assertEquals(Integer.signum(i - j), Integer.signum(
+                    OrderList.compareOrderValues(BY_CODE_POINT[i], BY_CODE_POINT[j], Order.ASC)), i + " vs " + j);
+                assertEquals(Integer.signum(j - i), Integer.signum(
+                    OrderList.compareOrderValues(BY_CODE_POINT[i], BY_CODE_POINT[j], Order.DESC)), i + " vs " + j);
+            }
+        }
+        //Strings of such characters in any combination compare as their code points do. A string with a surrogate
+        //which isn't part of a pair isn't valid UTF-16, and has no code point order to agree on
+        final int[] codePoints = {'a', 0xD7FF, 0xE000, 0xFFFF, 0x10000, 0x1F600, 0x10FC00, 0x10FFFF};
+        final Random random = new Random(7);
+        for (int n = 0; n < 20000; n++) {
+            final String s1 = randomString(random, codePoints), s2 = randomString(random, codePoints);
+            assertEquals(Integer.signum(Arrays.compare(s1.codePoints().toArray(), s2.codePoints().toArray())),
+                Integer.signum(OrderList.compareOrderValues(s1, s2, Order.ASC)), s1 + " vs " + s2);
+        }
+        //A missing value comes last in either direction, and other values compare by their natural order
+        for (final Order order : Order.values()) {
+            assertTrue(OrderList.compareOrderValues(null, "a", order) > 0);
+            assertTrue(OrderList.compareOrderValues("a", null, order) < 0);
+            assertEquals(0, OrderList.compareOrderValues(null, null, order));
+        }
+        assertTrue(OrderList.compareOrderValues(1L, 2L, Order.ASC) < 0);
+        assertTrue(OrderList.compareOrderValues(1L, 2L, Order.DESC) > 0);
+        assertTrue(OrderList.compareOrderValues('\uFFFF', '\uD83D', Order.ASC) > 0);
+
+        final PropertyKey name = tx.makePropertyKey("name").dataType(String.class).make();
+        final OrderList byName = new OrderList();
+        byName.add(name, Order.ASC);
+        byName.makeImmutable();
+        final List<JanusGraphVertex> vertices = new ArrayList<>();
+        for (final String s : BY_CODE_POINT) {
+            vertices.add(tx.addVertex("name", s));
+        }
+        Collections.shuffle(vertices, random);
+        vertices.sort(byName);
+        final List<String> names = new ArrayList<>();
+        vertices.forEach(v -> names.add(v.value("name")));
+        assertEquals(Arrays.asList(BY_CODE_POINT), names);
+    }
+
+    private static String randomString(Random random, int[] codePoints) {
+        final StringBuilder s = new StringBuilder();
+        for (int i = random.nextInt(4); i > 0; i--) {
+            s.appendCodePoint(codePoints[random.nextInt(codePoints.length)]);
+        }
+        return s.toString();
+    }
+
+    @Test
+    public void testInMemoryOrderComparesStringsByCodePoint() {
+        tx.makePropertyKey("name").dataType(String.class).make();
+        final List<String> byCodePoint = Arrays.asList(BY_CODE_POINT);
+        final List<String> shuffled = new ArrayList<>(byCodePoint);
+        Collections.shuffle(shuffled, new Random(11));
+        for (final String s : shuffled.subList(0, 6)) {
+            tx.addVertex("name", s);
+        }
+        tx.commit();
+        //Sorted in memory, by a query which no index answers, with the vertices the transaction adds among the others
+        tx = graph.newTransaction();
+        for (final String s : shuffled.subList(6, shuffled.size())) {
+            tx.addVertex("name", s);
+        }
+        final GraphTraversalSource g = tx.traversal();
+        assertEquals(byCodePoint, g.V().has("name").order().by("name", asc).values("name").toList());
+        assertEquals(byCodePoint.subList(0, 4),
+            g.V().has("name").order().by("name", asc).limit(4).values("name").toList());
+        final List<String> reversed = new ArrayList<>(byCodePoint);
+        Collections.reverse(reversed);
+        assertEquals(reversed.subList(0, 4),
+            g.V().has("name").order().by("name", desc).limit(4).values("name").toList());
+    }
+
+    @Test
+    public void testOrBranchesAreMergedInTheOrderOfTheirQueries() {
+        tx.makePropertyKey("kind").dataType(String.class).make();
+        tx.makePropertyKey("name").dataType(String.class).make();
+        tx.makePropertyKey("w").dataType(Integer.class).make();
+        for (final String name : Arrays.asList("a", "b", "\uE000", "\uD83D\uDE00")) {
+            tx.addVertex("kind", "p", "name", name);
+        }
+        for (final String name : Arrays.asList("z", "\uFFFF", "\uD83D\uDE01")) {
+            tx.addVertex("kind", "q", "name", name);
+        }
+        tx.addVertex("kind", "q");
+        final JanusGraphVertex from = tx.addVertex(), to = tx.addVertex();
+        for (final int w : new int[]{1, 1, 2, 2}) from.addEdge("e", to, "w", w);
+        tx.commit();
+        tx = graph.newTransaction();
+        final GraphTraversalSource g = tx.traversal();
+        //No index answers the or(), and the branches have ranges of their own, so JanusGraph answers each of them by a
+        //query of its own, whose results it merges in their order: strings by code point, and an element without the
+        //key last in either direction
+        final List<String> byName = Arrays.asList("a", "b", "z", "\uE000", "\uFFFF", "\uD83D\uDE00", "\uD83D\uDE01",
+            null);
+        assertEquals(byName, names(g.V().or(__.has("kind", "p").range(0, 10), __.has("kind", "q").range(0, 9))
+            .order().by("name", asc).toList()));
+        final List<String> byNameDescending = new ArrayList<>(byName.subList(0, 7));
+        Collections.reverse(byNameDescending);
+        byNameDescending.add(null);
+        assertEquals(byNameDescending, names(g.V().or(__.has("kind", "p").range(0, 10), __.has("kind", "q").range(0, 9))
+            .order().by("name", desc).toList()));
+        //A first branch which can't return anything, of a key which doesn't exist or of a limit of 0, is a query
+        //without an order, while the others are in the order of the step
+        assertEquals(byName, names(g.V().or(__.has("nickname", "x"), __.has("kind", "p"), __.has("kind", "q"))
+            .order().by("name", asc).toList()));
+        assertEquals(byName, names(g.V().or(__.has("kind", "x").limit(0), __.has("kind", "p"), __.has("kind", "q"))
+            .order().by("name", asc).toList()));
+        //An implicit key, whose value each query computes, here the id
+        final List<Edge> byId = g.E().order().by("~nid", asc).toList();
+        assertEquals(4, byId.size());
+        assertEquals(byId,
+            g.E().or(__.has("w", 1).range(0, 5), __.has("w", 2).range(0, 4)).order().by("~nid", asc).toList());
+    }
+
+    private static List<String> names(List<Vertex> vertices) {
+        final List<String> names = new ArrayList<>();
+        for (final Vertex vertex : vertices) {
+            names.add(vertex.<String>property("name").orElse(null));
+        }
+        return names;
     }
 
     @Test

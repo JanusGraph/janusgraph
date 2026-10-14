@@ -35,6 +35,7 @@ import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.internal.ElementCategory;
+import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.query.graph.GraphCentricQuery;
@@ -108,7 +109,15 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
             if (orders.isEmpty()) {
                 return new MultiDistinctUnorderedIterator<>(lowLimit, highLimit, responses);
             } else {
-                return new MultiDistinctOrderedIterator<>(lowLimit, highLimit, responses, orders);
+                //Every query which may return elements is ordered by the step's orders, so they come in the order of
+                //the OrderList which those queries share, which compares their values as JanusGraph does, implicit keys
+                //such as ~nid included, and so does their merge. A query which returns none, such as one with a limit
+                //of 0 or a condition no element can hold, has no order
+                final OrderList order = queries.values().stream().map(GraphCentricQuery::getOrder)
+                    .filter(o -> !o.isEmpty()).findFirst().orElse(OrderList.NO_ORDER);
+                assert queries.values().stream().allMatch(q -> q.getOrder().isEmpty() || q.getOrder().equals(order));
+                return new MultiDistinctOrderedIterator<>(lowLimit, highLimit, responses,
+                    (e1, e2) -> order.compare((JanusGraphElement) e1, (JanusGraphElement) e2));
             }
         });
     }

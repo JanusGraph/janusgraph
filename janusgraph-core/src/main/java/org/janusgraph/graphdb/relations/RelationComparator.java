@@ -57,12 +57,8 @@ public class RelationComparator implements Comparator<InternalRelation> {
         if (r1.equals(r2)) return 0;
 
         //1) Based on orders (if any)
-        if (!orders.isEmpty()) {
-            for (OrderList.OrderEntry order : orders) {
-                int orderCompare = compareOnKey(r1, r2, order.getKey(), order.getOrder());
-                if (orderCompare != 0) return orderCompare;
-            }
-        }
+        final int orderCompare = compareOnOrders(r1, r2, orders);
+        if (orderCompare != 0) return orderCompare;
 
         //2) RelationType (determine if property or edge - properties come first)
         int relationTypeCompare = (r1.isProperty()?1:2) - (r2.isProperty()?1:2);
@@ -123,6 +119,21 @@ public class RelationComparator implements Comparator<InternalRelation> {
 
         // 7)compare relation ids
         return AbstractElement.compare(r1,r2);
+    }
+
+    /**
+     * Compares two relations by the values of the keys of the given orders only, as {@link #compare} compares them
+     * first: as {@link #compareValues(Object, Object, Order)} does, which compares strings by UTF-16 code unit, the
+     * order in which the storage backend holds the sort keys of relations, and puts a missing value first when
+     * descending.
+     */
+    public static int compareOnOrders(JanusGraphRelation r1, JanusGraphRelation r2, OrderList orders) {
+        for (int i = 0; i < orders.size(); i++) {
+            final PropertyKey key = orders.getKey(i);
+            final int orderCompare = compareValues(r1.valueOrNull(key), r2.valueOrNull(key), orders.getOrder(i));
+            if (orderCompare != 0) return orderCompare;
+        }
+        return 0;
     }
 
     public static int compareValues(Object v1, Object v2, Order order) {

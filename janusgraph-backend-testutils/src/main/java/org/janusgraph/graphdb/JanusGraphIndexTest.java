@@ -2514,6 +2514,54 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     }
 
+    /**
+     * Strings come in the order of their code points, the order of their UTF-8 bytes in which the indexes sort them,
+     * whether an index sorts them, the transaction's new vertices are merged into what it returns, or JanusGraph sorts
+     * them in memory: U+E000 to U+FFFF come before the characters from U+10000 by code point, after them by UTF-16
+     * unit.
+     */
+    @Test
+    public void testStringsAreOrderedByCodePoint() {
+        final PropertyKey tag = makeKey("tag", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        makeKey("unindexedName", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(tag, getStringMapping()).addKey(name, getStringMapping())
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final List<String> stored = Arrays.asList("z", "\uE000", "\uFFFF", "\uD83D\uDE00a");
+        for (final String s : stored) {
+            tx.addVertex("tag", "t", "name", s, "unindexedName", s);
+        }
+        clopen();
+        final GraphTraversalSource g = tx.traversal();
+        assertEquals(stored, g.V().has("tag", "t").order().by("name", asc).values("name").toList());
+        assertEquals(stored.subList(0, 2),
+            g.V().has("tag", "t").order().by("name", asc).limit(2).values("name").toList());
+        assertEquals(Arrays.asList("\uD83D\uDE00a", "\uFFFF"),
+            g.V().has("tag", "t").order().by("name", desc).limit(2).values("name").toList());
+
+        final List<String> byCodePoint = Arrays.asList("a", "z", "\uE000", "\uE000a", "\uFFFF", "\uD83D\uDE00",
+            "\uD83D\uDE00a", "\uD83D\uDE01");
+        for (final String s : Arrays.asList("a", "\uE000a", "\uD83D\uDE00", "\uD83D\uDE01")) {
+            tx.addVertex("tag", "t", "name", s, "unindexedName", s);
+        }
+        final List<String> reversed = ImmutableList.copyOf(byCodePoint).reverse();
+        //The new vertices merged into the order of the index
+        assertEquals(byCodePoint, g.V().has("tag", "t").order().by("name", asc).values("name").toList());
+        assertEquals(byCodePoint.subList(0, 5),
+            g.V().has("tag", "t").order().by("name", asc).limit(5).values("name").toList());
+        assertEquals(reversed.subList(0, 5),
+            g.V().has("tag", "t").order().by("name", desc).limit(5).values("name").toList());
+        //All of them sorted in memory, by a key which no index holds
+        assertEquals(byCodePoint,
+            g.V().has("tag", "t").order().by("unindexedName", asc).values("unindexedName").toList());
+        assertEquals(byCodePoint.subList(0, 5),
+            g.V().has("tag", "t").order().by("unindexedName", asc).limit(5).values("unindexedName").toList());
+        assertEquals(reversed.subList(0, 5),
+            g.V().has("tag", "t").order().by("unindexedName", desc).limit(5).values("unindexedName").toList());
+    }
+
     @Tag(TestCategory.BRITTLE_TESTS)
     @Test
     public void testIndexReplay() throws Exception {
