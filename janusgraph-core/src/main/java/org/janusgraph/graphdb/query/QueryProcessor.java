@@ -179,13 +179,6 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
         }
     }
 
-     /*
-     TODO: Make the returned iterator smarter about limits: If less than LIMIT elements are returned,
-     it checks if the underlying iterators have been exhausted. If not, then it doubles the limit, discards the first count
-     elements and returns the remaining ones. Tricky bit: how to keep track of which iterators have been exhausted?
-     */
-
-
     private final class LimitAdjustingIterator extends org.janusgraph.graphdb.query.LimitAdjustingIterator<R> {
 
         private B backendQuery;

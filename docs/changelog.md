@@ -1082,6 +1082,24 @@ Elasticsearch and Solr do: a query which streamed 500,000 ids from Elasticsearch
 after every change, so that a hundred index queries of one result each in a transaction take 0.71 ms instead of 0.89 on
 one thread, and 1.1 ms instead of 3.1 with eight threads running such transactions at once, on the inmemory backend.
 
+##### Graph queries read on past the edges and properties which the transaction removed
+
+An index, mixed or composite, still holds the edges and vertex properties which the transaction removed, until it
+commits. Their ids turn into no element, and a graph query leaves them out of what the index returns. A query which the
+index answers under a limit, as one with `limit()` does, took a read of the index which came back with fewer elements
+than its limit for the end of the result. So in a transaction which removed some of the edges or properties it asked
+for, it could return fewer than it should: of 30 edges, after removing the 8 of the lowest `weight`,
+`g.E().has("kind", "paved").order().by("weight").limit(10)` returned 7. An index entry of an edge which no longer exists
+did the same in any transaction. The query now reads on with a larger limit as long as the index returns as many ids as
+the limit allows, and the read under the larger limit skips the ids which the reads before went through, so a query
+which removes the edges it reads, as `drop()` does, gets each of them once. That also fixes such a query in any
+transaction where the index answers it under a limit it reads on past, as with `query.smart-limit`, or with a
+`query.hard-max-limit` below the size of the result: it skipped as many elements as it had returned, and those it had
+removed by then were no longer among them, so it left elements out. And a direct index query of edges or
+properties (`indexQuery(...).edgeStream()` or `propertyStream()`) threw a `NullPointerException` on such an id; it now
+leaves it out, though it doesn't read on, so with a limit it still returns fewer than its limit in such a transaction.
+Vertices weren't affected.
+
 ##### Queries of a vertex read only the relations of their types among those it gained in the transaction
 
 A query of the relations of a vertex, such as its edges of some labels or its properties of some keys, reads the

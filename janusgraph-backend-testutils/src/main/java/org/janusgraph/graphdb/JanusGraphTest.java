@@ -2524,6 +2524,58 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 ElementCategory.EDGE, 0, new boolean[]{true, true}, "edgesByTime");
     }
 
+    //A composite index still holds the edges which the transaction removed, and a query leaves them out of what the
+    //index returns: one with a limit reads on past them
+    @Test
+    public void testLimitedQueryOfACompositeIndexReadsPastTheEdgesWhichTheTransactionRemoved() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        makeKey("weight", Long.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("roadsByKind", Edge.class).addKey(kind).buildCompositeIndex();
+        finishSchema();
+        final Vertex from = tx.addVertex();
+        final Vertex to = tx.addVertex();
+        for (long w = 1; w <= 30; w++) {
+            from.addEdge("road", to, "kind", "paved", "weight", w);
+        }
+        newTx();
+        tx.traversal().V(from).outE("road").has("weight", P.lte(25L)).toList().forEach(Edge::remove);
+
+        final List<Edge> anyThree = tx.traversal().E().has("kind", "paved").limit(3).toList();
+        assertEquals(3, anyThree.stream().distinct().count());
+        for (final Edge edge : anyThree) {
+            assertTrue(edge.<Long>value("weight") > 25);
+        }
+        assertEquals(5, tx.traversal().E().has("kind", "paved").toList().size());
+        tx.rollback();
+        newTx();
+
+        //A query which drops the edges it reads, as it reads them, before it reads on drops each of its edges once
+        tx.traversal().V(from).outE("road").has("weight", P.inside(8L, 26L)).toList().forEach(Edge::remove);
+        tx.traversal().V(from).outE("road").has("weight", P.lte(5L)).toList().forEach(Edge::remove);
+        tx.traversal().E().has("kind", "paved").limit(5).drop().iterate();
+        assertEquals(3, tx.traversal().E().has("kind", "paved").toList().size());
+    }
+
+    //A query without a limit which the index answers under one all the same, as under query.hard-max-limit, and which
+    //drops the edges it reads, as it reads them, drops each of them once it reads on past that limit
+    @Test
+    public void testQueryUnderTheHardMaxLimitDropsEveryEdgeItReads() {
+        clopen(option(HARD_MAX_LIMIT), 10);
+        final PropertyKey kind = makeKey("kind", String.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("roadsByKind", Edge.class).addKey(kind).buildCompositeIndex();
+        finishSchema();
+        final Vertex from = tx.addVertex();
+        final Vertex to = tx.addVertex();
+        for (int i = 0; i < 30; i++) {
+            from.addEdge("road", to, "kind", "paved");
+        }
+        newTx();
+        tx.traversal().E().has("kind", "paved").drop().iterate();
+        assertEquals(0L, tx.traversal().V(from).outE("road").count().next());
+    }
+
     @Test
     public void testRemoveStaleEntriesActionApplicability() {
         mgmt.makePropertyKey("name").dataType(String.class).make();

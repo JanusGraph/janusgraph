@@ -30,6 +30,14 @@ import java.util.NoSuchElementException;
  * iterated through to the point of the last returned element. While this may seem expensive, it is less expensive than
  * retrieving more than needed elements in the first place. However, this still means the initial currentLimit in the
  * constructor should be chosen wisely.
+ * <p>
+ * A wrapped iterator which comes to its end with fewer elements than the limit tells that the backend ran out, unless
+ * it leaves some of the backend's results out and the backend returned as many as the limit allowed
+ * ({@link BackendLimitAware}): then the limit is updated as well. Such an iterator also tells how many of the backend's
+ * results it went through, and the iterator under the updated limit skips as many of them before it turns any into an
+ * element, rather than as many elements as were returned: a result which turned into no element between the reads, as
+ * a relation which the transaction removed meanwhile, would otherwise shift the elements, and every result before
+ * would be turned into an element again. Any other iterator is iterated through as many elements as were returned.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -67,22 +75,38 @@ public abstract class LimitAdjustingIterator<R> implements CloseableIterator<R> 
     @Override
     public boolean hasNext() {
         if (iterator ==null) iterator = getNewIterator(currentLimit);
-        if (currentLimit == Query.NO_LIMIT || count < currentLimit)
-            return iterator.hasNext();
+        if (currentLimit == Query.NO_LIMIT || count < currentLimit) {
+            if (iterator.hasNext()) return true;
+            //The wrapped iterator came to its end before the limit, which tells that the backend ran out, unless the
+            //iterator left some of the backend's results out while the backend returned as many as the limit allowed
+            if (currentLimit == Query.NO_LIMIT || !(iterator instanceof BackendLimitAware)
+                    || !((BackendLimitAware) iterator).hasBackendReachedLimit()) {
+                return false;
+            }
+        }
         if (currentLimit>=maxLimit) return false;
 
+        //The old iterator found no element here which it didn't return: it came to its end, or the element it returned
+        //last filled the limit
+        final long backendResultsRead = iterator instanceof BackendLimitAware
+            ? ((BackendLimitAware) iterator).getBackendResultsRead() : -1;
         //Close old iterator. This is needed otherwise it would not be timed properly by profiler.
         CloseableIterator.closeIterator(iterator);
         //Get an iterator with an updated limit
         currentLimit = (int) Math.min(maxLimit, Math.round(currentLimit * 2.0));
         iterator = getNewIterator(currentLimit);
 
-        /*
-        We need to iterate out the iterator to the point where we last left of. This is pretty expensive and hence
-        it should be ensured that the initial limit is a good guesstimate.
-         */
-        for (int i = 0; i < count; i++)
-            iterator.next();
+        if (backendResultsRead >= 0 && iterator instanceof BackendLimitAware) {
+            //How far into the backend's results the old iterator got, which no removal since then moves
+            ((BackendLimitAware) iterator).skipBackendResults(backendResultsRead);
+        } else {
+            /*
+            We need to iterate out the iterator to the point where we last left of. This is pretty expensive and hence
+            it should be ensured that the initial limit is a good guesstimate.
+             */
+            for (int i = 0; i < count; i++)
+                iterator.next();
+        }
 
         assert count < currentLimit : count + " vs " + currentLimit + " | " + maxLimit;
         return hasNext();
