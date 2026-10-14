@@ -1045,7 +1045,7 @@ public class SolrIndex implements IndexProvider {
         } else if (predicate == Cmp.EQUAL) {
             return (stringKey + ":\"" + escapeValue(value) + "\"");
         } else if (predicate == Cmp.NOT_EQUAL) {
-            return (key + ":* -" + key + ":\"" + escapeValue(value) + "\"");
+            return (stringKey + ":* -" + stringKey + ":\"" + escapeValue(value) + "\"");
         } else if (predicate == Text.FUZZY) {
             return (stringKey + ":" + escapeValue(value) + "~" + Text.getMaxEditDistance(value.toString()));
         } else if (predicate == Text.CONTAINS_FUZZY) {

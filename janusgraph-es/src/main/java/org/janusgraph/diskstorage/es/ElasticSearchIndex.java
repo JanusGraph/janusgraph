@@ -1461,7 +1461,9 @@ public class ElasticSearchIndex implements IndexProvider {
                     throw new IllegalArgumentException("Text mapped string values only support CONTAINS and Compare queries and not: " + predicate);
                 if (mapping==Mapping.STRING && Text.HAS_CONTAINS.contains(predicate))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + predicate);
-                if (mapping==Mapping.TEXTSTRING && !(Text.HAS_CONTAINS.contains(predicate) || (predicate instanceof Cmp && predicate != Cmp.EQUAL))) {
+                //A TEXTSTRING key holds the string whole in its dual field, which it is sorted by, and its words in its
+                //text field: the predicates on words, as CONTAINS is, read the text field, and the others the string
+                if (mapping==Mapping.TEXTSTRING && !Text.HAS_CONTAINS.contains(predicate)) {
                     fieldName = getDualMappingName(key);
                 } else {
                     fieldName = key;

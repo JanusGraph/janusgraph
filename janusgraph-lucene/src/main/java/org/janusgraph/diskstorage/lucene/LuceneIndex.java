@@ -430,33 +430,37 @@ public class LuceneIndex implements IndexProvider {
         buildIndexFields(doc, information).forEach(doc::add);
     }
 
+    //A TEXTSTRING key's dual field stores its strings as a STRING key does, not lower-cased as its own field does, so a
+    //value is compared with each field's values as that field stores it
     private void removeField(Document doc, IndexEntry e, KeyInformation ki) {
-        removeFieldIfNeeded(doc, e.field, e.value, ki);
+        removeFieldIfNeeded(doc, e.field, e.value, ki, Mapping.getMapping(ki));
         getDualFieldName(e.field, ki)
-            .ifPresent(dualFieldName -> removeFieldIfNeeded(doc, dualFieldName, e.value, ki));
+            .ifPresent(dualFieldName -> removeFieldIfNeeded(doc, dualFieldName, e.value, ki, getDualMapping(ki)));
     }
 
-    private void removeFieldIfNeeded(Document doc, String fieldName, Object fieldValue, KeyInformation ki) {
+    private void removeFieldIfNeeded(Document doc, String fieldName, Object fieldValue, KeyInformation ki,
+                                     Mapping mapping) {
         boolean isSingle = ki.getCardinality() == Cardinality.SINGLE;
+        final String storedValue = isSingle ? null : convertToStringValue(mapping, fieldValue);
         Iterator<IndexableField> it = doc.iterator();
         while (it.hasNext()) {
             IndexableField field = it.next();
             if (!fieldName.equals(field.name())) {
                 continue;
             }
-            if (isSingle || convertToStringValue(ki, fieldValue).equals(field.stringValue())) {
+            if (isSingle || storedValue.equals(field.stringValue())) {
                 it.remove();
                 break;
             }
         }
     }
 
-    private String convertToStringValue(final KeyInformation ki, Object value) {
+    //The value as a field of the mapping stores it
+    private String convertToStringValue(final Mapping mapping, Object value) {
         String converted;
         if (value instanceof Number) {
             converted = value.toString();
         } else if (AttributeUtils.isString(value)) {
-            Mapping mapping = Mapping.getMapping(ki);
             if (mapping == Mapping.DEFAULT || mapping == Mapping.TEXT || mapping == Mapping.TEXTSTRING) {
                 converted = lowerCaseCodePoints((String) value);
             } else {
@@ -928,22 +932,20 @@ public class LuceneIndex implements IndexProvider {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: %s", janusgraphPredicate);
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, (Number) value));
             } else if (value instanceof String) {
+                //A TEXTSTRING key holds the string whole in its dual field, which it is sorted by, and its words in its
+                //text field: the predicates on words, as CONTAINS is, read the text field, and the others the string
+                final String stringFieldKey = ki == null ? key : getDualFieldName(key, ki).orElse(key);
+                final String string = value.toString();
                 if (janusgraphPredicate == Cmp.LESS_THAN) {
-                    params.addQuery(TermRangeQuery.newStringRange(key, null, value.toString(), false, false));
+                    params.addQuery(TermRangeQuery.newStringRange(stringFieldKey, null, string, false, false));
                 } else if (janusgraphPredicate == Cmp.LESS_THAN_EQUAL) {
-                    params.addQuery(TermRangeQuery.newStringRange(key, null, value.toString(), false, true));
+                    params.addQuery(TermRangeQuery.newStringRange(stringFieldKey, null, string, false, true));
                 } else if (janusgraphPredicate == Cmp.GREATER_THAN) {
-                    params.addQuery(TermRangeQuery.newStringRange(key, value.toString(), null, false, false));
+                    params.addQuery(TermRangeQuery.newStringRange(stringFieldKey, string, null, false, false));
                 } else if (janusgraphPredicate == Cmp.GREATER_THAN_EQUAL) {
-                    params.addQuery(TermRangeQuery.newStringRange(key, value.toString(), null, true, false));
+                    params.addQuery(TermRangeQuery.newStringRange(stringFieldKey, string, null, true, false));
                 } else {
                     final Mapping map = Mapping.getMapping(ki);
-                    final String stringFieldKey;
-                    if (Mapping.getMapping(ki) == Mapping.TEXTSTRING) {
-                        stringFieldKey = getDualFieldName(key, ki).orElse(key);
-                    } else {
-                        stringFieldKey = key;
-                    }
                     if ((map == Mapping.DEFAULT || map == Mapping.TEXT) && !Text.HAS_CONTAINS.contains(janusgraphPredicate))
                         throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + janusgraphPredicate);
                     if (map == Mapping.STRING && Text.HAS_CONTAINS.contains(janusgraphPredicate))
@@ -1253,7 +1255,13 @@ public class LuceneIndex implements IndexProvider {
                 case STRING:
                     return janusgraphPredicate instanceof Cmp || janusgraphPredicate == Text.PREFIX || janusgraphPredicate == Text.REGEX || janusgraphPredicate == Text.FUZZY;
                 case TEXTSTRING:
-                    return janusgraphPredicate instanceof Text || janusgraphPredicate instanceof Cmp;
+                    //The predicates convertQuery has a query for; the negated text predicates and CONTAINS_PHRASE are
+                    //checked in memory. Its query for CONTAINS_REGEX matches the expression, lower-cased, anywhere in a
+                    //word rather than a whole word, as it always has
+                    return janusgraphPredicate instanceof Cmp || janusgraphPredicate == Text.PREFIX
+                        || janusgraphPredicate == Text.REGEX || janusgraphPredicate == Text.FUZZY
+                        || janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX
+                        || janusgraphPredicate == Text.CONTAINS_REGEX || janusgraphPredicate == Text.CONTAINS_FUZZY;
             }
         } else if (dataType == Date.class || dataType == Instant.class) {
             return janusgraphPredicate instanceof Cmp;

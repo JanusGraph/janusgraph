@@ -377,6 +377,31 @@ stores and orders above positive infinity, also finds what it does without the i
 NaN, `lt` and `gt` of NaN nothing, and `neq` of any other value finds NaN as well. A raw range reaches NaN by a NaN
 bound, as in `score:[5 TO NaN]`.
 
+##### Ranges and not-equals of a `TEXTSTRING` key compare its strings whole
+
+A key mapped as `TEXTSTRING` holds each string whole in a field of its own, which the index sorts the key by, and its
+words in its text field. A range on such a key, `lt`, `lte`, `gt`, `gte` or `between`, compared its bound with the
+words, which are in lower case, rather than with the string, on Lucene, Elasticsearch and OpenSearch: with names "Long
+John Don", "Long Little Lewis", "Middle Sister Mabel", "big brother bob" and "Zed", `has("name", lt("Long Zed"))` found
+none of them, and `gt("Middle Sister Mabel")` all five. A `neq` read the text field on Elasticsearch, OpenSearch and
+Solr: `neq("Long John Don")` left out every element which holds all the words of its value, in any order and case, on
+Elasticsearch and OpenSearch, such as "Don John Long", and every element which holds them as a phrase on Solr, such as
+"Long John Don Jr". The comparisons now read the whole strings, in the order the key is sorted by, as `eq`,
+`textPrefix`, `textRegex` and `textFuzzy` already did on every index, and as Solr's ranges did. The predicates on words,
+such as `textContains`, still read the text field. No reindexing is needed for this: each index has written the whole
+strings since it began to support `TEXTSTRING`.
+
+Two more fixes on Lucene. Removing a value with upper-case letters from a `LIST` or `SET` key mapped as `TEXTSTRING`
+left it in the field of the whole strings, where `eq`, `neq`, `textPrefix`, `textRegex` and `textFuzzy` still saw it,
+and the ranges, which now read that field, would too. It's removed from there now; a value removed before this fix stays
+there until the index is reindexed. And the negated text predicates and `textContainsPhrase` on a `TEXTSTRING` key
+failed with "Could not call index", as Lucene accepted them but couldn't answer them. JanusGraph now checks them in
+memory, as it does on keys of the other mappings.
+
+On Lucene, Elasticsearch and OpenSearch, a `TEXTSTRING` key with a custom `string-analyzer` holds the terms of that
+analyzer in the field of its whole strings, as a key mapped as `STRING` with that analyzer does: a range compares its
+value, which isn't analyzed, with those terms, while `eq` and `neq` first split their value with that analyzer.
+
 ##### Faster mixed-index reindex with batched document restores
 
 Mixed-index reindex jobs (`SchemaAction.REINDEX` against an Elasticsearch, Solr or Lucene index) now
