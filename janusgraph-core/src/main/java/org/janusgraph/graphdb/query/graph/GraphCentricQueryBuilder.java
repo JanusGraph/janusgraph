@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 //import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
@@ -24,9 +25,12 @@ import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
+import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.database.util.IndexRecordUtil;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
@@ -43,6 +47,9 @@ import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.types.CompositeIndexType;
+import org.janusgraph.graphdb.types.MixedIndexType;
+import org.janusgraph.graphdb.types.ParameterIndexField;
 import org.janusgraph.graphdb.util.CloseableIteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,6 +116,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
      * Selection service for the best combination of indexes to be queried
      */
     private IndexSelectionStrategy indexSelector;
+    /**
+     * Whether the elements without a value of an order key are left out of the result, rather than coming last
+     */
+    private boolean requiresOrderValues = false;
 
     public GraphCentricQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer, IndexSelectionStrategy indexSelector) {
         Preconditions.checkNotNull(tx);
@@ -124,6 +135,20 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     public void disableSmartLimit() {
         useSmartLimit = false;
+    }
+
+    /**
+     * Leaves the elements without a value of an order key out of the result, as TinkerPop's {@code order().by(key)}
+     * does, rather than placing them last. Unlike a condition of {@link #has(String)}, this one doesn't take part in
+     * choosing the indexes which answer the query, so that an index which holds the key isn't read for every element
+     * which has a value of it: a mixed index which the query reads for its other conditions checks it where it holds
+     * the key, and the query checks it in memory otherwise.
+     *
+     * @return this query builder
+     */
+    public GraphCentricQueryBuilder requireOrderValues() {
+        requiresOrderValues = true;
+        return this;
     }
 
     /* ---------------------------------------------------------------
@@ -281,18 +306,15 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (query.isEmpty() || !query.getQuery(0).getIndex().isMixedIndex()) {
             return false;
         }
-        final org.janusgraph.graphdb.types.MixedIndexType index =
-            (org.janusgraph.graphdb.types.MixedIndexType) query.getQuery(0).getIndex();
-        final List<org.janusgraph.diskstorage.indexing.IndexQuery.OrderEntry> order =
-            query.getQuery(0).getMixedQuery().getOrder();
+        final MixedIndexType index = (MixedIndexType) query.getQuery(0).getIndex();
+        final List<IndexQuery.OrderEntry> order = query.getQuery(0).getMixedQuery().getOrder();
         if (order.size() != orders.size()) {
             return false;
         }
         for (int i = 0; i < orders.size(); i++) {
             final PropertyKey key = orders.getKey(i);
             if (!index.indexesKey(key) || order.get(i).getOrder() != orders.getOrder(i)
-                    || !org.janusgraph.graphdb.database.util.IndexRecordUtil.key2Field(index, key)
-                        .equals(order.get(i).getKey())) {
+                    || !IndexRecordUtil.key2Field(index, key).equals(order.get(i).getKey())) {
                 return false;
             }
         }
@@ -303,15 +325,15 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         Preconditions.checkNotNull(resultType);
         if (limit == 0) return GraphCentricQuery.emptyQuery(resultType);
 
-        //The query's own conditions, and those of each or() call with a single sub-query which an element can hold,
-        //are one conjunction, along with which each or() of several such sub-queries holds
+        //Prepare constraints, whose conditions compare strings by code point where JanusGraph checks them itself, as
+        //the mixed indexes which answer them and the query's order do (see constraints2QNF). The query's own
+        //conditions, and those of each or() call with a single sub-query which an element can hold, are one
+        //conjunction, along with which each or() of several such sub-queries holds
         final List<Or<JanusGraphElement>> disjunctions = new ArrayList<>(globalConstraints.size());
         final And<JanusGraphElement> conjunction = conjunction(constraints, globalConstraints, disjunctions);
         if (conjunction == null) {
             return GraphCentricQuery.emptyQuery(resultType);
         }
-        //Prepare constraints, whose conditions compare strings by code point where JanusGraph checks them itself, as
-        //the mixed indexes which answer them and the query's order do (see constraints2QNF)
         final MultiCondition<JanusGraphElement> conditions;
         //An or() alone is its disjunction, as before. Next to other conditions, each or() is written flat where its
         //sub-queries have a single condition each, so that the condition stays in the normal form which a composite
@@ -333,6 +355,34 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         final IndexSelectionStrategy.SelectedIndexQuery selectedIndex = sortedOnlyWhereTheIndexSorts(
             indexSelector.selectIndices(resultType, conditions, coveredClauses, orders, serializer));
 
+        JointIndexQuery indexQuery = selectedIndex.getQuery();
+        MultiCondition<JanusGraphElement> queryConditions = conditions;
+        if (requiresOrderValues && !orders.isEmpty()) {
+            //A value of each order key is a condition of the query, which the indexes chosen for the others take where
+            //they can, unless the query has it already. Another condition on the key doesn't take its place, as an
+            //index may find that one in documents without the key: Solr drops the clause of a condition whose value
+            //the key's analyzer turns into no terms
+            final And<JanusGraphElement> withValues = new And<>(conditions.numChildren() + orders.size());
+            if (conditions instanceof And) {
+                withValues.addAll(conditions);
+            } else {
+                withValues.add(conditions);
+            }
+            for (int i = 0; i < orders.size(); i++) {
+                final PredicateCondition<PropertyKey, JanusGraphElement> hasValue =
+                    new PredicateCondition<>(orders.getKey(i), Cmp.NOT_EQUAL, null);
+                if (!withValues.contains(hasValue)) {
+                    withValues.add(hasValue);
+                    final JointIndexQuery narrowed = requireValues(indexQuery, orders.getKey(i));
+                    if (narrowed != indexQuery) {
+                        indexQuery = narrowed;
+                        coveredClauses.add(hasValue);
+                    }
+                }
+            }
+            queryConditions = withValues;
+        }
+
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {
             int indexLimit;
@@ -341,14 +391,45 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             } else {
                 indexLimit = limit == Query.NO_LIMIT ? hardMaxLimit : limit;
             }
-            indexLimit = Math.min(hardMaxLimit,
-                QueryUtil.adjustLimitForTxModifications(tx, conditions.numChildren() - coveredClauses.size(), indexLimit));
-            query = new BackendQueryHolder<>(selectedIndex.getQuery().updateLimit(indexLimit),
-                    coveredClauses.size() == conditions.numChildren() || coveredClauses.contains(conditions), selectedIndex.isSorted());
+            indexLimit = Math.min(hardMaxLimit, QueryUtil.adjustLimitForTxModifications(tx,
+                queryConditions.numChildren() - coveredClauses.size(), indexLimit));
+            query = new BackendQueryHolder<>(indexQuery.updateLimit(indexLimit),
+                    coveredClauses.size() == queryConditions.numChildren() || coveredClauses.contains(queryConditions),
+                    selectedIndex.isSorted());
         } else {
             query = new BackendQueryHolder<>(new JointIndexQuery(), false, selectedIndex.isSorted());
         }
-        return new GraphCentricQuery(resultType, conditions, orders, query, limit);
+        return new GraphCentricQuery(resultType, queryConditions, orders, query, limit);
+    }
+
+    /*
+     * The index query with each subquery that reads a mixed index which holds the key, enabled and able to tell which
+     * elements have a value of it, leaving out the elements which have none; the given query where no subquery can
+     */
+    private JointIndexQuery requireValues(JointIndexQuery indexQuery, PropertyKey key) {
+        final JointIndexQuery narrowed = new JointIndexQuery();
+        boolean anyNarrowed = false;
+        for (int i = 0; i < indexQuery.size(); i++) {
+            final JointIndexQuery.Subquery subquery = indexQuery.getQuery(i);
+            if (subquery.getIndex().isCompositeIndex()) {
+                narrowed.add((CompositeIndexType) subquery.getIndex(), subquery.getCompositeQuery());
+                continue;
+            }
+            final MixedIndexType index = (MixedIndexType) subquery.getIndex();
+            final IndexQuery mixed = subquery.getMixedQuery();
+            final ParameterIndexField field = index.getField(key);
+            if (field == null || field.getStatus() != SchemaStatus.ENABLED
+                    || !serializer.supportsExistsQuery(index, field)) {
+                narrowed.add(index, mixed);
+                continue;
+            }
+            final And<JanusGraphElement> withValue = JointIndexQuery.conjunction(mixed.getCondition(),
+                new PredicateCondition<>(IndexRecordUtil.key2Field(field), Cmp.NOT_EQUAL, null));
+            narrowed.add(index, new IndexQuery(mixed.getStore(), withValue, ImmutableList.copyOf(mixed.getOrder()),
+                mixed.getLimit()));
+            anyNarrowed = true;
+        }
+        return anyNarrowed ? narrowed : indexQuery;
     }
 
     /*

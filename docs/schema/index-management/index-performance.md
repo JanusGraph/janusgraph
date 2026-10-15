@@ -309,6 +309,15 @@ When using `order().by()` it is important to note that:
     of edges, each of which holds one value of a key at most, is folded
     in whatever the cardinality of the key.
 
+-   An element which has no value of a key the results are ordered by
+    is left out of them, as TinkerPop leaves out an element for which a
+    `by()` modulator has no value. A mixed index which answers the query
+    and holds the key skips such elements itself, and so does the slice
+    of a vertex-centric index which sorts the edges or properties of a
+    vertex by it. To keep them, order by a traversal which gives them a
+    value, such as `order().by(coalesce(values('age'), constant(0)))`,
+    which TinkerPop sorts in memory.
+
 -   Strings are ordered by their code points, as the mixed index
     backends sort them, whether a mixed index or JanusGraph sorts the
     results. The edges and properties of a vertex, which a

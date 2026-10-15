@@ -497,22 +497,29 @@ public class EdgeSerializer implements RelationReader {
                 } else {
                     if (interval.getStart() != null)
                         writeInline(colStart, propertyKey, interval.getStart(), InlineType.KEY);
-                    if (interval.getEnd() != null)
+                    boolean endInclusive = interval.endInclusive();
+                    if (interval.getEnd() != null) {
                         writeInline(colEnd, propertyKey, interval.getEnd(), InlineType.KEY);
+                    } else if (leavesOutMissingValues(propertyKey)) {
+                        //The range ends before the relations without a value of the key, whose missing value is
+                        //written as -1 after the values (see writesMissingValuesLast), as no range holds them
+                        colEnd.putByte((byte) -1);
+                        endInclusive = false;
+                    }
 
                     switch (type.getSortOrder()) {
                         case ASC:
                             sliceStart = colStart.getStaticBuffer();
                             sliceEnd = colEnd.getStaticBuffer();
                             if (!interval.startInclusive()) sliceStart = BufferUtil.nextBiggerBuffer(sliceStart);
-                            if (interval.endInclusive()) sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
+                            if (endInclusive) sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
                             break;
 
                         case DESC:
                             sliceEnd = colStart.getStaticBufferFlipBytes(keyStartPos,colStart.getPosition());
                             sliceStart = colEnd.getStaticBufferFlipBytes(keyStartPos,colEnd.getPosition());
                             if (interval.startInclusive()) sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
-                            if (!interval.endInclusive()) sliceStart = BufferUtil.nextBiggerBuffer(sliceStart);
+                            if (!endInclusive) sliceStart = BufferUtil.nextBiggerBuffer(sliceStart);
                             break;
 
                         default:
@@ -542,6 +549,18 @@ public class EdgeSerializer implements RelationReader {
             }
         }
         return new SliceQuery(sliceStart, sliceEnd, type.name()).setDirectColumnByStartOnlyAllowed(isDirectColumnByStartOnlyAllowed(type));
+    }
+
+    /**
+     * Whether a slice of a range of the values of the sort key which is open toward the larger values leaves out the
+     * relations without a value of the key, as {@link #getQuery(InternalRelationType, Direction, TypedInterval[])}
+     * ends it before their missing value where the serializer writes that value after all others
+     *
+     * @param key a sort key
+     * @return whether such a slice holds only the relations with a value of the key
+     */
+    public boolean leavesOutMissingValues(PropertyKey key) {
+        return serializer.writesMissingValuesLast(key.dataType());
     }
 
     public static boolean isDirectColumnByStartOnlyAllowed(InternalRelationType type){

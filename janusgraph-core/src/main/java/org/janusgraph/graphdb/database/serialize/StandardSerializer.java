@@ -256,6 +256,16 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         return (getSerializer(datatype) instanceof OrderPreservingSerializer);
     }
 
+    /**
+     * The data types whose serializer doesn't write null itself are written after a flag, 0 for a value and -1 for
+     * null, and StringSerializer writes the same flags itself
+     */
+    @Override
+    public boolean writesMissingValuesLast(Class<?> datatype) {
+        return isOrderPreservingDatatype(datatype)
+            && (!supportsNullSerialization(datatype) || getSerializer(datatype) instanceof StringSerializer);
+    }
+
     private static<V> OrderPreservingSerializer<V> ensureOrderPreserving(AttributeSerializer<V> serializer, Class<V> type) {
         Preconditions.checkArgument(serializer instanceof OrderPreservingSerializer,"Registered serializer for datatype does not support order: %s",type);
         return (OrderPreservingSerializer)serializer;
