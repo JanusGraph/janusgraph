@@ -20,6 +20,7 @@ import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.BulkSet;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -29,9 +30,11 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceEdge;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertex;
+import org.janusgraph.core.JanusGraphException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -39,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 /**
@@ -52,6 +56,9 @@ public class FulgoraMemory implements Memory.Admin {
     public final Map<String, MemoryComputeKey> memoryKeys = new HashMap<>();
     public Map<String, Optional<Object>> previousMap;
     public final Map<String, Optional<Object>> currentMap;
+    //The values which the workers of an iteration add to the broadcast keys whose reducers may change their first
+    //argument, reduced with each other until the workers have ended, see add()
+    private final Map<String, Optional<Object>> broadcastAdditions = new ConcurrentHashMap<>();
     private final AtomicInteger iteration = new AtomicInteger(0);
     private final AtomicLong runtime = new AtomicLong(0L);
     private volatile boolean inExecute = false;
@@ -106,6 +113,21 @@ public class FulgoraMemory implements Memory.Admin {
     }
 
     protected void completeSubRound() {
+        if (this.inExecute) {
+            //The iteration's workers have ended, so the values they added to the broadcast keys join the keys' values.
+            //Each key's additions are taken out as they join, so that one which a worker made late joins at the next
+            //iteration's end, or never where none follows
+            for (String key : new ArrayList<>(this.broadcastAdditions.keySet())) {
+                final Optional<Object> added = this.broadcastAdditions.remove(key);
+                try {
+                    join(key, added.orElse(null));
+                } catch (Exception e) {
+                    //Numbered from 1, as FulgoraGraphComputer numbers the iterations which fail
+                    throw new JanusGraphException("Could not reduce the values added to memory key [" + key +
+                        "] in vertex program iteration [" + (getIteration() + 1) + "] into its value", e);
+                }
+            }
+        }
         this.previousMap = new ConcurrentHashMap<>(this.currentMap);
         this.inExecute = !this.inExecute;
     }
@@ -127,6 +149,23 @@ public class FulgoraMemory implements Memory.Admin {
             return r;
     }
 
+    /**
+     * Adds the value to the key with the key's reducer. The workers of an iteration read the value of a broadcast key
+     * as the iteration before left it, while other workers add to the key, and a reducer may change its first
+     * argument, as {@link Operator#addAll} does with the collection of an {@code aggregate()} step. Reduced into the
+     * key's value at once, the value added would change a collection which other workers are reading. So the values
+     * added to a broadcast key whose reducer may change its first argument, {@code addAll} or a reducer which isn't
+     * one of TinkerPop's operators, are reduced with each other, into the first one, like TinkerGraphComputer and
+     * SparkGraphComputer, which reduce each worker's (task's) additions into the first one. Their result is reduced
+     * into the key's value once the workers have ended. The first value added thus decides how the iteration's
+     * additions combine, so they have to be mutable and of the key's own kind, and a reducer of one's own has to be
+     * associative and take two additions. That holds for the side effects of a traversal too: with a reducer of its
+     * own, given to {@code withSideEffect(key, value, reducer)}, {@code aggregate()} adds each element on its own, and
+     * so does a step which calls {@code Traverser.sideEffects(key, value)}, so the reducer combines two elements, where
+     * {@code addAll}, given a collection to start from, collects them. The values added with TinkerPop's other
+     * operators, which change neither argument, and those added to the keys which the workers can't read, are reduced
+     * into the keys' values at once.
+     */
     @Override
     public void add(final String key, final Object value) {
         checkKey(key);
@@ -134,7 +173,37 @@ public class FulgoraMemory implements Memory.Admin {
             throw Memory.Exceptions.memoryIsCurrentlyImmutable();
         else if (!this.inExecute)
             throw Memory.Exceptions.memoryAddOnlyDuringVertexProgramExecute(key);
-        this.currentMap.compute(key, (k, v) -> Optional.ofNullable(null == v || !v.isPresent() ? value :
+        final MemoryComputeKey computeKey = this.memoryKeys.get(key);
+        final boolean deferred = computeKey.isBroadcast() && mayChangeFirstArgument(computeKey.getReducer());
+        reduce(deferred ? this.broadcastAdditions : this.currentMap, key, value);
+    }
+
+    //TinkerPop's operators other than addAll return a new value, or one of their arguments, and change neither
+    private static boolean mayChangeFirstArgument(final BinaryOperator<?> reducer) {
+        return !(reducer instanceof Operator) || reducer == Operator.addAll;
+    }
+
+    /*
+     * Reduces the values which the workers added to the broadcast key in an iteration into the key's value. Where the
+     * value is an empty BulkSet which addAll reduces into, as aggregate() starts from, the additions, a BulkSet as
+     * well, take its place instead, rather than be held and inserted twice: the reduction would give a BulkSet equal
+     * to them.
+     */
+    private void join(final String key, final Object added) {
+        final BinaryOperator<Object> reducer = this.memoryKeys.get(key).getReducer();
+        this.currentMap.compute(key, (k, v) -> {
+            if (null == v || !v.isPresent()) {
+                return Optional.ofNullable(added);
+            } else if (reducer == Operator.addAll && v.get() instanceof BulkSet && ((BulkSet<?>) v.get()).isEmpty() &&
+                    added instanceof BulkSet) {
+                return Optional.of(added);
+            }
+            return Optional.ofNullable(reducer.apply(v.get(), added));
+        });
+    }
+
+    private void reduce(final Map<String, Optional<Object>> values, final String key, final Object value) {
+        values.compute(key, (k, v) -> Optional.ofNullable(null == v || !v.isPresent() ? value :
             this.memoryKeys.get(key).getReducer().apply(v.get(), value)));
     }
 

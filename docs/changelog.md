@@ -491,6 +491,38 @@ traversal, and TinkerPop's copies of a traversal share the counter with which th
 same time got mixed-up step ids, which the job's memory and the other clones didn't know, or knew as other steps. Vertex
 programs are now cloned one at a time.
 
+##### OLAP traversals no longer fail when some workers of an iteration add to a side effect which others read
+
+An OLAP traversal which reads a side effect in the iteration in which it adds to it, as
+`g.V().where(without("x")).aggregate("x")` does, could fail with `Failed to process [N] vertices in vertex program
+iteration [K]`, where each vertex which failed logged a `ConcurrentModificationException`, or read some of the values
+which other vertices added in the same iteration. The memory of a `FulgoraGraphComputer` job reduced each value which a
+worker added to a key into the key's value at once, and the reducer of a collection, as that of `aggregate()`, adds to
+the collection itself, which the other workers were reading. The values added to a key which the workers read, a
+broadcast `MemoryComputeKey`, are now reduced with each other, into the first one, and join the key's value once the
+iteration's workers have ended, where the key's reducer is `Operator.addAll` or isn't one of TinkerPop's `Operator`s.
+`TinkerGraphComputer` and `SparkGraphComputer` likewise reduce each worker's (task's) additions into the first one.
+TinkerPop's other operators change neither argument, so their keys still take each addition at once.
+
+A vertex program which adds to such a key must therefore add values which are mutable, of the key's own kind, and which
+it no longer uses, as the first value added decides how the iteration's additions combine: after an immutable
+collection, as one of `Collections.singletonList()`, the vertices which add to the key fail, and sets added to a list
+lose the elements which several of them share. A reducer of the program's own must be associative, and take two
+additions.
+
+So must the reducer of a traversal's side effect given to `withSideEffect(key, value, reducer)`. Unless it is
+`Operator.addAll` or `Operator.assign`, `aggregate()` adds each element to the side effect on its own, and so does a
+step which calls `Traverser.sideEffects(key, value)`, so the reducer now combines two elements where it took the side
+effect's value and an element. A reducer which adds an element to the side effect's set, as
+`(a, b) -> { ((Set) a).add(b); return a; }` does, fails, as on `TinkerGraphComputer`, where `Operator.addAll`, given a
+collection to start from, collects the elements.
+
+When the iteration ends, its additions are still held while they join the key's value, so a key which already holds
+values holds the iteration's additions twice for a moment; a job close to its heap limit may run out of memory. Where
+the key's value is an empty `BulkSet`, as the side effect of `aggregate()` is at first, the additions take its place
+instead. `TinkerGraphComputer` reduces each worker's additions into the key's value as that worker ends, so it holds a
+worker's share twice.
+
 ##### Opt-in parallel token-range scan for CQL full scans
 
 CQL full-table scans (used by reindex and other OLAP jobs) can optionally be split into several
