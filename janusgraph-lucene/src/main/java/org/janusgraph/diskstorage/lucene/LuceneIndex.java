@@ -48,13 +48,11 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanQuery.Builder;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
-import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
@@ -945,10 +943,28 @@ public class LuceneIndex implements IndexProvider {
     }
 
     private void addExistsQuery(final SearchParams params, final String key) {
-        // some fields like Integer omit norms but have docValues
-        params.addQuery(new DocValuesFieldExistsQuery(key), BooleanClause.Occur.SHOULD);
-        // some fields like Text have no docValue but have norms
-        params.addQuery(new NormsFieldExistsQuery(key), BooleanClause.Occur.SHOULD);
+        // For the text field of a string or a UUID only, which has norms. FieldExistsQuery fails on a number, date,
+        // instant or boolean of a key of several values, which has neither norms nor doc values: see existsQuery
+        params.addQuery(new FieldExistsQuery(key));
+    }
+
+    // The documents which hold a value of the key. FieldExistsQuery finds them by the doc values or the norms of the
+    // field, and fails on a field which has neither: buildIndexFields writes a number, date, instant or boolean of a
+    // key of several values as a point alone. Such a field is matched by a range of points over its whole type, up to
+    // NaN for decimals, which Lucene orders above every other double
+    private static Query existsQuery(String key, KeyInformation ki) {
+        if (ki != null && ki.getCardinality() != Cardinality.SINGLE) {
+            final Class<?> dataType = ki.getDataType();
+            if (AttributeUtils.isWholeNumber(dataType) || dataType.equals(Date.class)
+                    || dataType.equals(Instant.class)) {
+                return LongPoint.newRangeQuery(key, Long.MIN_VALUE, Long.MAX_VALUE);
+            } else if (AttributeUtils.isDecimal(dataType)) {
+                return DoublePoint.newRangeQuery(key, Double.NEGATIVE_INFINITY, Double.NaN);
+            } else if (dataType.equals(Boolean.class)) {
+                return IntPoint.newRangeQuery(key, Integer.MIN_VALUE, Integer.MAX_VALUE);
+            }
+        }
+        return new FieldExistsQuery(key);
     }
 
     private Query combineTerms(String key, List<String> terms, Function<Term, Query> queryCreator) {
@@ -1018,7 +1034,7 @@ public class LuceneIndex implements IndexProvider {
             KeyInformation ki = information.get(key);
             final JanusGraphPredicate janusgraphPredicate = atom.getPredicate();
             if (value == null && janusgraphPredicate == Cmp.NOT_EQUAL) {
-                addExistsQuery(params, key);
+                params.addQuery(existsQuery(key, ki));
             } else if (value instanceof Number) {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: %s", janusgraphPredicate);
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, (Number) value));
