@@ -1128,28 +1128,83 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     @Override
     public VertexLabel addProperties(VertexLabel vertexLabel, PropertyKey... keys) {
-        for (PropertyKey key : keys) {
-            addSchemaEdge(vertexLabel, key, TypeDefinitionCategory.PROPERTY_KEY_EDGE, null);
-        }
+        addPropertyMappings(vertexLabel, keys, key -> { });
         return vertexLabel;
     }
 
     @Override
     public EdgeLabel addProperties(EdgeLabel edgeLabel, PropertyKey... keys) {
-        for (PropertyKey key : keys) {
+        addPropertyMappings(edgeLabel, keys, key -> {
             if (key.cardinality() != Cardinality.SINGLE) {
                 throw new IllegalArgumentException(String.format("An Edge [%s] can not have a property [%s] with the cardinality [%s].", edgeLabel, key, key.cardinality()));
             }
-            addSchemaEdge(edgeLabel, key, TypeDefinitionCategory.PROPERTY_KEY_EDGE, null);
-        }
+        });
         return edgeLabel;
+    }
+
+    //Writes the mapping of each key which the label doesn't have yet: mappedProperties() lists each copy. A single key,
+    //which the schema maker gives for each element it checks, is looked up by a query of its own. For several keys, one
+    //query reads all of the label's mappings, rather than one query, and a slice read, per key. Both find the mappings
+    //which this transaction wrote too
+    private void addPropertyMappings(JanusGraphVertex label, PropertyKey[] keys, Consumer<PropertyKey> verifyKey) {
+        Set<Object> mapped = null;
+        for (PropertyKey key : keys) {
+            verifyKey.accept(key);
+            verifyWriteAccess(label, key);
+            final boolean has;
+            if (keys.length == 1) {
+                has = hasSchemaEdge(label, key, TypeDefinitionCategory.PROPERTY_KEY_EDGE, null);
+            } else {
+                if (mapped == null) mapped = mappedKeyIds(label);
+                has = !mapped.add(key.id());
+            }
+            if (!has) {
+                addSchemaEdge(label, key, TypeDefinitionCategory.PROPERTY_KEY_EDGE, null);
+            }
+        }
+    }
+
+    //The ids of the keys which the label maps, committed or written by this transaction
+    private static Set<Object> mappedKeyIds(JanusGraphVertex label) {
+        final Set<Object> ids = new HashSet<>();
+        if (label instanceof JanusGraphSchemaVertex) {
+            for (JanusGraphEdge edge : ((JanusGraphSchemaVertex) label).getEdges(
+                    TypeDefinitionCategory.PROPERTY_KEY_EDGE, Direction.OUT)) {
+                ids.add(edge.vertex(Direction.IN).id());
+            }
+        }
+        return ids;
     }
 
     @Override
     public EdgeLabel addConnection(EdgeLabel edgeLabel, VertexLabel outVLabel, VertexLabel inVLabel) {
-        addSchemaEdge(outVLabel, inVLabel, TypeDefinitionCategory.CONNECTION_EDGE, edgeLabel.name());
-        addSchemaEdge(edgeLabel, outVLabel, TypeDefinitionCategory.UPDATE_CONNECTION_EDGE, null);
+        //Checked first, as writing the edges would check them, so that a connection the schema has already fails
+        //where one it lacks would
+        verifyWriteAccess(outVLabel, inVLabel, edgeLabel);
+        //The connection, and the edge label's link to the outgoing vertex label through which the edge label finds its
+        //connections, are written only where the schema hasn't got them: mappedConnections() lists each copy of a
+        //connection, and a copy of a link only takes space
+        final String name = edgeLabel.name();
+        if (!hasSchemaEdge(outVLabel, inVLabel, TypeDefinitionCategory.CONNECTION_EDGE, name)) {
+            addSchemaEdge(outVLabel, inVLabel, TypeDefinitionCategory.CONNECTION_EDGE, name);
+        }
+        if (!hasSchemaEdge(edgeLabel, outVLabel, TypeDefinitionCategory.UPDATE_CONNECTION_EDGE, null)) {
+            addSchemaEdge(edgeLabel, outVLabel, TypeDefinitionCategory.UPDATE_CONNECTION_EDGE, null);
+        }
         return edgeLabel;
+    }
+
+    //Whether the schema vertex has a definition edge of the category to the other one, of the given modifier unless it
+    //is null. The query finds the edges this transaction wrote too, which the cached definitions (getRelated) don't
+    private static boolean hasSchemaEdge(JanusGraphVertex out, JanusGraphVertex in, TypeDefinitionCategory def,
+                                         Object modifier) {
+        if (!(out instanceof JanusGraphSchemaVertex) || !(in instanceof JanusGraphSchemaVertex)) return false;
+        for (JanusGraphEdge edge : ((JanusGraphSchemaVertex) out).getEdges(def, Direction.OUT,
+                (JanusGraphSchemaVertex) in)) {
+            final TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
+            if (modifier == null || modifier.equals(desc.getModifier())) return true;
+        }
+        return false;
     }
 
     public JanusGraphSchemaVertex getSchemaVertex(String schemaName) {

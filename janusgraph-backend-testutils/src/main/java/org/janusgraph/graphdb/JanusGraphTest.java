@@ -47,6 +47,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.Connection;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphConfigurationException;
@@ -59,6 +60,7 @@ import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.ReadOnlyTransactionException;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.core.Transaction;
@@ -156,6 +158,7 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
+import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
@@ -5168,6 +5171,196 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertThrows(IllegalArgumentException.class, () -> v3.addEdge("E2", v4));
         assertThrows(IllegalArgumentException.class, () -> v3.addEdge("E1", v2));
         assertThrows(IllegalArgumentException.class, () -> v1.addEdge("E1", v4));
+    }
+
+    @Test
+    public void testAddingAConnectionTwiceInATransactionWritesItOnce() {
+        VertexLabel person = mgmt.makeVertexLabel("person").make();
+        VertexLabel company = mgmt.makeVertexLabel("company").make();
+        EdgeLabel worksAt = mgmt.makeEdgeLabel("worksAt").make();
+        mgmt.addConnection(worksAt, person, company);
+        mgmt.addConnection(worksAt, person, company);
+        //The connection is found once, also before the schema is committed
+        assertEquals(1, worksAt.mappedConnections().size());
+        assertEquals(1, person.mappedConnections().size());
+        finishSchema();
+
+        assertEquals(1, mgmt.getEdgeLabel("worksAt").mappedConnections().size());
+        assertEquals(1, mgmt.getVertexLabel("person").mappedConnections().size());
+    }
+
+    @Test
+    public void testAddingACommittedConnectionAgainWritesNothing() {
+        mgmt.addConnection(mgmt.makeEdgeLabel("worksAt").make(), mgmt.makeVertexLabel("person").make(),
+            mgmt.makeVertexLabel("company").make());
+        finishSchema();
+
+        mgmt.addConnection(mgmt.getEdgeLabel("worksAt"), mgmt.getVertexLabel("person"),
+            mgmt.getVertexLabel("company"));
+        finishSchema();
+
+        assertEquals(1, mgmt.getEdgeLabel("worksAt").mappedConnections().size());
+        assertEquals(1, mgmt.getVertexLabel("person").mappedConnections().size());
+        //A connection from a vertex label to itself as well
+        mgmt.addConnection(mgmt.getEdgeLabel("worksAt"), mgmt.getVertexLabel("person"),
+            mgmt.getVertexLabel("person"));
+        finishSchema();
+        mgmt.addConnection(mgmt.getEdgeLabel("worksAt"), mgmt.getVertexLabel("person"),
+            mgmt.getVertexLabel("person"));
+        finishSchema();
+
+        assertEquals(2, mgmt.getEdgeLabel("worksAt").mappedConnections().size());
+        assertEquals(2, mgmt.getVertexLabel("person").mappedConnections().size());
+    }
+
+    /**
+     * An edge label finds its connections through the outgoing vertex labels it links to: the connections of an edge
+     * label which share an outgoing vertex label link to it once.
+     */
+    @Test
+    public void testConnectionsWhichShareTheirOutgoingVertexLabelLinkToItOnce() {
+        VertexLabel transfer = mgmt.makeVertexLabel("transfer").make();
+        EdgeLabel to = mgmt.makeEdgeLabel("to").make();
+        for (String name : new String[]{"person", "company", "account"}) {
+            mgmt.addConnection(to, transfer, mgmt.makeVertexLabel(name).make());
+        }
+        assertEquals(1, Iterables.size(((JanusGraphSchemaVertex) to).getEdges(
+            TypeDefinitionCategory.UPDATE_CONNECTION_EDGE, Direction.OUT)));
+        finishSchema();
+
+        assertEquals(1, Iterables.size(((JanusGraphSchemaVertex) mgmt.getEdgeLabel("to")).getEdges(
+            TypeDefinitionCategory.UPDATE_CONNECTION_EDGE, Direction.OUT)));
+    }
+
+    /**
+     * An ordinary transaction which adds several edges of a connection it creates under schema.constraints=true checks
+     * the connections of the committed schema each time, which don't hold it yet, and creates the connection once.
+     */
+    @Test
+    public void testAutoCreatedConnectionConstraintIsWrittenOnceByATransaction() {
+        clopen(option(SCHEMA_CONSTRAINTS), true);
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makeEdgeLabel("knows").make();
+        finishSchema();
+
+        final JanusGraphTransaction t = graph.newTransaction();
+        for (int i = 0; i < 3; i++) {
+            t.addVertex("person").addEdge("knows", t.addVertex("person"));
+        }
+        t.commit();
+
+        assertEquals(1, mgmt.getEdgeLabel("knows").mappedConnections().size());
+        assertEquals(1, mgmt.getVertexLabel("person").mappedConnections().size());
+    }
+
+    @Test
+    public void testAddingAPropertyWhichALabelHasWritesNothing() {
+        VertexLabel person = mgmt.makeVertexLabel("person").make();
+        EdgeLabel knows = mgmt.makeEdgeLabel("knows").make();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey since = mgmt.makePropertyKey("since").dataType(Integer.class).make();
+        mgmt.addProperties(person, name);
+        mgmt.addProperties(person, name, name);
+        mgmt.addProperties(knows, since);
+        mgmt.addProperties(knows, since);
+        //Each property is found once, also before the schema is committed
+        assertEquals(Collections.singletonList(name), new ArrayList<>(person.mappedProperties()));
+        assertEquals(Collections.singletonList(since), new ArrayList<>(knows.mappedProperties()));
+        finishSchema();
+
+        //A call of one key, and of several keys: one of which the label has, and one which it doesn't have, twice
+        mgmt.addProperties(mgmt.getVertexLabel("person"), mgmt.getPropertyKey("name"));
+        mgmt.addProperties(mgmt.getVertexLabel("person"), mgmt.getPropertyKey("name"),
+            mgmt.makePropertyKey("age").dataType(Integer.class).make());
+        mgmt.addProperties(mgmt.getEdgeLabel("knows"), mgmt.getPropertyKey("since"));
+        final PropertyKey weight = mgmt.makePropertyKey("weight").dataType(Double.class).make();
+        mgmt.addProperties(mgmt.getEdgeLabel("knows"), weight, weight);
+        finishSchema();
+
+        assertEquals(Arrays.asList("age", "name"), mgmt.getVertexLabel("person").mappedProperties().stream()
+            .map(PropertyKey::name).sorted().collect(Collectors.toList()));
+        assertEquals(Arrays.asList("since", "weight"), mgmt.getEdgeLabel("knows").mappedProperties().stream()
+            .map(PropertyKey::name).sorted().collect(Collectors.toList()));
+    }
+
+    /**
+     * An ordinary transaction which adds a property to several vertices and edges under schema.constraints=true checks
+     * the properties of the committed schema each time, which don't hold it yet, and adds the property to the label
+     * once.
+     */
+    @Test
+    public void testAutoCreatedPropertyConstraintsAreWrittenOnceByATransaction() {
+        clopen(option(SCHEMA_CONSTRAINTS), true);
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makeEdgeLabel("knows").make();
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.makePropertyKey("since").dataType(Integer.class).make();
+        finishSchema();
+
+        final JanusGraphTransaction t = graph.newTransaction();
+        for (int i = 0; i < 3; i++) {
+            t.addVertex(T.label, "person", "name", "n" + i).addEdge("knows", t.addVertex("person"), "since", i);
+        }
+        t.commit();
+
+        assertEquals(1, mgmt.getVertexLabel("person").mappedProperties().size());
+        assertEquals(1, mgmt.getEdgeLabel("knows").mappedProperties().size());
+    }
+
+    /**
+     * A read-only transaction can't add a connection or property, also not one which the schema has already: the
+     * write access is checked before the schema is.
+     */
+    @Test
+    public void testAddingAConstraintWhichTheSchemaHasFailsInAReadOnlyTransaction() {
+        VertexLabel person = mgmt.makeVertexLabel("person").make();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.addConnection(mgmt.makeEdgeLabel("knows").make(), person, person);
+        mgmt.addProperties(person, name, age);
+        finishSchema();
+
+        final JanusGraphTransaction readOnly = graph.buildTransaction().readOnly().start();
+        try {
+            final VertexLabel readPerson = readOnly.getVertexLabel("person");
+            assertThrows(ReadOnlyTransactionException.class,
+                () -> readOnly.addConnection(readOnly.getEdgeLabel("knows"), readPerson, readPerson));
+            assertThrows(ReadOnlyTransactionException.class,
+                () -> readOnly.addProperties(readPerson, readOnly.getPropertyKey("name")));
+            assertThrows(ReadOnlyTransactionException.class, () -> readOnly.addProperties(readPerson,
+                readOnly.getPropertyKey("name"), readOnly.getPropertyKey("age")));
+        } finally {
+            readOnly.rollback();
+        }
+    }
+
+    /**
+     * Renaming an edge label renames each of its connection edges, also the copies of a connection which an earlier
+     * JanusGraph version wrote when the connection was added more than once.
+     */
+    @Test
+    public void testRenamingAnEdgeLabelRenamesEachCopyOfItsConnections() {
+        clopen(option(AUTO_TYPE), "none", option(SCHEMA_CONSTRAINTS), true);
+        VertexLabel v1 = mgmt.makeVertexLabel("V1").make();
+        VertexLabel v2 = mgmt.makeVertexLabel("V2").make();
+        EdgeLabel e1 = mgmt.makeEdgeLabel("E1").make();
+        //Two copies of the connection and of the edge label's link to V1, as earlier versions wrote them
+        final StandardJanusGraphTx schemaTx = ((ManagementSystem) mgmt).getWrappedTx();
+        for (int i = 0; i < 2; i++) {
+            schemaTx.addSchemaEdge(v1, v2, TypeDefinitionCategory.CONNECTION_EDGE, "E1");
+            schemaTx.addSchemaEdge(e1, v1, TypeDefinitionCategory.UPDATE_CONNECTION_EDGE, null);
+        }
+        finishSchema();
+
+        mgmt.changeName(mgmt.getEdgeLabel("E1"), "E2");
+        finishSchema();
+
+        final Collection<Connection> connections = mgmt.getVertexLabel("V1").mappedConnections();
+        assertEquals(2, connections.size());
+        for (Connection connection : connections) {
+            assertEquals("E2", connection.getEdgeLabel());
+        }
+        tx.addVertex("V1").addEdge("E2", tx.addVertex("V2"));
     }
 
 
