@@ -1170,6 +1170,17 @@ Elasticsearch and Solr do: a query which streamed 500,000 ids from Elasticsearch
 after every change, so that a hundred index queries of one result each in a transaction take 0.71 ms instead of 0.89 on
 one thread, and 1.1 ms instead of 3.1 with eight threads running such transactions at once, on the inmemory backend.
 
+##### Graph queries which JanusGraph sorts leave out the vertices which the transaction removed
+
+A graph query ordered by a key which its index doesn't sort it by, such as one which a composite index answers, or a
+mixed index which doesn't hold the order key, failed in a transaction which had removed one of the vertices it matched,
+with an `IllegalStateException` that the vertex was removed: JanusGraph sorted what the index returned before it left
+out the elements which the transaction had removed, and read the order key of the removed vertex. It now leaves out the
+removed vertices before it sorts the others, as the query without an order leaves them out. So
+`g.V().has('kind', 'p').order().by('name')`, with `kind` in a composite index, returns the vertices of kind `p` which
+are left in a transaction which dropped one of them, as does
+`graph.query().has('kind', 'p').orderBy('name', asc).vertices()`.
+
 ##### Graph queries read on past the edges and properties which the transaction removed
 
 An index, mixed or composite, still holds the edges and vertex properties which the transaction removed, until it
