@@ -167,7 +167,10 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
             ? compareByCodePoint((String) value1, (String) value2) : AttributeUtils.compareValues(value1, value2));
     }
 
-    /*
+    /**
+     * Compares two strings by code point, as a graph query orders and checks them (see
+     * {@link org.janusgraph.graphdb.query.condition.PredicateCondition}).
+     * <p>
      * UTF-16 code units order like code points except where, at the first unit in which the strings differ, one has a
      * surrogate (U+D800 to U+DFFF), a unit of a character from U+10000 up, and the other a unit from U+E000 to U+FFFF:
      * the surrogate is the smaller unit, but its character the greater code point. Placing the surrogates after U+FFFF,
@@ -175,7 +178,7 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
      * pair isn't valid UTF-16 and is placed in the same way, which may not be where an index puts it: an index can't
      * keep it as it is, Lucene for one stores U+FFFD instead.
      */
-    static int compareByCodePoint(String s1, String s2) {
+    public static int compareByCodePoint(String s1, String s2) {
         final int length = Math.min(s1.length(), s2.length());
         for (int i = 0; i < length; i++) {
             final char c1 = s1.charAt(i);

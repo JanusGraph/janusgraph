@@ -562,8 +562,9 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         orders.makeImmutable();
         assert orders.hasCommonOrder();
 
-        //Prepare constraints
-        And<JanusGraphRelation> conditions = QueryUtil.constraints2QNF(tx, constraints);
+        //Prepare constraints, whose conditions compare strings by UTF-16 code unit, the order in which the storage
+        //backend holds a vertex's relations by their sort keys, whose slices answer the query
+        And<JanusGraphRelation> conditions = QueryUtil.constraints2QNF(tx, constraints, false);
         if (conditions == null)
             return BaseVertexCentricQuery.emptyQuery();
 

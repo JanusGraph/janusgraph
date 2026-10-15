@@ -21,6 +21,18 @@ Boolean and UUID data types support the `eq` and `neq` comparison predicates.
 
 `eq` and `neq` can be used on Boolean and UUID.
 
+In a graph query, such as `g.V().has('name', gt('m'))`, the comparison predicates compare two strings by their code
+points, as the mixed indexes do, also where JanusGraph checks them itself, and so does an `order().by(key)` which
+JanusGraph folds into the query. On the edges and properties of a vertex, such as
+`g.V(v).outE('link').has('name', gt('m'))`, they compare two strings by their UTF-16 code units, the order in which a
+vertex-centric index sorts them. So do an `order()` and a `has()` which JanusGraph doesn't fold into a query, which
+TinkerPop checks, such as `order().by('name').by(T.id)`, `not(has('name', lte('m')))` or a `has()` of a
+`g.withComputer()` traversal. Such an order disagrees with the conditions of a graph query also where no mixed index
+answers it, so keyset paging with `gt()` needs an order which JanusGraph folds: by property keys alone, right after the
+`has()` steps of the query, and for vertices by keys of `SINGLE` cardinality, unless every mixed index backend of the
+graph can order by a key of several values. The two orders differ only where, at the first character in which two
+strings differ, one has a character from U+10000 up, such as an emoji, and the other one from U+E000 to U+FFFF.
+
 ## Text Predicate
 
 The `Text` enum specifies the [Text Search](../index-backend/text-search.md) used to query for matching text or string values.  We differentiate between two types of predicates:

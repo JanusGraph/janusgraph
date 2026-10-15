@@ -9419,6 +9419,45 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             annotatnions.get("queries").equals("[friend-no-index:SliceQuery[0x7180,0x7181), 2069:byTime:SliceQuery[0xB0E0FF7FFFFF9B,0xB0E0FF7FFFFF9C)]"));
     }
 
+    /**
+     * The conditions of a vertex-centric query compare two strings by UTF-16 unit, the order in which the storage
+     * backend holds the sort keys whose slices answer the query, so that the edges the transaction added match as the
+     * stored ones do; a graph query compares them by code point instead. By UTF-16 unit, U+1F600 and U+1F601, whose
+     * first units are surrogates, come before U+E000.
+     */
+    @Test
+    public void testVertexCentricConditionsCompareStringsByUtf16Unit() {
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        final EdgeLabel link = mgmt.makeEdgeLabel("link").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildEdgeIndex(link, "linkByName", Direction.OUT, asc, name);
+        finishSchema();
+        JanusGraphVertex v = tx.addVertex();
+        for (final String s : Arrays.asList("a", "\uE000", "\uFFFF", "\uD83D\uDE00")) {
+            v.addEdge("link", tx.addVertex(), "name", s);
+        }
+        newTx();
+        v = getV(tx, v);
+        for (final String s : Arrays.asList("\uE000a", "\uD83D\uDE01")) {
+            v.addEdge("link", tx.addVertex(), "name", s);
+        }
+        //The stored edges from a slice of the index, the new ones checked in memory, all in UTF-16 order
+        assertEquals(Arrays.asList("\uE000a", "\uFFFF"), edgeNames(v.query().labels("link").direction(OUT)
+            .has("name", Cmp.GREATER_THAN, "\uE000").orderBy("name", asc).edges()));
+        assertEquals(Arrays.asList("a", "\uD83D\uDE00", "\uD83D\uDE01"), edgeNames(v.query().labels("link")
+            .direction(OUT).has("name", Cmp.LESS_THAN, "\uE000").orderBy("name", asc).edges()));
+        assertEquals(Arrays.asList("\uE000a", "\uFFFF"), tx.traversal().V(v).outE("link").has("name", P.gt("\uE000"))
+            .order().by("name", asc).values("name").toList());
+        //A graph query, here a scan, compares them by code point
+        assertEquals(Arrays.asList("\uE000a", "\uFFFF", "\uD83D\uDE00", "\uD83D\uDE01"),
+            tx.traversal().E().has("name", P.gt("\uE000")).order().by("name", asc).values("name").toList());
+    }
+
+    private static List<String> edgeNames(Iterable<JanusGraphEdge> edges) {
+        final List<String> names = new ArrayList<>();
+        edges.forEach(edge -> names.add(edge.value("name")));
+        return names;
+    }
+
     @Test
     public void testVertexCentricIndexWithNull() {
         EdgeLabel bought = makeLabel("bought");
