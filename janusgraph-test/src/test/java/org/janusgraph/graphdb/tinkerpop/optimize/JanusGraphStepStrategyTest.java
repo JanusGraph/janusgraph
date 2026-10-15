@@ -40,6 +40,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComp
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.FilterRankingStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.InlineFilterStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.ProductiveByStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalStrategies;
@@ -51,6 +52,7 @@ import org.janusgraph.StorageSetup;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -84,6 +86,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -167,6 +170,46 @@ public class JanusGraphStepStrategyTest {
         assertEquals(2, localHasContainers.size());
     }
 
+    /**
+     * The range and the order of a branch of an or(), which a JanusGraphStep can be given, apply to each element on its
+     * own, as TinkerPop runs the branch for each element: a range lets the element through unless it skips it, and an
+     * order where each of its keys has a value
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldApplyTheRangeAndOrderOfAnOrBranchToEachElement() {
+        final JanusGraph graph = StorageSetup.getInMemoryGraph();
+        try {
+            final JanusGraphManagement mgmt = graph.openManagement();
+            mgmt.makePropertyKey("kind").dataType(String.class).make();
+            mgmt.makePropertyKey("age").dataType(Integer.class).make();
+            mgmt.commit();
+            final JanusGraphTransaction tx = graph.newTransaction();
+            final Object older = tx.addVertex("kind", "p", "age", 3).id();
+            final Object younger = tx.addVertex("kind", "p", "age", 1).id();
+            tx.addVertex("kind", "p");
+            tx.addVertex("kind", "q", "age", 2);
+            tx.commit();
+            final GraphTraversal.Admin<Vertex, Vertex> traversal = graph.traversal().V().asAdmin();
+            traversal.applyStrategies();
+            final JanusGraphStep<Vertex, Vertex> step = (JanusGraphStep<Vertex, Vertex>) traversal.getStartStep();
+            final OrStep<Vertex> or = new OrStep<>(traversal);
+            final List<HasContainer> ofP = step.addLocalHasContainersConvertingAndPContainers(or,
+                Collections.singletonList(new HasContainer("kind", P.eq("p"))));
+            step.setLocalLimit(or, ofP, 0, 1);
+            step.localOrderBy(or, ofP, "age", Order.asc);
+            final List<HasContainer> ofQ = step.addLocalHasContainersConvertingAndPContainers(or,
+                Collections.singletonList(new HasContainer("kind", P.eq("q"))));
+            step.setLocalLimit(or, ofQ, 1, 2);
+            final List<Object> ids = new ArrayList<>();
+            traversal.forEachRemaining(vertex -> ids.add(vertex.id()));
+            assertEquals(new HashSet<>(Arrays.asList(older, younger)), new HashSet<>(ids));
+            assertEquals(2, ids.size());
+        } finally {
+            graph.close();
+        }
+    }
+
     private void applyMultiQueryTraversalSteps(Traversal.Admin<?,?> traversal) {
         // JanusGraphMultiQueryStrategy replaces RepeatSteps with JanusGraphRepeatSteps when limited batches are used
         TraversalHelper.getStepsOfAssignableClassRecursively(RepeatStep.class, traversal).stream()
@@ -226,6 +269,9 @@ public class JanusGraphStepStrategyTest {
                 graphStep.orderBy(orderEntry.key, orderEntry.order);
             } else if (hasKeyValues[i] instanceof DefaultGraphTraversal && ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep() instanceof OrStep){
                 OrStep<?> orStep = (OrStep<?>) ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep();
+                if (orStep.getLocalChildren().isEmpty()) {
+                    graphStep.addLocalHasContainersOfNoBranch(orStep);
+                }
                 for (final Traversal.Admin<?, ?> child : orStep.getLocalChildren()) {
                     final JanusGraphStep<Vertex, Vertex> localGraphStep = ((JanusGraphStep<Vertex, Vertex>) ((DefaultGraphTraversal) child).getStartStep());
                     graphStep.addLocalHasContainersConvertingAndPContainers(orStep, localGraphStep.getHasContainers());
@@ -322,17 +368,45 @@ public class JanusGraphStepStrategyTest {
             arguments(g.V().has("name", "marko").range(10, 20), g_V("name", eq("marko"), __.range(10, 20)), Collections.emptyList()),
             arguments(g.V().has("name", "marko").or(has("length", lt(160)), has("age", gt(32))).has("lang", "java"),
                 g_V("name", eq("marko"), "lang", eq("java"), __.or(g_V("length", lt(160)), g_V("age", gt(32)))), Collections.emptyList()),
+            // TinkerPop runs a branch of an or() for each element on its own: a range() which skips the element lets
+            // none through, so the branch drops out
             arguments(g.V().or(has("length", lt(160)), has("age", gt(32)).range(1, 5)),
-                g_V(__.or(g_V("length", lt(160)), g_V("age", gt(32), __.range(1, 5)))), Collections.emptyList()),
+                g_V(__.or(g_V("length", lt(160)))), Collections.emptyList()),
             arguments(g.V().or(has("length", lt(160)), has("age", gt(32)).range(1, 5)).range(10, 20),
-                g_V(__.or(g_V("length", lt(160)), g_V("age", gt(32), __.range(1, 5))), __.range(10, 20)), Collections.emptyList()),
+                g_V(__.or(g_V("length", lt(160))), __.range(10, 20)), Collections.emptyList()),
+            // a limit() lets every element through, and an order() each one which has a value of its key
+            arguments(g.V().or(has("length", lt(160)), has("age", gt(32)).limit(5)),
+                g_V(__.or(g_V("length", lt(160)), g_V("age", gt(32)))), Collections.emptyList()),
             arguments(g.V().or(has("name", "marko"), has("lang", "java").order().by("name", Order.desc)),
-                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name",
-                    Order.desc)))), Collections.emptyList()),
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), "name", neq(null)))),
+                Collections.emptyList()),
             arguments(g.V().or(has("name", "marko"), has("lang", "java").order().by("name", Order.desc)).order().by(
                 "lang", Order.asc),
-                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), new HasStepFolder.OrderEntry("name",
-                    Order.desc))), new HasStepFolder.OrderEntry("lang", Order.asc)), Collections.emptyList()),
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java"), "name", neq(null))),
+                    new HasStepFolder.OrderEntry("lang", Order.asc)), Collections.emptyList()),
+            // the has() steps of a branch are one condition, whatever steps come between them
+            arguments(g.V().or(__.limit(1).has("name", "marko").range(0, 3).has("lang", "java"), has("age", gt(32))),
+                g_V(__.or(g_V("name", eq("marko"), "lang", eq("java")), g_V("age", gt(32)))),
+                Collections.emptyList()),
+            arguments(g.V().or(has("name", "marko").has("age"), has("lang", "java")),
+                g_V(__.or(g_V("name", eq("marko"), "age", neq(null)), g_V("lang", eq("java")))),
+                Collections.emptyList()),
+            // an order() by the id or the label lets every element through, and so does one by a key which
+            // ProductiveByStrategy makes yield null where it has no value
+            arguments(g.V().or(has("name", "marko").order().by(T.label), has("lang", "java").order().by(T.id)),
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java")))), Collections.emptyList()),
+            arguments(g.V().or(has("name", "marko").order().by("lang"), has("lang", "java")),
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java")))),
+                Collections.singletonList(ProductiveByStrategy.instance())),
+            // an or() which lets no element through folds in as one of no branches, so that the step returns no
+            // element, and one whose branch orders by a traversal is TinkerPop's
+            arguments(g.V().or(has("name", "marko").range(1, 2), has("age", gt(32)).limit(0)),
+                g_V(__.or()), Collections.emptyList()),
+            arguments(g.V().or(has("name", "marko").range(1, 2), has("age", gt(32)).limit(0)).has("lang", "java"),
+                g_V("lang", eq("java"), __.or()), Collections.emptyList()),
+            arguments(g.V().or(has("name", "marko"), has("lang", "java").order().by(values("age").count())),
+                g_V().or(has("name", "marko"), has("lang", "java").order().by(values("age").count())),
+                Collections.emptyList()),
             arguments(g.V().or(__.has("name", "marko").has("age", 29), __.has("name", "vadas").has("age", 27)).as("x").select("x"),
                 g_V(__.or(g_V("name", eq("marko"), "age", eq(29)), g_V("name", eq("vadas"), "age", eq(27)))).as("x").select("x"), Collections.emptyList()),
         });

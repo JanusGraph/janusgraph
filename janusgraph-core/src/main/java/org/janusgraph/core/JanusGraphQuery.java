@@ -57,6 +57,15 @@ public interface JanusGraphQuery<Q extends JanusGraphQuery<Q>> {
 
     Q hasNot(String key, Object value);
 
+    /**
+     * The returned element must match at least one of the given sub-queries, as well as the other conditions of this
+     * query: the conditions of a sub-query, and those of its own or() calls, as they are when this method is called, so
+     * that a condition added to a sub-query afterwards doesn't count. The orders and limits of the sub-queries are
+     * ignored. An or() of no sub-queries matches no element.
+     *
+     * @param subQueries The sub-queries, one of which the element must match
+     * @return This query
+     */
     Q or(Collection<Q> subQueries);
 
     <T extends Comparable<?>> Q interval(String key, T startValue, T endValue);

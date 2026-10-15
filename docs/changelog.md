@@ -1085,7 +1085,7 @@ these came out of order:
 * in a query which no index sorts, such as one ordered by a key which the index doesn't hold, which sorted them unlike
   a query which an index sorts;
 * in a traversal whose `or()` branches JanusGraph answers by queries of their own, as it does when no index answers
-  the `or()`, and in most cases when a branch has a `range()` or a `limit()` of its own, which merged the results of
+  the `or()` as a whole, as for branches which only a composite index or no index answers, which merged the results of
   those queries by UTF-16 unit. That merge also failed with an `IllegalStateException` when it compared an element
   without the order key with one of another branch; such an element now comes last, as in any ordered graph query
   which JanusGraph answers.
@@ -1098,6 +1098,78 @@ representative orders them.
 
 For code built on these classes: `MultiDistinctOrderedIterator` takes the `Comparator` to merge by in place of a list
 of `HasStepFolder.OrderEntry`.
+
+##### The `limit()`, `range()` and `order()` steps of an `or()` branch apply to each element, as in TinkerPop
+
+TinkerPop runs each branch of an `or()` for each element on its own. So a `limit()` or `range()` in a branch lets the
+element through, unless it skips it or its limit is 0, and an `order()` there lets it through where each of its
+`by(key)` modulators has a value. JanusGraph, which folds the `or()` into its query, took the first elements of such a
+branch instead, and a branch's limit could become that of the whole query. With `kind` in a mixed index:
+
+* `g.V().or(__.has('kind', 'p').limit(1), __.has('kind', 'q'))` returned a single vertex, and one of kind `p` with those
+  of kind `q` where the branches came the other way round. It now returns every vertex of kind `p` or `q`, as
+  TinkerGraph does.
+* `g.V().or(__.has('kind', 'p').range(1, 3), __.has('kind', 'q'))` returned two vertices of kind `p` as well. A range
+  from 1 lets no element through, so it now returns the vertices of kind `q`.
+* `g.V().or(__.has('kind', 'p').order().by('age').limit(1), __.has('kind', 'q')).order().by('name')` returned a single
+  vertex, and where no index answers the `or()` as a whole, the first vertex of kind `p` by its `name` rather than its
+  `age` with those of kind `q`. It now returns the vertices of kind `p` which have an `age`, and those of kind `q`.
+
+A branch's `limit()` no longer bounds what JanusGraph reads, so such an `or()` reads every element which matches it. To
+take the first elements of a branch, use a `union()` of traversals which each start from `V()`, such as
+`g.union(__.V().has('kind', 'p').limit(1), __.V().has('kind', 'q')).dedup()`, for which JanusGraph queries an index for
+each branch. `g.V().union(...)` reads every vertex instead, and fails under `query.force-index`.
+
+Each step of a branch is now a condition on the element, whatever their order. A `has(key)` after a `has()`, as in
+`__.has('kind', 'p').has('age')`, was dropped, and a second one taken for a branch of its own; several `has()` steps
+with a `limit()` between them, such as `__.has('kind', 'p').limit(1).has('age', 3)`, were taken for branches of their
+own; a branch which began with a `limit()` was left out; and an `order()` by a traversal in a branch was dropped. A
+branch's `order()` by the id or the label of the element, which every element has, lets each element through, and so
+does one by a key under the deprecated `ProductiveByStrategy`, which makes it yield null where the key has none. An
+`or()` of which no branch lets an element through now returns no element without reading any, also where the traversal
+orders the elements. JanusGraph leaves an `or()` to TinkerPop where one of its branches orders by a traversal, such as
+`__.has('kind', 'p').order().by(__.values('age').count())`, and folds in none of the `has()` steps after it either:
+TinkerPop then checks every element which the query of the `has()` steps before the `or()` returns, every vertex where
+there are none, which fails under `query.force-index`, where JanusGraph used the index before.
+
+The vertices of ids which a traversal starts from, as in
+`g.V().hasId(ids).or(__.has('kind', 'p'), __.has('name', 'd'))`, had to hold every branch of the `or()` at once; they
+now need to hold one, as in TinkerPop. A traversal with two `or()` steps, of which one had a branch with an offset or an
+order of its own, failed with a `NullPointerException`, and one with a branch on a key which doesn't exist next to
+another `or()` returned nothing; both are fixed. Such a branch also made the `or()` of JanusGraph's API return nothing:
+`tx.query().or([tx.query().has('nickname', 'x'), tx.query().has('kind', 'p')]).vertices()` now returns the vertices of
+kind `p`.
+
+That `or()` also left out the query's own conditions, so
+`tx.query().has('kind', 'p').or([tx.query().has('name', 'd'), tx.query().has('age', 1)])` returned the vertices of other
+kinds which held a sub-query too, and the `or()` calls of its sub-queries, so that a sub-query of only an `or()` call,
+as the first of `tx.query().or([tx.query().or([...]), tx.query().has('name', 'a')])`, held for every vertex, for none
+where a Lucene index answered the query, and made Elasticsearch fail. Both now hold, the sub-queries as they are when
+the `or()` is called: a condition added to a sub-query afterwards no longer counts. The query's own conditions, and
+those of an `or()` of a single sub-query, make one conjunction, which an `or()` of sub-queries of a single condition
+each joins as a disjunction of those conditions, so that a composite index, or a Solr index, can answer the conditions
+it holds. An `or()` of sub-queries of several conditions each takes the query's condition out of that form: it is
+checked in memory, or scans, and fails under `query.force-index`, even where a composite index holds one of the query's
+own conditions, unless an Elasticsearch or Lucene index answers the whole condition. The condition of a traversal with
+several `or()` steps whose branches have a single condition each is written in the same way, so that a composite or a
+Solr index can answer it too where it holds its keys, and `profile()` shows it flat, as
+`((name = bob OR prop = val2) AND (name = alex OR prop = val))`. And `tx.query().or([])`, of no sub-queries, returned
+every vertex, where it now returns none, as a disjunction of nothing holds for none.
+
+A sub-query which every element holds, such as `tx.query().hasNot('nickname')` where no key is named `nickname`, now
+makes the `or()` hold for every element. Where a mixed index answered the `or()`, such a sub-query became a conjunction
+of no conditions: Lucene read it as one which no element holds, so
+`tx.query().or([tx.query().hasNot('nickname'), tx.query().has('kind', 'p')])` returned only the vertices of kind `p`,
+and Elasticsearch failed with `Could not call index`. Such an `or()` now reads every element, and so fails under
+`query.force-index` with `Could not find a suitable index`. So does a traversal's `or()` with a branch such as
+`__.has('nickname', null)` on a key which doesn't exist, which JanusGraph holds for every vertex, as it does
+`g.V().has('nickname', null)`, where TinkerPop holds it for none:
+`g.V().or(__.has('nickname', null), __.has('kind', 'p'))` now returns every vertex with a Lucene or Elasticsearch index
+too, as it did without an index, where Lucene returned the vertices of kind `p` and Elasticsearch failed.
+
+For code built on these classes: `HasStepFolder.localFoldInHasContainer` takes the step and the branch, as
+`(HasStepFolder, Traversal.Admin)`, and `JanusGraphStep.setLocalLimit` and `localOrderBy` apply the range and the order
+of a branch to each element, as TinkerPop does, instead of limiting and ordering the query of the branch.
 
 ##### Mixed index names on one backing index must now differ in more than case
 
