@@ -72,6 +72,30 @@ public class JanusGraphAssert {
         assertEquals(expected, stream.count());
     }
 
+    /**
+     * Asserts that two strings, either of which may be null, are equal. Where they differ, the message tells which one
+     * is null, or the first UTF-16 unit which differs, rather than the strings: test reports cut a message off at an
+     * unpaired surrogate.
+     */
+    public static void assertSameChars(String expected, String actual) {
+        if (expected == null || actual == null) {
+            assertTrue(expected == null && actual == null, () -> String.format("Expected %s but was %s",
+                expected == null ? "null" : expected.length() + " chars",
+                actual == null ? "null" : actual.length() + " chars"));
+            return;
+        }
+        assertTrue(expected.equals(actual), () -> {
+            int i = 0;
+            while (i < expected.length() && i < actual.length() && expected.charAt(i) == actual.charAt(i)) i++;
+            return String.format("Expected %d chars but was %d, which first differ at %d: expected %s but was %s",
+                expected.length(), actual.length(), i, unitAt(expected, i), unitAt(actual, i));
+        });
+    }
+
+    private static String unitAt(String text, int index) {
+        return index < text.length() ? String.format("U+%04X", (int) text.charAt(index)) : "the end";
+    }
+
     public static<V extends Element> void assertEmpty(Object object) {
         assertTrue(isEmpty(object));
     }

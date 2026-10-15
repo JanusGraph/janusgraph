@@ -391,6 +391,25 @@ index needs a reindex for queries to find text values holding a dotted capital `
 `I` written by a JVM with a Turkish or Azerbaijani default locale. A mixed index on Elasticsearch whose store name holds
 an `I` or a dotted capital `İ`, and whose index such a JVM created, needs one too.
 
+##### Strings longer than 16,000 UTF-16 units keep their unpaired surrogates
+
+JanusGraph stores a string longer than 16,000 UTF-16 units compressed. It wrote each unpaired surrogate of such a
+string, a unit from U+D800 to U+DFFF which isn't half of a surrogate pair, as a question mark, so the string came back
+from storage with question marks in their place. Strings which differ only there were stored alike: the values of a
+`SET` property became one, and a unique composite index took such strings for duplicates. Such strings now keep their
+unpaired surrogates, as shorter strings do: an unpaired surrogate is compressed as the three bytes which UTF-8 would
+give its code point (WTF-8). Every other string is stored byte for byte as before, and strings stored before read as
+before:
+
+* A string stored before keeps its question marks, and so does its composite index entry, which a lookup by the string
+  as it reads back finds. A lookup by the string with its unpaired surrogates finds only the entries written since, and
+  a unique index doesn't take the two for duplicates.
+* JanusGraph versions before 1.2.0 read such a string which 1.2.0 wrote with U+FFFD in place of each unpaired surrogate.
+  Where its bytes are part of a key, they can't remove it: a value of a `SET` property stays, and so does a composite
+  index entry, which keeps a unique value taken. Upgrade every instance before such strings are written, or afterwards
+  remove the leftover values with 1.2.0 and replace the composite indexes concerned with new ones: neither `REINDEX`
+  nor `REMOVE_STALE_ENTRIES` removes the entry of an element which still exists.
+
 ##### Zombie instances auto-close during index status update operations
 
 Starting from version 1.2.0 JanusGraph can automatically force-close JanusGraph instances that are unreachable
