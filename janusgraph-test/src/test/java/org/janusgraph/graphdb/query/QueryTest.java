@@ -24,9 +24,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.PropertyKey;
@@ -47,8 +49,10 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Function;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
@@ -193,6 +197,154 @@ public class QueryTest {
         // assertEquals(1, tx.traversal().V().or(__.hasId(vId, v2Id).limit(0), __.has("pos")).count().next());
         // assertEquals(1, tx.traversal().V().or(__.hasId(vId, v2Id).limit(1), __.has("pos")).count().next());
         // assertEquals(2, tx.traversal().V().or(__.hasId(vId, v2Id).limit(1), __.has("age")).count().next());
+    }
+
+    /**
+     * TinkerPop runs each branch of an or() for each element on its own, so a limit() or range() in a branch lets the
+     * element through, unless it skips it or its limit is 0, and an order() where each of its by(key) modulators has a
+     * value. No index answers these or() steps, so JanusGraph queries each branch, or scans the vertices where the
+     * traversal has several or() steps, and returns what a TinkerGraph which holds the same vertices does
+     */
+    @Test
+    public void testOrBranchesCheckEachElementOnItsOwnAsTinkerGraphDoes() {
+        tx.makePropertyKey("uid").dataType(Integer.class).make();
+        tx.makePropertyKey("kind").dataType(String.class).make();
+        tx.makePropertyKey("name").dataType(String.class).make();
+        tx.makePropertyKey("age").dataType(Integer.class).make();
+        final GraphTraversalSource reference = TinkerGraph.open().traversal();
+        //uid, kind, name and age; every vertex has a name, and some have no age
+        final Object[][] vertices = {{1, "p", "c", 5}, {2, "p", "a", 3}, {3, "p", "f", null}, {4, "p", "e", null},
+            {5, "p", "g", 1}, {6, "q", "d", 7}, {7, "q", "h", null}, {8, "r", "j", 9}};
+        for (final GraphTraversalSource g : Arrays.asList(tx.traversal(), reference)) {
+            for (final Object[] vertex : vertices) {
+                final GraphTraversal<Vertex, Vertex> added = g.addV().property("uid", vertex[0])
+                    .property("kind", vertex[1]).property("name", vertex[2]);
+                (vertex[3] == null ? added : added.property("age", vertex[3])).iterate();
+            }
+        }
+        tx.commit();
+        tx = graph.newTransaction();
+        final List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> unordered = Arrays.asList(
+            g -> g.V().or(__.has("kind", "p").limit(1), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "q"), __.has("kind", "p").limit(1)),
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "p").order().by("age", desc).limit(2), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "p").limit(1).has("age", 3), __.has("kind", "q").range(0, 1)),
+            g -> g.V().or(__.has("kind", "p").has("age"), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q"))
+                .or(__.has("age", 1), __.has("name", "d")),
+            g -> g.V().or(__.has("kind", "p").order().by("age").limit(1), __.has("kind", "q"))
+                .or(__.has("age", 1), __.has("name", "d")),
+            g -> g.V().or(__.has("nickname", "x"), __.has("kind", "p")).or(__.has("age", 1), __.has("name", "d")),
+            //The step's has() is copied into each branch, so the second branch of the first or() repeats the within()
+            g -> g.V().has("kind", P.within("p", "q")).or(__.has("name", "a"), __.has("kind", P.within("p", "q")))
+                .or(__.has("age", 1), __.has("name", "b")),
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q").limit(0)),
+            //The vertices of given ids, each checked against the branches
+            g -> g.V().hasId(withUids(g, 1, 3, 6, 8)).or(__.has("kind", "p"), __.has("name", "d")),
+            g -> g.V().hasId(withUids(g, 1, 3, 6, 8)).or(__.has("kind", "p").order().by("age"), __.has("name", "d")),
+            g -> g.V().hasId(withUids(g, 1, 3, 6, 8)).or(__.has("kind", "p").range(1, 2), __.has("name", "j")),
+            g -> g.V().hasId(withUids(g, 1, 3, 6, 8)).has("age").or(__.has("kind", "p"), __.has("name", "j")));
+        final List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> ordered = Arrays.asList(
+            g -> g.V().or(__.has("kind", "p").limit(1), __.has("kind", "q")).order().by("name").limit(3),
+            g -> g.V().or(__.has("kind", "p").limit(1), __.has("kind", "q")).count(),
+            //An or() of which no branch lets an element through, ordered
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q").limit(0)).order().by("name"),
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q").limit(0)).order().by("name", desc)
+                .limit(2));
+        for (final List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> traversals
+                : Arrays.asList(unordered, ordered)) {
+            for (final Function<GraphTraversalSource, GraphTraversal<?, ?>> traversal : traversals) {
+                final List<Object> expected = new ArrayList<>(), actual = new ArrayList<>();
+                traversal.apply(reference).forEachRemaining(
+                    result -> expected.add(result instanceof Vertex ? ((Vertex) result).value("uid") : result));
+                traversal.apply(tx.traversal()).forEachRemaining(
+                    result -> actual.add(result instanceof Vertex ? ((Vertex) result).value("uid") : result));
+                //Where the traversal doesn't order the vertices, they come in any order
+                if (traversals == unordered) {
+                    expected.sort(Comparator.comparing(Object::toString));
+                    actual.sort(Comparator.comparing(Object::toString));
+                }
+                assertEquals(expected, actual, traversal.apply(reference).toString());
+            }
+        }
+        //A branch of the API's or() which no element can hold, as one on a key which doesn't exist, leaves the others
+        final JanusGraphQuery<?> query = tx.query();
+        ((JanusGraphQuery) query).or(Arrays.asList(tx.query().has("nickname", "x"), tx.query().has("kind", "p")));
+        final List<Object> ofKindP = new ArrayList<>();
+        query.vertices().forEach(vertex -> ofKindP.add(vertex.value("uid")));
+        ofKindP.sort(Comparator.comparing(Object::toString));
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5), ofKindP);
+        //The query's own conditions hold along with its or(), and an or() of no branches holds for no element
+        final JanusGraphQuery<?> withOr = tx.query().has("kind", "p");
+        ((JanusGraphQuery) withOr).or(Arrays.asList(tx.query().has("name", "d"), tx.query().has("age", 1)));
+        final List<Object> ofKindPWithOr = new ArrayList<>();
+        withOr.vertices().forEach(vertex -> ofKindPWithOr.add(vertex.value("uid")));
+        assertEquals(Collections.singletonList(5), ofKindPWithOr);
+        assertFalse(tx.query().or(Collections.emptyList()).vertices().iterator().hasNext());
+        assertFalse(tx.query().has("kind", "p").or(Collections.emptyList()).vertices().iterator().hasNext());
+        //The or() calls of a sub-query hold along with its own conditions
+        final JanusGraphQuery<?> ofKindPOrQ = tx.query();
+        ((JanusGraphQuery) ofKindPOrQ).or(Arrays.asList(tx.query().has("kind", "p"), tx.query().has("kind", "q")));
+        final JanusGraphQuery<?> withNestedOr = tx.query();
+        ((JanusGraphQuery) withNestedOr).or(Arrays.asList(ofKindPOrQ, tx.query().has("name", "a")));
+        final List<Object> ofKindPOrQOrNamedA = new ArrayList<>();
+        withNestedOr.vertices().forEach(vertex -> ofKindPOrQOrNamedA.add(vertex.value("uid")));
+        ofKindPOrQOrNamedA.sort(Comparator.comparing(Object::toString));
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5, 6, 7), ofKindPOrQOrNamedA);
+        final JanusGraphQuery<?> ofKindPAndAge = tx.query().has("kind", "p");
+        ((JanusGraphQuery) ofKindPAndAge).or(Arrays.asList(tx.query().has("age", 1), tx.query().has("age", 3)));
+        final JanusGraphQuery<?> withOwnAndNestedOr = tx.query();
+        ((JanusGraphQuery) withOwnAndNestedOr).or(Arrays.asList(ofKindPAndAge, tx.query().has("name", "h")));
+        final List<Object> ofKindPAndAgeOrNamedH = new ArrayList<>();
+        withOwnAndNestedOr.vertices().forEach(vertex -> ofKindPAndAgeOrNamedH.add(vertex.value("uid")));
+        ofKindPAndAgeOrNamedH.sort(Comparator.comparing(Object::toString));
+        assertEquals(Arrays.asList(2, 5, 7), ofKindPAndAgeOrNamedH);
+        //A condition which the query and an or() call of a single sub-query both hold is held once, and so is one which
+        //two sub-queries of an or() call hold
+        final JanusGraphQuery<?> twice = tx.query().has("kind", "p");
+        ((JanusGraphQuery) twice).or(Collections.singletonList(tx.query().has("kind", "p")));
+        assertEquals("(kind = p)", conditionOf(twice));
+        final JanusGraphQuery<?> twiceInOr = tx.query().has("age", 1);
+        ((JanusGraphQuery) twiceInOr).or(Arrays.asList(tx.query().has("kind", "p"), tx.query().has("kind", "p"),
+            tx.query().has("name", "a")));
+        assertEquals("(age = 1 AND (kind = p OR name = a))", conditionOf(twiceInOr));
+        //The sub-queries are taken as they are at the call: a query among the sub-queries of its own or() call holds
+        //the conditions it had then, and a condition added to a sub-query afterwards doesn't count
+        final JanusGraphQuery<?> itself = tx.query().has("kind", "p");
+        ((JanusGraphQuery) itself).or(Arrays.asList(itself, tx.query().has("name", "d")));
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5), sortedUids(itself));
+        final JanusGraphQuery<?> later = tx.query().has("kind", "q");
+        final JanusGraphQuery<?> withLater = tx.query();
+        ((JanusGraphQuery) withLater).or(Arrays.asList(later, tx.query().has("name", "a")));
+        later.has("name", "h");
+        assertEquals(Arrays.asList(2, 6, 7), sortedUids(withLater));
+        //The step of an or() which lets no element through prints it as an or() of no branches, and is profiled
+        final GraphTraversal<Vertex, Vertex> none = tx.traversal().V()
+            .or(__.has("kind", "p").range(1, 3), __.has("kind", "q").limit(0));
+        assertFalse(none.hasNext());
+        assertTrue(none.toString().contains("Or()"), none.toString());
+        tx.traversal().V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q").limit(0)).order().by("name")
+            .profile().next();
+    }
+
+    //The condition of the query's vertices
+    private static String conditionOf(JanusGraphQuery<?> query) {
+        return ((org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder) query)
+            .constructQuery(org.janusgraph.graphdb.internal.ElementCategory.VERTEX).getCondition().toString();
+    }
+
+    //The uids of the query's vertices, in the order of the uids
+    private static List<Object> sortedUids(JanusGraphQuery<?> query) {
+        final List<Object> uids = new ArrayList<>();
+        query.vertices().forEach(vertex -> uids.add(vertex.value("uid")));
+        uids.sort(Comparator.comparing(uid -> (Integer) uid));
+        return uids;
+    }
+
+    //The ids of the vertices of the given uids
+    private static P<Object> withUids(GraphTraversalSource g, Object... uids) {
+        return P.within(g.V().has("uid", P.within(uids)).id().toList());
     }
 
     @Test
