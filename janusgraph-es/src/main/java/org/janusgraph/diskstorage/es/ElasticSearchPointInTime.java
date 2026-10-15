@@ -31,7 +31,8 @@ import java.util.Queue;
 /**
  * Iterates over the hits of a search of a point in time one page at a time, each page asked for after the last hit of
  * the one before ({@code search_after}), and closes the point in time as soon as it can: when a page comes back short,
- * when the limit is within the pages received, or when the consumer closes it.
+ * when the limit is within the pages received, when a page fails, or when the consumer closes it. Once a page failed,
+ * every later call fails with it.
  */
 public class ElasticSearchPointInTime implements Iterator<RawQuery.Result<String>>, AutoCloseable {
 
@@ -50,6 +51,10 @@ public class ElasticSearchPointInTime implements Iterator<RawQuery.Result<String
     private boolean released;
     private String pitId;
     private List<Object> lastSort;
+    //The failure of a page, which every later call rethrows: a consumer which asks again, as the transaction's cache of
+    //index results does to tell whether a result is complete, must not take the hits read before it for the whole
+    //result
+    private RuntimeException failure;
 
     /**
      * @param requestBody the body of the search, which every page sends again with the position of the one before;
@@ -87,6 +92,9 @@ public class ElasticSearchPointInTime implements Iterator<RawQuery.Result<String
 
     @Override
     public boolean hasNext() {
+        if (failure != null) {
+            throw failure;
+        }
         if (delivered >= limit) {
             return false;
         }
@@ -102,18 +110,18 @@ public class ElasticSearchPointInTime implements Iterator<RawQuery.Result<String
             update(response);
             return response.numResults() > 0;
         } catch (final IOException e) {
-            //The pages can't go on from here, so the point in time has served its purpose
-            finishAfterAFailedPage();
-            throw new UncheckedIOException("Could not read the next page of point in time " + pitId, e);
+            throw fail(new UncheckedIOException("Could not read the next page of point in time " + pitId, e));
         } catch (final RuntimeException e) {
-            finishAfterAFailedPage();
-            throw e;
+            throw fail(e);
         }
     }
 
-    private void finishAfterAFailedPage() {
+    //The pages can't go on from a page which failed, so the point in time has served its purpose
+    private RuntimeException fail(RuntimeException pageFailure) {
+        failure = pageFailure;
         isFinished = true;
         release();
+        return pageFailure;
     }
 
     @Override

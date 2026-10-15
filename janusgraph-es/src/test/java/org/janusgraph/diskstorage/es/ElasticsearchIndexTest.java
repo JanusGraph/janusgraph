@@ -131,6 +131,12 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
     //The largest page of a limited result of the index a test opens: the option's default where null
     private Integer limitedResultMaxPageSize;
 
+    //The shards of the indexes which the index a test opens creates: the container's default of 1 where null
+    private Integer numberOfShards;
+
+    //Whether the index a test opens uses the results of the shards which answered where others failed
+    private boolean allowPartialResults;
+
     @Container
     public static JanusGraphElasticsearchContainer esr = new JanusGraphElasticsearchContainer();
     static HttpHost host;
@@ -193,6 +199,10 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         if (limitedResultMaxPageSize != null) {
             cc.set("index." + index + ".elasticsearch.limited-result-max-page-size", limitedResultMaxPageSize);
         }
+        if (numberOfShards != null) {
+            cc.set("index." + index + ".elasticsearch.create.ext.number_of_shards", numberOfShards);
+        }
+        cc.set("index." + index + ".elasticsearch.allow-partial-results", allowPartialResults);
         return makeESTestConfig(index, cc);
     }
 
@@ -1281,6 +1291,103 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertEquals(INDEXED_DOCUMENTS, tx.queryStream(allDocuments(store)).count());
         assertEquals(5, awaitSearchContextsBackAt(afterLimited).queryTotal - afterLimited.queryTotal,
             "queries of the result without a limit");
+    }
+
+    /* ---------------------------------------------------------------
+     * Shards which fail. Of the 10 documents in an index of two shards, read in the order of time, a script field
+     * throws for doc7, which fails the fetch of its shard wherever doc7 is among the hits: in a single request of 8
+     * hits, and on the third page of a result read in pages of 3, after a first request of 4 hits which doesn't reach
+     * it
+     * ---------------------------------------------------------------
+     */
+
+    private static final String SHARD_FAILURE = "doc7 fails its shard";
+
+    private void indexDocumentsInTwoShards(String store) throws BackendException {
+        numberOfShards = 2;
+        //The index which creates the store's index has to know the shards
+        clopen();
+        indexDocuments(store);
+    }
+
+    private static RawQuery failingForDoc7(String store) {
+        final Map<String, Object> script = ImmutableMap.of("source",
+            "if (doc['" + TIME + "'].value == 7) { throw new IllegalArgumentException('" + SHARD_FAILURE + "'); } "
+                + "return 0;");
+        return new RawQuery(store, "text:\"Hello world\"",
+            ImmutableList.of(new IndexQuery.OrderEntry(TIME, Order.ASC, Long.class)),
+            new Parameter[]{new Parameter<>("script_fields",
+                ImmutableMap.of("failing", ImmutableMap.of("script", script)))});
+    }
+
+    //Elasticsearch 7 and later, told not to allow partial results, fail the single request and a page of a point in
+    //time themselves; JanusGraph fails a page of a scroll, and every answer of Elasticsearch 6, which isn't told
+    @ParameterizedTest
+    @EnumSource(ElasticSearchPagingMode.class)
+    public void shouldFailAResultWhichSomeShardsLeftOut(ElasticSearchPagingMode mode) throws Exception {
+        pagingMode = mode;
+        final String store = "vertex";
+        indexDocumentsInTwoShards(store);
+
+        assertFailedForTheShard(assertThrows(BackendException.class,
+            () -> tx.queryStream(failingForDoc7(store).setLimit(8)).count()));
+        try (Stream<RawQuery.Result<String>> hits = tx.queryStream(failingForDoc7(store))) {
+            assertFailedForTheShard(assertThrows(RuntimeException.class, hits::count));
+        }
+    }
+
+    //Where partial results are allowed, the third page comes back with the hits of the other shard, fewer than a page,
+    //which ends the result, as it always did before
+    @ParameterizedTest
+    @EnumSource(ElasticSearchPagingMode.class)
+    public void shouldEndAResultEarlyWherePartialResultsAreAllowed(ElasticSearchPagingMode mode) throws Exception {
+        pagingMode = mode;
+        allowPartialResults = true;
+        final String store = "vertex";
+        indexDocumentsInTwoShards(store);
+
+        final List<String> read = tx.queryStream(failingForDoc7(store)).map(RawQuery.Result::getResult)
+            .collect(Collectors.toList());
+        assertEquals(Arrays.asList("doc0", "doc1", "doc2", "doc3", "doc4", "doc5"), read.subList(0, 6),
+            "hits read: " + read);
+        assertFalse(read.contains("doc7"), "hits read: " + read);
+        assertFalse(read.contains("doc9"), "hits read: " + read);
+    }
+
+    //A count of the same documents whose post_filter throws for doc7: a count fetches no hits, so the shard fails
+    //where it filters them
+    private static RawQuery countFailingForDoc7(String store) {
+        final Map<String, Object> script = ImmutableMap.of("source",
+            "if (doc['" + TIME + "'].value == 7) { throw new IllegalArgumentException('" + SHARD_FAILURE + "'); } "
+                + "return true;");
+        return new RawQuery(store, "text:\"Hello world\"", new Parameter[]{new Parameter<>("post_filter",
+            ImmutableMap.of("script", ImmutableMap.of("script", script)))});
+    }
+
+    //A count is a search for no hits which counts them all, which Elasticsearch 7 and later, told not to allow partial
+    //results, fail themselves; JanusGraph fails the count of Elasticsearch 6
+    @Test
+    public void shouldFailACountWhichSomeShardsLeftOut() throws Exception {
+        final String store = "vertex";
+        indexDocumentsInTwoShards(store);
+
+        assertFailedForTheShard(assertThrows(BackendException.class, () -> tx.totals(countFailingForDoc7(store))));
+    }
+
+    @Test
+    public void shouldCountWhatTheShardsWhichAnsweredFoundWherePartialResultsAreAllowed() throws Exception {
+        allowPartialResults = true;
+        final String store = "vertex";
+        indexDocumentsInTwoShards(store);
+
+        final long count = tx.totals(countFailingForDoc7(store));
+        assertTrue(count < INDEXED_DOCUMENTS, "count: " + count);
+    }
+
+    private static void assertFailedForTheShard(Throwable failure) {
+        assertTrue(Throwables.getCausalChain(failure).stream()
+                .anyMatch(cause -> String.valueOf(cause.getMessage()).contains(SHARD_FAILURE)),
+            () -> Throwables.getStackTraceAsString(failure));
     }
 
     private static final class SearchStats {

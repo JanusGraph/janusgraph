@@ -239,16 +239,31 @@ public class ElasticSearchIndex implements IndexProvider {
                 "but never in pages smaller than `index.[X].max-result-set-size`, the page size of a query without " +
                 "a limit. Larger pages take fewer round trips and a larger response each. `scroll-keep-alive` must " +
                 "cover consuming one page: each page renews it, and a consumer which takes longer over a page than " +
-                "the keep-alive loses the scroll context or point in time. The next page then fails, or, where the " +
-                "index's shards sit on several nodes, comes back with the hits of only some shards, which ends the " +
-                "result early or leaves hits out without an error. A slower consumer can lower this option in its " +
-                "local configuration, as it is MASKABLE, or raise `scroll-keep-alive`, which is GLOBAL_OFFLINE. " +
-                "10,000 is the practical ceiling: Elasticsearch accepts at most `index.max_result_window` hits in a " +
-                "page of a scroll or of a point in time, 10,000 by default, which JanusGraph lifts only on the " +
-                "indexes it creates; on those, the time a consumer has for each hit bounds it. A value no larger " +
-                "than `max-result-set-size` reads such results in pages of `max-result-set-size`, as earlier " +
-                "versions did.",
+                "the keep-alive loses the scroll context or point in time, and the next page fails, unless " +
+                "`allow-partial-results` lets it come back with the hits of the shards which kept theirs. A slower " +
+                "consumer can lower this option in its local configuration, as it is MASKABLE, or raise " +
+                "`scroll-keep-alive`, which is GLOBAL_OFFLINE. 10,000 is the practical ceiling: Elasticsearch " +
+                "accepts at most `index.max_result_window` hits in a page of a scroll or of a point in time, 10,000 " +
+                "by default, which JanusGraph lifts only on the indexes it creates; on those, the time a consumer " +
+                "has for each hit bounds it. A value no larger than `max-result-set-size` reads such results in " +
+                "pages of `max-result-set-size`, as earlier versions did.",
             ConfigOption.Type.MASKABLE, 250, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Boolean> ALLOW_PARTIAL_RESULTS =
+            new ConfigOption<>(ELASTICSEARCH_NS, "allow-partial-results",
+            "Whether an index query, count or aggregation uses the results of the shards which answered where other " +
+                "shards of the index failed, weren't available or ran out of time: where the search context of a " +
+                "scroll expired on some nodes but not on others, for example, or where a search ran out of its " +
+                "`timeout`, set as a parameter of a direct index query or by the cluster's " +
+                "`search.default_search_timeout`. Elasticsearch answers with such partial results unless it is told " +
+                "otherwise. By default, JanusGraph tells it otherwise, with `allow_partial_search_results=false` on " +
+                "the searches and counts it sends to Elasticsearch 7 and later and to OpenSearch, and fails every " +
+                "answer which lacks the results of some shards, with their failures in the error, the later pages " +
+                "of a scroll among them, which take no such parameter. JanusGraph doesn't reattempt a search which " +
+                "ran out of time, though the Elasticsearch client still sends a request answered with 502, 503 or " +
+                "504 to its next host, and Elasticsearch 8.15.3 answers a time-out with 504. Set this to true to " +
+                "use partial results, as earlier versions did.",
+            ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigNamespace ES_INGEST_PIPELINES =
             new ConfigNamespace(ELASTICSEARCH_NS, "ingest-pipeline", "Ingest pipeline applicable to a store of an index.");
@@ -465,8 +480,12 @@ public class ElasticSearchIndex implements IndexProvider {
                 "and leaving the mixed index inconsistent with the graph; a bulk request qualifies only when every " +
                 "item which failed did so with one of these codes. Resubmitting a whole mutation resends items " +
                 "which already succeeded, which duplicates the values of LIST cardinality properties - the client " +
-                "level attempts do not. Queries get the client level attempts only. Set to an empty list to " +
-                "consider every status code permanent, which disables both levels. E.g. \"429,502,503,504\"",
+                "level attempts do not. A query, count or aggregation is likewise reattempted as a whole for up " +
+                "to `storage.read-time`, but not the later pages of a result read in pages, which get the client " +
+                "level attempts only. JanusGraph doesn't reattempt a search which ran out of its time, whatever its " +
+                "status, though the Elasticsearch client still sends a request answered with 502, 503 or 504 to its " +
+                "next host. Set to an empty list to consider every status code permanent, which disables both " +
+                "levels. E.g. \"429,502,503,504\"",
             ConfigOption.Type.LOCAL, String[].class, new String[]{"429", "502", "503", "504"},
             ElasticSearchIndex::isStatusCodeList);
 
@@ -917,7 +936,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 return cause;
             } else if (cause instanceof ResponseException) {
                 final int statusCode = ((ResponseException) cause).getResponse().getStatusLine().getStatusCode();
-                if (retryErrorCodes.contains(statusCode)) {
+                if (retryErrorCodes.contains(statusCode) && !TransientFailures.isSearchTimeout(cause)) {
                     return cause;
                 }
             } else if (cause instanceof ElasticSearchBulkFailureException) {

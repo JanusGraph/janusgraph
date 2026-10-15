@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -40,6 +42,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LongSummaryStatistics;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -199,6 +202,25 @@ public class RestClientRetryTest {
             Assertions.assertSame(expectedFinalException, actualException);
         }
         verify(restClientMock, times(expectedNumberOfRequestAttempts)).performRequest(requestCaptor.capture());
+    }
+
+    //Elasticsearch 9.5.4 fails a search which ran out of its time with status 429, which retry-error-codes lists by
+    //default, but reattempting it would run it as long again
+    @Test
+    public void testSearchWhichRanOutOfTimeIsNotRetried() throws IOException {
+        doReturn(429).when(statusLine).getStatusCode();
+        doReturn(statusLine).when(response).getStatusLine();
+        doReturn(new StringEntity("{\"error\":{\"root_cause\":[{\"type\":\"search_timeout_exception\",\"reason\":"
+            + "\"Time exceeded\"}],\"type\":\"search_phase_execution_exception\",\"reason\":\"all shards failed\"},"
+            + "\"status\":429}", ContentType.APPLICATION_JSON)).when(response).getEntity();
+        doReturn(response).when(responseException).getResponse();
+
+        try (RestElasticSearchClient restClientUnderTest = createClient(3, Sets.newHashSet(429))) {
+            when(restClientMock.performRequest(any())).thenThrow(responseException);
+            Assertions.assertSame(responseException, Assertions.assertThrows(ResponseException.class,
+                () -> restClientUnderTest.search("some_index", new HashMap<>(), false)));
+        }
+        verify(restClientMock, times(1)).performRequest(any());
     }
 
     @Test

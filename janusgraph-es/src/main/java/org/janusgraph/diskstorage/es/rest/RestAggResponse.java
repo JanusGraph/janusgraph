@@ -14,10 +14,17 @@
 package org.janusgraph.diskstorage.es.rest;
 
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
+import org.apache.tinkerpop.shaded.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class RestAggResponse {
     private RestAggResult aggregations;
+
+    @JsonProperty("timed_out")
+    private boolean timedOut;
+
+    @JsonProperty("_shards")
+    private RestShardStatistics shards;
 
     public RestAggResult getAggregations() {
         return aggregations;
@@ -25,5 +32,23 @@ public class RestAggResponse {
 
     public void setAggregations(RestAggResult aggregations) {
         this.aggregations = aggregations;
+    }
+
+    /**
+     * Whether a shard ran out of the aggregation's time, and answered with what it aggregated until then.
+     */
+    public boolean isTimedOut() {
+        return timedOut;
+    }
+
+    /**
+     * The shards the aggregation ran on and which of them answered; null where the response doesn't tell.
+     */
+    public RestShardStatistics getShards() {
+        return shards;
+    }
+
+    public void setShards(RestShardStatistics shards) {
+        this.shards = shards;
     }
 }

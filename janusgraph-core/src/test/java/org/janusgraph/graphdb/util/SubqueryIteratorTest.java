@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -244,6 +245,64 @@ public class SubqueryIteratorTest {
         final SubqueryIterator iterator = iteratorOver(Stream.of(1L, 2L, 3L));
         iterator.forEachRemaining(element -> { });
         assertFalse(iterator.hasBackendReachedLimit());
+    }
+
+    //An index stream whose ids are 1 and 2, after which reading fails, as a page of an Elasticsearch scroll which lost
+    //the hits of a shard does, and which then answers that the ids ended, as an Elasticsearch point in time did once a
+    //page of it failed. It records whether it was asked for an id after the failure
+    @SuppressWarnings("unchecked")
+    private static Stream<Object> failingAfterTwoIds(AtomicBoolean askedAfterTheFailure) {
+        final Iterator<Object> ids = new Iterator<Object>() {
+            private long returned;
+            private boolean failed;
+
+            @Override
+            public boolean hasNext() {
+                if (failed) {
+                    askedAfterTheFailure.set(true);
+                    return false;
+                }
+                if (returned == 2) {
+                    failed = true;
+                    throw new IllegalStateException("A page of the index failed");
+                }
+                return true;
+            }
+
+            @Override
+            public Object next() {
+                return ++returned;
+            }
+        };
+        final Stream<Object> stream = mock(Stream.class);
+        when(stream.iterator()).thenReturn(ids);
+        return stream;
+    }
+
+    //What follows a failure to read the index is unknown. Closing the iterator after it, as closing the traversal does,
+    //neither asks the index whether the result ended, which may fail again and hide the first failure from the
+    //caller, nor caches the ids read before it as the whole result, and still closes the index's stream
+    @Test
+    public void shouldNeitherProbeNorCacheAfterReadingTheIndexFailed() {
+        final AtomicBoolean askedAfterTheFailure = new AtomicBoolean();
+        final Stream<Object> fromIndex = failingAfterTwoIds(askedAfterTheFailure);
+        final JointIndexQuery.Subquery subQuery = mock(JointIndexQuery.Subquery.class);
+        when(subQuery.getProfiler()).thenReturn(QueryProfiler.NO_OP);
+        final IndexSerializer indexSerializer = mock(IndexSerializer.class);
+        when(indexSerializer.query(any(), any(), any())).thenAnswer(invocation -> fromIndex);
+        final SubqueryCache indexCache = mock(SubqueryCache.class);
+        when(indexCache.getIfPresent(any())).thenReturn(null);
+        when(indexCache.maximumCachedResultSize()).thenReturn(Integer.MAX_VALUE);
+        final SubqueryIterator iterator = new SubqueryIterator(subQuery, indexSerializer,
+            mock(BackendTransaction.class), mock(StandardJanusGraphTx.class), indexCache, Integer.MAX_VALUE,
+            id -> mock(JanusGraphElement.class), null);
+
+        assertThrows(IllegalStateException.class, () -> iterator.forEachRemaining(element -> { }));
+        iterator.close();
+
+        assertFalse(askedAfterTheFailure.get());
+        verify(indexCache, never()).put(any(), any());
+        verify(fromIndex).close();
     }
 
     //A subquery read under a limit of five, whose conversion records the ids it is given
