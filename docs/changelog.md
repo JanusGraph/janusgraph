@@ -326,6 +326,15 @@ loaded by class name, so they have to exist in Lucene 9. Lucene 9 renamed the `l
 `lucene-analysis-common` and moved a few analyzers to other packages, for example `ClassicAnalyzer` to
 `org.apache.lucene.analysis.classic` and `UAX29URLEmailAnalyzer` to `org.apache.lucene.analysis.email`.
 
+##### `has(key)` on Lucene finds the elements with a `LIST` or `SET` key of numbers, dates or booleans
+
+On a Lucene mixed index, `has(key)` of a key of `LIST` or `SET` cardinality whose values are numbers, dates, instants or
+booleans, such as `g.V().has("weights")`, found no elements in JanusGraph 0.6.0 to 1.1.x, on vertex, edge and vertex
+property indexes alike, and its `count()` was 0. Lucene indexes such values as points alone, without the doc values or
+norms which the exists query of `has(key)` read. That query now finds the elements which hold a value of such a key, by
+reading all the values of the key in the index: roughly 1 ms a query per million values, also with a limit or a
+selective condition beside it. No reindexing is needed, as Lucene writes these keys as before.
+
 ##### Names, dates and searched text no longer depend on the default locale
 
 JanusGraph converts the case of the names it reads and writes in the root locale, and lower-cases the text it searches

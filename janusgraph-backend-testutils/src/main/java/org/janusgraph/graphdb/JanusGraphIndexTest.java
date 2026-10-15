@@ -580,6 +580,108 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertNotNull(graph.traversal().V().has("compositeInt").properties("compositeInt").as("p").has("bool2").select("p").next());
     }
 
+    /**
+     * has(key) finds the vertices, edges and vertex properties which hold a value of the key, and hasNot(key) the
+     * others, whatever the data type and the cardinality of the key. Lucene indexes the numbers, dates, instants and
+     * booleans of a key of several values as points alone, without the doc values which its exists query read
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"SINGLE", "LIST", "SET"})
+    public void testExistsQueryOnKeysOfEachDataTypeAndCardinality(Cardinality cardinality) {
+        if (!indexFeatures.supportsCardinality(cardinality)) return;
+        //The name, data type and mapping of each key, and two values of it, the second of which the elements keep
+        final List<Object[]> keys = new ArrayList<>(Arrays.asList(
+            new Object[]{"byte", Byte.class, Mapping.DEFAULT, (byte) 1, (byte) -2},
+            new Object[]{"short", Short.class, Mapping.DEFAULT, (short) 1, (short) -2},
+            new Object[]{"int", Integer.class, Mapping.DEFAULT, 1, -2},
+            new Object[]{"long", Long.class, Mapping.DEFAULT, 1L, Long.MIN_VALUE},
+            new Object[]{"float", Float.class, Mapping.DEFAULT, 1.5f, -2.5f},
+            new Object[]{"double", Double.class, Mapping.DEFAULT, 1.5, -2.5},
+            new Object[]{"date", Date.class, Mapping.DEFAULT, new Date(1000), new Date(2000)},
+            new Object[]{"instant", Instant.class, Mapping.DEFAULT, Instant.ofEpochSecond(1), Instant.ofEpochSecond(2)},
+            new Object[]{"bool", Boolean.class, Mapping.DEFAULT, true, false},
+            new Object[]{"defaultString", String.class, Mapping.DEFAULT, "First Value", "second value"}));
+        for (final Object[] string : new Object[][]{{"text", Mapping.TEXT}, {"string", Mapping.STRING},
+                {"textString", Mapping.TEXTSTRING}}) {
+            if (indexFeatures.supportsStringMapping((Mapping) string[1])) {
+                keys.add(new Object[]{string[0], String.class, string[1], "First Value", "second value"});
+            }
+        }
+        //The schema of the Solr tests has no field of several UUIDs
+        if (cardinality == Cardinality.SINGLE || !"solr".equals(readConfig.get(INDEX_BACKEND, INDEX))) {
+            keys.add(new Object[]{"uuid", UUID.class, Mapping.DEFAULT, UUID.randomUUID(), UUID.randomUUID()});
+        }
+        final PropertyKey kind = makeKey("kind", String.class);
+        makeKey("tag", String.class);
+        makeLabel("knows");
+        final List<JanusGraphManagement.IndexBuilder> indexes = Arrays.asList(
+            mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()),
+            mgmt.buildIndex("edges", Edge.class).addKey(kind, getStringMapping()),
+            mgmt.buildIndex("psearch", JanusGraphVertexProperty.class).addKey(kind, getStringMapping()));
+        for (final Object[] key : keys) {
+            final PropertyKey propertyKey = mgmt.makePropertyKey((String) key[0]).dataType((Class<?>) key[1])
+                .cardinality(cardinality).make();
+            indexes.forEach(index -> index.addKey(propertyKey, ((Mapping) key[2]).asParameter()));
+        }
+        indexes.forEach(index -> index.buildMixedIndex(INDEX));
+        finishSchema();
+
+        final JanusGraphVertex with = tx.addVertex("kind", "k");
+        final JanusGraphVertex without = tx.addVertex("kind", "k");
+        final JanusGraphVertex removed = tx.addVertex("kind", "k");
+        final JanusGraphEdge withEdge = with.addEdge("knows", without, "kind", "k");
+        final JanusGraphEdge withoutEdge = with.addEdge("knows", without, "kind", "k");
+        final JanusGraphEdge removedEdge = with.addEdge("knows", without, "kind", "k");
+        final JanusGraphVertexProperty<String> withProperty = with.property("tag", "t", "kind", "k");
+        without.property("tag", "t", "kind", "k");
+        for (final Object[] key : keys) {
+            final String name = (String) key[0];
+            for (final JanusGraphVertex vertex : new JanusGraphVertex[]{with, removed}) {
+                vertex.property(cardinality.convert(), name, key[3]);
+                if (cardinality != Cardinality.SINGLE) {
+                    vertex.property(cardinality.convert(), name, key[4]);
+                }
+            }
+            withEdge.property(name, key[3]);
+            removedEdge.property(name, key[3]);
+            withProperty.property(name, key[3]);
+        }
+        newTx();
+        //The first vertex and edge keep the second value of each key, which replaces the first one of a key of one
+        //value, and the vertex and the edge whose values are removed keep none
+        GraphTraversalSource g = tx.traversal();
+        for (final Object[] key : keys) {
+            final String name = (String) key[0];
+            if (cardinality == Cardinality.SINGLE) {
+                g.V(with).property(name, key[4]).iterate();
+            } else {
+                g.V(with).properties(name).hasValue(key[3]).drop().iterate();
+            }
+            g.V(removed).properties(name).drop().iterate();
+            g.E(withEdge).property(name, key[4]).iterate();
+            g.E(removedEdge).properties(name).drop().iterate();
+        }
+        clopen(option(FORCE_INDEX_USAGE), true);
+
+        g = tx.traversal();
+        for (final Object[] key : keys) {
+            final String name = (String) key[0];
+            assertEquals(Collections.singletonList(with.id()), g.V().has(name).id().toList(), name);
+            assertEquals(Collections.singletonList(with.id()), g.V().has("kind", "k").has(name).id().toList(), name);
+            assertEquals(1L, g.V().has(name).count().next(), name);
+            assertEquals(Sets.newHashSet(without.id(), removed.id()), g.V().has("kind", "k").hasNot(name).id().toSet(),
+                name);
+            assertEquals(Collections.singletonList(key[4]), g.V().has(name).values(name).toList(), name);
+            assertEquals(Collections.singletonList(withEdge.id()), g.E().has(name).id().toList(), name);
+            assertEquals(1L, g.E().has(name).count().next(), name);
+            assertEquals(Sets.newHashSet(withoutEdge.id(), removedEdge.id()),
+                g.E().has("kind", "k").hasNot(name).id().toSet(), name);
+            final List<Object> properties = new ArrayList<>();
+            tx.query().has(name).properties().forEach(property -> properties.add(property.id()));
+            assertEquals(Collections.singletonList(withProperty.id()), properties, name);
+        }
+    }
+
     @Test
     public void testSimpleUpdate() {
         final PropertyKey name = makeKey("name", String.class);
@@ -4815,16 +4917,22 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        PropertyKey scores = mgmt.makePropertyKey("scores").dataType(Integer.class).cardinality(Cardinality.LIST)
+            .make();
         JanusGraphManagement.IndexBuilder indexBuilder = mgmt.buildIndex("theIndex", Vertex.class)
             .addKey(name, getStringMapping());
         if (multipleFields) {
             indexBuilder.addKey(time);
+            //The documents are enumerated by an exists query on each field, also on one of a key of several values
+            if (indexFeatures.supportsCardinality(Cardinality.LIST)) {
+                indexBuilder.addKey(scores);
+            }
         }
         indexBuilder.buildMixedIndex(INDEX);
         finishSchema();
 
-        tx.addVertex("name", "stale", "time", 1);
-        tx.addVertex("name", "alive", "time", 2);
+        tx.addVertex("name", "stale", "time", 1, "scores", 1);
+        tx.addVertex("name", "alive", "time", 2, "scores", 2);
         newTx();
 
         //Disable the index and delete a vertex while the index does not receive updates -> stale document
