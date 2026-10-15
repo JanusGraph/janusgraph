@@ -15,6 +15,7 @@
 package org.janusgraph.util.datastructures;
 
 import com.google.common.base.Preconditions;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 
 import java.util.AbstractMap;
 import java.util.Collection;
@@ -24,6 +25,9 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
+ * An interval of the values of a key, whose ends compare with each other and with points as
+ * {@link AttributeUtils#compareValues} compares them, in the order in which the storage backend holds sort keys.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -106,7 +110,7 @@ public class RangeInterval<T> implements Interval<T> {
     public boolean isEmpty() {
         if (start==null || end==null) return false;
         if (isPoints()) return false;
-        int cmp = ((Comparable)start).compareTo(end);
+        int cmp = AttributeUtils.compareValues(start, end);
         return cmp>0 || (cmp==0 && (!startInclusive || !endInclusive));
     }
 
@@ -134,7 +138,7 @@ public class RangeInterval<T> implements Interval<T> {
     private Map.Entry<T,Boolean> comparePoints(T one, boolean oneIncl, T two, boolean twoIncl, boolean chooseBigger) {
         if (one==null) return new AbstractMap.SimpleImmutableEntry<>(two, twoIncl);
         if (two==null) return new AbstractMap.SimpleImmutableEntry<>(one, oneIncl);
-        int c = ((Comparable)one).compareTo(two);
+        int c = AttributeUtils.compareValues(one, two);
         if (c==0) {
             return new AbstractMap.SimpleImmutableEntry<>(one, oneIncl & twoIncl);
         } else if ((c>0 && chooseBigger) || (c<0  && !chooseBigger)) {
@@ -149,11 +153,11 @@ public class RangeInterval<T> implements Interval<T> {
         if (isPoints()) return start.equals(other);
         else {
             if (start!=null) {
-                int cmp = ((Comparable)start).compareTo(other);
+                int cmp = AttributeUtils.compareValues(start, other);
                 if (cmp>0 || (cmp==0 && !startInclusive)) return false;
             }
             if (end!=null) {
-                int cmp = ((Comparable)end).compareTo(other);
+                int cmp = AttributeUtils.compareValues(end, other);
                 return cmp >= 0 && (cmp != 0 || endInclusive);
             }
             return true;

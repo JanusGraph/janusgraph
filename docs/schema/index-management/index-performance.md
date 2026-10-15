@@ -305,6 +305,20 @@ When using `order().by()` it is important to note that:
     character from U+10000 up, such as an emoji, and the other one
     from U+E000 to U+FFFF.
 
+-   UUIDs are ordered by their string forms, as the Elasticsearch,
+    OpenSearch and Solr mixed index backends sort them and as the
+    storage backend holds them as sort keys, whether a mixed index or
+    JanusGraph sorts the results. An `order()` which JanusGraph
+    doesn't fold into its query, `min()` and `max()` compare them by
+    `UUID.compareTo` instead, as TinkerPop does, which differs: keyset
+    paging with such an order, such as
+    `has('uid', gt(last)).order().by('uid').by(T.id)`, can skip UUIDs,
+    so it needs an order which JanusGraph folds, such as
+    `order().by('uid')`. Lucene doesn't sort by a UUID key: a query
+    which a Lucene index answers, ordered by a UUID key which the
+    index holds, fails with "Could not call index", and JanusGraph
+    doesn't sort the results itself instead.
+
 ### Label Constraint
 
 In many cases it is desirable to only index vertices or edges with a

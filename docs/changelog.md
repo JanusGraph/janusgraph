@@ -793,6 +793,66 @@ like every other 404 of a removal, so the commit passed silently although the in
 A removal stays exempt from a 404 which says only that the document is missing, since an absent document is the state
 it asked for.
 
+##### UUIDs are compared as their string forms, as the indexes and the storage backend order them
+
+JanusGraph now compares two UUIDs by their bits as unsigned numbers, the most significant half first, which is the
+order of their string forms, in the orders and ranges of its own queries: where it orders the results of a graph query
+or checks a range of UUIDs on them itself, and among the edges and properties of a vertex. It compared them with
+`UUID.compareTo`, which compares each half as a signed number: where, in the first half in which two UUIDs differ, one
+starts with a digit from `8` to `f` and the other with one from `0` to `7`, it put the first before the second.
+Elasticsearch, OpenSearch and Solr sort UUIDs by their string forms, and the storage backend holds the UUIDs which are
+the sort keys of a vertex's edges or properties, or the values of a key of `SET` cardinality, by their bytes, in that
+order too. So UUIDs like these came out of order:
+
+* in a graph query ordered by a UUID key, such as `g.V().has('kind', 'k').order().by('uid')`: the results of a query
+  which no index sorts, which JanusGraph sorted unlike an index would, and on Solr the vertices and edges which a
+  transaction had added or changed, merged into what the index returned;
+* among the edges or properties of a vertex ordered by a UUID sort key, and among the values of a UUID key of `SET`
+  cardinality: those which the transaction had added, merged into those which the storage backend returned.
+
+Elasticsearch failed a graph query ordered by a UUID key which its index holds with "Could not call index", as
+JanusGraph asked it to sort by the key with an `unmapped_type` of null, which it rejects. JanusGraph now gives
+`keyword`, the type which it maps UUIDs to. Lucene still doesn't sort by a UUID key: a graph query which a Lucene index
+answers, ordered by a UUID key which the index holds, fails with "Could not call index", and JanusGraph doesn't sort the
+results itself instead.
+
+On Solr, an ascending order by a UUID key which keeps the elements without the key, such as that of
+`graph.query().has('tag', 't').orderBy('uid', asc)`, put those elements first, where JanusGraph and Elasticsearch put
+them last, as the `uuid` field type of the example `conf/solr/schema.xml` didn't declare `sortMissingLast="true"`, as
+its other sortable types do. With the transaction's new vertices merged into such an order, a limit could leave out a
+vertex which comes within it. The `uuid` type now declares the attribute. To have an existing collection order these
+elements in the same way, add the attribute to its `uuid` type and reload the collection.
+
+Ranges of UUIDs, such as `has('uid', gt(u))`, which no index answers, compared them as signed numbers too. In a graph
+query they disagreed with the order of an index which sorts by the key, so that keyset paging with `gt()` could skip
+UUIDs. On the edges of a vertex they disagreed with the storage backend, from which JanusGraph reads the stored edges in
+a range of their sort key: `has('uid', gt(u))` found the stored edges which come after `u` both as unsigned and as
+signed numbers, and the transaction's new ones which come after it as signed numbers, while a range from
+`00000000-0000-0000-0000-000000000001` to `ffffffff-ffff-ffff-ffff-ffffffffffff` found none at all.
+
+Where TinkerPop compares UUIDs, it still does so by `UUID.compareTo`, which now disagrees with JanusGraph's own orders
+and ranges: in an `order()` which JanusGraph doesn't fold into its query, in `min()` and `max()`, and in a `has()`,
+`is()` or `where()` which JanusGraph doesn't fold into a query, such as one after a `V()` of ids or a `hasId()`, or
+`where(values('uid').is(gt(u)))`. So `g.V(ids).has('uid', gt(u))` can find other vertices than
+`g.V().has('kind', 'k').has('uid', gt(u))` of the same vertices. After a `hasId()`, though, JanusGraph checks an `and()`
+or `or()` of predicates, such as a `between()`, with `Cmp`, which compares UUIDs as their string forms, while TinkerPop
+checks a single `gt()`, `gte()`, `lt()` or `lte()` there: `hasId(ids).has('uid', gte(a).and(lt(b)))` can find other
+vertices than `hasId(ids).has('uid', gte(a)).has('uid', lt(b))`, where both compared by `UUID.compareTo` before.
+
+Where no mixed index answers a query, its conditions compared UUIDs as an `order()` which JanusGraph doesn't fold does,
+and now don't, so keyset paging with such an order can skip UUIDs. With a composite index on `kind`, paging with
+`g.V().has('kind', 'k').has('uid', gt(last)).order().by('uid').by(T.id).limit(2)` over UUIDs on either side of `8`, such
+as `00000000-0000-0000-0000-000000000001`, `7fffffff-ffff-ffff-ffff-ffffffffffff`,
+`80000000-0000-0000-0000-000000000000` and `ffffffff-ffff-ffff-ffff-ffffffffffff`, returns `80000000-...` and
+`ffffffff-...`, which that order puts first, and then nothing, as no UUID comes after `ffffffff-...` in the order of
+their string forms; it returned all of them before. Keyset paging needs an order which JanusGraph folds, such as
+`order().by('uid')`, which returns all of them in the order of their string forms. That is the trade-off of this change:
+JanusGraph's own orders and ranges now agree with the indexes and the storage backend, and no longer with the orders
+which TinkerPop sorts.
+
+For code built on these classes: the ranges of `Cmp` and `AttributeUtils.compare` compare two UUIDs by their bits as
+unsigned numbers, and `AttributeUtils.compareValues` and `AttributeUtils.compareUnsigned` are new.
+
 ##### Fixes to the aggregations and orders which a mixed index answers
 
 JanusGraph answers a `count()`, `min()`, `max()`, `sum()` or `mean()` which follows a query that a single mixed index
