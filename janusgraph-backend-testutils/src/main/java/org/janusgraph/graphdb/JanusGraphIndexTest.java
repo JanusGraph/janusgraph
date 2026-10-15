@@ -6020,9 +6020,14 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             () -> g.V().has("kind", "x").order().by("name", desc);
         assertTrue(readsIndexWith(byNameDesc.get().limit(2), "name >= zy"));
         assertEquals(Arrays.asList("zz", "zy"), values(byNameDesc.get().limit(2), "name"));
-        g.V(ids.get(5)).property("name", "\uE000").iterate();
+        g.V(ids.get(5)).property("name", "\uD800").iterate();
         assertFalse(readsIndexWith(byNameDesc.get().limit(1), "name >= "));
-        assertEquals(Collections.singletonList("\uE000"), values(byNameDesc.get().limit(1), "name"));
+        assertEquals(Collections.singletonList("\uD800"), values(byNameDesc.get().limit(1), "name"));
+        //A string from U+10000, an emoji, which memory places before a surrogate out of its pair of a lower unit: its
+        //descending range starts at U+FFFD
+        g.V(ids.get(6)).property("name", "\uD83D\uDE00").iterate();
+        assertTrue(readsIndexWith(byNameDesc.get().limit(1), "name >= \uFFFD"));
+        assertEquals(Collections.singletonList("\uD83D\uDE00"), values(byNameDesc.get().limit(1), "name"));
         tx.rollback();
 
         //A transaction whose queries the metrics of a group observe reads the index the same way
@@ -6118,28 +6123,19 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     //The index is read whole, without a range on the first order key, where a range may leave out elements which
     //memory orders before the bound: in a descending order of decimals, which puts NaN first, where no range holds it,
-    //and on a TEXTSTRING field, which an index may compare by its analyzed terms. An ascending one takes the range
+    //and from a string with a surrogate out of its pair, which no index holds as it is, while memory places it after
+    //U+FFFF. An ascending order of decimals takes the range
     @Test
     public void testTransactionReadsTheIndexWholeWhereItMayCompareOtherwise() {
         final PropertyKey kind = makeKey("kind", String.class);
         final PropertyKey score = makeKey("score", Double.class);
-        final PropertyKey title = makeKey("title", String.class);
-        final boolean textString = indexFeatures.supportsStringMapping(Mapping.TEXTSTRING);
-        if (textString) {
-            mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(score)
-                .addKey(title, Mapping.TEXTSTRING.asParameter()).buildMixedIndex(INDEX);
-        } else {
-            mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(score)
-                .buildMixedIndex(INDEX);
-        }
+        final PropertyKey name = makeKey("name", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(score)
+            .addKey(name, getStringMapping()).buildMixedIndex(INDEX);
         finishSchema();
 
         for (int i = 1; i <= 10; i++) {
-            tx.addVertex("kind", "x", "score", (double) i);
-        }
-        if (textString) {
-            tx.addVertex("kind", "x", "title", "Long John Don");
-            tx.addVertex("kind", "x", "title", "Long Little Lewis");
+            tx.addVertex("kind", "x", "score", (double) i, "name", "n" + i);
         }
         tx.commit();
         newTx();
@@ -6155,13 +6151,164 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertTrue(readsIndexWith(g.V().has("kind", "x").order().by("score", asc).limit(2), "score <= -5.0"));
         assertEquals(Arrays.asList(-6.0, -5.0),
             values(g.V().has("kind", "x").order().by("score", asc).limit(2), "score"));
-        if (textString) {
-            g.addV().property("kind", "x").property("title", "Long Yan").iterate();
-            g.addV().property("kind", "x").property("title", "Long Zed").iterate();
-            assertFalse(readsIndexWith(g.V().has("kind", "x").order().by("title", asc).limit(2), "title <= "));
-            assertEquals(Arrays.asList("Long John Don", "Long Little Lewis"),
-                values(g.V().has("kind", "x").order().by("title", asc).limit(2), "title"));
+        g.addV().property("kind", "x").property("name", "\uD800").iterate();
+        assertFalse(readsIndexWith(g.V().has("kind", "x").order().by("name", desc).limit(1), "name >= "));
+        assertEquals(Collections.singletonList("\uD800"),
+            values(g.V().has("kind", "x").order().by("name", desc).limit(1), "name"));
+        assertFalse(readsIndexWith(g.V().has("kind", "x").order().by("name", asc).limit(1), "name <= "));
+        assertEquals(Collections.singletonList("n1"),
+            values(g.V().has("kind", "x").order().by("name", asc).limit(1), "name"));
+        tx.rollback();
+    }
+
+    //Strings from U+E000 and from U+10000, surrogate pairs which UTF-16 units put below U+E000, are ranged in the
+    //order of their code points, in which memory and the indexes compare them: the ascending range of an emoji holds
+    //U+FFFF, and the descending range of U+E000 holds an emoji. The descending range of a string with a character from
+    //U+FFFD up starts at U+FFFD in place of the first of them
+    @Test
+    public void testTransactionReadsTheIndexUpToAStringBeyondTheSurrogatesInCodePointOrder() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(name, getStringMapping())
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        tx.addVertex("kind", "x", "name", "\uFFFF");
+        tx.addVertex("kind", "x", "name", "\uD83D\uDE01");
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.addV().property("kind", "x").property("name", "\uE000").iterate();
+        g.addV().property("kind", "x").property("name", "\uD83D\uDE00").iterate();
+        final Supplier<GraphTraversal<Vertex, Vertex>> byNameAsc = () -> g.V().has("kind", "x").order().by("name", asc);
+        final Supplier<GraphTraversal<Vertex, Vertex>> byNameDesc =
+            () -> g.V().has("kind", "x").order().by("name", desc);
+        assertTrue(readsIndexWith(byNameAsc.get().limit(2), "name <= \uD83D\uDE00"));
+        assertEquals(Arrays.asList("\uE000", "\uFFFF"), values(byNameAsc.get().limit(2), "name"));
+        assertTrue(readsIndexWith(byNameDesc.get().limit(2), "name >= \uE000"));
+        assertEquals(Arrays.asList("\uD83D\uDE01", "\uD83D\uDE00"), values(byNameDesc.get().limit(2), "name"));
+        assertTrue(readsIndexWith(byNameDesc.get().limit(1), "name >= \uFFFD"));
+        assertEquals(Collections.singletonList("\uD83D\uDE01"), values(byNameDesc.get().limit(1), "name"));
+        tx.rollback();
+    }
+
+    //A string with a surrogate out of its pair isn't valid UTF-16, and no index holds such a surrogate as it is, while
+    //memory places it after U+FFFF, by its unit among the characters from U+10000. Lucene and Solr hold it as U+FFFD,
+    //below U+FFFE, U+FFFF and the characters from U+10000, so the descending range of a string with a character from
+    //U+FFFD up starts at U+FFFD in place of the first of them: limit(1), which takes that range, returns what the query
+    //without a limit returns first. There, memory places the stored string of U+DC00 before the new U+FFFE, and before
+    //the new U+1F600, whose first unit comes below the surrogates of the stored strings. Elasticsearch 9.5 holds such
+    //a surrogate as a question mark, below the letters, where the stored strings of the surrogates come after the rest
+    @Test
+    public void testTransactionRangeKeepsTheResultsOfADescendingOrderWithAStoredUnpairedSurrogate() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(name, getStringMapping())
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        tx.addVertex("kind", "x", "name", "a");
+        tx.addVertex("kind", "x", "name", "\uDBFF");
+        tx.addVertex("kind", "x", "name", "\uDC00b");
+        tx.commit();
+
+        for (final String added : Arrays.asList("\uFFFE", "\uD83D\uDE00")) {
+            newTx();
+            final GraphTraversalSource g = tx.traversal();
+            g.addV().property("kind", "x").property("name", added).iterate();
+            final Supplier<GraphTraversal<Vertex, Vertex>> byNameDesc =
+                () -> g.V().has("kind", "x").order().by("name", desc);
+            assertTrue(readsIndexWith(byNameDesc.get().limit(1), "name >= \uFFFD"), codeUnits(added));
+            final List<Object> all = values(byNameDesc.get(), "name");
+            assertEquals(4, all.size(), codeUnits(all));
+            assertEquals(codeUnits(all.subList(0, 1)), codeUnits(values(byNameDesc.get().limit(1), "name")));
+            tx.rollback();
         }
+    }
+
+    //JanusGraph's Lucene backend, OpenSearch 2 and Elasticsearch 6 to 8 can't build a range from a lower bound of more
+    //than 1,000 UTF-8 bytes up to the greatest string, and Solr takes a query in a URL of at most 8 KB. A range from a
+    //last new value of 1,000 bytes takes it whole. The descending range from a longer one starts at its longest prefix
+    //of whole characters within 1,000 bytes, and no ascending range is taken from it. Either way, the query returns
+    //what it returns without a limit first
+    @Test
+    public void testTransactionRangesFromALastNewValueOfMoreThanAThousandBytes() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey title = makeKey("title", String.class);
+        final boolean textString = indexFeatures.supportsStringMapping(Mapping.TEXTSTRING);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(name, getStringMapping())
+            .addKey(title, textString ? Mapping.TEXTSTRING.asParameter() : getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final String stored = "w".repeat(1000) + "x";
+        tx.addVertex("kind", "x", "name", stored, "title", stored);
+        tx.addVertex("kind", "x", "name", "a", "title", "a");
+        tx.commit();
+
+        //1,000 bytes and more: ASCII, and characters of three bytes below and above the surrogates, 333 of which make
+        //999 bytes
+        for (final String added : Arrays.asList("w".repeat(1000), "w".repeat(1001), "\u4E2D".repeat(400),
+                "\uE000".repeat(400))) {
+            final boolean whole = added.length() == 1000;
+            final String prefix = whole ? added : added.substring(0, added.charAt(0) == 'w' ? 1000 : 333);
+            for (final String key : Arrays.asList("name", "title")) {
+                newTx();
+                final GraphTraversalSource g = tx.traversal();
+                g.addV().property("kind", "x").property(key, added).iterate();
+                final Supplier<GraphTraversal<Vertex, Vertex>> byKeyDesc =
+                    () -> g.V().has("kind", "x").order().by(key, desc);
+                final Supplier<GraphTraversal<Vertex, Vertex>> byKeyAsc =
+                    () -> g.V().has("kind", "x").order().by(key, asc);
+                final String message = key + ", " + added.length() + " of " + codeUnits(added.substring(0, 1));
+                assertTrue(readsIndexWith(byKeyDesc.get().limit(1), key + " >= " + prefix), message);
+                assertEquals(values(byKeyDesc.get(), key).subList(0, 1), values(byKeyDesc.get().limit(1), key),
+                    message);
+                assertEquals(whole, readsIndexWith(byKeyAsc.get().limit(1), key + " <= "), message);
+                assertEquals(values(byKeyAsc.get(), key).subList(0, 1), values(byKeyAsc.get().limit(1), key),
+                    message);
+                tx.rollback();
+            }
+        }
+    }
+
+    //A key mapped as TEXTSTRING is ranged by the field of its whole strings, which the index sorts it by, rather than
+    //by its text field, which holds its words in lower case: a range of words would find no stored title up to Long
+    //Zed, and leave out ~Tilde Title, whose words come below zz top, from the range down to it
+    @Test
+    public void testTransactionReadsTheIndexOfADualMappedKeyOnlyUpToItsLastNewValueWithinTheLimit() {
+        if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) {
+            return;
+        }
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey title = makeKey("title", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping())
+            .addKey(title, Mapping.TEXTSTRING.asParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        for (final String stored : Arrays.asList("Long John Don", "Long Little Lewis", "Middle Sister Mabel",
+                "big brother bob", "Zed", "~Tilde Title")) {
+            tx.addVertex("kind", "x", "title", stored);
+        }
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        for (final String added : Arrays.asList("Long Yan", "Long Zed", "zz top", "zz top 2")) {
+            g.addV().property("kind", "x").property("title", added).iterate();
+        }
+        final Supplier<GraphTraversal<Vertex, Vertex>> byTitleAsc =
+            () -> g.V().has("kind", "x").order().by("title", asc);
+        final Supplier<GraphTraversal<Vertex, Vertex>> byTitleDesc =
+            () -> g.V().has("kind", "x").order().by("title", desc);
+        assertTrue(readsIndexWith(byTitleAsc.get().limit(2), "title <= Long Zed"));
+        assertEquals(Arrays.asList("Long John Don", "Long Little Lewis"), values(byTitleAsc.get().limit(2), "title"));
+        assertTrue(readsIndexWith(byTitleAsc.get().limit(4), "title <= zz top 2"));
+        assertEquals(Arrays.asList("Long John Don", "Long Little Lewis", "Long Yan", "Long Zed"),
+            values(byTitleAsc.get().limit(4), "title"));
+        assertTrue(readsIndexWith(byTitleDesc.get().limit(2), "title >= zz top"));
+        assertEquals(Arrays.asList("~Tilde Title", "zz top 2"), values(byTitleDesc.get().limit(2), "title"));
         tx.rollback();
     }
 
@@ -6257,11 +6404,17 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         final PropertyKey num = makeKey("num", Long.class);
         final PropertyKey str = makeKey("str", String.class);
         final PropertyKey dbl = makeKey("dbl", Double.class);
+        //Strings from both sides of the surrogates, of a STRING key and of a TEXTSTRING key of words in mixed case, in
+        //the order of their code points
+        final PropertyKey txt = makeKey("txt", String.class);
         final PropertyKey ekind = makeKey("ekind", String.class);
         final PropertyKey weight = makeKey("weight", Long.class);
         mgmt.makeEdgeLabel("link").make();
         mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(num)
-            .addKey(str, getStringMapping()).addKey(dbl).buildMixedIndex(INDEX);
+            .addKey(str, getStringMapping()).addKey(dbl)
+            .addKey(txt, indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ? Mapping.TEXTSTRING.asParameter()
+                : getStringMapping())
+            .buildMixedIndex(INDEX);
         mgmt.buildIndex("edges", Edge.class).addKey(ekind, getStringMapping()).addKey(weight)
             .buildMixedIndex(INDEX);
         finishSchema();
@@ -6276,6 +6429,12 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         final List<Object> values = new ArrayList<>();
         traversal.forEachRemaining(element -> values.add(valueOf(element, key)));
         return values;
+    }
+
+    //The UTF-16 units of the values' string form, brackets and commas included, which a surrogate out of its pair
+    //doesn't garble when printed
+    private static String codeUnits(Object values) {
+        return String.valueOf(values).chars().mapToObj(Integer::toHexString).collect(Collectors.joining(" "));
     }
 
     //The element's value of the key, null where it has none
@@ -6336,6 +6495,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 setOrRemove(vertex, "num", randomNum());
                 setOrRemove(vertex, "str", randomStr());
                 setOrRemove(vertex, "dbl", randomDbl());
+                setOrRemove(vertex, "txt", randomTxt());
                 ids.add(vertex.id());
             }
             final List<JanusGraphVertex> hubs = new ArrayList<>();
@@ -6372,8 +6532,19 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             return random.nextInt(10) == 0 ? null : (long) random.nextInt((int) range);
         }
 
+        //Characters from U+E000 to U+FFFF come below those from U+10000, surrogate pairs, by code point, and above them
+        //by UTF-16 unit
         private String randomStr() {
-            final String[] strings = {"a", "b", "c", "d", "aa", "ab", "ba", "bb", "abc", "cab", "dd", "z"};
+            final String[] strings = {"a", "b", "c", "d", "aa", "ab", "ba", "bb", "abc", "cab", "dd", "z", "\uE000",
+                "a\uE000", "\uFFFC", "\uFFFD", "\uFFFF", "\uFFFFa", "\uD83D\uDE00", "a\uD83D\uDE00",
+                "\uD83D\uDE00a", "\uD83D\uDE01", "\uD800\uDC00", "\uDBFF\uDFFF"};
+            return random.nextInt(10) == 0 ? null : strings[random.nextInt(strings.length)];
+        }
+
+        //Whole strings of words in mixed case, which a TEXTSTRING key also holds as words in lower case
+        private String randomTxt() {
+            final String[] strings = {"Long John", "long john", "Long Zed", "big Brother", "Zed", "zed b", "~Tilde",
+                "Ab", "aB", "a\uE000 b", "\uFFFF x", "\uD83D\uDE00 Party"};
             return random.nextInt(10) == 0 ? null : strings[random.nextInt(strings.length)];
         }
 
@@ -6391,8 +6562,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                     return how == 0 ? (Object) (range + random.nextInt((int) range + 1))
                         : how == 1 ? (Object) (-1L - random.nextInt((int) range + 1)) : how == 2 ? randomNum() : null;
                 case "str":
-                    return how == 0 ? (Object) ("zz" + random.nextInt(3))
+                    return how == 0 ? (Object) ("\uDBFF\uDFFF" + random.nextInt(3))
                         : how == 1 ? (Object) ("0" + random.nextInt(3)) : how == 2 ? randomStr() : null;
+                case "txt":
+                    return how == 0 ? (Object) ("\uDBFF\uDFFF Top " + random.nextInt(3))
+                        : how == 1 ? (Object) ("0 Low " + random.nextInt(3)) : how == 2 ? randomTxt() : null;
                 default:
                     return how == 0 ? (Object) (1e6 + random.nextInt(100))
                         : how == 1 ? (Object) (-1e6 - random.nextInt(100)) : how == 2 ? randomDbl() : null;
@@ -6415,13 +6589,13 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             final Vertex vertex = g.V(ids.get(random.nextInt(vertices))).tryNext().orElse(null);
             if (op < 18) {
                 final JanusGraphVertex added = tx.addVertex("kind", random.nextInt(5) == 0 ? kind + "n" : kind);
-                for (final String key : Arrays.asList("num", "str", "dbl")) {
+                for (final String key : Arrays.asList("num", "str", "dbl", "txt")) {
                     setOrRemove(added, key, random.nextBoolean() ? changedValue(key) : null);
                 }
                 ids.add(added.id());
             } else if (op < 55) {
                 if (vertex == null) return;
-                final String key = Arrays.asList("num", "str", "dbl").get(random.nextInt(3));
+                final String key = Arrays.asList("num", "str", "dbl", "txt").get(random.nextInt(4));
                 final Object old = valueOf(vertex, key);
                 setOrRemove(vertex, key, changedValue(key));
                 if (random.nextInt(8) == 0) setOrRemove(vertex, key, old);
@@ -6493,7 +6667,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 high = limits[random.nextInt(limits.length)];
                 low = random.nextInt(5) == 0 ? random.nextInt(high + 1) : 0;
                 final List<String> orderKeys = new ArrayList<>(edges
-                    ? Collections.singletonList("weight") : Arrays.asList("num", "str", "dbl"));
+                    ? Collections.singletonList("weight") : Arrays.asList("num", "str", "dbl", "txt"));
                 Collections.shuffle(orderKeys, random);
                 final int size = edges ? 1 : random.nextInt(4) == 0 ? 0 : random.nextInt(3) == 0 ? 2 : 1;
                 keys = orderKeys.subList(0, size).toArray(new String[0]);
@@ -6568,11 +6742,27 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                         final Comparable<Object> a = (Comparable<Object>) valueOf(first, keys[i]);
                         final Comparable<Object> b = (Comparable<Object>) valueOf(second, keys[i]);
                         final int cmp = a == null || b == null ? (a == null ? (b == null ? 0 : 1) : -1)
-                            : descending[i] ? b.compareTo(a) : a.compareTo(b);
+                            : descending[i] ? compareValues(b, a) : compareValues(a, b);
                         if (cmp != 0) return cmp;
                     }
                     return 0;
                 };
+            }
+
+            //Strings by their code points, as the indexes order them, and other values by their natural order
+            @SuppressWarnings("unchecked")
+            private int compareValues(Object a, Object b) {
+                if (!(a instanceof String) || !(b instanceof String)) {
+                    return ((Comparable<Object>) a).compareTo(b);
+                }
+                final int[] first = ((String) a).codePoints().toArray();
+                final int[] second = ((String) b).codePoints().toArray();
+                for (int i = 0; i < Math.min(first.length, second.length); i++) {
+                    if (first[i] != second[i]) {
+                        return Integer.compare(first[i], second[i]);
+                    }
+                }
+                return Integer.compare(first.length, second.length);
             }
 
             //The values of the order keys of each element, which are all that a result of ties may differ in

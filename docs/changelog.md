@@ -1133,6 +1133,37 @@ whether their vertex is new, with `get(key, value, ofNewVertices)`, `count` and 
 and `SimpleIndexCache` and `ConcurrentIndexCache` take the transaction's added relations, from which they index a key
 on its first lookup.
 
+##### Ordered graph queries in a transaction read less of the index for more strings
+
+An ordered query which an index sorts, in a transaction whose matching elements fill the query's limit, reads from the
+index only the elements whose value of the first order key doesn't come after that of the last of them within the limit,
+as the section above describes. For a string, it did so only below U+D800 and for a key mapped as `STRING`. It now does
+so for any string of valid UTF-16, now that JanusGraph orders strings by code point as the indexes do, and for a key
+mapped as `TEXTSTRING` as well, now that its ranges compare its whole strings, in either case for a key without a string
+or text analyzer. After a transaction renamed 20,000 of 50,000 vertices to names from U+E000,
+`g.V().has("kind", "k").order().by("name", desc).limit(10)` runs one Elasticsearch search instead of 155, and takes
+about 90 ms instead of 1.2 s. On Solr, the range reads the field which the schema defines for the key's whole strings,
+`<key>_s` with dynamic fields, as for a `STRING` key: a schema which makes that field analyzed breaks the range, as it
+breaks the order.
+
+A range from a long string could fail. JanusGraph's Lucene backend, OpenSearch 2 and Elasticsearch 6 to 8 can't build a
+range from a lower bound of more than 1,000 UTF-8 bytes, and Solr takes a query in a URL of at most 8 KB, as JanusGraph
+sends its queries to Solr as GET requests. So a descending query whose last new value was longer failed on the former
+with "Could not call index", and so did a query in either direction on Solr whose value had about 8 KB, or 2.7 KB of
+characters of three UTF-8 bytes, for a `STRING` key below U+D800 too. A descending range now starts at the value's
+longest prefix of whole characters within 1,000 bytes, and no ascending range is taken from a value of more than 1,000
+bytes, as an upper bound can't be cut.
+
+A string with a surrogate without its pair isn't valid UTF-16. No index holds such a surrogate as it is: Lucene, Solr,
+OpenSearch and Elasticsearch up to 8 hold U+FFFD, Elasticsearch 9.5 a question mark, while JanusGraph places it after
+U+FFFF. A last new value with one still makes the query read the index whole. The descending range of a string with a
+character from U+FFFD up starts at U+FFFD in place of that character and what follows it, so that where the index holds
+U+FFFD, a descending query returns what it returns without the range also where the index holds such strings. On
+Elasticsearch 9.5, a descending range from nearly any string, below U+D800 too, may leave out a stored string with such
+a surrogate. And where the index holds U+FFFD, an ascending range may leave out a stored string of more than 16,000
+UTF-16 units which storage holds with a question mark in place of such a surrogate, as it does where it compresses the
+string from its UTF-8 bytes.
+
 ##### Storage operations no longer contend for one random generator
 
 Nearly every storage operation, among them every read of a transaction and every mutation its commit writes, runs
