@@ -40,6 +40,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComp
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.FilterRankingStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.InlineFilterStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.ProductiveByStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversalStrategies;
@@ -95,6 +96,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.P.within;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.filter;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.not;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.properties;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.values;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_STEP_BATCH_MODE;
@@ -251,6 +253,7 @@ public class JanusGraphStepStrategyTest {
     private static Stream<Arguments> generateTestParameters() {
         final StandardJanusGraph graph = (StandardJanusGraph) StorageSetup.getInMemoryGraph();
         final GraphTraversalSource g = graph.traversal();
+        final ElementValueComparator byName = new ElementValueComparator("name", Order.asc);
         // create a basic schema so that order pushdown can be tested as this optimization requires a JanusGraph
         // transaction registered against a non-EmptyGraph
         final JanusGraphManagement mgmt = graph.openManagement();
@@ -305,11 +308,30 @@ public class JanusGraphStepStrategyTest {
                     Order.asc)),
                 g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.asc)),
                 Collections.emptyList()),
-            // if multiple order steps are specified in a row, only the last will be folded in because it overrides previous ordering
+            // order steps in a row are folded in together: TinkerPop sorts by each in turn, keeping the order of
+            // ties, so the last one orders the elements and those before it order its ties
             arguments(g.V().hasLabel("Person").has("lang", "java").order().by("lang", Order.asc).order().by("name",
                 Order.desc),
-                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.desc)),
+                g_V("~label", eq("Person"), "lang", eq("java"), new HasStepFolder.OrderEntry("name", Order.desc),
+                    new HasStepFolder.OrderEntry("lang", Order.asc)),
                 Collections.emptyList()),
+            // or not at all, where one of them can't be
+            arguments(g.V().hasLabel("Person").order().by(values("age")).order().by("name", Order.desc),
+                g_V("~label", eq("Person")).order().by(values("age")).order().by("name", Order.desc),
+                Collections.emptyList()),
+            // a random order is TinkerPop's
+            arguments(g.V().hasLabel("Person").order().by("name", Order.shuffle),
+                g_V("~label", eq("Person")).order().by("name", Order.shuffle), Collections.emptyList()),
+            // an order of an or() branch which isn't folded in, but leaves out no element, doesn't keep the or() from
+            // being folded in
+            arguments(g.V().or(has("name", "marko").order(), has("lang", "java").order().by(T.label)),
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java")))), Collections.emptyList()),
+            arguments(g.V().or(has("name", "marko").order().by("lang"), has("lang", "java")),
+                g_V(__.or(g_V("name", eq("marko")), g_V("lang", eq("java")))),
+                Collections.singletonList(ProductiveByStrategy.instance())),
+            // and so is an order of other elements than the step's by their values
+            arguments(g.V().hasLabel("Person").order().by(out("knows"), byName),
+                g_V("~label", eq("Person")).order().by(out("knows"), byName), Collections.emptyList()),
             // do not folder in orders that include a nested traversal
             arguments(g.V().hasLabel("Person").order().by(values("age")),
                 g_V("~label", eq("Person")).order().by(values("age")), Collections.emptyList()),

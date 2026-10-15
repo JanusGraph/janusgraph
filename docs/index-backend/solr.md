@@ -292,9 +292,13 @@ use.
 
 ### Ordering Elements without a Value
 
-When JanusGraph orders the elements of a query itself, for example for
-`order().by('age')`, it places the elements which hold no value of the
-key last, whether the order is ascending or descending. When Solr orders
+A traversal's `order().by('age')` leaves out the elements which hold no
+value of the key, as TinkerPop does, and a mixed index which answers the
+order skips them. A query of JanusGraph's API, such as
+`graph.query().orderBy('age', asc)`, and an order which has a key of
+**LIST** or **SET** cardinality keep them: when JanusGraph orders its
+elements itself, it places those which hold no value of the key last,
+whether the order is ascending or descending. When Solr orders
 them, for an order which a mixed index answers, it places the documents
 without a value of a field as the `sortMissingLast` and
 `sortMissingFirst` attributes of the field, or of its type, say. If

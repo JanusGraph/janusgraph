@@ -35,6 +35,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
@@ -5503,7 +5504,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     /**
      * A mixed index orders the elements without the key last, whichever the direction, as JanusGraph does when it
-     * orders them in memory
+     * orders them in memory, for a query which keeps them; a traversal's order().by(key) leaves them out
      */
     @Test
     public void testMixedIndexOrdersElementsWithoutTheKeyLast() {
@@ -5524,13 +5525,17 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         newTx();
         for (final String key : Arrays.asList("height", "weight", "tag")) {
             assertEquals(Arrays.asList(low, middle, high, without),
-                tx.traversal().V().has("name", "x").order().by(key, asc).id().toList(), key);
+                ids(tx.query().has("name", "x").orderBy(key, asc).vertices()), key);
             assertEquals(Arrays.asList(high, middle, low, without),
-                tx.traversal().V().has("name", "x").order().by(key, desc).id().toList(), key);
+                ids(tx.query().has("name", "x").orderBy(key, desc).vertices()), key);
             assertEquals(Arrays.asList(low, middle),
-                tx.traversal().V().has("name", "x").order().by(key, asc).limit(2).id().toList(), key);
+                ids(tx.query().has("name", "x").orderBy(key, asc).limit(2).vertices()), key);
             assertEquals(Arrays.asList(high, middle),
-                tx.traversal().V().has("name", "x").order().by(key, desc).limit(2).id().toList(), key);
+                ids(tx.query().has("name", "x").orderBy(key, desc).limit(2).vertices()), key);
+            assertEquals(Arrays.asList(low, middle, high),
+                tx.traversal().V().has("name", "x").order().by(key, asc).id().toList(), key);
+            assertEquals(Arrays.asList(high, middle, low),
+                tx.traversal().V().has("name", "x").order().by(key, desc).id().toList(), key);
         }
     }
 
@@ -5548,10 +5553,175 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         tx.commit();
 
         newTx();
-        assertEquals(Arrays.asList(off, on, without), tx.traversal().V().has("name", "x").order().by("active", asc).id().toList());
-        assertEquals(Arrays.asList(on, off, without), tx.traversal().V().has("name", "x").order().by("active", desc).id().toList());
-        assertEquals(Arrays.asList(off), tx.traversal().V().has("name", "x").order().by("active", asc).limit(1).id().toList());
-        assertEquals(Arrays.asList(on), tx.traversal().V().has("name", "x").order().by("active", desc).limit(1).id().toList());
+        assertEquals(Arrays.asList(off, on, without),
+            ids(tx.query().has("name", "x").orderBy("active", asc).vertices()));
+        assertEquals(Arrays.asList(on, off, without),
+            ids(tx.query().has("name", "x").orderBy("active", desc).vertices()));
+        assertEquals(Arrays.asList(off), ids(tx.query().has("name", "x").orderBy("active", asc).limit(1).vertices()));
+        assertEquals(Arrays.asList(on), ids(tx.query().has("name", "x").orderBy("active", desc).limit(1).vertices()));
+        assertEquals(Arrays.asList(off, on),
+            tx.traversal().V().has("name", "x").order().by("active", asc).id().toList());
+        assertEquals(Arrays.asList(on, off),
+            tx.traversal().V().has("name", "x").order().by("active", desc).id().toList());
+    }
+
+    private static List<Object> ids(Iterable<? extends JanusGraphElement> elements) {
+        final List<Object> ids = new ArrayList<>();
+        elements.forEach(element -> ids.add(element.id()));
+        return ids;
+    }
+
+    /**
+     * An order().by(key) which JanusGraph folds into its query leaves out the elements without a value of the key, as
+     * TinkerPop leaves out an element for which a by() modulator has none: where a mixed index sorts the query, which
+     * then skips them, where JanusGraph sorts it, among the elements a transaction added or changed, and where it
+     * orders the edges of a vertex. The results are those of a TinkerGraph which holds the same elements.
+     */
+    @Test
+    public void testOrderLeavesOutTheElementsWithoutAKeyItOrdersBy() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        final PropertyKey ckind = makeKey("ckind", String.class);
+        final PropertyKey ekind = makeKey("ekind", String.class);
+        final PropertyKey weight = makeKey("weight", Integer.class);
+        makeKey("uid", Integer.class);
+        makeKey("tag", String.class);
+        mgmt.makeEdgeLabel("link").make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(name, getStringMapping())
+            .addKey(age).buildMixedIndex(INDEX);
+        mgmt.buildIndex("edges", Edge.class).addKey(ekind, getStringMapping()).addKey(weight).buildMixedIndex(INDEX);
+        mgmt.buildIndex("byCkind", Vertex.class).addKey(ckind).buildCompositeIndex();
+        finishSchema();
+
+        final GraphTraversalSource reference = TinkerGraph.open().traversal();
+        //uid, kind, name and age, some without a name or an age
+        final Object[][] vertices = {{1, "p", "c", 5}, {2, "p", "a", 3}, {3, "p", null, 4}, {4, "p", "e", null},
+            {5, "p", null, 1}, {6, "p", "b", 2}, {7, "q", "d", 7}, {8, "q", null, 6}};
+        for (final Object[] vertex : vertices) {
+            onBoth(reference, g -> {
+                GraphTraversal<Vertex, Vertex> added = g.addV().property("uid", vertex[0]).property("kind", vertex[1])
+                    .property("ckind", vertex[1]).property("tag", "t");
+                if (vertex[2] != null) added = added.property("name", vertex[2]);
+                return vertex[3] == null ? added : added.property("age", vertex[3]);
+            });
+        }
+        //The edges of vertex 1 to the others, some without a weight
+        final Integer[] weights = {3, null, 1, 2, null, 5};
+        for (int i = 0; i < weights.length; i++) {
+            final int to = i + 2;
+            final int uid = i + 11;
+            final Integer w = weights[i];
+            onBoth(reference, g -> {
+                final GraphTraversal<Vertex, Edge> added = g.V().has("uid", 1).addE("link")
+                    .to(__.V().has("uid", to)).property("uid", uid).property("ekind", "e");
+                return w == null ? added : added.property("weight", w);
+            });
+        }
+        tx.commit();
+        newTx();
+
+        final List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> traversals = Arrays.asList(
+            g -> g.V().has("kind", "p").order().by("name"),
+            g -> g.V().has("kind", "p").order().by("name", desc),
+            g -> g.V().has("kind", "p").order().by("name").limit(3),
+            g -> g.V().has("kind", "p").order().by("name", desc).range(1, 3),
+            g -> g.V().has("kind", "p").order().by("name").by("age"),
+            g -> g.V().has("kind", "p").order().by("age", desc).by("name").limit(4),
+            g -> g.V().has("kind", "p").order().by("age").order().by("name"),
+            g -> g.V().has("kind", "p").order().by("name").count(),
+            //A composite index, of which JanusGraph sorts the results, and a key which no index holds
+            g -> g.V().has("ckind", "p").order().by("name").limit(3),
+            g -> g.V().has("tag", "t").order().by("age", desc).limit(5),
+            g -> g.E().has("ekind", "e").order().by("weight").limit(3),
+            g -> g.E().has("ekind", "e").order().by("weight", desc),
+            g -> g.V().has("uid", 1).local(__.outE("link").order().by("weight", desc).limit(3)),
+            g -> g.V().has("uid", 1).local(__.outE("link").order().by("weight")));
+        for (final Function<GraphTraversalSource, GraphTraversal<?, ?>> traversal : traversals) {
+            assertEquals(results(traversal.apply(reference)), results(traversal.apply(tx.traversal())),
+                traversal.apply(reference).toString());
+        }
+        //The mixed indexes skip the elements without the key, as a new transaction's profile shows
+        tx.rollback();
+        newTx();
+        assertTrue(readsIndexWith(tx.traversal().V().has("kind", "p").order().by("name").limit(3), "name <> null"));
+        assertTrue(readsIndexWith(tx.traversal().E().has("ekind", "e").order().by("weight"), "weight <> null"));
+        tx.rollback();
+
+        //A transaction adds elements with and without the key, gives one a value of it and takes another one's
+        newTx();
+        onBoth(reference, g -> g.addV().property("uid", 9).property("kind", "p").property("ckind", "p")
+            .property("tag", "t").property("name", "ab").property("age", 9));
+        onBoth(reference, g -> g.addV().property("uid", 10).property("kind", "p").property("ckind", "p")
+            .property("tag", "t").property("age", 10));
+        onBoth(reference, g -> g.V().has("uid", 3).property("name", "bb"));
+        onBoth(reference, g -> g.V().has("uid", 6).properties("name").drop());
+        onBoth(reference, g -> g.V().has("uid", 2).properties("age").drop());
+        onBoth(reference, g -> g.E().has("uid", 12).property("weight", 4));
+        onBoth(reference, g -> g.E().has("uid", 14).properties("weight").drop());
+        for (final Function<GraphTraversalSource, GraphTraversal<?, ?>> traversal : traversals) {
+            assertEquals(results(traversal.apply(reference)), results(traversal.apply(tx.traversal())),
+                "in a transaction: " + traversal.apply(reference));
+        }
+        tx.rollback();
+    }
+
+    //Applies the change to the transaction of the test and to the reference graph
+    private void onBoth(GraphTraversalSource reference, Function<GraphTraversalSource, GraphTraversal<?, ?>> change) {
+        change.apply(tx.traversal()).iterate();
+        change.apply(reference).iterate();
+    }
+
+    //The uids of the elements which the traversal returns, in its order, or its values which aren't elements
+    private static List<Object> results(GraphTraversal<?, ?> traversal) {
+        final List<Object> results = new ArrayList<>();
+        traversal.forEachRemaining(result -> results.add(result instanceof Element
+            ? ((Element) result).value("uid") : result));
+        return results;
+    }
+
+    /**
+     * An order by a key of several values, which only an index that can sort by such a key answers, keeps the elements
+     * without a value of any of its keys, last, as before: JanusGraph can't order elements by such a key in memory,
+     * which the elements that a transaction changed would need, and TinkerPop fails on an element with several values
+     * of it
+     */
+    @Test
+    public void testOrderByAKeyOfSeveralValuesKeepsTheElementsWithoutIt() {
+        if (!supportsOrderingListProperty) {
+            return;
+        }
+        final PropertyKey gender = makeKey("gender", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        final PropertyKey names = mgmt.makePropertyKey("names").dataType(String.class).cardinality(Cardinality.LIST)
+            .make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(gender, getStringMapping()).addKey(age)
+            .addKey(names, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex two = tx.addVertex("gender", "female", "age", 20);
+        two.property(VertexProperty.Cardinality.list, "names", "a");
+        two.property(VertexProperty.Cardinality.list, "names", "b");
+        final JanusGraphVertex one = tx.addVertex("gender", "female");
+        one.property(VertexProperty.Cardinality.list, "names", "c");
+        final JanusGraphVertex none = tx.addVertex("gender", "female", "age", 10);
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        assertEquals(Arrays.asList(one.id(), two.id(), none.id()),
+            g.V().has("gender", "female").order().by("names", desc).id().toList());
+        //A key of one value next to it keeps them too
+        assertEquals(Arrays.asList(one.id(), two.id(), none.id()),
+            g.V().has("gender", "female").order().by("names", desc).by("age").id().toList());
+        //and the vertices which the transaction changed, without failing
+        g.V(one.id()).property(VertexProperty.Cardinality.list, "names", "d").iterate();
+        g.V(two.id()).property("age", 40).iterate();
+        final Set<Object> all = new HashSet<>(Arrays.asList(one.id(), two.id(), none.id()));
+        assertEquals(all, new HashSet<>(g.V().has("gender", "female").order().by("names", desc).id().toList()));
+        assertEquals(all,
+            new HashSet<>(g.V().has("gender", "female").order().by("names", desc).by("age").id().toList()));
+        tx.rollback();
     }
 
     @Test
@@ -5972,7 +6142,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     //elements whose value of the first order key doesn't come after that of the last of them within the limit, as no
     //other element can come within it. Ties at that value are read, as a later order key decides between them. A query
     //whose new elements don't fill the limit reads the index whole, as does one whose last new element within the limit
-    //has no value, which comes last, or has a string value which the indexes may compare otherwise than memory
+    //has a string value which the indexes may compare otherwise than memory. A traversal leaves out the elements
+    //without a value, which a query of the transaction keeps, last
     @Test
     public void testTransactionReadsTheIndexOnlyUpToItsLastNewValueWithinTheLimit() {
         final PropertyKey kind = makeKey("kind", String.class);
@@ -6007,12 +6178,18 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         //Too few new elements for the limit
         assertFalse(readsIndexWith(byAgeDesc.get().limit(4), "age >= "));
         assertEquals(Arrays.asList(30L, 18L, 18L, 18L), values(byAgeDesc.get().limit(4), "age"));
-        //The last new element within the limit has no value
+        //New elements without a value, which the traversal leaves out, so that three new elements don't fill a limit of
+        //5, while a query of the transaction places them after the others
         g.addV().property("kind", "x").iterate();
         g.addV().property("kind", "x").iterate();
         assertEquals(Arrays.asList(30L, 18L, 18L), values(byAgeDesc.get().limit(3), "age"));
         assertFalse(readsIndexWith(byAgeDesc.get().limit(5), "age >= "));
         assertEquals(Arrays.asList(30L, 18L, 18L, 18L, 17L), values(byAgeDesc.get().limit(5), "age"));
+        final List<Object> ages = new ArrayList<>();
+        tx.query().has("kind", "x").orderBy("age", desc).limit(21).vertices()
+            .forEach(vertex -> ages.add(valueOf(vertex, "age")));
+        assertEquals(Arrays.asList(30L, 18L, 18L, 18L, 17L), ages.subList(0, 5));
+        assertEquals(Arrays.asList(4L, null, null, null), ages.subList(17, 21));
         //A string value, and one which memory compares otherwise than an index may
         g.V(ids.get(3)).property("name", "zz").iterate();
         g.V(ids.get(4)).property("name", "zy").iterate();
@@ -6250,7 +6427,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     //Ordered and unordered queries in transactions with random changes return what a scan of every element which the
     //transaction sees finds: new and removed vertices, values raised, lowered, tied or removed, vertices which stop or
-    //start matching, and new and changed edges; with one or two order keys, missing values, limits and offsets
+    //start matching, and new and changed edges; with one or two order keys, which leave out the elements without a
+    //value of them, limits and offsets
     @Test
     public void testTransactionQueriesAgreeWithAScanOfTheirElements() {
         final PropertyKey kind = makeKey("kind", String.class);
@@ -6310,7 +6488,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      * One round of testTransactionQueriesAgreeWithAScanOfTheirElements: vertices of a kind of the round's own, edges
      * between a few vertices of another, stored; a transaction which runs random queries, changes the elements at
      * random and runs them again, each compared with the elements which a scan of every element the transaction sees
-     * finds, in the order which the query asks for, a missing value last
+     * finds, in the order which the query asks for, without those which have no value of an order key
      */
     private final class RandomTransactionCheck {
         private final Random random;
@@ -6456,7 +6634,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertEquals(expectedValues, spec.values(actual), message);
             assertEquals(actual.size(), new HashSet<>(actual).size(), message);
             for (final Element element : actual) {
-                assertTrue(spec.matches(element), message + ": " + element);
+                assertTrue(spec.matches(element) && spec.hasOrderValues(element), message + ": " + element);
             }
         }
 
@@ -6473,7 +6651,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                     g.V(id).tryNext().ifPresent(elements::add);
                 }
             }
-            elements.removeIf(element -> !spec.matches(element));
+            elements.removeIf(element -> !spec.matches(element) || !spec.hasOrderValues(element));
             elements.sort(spec.order());
             return elements;
         }
@@ -6559,6 +6737,15 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                     default:
                         return n != null && n < numBound || d != null && Double.compare(d, dblBound) > 0;
                 }
+            }
+
+            //Whether the element has a value of each order key, as an order().by(key) of TinkerPop leaves it out
+            //otherwise
+            private boolean hasOrderValues(Element element) {
+                for (final String key : keys) {
+                    if (valueOf(element, key) == null) return false;
+                }
+                return true;
             }
 
             @SuppressWarnings("unchecked")

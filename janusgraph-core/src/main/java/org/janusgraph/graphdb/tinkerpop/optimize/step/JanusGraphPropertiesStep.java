@@ -123,7 +123,13 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
         for (final HasContainer condition : hasContainers) {
             query.has(condition.getKey(), JanusGraphPredicateUtils.convert(condition.getBiPredicate()), condition.getValue());
         }
-        for (final OrderEntry order : orders) query.orderBy(order.key, order.order);
+        for (final OrderEntry order : orders) {
+            //TinkerPop's order().by(key) leaves out the elements which have no value of the key
+            if (!HasStepFolder.requiresAValueOf(order.key, hasContainers)) {
+                query.has(order.key);
+            }
+            query.orderBy(order.key, order.order);
+        }
         if (limit != BaseQuery.NO_LIMIT) query.limit(limit);
         return query;
     }

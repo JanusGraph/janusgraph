@@ -19,11 +19,14 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.ProductiveByStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
@@ -49,9 +52,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Function;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.shuffle;
 import static org.apache.tinkerpop.gremlin.process.traversal.P.not;
 import static org.janusgraph.testutil.JanusGraphAssert.assertBackendHit;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
@@ -364,15 +369,13 @@ public class QueryTest {
         tx = graph.newTransaction();
         final GraphTraversalSource g = tx.traversal();
         //No index answers the or(), and the branches have ranges of their own, so JanusGraph answers each of them by a
-        //query of its own, whose results it merges in their order: strings by code point, and an element without the
-        //key last in either direction
-        final List<String> byName = Arrays.asList("a", "b", "z", "\uE000", "\uFFFF", "\uD83D\uDE00", "\uD83D\uDE01",
-            null);
+        //query of its own, whose results it merges in their order: strings by code point. An element without the key
+        //is left out, as TinkerPop leaves it out
+        final List<String> byName = Arrays.asList("a", "b", "z", "\uE000", "\uFFFF", "\uD83D\uDE00", "\uD83D\uDE01");
         assertEquals(byName, names(g.V().or(__.has("kind", "p").range(0, 10), __.has("kind", "q").range(0, 9))
             .order().by("name", asc).toList()));
-        final List<String> byNameDescending = new ArrayList<>(byName.subList(0, 7));
+        final List<String> byNameDescending = new ArrayList<>(byName);
         Collections.reverse(byNameDescending);
-        byNameDescending.add(null);
         assertEquals(byNameDescending, names(g.V().or(__.has("kind", "p").range(0, 10), __.has("kind", "q").range(0, 9))
             .order().by("name", desc).toList()));
         //A first branch which can't return anything, of a key which doesn't exist or of a limit of 0, is a query
@@ -394,6 +397,112 @@ public class QueryTest {
             names.add(vertex.<String>property("name").orElse(null));
         }
         return names;
+    }
+
+    /**
+     * TinkerPop leaves out an element for which a by() modulator of an order() has no value. JanusGraph sorts these
+     * queries itself, as no index answers them, and agrees with a TinkerGraph which holds the same vertices: where it
+     * folds the order into its query, where several order() steps follow each other, and where the order is TinkerPop's
+     */
+    @Test
+    @SuppressWarnings({"deprecation", "unchecked", "rawtypes"})
+    public void testOrderLeavesOutTheElementsWithoutAKeyItOrdersByAsTinkerGraphDoes() {
+        tx.makePropertyKey("uid").dataType(Integer.class).make();
+        tx.makePropertyKey("kind").dataType(String.class).make();
+        tx.makePropertyKey("name").dataType(String.class).make();
+        tx.makePropertyKey("age").dataType(Integer.class).make();
+        final GraphTraversalSource reference = TinkerGraph.open().traversal();
+        //uid, name and age, some without a name or an age
+        final Object[][] vertices = {{1, "c", 5}, {2, "a", 3}, {3, null, 4}, {4, "e", null}, {5, null, 1}, {6, "b", 2}};
+        for (final GraphTraversalSource g : Arrays.asList(tx.traversal(), reference)) {
+            for (final Object[] vertex : vertices) {
+                GraphTraversal<Vertex, Vertex> added = g.addV().property("uid", vertex[0]).property("kind", "p");
+                if (vertex[1] != null) added = added.property("name", vertex[1]);
+                if (vertex[2] != null) added = added.property("age", vertex[2]);
+                added.iterate();
+            }
+        }
+        tx.commit();
+        tx = graph.newTransaction();
+        final List<Function<GraphTraversalSource, GraphTraversal<?, Vertex>>> traversals = Arrays.asList(
+            g -> g.V().has("kind", "p").order().by("name"),
+            g -> g.V().has("kind", "p").order().by("name", desc).limit(2),
+            g -> g.V().has("kind", "p").order().by("age", desc).by("name"),
+            //The second by() of a key, which only orders the ties of the first, is left out
+            g -> g.V().has("kind", "p").order().by("name").by("name", desc),
+            //Both orders are folded in, by the name and then by the age
+            g -> g.V().has("kind", "p").order().by("age").order().by("name"),
+            //An order by a traversal is TinkerPop's, and so are the orders next to it
+            g -> g.V().has("kind", "p").order().by(__.values("age").is(P.gt(2))).order().by("name", desc),
+            g -> g.V().has("kind", "p").order().by("name").order().by(__.values("age").is(P.gt(2))));
+        for (final Function<GraphTraversalSource, GraphTraversal<?, Vertex>> traversal : traversals) {
+            assertEquals(uids(traversal.apply(reference).toList()), uids(traversal.apply(tx.traversal()).toList()),
+                traversal.apply(reference).toString());
+        }
+        //A random order, which TinkerPop gives, of the vertices which have a name
+        assertEquals(Arrays.asList(1, 2, 4, 6), sorted(uids(tx.traversal().V().has("kind", "p")
+            .order().by("name", shuffle).toList())));
+        assertEquals(2, tx.traversal().V().has("kind", "p").order().by("name", shuffle).limit(2).toList()
+            .stream().filter(v -> v.property("name").isPresent()).count());
+        //ProductiveByStrategy makes a by() modulator give null where it has no value, which TinkerPop orders first
+        final Function<GraphTraversalSource, GraphTraversal<?, Vertex>> productive = g -> g
+            .withStrategies(ProductiveByStrategy.instance()).V().has("kind", "p").order().by("age").by("uid");
+        assertEquals(uids(productive.apply(reference).toList()), uids(productive.apply(tx.traversal()).toList()));
+        assertEquals(Arrays.asList(4, 5, 6, 2, 3, 1), uids(productive.apply(tx.traversal()).toList()));
+        //An order by an ElementValueComparator, on which TinkerPop fails where a vertex has no value, leaves out such
+        //a vertex too
+        final ElementValueComparator byName = new ElementValueComparator("name", asc);
+        assertEquals(Arrays.asList(2, 6, 1, 4), uids(tx.traversal().V().has("kind", "p").order().by(byName).toList()));
+        //An order in an or() branch which isn't folded in, a random one, leaves the or() to TinkerPop, which runs the
+        //branch for each vertex and leaves out those without a name
+        final Function<GraphTraversalSource, GraphTraversal<?, Vertex>> shuffledBranch = g -> g.V()
+            .or(__.has("kind", "p").order().by("name", shuffle), __.has("uid", 3));
+        assertEquals(sorted(uids(shuffledBranch.apply(reference).toList())),
+            sorted(uids(shuffledBranch.apply(tx.traversal()).toList())));
+        assertEquals(Arrays.asList(1, 2, 3, 4, 6), sorted(uids(shuffledBranch.apply(tx.traversal()).toList())));
+        //while an order which leaves out no element, of the element itself, its label, or a key which
+        //ProductiveByStrategy makes yield null where it has no value, is folded in without its order, as before
+        final List<Function<GraphTraversalSource, GraphTraversal<?, Vertex>>> branchOrders = Arrays.asList(
+            g -> g.V().or(__.has("kind", "p").order(), __.has("uid", 3)),
+            g -> g.V().or(__.has("kind", "p").order().by(T.label), __.has("uid", 3)),
+            g -> g.withStrategies(ProductiveByStrategy.instance()).V()
+                .or(__.has("kind", "p").order().by("age"), __.has("uid", 3)));
+        for (final Function<GraphTraversalSource, GraphTraversal<?, Vertex>> branchOrder : branchOrders) {
+            assertEquals(sorted(uids(branchOrder.apply(reference).toList())),
+                sorted(uids(branchOrder.apply(tx.traversal()).toList())), branchOrder.apply(reference).toString());
+        }
+
+        //An edge holds one value of a key at most, also of one declared to hold several, so an order by such a key
+        //leaves out the edges without it as well
+        tx.makePropertyKey("lw").dataType(Integer.class).cardinality(Cardinality.LIST).make();
+        final Integer[] weights = {3, null, 1};
+        for (final GraphTraversalSource g : Arrays.asList(tx.traversal(), reference)) {
+            for (int i = 0; i < weights.length; i++) {
+                GraphTraversal<Vertex, Edge> added = g.V().has("uid", 1).addE("link").to(__.V().has("uid", i + 2))
+                    .property("uid", 11 + i);
+                if (weights[i] != null) added = added.property("lw", weights[i]);
+                added.iterate();
+            }
+        }
+        tx.commit();
+        tx = graph.newTransaction();
+        for (final org.apache.tinkerpop.gremlin.process.traversal.Order order : Arrays.asList(asc, desc)) {
+            final Function<GraphTraversalSource, List<Object>> edges = g -> g.E().order().by("lw", order).values("uid")
+                .toList();
+            assertEquals(edges.apply(reference), edges.apply(tx.traversal()), order.toString());
+        }
+    }
+
+    private static List<Integer> uids(List<Vertex> vertices) {
+        final List<Integer> uids = new ArrayList<>();
+        vertices.forEach(vertex -> uids.add(vertex.value("uid")));
+        return uids;
+    }
+
+    private static List<Integer> sorted(List<Integer> values) {
+        final List<Integer> sorted = new ArrayList<>(values);
+        Collections.sort(sorted);
+        return sorted;
     }
 
     @Test

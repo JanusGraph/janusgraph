@@ -123,16 +123,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         //The condition joins the conjuncts of a conjunction rather than nesting it, as Solr writes a nested conjunction
         //without parentheses, which its query parser rejects
         final Condition<JanusGraphElement> current = mixed.getCondition();
-        final And<JanusGraphElement> narrowedCondition;
-        if (current instanceof And) {
-            narrowedCondition = new And<>(((And<JanusGraphElement>) current).size() + 1);
-            current.getChildren().forEach(narrowedCondition::add);
-        } else {
-            narrowedCondition = new And<>(2);
-            narrowedCondition.add(current);
-        }
-        narrowedCondition.add(condition);
-        final IndexQuery narrowed = new IndexQuery(mixed.getStore(), narrowedCondition,
+        final IndexQuery narrowed = new IndexQuery(mixed.getStore(), conjunction(current, condition),
             ImmutableList.copyOf(mixed.getOrder()), mixed.getLimit());
         final List<Subquery> subqueries = new ArrayList<>(queries);
         subqueries.set(0, first.replacedBy(narrowed));
@@ -140,6 +131,29 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         jointIndexQuery.profiler = profiler;
         jointIndexQuery.setLimit(getLimit());
         return jointIndexQuery;
+    }
+
+    /**
+     * The conjunction of the condition of an index query with another one, which joins the conjuncts of the first
+     * where it is a conjunction rather than nesting it, as Solr writes a nested conjunction without parentheses, which
+     * its query parser rejects
+     *
+     * @param current the condition of an index query
+     * @param condition the condition which the results have to meet as well
+     * @return the conjunction
+     */
+    static And<JanusGraphElement> conjunction(Condition<JanusGraphElement> current,
+                                              Condition<JanusGraphElement> condition) {
+        final And<JanusGraphElement> conjunction;
+        if (current instanceof And) {
+            conjunction = new And<>(((And<JanusGraphElement>) current).size() + 1);
+            current.getChildren().forEach(conjunction::add);
+        } else {
+            conjunction = new And<>(2);
+            conjunction.add(current);
+        }
+        conjunction.add(condition);
+        return conjunction;
     }
 
     @Override
