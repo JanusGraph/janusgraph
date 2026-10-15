@@ -117,6 +117,9 @@ public class BenchmarkRunner {
             builder.exclude(IndexQueryResultBenchmark.class.getSimpleName());
             builder.exclude(TransactionGetOrCreateBenchmark.class.getSimpleName());
             builder.exclude(TransactionChangedVerticesBenchmark.class.getSimpleName());
+            // Its commits which BerkeleyJE syncs to disk mostly measure the disk of the machine, and its 10 cases would
+            // take some five minutes; run it explicitly
+            builder.exclude(BerkeleyJELockBenchmark.class.getSimpleName());
             builder.exclude("CQL.*Benchmark");
             builder.exclude(".*ElasticSearch.*Benchmark.*");
         }

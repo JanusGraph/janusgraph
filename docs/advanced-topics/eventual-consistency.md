@@ -12,7 +12,10 @@ Apache Cassandra or Apache HBase.
 
 On eventually consistent storage backends, JanusGraph must obtain locks
 in order to ensure consistency because the underlying storage backend
-does not provide transactional isolation. In the interest of efficiency,
+does not provide transactional isolation. It must on BerkeleyDB as well:
+at their default isolation level, BerkeleyDB's transactions don't keep
+two of them from both adding the same value of a unique index, for
+instance. In the interest of efficiency,
 JanusGraph does not use locking by default. Hence, the user has to
 decide for each schema element that defines a consistency constraint
 whether or not to use locking. Use `JanusGraphManagement.setConsistency(element, ConsistencyModifier.LOCK)`
@@ -44,8 +47,8 @@ optimizations (e.g. local conflict detection) and detection of failure
 scenarios (e.g. expired locks).
 
 The actual lock application mechanism is abstracted such that JanusGraph
-can use multiple implementations of a locking provider. Currently, only one
-locking provider is included in the JanusGraph distribution:
+can use multiple implementations of a locking provider. Two are included
+in the JanusGraph distribution:
 
 A locking implementation based on key-consistent read and write
 operations that is agnostic to the underlying storage backend as
@@ -54,6 +57,11 @@ Cassandra and HBase). This is the default implementation and uses
 timestamp based lock applications to determine which transaction
 holds the lock. It requires that clocks are synchronized across all
 machines in the cluster.
+
+BerkeleyDB locks the elements in the JVM which has its directory open,
+the only one which can write it. A transaction holds its locks until it
+commits or rolls back, and one which tries to take a lock that another
+transaction holds fails at once. See [BerkeleyDB locking](../storage-backend/bdb.md#locking).
 
 !!! warning
     The locking implementation is not robust against all failure

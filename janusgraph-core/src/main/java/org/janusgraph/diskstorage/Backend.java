@@ -524,7 +524,15 @@ public class Backend implements LockerProvider, AutoCloseable {
                 StandardStoreManager.getAllManagerClasses());
         if (manager instanceof OrderedKeyValueStoreManager) {
             if (storageConfig.get(ALLOW_CUSTOM_VERTEX_ID_TYPES)) {
-                throw new JanusGraphException(ALLOW_CUSTOM_VERTEX_ID_TYPES.getName() + " is not supported for OrderedKeyValueStore");
+                final JanusGraphException failure = new JanusGraphException(
+                    ALLOW_CUSTOM_VERTEX_ID_TYPES.getName() + " is not supported for OrderedKeyValueStore");
+                //The manager has opened its storage, as BerkeleyJE opens its environment, which nothing would close
+                try {
+                    manager.close();
+                } catch (BackendException | RuntimeException e) {
+                    failure.addSuppressed(e);
+                }
+                throw failure;
             }
             Map<String, Integer> keyLength = new HashMap<>(3);
             keyLength.put(EDGESTORE_NAME, 8);

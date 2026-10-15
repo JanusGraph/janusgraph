@@ -151,8 +151,9 @@ mgmt.commit()
 ```
 
 !!! note
-    To enforce uniqueness against an eventually consistent storage
-    backend, the [consistency](../../advanced-topics/eventual-consistency.md) of the index must be
+    To enforce uniqueness against concurrent transactions, on an eventually
+    consistent storage backend or on BerkeleyDB, the
+    [consistency](../../advanced-topics/eventual-consistency.md) of the index must be
     explicitly set to enabling locking.
 
 ### Mixed Index

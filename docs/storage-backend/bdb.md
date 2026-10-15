@@ -58,6 +58,30 @@ BerkeleyDB specific configuration options:
     for JanusGraph. For instance, if JanusGraph only runs short
     transactions, use a value of 80 or higher.
 
+## Locking
+
+At their default isolation level, BerkeleyDB's transactions don't keep two
+of them from both adding the same value of a unique index, or from both
+adding a `ONE2ONE` edge to the same vertex. Set the
+[consistency](../advanced-topics/eventual-consistency.md#data-consistency) of such constraints to `LOCK`, as on
+the other storage backends; the names of schema elements always have it.
+Transactions then lock the keys of these constraints when they commit:
+
+-   The lock of a key lives in the JVM which has the directory open, which
+    is the only one that can write it. All the graph instances of that JVM
+    which open the directory share the locks.
+-   A transaction which tries to take a lock that another one holds fails
+    at once with a `PermanentLockingException` ("Local lock contention").
+    Taking a lock never waits, so it can't deadlock with BerkeleyDB's own
+    record locks.
+-   Before its first write, a transaction checks that each key it locked
+    still has the value it read. If another transaction has changed it,
+    the commit fails with a `PermanentLockingException` ("Expected value
+    mismatch").
+-   A transaction holds its locks until it commits or rolls back. They
+    don't expire, and the `storage.lock` options don't apply to them.
+-   With `storage.transactions=false`, nothing is locked.
+
 ## Ideal Use Case
 
 The BerkeleyDB storage backend is best suited for small to medium size

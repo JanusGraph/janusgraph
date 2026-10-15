@@ -1600,6 +1600,51 @@ on BerkeleyJE, where it used to be interrupted after a second. A log closed from
 wait for them and keeps the second, and so do the logs of other storage backends. The reader threads of every log are
 now named after it.
 
+##### BerkeleyJE enforces `LOCK` consistency
+
+BerkeleyJE claimed to lock keys itself, so JanusGraph didn't put its own locker in front of it, but it took no locks.
+So a constraint whose consistency is `LOCK` didn't hold against concurrent transactions on BerkeleyJE, which all
+committed:
+- The names of schema elements always have `LOCK` consistency. Transactions which created the same type at once,
+  explicitly or implicitly through the default schema maker, each created one, and the schema then returned one of them.
+  The data of the others became invisible: of four transactions which each added a vertex with a value of a new
+  property key `auto`, committing at once, all four committed, the schema had four keys named `auto`, and
+  `g.V().has('auto').count()` returned 1. So did management systems and OLAP jobs which created the same type or compute
+  key.
+- Transactions which added the same value of a unique index each added a vertex of it, while the index kept one of them.
+- Several transactions could each add an edge of a `ONE2ONE` label to the same vertex.
+- Management systems which each read a global configuration option and changed it all committed, and the last one won,
+  although a management system checks the option against the value it read when it commits.
+
+A transaction now takes the locks of these keys when it commits, holds them in the JVM until it has committed or rolled
+back, and checks before its first write that each key still has the value it read. Where concurrent transactions used to
+commit together, all but one now fail with a `PermanentLockingException`: "Local lock contention" where another
+transaction holds the lock, "Expected value mismatch" where another transaction changed the key. This includes
+transactions which create the same type implicitly at once, even where no schema element was given `LOCK` consistency:
+in the example above, one commits and three fail with "Local lock contention", leaving one key named `auto`. Of two
+management systems which read and change the same global option, the second one to commit fails with "Expected value
+mismatch".
+Handle or retry these failures as on the other storage backends. The graph instances of a JVM which open the same
+directory share the locks, which don't expire; the `storage.lock` options don't apply to them. With
+`storage.transactions=false`, nothing is locked, as before.
+
+Each locked key costs its transaction a read of its record before the first write. In a benchmark on a laptop SSD,
+transactions which each locked 100 keys in 8 threads at once took 2.5% longer, about 0.22 ms, and 6.9%, about 0.29 ms,
+where BerkeleyJE didn't sync commits to disk. Transactions of one locked key or of none, and schema changes, took no
+measurably longer.
+
+A constraint without `LOCK` consistency still doesn't hold against concurrent transactions on BerkeleyJE at its default
+isolation level, as the documentation now says.
+
+Two related fixes:
+- On a storage backend without transaction isolation, such as Cassandra or HBase, a transaction commits its schema
+  elements in a transaction of their own first. Where that commit failed, as when the name of a new type no longer had
+  the value which the transaction had read, the locks of the schema stayed taken: in the JVM until
+  `storage.lock.expiry-time` (5 minutes by default), during which the JVM's transactions which created or renamed a type
+  of that name failed with "Local lock contention", and in the lock store. The failed commit now releases them.
+- Opening a graph on BerkeleyJE with `graph.allow-custom-vid-types` set to `true` failed, as it should, but left the
+  BerkeleyJE environment it had opened open in the JVM. It now closes it.
+
 ##### A graph runs its background work on fewer threads, which end with it
 
 Each ID pool of a graph renewed its blocks of ids on a thread of its own, which it kept until the graph closed: one for
