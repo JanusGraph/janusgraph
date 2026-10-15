@@ -28,7 +28,8 @@ import java.util.Queue;
 
 /**
  * Iterates over the hits of a scroll one page at a time, and releases the scroll context as soon as it can:
- * when a page comes back short, when the limit is within the pages received, or when the consumer closes it.
+ * when a page comes back short, when the limit is within the pages received, when a page fails, or when the consumer
+ * closes it. Once a page failed, every later call fails with it.
  *
  * @author David Clement (david.clement90@laposte.net)
  */
@@ -46,6 +47,10 @@ public class ElasticSearchScroll implements Iterator<RawQuery.Result<String>>, A
     private boolean isFinished;
     private boolean released;
     private String scrollId;
+    //The failure of a page, which every later call rethrows: a consumer which asks again, as the transaction's cache of
+    //index results does to tell whether a result is complete, must not take the hits read before it for the whole
+    //result
+    private RuntimeException failure;
 
     public ElasticSearchScroll(ElasticSearchClient client, ElasticSearchResponse initialResponse, int nbDocByQuery) {
         this(client, initialResponse, nbDocByQuery, Long.MAX_VALUE);
@@ -77,6 +82,9 @@ public class ElasticSearchScroll implements Iterator<RawQuery.Result<String>>, A
 
     @Override
     public boolean hasNext() {
+        if (failure != null) {
+            throw failure;
+        }
         if (delivered >= limit) {
             return false;
         }
@@ -91,8 +99,19 @@ public class ElasticSearchScroll implements Iterator<RawQuery.Result<String>>, A
             update(res);
             return res.numResults() > 0;
         } catch (final IOException e) {
-            throw new UncheckedIOException(e.getMessage(), e);
+            throw fail(new UncheckedIOException(e.getMessage(), e));
+        } catch (final RuntimeException e) {
+            throw fail(e);
         }
+    }
+
+    //The pages can't go on from a page which failed, and the shards which answered it, if only some failed, still hold
+    //their contexts
+    private RuntimeException fail(RuntimeException pageFailure) {
+        failure = pageFailure;
+        isFinished = true;
+        release();
+        return pageFailure;
     }
 
     @Override

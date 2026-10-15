@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -241,6 +242,54 @@ public class ElasticSearchScrollTest {
         List<RawQuery.Result<String>> delivered = new ArrayList<>();
         scroll.forEachRemaining(delivered::add);
         Assertions.assertEquals(batchSize - 1, delivered.size());
+    }
+
+    //A page which fails ends the scroll, and releases the contexts which the shards that answered still hold, as where
+    //only some shards failed, rather than leave them to expire after scroll-keep-alive. Every later call fails with
+    //it, so that the hits read before it aren't taken for the whole result
+    @Test
+    public void shouldReleaseTheScrollWhenALaterPageFails() throws IOException {
+        ElasticSearchClient client = Mockito.mock(ElasticSearchClient.class);
+        ElasticSearchResponse initialResponse = Mockito.mock(ElasticSearchResponse.class);
+        int batchSize = 5;
+        setupResultMocks(makeTestResults(batchSize), initialResponse, "scrollId");
+        Mockito.when(client.search("scrollId")).thenThrow(new IOException("Elasticsearch answered a page of a scroll " +
+            "with the results of only 1 of 2 shards"));
+
+        ElasticSearchScroll scroll = new ElasticSearchScroll(client, initialResponse, batchSize);
+        for (int i = 0; i < batchSize; i++) {
+            scroll.next();
+        }
+        Mockito.verify(client, Mockito.never()).deleteScroll(Mockito.any());
+
+        UncheckedIOException failure = Assertions.assertThrows(UncheckedIOException.class, scroll::hasNext);
+        Mockito.verify(client).deleteScroll("scrollId");
+        Assertions.assertSame(failure, Assertions.assertThrows(UncheckedIOException.class, scroll::hasNext));
+        Assertions.assertSame(failure, Assertions.assertThrows(UncheckedIOException.class, scroll::next));
+        scroll.close();
+        Mockito.verify(client, Mockito.times(1)).search("scrollId");
+        Mockito.verify(client, Mockito.times(1)).deleteScroll(Mockito.any());
+    }
+
+    @Test
+    public void shouldReleaseTheScrollWhenALaterPageFailsAtRuntime() throws IOException {
+        ElasticSearchClient client = Mockito.mock(ElasticSearchClient.class);
+        ElasticSearchResponse initialResponse = Mockito.mock(ElasticSearchResponse.class);
+        int batchSize = 5;
+        setupResultMocks(makeTestResults(batchSize), initialResponse, "scrollId");
+        IllegalStateException interrupted = new IllegalStateException("interrupted while waiting to retry");
+        Mockito.when(client.search("scrollId")).thenThrow(interrupted);
+
+        ElasticSearchScroll scroll = new ElasticSearchScroll(client, initialResponse, batchSize);
+        for (int i = 0; i < batchSize; i++) {
+            scroll.next();
+        }
+
+        Assertions.assertSame(interrupted, Assertions.assertThrows(IllegalStateException.class, scroll::hasNext));
+        Mockito.verify(client).deleteScroll("scrollId");
+        Assertions.assertSame(interrupted, Assertions.assertThrows(IllegalStateException.class, scroll::hasNext));
+        Mockito.verify(client, Mockito.times(1)).search("scrollId");
+        Mockito.verify(client, Mockito.times(1)).deleteScroll(Mockito.any());
     }
 
     private List<RawQuery.Result<String>> makeTestResults(int batchSize){

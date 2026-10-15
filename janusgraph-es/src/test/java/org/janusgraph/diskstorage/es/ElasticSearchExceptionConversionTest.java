@@ -19,6 +19,8 @@ import org.apache.http.ConnectionClosedException;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.StatusLine;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.janusgraph.diskstorage.BackendException;
@@ -85,6 +87,32 @@ public class ElasticSearchExceptionConversionTest {
         return responseException;
     }
 
+    //The errors with which Elasticsearch failed a search which ran out of its time, where it was told not to answer
+    //with the hits found in time, shortened: Elasticsearch 9.5.4 with status 429 and 8.15.3 with 504 the first,
+    //Elasticsearch 7.17.8, OpenSearch 2.19.6 and 3.9.0 with 500 the second
+    private static final String SEARCH_TIMEOUT = "{\"error\":{\"root_cause\":[{\"type\":\"search_timeout_exception\","
+        + "\"reason\":\"Time exceeded\"}],\"type\":\"search_phase_execution_exception\","
+        + "\"reason\":\"all shards failed\",\"phase\":\"query\",\"grouped\":true,\"failed_shards\":[{\"shard\":0,"
+        + "\"index\":\"janusgraph_vertex\",\"node\":\"p_Fuu6-xTNWsZMhLOUsgIA\",\"reason\":{"
+        + "\"type\":\"search_timeout_exception\",\"reason\":\"Time exceeded\"}}]},\"status\":429}";
+    private static final String TIME_EXCEEDED = "{\"error\":{\"root_cause\":[{\"type\":"
+        + "\"query_phase_execution_exception\",\"reason\":\"Time exceeded\"}],\"type\":"
+        + "\"search_phase_execution_exception\",\"reason\":\"all shards failed\",\"phase\":\"query\","
+        + "\"grouped\":true,\"failed_shards\":[{\"shard\":0,\"index\":\"janusgraph_vertex\","
+        + "\"node\":\"Fk-EVcRdTLWvIX12f7wAwA\",\"reason\":{\"type\":\"query_phase_execution_exception\","
+        + "\"reason\":\"Time exceeded\"}}]},\"status\":500}";
+    //A search which a shard rejected for want of room in the queue of its thread pool
+    private static final String REJECTED = "{\"error\":{\"root_cause\":[{\"type\":\"es_rejected_execution_exception\","
+        + "\"reason\":\"rejected execution\"}],\"type\":\"search_phase_execution_exception\","
+        + "\"reason\":\"all shards failed\"},\"status\":429}";
+
+    private static ResponseException responseException(int statusCode, String body) {
+        final ResponseException responseException = responseException(statusCode);
+        when(responseException.getResponse().getEntity())
+            .thenReturn(new StringEntity(body, ContentType.APPLICATION_JSON));
+        return responseException;
+    }
+
     private static ElasticSearchBulkFailureException bulkFailure(Integer... failedItemStatusCodes) {
         return new ElasticSearchBulkFailureException(
             Stream.of(failedItemStatusCodes).collect(ImmutableSet.toImmutableSet()),
@@ -101,6 +129,26 @@ public class ElasticSearchExceptionConversionTest {
     @ValueSource(ints = {400, 401, 403, 404, 409})
     public void shouldConvertPermanentResponseStatusToPermanent(int statusCode) {
         assertInstanceOf(PermanentBackendException.class, convert(responseException(statusCode)));
+    }
+
+    //Reattempting a search which ran out of its time runs it as long again, on a cluster which was too slow for it
+    //already, whatever the status Elasticsearch answered it with
+    @ParameterizedTest
+    @ValueSource(ints = {429, 504})
+    public void shouldConvertASearchWhichRanOutOfTimeToPermanent(int statusCode) {
+        assertInstanceOf(PermanentBackendException.class, convert(responseException(statusCode, SEARCH_TIMEOUT)));
+    }
+
+    //Elasticsearch 7 and OpenSearch answer with 500, which retry-error-codes doesn't list by default
+    @Test
+    public void shouldConvertASearchOfElasticsearch7WhichRanOutOfTimeToPermanent() {
+        assertInstanceOf(PermanentBackendException.class, ElasticSearchIndex.convert(
+            responseException(500, TIME_EXCEEDED), ImmutableSet.of(500), true));
+    }
+
+    @Test
+    public void shouldConvertARejectedSearchToTemporary() {
+        assertInstanceOf(TemporaryBackendException.class, convert(responseException(429, REJECTED)));
     }
 
     @Test
