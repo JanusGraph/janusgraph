@@ -924,18 +924,21 @@ public class SolrIndex implements IndexProvider {
                 Preconditions.checkArgument(map == Mapping.PREFIX_TREE || predicate == Geo.WITHIN || predicate == Geo.INTERSECT,
                         "Relation not supported on geopoint types: %s", predicate);
                 final Geoshape geo = (Geoshape)value;
+                // The precision of the shape (distErrPct) is an option of a shape's query, within its quotes: after
+                // them, it was a term of its own on the default field. geofilt takes no such option, and its circle
+                // has the precision of the field
                 if (geo.getType() == Geoshape.Type.CIRCLE && (predicate == Geo.INTERSECT || map == Mapping.DEFAULT)) {
                     final Geoshape.Point center = geo.getPoint();
                     return ("{!geofilt sfield=" + key +
                             " pt=" + center.getLatitude() + "," + center.getLongitude() +
-                            " d=" + geo.getRadius() + "} distErrPct=0"); //distance in kilometers
+                            " d=" + geo.getRadius() + "}"); //distance in kilometers
                 } else if (geo.getType() == Geoshape.Type.BOX && (predicate == Geo.INTERSECT || map == Mapping.DEFAULT)) {
                     final Geoshape.Point southwest = geo.getPoint(0);
                     final Geoshape.Point northeast = geo.getPoint(1);
                     return (key + ":[" + southwest.getLatitude() + "," + southwest.getLongitude() +
                             " TO " + northeast.getLatitude() + "," + northeast.getLongitude() + "]");
                 } else if (map == Mapping.PREFIX_TREE) {
-                    return key + ":\"" + SPATIAL_PREDICATES.get(predicate) + "(" + geo + ")\" distErrPct=0";
+                    return key + ":\"" + SPATIAL_PREDICATES.get(predicate) + "(" + geo + ") distErrPct=0\"";
                 } else {
                     throw new IllegalArgumentException("Unsupported or invalid search shape type: " + geo.getType());
                 }
@@ -983,7 +986,7 @@ public class SolrIndex implements IndexProvider {
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
             final String sub = buildQueryFilter(((Not)condition).getChild(),information);
-            if (StringUtils.isNotBlank(sub)) return "-("+sub+")";
+            if (StringUtils.isNotBlank(sub)) return "-" + group(sub);
             else return "";
         } else if (condition instanceof And) {
             final int numChildren = ((And) condition).size();
@@ -994,13 +997,21 @@ public class SolrIndex implements IndexProvider {
                 if (StringUtils.isBlank(sub))
                     continue;
 
+                // The queries this method writes start with their operator, "+" or "-", or else with a field, a group
+                // or local parameters, never with a space, so the first character tells a sub-query's operator.
                 // we don't have to add "+" which means AND iff
-                // a. it's a NOT query,
+                // a. it's a NOT query, or a conjunction which starts with one, whose clauses each carry their
+                //    operator and join this one's as they are,
                 // b. expression is a single statement in the AND.
-                if (!sub.startsWith("-") && numChildren > 1)
-                    sb.append("+");
+                // A conjunction which starts with "+" is required as a group: "++" doesn't parse.
+                if (sub.startsWith("+") && numChildren > 1)
+                    sb.append("+").append(group(sub));
+                else if (!sub.startsWith("-") && numChildren > 1)
+                    sb.append("+").append(sub);
+                else
+                    sb.append(sub);
 
-                sb.append(sub).append(" ");
+                sb.append(" ");
             }
             return sb.toString();
         } else if (condition instanceof Or) {
@@ -1011,7 +1022,9 @@ public class SolrIndex implements IndexProvider {
                 if (StringUtils.isBlank(sub)) continue;
                 if (element==0) sb.append("(");
                 else sb.append(" OR ");
-                sb.append(sub);
+                // An alternative of several clauses is a group, or its clauses would join the disjunction's: a "+"
+                // or "-" clause would be required or excluded by all of it
+                sb.append(isSingleClause(c, sub) ? sub : group(sub));
                 element++;
             }
             if (element>0) sb.append(")");
@@ -1019,6 +1032,23 @@ public class SolrIndex implements IndexProvider {
         } else {
             throw new IllegalArgumentException("Invalid condition: " + condition);
         }
+    }
+
+    // The query as a group, which matches what the query matches on its own. A query which starts with "-" may only
+    // exclude documents: Solr excludes them from all documents where such a query is the whole query, but a group of
+    // only exclusions matches nothing, so the group starts from all documents
+    private static String group(String query) {
+        return query.startsWith("-") ? "(*:* " + query + ")" : "(" + query + ")";
+    }
+
+    // Whether the query of a condition is a single clause: that of a disjunction, which is a group, or that of a
+    // predicate unless the analyzer split its value into several terms, which are a conjunction, or it asks for a
+    // value other than the given one ("key:* -key:value")
+    private static boolean isSingleClause(Condition<JanusGraphElement> condition, String query) {
+        if (condition instanceof Or) return true;
+        if (!(condition instanceof PredicateCondition) || query.startsWith("+")) return false;
+        final PredicateCondition<?, ?> atom = (PredicateCondition<?, ?>) condition;
+        return atom.getPredicate() != Cmp.NOT_EQUAL || atom.getValue() == null;
     }
 
     public String buildQueryFilterStringValue(String key, String value, JanusGraphPredicate predicate, KeyInformation.StoreRetriever information) {

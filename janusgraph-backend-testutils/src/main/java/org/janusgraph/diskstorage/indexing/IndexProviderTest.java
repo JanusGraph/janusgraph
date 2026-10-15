@@ -25,6 +25,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
@@ -39,6 +40,7 @@ import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.And;
+import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
@@ -1343,6 +1345,81 @@ public abstract class IndexProviderTest {
 
     protected Set<String> rangeQuery(String store, String key, Cmp relation, Object value) throws BackendException {
         return tx.queryStream(new IndexQuery(store, PredicateCondition.of(key, relation, value))).collect(Collectors.toSet());
+    }
+
+    // A condition within another one matches what it matches on its own, also one which an index writes as several
+    // clauses: a conjunction, a CONTAINS condition of several words, a not-equal one, or a negation
+    @Test
+    public void conditionsWithinOtherConditionsMatchAsOnTheirOwn() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Object[][] docs = {{"d1", 1L, "red green"}, {"d2", 2L, "red blue"}, {"d3", 3L, "green blue"},
+            {"d4", null, "red green blue"}};
+        for (final Object[] d : docs) {
+            final Multimap<String, Object> doc = HashMultimap.create();
+            if (d[1] != null) doc.put(TIME, d[1]);
+            doc.put(TEXT, d[2]);
+            add(store, (String) d[0], doc, true);
+        }
+        clopen();
+        final Condition<JanusGraphElement> time1 = PredicateCondition.of(TIME, Cmp.EQUAL, 1L);
+        final Condition<JanusGraphElement> time2 = PredicateCondition.of(TIME, Cmp.EQUAL, 2L);
+        final Condition<JanusGraphElement> time3 = PredicateCondition.of(TIME, Cmp.EQUAL, 3L);
+        final Condition<JanusGraphElement> redGreen = PredicateCondition.of(TEXT, Text.CONTAINS, "red green");
+        final Condition<JanusGraphElement> blue = PredicateCondition.of(TEXT, Text.CONTAINS, "blue");
+
+        assertEquals(ImmutableSet.of("d2", "d3"), query(store, And.of(And.of(
+            PredicateCondition.of(TIME, Cmp.GREATER_THAN_EQUAL, 2L), PredicateCondition.of(TIME, Cmp.LESS_THAN, 4L)),
+            blue)));
+        assertEquals(ImmutableSet.of("d1"),
+            query(store, And.of(redGreen, PredicateCondition.of(TIME, Cmp.LESS_THAN, 3L))));
+        assertEquals(ImmutableSet.of("d1", "d3"), query(store, Or.of(And.of(time1, redGreen), time3)));
+        assertEquals(ImmutableSet.of("d1", "d3", "d4"), query(store, Or.of(redGreen, time3)));
+        assertEquals(ImmutableSet.of("d1", "d2", "d3"),
+            query(store, Or.of(PredicateCondition.of(TIME, Cmp.NOT_EQUAL, 1L), time1)));
+        assertEquals(ImmutableSet.of("d1", "d3"),
+            query(store, Or.of(time1, Not.of(PredicateCondition.of(TEXT, Text.CONTAINS, "red")))));
+        assertEquals(ImmutableSet.of("d1"), query(store, Not.of(Not.of(time1))));
+        assertEquals(ImmutableSet.of("d1", "d2"), query(store, Not.of(And.of(Not.of(time1), Not.of(time2)))));
+        assertEquals(ImmutableSet.of("d1", "d3", "d4"),
+            query(store, Or.of(And.of(Not.of(time1), Not.of(time2)), time1)));
+    }
+
+    // A geo condition matches by its shape alone: on its own, as either alternative of a disjunction, and negated. Solr
+    // took the precision which followed the query of a shape for a term of the default field, text in the test
+    // configset, which "0" matched
+    @Test
+    public void geoConditionsMatchByTheirShapeAlone() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Multimap<String, Object> inside = HashMultimap.create();
+        inside.put(LOCATION, Geoshape.point(48.5, 0.5));
+        inside.put(BOUNDARY, Geoshape.point(48.5, 0.5));
+        inside.put(TIME, 1L);
+        add(store, "inside", inside, true);
+        final Multimap<String, Object> zero = HashMultimap.create();
+        zero.put(TEXT, "0");
+        zero.put(TIME, 2L);
+        add(store, "zero", zero, true);
+        clopen();
+        final Geoshape circle = Geoshape.circle(48.5, 0.5, 200.00);
+        final Geoshape polygon = Geoshape.polygon(Arrays.asList(new double[][]
+            {{-1.0, 48.0}, {2.0, 48.0}, {2.0, 49.0}, {-1.0, 49.0}, {-1.0, 48.0}}));
+        final Condition<JanusGraphElement> time3 = PredicateCondition.of(TIME, Cmp.EQUAL, 3L);
+        for (final Condition<JanusGraphElement> geo : Arrays.<Condition<JanusGraphElement>>asList(
+                PredicateCondition.of(LOCATION, Geo.WITHIN, circle),
+                PredicateCondition.of(BOUNDARY, Geo.WITHIN, circle),
+                PredicateCondition.of(BOUNDARY, Geo.WITHIN, Geoshape.box(46.5, -0.5, 50.5, 10.5)),
+                PredicateCondition.of(BOUNDARY, Geo.INTERSECT, polygon))) {
+            assertEquals(ImmutableSet.of("inside"), query(store, geo), geo.toString());
+            assertEquals(ImmutableSet.of("inside"), query(store, Or.of(geo, time3)), geo.toString());
+            assertEquals(ImmutableSet.of("inside"), query(store, Or.of(time3, geo)), geo.toString());
+            assertEquals(ImmutableSet.of("zero"), query(store, Not.of(geo)), geo.toString());
+        }
+    }
+
+    private Set<String> query(String store, Condition<JanusGraphElement> condition) throws BackendException {
+        return tx.queryStream(new IndexQuery(store, condition)).collect(Collectors.toSet());
     }
 
     protected long getDocCountByPredicate(JanusGraphPredicate predicate, String field, String condition) throws BackendException {

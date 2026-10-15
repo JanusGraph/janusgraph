@@ -298,6 +298,42 @@ reader) comes first on the classpath, SolrJ fails with
 `NoSuchMethodError: 'java.lang.Object org.noggit.ObjectBuilder.getValStrict()'`. Applications which use
 `janusgraph-solr` should exclude `org.noggit:noggit` as well: Spatial4j works with SolrJ's copy.
 
+##### Solr keeps the clauses of each condition together
+
+Solr's query parser takes the clauses of a condition's query within another condition as clauses of that one, so
+JanusGraph has to group them. It didn't:
+
+* A `textContains` of several words, which Solr gets as a conjunction of its words, failed together with another
+  condition which the same mixed index answers, such as `g.V().has('name', textContains('red green')).has('num',
+  lt(4))`, with `SyntaxError: Cannot parse '++name_t:(red) +name_t:(green) ...'`. So did an `eq` or `neq` whose value a
+  custom `string-analyzer` splits into several terms.
+* Within a disjunction of predicates on one key, such a condition, or a `neq`, restricted the other alternatives:
+  `has('name', textContains('red green').or(textContains('yellow')))` didn't find a vertex named `yellow`, and
+  `has('num', neq(3).or(lt(4)))` didn't find the vertices of `num` 3.
+* In a condition which an application builds for the index provider API itself, a negation within a disjunction
+  excluded its documents from the whole disjunction, and a negation of a negation matched every document.
+
+Solr now gets each such condition as a group, and a group which starts with a negation starts from all documents
+(`*:*`). The other queries are unchanged.
+
+The precision of a shape (`distErrPct=0`), which JanusGraph wrote after the quotes of the query of a key mapped as
+`PREFIX_TREE` and after a `geofilt` query, was a clause of its own as well: a term of the default field, `text`.
+
+* The configset in `conf/solr` has no such field, so with it Solr rejected these queries with `undefined field text`:
+  every geo condition on a `PREFIX_TREE` key other than a `geoIntersect` of a circle or a box, and a `geofilt` one
+  together with another condition of the same mixed index, such as
+  `g.V().has('location', geoWithin(Geoshape.circle(48.5, 0.5, 200))).has('num', 3)` on a key of the default mapping.
+  A condition of a polygon fails earlier there, as before: that configset's geo field parses no polygons.
+* Where the field exists, as in the configset of JanusGraph's tests, a document whose `text` held "0" matched such a
+  query on a `PREFIX_TREE` key on its own, and a `geofilt` query within a disjunction.
+
+The precision now goes within the quotes, where Solr reads it. So the query of a shape on a `PREFIX_TREE` key, which
+every geo condition there gets but a `geoIntersect` of a circle (a `geofilt` query) or of a box (a range query),
+compares the shape as precisely as the field's grid allows, rather than with the field's `distErrPct`. Where that is
+larger than 0, such as 0.025 in Solr's sample `location_rpt` field, such a query may take longer, as it refines more
+cells along the shape's edge; in the configset in `conf/solr`, it is 0 already, so nothing changes there. A `geofilt`
+query takes no such option and gets none.
+
 ##### Lucene counts more than a thousand matches exactly
 
 A `count()` which a Lucene mixed index answers, such as `g.V().has('age', lt(2000)).count()`, and the totals of a direct

@@ -120,8 +120,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
     public JointIndexQuery narrowFirst(Condition<JanusGraphElement> condition) {
         final Subquery first = queries.get(0);
         final IndexQuery mixed = first.getMixedQuery();
-        //The condition joins the conjuncts of a conjunction rather than nesting it, as Solr writes a nested conjunction
-        //without parentheses, which its query parser rejects
+        //The condition joins the conjuncts of a conjunction rather than nesting it, which keeps the index query flat
         final Condition<JanusGraphElement> current = mixed.getCondition();
         final And<JanusGraphElement> narrowedCondition;
         if (current instanceof And) {
