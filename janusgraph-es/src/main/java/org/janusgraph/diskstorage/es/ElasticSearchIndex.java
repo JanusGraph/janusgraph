@@ -1684,15 +1684,27 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
+    //The unmapped_type of a sort by a key of the data type: the type which Elasticsearch takes the field for in an
+    //index without a mapping of it, where no document holds a value of it. It is the type which pushMapping maps a
+    //sortable field of the data type to, but keyword for any string key, which pushMapping maps to text where it has a
+    //string analyzer: with no values to sort, any type which Elasticsearch can sort by will do. Elasticsearch rejects a
+    //sort whose unmapped_type is null, and from version 8 on, where the index has no mapping of the field, one whose
+    //unmapped_type is "string", which versions 6 and 7 read as keyword with a deprecation warning
     private String convertToEsDataType(Class<?> dataType, Mapping mapping) {
         if(String.class.isAssignableFrom(dataType)) {
-            return "string";
+            return "keyword";
         }
         else if (Integer.class.isAssignableFrom(dataType)) {
             return "integer";
         }
         else if (Long.class.isAssignableFrom(dataType)) {
             return "long";
+        }
+        else if (Short.class.isAssignableFrom(dataType)) {
+            return "short";
+        }
+        else if (Byte.class.isAssignableFrom(dataType)) {
+            return "byte";
         }
         else if (Float.class.isAssignableFrom(dataType)) {
             return "float";
