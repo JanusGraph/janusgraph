@@ -236,6 +236,19 @@ public class GraphDatabaseConfiguration {
                 "The default is recommended.",
             ConfigOption.Type.MASKABLE, Duration.class, Duration.ofMinutes(1), d -> d != null && d.toMillis() > 0);
 
+    public static final ConfigOption<Duration> COMPUTER_TASK_PROGRESS_TIMEOUT = new ConfigOption<>(COMPUTER_NS,
+            "task-progress-timeout",
+            "How long a job waits without any of its tasks ending in the phases which run on a pool of workers " +
+                "after its scans: the execution of the vertex program on the partitioned vertices, the reduce stage " +
+                "of a map-reduce, and the writing of the computed properties into the graph. Then the job " +
+                "interrupts the running tasks, drops the others and fails, rather than wait for tasks which may " +
+                "never end. While tasks keep ending, the job waits as long as they take. A task is one vertex, key " +
+                "or batch of writes, which normally ends within seconds; the default also lets a backend retry the " +
+                "writes of a batch for several times storage.write-time. As for every duration, a value without a " +
+                "unit is in milliseconds: half an hour is '30 minutes' or 1800000. A value of about 292 years or " +
+                "more, such as 9223372036854775807, waits indefinitely.",
+            ConfigOption.Type.MASKABLE, Duration.class, Duration.ofMinutes(10), d -> d != null && d.toMillis() > 0);
+
 
     // ################ Transaction #######################
     // ################################################

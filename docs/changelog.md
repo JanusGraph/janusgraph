@@ -645,6 +645,26 @@ returning a partial result, and it fails fast: the error surfaces as soon as the
 end-of-data marker is observed rather than after the remaining key space has been streamed and
 discarded.
 
+##### OLAP jobs no longer drop the tasks which they run after their scans
+
+The phases of a `FulgoraGraphComputer` job which run on a pool of workers after its scans could end with some of their
+work missing, and without an error: the execution of the vertex program on the partitioned vertices, the reduce stage of
+a map-reduce, and the writing of the computed properties into the graph. Once all of a phase's tasks were submitted, the
+pool waited 10 s for them and then dropped those which hadn't started: on one worker, a program which took 100 ms on
+each of 140 partitioned vertices ran on about 105 to 110 of them. A reduce which failed was lost as well, and so was a
+batch of computed properties whose transaction couldn't start.
+
+The pool now waits for all its tasks as long as they keep ending. Where none ends for `computer.task-progress-timeout`,
+10 minutes by default, it interrupts the running tasks, drops the others and fails the job, whose failure is caused by
+the pool's, which names the phase and the tasks left, as nothing else can stop a job whose task never ends: neither
+cancelling its future nor closing the graph interrupts it. As for every duration, a value without a unit is in
+milliseconds, and one of about 292 years or more, such as 9223372036854775807, waits indefinitely. A task which throws,
+as a reduce which fails or a batch of computed properties whose transaction can't start, fails the job, and the tasks
+which haven't started are then skipped. The execution on a partitioned vertex and the commit of a batch of properties
+count their own failures, as before, which fail the job once all the tasks have run. A map-reduce's `workerStart()` now
+runs before its reduces and `workerEnd()` after them, on the job's thread and also after a failure, where both ran as
+tasks of their own, in any order with the reduces.
+
 ##### Scan merge no longer loses data on writes concurrent with the scan
 
 The multi-query scan merge matches each secondary slice query's rows against the grounding
