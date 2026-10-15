@@ -248,13 +248,26 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
 
         private final Iterator<R> iterator;
 
+        /*
+         * Sorts what the backend returns, once it has left out the elements which the transaction removed, as the
+         * order values of a removed vertex can't be read. getFilterIterator leaves out the other elements which the
+         * transaction deleted, such as those which it changed so that they no longer match, as they are reached, as
+         * for an unsorted query, so that a change which the caller makes while it reads the results is seen.
+         */
         private PreSortingIterator(BackendQueryHolder<B> backendQueryHolder) {
-            List<R> all = new ArrayList<>();
-            executor.execute(query,
+            final List<R> all = new ArrayList<>();
+            final Iterator<R> results = executor.execute(query,
                 backendQueryHolder.getBackendQuery().updateLimit(MAX_SORT_ITERATION),
-                backendQueryHolder.getExecutionInfo(),backendQueryHolder.getProfiler())
-                .forEachRemaining(all::add);
-            if (all.size() >= MAX_SORT_ITERATION)
+                backendQueryHolder.getExecutionInfo(),backendQueryHolder.getProfiler());
+            int fetched = 0;
+            while (results.hasNext()) {
+                final R result = results.next();
+                fetched++;
+                if (!result.isRemoved()) {
+                    all.add(result);
+                }
+            }
+            if (fetched >= MAX_SORT_ITERATION)
                 throw new QueryException("Could not execute query since pre-sorting requires fetching more than " +
                         MAX_SORT_ITERATION + " elements. Consider rewriting the query to exploit sort orders");
             all.sort(query.getSortOrder());

@@ -476,6 +476,102 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         assertTrue(graph.traversal().E().has("_e", 2).hasNext());
     }
 
+    /**
+     * An ordered query which JanusGraph sorts itself, as its index doesn't sort it, leaves out the vertices which the
+     * transaction removed before it sorts them, as the order values of a removed vertex can't be read; the edges which
+     * it removed, whose ids turn into no element, are left out as well
+     */
+    @Test
+    public void testQueriesSortedInMemorySkipTheElementsWhichTheTransactionRemoved() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        makeKey("name", String.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("verticesByKind", Vertex.class).addKey(kind).buildCompositeIndex();
+        mgmt.buildIndex("edgesByKind", Edge.class).addKey(kind).buildCompositeIndex();
+        finishSchema();
+        final Vertex from = tx.addVertex("kind", "q");
+        for (final String name : Arrays.asList("a", "b", "c", "d")) {
+            from.addEdge("road", tx.addVertex("kind", "p", "name", name), "kind", "p", "name", name);
+        }
+        newTx();
+        final GraphTraversalSource g = tx.traversal();
+        //The vertex named b, and with it its edge, and the edge named c
+        g.V().has("kind", "p").has("name", "b").drop().iterate();
+        g.E().has("kind", "p").has("name", "c").drop().iterate();
+        assertEquals(Arrays.asList("a", "c", "d"), g.V().has("kind", "p").order().by("name").values("name").toList());
+        assertEquals(Arrays.asList("d", "c"),
+            g.V().has("kind", "p").order().by("name", desc).limit(2).values("name").toList());
+        final List<Object> vertexNames = new ArrayList<>();
+        tx.query().has("kind", "p").orderBy("name", asc).vertices().forEach(v -> vertexNames.add(v.value("name")));
+        assertEquals(Arrays.asList("a", "c", "d"), vertexNames);
+        assertEquals(Arrays.asList("a", "d"), g.E().has("kind", "p").order().by("name").values("name").toList());
+        assertEquals(Collections.singletonList("d"),
+            g.E().has("kind", "p").order().by("name", desc).limit(1).values("name").toList());
+        final List<Object> edgeNames = new ArrayList<>();
+        tx.query().has("kind", "p").orderBy("name", asc).edges().forEach(e -> edgeNames.add(e.value("name")));
+        assertEquals(Arrays.asList("a", "d"), edgeNames);
+        assertEquals(Arrays.asList("a", "d"),
+            g.V(from).local(__.outE("road").order().by("name")).values("name").toList());
+        tx.rollback();
+    }
+
+    /**
+     * The elements which the transaction removes, or changes so that they no longer match, while it reads the sorted
+     * results of a query are left out as they are reached, as for an unsorted query. They are checked where the
+     * transaction had a change when a graph query began, or a change of the vertex's relations when a vertex query
+     * began.
+     */
+    @Test
+    public void testQueriesSortedInMemoryLeaveOutTheElementsRemovedWhileTheyAreRead() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        makeKey("name", String.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("verticesByKind", Vertex.class).addKey(kind).buildCompositeIndex();
+        finishSchema();
+        final Vertex from = tx.addVertex("kind", "q");
+        for (final String name : Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h")) {
+            from.addEdge("road", tx.addVertex("kind", "p", "name", name), "name", name);
+        }
+        newTx();
+        tx.addVertex("name", "unrelated");
+        final List<Object> names = new ArrayList<>();
+        for (final JanusGraphVertex vertex : tx.query().has("kind", "p").orderBy("name", asc).vertices()) {
+            names.add(vertex.value("name"));
+            if (names.size() == 1) {
+                tx.traversal().V().has("kind", "p").has("name", "g").next().remove();
+            }
+        }
+        assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "h"), names);
+        tx.rollback();
+        newTx();
+
+        //and so are those which it changes so that they no longer match
+        tx.addVertex("name", "unrelated");
+        names.clear();
+        for (final JanusGraphVertex vertex : tx.query().has("kind", "p").orderBy("name", asc).vertices()) {
+            names.add(vertex.value("name"));
+            if (names.size() == 1) {
+                tx.traversal().V().has("kind", "p").has("name", "g").property("kind", "z").iterate();
+            }
+        }
+        assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "h"), names);
+        tx.rollback();
+        newTx();
+
+        //and so are the edges of a vertex whose relations the transaction changed
+        final JanusGraphVertex source = (JanusGraphVertex) tx.traversal().V(from).next();
+        source.property("name", "source");
+        final List<Object> edgeNames = new ArrayList<>();
+        for (final JanusGraphEdge edge : source.query().labels("road").orderBy("name", asc).edges()) {
+            edgeNames.add(edge.value("name"));
+            if (edgeNames.size() == 1) {
+                tx.traversal().V(source).outE("road").has("name", "g").next().remove();
+            }
+        }
+        assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "h"), edgeNames);
+        tx.rollback();
+    }
+
     @Test
     public void testUpdateForkEdgePropertyThenRemoveEdge() {
         initializeGraphWithVerticesAndEdges();

@@ -5401,6 +5401,46 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         }
     }
 
+    /**
+     * An ordered query which a mixed index answers without sorting it, as the index doesn't hold the order key, leaves
+     * out the vertices which the transaction removed, which the index still returns, before JanusGraph sorts them, as
+     * the order values of a removed vertex can't be read; the edges which it removed, whose ids turn into no element,
+     * are left out as well
+     */
+    @Test
+    public void testQueriesSortedInMemorySkipTheElementsWhichTheTransactionRemoved() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        makeKey("name", String.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).buildMixedIndex(INDEX);
+        mgmt.buildIndex("edges", Edge.class).addKey(kind, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+        final Vertex from = tx.addVertex("kind", "q");
+        for (final String name : Arrays.asList("a", "b", "c", "d")) {
+            from.addEdge("road", tx.addVertex("kind", "p", "name", name), "kind", "p", "name", name);
+        }
+        newTx();
+        final GraphTraversalSource g = tx.traversal();
+        //The vertex named b, and with it its edge, and the edge named c
+        g.V().has("kind", "p").has("name", "b").drop().iterate();
+        g.E().has("kind", "p").has("name", "c").drop().iterate();
+        assertEquals(Arrays.asList("a", "c", "d"), g.V().has("kind", "p").order().by("name").values("name").toList());
+        assertEquals(Arrays.asList("d", "c"),
+            g.V().has("kind", "p").order().by("name", desc).limit(2).values("name").toList());
+        final List<Object> vertexNames = new ArrayList<>();
+        tx.query().has("kind", "p").orderBy("name", asc).vertices().forEach(v -> vertexNames.add(v.value("name")));
+        assertEquals(Arrays.asList("a", "c", "d"), vertexNames);
+        assertEquals(Arrays.asList("a", "d"), g.E().has("kind", "p").order().by("name").values("name").toList());
+        assertEquals(Collections.singletonList("d"),
+            g.E().has("kind", "p").order().by("name", desc).limit(1).values("name").toList());
+        final List<Object> edgeNames = new ArrayList<>();
+        tx.query().has("kind", "p").orderBy("name", asc).edges().forEach(e -> edgeNames.add(e.value("name")));
+        assertEquals(Arrays.asList("a", "d"), edgeNames);
+        assertEquals(Arrays.asList("a", "d"),
+            g.V(from).local(__.outE("road").order().by("name")).values("name").toList());
+        tx.rollback();
+    }
+
     //A query which removes the edges it reads, as it reads them, gets each of its edges once: a read under a larger
     //limit skips what the index returned before, rather than as many edges as were returned, which are removed by then
     @Test

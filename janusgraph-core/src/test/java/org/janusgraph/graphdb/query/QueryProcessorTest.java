@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -103,6 +104,19 @@ public class QueryProcessorTest {
         executor.narrows = true;
         assertEquals(2, run(query(true, 2, false), executor).size());
         assertNull(executor.lastValue);
+    }
+
+    //An element which the transaction removed, whose order value can't be read, is left out before the others are
+    //sorted
+    @Test
+    public void leavesOutTheRemovedElementsBeforeSortingWhatTheBackendReturns() {
+        final List<JanusGraphElement> stored = elements(8L, 6L, 4L);
+        final JanusGraphElement removed = mock(JanusGraphElement.class);
+        doReturn(true).when(removed).isRemoved();
+        doThrow(new IllegalStateException("The vertex was removed")).when(removed).valueOrNull(key);
+        stored.add(1, removed);
+        final Executor executor = new Executor(elements(), stored);
+        assertEquals(Arrays.asList(stored.get(0), stored.get(2), stored.get(3)), run(query(true, 10, false), executor));
     }
 
     private List<JanusGraphElement> run(ElementQuery<JanusGraphElement, FakeBackendQuery> query, Executor executor) {
