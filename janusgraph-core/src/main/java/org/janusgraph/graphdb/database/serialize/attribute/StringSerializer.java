@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -52,6 +54,8 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
     private static final int MAX_NUM_COMPRESSORS = (1<<COMPRESSOR_BIT_LEN);
     private static final long COMPRESSOR_BIT_MASK = MAX_NUM_COMPRESSORS-1;
     private static final long NO_COMPRESSION_OFFSET = COMPRESSOR_BIT_LEN+1;
+
+    private static final char REPLACEMENT_CHARACTER = 0xFFFD;
 
 
     private final CharacterSerializer cs = new CharacterSerializer();
@@ -232,7 +236,7 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                 try {
                     OutputStream out = new GZIPOutputStream(byteArrayOutputStream);
-                    out.write(text.getBytes(StandardCharsets.UTF_8));
+                    out.write(encodeWtf8(text));
                     out.close();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -242,8 +246,8 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
 
             @Override
             public String decompress(final ScanBuffer buffer, final int numBytes) {
-                try {
-                    InputStream in = new GZIPInputStream(new InputStream() {
+                //Closing the stream frees the memory of its Inflater at once; the stream it reads from closes nothing
+                try (InputStream in = new GZIPInputStream(new InputStream() {
 
                         int bytesRead = 0;
 
@@ -252,13 +256,25 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
                             if (++bytesRead>numBytes) return -1;
                             return 0xFF & buffer.getByte();
                         }
-                    });
+
+                        //GZIPInputStream reads the bytes into its buffer through this method, which InputStream
+                        //implements by a call of read() for each byte
+                        @Override
+                        public int read(byte[] b, int off, int len) {
+                            Objects.checkFromIndexSize(off, len, b.length);
+                            int count = Math.min(len, numBytes - bytesRead);
+                            if (count <= 0) return len == 0 ? 0 : -1;
+                            for (int i = 0; i < count; i++) b[off + i] = buffer.getByte();
+                            bytesRead += count;
+                            return count;
+                        }
+                    })) {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     byte[] bytes = new byte[8192];
                     int len;
                     while ((len = in.read(bytes)) > 0)
                         baos.write(bytes, 0, len);
-                    return new String(baos.toByteArray(), StandardCharsets.UTF_8);
+                    return decodeWtf8(baos.toByteArray());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -279,6 +295,76 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
             throw new IllegalArgumentException("Unknown compressor type for id: "+id);
         }
 
+    }
+
+    /**
+     * Encodes a string for compression: as UTF-8, except that an unpaired surrogate, which UTF-8 can't encode and
+     * {@link String#getBytes} replaces with '?', takes the three bytes UTF-8 would give its code point. This is WTF-8
+     * (https://simonsapin.github.io/wtf-8/), so a string without unpaired surrogates is encoded as UTF-8, as before,
+     * and Java's UTF-8 decoder, which earlier versions read these bytes with, reads an unpaired surrogate as U+FFFD.
+     * A string without surrogates takes {@link String#getBytes}; one with a surrogate, paired or not, the loop below,
+     * which encodes every other character and every pair as {@link String#getBytes} does.
+     */
+    private static byte[] encodeWtf8(String text) {
+        int first = 0;
+        while (first < text.length() && !Character.isSurrogate(text.charAt(first))) first++;
+        if (first == text.length()) return text.getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = new byte[text.length() * 3];
+        int length = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c < 0x80) {
+                bytes[length++] = (byte) c;
+            } else if (c < 0x800) {
+                bytes[length++] = (byte) (0xC0 | c >> 6);
+                bytes[length++] = (byte) (0x80 | c & 0x3F);
+            } else if (isSurrogatePair(text, i)) {
+                int codePoint = text.codePointAt(i++);
+                bytes[length++] = (byte) (0xF0 | codePoint >> 18);
+                bytes[length++] = (byte) (0x80 | codePoint >> 12 & 0x3F);
+                bytes[length++] = (byte) (0x80 | codePoint >> 6 & 0x3F);
+                bytes[length++] = (byte) (0x80 | codePoint & 0x3F);
+            } else { //Any other char, an unpaired surrogate included
+                bytes[length++] = (byte) (0xE0 | c >> 12);
+                bytes[length++] = (byte) (0x80 | c >> 6 & 0x3F);
+                bytes[length++] = (byte) (0x80 | c & 0x3F);
+            }
+        }
+        return Arrays.copyOf(bytes, length);
+    }
+
+    /**
+     * Decodes what {@link #encodeWtf8} encoded. Java's UTF-8 decoder reads the three bytes of a surrogate as U+FFFD,
+     * so the bytes hold a surrogate only if the string they decode to holds U+FFFD.
+     */
+    private static String decodeWtf8(byte[] bytes) {
+        String text = new String(bytes, StandardCharsets.UTF_8);
+        if (text.indexOf(REPLACEMENT_CHARACTER) < 0) return text;
+        StringBuilder decoded = null;
+        int start = 0;
+        int limit = bytes.length - 2;
+        int i = 0;
+        while (true) {
+            //A surrogate's three bytes are ED, A0 to BF and a continuation byte. UTF-8 has ED only before 80 to 9F
+            while (i < limit && bytes[i] != (byte) 0xED) i++;
+            if (i >= limit) break;
+            if ((bytes[i + 1] & 0xE0) == 0xA0 && (bytes[i + 2] & 0xC0) == 0x80) {
+                if (decoded == null) decoded = new StringBuilder(text.length());
+                if (i > start) decoded.append(new String(bytes, start, i - start, StandardCharsets.UTF_8));
+                decoded.append((char) (0xD000 | (bytes[i + 1] & 0x3F) << 6 | bytes[i + 2] & 0x3F));
+                i += 3;
+                start = i;
+            } else {
+                i++;
+            }
+        }
+        if (decoded == null) return text; //The string holds U+FFFD itself
+        return decoded.append(new String(bytes, start, bytes.length - start, StandardCharsets.UTF_8)).toString();
+    }
+
+    private static boolean isSurrogatePair(String text, int index) {
+        return Character.isHighSurrogate(text.charAt(index)) && index + 1 < text.length()
+            && Character.isLowSurrogate(text.charAt(index + 1));
     }
 
 }

@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -70,6 +71,24 @@ public class JanusGraphAssert {
 
     public static void assertCount(long expected, Stream stream) {
         assertEquals(expected, stream.count());
+    }
+
+    /**
+     * Asserts that two strings are equal. Where they differ, the message tells the first UTF-16 unit which does, rather
+     * than the strings: test reports cut a message off at an unpaired surrogate.
+     */
+    public static void assertSameChars(String expected, String actual) {
+        assertNotNull(actual);
+        assertTrue(expected.equals(actual), () -> {
+            int i = 0;
+            while (i < expected.length() && i < actual.length() && expected.charAt(i) == actual.charAt(i)) i++;
+            return String.format("Expected %d chars but was %d, which first differ at %d: expected %s but was %s",
+                expected.length(), actual.length(), i, unitAt(expected, i), unitAt(actual, i));
+        });
+    }
+
+    private static String unitAt(String text, int index) {
+        return index < text.length() ? String.format("U+%04X", (int) text.charAt(index)) : "the end";
     }
 
     public static<V extends Element> void assertEmpty(Object object) {
