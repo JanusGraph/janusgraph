@@ -62,6 +62,11 @@ public class MetricsQueryExecutor<Q extends ElementQuery,R extends JanusGraphEle
         return runWithMetrics("execute", v -> qe.execute(query, subquery, executionInfo, profiler));
     }
 
+    @Override
+    public B withoutResultsAfter(final Q query, final B subquery, final Object value) {
+        return qe.withoutResultsAfter(query, subquery, value);
+    }
+
     private <T> T runWithMetrics(String opName, Function<Void,T> impl) {
 
         Preconditions.checkNotNull(opName);

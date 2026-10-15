@@ -112,8 +112,11 @@ public class BenchmarkRunner {
             builder.include(".*Benchmark");
             builder.exclude(StaticArrayEntryListBenchmark.class.getSimpleName());
             builder.exclude(BackPressureBenchmark.class.getSimpleName());
-            // IndexQueryResultBenchmark's mixed index runs on an Elasticsearch server, which this run doesn't start
+            // These need an Elasticsearch server, which this run doesn't start: IndexQueryResultBenchmark and
+            // TransactionGetOrCreateBenchmark for their mixed index, and TransactionChangedVerticesBenchmark always
             builder.exclude(IndexQueryResultBenchmark.class.getSimpleName());
+            builder.exclude(TransactionGetOrCreateBenchmark.class.getSimpleName());
+            builder.exclude(TransactionChangedVerticesBenchmark.class.getSimpleName());
             builder.exclude("CQL.*Benchmark");
             builder.exclude(".*ElasticSearch.*Benchmark.*");
         }

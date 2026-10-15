@@ -19,6 +19,7 @@ import org.janusgraph.core.PropertyKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Collections;
 
 public class EmptyIndexCache implements IndexCache {
@@ -49,7 +50,19 @@ public class EmptyIndexCache implements IndexCache {
     }
 
     @Override
-    public Iterable<JanusGraphVertexProperty> get(final Object value, final PropertyKey key) {
+    public int count(PropertyKey key, Object value, boolean ofNewVertices) {
+        logWarning();
+        return 0;
+    }
+
+    @Override
+    public Collection<JanusGraphVertexProperty> get(PropertyKey key, Object value, boolean ofNewVertices) {
+        logWarning();
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Iterable<JanusGraphVertexProperty> getAll(PropertyKey key, boolean ofNewVertices) {
         logWarning();
         return Collections.emptyList();
     }
