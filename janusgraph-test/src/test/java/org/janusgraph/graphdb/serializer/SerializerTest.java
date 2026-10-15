@@ -52,14 +52,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -112,6 +115,49 @@ public class SerializerTest extends SerializerTestCommon {
             assertEquals(s2, serialize.readObjectByteOrder(b2.asReadBuffer(), String.class));
             assertEquals(Integer.signum(s1.compareTo(s2)), Integer.signum(b1.compareTo(b2)), s1 + " vs " + s2);
         }
+    }
+
+    /**
+     * The data types whose missing values the serializer writes last, as the byte -1 after every value of theirs, which
+     * lets the slice of a vertex-centric index end before the relations without a value of its sort key
+     */
+    @Test
+    public void testMissingValuesOfTheTypesWhichWriteThemLastComeAfterTheirValues() {
+        final Map<Class<?>, Object[]> values = new LinkedHashMap<>();
+        values.put(Byte.class, new Object[]{Byte.MIN_VALUE, (byte) -1, (byte) 0, Byte.MAX_VALUE});
+        values.put(Short.class, new Object[]{Short.MIN_VALUE, (short) -1, (short) 0, Short.MAX_VALUE});
+        values.put(Integer.class, new Object[]{Integer.MIN_VALUE, -1, 0, Integer.MAX_VALUE});
+        values.put(Long.class, new Object[]{Long.MIN_VALUE, -1L, 0L, Long.MAX_VALUE});
+        values.put(Float.class, new Object[]{Float.NEGATIVE_INFINITY, -0.0f, 0.0f, Float.MAX_VALUE,
+            Float.POSITIVE_INFINITY, Float.NaN});
+        values.put(Double.class, new Object[]{Double.NEGATIVE_INFINITY, -0.0, 0.0, Double.MAX_VALUE,
+            Double.POSITIVE_INFINITY, Double.NaN});
+        values.put(Character.class, new Object[]{Character.MIN_VALUE, 'a', Character.MAX_VALUE});
+        values.put(Boolean.class, new Object[]{false, true});
+        values.put(Date.class, new Object[]{new Date(Long.MIN_VALUE), new Date(0), new Date(Long.MAX_VALUE)});
+        values.put(UUID.class, new Object[]{new UUID(0, 0), new UUID(-1, -1)});
+        values.put(String.class, new Object[]{"", "a", "\uFFFF\uFFFF", "\uD83D\uDE00"});
+        for (final Map.Entry<Class<?>, Object[]> type : values.entrySet()) {
+            assertTrue(serialize.writesMissingValuesLast(type.getKey()), type.getKey().getName());
+            final StaticBuffer missing = byteOrder(null, type.getKey());
+            assertEquals(1, missing.length(), type.getKey().getName());
+            assertEquals((byte) -1, missing.getByte(0), type.getKey().getName());
+            for (final Object value : type.getValue()) {
+                assertTrue(byteOrder(value, type.getKey()).compareTo(missing) < 0,
+                    type.getKey().getName() + " " + value);
+            }
+        }
+        //A class is written as the number of its registration, 0 where it's missing, and an instant and an array keep
+        //no order
+        assertFalse(serialize.writesMissingValuesLast(Class.class));
+        assertFalse(serialize.writesMissingValuesLast(Instant.class));
+        assertFalse(serialize.writesMissingValuesLast(byte[].class));
+    }
+
+    private StaticBuffer byteOrder(Object value, Class<?> type) {
+        final DataOutput out = serialize.getDataOutput(64);
+        out.writeObjectByteOrder(value, type);
+        return out.getStaticBuffer();
     }
 
     @Test

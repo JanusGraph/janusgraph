@@ -203,6 +203,8 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
         if (traversal.getEndStep() instanceof CountGlobalStep) {
             centricQueryBuilder.disableSmartLimit();
         }
+        //TinkerPop's order().by(key) leaves out the elements which have no value of the key
+        centricQueryBuilder.requireOrderValues();
         final GraphCentricQuery graphCentricQuery = centricQueryBuilder.constructQueryWithoutProfile(Vertex.class.isAssignableFrom(this.returnClass) ? ElementCategory.VERTEX: ElementCategory.EDGE);
         optProfiler.stopTimer();
         return graphCentricQuery;

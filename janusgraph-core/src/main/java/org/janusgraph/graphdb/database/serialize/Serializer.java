@@ -30,4 +30,15 @@ public interface Serializer extends AttributeHandler, Closeable {
 
     DataOutput getDataOutput(int initialCapacity);
 
+    /**
+     * Whether {@link DataOutput#writeObjectByteOrder} writes a missing value of the data type as the single byte -1,
+     * and every value of it after a smaller first byte, so that the missing values sort after all others
+     *
+     * @param datatype a data type which keeps its order
+     * @return whether the missing values of the data type sort last, as the byte -1
+     */
+    default boolean writesMissingValuesLast(Class<?> datatype) {
+        return false;
+    }
+
 }

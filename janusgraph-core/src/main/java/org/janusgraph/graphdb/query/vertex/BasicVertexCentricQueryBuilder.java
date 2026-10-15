@@ -31,6 +31,7 @@ import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.database.idhandling.IDHandler;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
@@ -376,8 +377,10 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         Iterable<JanusGraphRelation> merge = null;
         if (vertex instanceof CacheVertex && !isPartitionedVertex(vertex) && vertex.isLoaded()) {
             CacheVertex cacheVertex = (CacheVertex) vertex;
+            //The cached relations come in the order of the storage backend, which a query in another order sorts on the
+            //default path
             boolean hasNotCachedQueries = baseQuery.getQueries().stream()
-                .anyMatch(q -> cacheVertex.getFromCache(q.getBackendQuery()) == null || !q.isFitted());
+                .anyMatch(q -> cacheVertex.getFromCache(q.getBackendQuery()) == null || !q.isFitted() || !q.isSorted());
             if (hasNotCachedQueries) {
                 //Fall back to default path
                 return executeRelations(vertex, baseQuery);
@@ -639,13 +642,16 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 }
 
 
-                if (type.isEdgeLabel() && typeDir==Direction.BOTH && intervalConstraints.isEmpty()
+                if (type.isEdgeLabel() && typeDir==Direction.BOTH
+                        && intervalConstraints.values().stream().allMatch(BasicVertexCentricQueryBuilder::isUnbounded)
                         && orders.isEmpty()) {
                     //TODO: This if-condition is a little too restrictive - we also want to include those cases where
                     //there ARE intervalConstraints or orders but those cannot be covered by any sort-keys
+                    //A has(key), a range without ends, is as before checked in memory rather than split by direction
                     SliceQuery q = serializer.getQuery(type, typeDir, null);
                     q.setLimit(sliceLimit);
-                    queries.add(new BackendQueryHolder<>(q, isIntervalFittedConditions, true));
+                    queries.add(new BackendQueryHolder<>(q, isIntervalFittedConditions && intervalConstraints.isEmpty(),
+                        true));
                 } else {
                     //Optimize for each direction independently
                     Direction[] dirs = {typeDir};
@@ -752,14 +758,18 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         }
         //...otherwise this is it and we can construct the slicequery
 
+        EdgeSerializer serializer = tx.getEdgeSerializer();
         boolean isFitted = isIntervalFittedConditions && position==intervalConstraints.size();
         if (isFitted && position>0) {
-            //If the last interval is open ended toward the larger values, then its not fitted because we need to
-            //filter out NULL values which are serialized with -1 (largest value) byte up front.
+            //If the last interval is open ended toward the larger values, then it's only fitted where the slice leaves
+            //out the NULL values, which are serialized with -1 (largest value) byte up front (see EdgeSerializer), and
+            //holds only the values which the condition holds: the slice of floating point numbers from a start holds
+            //NaN, which they sort after the others, and +0.0 after -0.0, which the comparisons of a range reject
             EdgeSerializer.TypedInterval lastInterval = sortKeyConstraints[position-1];
-            if (!lastInterval.interval.isPoints() && lastInterval.interval.getEnd()==null) isFitted=false;
+            if (!lastInterval.interval.isPoints() && lastInterval.interval.getEnd()==null
+                    && (!serializer.leavesOutMissingValues(lastInterval.key) || lastInterval.interval.getStart() != null
+                        && AttributeUtils.isDecimal(lastInterval.key.dataType()))) isFitted=false;
         }
-        EdgeSerializer serializer = tx.getEdgeSerializer();
         SliceQuery q = serializer.getQuery(bestCandidate, direction, sortKeyConstraints);
         q.setLimit(computeLimit(intervalConstraints.size()-position, sliceLimit));
         queries.add(new BackendQueryHolder<>(q, isFitted, bestCandidateSupportsOrder));
@@ -848,7 +858,10 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                     newInt = new PointInterval(value);
                     break;
                 case NOT_EQUAL:
-                    return null;
+                    //has(key), a not-equal to null, holds for every value, which a range without ends holds; that of an
+                    //implicit key, which a slice takes as points only, is checked in memory as before
+                    if (value != null || type instanceof ImplicitKey) return null;
+                    return pint != null ? pint : new RangeInterval<>();
                 case LESS_THAN:
                     newInt = new RangeInterval().setEnd(value, false);
                     break;
@@ -871,8 +884,15 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     //The intersection of the intervals, or null where their values are of different types, as those of a key of any
     //type may be: the conditions compare numbers of different types, which the intervals don't
     private static Interval intersect(Interval interval, Interval other) {
+        if (isUnbounded(interval)) return other;
+        if (isUnbounded(other)) return interval;
         final Class<?> type = valueType(interval);
         return type != null && type == valueType(other) ? interval.intersect(other) : null;
+    }
+
+    //Whether the interval is a range without ends, which every value is in, as has(key) gives
+    private static boolean isUnbounded(Interval<?> interval) {
+        return interval instanceof RangeInterval && interval.getStart() == null && interval.getEnd() == null;
     }
 
     //The type of the values of the interval, or null where they are of several types
