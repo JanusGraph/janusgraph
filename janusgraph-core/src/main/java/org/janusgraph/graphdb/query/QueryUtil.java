@@ -216,6 +216,9 @@ public class QueryUtil {
     /**
      * Prepares the constraints from the query builder into a QNF compliant condition.
      * If the condition is invalid or trivially false, it returns null.
+     * Its conditions compare two strings by their code points in the ranges of Cmp, as those of a graph-centric query
+     * do. The conditions of a vertex-centric query, which compare them by UTF-16 code unit, are made by
+     * {@link #constraints2QNF(StandardJanusGraphTx, List, boolean)} with false.
      *
      * @param tx
      * @param constraints
@@ -224,6 +227,19 @@ public class QueryUtil {
      * @see #isQueryNormalForm(org.janusgraph.graphdb.query.condition.Condition)
      */
     public static <E extends JanusGraphElement> And<E> constraints2QNF(StandardJanusGraphTx tx, List<PredicateCondition<String, E>> constraints) {
+        return constraints2QNF(tx, constraints, true);
+    }
+
+    /**
+     * Prepares the constraints as {@link #constraints2QNF(StandardJanusGraphTx, List)} does, into a condition which
+     * compares two strings in the ranges of Cmp by their code points if stringsByCodePoint, as a graph-centric query
+     * does, in the order of the mixed indexes and of the query's own order, or by UTF-16 code unit otherwise, as a
+     * vertex-centric query does, in the order in which the storage backend holds the sort keys of a vertex's relations
+     * (see {@link PredicateCondition}).
+     */
+    public static <E extends JanusGraphElement> And<E> constraints2QNF(StandardJanusGraphTx tx,
+                                                                        List<PredicateCondition<String, E>> constraints,
+                                                                        boolean stringsByCodePoint) {
         final And<E> conditions = new And<>(constraints.size() + 4);
         for (final PredicateCondition<String, E> atom : constraints) {
             final String atomKey = atom.getKey();
@@ -258,39 +274,44 @@ public class QueryUtil {
                 final Collection values = (Collection) value;
                 if (predicate == Contain.NOT_IN) {
                     if (values.isEmpty()) continue; //Simply ignore since trivially satisfied
-                    addConstraints(type, Cmp.NOT_EQUAL, values, conditions, tx);
+                    addConstraints(type, Cmp.NOT_EQUAL, values, conditions, tx, stringsByCodePoint);
                 } else {
                     Preconditions.checkArgument(predicate == Contain.IN);
                     if (values.isEmpty()) {
                         return null; //Cannot be satisfied
                     } if (values.size() == 1) {
-                        addConstraint(type, Cmp.EQUAL, values.iterator().next(), conditions, tx);
+                        addConstraint(type, Cmp.EQUAL, values.iterator().next(), conditions, tx, stringsByCodePoint);
                     } else {
                         final Or<E> nested = new Or<>(values.size());
-                        addConstraints(type, Cmp.EQUAL, values, nested, tx);
+                        addConstraints(type, Cmp.EQUAL, values, nested, tx, stringsByCodePoint);
                         conditions.add(nested);
                     }
                 }
             } else if (predicate instanceof AndJanusPredicate) {
-                if (addConstraint(type, (AndJanusPredicate) (predicate), (List<Object>) (value), conditions, tx) == null) {
+                if (addConstraint(type, (AndJanusPredicate) (predicate), (List<Object>) (value), conditions, tx,
+                        stringsByCodePoint) == null) {
                     return null;
                 }
             } else if (predicate instanceof OrJanusPredicate) {
                 final List<Object> values = (List<Object>) (value);
                 // FIXME: this might generate a non QNF-compliant form, e.g. nested = PredicateCondition OR (PredicateCondition AND PredicateCondition)
-                final Or<E> nested = addConstraint(type, (OrJanusPredicate) predicate, values, new Or<>(values.size()), tx);
+                final Or<E> nested = addConstraint(type, (OrJanusPredicate) predicate, values, new Or<>(values.size()),
+                    tx, stringsByCodePoint);
                 if (nested == null) {
                     return null;
                 }
                 conditions.add(nested);
             } else {
-                addConstraint(type, predicate, value, conditions, tx);
+                addConstraint(type, predicate, value, conditions, tx, stringsByCodePoint);
             }
         }
         return conditions;
     }
 
-    private static <E extends JanusGraphElement> And<E> addConstraint(final RelationType type, AndJanusPredicate predicate, List<Object> values, And<E> and, StandardJanusGraphTx tx) {
+    private static <E extends JanusGraphElement> And<E> addConstraint(final RelationType type,
+                                                                      AndJanusPredicate predicate, List<Object> values,
+                                                                      And<E> and, StandardJanusGraphTx tx,
+                                                                      boolean stringsByCodePoint) {
         for (int i = 0 ; i < values.size(); i++) {
             final JanusGraphPredicate janusGraphPredicate = predicate.get(i);
             if (janusGraphPredicate instanceof Contain) {
@@ -298,47 +319,54 @@ public class QueryUtil {
                 final Collection childValues = (Collection) values.get(i);
                 if (janusGraphPredicate == Contain.NOT_IN) {
                     if (childValues.isEmpty()) continue; //Simply ignore since trivially satisfied
-                    addConstraints(type, Cmp.NOT_EQUAL, childValues, and, tx);
+                    addConstraints(type, Cmp.NOT_EQUAL, childValues, and, tx, stringsByCodePoint);
                 } else {
                     Preconditions.checkArgument(janusGraphPredicate == Contain.IN);
                     if (childValues.isEmpty()) {
                         return null; //Cannot be satisfied
                     }
                     if (childValues.size() == 1) {
-                        addConstraint(type, Cmp.EQUAL, childValues.iterator().next(), and, tx);
+                        addConstraint(type, Cmp.EQUAL, childValues.iterator().next(), and, tx, stringsByCodePoint);
                     } else {
                         final Or<E> nested = new Or<>(childValues.size());
-                        addConstraints(type, Cmp.EQUAL, childValues, nested, tx);
+                        addConstraints(type, Cmp.EQUAL, childValues, nested, tx, stringsByCodePoint);
                         and.add(nested);
                     }
                 }
             } else if (janusGraphPredicate instanceof AndJanusPredicate) {
-                if (addConstraint(type, (AndJanusPredicate) (janusGraphPredicate), (List<Object>) (values.get(i)), and, tx) == null) {
+                if (addConstraint(type, (AndJanusPredicate) (janusGraphPredicate), (List<Object>) (values.get(i)), and,
+                        tx, stringsByCodePoint) == null) {
                     return null;
                 }
             } else if (predicate.get(i) instanceof OrJanusPredicate) {
                 final List<Object> childValues = (List<Object>) (values.get(i));
-                final Or<E> nested = addConstraint(type, (OrJanusPredicate) (janusGraphPredicate), childValues, new Or<>(childValues.size()), tx);
+                final Or<E> nested = addConstraint(type, (OrJanusPredicate) (janusGraphPredicate), childValues,
+                    new Or<>(childValues.size()), tx, stringsByCodePoint);
                 if (nested == null) {
                     return null;
                 }
                 and.add(nested);
             } else {
-                addConstraint(type, janusGraphPredicate, values.get(i), and, tx);
+                addConstraint(type, janusGraphPredicate, values.get(i), and, tx, stringsByCodePoint);
             }
         }
         return and;
     }
 
     //Returns the disjunction with the branches of the predicate, or null where nothing satisfies any of them
-    private static <E extends JanusGraphElement> Or<E> addConstraint(final RelationType type, OrJanusPredicate predicate, List<Object> values, Or<E> or, StandardJanusGraphTx tx) {
-        addBranches(type, predicate, values, or, tx);
+    private static <E extends JanusGraphElement> Or<E> addConstraint(final RelationType type,
+                                                                     OrJanusPredicate predicate, List<Object> values,
+                                                                     Or<E> or, StandardJanusGraphTx tx,
+                                                                     boolean stringsByCodePoint) {
+        addBranches(type, predicate, values, or, tx, stringsByCodePoint);
         //An empty disjunction would hold for every element
         return or.hasChildren() ? or : null;
     }
 
     //Adds the branches of the predicate to the disjunction, leaving out each branch which nothing satisfies
-    private static <E extends JanusGraphElement> void addBranches(final RelationType type, OrJanusPredicate predicate, List<Object> values, Or<E> or, StandardJanusGraphTx tx) {
+    private static <E extends JanusGraphElement> void addBranches(final RelationType type, OrJanusPredicate predicate,
+                                                                  List<Object> values, Or<E> or,
+                                                                  StandardJanusGraphTx tx, boolean stringsByCodePoint) {
         for (int i = 0 ; i < values.size(); i++) {
             final JanusGraphPredicate janusGraphPredicate = predicate.get(i);
             if (janusGraphPredicate instanceof Contain) {
@@ -346,37 +374,40 @@ public class QueryUtil {
                 final Collection childValues = (Collection) values.get(i);
                 if (janusGraphPredicate == Contain.NOT_IN) {
                     if (childValues.size() == 1) {
-                        addConstraint(type, Cmp.NOT_EQUAL, childValues.iterator().next(), or, tx);
+                        addConstraint(type, Cmp.NOT_EQUAL, childValues.iterator().next(), or, tx, stringsByCodePoint);
                     }
                     // Don't need to handle the case where childValues is empty, because it defaults to
                     // an or(and()) is added, which is a tautology
                     final And<E> nested = new And<>(childValues.size());
-                    addConstraints(type, Cmp.NOT_EQUAL, childValues, nested, tx);
+                    addConstraints(type, Cmp.NOT_EQUAL, childValues, nested, tx, stringsByCodePoint);
                     or.add(nested);
                 } else {
                     Preconditions.checkArgument(janusGraphPredicate == Contain.IN);
                     if (childValues.isEmpty()) {
                         continue; // Handle any unsatisfiable condition that occurs within an OR statement like it does not exist
                     }
-                    addConstraints(type, Cmp.EQUAL, childValues, or, tx);
+                    addConstraints(type, Cmp.EQUAL, childValues, or, tx, stringsByCodePoint);
                 }
             } else if (janusGraphPredicate instanceof AndJanusPredicate) {
                 final List<Object> childValues = (List<Object>) (values.get(i));
-                final And<E> nested = addConstraint(type, (AndJanusPredicate) janusGraphPredicate, childValues, new And<>(childValues.size()), tx);
+                final And<E> nested = addConstraint(type, (AndJanusPredicate) janusGraphPredicate, childValues,
+                    new And<>(childValues.size()), tx, stringsByCodePoint);
                 if (nested != null) {
                     or.add(nested);
                 }
             } else if (janusGraphPredicate instanceof OrJanusPredicate) {
-                addBranches(type, (OrJanusPredicate) janusGraphPredicate, (List<Object>) (values.get(i)), or, tx);
+                addBranches(type, (OrJanusPredicate) janusGraphPredicate, (List<Object>) (values.get(i)), or, tx,
+                    stringsByCodePoint);
             } else {
-                addConstraint(type, janusGraphPredicate, values.get(i), or, tx);
+                addConstraint(type, janusGraphPredicate, values.get(i), or, tx, stringsByCodePoint);
             }
         }
     }
 
     private static <E extends JanusGraphElement> void addConstraint(RelationType type, JanusGraphPredicate predicate,
-                                                               Object value, MultiCondition<E> conditions, StandardJanusGraphTx tx) {
-        final PredicateCondition<RelationType, E> pc = constraint(type, predicate, value, tx);
+                                                               Object value, MultiCondition<E> conditions,
+                                                               StandardJanusGraphTx tx, boolean stringsByCodePoint) {
+        final PredicateCondition<RelationType, E> pc = constraint(type, predicate, value, tx, stringsByCodePoint);
         if (!conditions.contains(pc)) conditions.add(pc);
     }
 
@@ -384,29 +415,28 @@ public class QueryUtil {
     //A set tells which they hold: looking each one up in the list made a within() or without() quadratic in its values
     private static <E extends JanusGraphElement> void addConstraints(RelationType type, JanusGraphPredicate predicate,
                                                                 Collection<?> values, MultiCondition<E> conditions,
-                                                                StandardJanusGraphTx tx) {
+                                                                StandardJanusGraphTx tx, boolean stringsByCodePoint) {
         final Set<Condition<E>> held = Sets.newHashSetWithExpectedSize(conditions.size() + values.size());
         for (final Condition<E> condition : conditions) {
             //Only an atom can equal an atom, and hashing a nested and() or or() would hash all of its children
             if (condition instanceof PredicateCondition) held.add(condition);
         }
         for (final Object value : values) {
-            final PredicateCondition<RelationType, E> pc = constraint(type, predicate, value, tx);
+            final PredicateCondition<RelationType, E> pc = constraint(type, predicate, value, tx, stringsByCodePoint);
             if (held.add(pc)) conditions.add(pc);
         }
     }
 
-    private static <E extends JanusGraphElement> PredicateCondition<RelationType, E> constraint(RelationType type,
-                                                                                            JanusGraphPredicate predicate,
-                                                                                            Object value,
-                                                                                            StandardJanusGraphTx tx) {
+    private static <E extends JanusGraphElement> PredicateCondition<RelationType, E> constraint(
+            RelationType type, JanusGraphPredicate predicate, Object value, StandardJanusGraphTx tx,
+            boolean stringsByCodePoint) {
         if (type.isPropertyKey()) {
             if (value != null)
                 value = tx.verifyAttribute((PropertyKey) type, value);
         } else { //t.isEdgeLabel()
             Preconditions.checkArgument(value instanceof JanusGraphVertex);
         }
-        return new PredicateCondition<>(type, predicate, value);
+        return new PredicateCondition<>(type, predicate, value, stringsByCodePoint);
     }
 
 

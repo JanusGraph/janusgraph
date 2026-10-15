@@ -30,6 +30,7 @@ import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.JanusGraphIndex;
@@ -39,6 +40,7 @@ import org.janusgraph.diskstorage.inmemory.InMemoryStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -319,6 +321,131 @@ public class QueryTest {
             s.appendCodePoint(codePoints[random.nextInt(codePoints.length)]);
         }
         return s.toString();
+    }
+
+    @Test
+    public void testGraphQueryConditionsCompareStringsByCodePoint() {
+        //The conditions of a graph query compare two strings by code point, as the mixed indexes and the order which
+        //JanusGraph gives the query do, and those of a vertex-centric query by UTF-16 unit, as the storage backend
+        //holds sort keys
+        final PropertyKey name = tx.makePropertyKey("name").dataType(String.class).make();
+        final List<JanusGraphVertex> vertices = new ArrayList<>();
+        for (final String s : BY_CODE_POINT) {
+            vertices.add(tx.addVertex("name", s));
+        }
+        for (int i = 0; i < BY_CODE_POINT.length; i++) {
+            final JanusGraphVertex v = vertices.get(i);
+            for (int j = 0; j < BY_CODE_POINT.length; j++) {
+                final String s = BY_CODE_POINT[j], pair = i + " vs " + j;
+                assertEquals(i < j, holds(v, name, Cmp.LESS_THAN, s, true), pair);
+                assertEquals(i <= j, holds(v, name, Cmp.LESS_THAN_EQUAL, s, true), pair);
+                assertEquals(i > j, holds(v, name, Cmp.GREATER_THAN, s, true), pair);
+                assertEquals(i >= j, holds(v, name, Cmp.GREATER_THAN_EQUAL, s, true), pair);
+                assertEquals(i == j, holds(v, name, Cmp.EQUAL, s, true), pair);
+                assertEquals(i != j, holds(v, name, Cmp.NOT_EQUAL, s, true), pair);
+                final int byUnit = BY_CODE_POINT[i].compareTo(s);
+                assertEquals(byUnit < 0, holds(v, name, Cmp.LESS_THAN, s, false), pair);
+                assertEquals(byUnit >= 0, holds(v, name, Cmp.GREATER_THAN_EQUAL, s, false), pair);
+            }
+        }
+        final JanusGraphVertex emoji = vertices.get(Arrays.asList(BY_CODE_POINT).indexOf("\uD83D\uDE00"));
+        assertTrue(holds(emoji, name, Cmp.GREATER_THAN, "\uE000", true));
+        assertFalse(holds(emoji, name, Cmp.GREATER_THAN, "\uE000", false));
+        //Other predicates, and the ranges of other values, test as they do on their own
+        assertTrue(holds(emoji, name, Text.PREFIX, "\uD83D", true));
+        assertTrue(holds(emoji, name, Contain.IN, Arrays.asList("a", "\uD83D\uDE00"), true));
+        tx.makePropertyKey("age").dataType(Integer.class).make();
+        final JanusGraphVertex aged = tx.addVertex("age", 2);
+        assertTrue(holds(aged, tx.getPropertyKey("age"), Cmp.GREATER_THAN, 1, true));
+        assertFalse(holds(aged, tx.getPropertyKey("age"), Cmp.GREATER_THAN, 2, true));
+    }
+
+    private static boolean holds(JanusGraphVertex vertex, PropertyKey key, JanusGraphPredicate predicate, Object value,
+                                 boolean stringsByCodePoint) {
+        return new PredicateCondition<>(key, predicate, value, stringsByCodePoint).evaluate(vertex);
+    }
+
+    /**
+     * Only a range of Cmp on strings depends on the order of strings, so any other condition of a graph query equals
+     * the same condition of a vertex-centric query, as a query which leaves out a repeated condition expects.
+     */
+    @Test
+    public void testConditionsWhichDontCompareStringsEqualTheirTwins() {
+        final PropertyKey name = tx.makePropertyKey("name").dataType(String.class).make();
+        final PropertyKey age = tx.makePropertyKey("age").dataType(Integer.class).make();
+        assertTwins(true, name, Cmp.NOT_EQUAL, null);
+        assertTwins(true, name, Cmp.EQUAL, "a");
+        assertTwins(true, name, Text.PREFIX, "a");
+        assertTwins(true, name, Contain.IN, Arrays.asList("a", "b"));
+        assertTwins(true, age, Cmp.GREATER_THAN, 1);
+        assertTwins(false, name, Cmp.GREATER_THAN, "a");
+        assertTwins(false, name, Cmp.LESS_THAN_EQUAL, "a");
+    }
+
+    private static void assertTwins(boolean equal, PropertyKey key, JanusGraphPredicate predicate, Object value) {
+        final PredicateCondition<PropertyKey, JanusGraphVertex> byCodePoint =
+            new PredicateCondition<>(key, predicate, value, true);
+        final PredicateCondition<PropertyKey, JanusGraphVertex> byUnit =
+            new PredicateCondition<>(key, predicate, value, false);
+        assertEquals(equal, byCodePoint.equals(byUnit), predicate + " " + value);
+        if (equal) {
+            assertEquals(byCodePoint.hashCode(), byUnit.hashCode(), predicate + " " + value);
+        }
+    }
+
+    /**
+     * A graph query which no mixed index answers compares strings by code point in its conditions, as in its order, so
+     * that keyset paging with gt() from the last string of each page comes through all of them, the ones which the
+     * transaction added included: by UTF-16 unit, U+1F600 comes before U+E000 and U+FFFF.
+     */
+    @Test
+    public void testGraphQueryPagesThroughStringsByCodePoint() {
+        final JanusGraphManagement mgmt = graph.openManagement();
+        final PropertyKey kind = mgmt.makePropertyKey("kind").dataType(String.class).make();
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.buildIndex("byKind", Vertex.class).addKey(kind).buildCompositeIndex();
+        mgmt.commit();
+        for (final String name : Arrays.asList("a", "\uFFFF")) {
+            tx.addVertex("kind", "k", "name", name);
+        }
+        tx.commit();
+        tx = graph.newTransaction();
+        for (final String name : Arrays.asList("\uE000", "\uD83D\uDE00")) {
+            tx.addVertex("kind", "k", "name", name);
+        }
+        final List<String> byCodePoint = Arrays.asList("a", "\uE000", "\uFFFF", "\uD83D\uDE00");
+        //Through the composite index on the kind, and by a scan
+        assertEquals(byCodePoint, pageThroughNames("k"));
+        assertEquals(byCodePoint, pageThroughNames(null));
+        //Ranges of two predicates, which a graph query checks one by one
+        final GraphTraversalSource g = tx.traversal();
+        assertEquals(byCodePoint.subList(0, 2), g.V().has("kind", "k").has("name", P.lt("\uFFFF"))
+            .order().by("name", asc).values("name").toList());
+        assertEquals(byCodePoint.subList(1, 4), g.V().has("kind", "k").has("name", P.between("\uE000", "\uD83D\uDE01"))
+            .order().by("name", asc).values("name").toList());
+        assertEquals(byCodePoint.subList(2, 4), g.V().has("kind", "k").has("name", P.inside("\uE000", "\uD83D\uDE01"))
+            .order().by("name", asc).values("name").toList());
+        assertEquals(byCodePoint.subList(3, 4), g.V().has("kind", "k").has("name", P.outside("a", "\uFFFF"))
+            .order().by("name", asc).values("name").toList());
+    }
+
+    //The names which keyset paging finds, two at a time, each page from the last name of the page before: of the
+    //vertices of the kind, through its index, or of all vertices with a name, by a scan
+    private List<String> pageThroughNames(String kind) {
+        final GraphTraversalSource g = tx.traversal();
+        final List<String> names = new ArrayList<>();
+        List<String> page = withKind(g, kind).order().by("name", asc).limit(2).<String>values("name").toList();
+        for (int i = 0; !page.isEmpty(); i++) {
+            assertTrue(i < 10, "pages without end: " + names);
+            names.addAll(page);
+            page = withKind(g, kind).has("name", P.gt(page.get(page.size() - 1))).order().by("name", asc).limit(2)
+                .<String>values("name").toList();
+        }
+        return names;
+    }
+
+    private static GraphTraversal<Vertex, Vertex> withKind(GraphTraversalSource g, String kind) {
+        return kind == null ? g.V().has("name") : g.V().has("kind", kind);
     }
 
     @Test

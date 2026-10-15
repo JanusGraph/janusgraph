@@ -2856,6 +2856,55 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             g.V().has("tag", "t").order().by("unindexedName", desc).limit(5).values("unindexedName").toList());
     }
 
+    /**
+     * A condition on strings which JanusGraph checks itself compares them by code point, as the index which answers it
+     * and the query's order do: on what the index returns where it doesn't answer the whole query, on the vertices the
+     * transaction changed, which the index has as they were, and on those it added. By UTF-16 unit, U+1F600 and
+     * U+1F601, whose first units are surrogates, come before U+E000.
+     */
+    @Test
+    public void testConditionsCheckedInMemoryCompareStringsByCodePoint() {
+        final PropertyKey tag = makeKey("tag", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        makeKey("unindexed", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(tag, getStringMapping()).addKey(name, getStringMapping())
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        for (final String s : Arrays.asList("a", "\uE000", "\uFFFF", "\uD83D\uDE00")) {
+            tx.addVertex("tag", "t", "name", s, "unindexed", "u");
+        }
+        clopen();
+        final GraphTraversalSource g = tx.traversal();
+        //Answered by the index alone, and checked in memory as well, as the index doesn't hold the other key
+        assertEquals(Arrays.asList("\uFFFF", "\uD83D\uDE00"), g.V().has("tag", "t").has("name", P.gt("\uE000"))
+            .order().by("name", asc).values("name").toList());
+        assertEquals(Arrays.asList("\uFFFF", "\uD83D\uDE00"), g.V().has("tag", "t").has("name", P.gt("\uE000"))
+            .has("unindexed", "u").order().by("name", asc).values("name").toList());
+        assertEquals(Arrays.asList("a", "\uE000", "\uFFFF"), g.V().has("tag", "t").has("name", P.lt("\uD83D\uDE00"))
+            .has("unindexed", "u").order().by("name", asc).values("name").toList());
+
+        //A stored vertex which the transaction changes, and new ones
+        g.V().has("tag", "t").has("name", "\uD83D\uDE00").property("unindexed", "v").iterate();
+        for (final String s : Arrays.asList("\uE000a", "\uD83D\uDE01")) {
+            tx.addVertex("tag", "t", "name", s, "unindexed", "u");
+        }
+        final List<String> byCodePoint = Arrays.asList("a", "\uE000", "\uE000a", "\uFFFF", "\uD83D\uDE00",
+            "\uD83D\uDE01");
+        assertEquals(byCodePoint.subList(2, 6), g.V().has("tag", "t").has("name", P.gt("\uE000"))
+            .order().by("name", asc).values("name").toList());
+        //Keyset paging, each page from the last name of the page before
+        final List<String> paged = new ArrayList<>();
+        List<String> page = g.V().has("tag", "t").order().by("name", asc).limit(2).<String>values("name").toList();
+        for (int i = 0; !page.isEmpty(); i++) {
+            assertTrue(i < 10, "pages without end: " + paged);
+            paged.addAll(page);
+            page = g.V().has("tag", "t").has("name", P.gt(page.get(page.size() - 1))).order().by("name", asc).limit(2)
+                .<String>values("name").toList();
+        }
+        assertEquals(byCodePoint, paged);
+    }
+
     @Tag(TestCategory.BRITTLE_TESTS)
     @Test
     public void testIndexReplay() throws Exception {
