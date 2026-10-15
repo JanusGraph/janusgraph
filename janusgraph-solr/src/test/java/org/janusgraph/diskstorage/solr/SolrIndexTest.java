@@ -210,6 +210,31 @@ public abstract class SolrIndexTest extends IndexProviderTest {
         assertEquals("test2", result[1]);
     }
 
+    // A value of a LIST key which a transaction removes and adds back, as a property replaced by one of the same value,
+    // stays held once. The mutation's consolidation drops the removal, so the document still holds the value; added
+    // with Solr's atomic "add", it would be held twice, and a later removal, which takes out one occurrence, would
+    // leave it behind
+    @Test
+    public void listValueRemovedAndAddedBackIsHeldOnce() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Multimap<String, Object> doc = HashMultimap.create();
+        doc.put(PHONE_LIST, "1");
+        doc.put(PHONE_LIST, "2");
+        add(store, "doc", doc, true);
+        clopen();
+        tx.delete(store, "doc", PHONE_LIST, "1", false);
+        tx.add(store, "doc", PHONE_LIST, "1", false);
+        clopen();
+        tx.delete(store, "doc", PHONE_LIST, "1", false);
+        clopen();
+
+        assertEquals(0, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "1")))
+            .count());
+        assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "2")))
+            .count());
+    }
+
     @Override
     public Mapping preferredGeoShapeMapping() {
         return Mapping.PREFIX_TREE;
