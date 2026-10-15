@@ -377,6 +377,33 @@ stores and orders above positive infinity, also finds what it does without the i
 NaN, `lt` and `gt` of NaN nothing, and `neq` of any other value finds NaN as well. A raw range reaches NaN by a NaN
 bound, as in `score:[5 TO NaN]`.
 
+##### Lucene no longer keeps the floats, and the strings with unpaired surrogates, removed from `LIST` and `SET` keys
+
+On a Lucene mixed index, most floats (`Float`) removed from a key of `LIST` or `SET` cardinality stayed in the
+element's document, as did the float which such a key of an edge held before it was set to another one, and `eq` and
+the ranges kept finding the element by them: after `g.V(v).properties("weights").drop()`, `g.V().has("weights", 0.1f)`
+and `g.V().has("weights", gt(0f))` still found `v`. Lucene stores a float as the double which it widens to, and
+compared the removed float with the stored values by its own decimal string, which differs from the double's for most
+floats: `0.1` against `0.10000000149011612`. Floats whose strings are the same, such as `1.5f` or `-2.5f`, were
+removed. A string with an unpaired surrogate stayed likewise, whatever its mapping, as Lucene stores U+FFFD in place of
+the surrogate. Lucene now compares a removed value with the stored ones in the form in which it stores them. What it
+writes doesn't change. A string longer than 16,000 characters is removed too where storage gives it back with its
+unpaired surrogates, as it does from 1.2.0 on (see "Strings longer than 16,000 characters keep their unpaired
+surrogates"); one which an earlier version stored comes back with a question mark in place of each unpaired surrogate,
+and stays in the index when it's removed.
+
+In exchange, a `SET` key mapped as `STRING` or `TEXTSTRING` which holds two strings that Lucene stores alike, which
+differ only in an unpaired surrogate, or in one and U+FFFD, holds one entry for both, whichever came first, so once one
+of them is removed, the other isn't found either. Two instants of one millisecond share one entry in the same way, as
+before.
+
+What an earlier version left in an index stays there: the removed values, and a second copy of a value which a `SET`
+key held when the value was set again, so that removing that value now takes out one of the two. A reindex writes the
+document of each element which holds a value of the index anew, without them, but leaves the document of an element
+which holds none as it is. To clear those too, stop the instances, delete the directory of each mixed index concerned,
+`index.[X].directory/<index name>`, and reindex those indexes. They stay enabled meanwhile, so until the reindex has
+finished, their queries miss the elements which it hasn't written yet.
+
 ##### Ranges and not-equals of a `TEXTSTRING` key compare its strings whole
 
 A key mapped as `TEXTSTRING` holds each string whole in a field of its own, which the index sorts the key by, and its
