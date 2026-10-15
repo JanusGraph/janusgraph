@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
@@ -38,6 +39,7 @@ import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
@@ -53,6 +55,7 @@ import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
+import org.janusgraph.core.log.LogProcessorFramework;
 import org.janusgraph.core.log.TransactionRecovery;
 import org.janusgraph.core.schema.CompositeIndexInfo;
 import org.janusgraph.core.schema.JanusGraphIndex;
@@ -98,6 +101,7 @@ import org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphMixedIndexAggStep;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexAggStrategy;
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphMixedIndexCountStrategy;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.IndexField;
@@ -121,24 +125,32 @@ import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HARD_MAX_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CDC_ENABLED;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_SELECT_STRATEGY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
@@ -148,6 +160,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MA
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_WRITE_WAITTIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_LOG_TRANSACTIONS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG;
 import static org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy.INDEX_SELECT_BRUTE_FORCE_THRESHOLD;
 import static org.janusgraph.testutil.JanusGraphAssert.assertBackendHit;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
@@ -157,6 +170,7 @@ import static org.janusgraph.testutil.JanusGraphAssert.assertNoBackendHit;
 import static org.janusgraph.testutil.JanusGraphAssert.assertNotEmpty;
 import static org.janusgraph.testutil.JanusGraphAssert.assertTraversal;
 import static org.janusgraph.testutil.JanusGraphAssert.assertTraversalAndIndexUsage;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -185,6 +199,16 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     private static final int RETRY_COUNT = 30;
     private static final long RETRY_INTERVAL = 1000L;
+    //A graph opened by clopen() without these reads the transaction log every 5 s. Recovery started on such a graph
+    //gets them again, so that it reads back what a test has just written within a fraction of a second.
+    private static final Object[] RECOVERY_LOG_READS = {
+        option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG), Duration.ofMillis(50),
+        option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofMillis(250)
+    };
+    //Long enough for recovery to count a transaction it read once more, as it used to when a transaction's final status
+    //came in after recovery had given the transaction up: its least wait of 5 s and the 5 s between the passes of its
+    //cleaner, with some to spare
+    private static final Duration RECOVERY_SETTLING = Duration.ofSeconds(12);
 
     public final boolean supportsGeoPoint;
     public final boolean supportsNumeric;
@@ -269,6 +293,32 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals("demigod", h.label());
         assertCount(5, h.query().direction(Direction.BOTH).edges());
         graphOfTheGods.tx().commit();
+    }
+
+    @Test
+    public void testCdcIndexOptionsCanBeChangedOnARunningCluster() {
+        final String cdcEnabled = ConfigElement.getPath(INDEX_CDC_ENABLED, INDEX);
+        assertFalse(cdcBackingIndexNames().contains(INDEX));
+
+        // Unlike a GLOBAL_OFFLINE option, the stored value can be changed while another instance is open
+        final JanusGraph otherInstance = JanusGraphFactory.open(config);
+        try {
+            mgmt.set(cdcEnabled, true);
+            mgmt.commit();
+        } finally {
+            otherInstance.close();
+        }
+        clopen();
+        assertTrue(cdcBackingIndexNames().contains(INDEX));
+
+        // The local configuration of an instance overrides the stored value
+        clopen(option(INDEX_CDC_ENABLED, INDEX), false);
+        assertFalse(cdcBackingIndexNames().contains(INDEX));
+        assertEquals("true", mgmt.get(cdcEnabled));
+    }
+
+    private Set<String> cdcBackingIndexNames() {
+        return GraphDatabaseConfiguration.getCdcBackingIndexNames(graph.getConfiguration().getConfiguration(), false);
     }
 
     @Test
@@ -1201,6 +1251,8 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertEquals(190, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").max().next());
             assertEquals(25, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("age").max().next());
             assertEquals(170, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").min().next());
+            assertEquals(102.5, ((Number) tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("weight").max().next()).doubleValue(), 0.001);
+            assertEquals(55.3, ((Number) tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("weight").min().next()).doubleValue(), 0.001);
             // since TinkerPop 3.8 sum() retains the number type of the stream (promoted by bulking), so compare the numeric value only
             assertEquals(535L, ((Number) tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").sum().next()).longValue());
             assertEquals(535.0/3, tx.traversal().V().or(__.has("name", "bob"), __.has("prop", "val")).values("height").mean().next());
@@ -2243,6 +2295,37 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     /**
+     * A count which a mixed index answers is exact past a thousand matches, beyond which the total hits of a Lucene
+     * search are only a lower bound, and so is a mean which Lucene divides by it
+     */
+    @Test
+    public void testMixedIndexCountsPastAThousandMatches() {
+        final int vertices = 2500;
+        final int matches = 2000;
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+        for (int i = 0; i < vertices; i++) {
+            tx.addVertex("age", i);
+        }
+        tx.commit();
+        // an update leaves the old document deleted, where Lucene can't count from the index statistics
+        newTx();
+        tx.traversal().V().has("age", 0).property("age", 1).iterate();
+        tx.commit();
+
+        // the ages 0 to matches - 1 sum up to matches * (matches - 1) / 2, plus the 1 of the update
+        final double mean = ((long) matches * (matches - 1) / 2 + 1) / (double) matches;
+        newTx();
+        assertTrue(tx.traversal().V().has("age", P.lt(matches)).count().profile().next().getMetrics().stream()
+            .anyMatch(metrics -> metrics.getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName())),
+            "the count isn't answered by the index");
+        assertEquals(matches, (long) tx.traversal().V().has("age", P.lt(matches)).count().next());
+        assertEquals(matches, graph.indexQuery("mixed", "v.age:[0 TO " + (matches - 1) + "]").vertexTotals());
+        assertEquals(mean, ((Number) tx.traversal().V().has("age", P.lt(matches)).values("age").mean().next()).doubleValue(), 0.0001);
+    }
+
+    /**
      * Tests index parameters (mapping and names) with raw indexQuery
      */
     @Test
@@ -2372,6 +2455,112 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             .forEachOrdered(e -> assertEquals(vertices.get(idx.getAndDecrement()), e));
     }
 
+    //A comparison of a TEXTSTRING key, a range or a not-equal, compares its strings whole, in the order the index
+    //sorts them by, and not the words or phrases of its text, which are in lower case
+    @Test
+    public void testComparisonsOfADualMappedKeyCompareTheStringsWhole() {
+        if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return;
+
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.TEXTSTRING.asParameter()).addKey(age)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Map<Object, String> names = addNamedVertices();
+        //Without a name, which no comparison of names finds
+        tx.addVertex("age", 30);
+        clopen();
+
+        //The mixed index answers them alone, without memory
+        evaluateQuery(tx.query().has("name", Cmp.LESS_THAN, "Long Zed"), ElementCategory.VERTEX,
+            4, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Cmp.GREATER_THAN_EQUAL, "Long Little Lewis"), ElementCategory.VERTEX,
+            4, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Cmp.NOT_EQUAL, "Long John Don"), ElementCategory.VERTEX,
+            6, new boolean[]{true, true}, "mixed");
+        assertNamesFound(names, P.lt("Long Zed"));
+        assertNamesFound(names, P.lte("Middle Sister Mabel"));
+        assertNamesFound(names, P.gt("Middle Sister Mabel"));
+        assertNamesFound(names, P.gte("Long Little Lewis"));
+        assertNamesFound(names, P.between("Long", "Middle"));
+        assertNamesFound(names, P.neq("Long John Don"));
+        assertEquals(Arrays.asList("Long John Don", "Long John Don Jr", "Long Little Lewis"), tx.traversal().V()
+            .has("name", P.between("Long", "Middle")).order().by("name", asc).values("name").toList());
+    }
+
+    //The text predicates on a TEXTSTRING key which an index may leave to memory, the negated ones and
+    //textContainsPhrase, find what they match either way
+    @Test
+    public void testNegatedAndPhraseTextPredicatesOfADualMappedKey() {
+        if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return;
+
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.TEXTSTRING.asParameter()).addKey(age)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Map<Object, String> names = addNamedVertices();
+        tx.addVertex("age", 30);
+        clopen();
+
+        assertNamesFound(names, Text.textNotPrefix("Long"));
+        assertNamesFound(names, Text.textNotRegex("Long.*"));
+        assertNamesFound(names, Text.textNotFuzzy("Zod"));
+        assertNamesFound(names, Text.textContainsPhrase("john don"));
+        assertNamesFound(names, Text.textNotContains("long"));
+        assertNamesFound(names, Text.textNotContainsPrefix("lit"));
+        assertNamesFound(names, Text.textNotContainsRegex("lit.*"));
+        assertNamesFound(names, Text.textNotContainsFuzzy("lewys"));
+        assertNamesFound(names, Text.textNotContainsPhrase("john don"));
+    }
+
+    //Removing one value of a TEXTSTRING key of several values removes it from both of its fields: from the words, which
+    //textContains reads, and from the whole strings, which equalities and ranges read
+    @ParameterizedTest
+    @ValueSource(strings = {"LIST", "SET"})
+    public void testRemovedValueOfADualMappedKeyOfSeveralValuesIsNotFound(Cardinality cardinality) {
+        if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)
+                || !indexFeatures.supportsCardinality(cardinality)) return;
+
+        final PropertyKey alias = mgmt.makePropertyKey("alias").dataType(String.class).cardinality(cardinality).make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(alias, Mapping.TEXTSTRING.asParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex vertex = tx.addVertex();
+        vertex.property(cardinality.convert(), "alias", "Marko");
+        final Object id = vertex.id();
+        clopen();
+
+        tx.traversal().V(id).properties("alias").hasValue("Marko").drop().iterate();
+        tx.traversal().V(id).property(cardinality.convert(), "alias", "zed").iterate();
+        clopen();
+
+        assertFalse(tx.traversal().V().has("alias", Text.textContains("marko")).hasNext());
+        assertFalse(tx.traversal().V().has("alias", P.lt("N")).hasNext());
+        assertFalse(tx.traversal().V().has("alias", "Marko").hasNext());
+        assertEquals(Collections.singletonList(id), tx.traversal().V().has("alias", "zed").id().toList());
+    }
+
+    //Vertices with names of mixed case and several words, by their ids
+    private Map<Object, String> addNamedVertices() {
+        final Map<Object, String> names = new HashMap<>();
+        for (final String n : Arrays.asList("Long John Don", "Don John Long", "Long John Don Jr", "Long Little Lewis",
+                "Middle Sister Mabel", "big brother bob", "Zed")) {
+            names.put(tx.addVertex("name", n).id(), n);
+        }
+        return names;
+    }
+
+    //The vertices which a predicate on names finds, against those whose names match it
+    @SuppressWarnings("unchecked")
+    private <V> void assertNamesFound(Map<Object, String> names, P<V> predicate) {
+        final Set<Object> expected = names.entrySet().stream().filter(e -> predicate.test((V) e.getValue()))
+            .map(Map.Entry::getKey).collect(Collectors.toSet());
+        assertEquals(expected, tx.traversal().V().has("name", predicate).id().toSet(), predicate.toString());
+    }
+
     @Test
     public void testDualMapping() {
         if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return;
@@ -2438,6 +2627,54 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     }
 
+    /**
+     * Strings come in the order of their code points, the order of their UTF-8 bytes in which the indexes sort them,
+     * whether an index sorts them, the transaction's new vertices are merged into what it returns, or JanusGraph sorts
+     * them in memory: U+E000 to U+FFFF come before the characters from U+10000 by code point, after them by UTF-16
+     * unit.
+     */
+    @Test
+    public void testStringsAreOrderedByCodePoint() {
+        final PropertyKey tag = makeKey("tag", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        makeKey("unindexedName", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(tag, getStringMapping()).addKey(name, getStringMapping())
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final List<String> stored = Arrays.asList("z", "\uE000", "\uFFFF", "\uD83D\uDE00a");
+        for (final String s : stored) {
+            tx.addVertex("tag", "t", "name", s, "unindexedName", s);
+        }
+        clopen();
+        final GraphTraversalSource g = tx.traversal();
+        assertEquals(stored, g.V().has("tag", "t").order().by("name", asc).values("name").toList());
+        assertEquals(stored.subList(0, 2),
+            g.V().has("tag", "t").order().by("name", asc).limit(2).values("name").toList());
+        assertEquals(Arrays.asList("\uD83D\uDE00a", "\uFFFF"),
+            g.V().has("tag", "t").order().by("name", desc).limit(2).values("name").toList());
+
+        final List<String> byCodePoint = Arrays.asList("a", "z", "\uE000", "\uE000a", "\uFFFF", "\uD83D\uDE00",
+            "\uD83D\uDE00a", "\uD83D\uDE01");
+        for (final String s : Arrays.asList("a", "\uE000a", "\uD83D\uDE00", "\uD83D\uDE01")) {
+            tx.addVertex("tag", "t", "name", s, "unindexedName", s);
+        }
+        final List<String> reversed = ImmutableList.copyOf(byCodePoint).reverse();
+        //The new vertices merged into the order of the index
+        assertEquals(byCodePoint, g.V().has("tag", "t").order().by("name", asc).values("name").toList());
+        assertEquals(byCodePoint.subList(0, 5),
+            g.V().has("tag", "t").order().by("name", asc).limit(5).values("name").toList());
+        assertEquals(reversed.subList(0, 5),
+            g.V().has("tag", "t").order().by("name", desc).limit(5).values("name").toList());
+        //All of them sorted in memory, by a key which no index holds
+        assertEquals(byCodePoint,
+            g.V().has("tag", "t").order().by("unindexedName", asc).values("unindexedName").toList());
+        assertEquals(byCodePoint.subList(0, 5),
+            g.V().has("tag", "t").order().by("unindexedName", asc).limit(5).values("unindexedName").toList());
+        assertEquals(reversed.subList(0, 5),
+            g.V().has("tag", "t").order().by("unindexedName", desc).limit(5).values("unindexedName").toList());
+    }
+
     @Tag(TestCategory.BRITTLE_TESTS)
     @Test
     public void testIndexReplay() throws Exception {
@@ -2475,7 +2712,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         vs[0].property(VertexProperty.Cardinality.single, "age", 66);
         newTx();
 
-        clopen();
+        clopen(RECOVERY_LOG_READS);
         //Just to make sure nothing has been persisted to index
         evaluateQuery(tx.query().has("name", Text.CONTAINS, "boy"),
                 ElementCategory.VERTEX, 0, new boolean[]{true, true}, "mi");
@@ -2483,8 +2720,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         Transaction Recovery
          */
         final TransactionRecovery recovery = JanusGraphFactory.startTransactionRecovery(graph, startTime);
-        //wait
-        Thread.sleep(12000L);
+        awaitRecoveredTransactions(recovery, 5, RECOVERY_SETTLING);
 
         recovery.shutdown();
         final long[] recoveryStats = ((StandardTransactionLogProcessor) recovery).getStatistics();
@@ -2509,6 +2745,122 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         assertEquals(1, recoveryStats[0]); //schema transaction was successful
         assertEquals(4, recoveryStats[1]); //all 4 index transaction had provoked errors in the indexing backend
+    }
+
+    @Test
+    public void testRecoveryWaitsForAFinalStatusReadOnePollLater() throws Exception {
+        final String userLogName = "recovery";
+        //The commit spends 2.5 s in its index write before it writes its user-log event and its final status, which
+        //leaves the rest of the commit 2.5 s to fit in max-commit-time on a slow index backend. Recovery, started as
+        //the commit returns, reads the log up to 2 s back in its first poll, which takes in the commit's first entries
+        //but not its final status, and reads that in its next poll, 6 s later
+        clopen(option(SYSTEM_LOG_TRANSACTIONS), true
+                , option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG), Duration.ofSeconds(2)
+                , option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofSeconds(6)
+                , option(MAX_COMMIT_TIME), Duration.ofSeconds(5)
+                , option(KCVSLog.LOG_READ_LAG_TIME, USER_LOG), Duration.ofMillis(50)
+                , option(LOG_READ_INTERVAL, USER_LOG), Duration.ofMillis(250)
+                , option(LOG_SEND_DELAY, USER_LOG), Duration.ZERO
+                , option(TestMockIndexProvider.INDEX_BACKEND_PROXY, INDEX), readConfig.get(INDEX_BACKEND, INDEX)
+                , option(INDEX_BACKEND, INDEX), TestMockIndexProvider.class.getName()
+                , option(TestMockIndexProvider.INDEX_MOCK_MUTATION_DELAY, INDEX), Duration.ofMillis(2500)
+        );
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.buildIndex("mi", Vertex.class).addKey(name, getTextMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Instant startTime = graph.getConfiguration().getTimestampProvider().getTime();
+        final JanusGraphTransaction logged = graph.buildTransaction().logIdentifier(userLogName).start();
+        logged.addVertex("name", "Sent Once");
+        logged.commit();
+        final TransactionRecovery recovery = JanusGraphFactory.startTransactionRecovery(graph, startTime);
+        final AtomicInteger userLogEvents = new AtomicInteger();
+        final LogProcessorFramework userLogs = JanusGraphFactory.openTransactionLog(graph);
+        userLogs.addLogProcessor(userLogName).setStartTime(startTime).setRetryAttempts(1)
+                .addProcessor((tx, txId, changes) -> userLogEvents.incrementAndGet()).build();
+        try {
+            //Not settled: with this test's slower reads a second count would come late, and the user-log event which
+            //recovery sends again with it shows the same sooner
+            final long[] recoveryStats = awaitRecoveredTransactions(recovery, 1, Duration.ZERO);
+            //The commit's own event arrives within the user log's read interval, and one recovery had sent again
+            //with the count above would arrive within another, so that gets a second to show
+            final long eventDeadline = System.nanoTime() + Duration.ofSeconds(10).toNanos();
+            while (userLogEvents.get() < 1 && System.nanoTime() - eventDeadline < 0) {
+                Thread.sleep(100L);
+            }
+            Thread.sleep(1000L);
+            assertEquals(1, userLogEvents.get());
+            assertArrayEquals(new long[]{1, 0, 0}, recoveryStats); //the transaction succeeded
+        } finally {
+            userLogs.shutdown();
+            recovery.shutdown();
+        }
+    }
+
+    @Test
+    public void testRecoveryTimesATransactionByItsFirstEntryAndNotByItsCommitTime() throws Exception {
+        final String userLogName = "backdated";
+        clopen(option(SYSTEM_LOG_TRANSACTIONS), true
+                , option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG), Duration.ofMillis(50)
+                , option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofMillis(250)
+                , option(MAX_COMMIT_TIME), Duration.ofSeconds(1)
+                , option(KCVSLog.LOG_READ_LAG_TIME, USER_LOG), Duration.ofMillis(50)
+                , option(LOG_READ_INTERVAL, USER_LOG), Duration.ofMillis(250)
+                , option(LOG_SEND_DELAY, USER_LOG), Duration.ZERO
+        );
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.buildIndex("mi", Vertex.class).addKey(name, getTextMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Instant startTime = graph.getConfiguration().getTimestampProvider().getTime();
+        final TransactionRecovery recovery = JanusGraphFactory.startTransactionRecovery(graph, startTime);
+        final AtomicInteger userLogEvents = new AtomicInteger();
+        final LogProcessorFramework userLogs = JanusGraphFactory.openTransactionLog(graph);
+        userLogs.addLogProcessor(userLogName).setStartTime(startTime).setRetryAttempts(1)
+                .addProcessor((tx, txId, changes) -> userLogEvents.incrementAndGet()).build();
+        try {
+            //A commit time an hour back, as a job which backdates its writes sets one. The transaction's log entries
+            //carry the times they were written at, and recovery has to time the transaction by those: timed by its
+            //commit time, it would be given up on the moment its first entry is read
+            final JanusGraphTransaction backdated = graph.buildTransaction().logIdentifier(userLogName)
+                .commitTime(startTime.minus(Duration.ofHours(1))).start();
+            backdated.addVertex("name", "Long Ago");
+            backdated.commit();
+
+            //Settled: timed by its commit time, the transaction would be counted once per entry, and the first of those
+            //counts, from its first entry, comes before the others
+            final long[] recoveryStats = awaitRecoveredTransactions(recovery, 1, RECOVERY_SETTLING);
+            assertArrayEquals(new long[]{1, 0, 0}, recoveryStats); //the transaction succeeded, once
+            assertEquals(1, userLogEvents.get());
+        } finally {
+            userLogs.shutdown();
+            recovery.shutdown();
+        }
+    }
+
+    /**
+     * Waits until the recovery has counted the given number of transactions, succeeded or failed, and then for the
+     * settling time on top, or until it counts more, so that a count above the expected one shows instead of being cut
+     * short by the shutdown which follows. Returns its statistics.
+     */
+    private static long[] awaitRecoveredTransactions(TransactionRecovery recovery, long transactions,
+                                                     Duration settling) throws InterruptedException {
+        final StandardTransactionLogProcessor processor = (StandardTransactionLogProcessor) recovery;
+        final long deadline = System.nanoTime() + Duration.ofMinutes(1).toNanos();
+        long[] statistics = processor.getStatistics();
+        while (statistics[0] + statistics[1] < transactions && System.nanoTime() - deadline < 0) {
+            Thread.sleep(100L);
+            statistics = processor.getStatistics();
+        }
+        assertTrue(statistics[0] + statistics[1] >= transactions, "recovery counted " + statistics[0] + " succeeded "
+            + "and " + statistics[1] + " failed transactions within a minute, fewer than the " + transactions
+            + " expected");
+        final long settled = System.nanoTime() + settling.toNanos();
+        while (statistics[0] + statistics[1] <= transactions && System.nanoTime() - settled < 0) {
+            Thread.sleep(100L);
+            statistics = processor.getStatistics();
+        }
+        return statistics;
     }
 
     @Tag(TestCategory.BRITTLE_TESTS)
@@ -2550,7 +2902,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         vs[0].property(VertexProperty.Cardinality.single, "age", 66);
         newTx();
 
-        clopen();
+        clopen(RECOVERY_LOG_READS);
         //Just to make sure nothing has been persisted to index
         evaluateQuery(tx.query().has("name", Text.CONTAINS, "boy"),
                 ElementCategory.VERTEX, 0, new boolean[]{true, true}, "mi");
@@ -2560,10 +2912,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         Transaction Recovery
          */
         final TransactionRecovery recoveryDay1 = JanusGraphFactory.startRecurringTransactionRecovery(graph, startTimeDay1);
-        //wait
-        Thread.sleep(12000L);
-
-        final long[] recoveryStatsDay1 = ((StandardTransactionLogProcessor) recoveryDay1).getStatistics();
+        final long[] recoveryStatsDay1 = awaitRecoveredTransactions(recoveryDay1, 5, RECOVERY_SETTLING);
         recoveryDay1.shutdown();
 
         clopen();
@@ -2618,7 +2967,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         vs2[0].property(VertexProperty.Cardinality.single, "age", 56);
         newTx();
 
-        clopen();
+        clopen(RECOVERY_LOG_READS);
         //Just to make sure nothing has been persisted to index
         evaluateQuery(tx.query().has("name", Text.CONTAINS, "girl"),
                 ElementCategory.VERTEX, 0, new boolean[]{true, true}, "mi");
@@ -2628,10 +2977,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         Transaction Recovery
          */
         final TransactionRecovery recoveryDay2 = JanusGraphFactory.startRecurringTransactionRecovery(graph, startTimeDay2);
-        //wait
-        Thread.sleep(12000L);
-
-        final long[] recoveryStatsDay2 = ((StandardTransactionLogProcessor) recoveryDay2).getStatistics();
+        final long[] recoveryStatsDay2 = awaitRecoveredTransactions(recoveryDay2, 4, RECOVERY_SETTLING);
         recoveryDay2.shutdown();
 
         clopen();
@@ -2690,13 +3036,10 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
          * Transaction Recovery
          */
         final TransactionRecovery recoveryDay3_1 = JanusGraphFactory.startRecurringTransactionRecovery(graph, startTimeDay3);
-        // wait
-        Thread.sleep(12000L);
-
-        final long[] recoveryStatsDay3_1 = ((StandardTransactionLogProcessor) recoveryDay3_1).getStatistics();
+        final long[] recoveryStatsDay3_1 = awaitRecoveredTransactions(recoveryDay3_1, 1, RECOVERY_SETTLING);
         recoveryDay3_1.shutdown();
 
-        clopen();
+        clopen(RECOVERY_LOG_READS);
 
         evaluateQuery(tx.query().has("name", Text.CONTAINS, "random"),
                 ElementCategory.VERTEX, 0, new boolean[] { true, true }, "mi");
@@ -2710,10 +3053,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         // Simulating DAY 3 index recovery when finally indexing backend is up again
         final TransactionRecovery recoveryDay3_2 = JanusGraphFactory.startRecurringTransactionRecovery(graph, startTimeDay3);
-        // wait
-        Thread.sleep(12000L);
-
-        final long[] recoveryStatsDay3_2 = ((StandardTransactionLogProcessor) recoveryDay3_2).getStatistics();
+        final long[] recoveryStatsDay3_2 = awaitRecoveredTransactions(recoveryDay3_2, 1, RECOVERY_SETTLING);
         recoveryDay3_2.shutdown();
 
         clopen();
@@ -2771,10 +3111,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
          */
         final TransactionRecovery recoveryBatch1 = JanusGraphFactory.startRecurringTransactionRecovery(graph,
                 startTimeBatch1);
-        //wait
-        Thread.sleep(12000L);
-
-        final long[] recoveryStatsBatch1 = ((StandardTransactionLogProcessor) recoveryBatch1).getStatistics();
+        final long[] recoveryStatsBatch1 = awaitRecoveredTransactions(recoveryBatch1, 2, RECOVERY_SETTLING);
         recoveryBatch1.shutdown();
 
         assertEquals(0, recoveryStatsBatch1[0]); //no transaction was successful
@@ -2804,10 +3141,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
          */
         final TransactionRecovery recoveryBatch2 = JanusGraphFactory.startRecurringTransactionRecovery(graph,
                 startTimeBatch2);
-        //wait
-        Thread.sleep(12000L);
-
-        final long[] recoveryStatsBatch2 = ((StandardTransactionLogProcessor) recoveryBatch2).getStatistics();
+        final long[] recoveryStatsBatch2 = awaitRecoveredTransactions(recoveryBatch2, 2, RECOVERY_SETTLING);
         recoveryBatch2.shutdown();
 
         assertEquals(0, recoveryStatsBatch2[0]); //no transaction was successful
@@ -2820,10 +3154,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
          */
         final TransactionRecovery recoveryBatch1_2 = JanusGraphFactory.startRecurringTransactionRecovery(graph,
                 startTimeBatch1);
-        //wait
-        Thread.sleep(12000L);
-
-        final long[] recoveryStatsBatch1_2 = ((StandardTransactionLogProcessor) recoveryBatch1_2).getStatistics();
+        final long[] recoveryStatsBatch1_2 = awaitRecoveredTransactions(recoveryBatch1_2, 4, RECOVERY_SETTLING);
         recoveryBatch1_2.shutdown();
 
         assertEquals(0, recoveryStatsBatch1_2[0]); //no transaction was successful
@@ -4867,6 +5198,140 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(2, graph.indexQuery(indexName, nameIndexField+":"+nameValue).edgeTotals());
         // Check that Gremlin query doesn't return a stale edge and doesn't skip edges after a stale one
         assertEquals(1, tx.traversal().E().has(namePropKeyStr, nameValue).toList().size());
+        // Nor does a query whose limit the stale edge alone fills in the index: it reads on past it
+        assertEquals(1, tx.traversal().E().has(namePropKeyStr, nameValue).limit(1).toList().size());
+    }
+
+    //The index still holds the edges which the transaction removed, and a query leaves them out of what the index
+    //returns: one with a limit reads on past them, and a direct index query neither fails on them nor returns them
+    @Test
+    public void testLimitedQueriesOfEdgesReadPastTheEdgesWhichTheTransactionRemoved() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey weight = makeKey("weight", Long.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("edges", Edge.class).addKey(kind, getStringMapping()).addKey(weight).buildMixedIndex(INDEX);
+        finishSchema();
+        //The edges which the transaction removes have the lowest weights, which an index sorting by weight returns
+        //first. They are also committed first, so an index which returns its hits in the order it got them, as one
+        //which ranks them all alike may, returns them first without an order too. The assertions hold either way
+        Vertex from = tx.addVertex();
+        Vertex to = tx.addVertex();
+        for (long w = 1; w <= 15; w++) {
+            from.addEdge("road", to, "kind", "paved", "weight", w);
+        }
+        newTx();
+        from = tx.traversal().V(from).next();
+        to = tx.traversal().V(to).next();
+        for (long w = 16; w <= 30; w++) {
+            from.addEdge("road", to, "kind", "paved", "weight", w);
+        }
+        newTx();
+        tx.traversal().E().has("weight", P.lte(12L)).toList().forEach(Edge::remove);
+
+        assertEquals(Arrays.asList(13L, 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L, 22L),
+            tx.traversal().E().has("kind", "paved").order().by("weight", asc).limit(10).values("weight").toList());
+        assertEquals(Arrays.asList(13L, 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L, 22L),
+            ImmutableList.copyOf(tx.query().has("kind", "paved").orderBy("weight", asc).limit(10).edges()).stream()
+                .map(edge -> edge.<Long>value("weight")).collect(Collectors.toList()));
+        final List<Edge> anyTen = tx.traversal().E().has("kind", "paved").limit(10).toList();
+        assertEquals(10, anyTen.stream().distinct().count());
+        for (final Edge edge : anyTen) {
+            assertTrue(edge.<Long>value("weight") > 12);
+        }
+        final List<Long> found = tx.indexQuery("edges", "e.kind:\"paved\"").edgeStream()
+            .map(result -> result.getElement().<Long>value("weight")).collect(Collectors.toList());
+        assertEquals(18, found.size());
+        for (final long w : found) {
+            assertTrue(w > 12);
+        }
+    }
+
+    //As above, for the vertex properties which a property index holds by their meta-properties
+    @Test
+    public void testLimitedQueriesOfPropertiesReadPastThePropertiesWhichTheTransactionRemoved() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey weight = makeKey("weight", Long.class);
+        mgmt.makePropertyKey("tag").dataType(String.class).cardinality(Cardinality.LIST).make();
+        mgmt.buildIndex("psearch", JanusGraphVertexProperty.class).addKey(kind, getStringMapping()).addKey(weight)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+        Vertex vertex = tx.addVertex();
+        for (long w = 1; w <= 15; w++) {
+            vertex.property(VertexProperty.Cardinality.list, "tag", "t" + w, "kind", "paved", "weight", w);
+        }
+        newTx();
+        vertex = tx.traversal().V(vertex).next();
+        for (long w = 16; w <= 30; w++) {
+            vertex.property(VertexProperty.Cardinality.list, "tag", "t" + w, "kind", "paved", "weight", w);
+        }
+        newTx();
+        tx.traversal().V(vertex).properties("tag").has("weight", P.lte(12L)).toList()
+            .forEach(property -> property.remove());
+
+        assertEquals(Arrays.asList(13L, 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L, 22L),
+            ImmutableList.copyOf(tx.query().has("kind", "paved").orderBy("weight", asc).limit(10).properties()).stream()
+                .map(property -> property.<Long>value("weight")).collect(Collectors.toList()));
+        final List<JanusGraphVertexProperty> anyTen =
+            ImmutableList.copyOf(tx.query().has("kind", "paved").limit(10).properties());
+        assertEquals(10, anyTen.stream().distinct().count());
+        for (final JanusGraphVertexProperty property : anyTen) {
+            assertTrue(property.<Long>value("weight") > 12);
+        }
+        final List<Long> found = tx.indexQuery("psearch", "p.kind:\"paved\"").propertyStream()
+            .map(result -> result.getElement().<Long>value("weight")).collect(Collectors.toList());
+        assertEquals(18, found.size());
+        for (final long w : found) {
+            assertTrue(w > 12);
+        }
+    }
+
+    //A query which removes the edges it reads, as it reads them, gets each of its edges once: a read under a larger
+    //limit skips what the index returned before, rather than as many edges as were returned, which are removed by then
+    @Test
+    public void testLimitedQueriesOfEdgesWhichTheTransactionRemovesAsItReadsThem() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey weight = makeKey("weight", Long.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("edges", Edge.class).addKey(kind, getStringMapping()).addKey(weight).buildMixedIndex(INDEX);
+        finishSchema();
+        Vertex from = tx.addVertex();
+        Vertex to = tx.addVertex();
+        for (long w = 1; w <= 15; w++) {
+            from.addEdge("road", to, "kind", "paved", "weight", w);
+        }
+        newTx();
+        from = tx.traversal().V(from).next();
+        to = tx.traversal().V(to).next();
+        for (long w = 16; w <= 30; w++) {
+            from.addEdge("road", to, "kind", "paved", "weight", w);
+        }
+        newTx();
+
+        //Only the edges of weight 9 to 15 are left, which the query reads before it reads on and finds no more
+        tx.traversal().E().has("weight", P.lte(8L)).toList().forEach(Edge::remove);
+        tx.traversal().E().has("weight", P.gte(16L)).toList().forEach(Edge::remove);
+        final AtomicInteger read = new AtomicInteger();
+        for (final Edge edge : tx.query().has("kind", "paved").limit(10).edges()) {
+            edge.remove();
+            read.incrementAndGet();
+        }
+        assertEquals(7, read.get());
+        assertFalse(tx.traversal().E().has("kind", "paved").hasNext());
+        tx.rollback();
+        newTx();
+
+        tx.traversal().E().has("weight", P.lte(8L)).toList().forEach(Edge::remove);
+        tx.traversal().E().has("weight", P.gte(16L)).toList().forEach(Edge::remove);
+        tx.traversal().E().has("kind", "paved").limit(10).drop().iterate();
+        assertFalse(tx.traversal().E().has("kind", "paved").hasNext());
+        tx.rollback();
+        newTx();
+
+        //The first ten by weight of those left are those of weight 9 to 18, of which 16 to 18 come after a read on
+        tx.traversal().E().has("weight", P.lte(8L)).toList().forEach(Edge::remove);
+        tx.traversal().E().has("kind", "paved").order().by("weight", asc).limit(10).drop().iterate();
+        assertEquals(Arrays.asList(19L, 20L, 21L, 22L, 23L, 24L, 25L, 26L, 27L, 28L, 29L, 30L),
+            tx.traversal().E().has("kind", "paved").order().by("weight", asc).values("weight").toList());
     }
 
     @Test
@@ -4914,6 +5379,179 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 graph.traversal().V().has(namePropKeyStr, nameValue).limit(limit).count().next()
             );
         }
+    }
+
+    /**
+     * The aggregations which a mixed index answers are those TinkerPop computes from the values the matching elements
+     * hold, with no result when there is no value. A traversal aggregates in memory what the index can't answer alike:
+     * a minimum, maximum, sum or mean after a limit or an offset, as the index aggregates every match, the changes of
+     * its transaction to the keys it reads, which the index doesn't hold, and a key the index doesn't hold the values of
+     * yet
+     */
+    @Test
+    public void testMixedIndexAggregationsOfTheValuesThereAre() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey height = makeKey("height", Integer.class);
+        final PropertyKey weight = makeKey("weight", Double.class);
+        final PropertyKey big = makeKey("big", Long.class);
+        makeKey("length", Integer.class);
+        final PropertyKey scores = mgmt.makePropertyKey("scores").dataType(Integer.class).cardinality(Cardinality.LIST).make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).addKey(height).addKey(weight).addKey(big)
+            .addKey(scores).buildMixedIndex(INDEX);
+        final PropertyKey code = makeKey("code", Integer.class);
+        mgmt.buildIndex("codes", Vertex.class).addKey(code).buildCompositeIndex();
+        finishSchema();
+
+        final JanusGraphVertex first = tx.addVertex("name", "some", "height", 170, "weight", -10.5, "code", 1, "length", 30);
+        first.property("scores", 3);
+        first.property("scores", -7);
+        tx.addVertex("name", "some", "height", 190, "scores", 10);
+        tx.addVertex("name", "some");
+        tx.addVertex("name", "none");
+        // each vertex without the value before the one with it, which holds the value an index may sort a missing one as
+        tx.addVertex("name", "greatest");
+        tx.addVertex("name", "least");
+        tx.commit();
+        newTx();
+        tx.addVertex("name", "greatest", "big", Long.MAX_VALUE);
+        tx.addVertex("name", "least", "big", Long.MIN_VALUE);
+        tx.commit();
+
+        newTx();
+        assertAggregations("some", "height", 170, 190, 360, 180.0);
+        assertAggregations("some", "weight", -10.5, -10.5, -10.5, -10.5);
+        assertAggregations("some", "scores", -7, 10, 6, 2.0);
+        assertAggregations("none", "height", null, null, null, null);
+        assertAggregations("nobody", "height", null, null, null, null);
+        assertAggregation(Long.MAX_VALUE, true, g -> g.V().has("name", "greatest").values("big").min());
+        assertAggregation(Long.MIN_VALUE, true, g -> g.V().has("name", "least").values("big").max());
+
+        // the index aggregates every match: a count stops at the limit of the traversal and leaves out the offset of
+        // a range, while the other aggregations aggregate in memory after a limit or an offset
+        assertAggregation(2, true, g -> g.V().has("name", "some").limit(2).count());
+        assertAggregation(2, true, g -> g.V().has("name", "some").range(1, 3).count());
+        assertAggregation(0, true, g -> g.V().has("name", "some").range(5, 10).count());
+        assertAggregation(170, false, g -> g.V().has("name", "some").order().by("height", asc).limit(1).values("height").sum());
+        assertAggregation(190, false, g -> g.V().has("name", "some").order().by("height", asc).range(1, 2).values("height").min());
+
+        // the index doesn't hold the changes of the transaction, which the traversal sees, to a key of the condition
+        tx.addVertex("name", "some", "height", 200);
+        assertAggregation(4, false, g -> g.V().has("name", "some").count());
+        assertAggregation(200, false, g -> g.V().has("name", "some").values("height").max());
+        tx.rollback();
+        // or to the aggregated key; a change which can't change the result leaves it to the index
+        newTx();
+        tx.addVertex("length", 5);
+        assertAggregation(3, true, g -> g.V().has("name", "some").count());
+        assertAggregation(190, true, g -> g.V().has("name", "some").values("height").max());
+        tx.addVertex("height", 300);
+        assertAggregation(3, true, g -> g.V().has("name", "some").count());
+        assertAggregation(190, false, g -> g.V().has("name", "some").values("height").max());
+        tx.rollback();
+        // a vertex removed in the transaction takes its properties with it
+        newTx();
+        tx.traversal().V().has("name", "some").has("height", 170).drop().iterate();
+        assertAggregation(2, false, g -> g.V().has("name", "some").count());
+        assertAggregation(190, false, g -> g.V().has("name", "some").values("height").max());
+        tx.rollback();
+
+        // nor the values of the elements it indexed before a key was added to it, until the key is enabled
+        newTx();
+        mgmt.addIndexKey(mgmt.getGraphIndex("mixed"), mgmt.getPropertyKey("length"));
+        finishSchema();
+        assertAggregation(30, false, g -> g.V().has("name", "some").values("length").max());
+
+        // a key which doesn't exist leaves no mixed index query to aggregate on, and neither does a composite index
+        assertFalse(tx.traversal().V().has("nokey", 1).values("height").max().hasNext());
+        assertEquals(170, tx.traversal().V().has("code", 1).values("height").max().next());
+        assertFalse(tx.traversal().V().has("code", 1).values("height").max().profile().next().getMetrics().stream()
+            .anyMatch(metrics -> metrics.getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName())));
+
+        // a count covers every match, where query.hard-max-limit only caps the index queries which fetch them
+        clopen(option(HARD_MAX_LIMIT), 1);
+        assertAggregation(3, true, g -> g.V().has("name", "some").count());
+    }
+
+    private void assertAggregations(String name, String key, Number min, Number max, Number sum, Number mean) {
+        assertAggregation(min, true, g -> g.V().has("name", name).values(key).min());
+        assertAggregation(max, true, g -> g.V().has("name", name).values(key).max());
+        assertAggregation(sum, true, g -> g.V().has("name", name).values(key).sum());
+        assertAggregation(mean, true, g -> g.V().has("name", name).values(key).mean());
+    }
+
+    // The result of the traversal, by the index when byIndex, and in memory, is the expected value, or none for null
+    private void assertAggregation(Number expected, boolean byIndex, Function<GraphTraversalSource, GraphTraversal<Vertex, ?>> aggregation) {
+        assertEquals(byIndex, aggregation.apply(tx.traversal()).profile().next().getMetrics().stream()
+            .anyMatch(metrics -> metrics.getName().contains(JanusGraphMixedIndexAggStep.class.getSimpleName())));
+        final List<?> optimized = aggregation.apply(tx.traversal()).toList();
+        final List<?> inMemory = aggregation.apply(tx.traversal()
+            .withoutStrategies(JanusGraphMixedIndexAggStrategy.class, JanusGraphMixedIndexCountStrategy.class)).toList();
+        for (final List<?> result : Arrays.asList(inMemory, optimized)) {
+            if (expected == null) {
+                assertEquals(Collections.emptyList(), result);
+            } else {
+                assertEquals(1, result.size(), result.toString());
+                if (expected instanceof Double) {
+                    assertEquals(expected.doubleValue(), ((Number) result.get(0)).doubleValue(), 0.0001);
+                } else {
+                    // whole numbers exactly, as doubles can't tell those beyond 2^53 apart
+                    assertEquals(expected.longValue(), ((Number) result.get(0)).longValue());
+                }
+            }
+        }
+    }
+
+    /**
+     * A mixed index orders the elements without the key last, whichever the direction, as JanusGraph does when it
+     * orders them in memory
+     */
+    @Test
+    public void testMixedIndexOrdersElementsWithoutTheKeyLast() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey height = makeKey("height", Integer.class);
+        final PropertyKey weight = makeKey("weight", Double.class);
+        final PropertyKey tag = makeKey("tag", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).addKey(height).addKey(weight)
+            .addKey(tag, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object low = tx.addVertex("name", "x", "height", -10, "weight", -10.5, "tag", "a").id();
+        final Object middle = tx.addVertex("name", "x", "height", 5, "weight", 5.5, "tag", "b").id();
+        final Object without = tx.addVertex("name", "x").id();
+        final Object high = tx.addVertex("name", "x", "height", 30, "weight", 30.5, "tag", "c").id();
+        tx.commit();
+
+        newTx();
+        for (final String key : Arrays.asList("height", "weight", "tag")) {
+            assertEquals(Arrays.asList(low, middle, high, without),
+                tx.traversal().V().has("name", "x").order().by(key, asc).id().toList(), key);
+            assertEquals(Arrays.asList(high, middle, low, without),
+                tx.traversal().V().has("name", "x").order().by(key, desc).id().toList(), key);
+            assertEquals(Arrays.asList(low, middle),
+                tx.traversal().V().has("name", "x").order().by(key, asc).limit(2).id().toList(), key);
+            assertEquals(Arrays.asList(high, middle),
+                tx.traversal().V().has("name", "x").order().by(key, desc).limit(2).id().toList(), key);
+        }
+    }
+
+    // A boolean sorts as an int in Lucene, and the elements without it come last in either direction as well
+    @Test
+    public void testMixedIndexOrdersElementsWithoutABooleanKeyLast() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey active = makeKey("active", Boolean.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).addKey(active).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object off = tx.addVertex("name", "x", "active", false).id();
+        final Object on = tx.addVertex("name", "x", "active", true).id();
+        final Object without = tx.addVertex("name", "x").id();
+        tx.commit();
+
+        newTx();
+        assertEquals(Arrays.asList(off, on, without), tx.traversal().V().has("name", "x").order().by("active", asc).id().toList());
+        assertEquals(Arrays.asList(on, off, without), tx.traversal().V().has("name", "x").order().by("active", desc).id().toList());
+        assertEquals(Arrays.asList(off), tx.traversal().V().has("name", "x").order().by("active", asc).limit(1).id().toList());
+        assertEquals(Arrays.asList(on), tx.traversal().V().has("name", "x").order().by("active", desc).limit(1).id().toList());
     }
 
     @Test
@@ -5185,5 +5823,789 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 tListDateFilter, v6, v4, v2
             );
         }
+    }
+
+    //The indexes hold what the vertices held before the transaction: a query in the transaction finds a vertex which a
+    //change made match, whatever the order of its conditions and whichever index holds the changed key, and not under
+    //its old values
+    @Test
+    public void testTransactionFindsVerticesWhichItsChangesMadeMatch() {
+        makeKey("uid", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("byUid", Vertex.class).addKey(mgmt.getPropertyKey("uid")).buildCompositeIndex();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object changed = tx.addVertex("uid", "u1", "name", "a", "age", 20).id();
+        final Object other = tx.addVertex("uid", "u2", "name", "c", "age", 40).id();
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(changed).property("name", "b").property("age", 30).iterate();
+        assertEquals(Collections.singletonList(changed), g.V().has("uid", "u1").has("name", "b").id().toList());
+        assertEquals(Collections.singletonList(changed), g.V().has("name", "b").has("uid", "u1").id().toList());
+        assertEquals(Collections.singletonList(changed), g.V().has("age", P.between(25, 35)).id().toList());
+        //Not counted: a count which the mixed index answers on its own counts what the index holds
+        assertFalse(g.V().has("name", "a").hasNext());
+        assertFalse(g.V().has("uid", "u1").has("name", "a").hasNext());
+        //The index returns the changed vertex too, under its old age: it comes once
+        assertEquals(Arrays.asList(changed, other), g.V().has("age", P.gt(10)).order().by("age").id().toList());
+        tx.rollback();
+    }
+
+    //An index which sorts what it returns sorts the vertices by what they held before the transaction: a query in the
+    //transaction orders the vertices whose order key it changed by what they hold now
+    @Test
+    public void testTransactionOrdersVerticesByWhatItChanged() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object raised = tx.addVertex("kind", "x", "age", 1).id();
+        final Object kept = tx.addVertex("kind", "x", "age", 30).id();
+        final Object lowered = tx.addVertex("kind", "x", "age", 50).id();
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(raised).property("age", 100).iterate();
+        g.V(lowered).property("age", 5).iterate();
+        assertEquals(Collections.singletonList(raised),
+            g.V().has("kind", "x").order().by("age", desc).limit(1).id().toList());
+        assertEquals(Arrays.asList(raised, kept, lowered),
+            g.V().has("kind", "x").order().by("age", desc).id().toList());
+        assertEquals(Arrays.asList(lowered, kept, raised),
+            g.V().has("kind", "x").order().by("age", asc).id().toList());
+        tx.rollback();
+    }
+
+    //A vertex with several values of a key can't be ordered by the key in memory, which an index that sorts by such a
+    //key does on its own: a change of the key in the transaction, or of another order key of the query, leaves the
+    //vertices where the index places them, without failing
+    @Test
+    public void testTransactionKeepsTheIndexOrderOfAKeyOfSeveralValues() {
+        if (!supportsOrderingListProperty) {
+            return;
+        }
+        final PropertyKey gender = makeKey("gender", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        final PropertyKey names = mgmt.makePropertyKey("names").dataType(String.class).cardinality(Cardinality.LIST)
+            .make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(gender, getStringMapping()).addKey(age)
+            .addKey(names, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex two = tx.addVertex("gender", "female", "age", 20);
+        two.property(VertexProperty.Cardinality.list, "names", "a");
+        two.property(VertexProperty.Cardinality.list, "names", "b");
+        final JanusGraphVertex one = tx.addVertex("gender", "female", "age", 30);
+        one.property(VertexProperty.Cardinality.list, "names", "c");
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        final Set<Object> both = new HashSet<>(Arrays.asList(one.id(), two.id()));
+        g.V(one.id()).property(VertexProperty.Cardinality.list, "names", "d").iterate();
+        assertEquals(both, new HashSet<>(g.V().has("gender", "female").order().by("names", desc).id().toList()));
+        //An order key of one value which the transaction changed on a vertex with several values of the first
+        g.V(two.id()).property("age", 40).iterate();
+        assertEquals(both,
+            new HashSet<>(g.V().has("gender", "female").order().by("names", desc).by("age").id().toList()));
+        tx.rollback();
+    }
+
+    //A disjunction, which an index that takes any condition is given whole, finds the vertices which the transaction's
+    //changes made match too
+    @Test
+    public void testTransactionFindsVerticesOfADisjunctionWhichItsChangesMadeMatch() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey tag = makeKey("tag", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, getStringMapping()).addKey(tag, getStringMapping())
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object bob = tx.addVertex("name", "bob").id();
+        final Object renamed = tx.addVertex("name", "alice").id();
+        tx.addVertex("name", "carol");
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(renamed).property("name", "bob").property("tag", "t2").iterate();
+        final Object added = g.addV().property("tag", "t").next().id();
+        assertEquals(new HashSet<>(Arrays.asList(bob, renamed, added)),
+            new HashSet<>(g.V().or(__.has("name", "bob"), __.has("tag", "t")).id().toList()));
+        assertEquals(new HashSet<>(Arrays.asList(renamed, added)),
+            new HashSet<>(g.V().or(__.has("name", "bob").has("tag", "t2"), __.has("tag", "t")).id().toList()));
+        tx.rollback();
+    }
+
+    //An index may answer a not-equal by leaving out the elements which hold the value, as the vertex did before the
+    //transaction: a query in the transaction finds a vertex once the transaction removed the value
+    @Test
+    public void testTransactionFindsAVertexWhichARemovalMadeMatch() {
+        if (!indexFeatures.supportsCardinality(Cardinality.SET)) {
+            return;
+        }
+        final PropertyKey tags = mgmt.makePropertyKey("tags").dataType(String.class).cardinality(Cardinality.SET)
+            .make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(tags, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex vertex = tx.addVertex();
+        vertex.property(VertexProperty.Cardinality.set, "tags", "red");
+        vertex.property(VertexProperty.Cardinality.set, "tags", "blue");
+        final Object id = vertex.id();
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(id).properties("tags").hasValue("red").drop().iterate();
+        assertEquals(Collections.singletonList(id), g.V().has("tags", P.neq("red")).id().toList());
+        tx.rollback();
+    }
+
+    //Where the new elements of an ordered query in the transaction fill its limit, the index is read only for the
+    //elements whose value of the first order key doesn't come after that of the last of them within the limit, as no
+    //other element can come within it. Ties at that value are read, as a later order key decides between them. A query
+    //whose new elements don't fill the limit reads the index whole, as does one whose last new element within the limit
+    //has no value, which comes last, or has a string value which the indexes may compare otherwise than memory
+    @Test
+    public void testTransactionReadsTheIndexOnlyUpToItsLastNewValueWithinTheLimit() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey age = makeKey("age", Long.class);
+        final PropertyKey name = makeKey("name", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(age)
+            .addKey(name, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final List<Object> ids = new ArrayList<>();
+        for (long i = 1; i <= 18; i++) {
+            ids.add(tx.addVertex("kind", "x", "age", i, "name", "n" + i).id());
+        }
+        tx.addVertex("kind", "x", "name", "none");
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(ids.get(0)).property("age", 30L).iterate();
+        g.V(ids.get(1)).property("age", 18L).iterate();
+        g.V(ids.get(2)).property("age", 18L).iterate();
+        //The three changed vertices fill the limit, the last of them at 18, as is a vertex which the index holds
+        final Supplier<GraphTraversal<Vertex, Vertex>> byAgeDesc = () -> g.V().has("kind", "x").order().by("age", desc);
+        assertTrue(readsIndexWith(byAgeDesc.get().limit(3), "age >= 18"));
+        assertEquals(Arrays.asList(30L, 18L, 18L), values(byAgeDesc.get().limit(3), "age"));
+        //A later order key decides between the ties: the index's vertex of 18 comes before the changed ones
+        assertTrue(readsIndexWith(byAgeDesc.get().by("name", asc).limit(2), "age >= 18"));
+        assertEquals(Arrays.asList("n1", "n18"), values(byAgeDesc.get().by("name", asc).limit(2), "name"));
+        //An ascending order reads the elements up to the value
+        assertTrue(readsIndexWith(g.V().has("kind", "x").order().by("age", asc).limit(3), "age <= 30"));
+        assertEquals(Arrays.asList(4L, 5L, 6L), values(g.V().has("kind", "x").order().by("age", asc).limit(3), "age"));
+        //Too few new elements for the limit
+        assertFalse(readsIndexWith(byAgeDesc.get().limit(4), "age >= "));
+        assertEquals(Arrays.asList(30L, 18L, 18L, 18L), values(byAgeDesc.get().limit(4), "age"));
+        //The last new element within the limit has no value
+        g.addV().property("kind", "x").iterate();
+        g.addV().property("kind", "x").iterate();
+        assertEquals(Arrays.asList(30L, 18L, 18L), values(byAgeDesc.get().limit(3), "age"));
+        assertFalse(readsIndexWith(byAgeDesc.get().limit(5), "age >= "));
+        assertEquals(Arrays.asList(30L, 18L, 18L, 18L, 17L), values(byAgeDesc.get().limit(5), "age"));
+        //A string value, and one which memory compares otherwise than an index may
+        g.V(ids.get(3)).property("name", "zz").iterate();
+        g.V(ids.get(4)).property("name", "zy").iterate();
+        final Supplier<GraphTraversal<Vertex, Vertex>> byNameDesc =
+            () -> g.V().has("kind", "x").order().by("name", desc);
+        assertTrue(readsIndexWith(byNameDesc.get().limit(2), "name >= zy"));
+        assertEquals(Arrays.asList("zz", "zy"), values(byNameDesc.get().limit(2), "name"));
+        g.V(ids.get(5)).property("name", "\uE000").iterate();
+        assertFalse(readsIndexWith(byNameDesc.get().limit(1), "name >= "));
+        assertEquals(Collections.singletonList("\uE000"), values(byNameDesc.get().limit(1), "name"));
+        tx.rollback();
+
+        //A transaction whose queries the metrics of a group observe reads the index the same way
+        final JanusGraphTransaction observed = graph.buildTransaction().groupName("bounded").start();
+        try {
+            final GraphTraversalSource og = observed.traversal();
+            og.V(ids.get(0)).property("age", 30L).iterate();
+            og.V(ids.get(1)).property("age", 18L).iterate();
+            og.V(ids.get(2)).property("age", 18L).iterate();
+            assertTrue(readsIndexWith(og.V().has("kind", "x").order().by("age", desc).limit(3), "age >= 18"));
+            assertEquals(Arrays.asList(30L, 18L, 18L),
+                values(og.V().has("kind", "x").order().by("age", desc).limit(3), "age"));
+        } finally {
+            observed.rollback();
+        }
+    }
+
+    //The same for a query of edges, whose new ones fill its limit
+    @Test
+    public void testTransactionReadsTheEdgeIndexOnlyUpToItsLastNewValueWithinTheLimit() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey weight = makeKey("weight", Long.class);
+        mgmt.makeEdgeLabel("link").make();
+        mgmt.buildIndex("edges", Edge.class).addKey(kind, getStringMapping()).addKey(weight)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex from = tx.addVertex();
+        final JanusGraphVertex to = tx.addVertex();
+        for (long i = 1; i <= 10; i++) {
+            from.addEdge("link", to, "kind", "x", "weight", i);
+        }
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        final Vertex newFrom = g.V(from.id()).next();
+        final Vertex newTo = g.V(to.id()).next();
+        for (long i = 20; i <= 24; i++) {
+            newFrom.addEdge("link", newTo, "kind", "x", "weight", i);
+        }
+        //A changed edge comes once, where its new weight goes
+        g.E().has("kind", "x").has("weight", 10L).property("weight", 22L).iterate();
+        assertTrue(readsIndexWith(g.E().has("kind", "x").order().by("weight", desc).limit(4), "weight >= 22"));
+        assertEquals(Arrays.asList(24L, 23L, 22L, 22L),
+            values(g.E().has("kind", "x").order().by("weight", desc).limit(4), "weight"));
+        assertEquals(Arrays.asList(24L, 23L, 22L, 22L, 21L, 20L, 9L),
+            values(g.E().has("kind", "x").order().by("weight", desc).limit(7), "weight"));
+        tx.rollback();
+    }
+
+    //An unordered query in the transaction takes the new elements which match it first: where they fill the limit, the
+    //index isn't read at all; otherwise the rest comes from the index, which leaves out the elements that the new ones
+    //stand for
+    @Test
+    public void testTransactionTakesItsMatchingElementsBeforeTheIndex() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey age = makeKey("age", Long.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final List<Object> ids = new ArrayList<>();
+        for (long i = 1; i <= 10; i++) {
+            ids.add(tx.addVertex("kind", "x", "age", i).id());
+        }
+        final Object stored = tx.addVertex("kind", "x", "age", 45L).id();
+        final Object restored = tx.addVertex("kind", "x", "age", 46L).id();
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        final Set<Object> matching = new HashSet<>();
+        for (int i = 0; i < 5; i++) {
+            g.V(ids.get(i)).property("age", 50L + i).iterate();
+            matching.add(ids.get(i));
+        }
+        //The index still returns this one, under its old age
+        g.V(restored).property("age", 70L).iterate();
+        matching.add(restored);
+        matching.add(g.addV().property("kind", "x").property("age", 60L).next().id());
+        final Supplier<GraphTraversal<Vertex, Vertex>> older = () -> g.V().has("kind", "x").has("age", P.gt(40L));
+        assertNoBackendHit(older.get().limit(3).profile().next());
+        final List<Object> three = older.get().limit(3).id().toList();
+        assertEquals(3, three.size());
+        assertTrue(matching.containsAll(three));
+        matching.add(stored);
+        assertBackendHit(older.get().limit(10).profile().next());
+        final List<Object> all = older.get().limit(10).id().toList();
+        assertEquals(matching.size(), all.size());
+        assertEquals(matching, new HashSet<>(all));
+        tx.rollback();
+    }
+
+    //The index is read whole, without a range on the first order key, where a range may leave out elements which
+    //memory orders before the bound: in a descending order of decimals, which puts NaN first, where no range holds it,
+    //and on a TEXTSTRING field, which an index may compare by its analyzed terms. An ascending one takes the range
+    @Test
+    public void testTransactionReadsTheIndexWholeWhereItMayCompareOtherwise() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey score = makeKey("score", Double.class);
+        final PropertyKey title = makeKey("title", String.class);
+        final boolean textString = indexFeatures.supportsStringMapping(Mapping.TEXTSTRING);
+        if (textString) {
+            mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(score)
+                .addKey(title, Mapping.TEXTSTRING.asParameter()).buildMixedIndex(INDEX);
+        } else {
+            mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(score)
+                .buildMixedIndex(INDEX);
+        }
+        finishSchema();
+
+        for (int i = 1; i <= 10; i++) {
+            tx.addVertex("kind", "x", "score", (double) i);
+        }
+        if (textString) {
+            tx.addVertex("kind", "x", "title", "Long John Don");
+            tx.addVertex("kind", "x", "title", "Long Little Lewis");
+        }
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.addV().property("kind", "x").property("score", 20.0).iterate();
+        g.addV().property("kind", "x").property("score", 30.0).iterate();
+        assertFalse(readsIndexWith(g.V().has("kind", "x").order().by("score", desc).limit(2), "score >= "));
+        assertEquals(Arrays.asList(30.0, 20.0),
+            values(g.V().has("kind", "x").order().by("score", desc).limit(2), "score"));
+        g.addV().property("kind", "x").property("score", -5.0).iterate();
+        g.addV().property("kind", "x").property("score", -6.0).iterate();
+        assertTrue(readsIndexWith(g.V().has("kind", "x").order().by("score", asc).limit(2), "score <= -5.0"));
+        assertEquals(Arrays.asList(-6.0, -5.0),
+            values(g.V().has("kind", "x").order().by("score", asc).limit(2), "score"));
+        if (textString) {
+            g.addV().property("kind", "x").property("title", "Long Yan").iterate();
+            g.addV().property("kind", "x").property("title", "Long Zed").iterate();
+            assertFalse(readsIndexWith(g.V().has("kind", "x").order().by("title", asc).limit(2), "title <= "));
+            assertEquals(Arrays.asList("Long John Don", "Long Little Lewis"),
+                values(g.V().has("kind", "x").order().by("title", asc).limit(2), "title"));
+        }
+        tx.rollback();
+    }
+
+    //An unordered query checks the transaction's new elements only once it reaches them, by which time the caller may
+    //have changed the transaction: the edges it had when the query started come once each, however many it added
+    //meanwhile, changing the queried key of the vertices the query is still to reach doesn't disturb it, and the
+    //vertices it removed meanwhile aren't returned, other than one which the query had fetched ahead
+    @Test
+    public void testTransactionChangesWhileAnUnorderedQueryRuns() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey age = makeKey("age", Long.class);
+        mgmt.makeEdgeLabel("link").make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(age).buildMixedIndex(INDEX);
+        mgmt.buildIndex("edges", Edge.class).addKey(kind, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object hub = tx.addVertex().id();
+        final List<Object> ids = new ArrayList<>();
+        for (long i = 1; i <= 6; i++) {
+            ids.add(tx.addVertex("kind", "x", "age", i).id());
+        }
+        tx.commit();
+        newTx();
+
+        //The edges in the transaction bound to the thread, whose container of added relations isn't copied when read
+        final Vertex from = graph.traversal().V(hub).next();
+        final Set<Object> edges = new HashSet<>();
+        for (int i = 0; i < 5; i++) {
+            edges.add(from.addEdge("link", from, "kind", "x").id());
+        }
+        final List<Object> returnedEdges = new ArrayList<>();
+        for (final JanusGraphEdge edge : graph.query().has("kind", "x").edges()) {
+            //A few edges, then enough for the container to grow
+            final int added = returnedEdges.isEmpty() ? 3 : returnedEdges.size() == 1 ? 2000 : 0;
+            for (int i = 0; i < added; i++) {
+                from.addEdge("link", from, "kind", "x");
+            }
+            returnedEdges.add(edge.id());
+        }
+        assertEquals(edges.size(), returnedEdges.size());
+        assertEquals(edges, new HashSet<>(returnedEdges));
+        //There, changing the queried key of the vertices which the query is still to reach doesn't disturb it either
+        final GraphTraversalSource bound = graph.traversal();
+        for (int i = 0; i < ids.size(); i++) {
+            bound.V(ids.get(i)).property("age", 60L + i).iterate();
+        }
+        final List<Object> changedMeanwhile = new ArrayList<>();
+        for (final JanusGraphVertex vertex
+                : graph.query().has("kind", "x").has("age", Cmp.GREATER_THAN, 55L).vertices()) {
+            for (int i = 0; i < ids.size(); i++) {
+                bound.V(ids.get(i)).property("age", 100L * (changedMeanwhile.size() + 1) + i).iterate();
+            }
+            changedMeanwhile.add(vertex.id());
+        }
+        assertEquals(ids.size(), changedMeanwhile.size());
+        assertEquals(new HashSet<>(ids), new HashSet<>(changedMeanwhile));
+        //Nor does removing the vertices which the query is still to reach, whose properties of the queried value go
+        final List<Object> returnedThere = removedMeanwhile(graph.traversal(), graph.query(), ids);
+        assertTrue(returnedThere.size() <= 2, returnedThere::toString);
+        graph.tx().rollback();
+
+        final List<Object> returnedVertices = removedMeanwhile(tx.traversal(), tx.query(), ids);
+        assertTrue(returnedVertices.size() <= 2, returnedVertices::toString);
+        tx.rollback();
+    }
+
+    //Sets age 50 on the vertices, then runs a query for them whose first result drops the others: returns what the
+    //query returned, which the caller checks for the one it read ahead at most
+    private static List<Object> removedMeanwhile(GraphTraversalSource g, JanusGraphQuery<?> query, List<Object> ids) {
+        for (final Object id : ids) {
+            g.V(id).property("age", 50L).iterate();
+        }
+        final List<Object> returned = new ArrayList<>();
+        for (final JanusGraphVertex vertex : query.has("kind", "x").has("age", 50L).vertices()) {
+            if (returned.isEmpty()) {
+                for (final Object id : ids) {
+                    if (!id.equals(vertex.id())) {
+                        g.V(id).drop().iterate();
+                    }
+                }
+            }
+            returned.add(vertex.id());
+        }
+        return returned;
+    }
+
+    //Ordered and unordered queries in transactions with random changes return what a scan of every element which the
+    //transaction sees finds: new and removed vertices, values raised, lowered, tied or removed, vertices which stop or
+    //start matching, and new and changed edges; with one or two order keys, missing values, limits and offsets
+    @Test
+    public void testTransactionQueriesAgreeWithAScanOfTheirElements() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey num = makeKey("num", Long.class);
+        final PropertyKey str = makeKey("str", String.class);
+        final PropertyKey dbl = makeKey("dbl", Double.class);
+        final PropertyKey ekind = makeKey("ekind", String.class);
+        final PropertyKey weight = makeKey("weight", Long.class);
+        mgmt.makeEdgeLabel("link").make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(num)
+            .addKey(str, getStringMapping()).addKey(dbl).buildMixedIndex(INDEX);
+        mgmt.buildIndex("edges", Edge.class).addKey(ekind, getStringMapping()).addKey(weight)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        for (int seed = 1; seed <= 20; seed++) {
+            new RandomTransactionCheck(seed).run();
+        }
+    }
+
+    //The values of the key of the elements which the traversal returns, null where an element has none
+    private static List<Object> values(GraphTraversal<?, ? extends Element> traversal, String key) {
+        final List<Object> values = new ArrayList<>();
+        traversal.forEachRemaining(element -> values.add(valueOf(element, key)));
+        return values;
+    }
+
+    //The element's value of the key, null where it has none
+    private static Object valueOf(Element element, String key) {
+        final Iterator<? extends Property<Object>> properties = element.properties(key);
+        return properties.hasNext() ? properties.next().value() : null;
+    }
+
+    //Whether the traversal read its mixed index with the given condition, which its profile shows; a query which the
+    //transaction ran before may come from its cache instead, so this profiles a query's first run
+    private static boolean readsIndexWith(GraphTraversal<?, ?> traversal, String condition) {
+        final List<String> queries = new ArrayList<>();
+        for (final Metrics metrics : traversal.profile().next().getMetrics()) {
+            collectBackendQueries(metrics, queries);
+        }
+        //Solr's field names may carry the suffix of a dynamic field
+        final String[] parts = condition.split(" ", 2);
+        final String pattern = "(?s).*\\b" + parts[0] + "(_[a-z]+)? " + java.util.regex.Pattern.quote(parts[1]) + ".*";
+        return queries.stream().anyMatch(query -> query.matches(pattern));
+    }
+
+    private static void collectBackendQueries(Metrics metrics, List<String> queries) {
+        if (QueryProfiler.BACKEND_QUERY.equals(metrics.getName())) {
+            queries.add(String.valueOf(metrics.getAnnotation(QueryProfiler.QUERY_ANNOTATION)));
+        }
+        for (final Metrics nested : metrics.getNested()) {
+            collectBackendQueries(nested, queries);
+        }
+    }
+
+    /*
+     * One round of testTransactionQueriesAgreeWithAScanOfTheirElements: vertices of a kind of the round's own, edges
+     * between a few vertices of another, stored; a transaction which runs random queries, changes the elements at
+     * random and runs them again, each compared with the elements which a scan of every element the transaction sees
+     * finds, in the order which the query asks for, a missing value last
+     */
+    private final class RandomTransactionCheck {
+        private final Random random;
+        private final int seed;
+        private final String kind;
+        private final List<Object> ids = new ArrayList<>();
+        private final List<Object> hubIds = new ArrayList<>();
+        private final long range;
+        private final int vertices;
+
+        private RandomTransactionCheck(int seed) {
+            this.seed = seed;
+            this.random = new Random(seed);
+            this.kind = "k" + seed;
+            this.vertices = 5 + random.nextInt(random.nextInt(4) == 0 ? 100 : 40);
+            this.range = random.nextBoolean() ? Math.max(3, vertices / 5) : vertices * 20L;
+        }
+
+        private void run() {
+            for (int i = 0; i < vertices + vertices / 4 + 1; i++) {
+                final JanusGraphVertex vertex = tx.addVertex();
+                vertex.property("kind", i < vertices ? kind : kind + "n");
+                setOrRemove(vertex, "num", randomNum());
+                setOrRemove(vertex, "str", randomStr());
+                setOrRemove(vertex, "dbl", randomDbl());
+                ids.add(vertex.id());
+            }
+            final List<JanusGraphVertex> hubs = new ArrayList<>();
+            for (int i = 0; i < 4; i++) {
+                hubs.add(tx.addVertex("kind", kind + "h"));
+                hubIds.add(hubs.get(i).id());
+            }
+            for (int i = 0; i < vertices / 2; i++) {
+                addEdge(hubs.get(random.nextInt(hubs.size())), hubs.get(random.nextInt(hubs.size())), false);
+            }
+            tx.commit();
+            newTx();
+
+            final List<Spec> specs = new ArrayList<>();
+            for (int i = 0; i < 10; i++) {
+                specs.add(new Spec());
+            }
+            for (final Spec spec : specs) {
+                check(spec, "before the changes");
+            }
+            final int[] counts = {0, 1, 3, 10, vertices / 2, vertices, 2 * vertices};
+            final int changes = counts[random.nextInt(counts.length)];
+            for (int i = 0; i < changes; i++) {
+                change();
+            }
+            for (final Spec spec : specs) {
+                check(spec, "after " + changes + " changes");
+            }
+            tx.rollback();
+            newTx();
+        }
+
+        private Long randomNum() {
+            return random.nextInt(10) == 0 ? null : (long) random.nextInt((int) range);
+        }
+
+        private String randomStr() {
+            final String[] strings = {"a", "b", "c", "d", "aa", "ab", "ba", "bb", "abc", "cab", "dd", "z"};
+            return random.nextInt(10) == 0 ? null : strings[random.nextInt(strings.length)];
+        }
+
+        private Double randomDbl() {
+            final double[] doubles = {-0.0, 0.0, 1.5, -1.5, 2.25, 100.0, -100.0};
+            return random.nextInt(10) == 0 ? null : doubles[random.nextInt(doubles.length)];
+        }
+
+        //A value above, below or among the stored ones, or none
+        private Object changedValue(String key) {
+            final int how = random.nextInt(4);
+            switch (key) {
+                case "num":
+                case "weight":
+                    return how == 0 ? (Object) (range + random.nextInt((int) range + 1))
+                        : how == 1 ? (Object) (-1L - random.nextInt((int) range + 1)) : how == 2 ? randomNum() : null;
+                case "str":
+                    return how == 0 ? (Object) ("zz" + random.nextInt(3))
+                        : how == 1 ? (Object) ("0" + random.nextInt(3)) : how == 2 ? randomStr() : null;
+                default:
+                    return how == 0 ? (Object) (1e6 + random.nextInt(100))
+                        : how == 1 ? (Object) (-1e6 - random.nextInt(100)) : how == 2 ? randomDbl() : null;
+            }
+        }
+
+        private void addEdge(Vertex from, Vertex to, boolean changed) {
+            final Object weight = changed && random.nextBoolean() ? changedValue("weight") : randomNum();
+            final String edgeKind = random.nextInt(8) == 0 ? kind + "n" : kind;
+            if (weight == null) {
+                from.addEdge("link", to, "ekind", edgeKind);
+            } else {
+                from.addEdge("link", to, "ekind", edgeKind, "weight", weight);
+            }
+        }
+
+        private void change() {
+            final GraphTraversalSource g = tx.traversal();
+            final int op = random.nextInt(100);
+            final Vertex vertex = g.V(ids.get(random.nextInt(vertices))).tryNext().orElse(null);
+            if (op < 18) {
+                final JanusGraphVertex added = tx.addVertex("kind", random.nextInt(5) == 0 ? kind + "n" : kind);
+                for (final String key : Arrays.asList("num", "str", "dbl")) {
+                    setOrRemove(added, key, random.nextBoolean() ? changedValue(key) : null);
+                }
+                ids.add(added.id());
+            } else if (op < 55) {
+                if (vertex == null) return;
+                final String key = Arrays.asList("num", "str", "dbl").get(random.nextInt(3));
+                final Object old = valueOf(vertex, key);
+                setOrRemove(vertex, key, changedValue(key));
+                if (random.nextInt(8) == 0) setOrRemove(vertex, key, old);
+            } else if (op < 63) {
+                if (vertex == null) return;
+                vertex.property("kind", kind + "x");
+                if (random.nextInt(6) == 0) vertex.property("kind", kind);
+            } else if (op < 69) {
+                final Object otherId = ids.get(vertices + random.nextInt(ids.size() - vertices));
+                final Vertex other = g.V(otherId).tryNext().orElse(null);
+                if (other != null) other.property("kind", kind);
+            } else if (op < 75) {
+                if (vertex != null) vertex.remove();
+            } else if (op < 88) {
+                final Vertex from = g.V(hubIds.get(random.nextInt(hubIds.size()))).next();
+                addEdge(from, g.V(hubIds.get(random.nextInt(hubIds.size()))).next(), true);
+            } else {
+                final List<Edge> edges = g.V(hubIds.get(random.nextInt(hubIds.size()))).outE("link").toList();
+                if (edges.isEmpty()) return;
+                final Edge edge = edges.get(random.nextInt(edges.size()));
+                if (random.nextInt(4) == 0) edge.property("ekind", random.nextBoolean() ? kind + "x" : kind);
+                else setOrRemove(edge, "weight", changedValue("weight"));
+            }
+        }
+
+        private void check(Spec spec, String when) {
+            final List<Element> expected = scan(spec);
+            final List<List<Object>> expectedValues = spec.values(
+                expected.subList(Math.min(spec.low, expected.size()), Math.min(spec.high, expected.size())));
+            final List<Element> actual = spec.run(tx.traversal());
+            final String message = "seed " + seed + ", " + when + ": " + spec;
+            assertEquals(expectedValues, spec.values(actual), message);
+            assertEquals(actual.size(), new HashSet<>(actual).size(), message);
+            for (final Element element : actual) {
+                assertTrue(spec.matches(element), message + ": " + element);
+            }
+        }
+
+        //Every element of the round which the transaction sees and which matches the spec, in its order
+        private List<Element> scan(Spec spec) {
+            final GraphTraversalSource g = tx.traversal();
+            final List<Element> elements = new ArrayList<>();
+            if (spec.edges) {
+                for (final Object hub : hubIds) {
+                    elements.addAll(g.V(hub).outE("link").toList());
+                }
+            } else {
+                for (final Object id : ids) {
+                    g.V(id).tryNext().ifPresent(elements::add);
+                }
+            }
+            elements.removeIf(element -> !spec.matches(element));
+            elements.sort(spec.order());
+            return elements;
+        }
+
+        private final class Spec {
+            private final boolean edges = random.nextInt(4) == 0;
+            private final String[] keys;
+            private final boolean[] descending;
+            private final int condition = random.nextInt(4);
+            private final long numBound = random.nextInt((int) range + 1);
+            private final double dblBound = random.nextInt(3) - 0.5;
+            private final int high;
+            private final int low;
+
+            private Spec() {
+                final int[] limits = {1, 1, 2, 3, 5, 10, 10, 20, 50, 1000};
+                high = limits[random.nextInt(limits.length)];
+                low = random.nextInt(5) == 0 ? random.nextInt(high + 1) : 0;
+                final List<String> orderKeys = new ArrayList<>(edges
+                    ? Collections.singletonList("weight") : Arrays.asList("num", "str", "dbl"));
+                Collections.shuffle(orderKeys, random);
+                final int size = edges ? 1 : random.nextInt(4) == 0 ? 0 : random.nextInt(3) == 0 ? 2 : 1;
+                keys = orderKeys.subList(0, size).toArray(new String[0]);
+                descending = new boolean[size];
+                for (int i = 0; i < size; i++) {
+                    descending[i] = random.nextBoolean();
+                }
+            }
+
+            private List<Element> run(GraphTraversalSource g) {
+                GraphTraversal<? extends Element, ? extends Element> traversal;
+                if (edges) {
+                    GraphTraversal<Edge, Edge> query = g.E().has("ekind", kind);
+                    if (condition % 2 == 1) query = query.has("weight", P.gt(numBound));
+                    traversal = order(query);
+                } else {
+                    final GraphTraversal<Vertex, Vertex> query;
+                    switch (condition) {
+                        case 0:
+                            query = g.V().has("kind", kind);
+                            break;
+                        case 1:
+                            query = g.V().has("kind", kind).has("dbl", P.gt(dblBound));
+                            break;
+                        case 2:
+                            query = g.V().has("kind", kind).has("num", P.neq(numBound));
+                            break;
+                        default:
+                            query = g.V().or(__.has("kind", kind).has("num", P.lt(numBound)),
+                                __.has("kind", kind).has("dbl", P.gt(dblBound)));
+                    }
+                    traversal = order(query);
+                }
+                return new ArrayList<>(low > 0 ? traversal.range(low, high).toList() : traversal.limit(high).toList());
+            }
+
+            private <E extends Element> GraphTraversal<E, E> order(GraphTraversal<E, E> query) {
+                if (keys.length == 0) {
+                    return query;
+                }
+                GraphTraversal<E, E> ordered = query.order();
+                for (int i = 0; i < keys.length; i++) {
+                    ordered = ordered.by(keys[i], descending[i] ? desc : asc);
+                }
+                return ordered;
+            }
+
+            private boolean matches(Element element) {
+                if (edges) {
+                    final Long w = (Long) valueOf(element, "weight");
+                    return kind.equals(valueOf(element, "ekind")) && (condition % 2 == 0 || w != null && w > numBound);
+                }
+                if (!kind.equals(valueOf(element, "kind"))) return false;
+                final Long n = (Long) valueOf(element, "num");
+                final Double d = (Double) valueOf(element, "dbl");
+                switch (condition) {
+                    case 0:
+                        return true;
+                    case 1:
+                        return d != null && Double.compare(d, dblBound) > 0;
+                    case 2:
+                        return n != null && n != numBound;
+                    default:
+                        return n != null && n < numBound || d != null && Double.compare(d, dblBound) > 0;
+                }
+            }
+
+            @SuppressWarnings("unchecked")
+            private Comparator<Element> order() {
+                return (first, second) -> {
+                    for (int i = 0; i < keys.length; i++) {
+                        final Comparable<Object> a = (Comparable<Object>) valueOf(first, keys[i]);
+                        final Comparable<Object> b = (Comparable<Object>) valueOf(second, keys[i]);
+                        final int cmp = a == null || b == null ? (a == null ? (b == null ? 0 : 1) : -1)
+                            : descending[i] ? b.compareTo(a) : a.compareTo(b);
+                        if (cmp != 0) return cmp;
+                    }
+                    return 0;
+                };
+            }
+
+            //The values of the order keys of each element, which are all that a result of ties may differ in
+            private List<List<Object>> values(List<Element> elements) {
+                final List<List<Object>> values = new ArrayList<>();
+                for (final Element element : elements) {
+                    final List<Object> row = new ArrayList<>();
+                    for (final String key : keys) {
+                        row.add(valueOf(element, key));
+                    }
+                    values.add(row);
+                }
+                return values;
+            }
+
+            @Override
+            public String toString() {
+                final StringBuilder order = new StringBuilder();
+                for (int i = 0; i < keys.length; i++) {
+                    order.append(keys[i]).append(descending[i] ? " desc " : " asc ");
+                }
+                return (edges ? "edges" : "vertices") + ", condition " + condition + " (" + numBound + ", " + dblBound
+                    + "), order " + order + "range " + low + ".." + high;
+            }
+        }
+
+        private void setOrRemove(Element element, String key, Object value) {
+            if (value == null) {
+                element.properties(key).forEachRemaining(Property::remove);
+            } else {
+                element.property(key, value);
+            }
+        }
+
     }
 }

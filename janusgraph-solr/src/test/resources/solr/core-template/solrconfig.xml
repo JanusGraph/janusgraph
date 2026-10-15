@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>8.0.0</luceneMatchVersion>
+  <luceneMatchVersion>9.12</luceneMatchVersion>
 
   <!-- Data Directory
 
@@ -121,24 +121,6 @@
   </indexConfig>
 
 
-  <!-- JMX
-       
-       This example enables JMX if and only if an existing MBeanServer
-       is found, use this if you want to configure JMX through JVM
-       parameters. Remove this to disable exposing Solr configuration
-       and statistics to JMX.
-
-       For more details see https://wiki.apache.org/solr/SolrJmx
-    -->
-  <jmx />
-  <!-- If you want to connect to a particular server, specify the
-       agentId 
-    -->
-  <!-- <jmx agentId="myAgent" /> -->
-  <!-- If you want to start a new MBeanServer, specify the serviceUrl -->
-  <!-- <jmx serviceUrl="service:jmx:rmi:///jndi/rmi://localhost:9999/solr"/>
-    -->
-
   <!-- The default high-performance update handler -->
   <updateHandler class="solr.DirectUpdateHandler2">
 
@@ -211,14 +193,7 @@
 
     <!-- Solr Internal Query Caches
 
-         There are two implementations of cache available for Solr,
-         LRUCache, based on a synchronized LinkedHashMap, and
-         FastLRUCache, based on a ConcurrentHashMap.  
-
-         FastLRUCache has faster gets and slower puts in single
-         threaded operation and thus is generally faster than LRUCache
-         when the hit ratio of the cache is high (> 75%), and may be
-         faster under other scenarios on multi-cpu systems.
+         Starting with Solr 9.0 the only cache implementation is CaffeineCache.
     -->
 
     <!-- Filter Cache
@@ -228,19 +203,18 @@
          new searcher is opened, its caches may be prepopulated or
          "autowarmed" using data from caches in the old searcher.
          autowarmCount is the number of items to prepopulate.  For
-         LRUCache, the autowarmed items will be the most recently
+         CaffeineCache, the autowarmed items will be the most recently
          accessed items.
 
          Parameters:
-           class - the SolrCache implementation LRUCache or
-               (LRUCache or FastLRUCache)
+           class - the SolrCache implementation (CaffeineCache)
            size - the maximum number of entries in the cache
            initialSize - the initial capacity (number of entries) of
                the cache.  (see java.util.HashMap)
            autowarmCount - the number of entries to prepopulate from
                and old cache.  
       -->
-    <filterCache class="solr.FastLRUCache"
+    <filterCache class="solr.CaffeineCache"
                  size="512"
                  initialSize="512"
                  autowarmCount="0"/>
@@ -250,7 +224,7 @@
          Caches results of searches - ordered lists of document ids
          (DocList) based on a query, a sort, and the range of documents requested.  
       -->
-    <queryResultCache class="solr.LRUCache"
+    <queryResultCache class="solr.CaffeineCache"
                      size="512"
                      initialSize="512"
                      autowarmCount="0"/>
@@ -261,14 +235,14 @@
          document).  Since Lucene internal document ids are transient,
          this cache will not be autowarmed.  
       -->
-    <documentCache class="solr.LRUCache"
+    <documentCache class="solr.CaffeineCache"
                    size="512"
                    initialSize="512"
                    autowarmCount="0"/>
     
     <!-- custom cache currently used by block join --> 
     <cache name="perSegFilter"
-      class="solr.search.LRUCache"
+      class="solr.CaffeineCache"
       size="10"
       initialSize="0"
       autowarmCount="10"
@@ -349,9 +323,6 @@
          what restrictions may be placed on the ContentStreams from
          those requests
 
-         enableRemoteStreaming - enables use of the stream.file
-         and stream.url parameters for specifying remote streams.
-
          multipartUploadLimitInKB - specifies the max size (in KiB) of
          Multipart File Uploads that Solr will allow in a Request.
          
@@ -366,15 +337,12 @@
          key "httpRequest". It will not be used by any of the existing
          Solr components, but may be useful when developing custom 
          plugins.
-         
-         *** WARNING ***
-         The settings below authorize Solr to fetch remote files, You
-         should make sure your system has some authentication before
-         using enableRemoteStreaming="true"
 
-      --> 
-    <requestParsers enableRemoteStreaming="true" 
-                    multipartUploadLimitInKB="2048000"
+         Since Solr 9 remote streaming (the stream.file and stream.url
+         parameters) is enabled by the solr.enableRemoteStreaming system
+         property instead of this file.
+      -->
+    <requestParsers multipartUploadLimitInKB="2048000"
                     formdataUploadLimitInKB="2048"
                     addHttpRequestToContext="false"/>
 

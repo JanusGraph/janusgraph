@@ -48,6 +48,8 @@ import org.junit.Assume;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
@@ -60,6 +62,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -1309,8 +1312,83 @@ public abstract class IndexProviderTest {
         return supportsPredicateFor(mapping, String.class, Cardinality.SINGLE, predicate);
     }
 
+    // Comparisons of decimals reach zero and the negative values, and comparisons of whole numbers reach the extremes of
+    // long, where a strict bound has nothing beyond it
+    @Test
+    public void rangeQueriesReachTheEndsOfTheirType() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Object[][] values = {{"negative", -2.5, Long.MIN_VALUE}, {"zero", 0.0, 0L}, {"positive", 3.5, Long.MAX_VALUE}};
+        for (final Object[] value : values) {
+            final Multimap<String, Object> doc = HashMultimap.create();
+            doc.put(WEIGHT, value[1]);
+            doc.put(TIME, value[2]);
+            add(store, (String) value[0], doc, true);
+        }
+        clopen();
+        assertEquals(ImmutableSet.of("negative", "zero"), rangeQuery(store, WEIGHT, Cmp.LESS_THAN, 0.01));
+        assertEquals(ImmutableSet.of("negative", "zero"), rangeQuery(store, WEIGHT, Cmp.LESS_THAN_EQUAL, 0.0));
+        assertEquals(ImmutableSet.of("negative", "zero"), rangeQuery(store, WEIGHT, Cmp.NOT_EQUAL, 3.5));
+        assertEquals(ImmutableSet.of("zero", "positive"), rangeQuery(store, WEIGHT, Cmp.GREATER_THAN, -1.0));
+        assertEquals(ImmutableSet.of("negative", "zero", "positive"), rangeQuery(store, WEIGHT, Cmp.GREATER_THAN_EQUAL, -2.5));
+
+        assertEquals(ImmutableSet.of("negative", "zero"), rangeQuery(store, TIME, Cmp.NOT_EQUAL, Long.MAX_VALUE));
+        assertEquals(ImmutableSet.of("zero", "positive"), rangeQuery(store, TIME, Cmp.NOT_EQUAL, Long.MIN_VALUE));
+        assertEquals(ImmutableSet.of(), rangeQuery(store, TIME, Cmp.GREATER_THAN, Long.MAX_VALUE));
+        assertEquals(ImmutableSet.of(), rangeQuery(store, TIME, Cmp.LESS_THAN, Long.MIN_VALUE));
+        assertEquals(ImmutableSet.of("positive"), rangeQuery(store, TIME, Cmp.GREATER_THAN_EQUAL, Long.MAX_VALUE));
+        assertEquals(ImmutableSet.of("negative"), rangeQuery(store, TIME, Cmp.LESS_THAN_EQUAL, Long.MIN_VALUE));
+        assertEquals(ImmutableSet.of("negative", "zero"), rangeQuery(store, TIME, Cmp.LESS_THAN, 1L));
+    }
+
+    protected Set<String> rangeQuery(String store, String key, Cmp relation, Object value) throws BackendException {
+        return tx.queryStream(new IndexQuery(store, PredicateCondition.of(key, relation, value))).collect(Collectors.toSet());
+    }
+
     protected long getDocCountByPredicate(JanusGraphPredicate predicate, String field, String condition) throws BackendException {
         return tx.queryStream(new IndexQuery("vertex", PredicateCondition.of(field, predicate, condition))).count();
+    }
+
+    // The analyzers of the index backends lower-case one code point at a time, which turns the dotted capital I into an
+    // i. String.toLowerCase, which JanusGraph used on the text it lower-cases itself, turns it into an i followed by a
+    // combining dot above, which neither matches the analyzed tokens nor keeps a token whole
+    @Test
+    public void textQueriesFindTheDottedCapitalI() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Multimap<String, Object> doc = HashMultimap.create();
+        doc.put(TEXT, "\u0130STANBUL \u0130ZM\u0130R");
+        add(store, "doc1", doc, true);
+        clopen();
+        assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS, "istanbul"));
+        assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS, "\u0130stanbul"));
+        assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS_PREFIX, "izm"));
+        assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS_PREFIX, "\u0130zm"));
+    }
+
+    // A Turkish default locale lower-cases I to a dotless i, which the analyzers of the index backends don't. The
+    // document is written in the default locale of the test; the queries run in a Turkish one
+    @Test
+    @ResourceLock(Resources.LOCALE)
+    public void textQueriesFindTheCapitalIInATurkishDefaultLocale() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Multimap<String, Object> doc = HashMultimap.create();
+        doc.put(TEXT, "ISPARTA");
+        add(store, "doc1", doc, true);
+        clopen();
+        final Locale defaultLocale = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+        try {
+            assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS, "ISPARTA"));
+            assertEquals(Collections.singletonList("doc1"), textQuery(store, Text.CONTAINS_PREFIX, "ISP"));
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
+    }
+
+    private List<String> textQuery(String store, JanusGraphPredicate predicate, String value) throws BackendException {
+        return tx.queryStream(new IndexQuery(store, PredicateCondition.of(TEXT, predicate, value))).collect(Collectors.toList());
     }
 
     private void testPredicateByCount(long expectation, JanusGraphPredicate predicate, String field, String condition) throws BackendException {

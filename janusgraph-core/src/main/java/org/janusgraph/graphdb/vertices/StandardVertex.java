@@ -21,6 +21,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
@@ -35,6 +36,7 @@ import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.util.datastructures.Retriever;
 
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -106,6 +108,12 @@ public class StandardVertex extends AbstractVertex {
     @Override
     public Iterable<InternalRelation> getAddedRelations(Predicate<InternalRelation> query) {
         return addedRelations.getView(query);
+    }
+
+    @Override
+    public Iterable<InternalRelation> getAddedRelations(Set<? extends RelationType> types,
+                                                        Predicate<InternalRelation> query) {
+        return addedRelations.getView(types, query);
     }
 
     @Override

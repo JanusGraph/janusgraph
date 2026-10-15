@@ -20,6 +20,8 @@ import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.Mutation;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -37,6 +39,12 @@ public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
     private final KeyInformation.StoreRetriever storeRetriever;
     private final boolean isNew;
     private boolean isDeleted;
+    //The complete indexed content of the element this mutation belongs to, when the caller which knows the element
+    //supplied it, so that a provider which finds the document missing can recreate it whole rather than from the
+    //fields the mutation touches. Only an update of an existing document carries one. It is supplied once, from the
+    //element's state at commit, so it may be empty: an element with nothing indexed leaves nothing to recreate a missing
+    //document from, and a provider then goes on as without one. Reading the element again would read the same state
+    private List<IndexEntry> completeDocument;
 
     private final Function<IndexEntry, Object> entryConversionFunction =
             indexEntry -> isCollection(indexEntry.field) ?
@@ -66,6 +74,10 @@ public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
         Preconditions.checkArgument(isNew == m.isNew,"Incompatible new status");
         Preconditions.checkArgument(isDeleted == m.isDeleted,"Incompatible delete status");
         super.merge(m);
+        //Both can only hold a snapshot of the same element; the one merged in was supplied later and stands
+        if (m.completeDocument != null) {
+            completeDocument = m.completeDocument;
+        }
     }
 
     public boolean isNew() {
@@ -78,6 +90,21 @@ public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
 
     public void resetDelete() {
         isDeleted=false;
+    }
+
+    public void setCompleteDocument(List<IndexEntry> completeDocument) {
+        this.completeDocument = Collections.unmodifiableList(new ArrayList<>(completeDocument));
+    }
+
+    //Whether a complete document has been supplied, which includes an empty one
+    public boolean hasCompleteDocument() {
+        return completeDocument != null;
+    }
+
+    //Every indexed value of the element, as a restore would write the document
+    public List<IndexEntry> getCompleteDocument() {
+        Preconditions.checkState(completeDocument != null, "No complete document has been supplied");
+        return completeDocument;
     }
 
     private boolean isCollection(String field) {

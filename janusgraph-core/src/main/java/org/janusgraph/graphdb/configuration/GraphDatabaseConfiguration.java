@@ -80,10 +80,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -222,6 +224,18 @@ public class GraphDatabaseConfiguration {
             "How the graph computer should return the computed results. 'persist' for writing them into the graph, " +
                     "'localtx' for writing them into the local transaction, or 'none' (default)", ConfigOption.Type.MASKABLE, "none");
 
+    public static final ConfigOption<Integer> COMPUTER_JOB_POOL_SIZE = new ConfigOption<>(COMPUTER_NS,"job-pool-size",
+            "The number of threads which run the jobs of the graph's computers, a job on each, while further jobs wait. " +
+                "If not set, which is recommended, as many as the JVM's common pool has threads (by default the number of " +
+                "processors less one, at least one), or a thread per job where that is a single thread. Set it to run " +
+                "fewer of the graph's jobs at once, or more.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Duration> COMPUTER_JOB_KEEP_ALIVE_TIME = new ConfigOption<>(COMPUTER_NS,"job-keep-alive-time",
+            "How long a thread which runs the jobs of the graph's computers waits for the next job before it ends. " +
+                "The default is recommended.",
+            ConfigOption.Type.MASKABLE, Duration.class, Duration.ofMinutes(1), d -> d != null && d.toMillis() > 0);
+
 
     // ################ Transaction #######################
     // ################################################
@@ -234,10 +248,26 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<>(TRANSACTION_NS,"max-commit-time",
-            "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
-                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
-                    "Must be longer than the maximum allowed write time.",
-            ConfigOption.Type.GLOBAL, Duration.ofSeconds(10));
+            "Maximum time that a transaction might take to commit against all backends; a value without a unit is in " +
+                    "milliseconds. This is used by the distributed " +
+                    "write-ahead log processing to determine when a transaction can be considered failed. Transaction recovery " +
+                    "considers a transaction failed once it has read the transaction log up to this long past the first " +
+                    "of the transaction's log entries it read, however long reading the log takes. A value shorter than the commit " +
+                    "really takes lets recovery restore the index documents of a transaction which is still committing, underneath " +
+                    "the index writes that commit has yet to make. A commit reattempts its storage write and then each of its index " +
+                    "writes for up to storage.write-time in turn, so this must exceed storage.write-time multiplied by one plus the " +
+                    "number of configured index backends; a warning is logged at graph open when transaction logging is enabled and " +
+                    "it does not. That is only the minimum: the time a commit spends preparing its writes counts as well; a " +
+                    "transaction with more than storage.buffer-size mutations writes storage in several chunks, each reattempted " +
+                    "for up to storage.write-time; on a storage backend without transaction isolation, a transaction which " +
+                    "creates schema elements first commits them in a storage write of their own, reattempted the same way; and " +
+                    "the last attempt of each write can run past its write time. So leave headroom for the largest transactions. " +
+                    "A transaction which writes a user log (TransactionBuilder.logIdentifier) is exposed for longer: until " +
+                    "recovery has read its final status, an expiry makes recovery send its user-log event again, so its " +
+                    "user-log write (up to log.user.max-write-time when log.user.send-delay is 0) counts as well. The final " +
+                    "status's own write does not: its log entry is timed from before the write, and has to become visible " +
+                    "within log.tx.read-lag-time like every entry.",
+            ConfigOption.Type.GLOBAL, Duration.ofSeconds(300));
 
 
     public static final ConfigNamespace TRANSACTION_RECOVERY_NS = new ConfigNamespace(TRANSACTION_NS,"recovery",
@@ -246,6 +276,18 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> VERBOSE_TX_RECOVERY = new ConfigOption<>(TRANSACTION_RECOVERY_NS,"verbose",
             "Whether the transaction recovery system should print recovered transactions and other activity to standard output",
             ConfigOption.Type.MASKABLE, false);
+
+    public static final ConfigOption<Integer> TX_RECOVERY_REPAIR_POOL_SIZE = new ConfigOption<>(TRANSACTION_RECOVERY_NS,"repair-pool-size",
+            "The number of threads which repair the transactions the recovery finds incomplete: a repair reads the " +
+                "storage backend and writes the index backends and the user log. If not set, which is recommended, as many " +
+                "as the JVM's common pool has threads (by default the number of processors less one, at least one). As the " +
+                "repairs mostly wait for I/O, more threads catch up faster with many incomplete transactions.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Duration> TX_RECOVERY_REPAIR_KEEP_ALIVE_TIME = new ConfigOption<>(TRANSACTION_RECOVERY_NS,"repair-keep-alive-time",
+            "How long a thread which repairs incomplete transactions waits for the next repair before it ends. " +
+                "The default is recommended.",
+            ConfigOption.Type.MASKABLE, Duration.class, Duration.ofMinutes(1), d -> d != null && d.toMillis() > 0);
 
     // ################ Query Processing #######################
     // ################################################
@@ -312,8 +354,13 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<>(QUERY_BATCH_NS,"enabled",
         "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
-            "performance improvement if there is a non-trivial latency to the backend. If `false` then all other configuration options under `" +
-            QUERY_BATCH_NS.toStringWithoutRoot()+"` namespace are ignored.",
+            "performance improvement if there is a non-trivial latency to the backend. It also lets a composite " +
+            "index lookup of several values, such as `has(key, within(values))`, read their index rows together, and " +
+            "a commit read the labels which the index updates of its vertices check together, on a storage backend " +
+            "with multi-key queries. It is the default of each transaction's own multi-query setting, which " +
+            "`TransactionBuilder.multiQuery(boolean)` can change for a transaction; where that setting is `false`, " +
+            "all other configuration options under `" + QUERY_BATCH_NS.toStringWithoutRoot() + "` namespace are " +
+            "ignored.",
         ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigOption<Boolean> LIMITED_BATCH = new ConfigOption<>(QUERY_BATCH_NS,"limited",
@@ -329,6 +376,16 @@ public class GraphDatabaseConfiguration {
             "barrier step either. This option is used only when `"+LIMITED_BATCH.toStringWithoutRoot()+"` is `true`. " +
             "Notice, value `"+Integer.MAX_VALUE+"` is considered to be unlimited.",
         ConfigOption.Type.MASKABLE, 2500);
+
+    public static final ConfigOption<Integer> MAX_KEYS_PER_READ = new ConfigOption<>(QUERY_BATCH_NS,"max-keys-per-read",
+        "The most keys which one read of several keys at once asks the storage backend for, where JanusGraph splits " +
+            "such a read on its own: a composite index lookup of several values, such as `has(key, within(values))`, " +
+            "reading their index rows, and a commit reading the labels which the index updates of its vertices " +
+            "check. A read which fails temporarily is reattempted whole, and its results are held all at once, so " +
+            "a smaller value makes smaller reads, and more of them. The default is the recommended value. Used only " +
+            "where reads are batched (`" + USE_MULTIQUERY.toStringWithoutRoot() + "`, unless a transaction sets its " +
+            "own multi-query setting), on a storage backend with multi-key queries.",
+        ConfigOption.Type.MASKABLE, 1000, ConfigOption.positiveInt());
 
     public static final ConfigOption<String> REPEAT_STEP_BATCH_MODE = new ConfigOption<>(QUERY_BATCH_NS,"repeat-step-mode",
         String.format("Batch mode for `repeat` step. Used only when "+USE_MULTIQUERY.toStringWithoutRoot()+" is `true`.<br>" +
@@ -1016,6 +1073,20 @@ public class GraphDatabaseConfiguration {
             "This helps avoid transaction commits waiting on ID reservation even if the block size is relatively small.",
             ConfigOption.Type.MASKABLE, 0.3);
 
+    public static final ConfigOption<Integer> IDS_RENEW_POOL_SIZE = new ConfigOption<>(IDS_NS,"renew-pool-size",
+            "The number of threads which reserve new ID blocks for the instance's ID pools, each pool one block at a " +
+                "time. If not set, which is recommended, as many as the instance can have pools: three for each partition " +
+                "of cluster.max-partitions (vertices, vertices of unmodifiable labels and relations), one for schema ids " +
+                "and one for partitioned vertices, so that every pool can reserve a block at once. The threads end after " +
+                "ids.renew-keep-alive-time without a reservation. Set it to bound them, at the price of reservations " +
+                "queueing when more pools need blocks at once.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Duration> IDS_RENEW_KEEP_ALIVE_TIME = new ConfigOption<>(IDS_NS,"renew-keep-alive-time",
+            "How long a thread which reserves ID blocks waits for the next reservation before it ends. " +
+                "The default is recommended.",
+            ConfigOption.Type.MASKABLE, Duration.class, Duration.ofMinutes(1), d -> d != null && d.toMillis() > 0);
+
     // ################ IDAUTHORITY ###################
     // ################################################
 
@@ -1133,7 +1204,9 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Integer> INDEX_MAX_RESULT_SET_SIZE = new ConfigOption<>(INDEX_NS, "max-result-set-size",
             "Maximum number of results to return if no limit is specified. For index backends that support scrolling, it represents " +
-                    "the number of results in each batch",
+                    "the number of results in each batch, except that Elasticsearch reads a query with a limit " +
+                    "too large for a single request in batches of up to " +
+                    "`index.[X].elasticsearch.limited-result-max-page-size` results, though never smaller than this",
             ConfigOption.Type.MASKABLE, 50);
 
     public static final ConfigOption<Boolean> INDEX_NAME_MAPPING = new ConfigOption<>(INDEX_NS,"map-name",
@@ -1149,11 +1222,12 @@ public class GraphDatabaseConfiguration {
             "Whether this mixed index backend is maintained via the CDC pipeline (the janusgraph-cdc worker consumes " +
             "Change-Data-Capture events of the graph data and reindexes affected elements) instead of, or in addition " +
             "to, synchronous index writes during the transaction. Has no effect unless an external CDC pipeline " +
-            "(e.g. Cassandra CDC + Debezium + Kafka) and the janusgraph-cdc worker are running. Managed cluster-wide " +
-            "(GLOBAL_OFFLINE) so every JanusGraph instance and the CDC worker agree on who maintains the index: set " +
-            "it in the configuration when the graph is first created, or change it later via " +
-            "mgmt.set(\"index.[X].cdc.enabled\", ...) while no other instance is open.",
-            ConfigOption.Type.GLOBAL_OFFLINE, false);
+            "(e.g. Cassandra CDC + Debezium + Kafka) and the janusgraph-cdc worker are running. The stored value can " +
+            "be changed on a running cluster via mgmt.set(\"index.[X].cdc.enabled\", ...), which JanusGraph " +
+            "instances and the CDC worker pick up when they next open the graph, and the local configuration of an " +
+            "instance overrides it. Keep the instances and the CDC worker consistent: every index an instance " +
+            "writes in cdc-only mode must be maintained by the worker.",
+            ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigOption<Boolean> INDEX_CDC_SYNCHRONOUS = new ConfigOption<>(INDEX_CDC_NS, "synchronous",
             "Only relevant when index.[X].cdc.enabled is true. When true (default), the mixed index is ALSO written " +
@@ -1161,15 +1235,18 @@ public class GraphDatabaseConfiguration {
             "When false, synchronous mixed index additions are skipped (cdc-only mode) and performed by the CDC worker " +
             "instead, which maximizes efficiency at the cost of the index lagging the graph by the CDC propagation " +
             "latency; the few deletions of edge and meta-property documents that change events cannot identify are " +
-            "still applied synchronously. Managed cluster-wide (GLOBAL_OFFLINE), like index.[X].cdc.enabled.",
-            ConfigOption.Type.GLOBAL_OFFLINE, true);
+            "still applied synchronously. Can be changed on a running cluster and overridden by the local " +
+            "configuration of an instance, like index.[X].cdc.enabled.",
+            ConfigOption.Type.MASKABLE, true);
 
     /**
      * The names of the index backends with {@link #INDEX_CDC_ENABLED} true. With {@code cdcOnly}, restricted to those
      * additionally configured with {@link #INDEX_CDC_SYNCHRONOUS} false (cdc-only mode: the synchronous mixed-index
      * write is skipped). The commit-side skip ({@code StandardJanusGraph}) and the CDC worker's index discovery
      * ({@code janusgraph-cdc}) are the two halves of one contract -- every cdc-only index must be worker-managed --
-     * so both derive their sets from this one method.
+     * so both derive their sets from this one method. They only agree when the JanusGraph instances and the worker
+     * run with the same effective index.[X].cdc.* values: the options are MASKABLE, so the local configuration of a
+     * process can override the stored ones.
      */
     public static Set<String> getCdcBackingIndexNames(Configuration configuration, boolean cdcOnly) {
         final Set<String> result = new HashSet<>();
@@ -1209,6 +1286,16 @@ public class GraphDatabaseConfiguration {
             "Maximum time to wait for an instance to acknowledge a schema change before treating it as stale. " +
                 "Only effective when graph.management-auto-close-stale-instances is enabled.",
             ConfigOption.Type.MASKABLE, Duration.ofSeconds(120));
+
+    public static final ConfigOption<Duration> MANAGEMENT_TX_CLOSE_WAIT_TIME = new ConfigOption<>(GRAPH_NS,
+            "management-tx-close-wait-time",
+            "Maximum time an instance waits for the transactions which were open when a schema change reached it to " +
+                "close, before it acknowledges the change. If they are still open by then, it logs a stale transaction " +
+                "alert and doesn't acknowledge the change. The default is recommended; raise it if transactions stay open " +
+                "longer and schema changes should wait for them. With graph.management-auto-close-stale-instances, an " +
+                "instance which hasn't acknowledged a change within graph.management-ack-timeout is force-closed, whether " +
+                "it still waits or has given up, so a value above that timeout gains nothing.",
+            ConfigOption.Type.MASKABLE, Duration.class, Duration.ofSeconds(60), d -> d != null && !d.isNegative());
 
     public static final String MANAGEMENT_LOG = "janusgraph";
     public static final String TRANSACTION_LOG = "tx";
@@ -1531,6 +1618,7 @@ public class GraphDatabaseConfiguration {
     private boolean adjustQueryLimit;
     private int hardMaxLimit;
     private Boolean useMultiQuery;
+    private int maxKeysPerRead;
     private boolean limitedBatch;
     private int limitedBatchSize;
     private MultiQueryStrategyRepeatStepMode repeatStepMode;
@@ -1555,6 +1643,9 @@ public class GraphDatabaseConfiguration {
     private IndicesActivationType schemaInitJsonIndicesActivationType;
     private boolean schemaInitJsonForceCloseOtherInstances;
     private long schemaInitJsonIndexStatusAwaitTimeout;
+
+    //The Metrics reporters which this configuration asks for, with what starts each
+    private final Map<MetricManager.GraphReporter, Runnable> metricsReporters = new EnumMap<>(MetricManager.GraphReporter.class);
 
     private StoreFeatures storeFeatures = null;
 
@@ -1613,6 +1704,30 @@ public class GraphDatabaseConfiguration {
         return metricsPrefix;
     }
 
+    /**
+     * Starts the Metrics reporters which this configuration asks for, unless reporters of their kinds run already, for
+     * a graph which opens with it. The graph gives back the claims it gets with
+     * {@link MetricManager#releaseGraphReporters(Map)} when it closes, which stops the reporters that graphs started
+     * once no graph which uses them is open.
+     *
+     * @return the graph's claims on the reporters, by their kind
+     */
+    public Map<MetricManager.GraphReporter, Object> startMetricsReporters() {
+        final Map<MetricManager.GraphReporter, Object> claims = new EnumMap<>(MetricManager.GraphReporter.class);
+        try {
+            metricsReporters.forEach((reporter, start) -> {
+                final Object claim = MetricManager.INSTANCE.addGraphReporter(reporter, start);
+                if (claim != null) {
+                    claims.put(reporter, claim);
+                }
+            });
+        } catch (RuntimeException | Error e) {
+            MetricManager.INSTANCE.releaseGraphReporters(claims);
+            throw e;
+        }
+        return claims;
+    }
+
     public DefaultSchemaMaker getDefaultSchemaMaker() {
         return defaultSchemaMaker;
     }
@@ -1657,6 +1772,10 @@ public class GraphDatabaseConfiguration {
         return limitedBatchSize;
     }
 
+    public int maxKeysPerRead() {
+        return maxKeysPerRead;
+    }
+
     public MultiQueryStrategyRepeatStepMode repeatStepMode() {
         return repeatStepMode;
     }
@@ -1695,6 +1814,90 @@ public class GraphDatabaseConfiguration {
 
     public String getUnknownIndexKeyName() {
         return unknownIndexKeyName;
+    }
+
+    /**
+     * The longest transaction recovery waits for a transaction, about 146 years: half the nanoseconds a long holds.
+     * Its cache times a transaction by the nanoseconds of the log left to read before the wait is over, the wait plus
+     * the transaction's first entry's distance from the read progress, which overflows a long for a longer wait; the
+     * cache caps its own durations at the same value. Recovery waits no longer than this for a longer
+     * {@link #MAX_COMMIT_TIME}.
+     * <p>
+     * This is an internal limit, not a configuration option: it is public only so that the transaction recovery
+     * processor and the check of {@link #MAX_COMMIT_TIME} at graph open share one value.
+     */
+    public static final Duration LONGEST_RECOVERY_WAIT = Duration.ofNanos(Long.MAX_VALUE >>> 1);
+
+    //Transaction recovery treats a transaction as failed once it has read the log up to max-commit-time past the
+    //transaction's first log entry, and restores the index documents of the elements it changed from the storage
+    //backend. While the commit still has index writes to make, those then land on top of documents which already
+    //reflect the transaction. The warning is for a value which cannot outlast even a commit whose storage write is a
+    //single chunk; how much more the largest transactions need depends on their size and on the backends, which are not
+    //known here. A GLOBAL option which was never set explicitly resolves to the code default, so an existing graph
+    //picks a new default up when its instances restart; only an explicitly stored value survives an upgrade.
+    private static void warnIfMaxCommitTimeIsTooShort(Duration maxCommitTime, Duration maxWriteTime, int indexBackends) {
+        final int writes = 1 + indexBackends;
+        final Optional<Duration> minimum = singleChunkCommitBudget(maxWriteTime, indexBackends);
+        if (minimum.isEmpty()) {
+            //No value of max-commit-time can outlast a budget which reaches the longest recovery can wait, so the
+            //remedy is the write time.
+            log.warn("Transaction recovery cannot wait longer than {} for a transaction, but the writes of a commit may "
+                + "keep being reattempted for at least as long: {} ({}) for each of its {} writes, the storage write and "
+                + "{} index backend(s). No {} can outlast that, so transaction recovery can restore the index documents of a "
+                + "transaction which is still committing. Lower {} to a realistic value.", LONGEST_RECOVERY_WAIT,
+                STORAGE_WRITE_WAITTIME.toStringWithoutRoot(), maxWriteTime, writes, indexBackends,
+                MAX_COMMIT_TIME.toStringWithoutRoot(), STORAGE_WRITE_WAITTIME.toStringWithoutRoot());
+        } else if (maxCommitTime.compareTo(minimum.get()) <= 0) {
+            log.warn("{} is {}, which does not exceed the {} for which even a small commit may keep reattempting its "
+                + "writes: {} ({}) for each of its {} writes, the storage write and {} index backend(s). Transaction "
+                + "recovery considers a transaction failed once it has read the transaction log {} past the first "
+                + "of the transaction's entries it read, so it can restore the index documents "
+                + "of a transaction which is still committing, underneath the index writes that commit has yet to make. "
+                + "Set {} to more than {}, with headroom for transactions whose storage write spans several {} chunks, "
+                + "which create schema elements or which write a user log, through the management system, for "
+                + "instance {} followed by mgmt.commit().",
+                MAX_COMMIT_TIME.toStringWithoutRoot(), maxCommitTime, minimum.get(),
+                STORAGE_WRITE_WAITTIME.toStringWithoutRoot(), maxWriteTime, writes, indexBackends,
+                MAX_COMMIT_TIME.toStringWithoutRoot(), MAX_COMMIT_TIME.toStringWithoutRoot(), minimum.get(),
+                BUFFER_SIZE.toStringWithoutRoot(), suggestedManagementSystemCall(maxWriteTime, indexBackends));
+        }
+    }
+
+    //The time for which the writes of a commit whose storage write is a single chunk may be reattempted before it gives
+    //up: the storage write and then one write per index backend, each for up to write-time. It is the least a
+    //max-commit-time has to exceed, not a bound on a commit: the preparation of the writes counts as well, a transaction
+    //with more than storage.buffer-size mutations writes storage in several chunks, each with a write-time of its own,
+    //a storage backend without transaction isolation commits the schema elements a transaction creates in a storage
+    //write of their own before the rest, and the last attempt of each write can run past its write time. Empty when no
+    //max-commit-time which transaction recovery can wait for exceeds it.
+    static Optional<Duration> singleChunkCommitBudget(Duration maxWriteTime, int indexBackends) {
+        try {
+            final Duration budget = maxWriteTime.multipliedBy(1 + indexBackends);
+            return budget.compareTo(LONGEST_RECOVERY_WAIT) < 0 ? Optional.of(budget) : Optional.empty();
+        } catch (ArithmeticException e) {
+            return Optional.empty();
+        }
+    }
+
+    //Whether max-commit-time exceeds that budget. Equality is not enough, since the last attempt of each write can
+    //start just before its write time runs out, and a budget which reaches the longest recovery can wait cannot be
+    //exceeded at all.
+    static boolean outlastsASingleChunkCommit(Duration maxCommitTime, Duration maxWriteTime, int indexBackends) {
+        return singleChunkCommitBudget(maxWriteTime, indexBackends).map(budget -> maxCommitTime.compareTo(budget) > 0).orElse(false);
+    }
+
+    //The management system call the warning suggests, written so that it can be pasted as it is. It sets that budget
+    //and one write time more, the headroom the default leaves over the storage write and one index backend, but no
+    //more than transaction recovery can wait, as an ISO-8601 duration, which any Duration can be written as. The sum
+    //cannot overflow, a budget being shorter than recovery can wait and at least one write time. A placeholder only
+    //when there is no budget, for which the warning suggests no value.
+    static String suggestedManagementSystemCall(Duration maxWriteTime, int indexBackends) {
+        final String value = singleChunkCommitBudget(maxWriteTime, indexBackends)
+            .map(budget -> budget.plus(maxWriteTime))
+            .map(suggested -> suggested.compareTo(LONGEST_RECOVERY_WAIT) < 0 ? suggested : LONGEST_RECOVERY_WAIT)
+            .map(suggested -> "java.time.Duration.parse(\"" + suggested + "\")")
+            .orElse("<duration>");
+        return "mgmt.set(\"" + MAX_COMMIT_TIME.toStringWithoutRoot() + "\", " + value + ")";
     }
 
     public boolean hasLogTransactions() {
@@ -1851,6 +2054,7 @@ public class GraphDatabaseConfiguration {
         useMultiQuery = configuration.get(USE_MULTIQUERY);
         limitedBatch = configuration.get(LIMITED_BATCH);
         limitedBatchSize = configuration.get(LIMITED_BATCH_SIZE);
+        maxKeysPerRead = configuration.get(MAX_KEYS_PER_READ);
         repeatStepMode = selectExactConfig(REPEAT_STEP_BATCH_MODE, MultiQueryStrategyRepeatStepMode.values());
         hasStepStrategyMode = selectExactConfig(HAS_STEP_BATCH_MODE, MultiQueryHasStepStrategyMode.values());
         propertiesStrategyMode = selectExactConfig(PROPERTIES_BATCH_MODE, MultiQueryPropertiesStrategyMode.values());
@@ -1872,6 +2076,17 @@ public class GraphDatabaseConfiguration {
         }
 
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
+        if (logTransactions) {
+            //The transaction log's own writes add nothing to the budget of the index documents: the precommit entry is
+            //written before recovery can read it, the primary success is committed together with the storage write,
+            //and the secondary status follows the index writes, after which a restore only rewrites documents which
+            //are right. A transaction which writes a user log is the exception: until recovery has read that status
+            //it would send the user-log event again, so the user-log write counts for it as well; the final status's
+            //own write does not, its entry being timed from before the write. The log identifier is set per
+            //transaction, so the warning cannot take it into account.
+            warnIfMaxCommitTimeIsTooShort(configuration.get(MAX_COMMIT_TIME),
+                configuration.get(STORAGE_WRITE_WAITTIME), configuration.getContainedNamespaces(INDEX_NS).size());
+        }
         dropWholeRowOnVertexRemoval = configuration.get(DROP_WHOLE_ROW_ON_VERTEX_REMOVAL);
 
         unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
@@ -1915,37 +2130,47 @@ public class GraphDatabaseConfiguration {
 
     private void configureMetricsConsoleReporter() {
         if (configuration.has(METRICS_CONSOLE_INTERVAL)) {
-            MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL));
+            addMetricsReporter(MetricManager.GraphReporter.CONSOLE,
+                () -> MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL)));
         }
     }
 
     private void configureMetricsCsvReporter() {
         if (configuration.has(METRICS_CSV_DIR)) {
-            MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR));
+            addMetricsReporter(MetricManager.GraphReporter.CSV,
+                () -> MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR)));
         }
     }
 
     private void configureMetricsJmxReporter() {
         if (configuration.get(METRICS_JMX_ENABLED)) {
-            MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID));
+            addMetricsReporter(MetricManager.GraphReporter.JMX,
+                () -> MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID)));
         }
     }
 
     private void configureMetricsSlf4jReporter() {
         if (configuration.has(METRICS_SLF4J_INTERVAL)) {
             // null loggerName is allowed -- that means Metrics will use its internal default
-            MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
-                configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
+            addMetricsReporter(MetricManager.GraphReporter.SLF4J,
+                () -> MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
+                    configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null));
         }
     }
 
     private void configureMetricsGraphiteReporter() {
         if (configuration.has(GRAPHITE_HOST)) {
-            MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
-                configuration.get(GRAPHITE_PORT),
-                configuration.get(GRAPHITE_PREFIX),
-                configuration.get(GRAPHITE_INTERVAL));
+            addMetricsReporter(MetricManager.GraphReporter.GRAPHITE,
+                () -> MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
+                    configuration.get(GRAPHITE_PORT),
+                    configuration.get(GRAPHITE_PREFIX),
+                    configuration.get(GRAPHITE_INTERVAL)));
         }
+    }
+
+    //Started by the graphs which open with this configuration, see startMetricsReporters()
+    private void addMetricsReporter(MetricManager.GraphReporter reporter, Runnable start) {
+        metricsReporters.put(reporter, start);
     }
 
 }

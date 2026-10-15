@@ -28,12 +28,14 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
@@ -42,9 +44,11 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.util.CacheMetricsAction;
 import org.janusgraph.diskstorage.util.MetricInstrumentedStore;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.util.stats.MetricManager;
@@ -52,6 +56,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -299,6 +304,169 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
 
 
     @Test
+    public void testCommitReadsTheLabelsItChecksForAnIndexTogether() {
+        metricsPrefix = "testCommitReadsTheLabelsItChecksForAnIndexTogether";
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        final VertexLabel person = mgmt.makeVertexLabel("person").make();
+        mgmt.buildIndex("personByName", Vertex.class).addKey(name).indexOnly(person).buildCompositeIndex();
+        finishSchema();
+
+        final int numVertices = 5;
+        final Object[] ids = new Object[numVertices];
+        for (int i = 0; i < numVertices; i++) {
+            ids[i] = tx.addVertex("person").property("name", "round0 " + i).element().id();
+        }
+        final Object removed = tx.addVertex("person").property("name", "removed").element().id();
+        final Object removedAlone = tx.addVertex("person").property("name", "removed alone").element().id();
+        tx.commit();
+
+        // At commit, a store without locking of its own reads back the values a removal locked, to check them: these
+        // are the reads of a commit which only removes such a vertex
+        JanusGraphTransaction tx = graph.buildTransaction().checkExternalVertexExistence(false).groupName(metricsPrefix)
+            .start();
+        tx.getVertex(removedAlone).remove();
+        resetMetrics();
+        tx.commit();
+        final long removalReads = edgeStoreReads();
+
+        // Changes the indexed name of vertices it looked up by id, whose labels it hasn't read: the index is restricted
+        // to persons, so the commit checks the label of each. The labels are read with one read of several keys, where
+        // the store can make one. A vertex added and one removed in the same transaction cost no read of their labels
+        final boolean together = features.hasMultiQuery();
+        tx = changeNames(ids, 1, true, 0);
+        tx.addVertex("person").property("name", "added");
+        tx.getVertex(removed).remove();
+        resetMetrics();
+        tx.commit();
+        verifyEdgeStoreReads((together ? 1 : numVertices) + removalReads);
+        verifyIndexedNames(ids, 1);
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        evaluateQuery(tx.query().has("name", Cmp.EQUAL, "added").has(LABEL_NAME, "person"),
+            ElementCategory.VERTEX, 1, new boolean[]{true, true}, "personByName");
+        evaluateQuery(tx.query().has("name", Cmp.EQUAL, "removed").has(LABEL_NAME, "person"),
+            ElementCategory.VERTEX, 0, new boolean[]{true, true}, "personByName");
+        tx.rollback();
+
+        // The labels of two of them read already: those are not read again
+        tx = changeNames(ids, 2, true, 2);
+        resetMetrics();
+        tx.commit();
+        verifyEdgeStoreReads(together ? 1 : numVertices - 2);
+        verifyIndexedNames(ids, 2);
+
+        // Without multi-queries in the transaction, each label is read on its own
+        tx = changeNames(ids, 3, false, 0);
+        resetMetrics();
+        tx.commit();
+        verifyEdgeStoreReads(numVertices);
+        verifyIndexedNames(ids, 3);
+
+        // With at most two keys per read, the labels of the five take three reads
+        clopen(option(GraphDatabaseConfiguration.MAX_KEYS_PER_READ), 2);
+        tx = changeNames(ids, 4, true, 0);
+        resetMetrics();
+        tx.commit();
+        verifyEdgeStoreReads(together ? 3 : numVertices);
+        verifyIndexedNames(ids, 4);
+    }
+
+    // The reads of the edge store since the metrics were reset
+    private long edgeStoreReads() {
+        return metric.getCounter(metricsPrefix, EDGESTORE_NAME, M_GET_SLICE, MetricInstrumentedStore.M_CALLS)
+            .getCount();
+    }
+
+    private void verifyEdgeStoreReads(long expected) {
+        assertEquals(expected, edgeStoreReads(), "reads of the edge store");
+    }
+
+    // A transaction which looks the vertices up by id and gives them the names of the round, having read the labels of
+    // the first labelsRead of them
+    private JanusGraphTransaction changeNames(Object[] ids, int round, boolean multiQuery, int labelsRead) {
+        final JanusGraphTransaction tx = graph.buildTransaction().checkExternalVertexExistence(false)
+            .multiQuery(multiQuery).groupName(metricsPrefix).start();
+        for (int i = 0; i < labelsRead; i++) {
+            assertEquals("person", tx.getVertex(ids[i]).label());
+        }
+        for (int i = 0; i < ids.length; i++) {
+            tx.getVertex(ids[i]).property("name", "round" + round + " " + i);
+        }
+        return tx;
+    }
+
+    // The index finds the vertices by the names of the round, and no longer by those of the round before
+    private void verifyIndexedNames(Object[] ids, int round) {
+        final JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        for (int i = 0; i < ids.length; i++) {
+            evaluateQuery(tx.query().has("name", Cmp.EQUAL, "round" + round + " " + i).has(LABEL_NAME, "person"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "personByName");
+            assertEquals(ids[i], getOnlyElement(tx.query().has("name", "round" + round + " " + i)
+                .has(LABEL_NAME, "person").vertices()).id());
+            evaluateQuery(tx.query().has("name", Cmp.EQUAL, "round" + (round - 1) + " " + i).has(LABEL_NAME, "person"),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "personByName");
+        }
+        tx.rollback();
+    }
+
+    @Test
+    public void testEdgeByIdDoesNotReadTypeVertex() {
+        metricsPrefix = "testEdgeByIdDoesNotReadTypeVertex";
+        final String schemaPrefix = GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT;
+
+        JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        JanusGraphVertex v = tx.addVertex("name", "john");
+        JanusGraphVertex u = tx.addVertex("name", "mary");
+        RelationIdentifier eid = (RelationIdentifier) v.addEdge("knows", u).id();
+        // label and edge created in this transaction: resolvable by id before commit, without any read
+        RelationIdentifier newLabelEid = (RelationIdentifier) v.addEdge("likes", u).id();
+        assertEquals(newLabelEid, Iterables.getOnlyElement(tx.getEdges(newLabelEid)).id());
+        verifyStoreMetrics(EDGESTORE_NAME);
+        tx.commit();
+
+        // warm the schema cache for the label, then start counting
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(eid, Iterables.getOnlyElement(tx.getEdges(eid)).id());
+        tx.commit();
+        resetMetrics();
+
+        // 1 slice on the out-vertex for the edge itself; the label's schema row is read neither in this
+        // transaction nor through the schema cache (which loads under the schema metrics group)
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        JanusGraphEdge e = Iterables.getOnlyElement(tx.getEdges(eid));
+        assertEquals(eid, e.id());
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1L));
+        verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of());
+        tx.commit();
+
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        RelationIdentifier missingEdge = new RelationIdentifier(eid.getOutVertexId(), eid.getTypeId(), eid.getRelationId() + 1, eid.getInVertexId());
+        assertFalse(tx.getEdges(missingEdge).iterator().hasNext());
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L));
+        verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of());
+        tx.commit();
+
+        // a well-formed label id with no schema vertex behind it resolves to "no edge". Its (empty) definition is
+        // read through the schema cache and deliberately not remembered, so that a label created later under this
+        // id is picked up: one schema read per lookup, and never a read in this transaction's group.
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        long missingTypeId = IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, 1L << 40);
+        RelationIdentifier missingType = new RelationIdentifier(eid.getOutVertexId(), missingTypeId, eid.getRelationId(), eid.getInVertexId());
+        assertFalse(tx.getEdges(missingType).iterator().hasNext());
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 2L));
+        verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of(M_GET_SLICE, 1L));
+        assertFalse(tx.getEdges(missingType).iterator().hasNext());
+        verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of(M_GET_SLICE, 2L));
+        // the lookups left nothing behind in the transaction: resolving the id as a vertex still checks storage and finds nothing
+        assertNull(tx.getVertex(missingTypeId));
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 3L));
+        // ... and the removed stub that check left in the transaction is treated as "no such type", without any read
+        assertFalse(tx.getEdges(missingType).iterator().hasNext());
+        verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 3L));
+        verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of(M_GET_SLICE, 2L));
+        tx.commit();
+    }
+
+    @Test
     public void testKCVSAccess1() {
         metricsPrefix = "testKCVSAccess1";
 
@@ -381,6 +549,63 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         verifyStoreMetrics(METRICS_STOREMANAGER_NAME);
     }
 
+
+    //A lookup of several values of a composite index reads their keys in one call where the storage backend has multi-key
+    //queries and no key gets read which reading them one after the other would not: without a limit, and with a limit
+    //on a unique index. Otherwise it reads one key after the other, stopping at the limit
+    @Test
+    public void checkCompositeIndexLookupOfSeveralValues() {
+        PropertyKey uid = makeKey("uid", String.class);
+        PropertyKey group = makeKey("group", String.class);
+        mgmt.buildIndex("uid", Vertex.class).unique().addKey(uid).buildCompositeIndex();
+        mgmt.buildIndex("group", Vertex.class).addKey(group).buildCompositeIndex();
+        finishSchema();
+
+        metricsPrefix = "checkCompositeIndexLookupOfSeveralValues";
+
+        JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        for (int i = 0; i < 5; i++) {
+            tx.addVertex("uid", "v" + i, "group", "g" + (i % 2));
+        }
+        tx.commit();
+        final List<String> uids = Arrays.asList("v0", "v1", "v2", "v3", "v4");
+        final List<String> groups = Arrays.asList("g0", "g1");
+        final boolean together = features.hasMultiQuery();
+
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(5, Iterables.size(tx.query().has("uid", Contain.IN, uids).vertices()));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, together ? 1L : 5L));
+        tx.rollback();
+
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(5, Iterables.size(tx.query().has("group", Contain.IN, groups).vertices()));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, together ? 1L : 2L));
+        tx.rollback();
+
+        //Each key of a unique index holds at most one entry, so the first 3 keys are all a limit of 3 can need
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(3, Iterables.size(tx.query().has("uid", Contain.IN, uids).limit(3).vertices()));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, together ? 1L : 3L));
+        tx.rollback();
+
+        //The first key of an index which isn't unique may already reach the limit, as g0 does
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        assertEquals(2, Iterables.size(tx.query().has("group", Contain.IN, groups).limit(2).vertices()));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1L));
+        tx.rollback();
+
+        //A transaction which doesn't batch, as query.batch.enabled = false makes every transaction, reads one key after
+        //the other
+        resetMetrics();
+        tx = graph.buildTransaction().groupName(metricsPrefix).multiQuery(false).start();
+        assertEquals(5, Iterables.size(tx.query().has("uid", Contain.IN, uids).vertices()));
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 5L));
+        tx.rollback();
+    }
 
     @Test
     public void checkFastPropertyTrue() {

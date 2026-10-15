@@ -18,7 +18,7 @@ import io.debezium.config.Configuration;
 
 /**
  * Test-only bridge that starts the Debezium Cassandra connector embedded in the test JVM. Lives in Debezium's package
- * because {@link CassandraConnectorTask#init(CassandraConnectorConfig, ComponentFactory)} is package-private.
+ * because {@link CassandraConnectorTask#init(CassandraConnectorConfig)} is package-private.
  */
 public final class JanusGraphCdcConnectorStarter {
 
@@ -28,8 +28,8 @@ public final class JanusGraphCdcConnectorStarter {
     /** Builds, initializes and starts a standalone (embedded, Kafka-producing) Cassandra connector. */
     public static CassandraConnectorTaskTemplate startEmbedded(Configuration configuration) throws Exception {
         CassandraConnectorTaskTemplate template =
-            CassandraConnectorTask.init(new CassandraConnectorConfig(configuration), new ComponentFactoryStandalone());
-        template.start();
+            CassandraConnectorTask.init(new CassandraConnectorConfig(configuration));
+        template.start(new ComponentFactoryStandalone());
         return template;
     }
 }

@@ -402,7 +402,8 @@ public class ElasticsearchConfigTest {
         ElasticSearchIndex elasticSearchIndex = ((ElasticSearchIndex) idx);
 
         URIBuilder uriBuilder = new URIBuilder(endpoint);
-        if(ElasticMajorVersion.SEVEN.equals(elasticSearchIndex.getVersion()) && elasticSearchIndex.isUseMappingForES7()){
+        //OpenSearch 2 and newer ignore use-mapping-for-es7, since they removed mapping types
+        if(ElasticMajorVersion.SEVEN.equals(elasticSearchIndex.getVersion()) && elasticSearchIndex.usesMappingTypes()){
             uriBuilder.setParameter(RestElasticSearchClient.INCLUDE_TYPE_NAME_PARAMETER, "true");
         }
 
@@ -414,8 +415,7 @@ public class ElasticsearchConfigTest {
     private boolean isMappingUsed(IndexProvider idx){
         ElasticSearchIndex elasticSearchIndex = ((ElasticSearchIndex) idx);
 
-        return elasticSearchIndex.getVersion().getValue() < 7 ||
-            (ElasticMajorVersion.SEVEN.equals(elasticSearchIndex.getVersion()) && elasticSearchIndex.isUseMappingForES7());
+        return elasticSearchIndex.usesMappingTypes();
     }
 
     private Mapping preferredGeoShapeMapping() {

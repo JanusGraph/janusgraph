@@ -14,6 +14,7 @@
 
 package org.janusgraph.graphdb.types.vertices;
 
+import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Modifier;
@@ -31,18 +32,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 //whether or not the field is volatile. This asserts the property itself, as IndexTypeWrapperPublicationTest does for
 //the wrappers these caches hand out. A final field is accepted too, so that moving a cache behind an immutable
 //holder does not fail here. The caches which hold an immutable value - name, consistency, ttl and the
-//ImmutableListMultimap relation caches - are not listed, because a stale read of those only recomputes.
+//ImmutableListMultimap relation caches - would publish safely without it, but a read which a reset overlapped must not
+//keep what it loaded (SchemaVertexCacheResetTest), and that check only orders against the reset if every cache field is
+//volatile.
 public class SchemaVertexCachePublicationTest {
 
     @Test
-    public void relationTypeIndexCachesShouldBePublishedSafely() throws Exception {
+    public void relationTypeCachesShouldBePublishedSafely() throws Exception {
         assertSafelyPublished(RelationTypeVertex.class, "indexes");
         assertSafelyPublished(RelationTypeVertex.class, "indexesReferences");
+        assertSafelyPublished(RelationTypeVertex.class, "consistency");
+        assertSafelyPublished(RelationTypeVertex.class, "ttl");
     }
 
     @Test
-    public void schemaDefinitionCacheShouldBePublishedSafely() throws Exception {
+    public void vertexLabelCacheShouldBePublishedSafely() throws Exception {
+        assertSafelyPublished(VertexLabelVertex.class, "ttl");
+    }
+
+    @Test
+    public void schemaVertexCachesShouldBePublishedSafely() throws Exception {
         assertSafelyPublished(JanusGraphSchemaVertex.class, "definition");
+        assertSafelyPublished(JanusGraphSchemaVertex.class, "name");
+        assertSafelyPublished(JanusGraphSchemaVertex.class, "outRelations");
+        assertSafelyPublished(JanusGraphSchemaVertex.class, "inRelations");
     }
 
     private static void assertSafelyPublished(Class<?> declaringClass, String fieldName) throws NoSuchFieldException {

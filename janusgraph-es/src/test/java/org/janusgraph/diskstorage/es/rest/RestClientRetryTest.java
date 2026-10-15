@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
+import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
@@ -39,8 +40,10 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LongSummaryStatistics;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -126,6 +129,10 @@ public class RestClientRetryTest {
             //Verify that despite only calling bulkRequest once, we had 2 calls to the underlying rest client's
             //perform request (due to the retried failure)
             verify(restClientMock, times(2)).performRequest(requestCaptor.capture());
+            //The reattempt sends the failed item alone
+            final String reattempt = EntityUtils.toString(requestCaptor.getAllValues().get(1).getEntity());
+            Assertions.assertTrue(reattempt.contains("some_doc_id2"), reattempt);
+            Assertions.assertFalse(reattempt.contains("some_doc_id1") || reattempt.contains("some_doc_id3"), reattempt);
         }
     }
 
@@ -314,6 +321,28 @@ public class RestClientRetryTest {
             Assertions.assertSame(connectionReset, actualException);
         }
         verify(restClientMock, times(1)).performRequest(requestCaptor.capture());
+    }
+
+    //Each wait lies between half of its backoff and all of it, and the backoff grows tenfold up to the largest allowed
+    @Test
+    public void testRetryWaitIsDrawnFromTheUpperHalfOfTheBackoff() throws IOException {
+        //Just throw an exception when there's an attempt to look up the ES version during instantiation
+        when(restClientMock.performRequest(any())).thenThrow(new IOException());
+        try (RestElasticSearchClient restClientUnderTest = new RestElasticSearchClient(restClientMock, 0, false,
+            3, Collections.emptySet(), 100, 2_000, 100_000_000)) {
+            assertWaitsWithin(restClientUnderTest, 0, 50, 100);
+            assertWaitsWithin(restClientUnderTest, 1, 500, 1_000);
+            assertWaitsWithin(restClientUnderTest, 2, 1_000, 2_000);
+        }
+    }
+
+    private static void assertWaitsWithin(RestElasticSearchClient client, int retryCount, long least, long most) {
+        final LongSummaryStatistics waits = IntStream.range(0, 1_000)
+            .mapToLong(i -> client.retryWaitMs(retryCount)).summaryStatistics();
+        Assertions.assertTrue(waits.getMin() >= least && waits.getMax() <= most, waits.toString());
+        //Spread over the range: 1,000 uniform draws all miss its lowest or its highest quarter with a negligible chance
+        final long quarter = (most - least) / 4;
+        Assertions.assertTrue(waits.getMin() < least + quarter && waits.getMax() > most - quarter, waits.toString());
     }
 
     @Test

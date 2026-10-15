@@ -14,12 +14,10 @@
 
 package org.janusgraph.graphdb.util;
 
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
-import org.apache.tinkerpop.gremlin.util.function.MultiComparator;
 import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder.OrderEntry;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -43,7 +41,11 @@ public class MultiDistinctOrderedIterator<E extends Element> extends CloseableAb
     private final boolean singleIterator;
     private long count = 0;
 
-    public MultiDistinctOrderedIterator(final Integer lowLimit, final Integer highLimit, final List<Iterator<E>> iterators, final List<OrderEntry> orders) {
+    /**
+     * @param order the order in which each of the iterators returns its elements, which they are merged in
+     */
+    public MultiDistinctOrderedIterator(final Integer lowLimit, final Integer highLimit,
+                                        final List<Iterator<E>> iterators, final Comparator<? super E> order) {
         this.limit = highLimit;
         this.singleIterator = iterators.size() == 1;
         this.iterators = new LinkedHashMap<>(iterators.size());
@@ -53,9 +55,8 @@ public class MultiDistinctOrderedIterator<E extends Element> extends CloseableAb
             this.iterators.put(i, iterators.get(i));
             this.iteratorValues.add(null);
         }
-        final List<Comparator<E>> comp = new ArrayList<>();
-        orders.forEach(o -> comp.add(new ElementValueComparator(o.key, o.order)));
-        this.queue = new PriorityQueue<>(iterators.size(), new MultiComparator<>(comp));
+        this.queue = new PriorityQueue<>(iterators.size(),
+            Preconditions.checkNotNull(order, "The order which merges the iterators must not be null"));
         long i = 0;
         while (i < lowLimit && this.hasNext()) {
             this.next();

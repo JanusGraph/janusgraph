@@ -18,6 +18,8 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.graphdb.types.ParameterType;
 
+import java.util.Locale;
+
 /**
  * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
  * {@link JanusGraphManagement#addIndexKey(JanusGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}.
@@ -36,7 +38,7 @@ public enum Mapping {
     PREFIX_TREE,
     // BKD is the default ElasticSearch (geo-shape index strategy)[https://www.elastic.co/guide/en/elasticsearch/reference/8.1/geo-shape.html#geoshape-indexing-approach].
     // (More information about this strategy)[https://github.com/elastic/elasticsearch/issues/32039].
-    // PREFIX_TREE strategy was deprecated in ElasticSearch 7 and was removed in ElasticSearch 8. PREFIX_TREE is available in Solr 8 and Lucene 8.
+    // PREFIX_TREE strategy was deprecated in ElasticSearch 7 and was removed in ElasticSearch 8. PREFIX_TREE is available in Solr and Lucene.
     BKD;
 
     /**
@@ -55,7 +57,7 @@ public enum Mapping {
         else {
             Preconditions.checkArgument((value instanceof Mapping || value instanceof String),"Invalid mapping specified: %s",value);
             if (value instanceof String) {
-                value = Mapping.valueOf(value.toString().toUpperCase());
+                value = Mapping.valueOf(value.toString().toUpperCase(Locale.ROOT));
             }
             return (Mapping)value;
         }

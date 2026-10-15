@@ -39,6 +39,22 @@ public class JanusGraphSettingsTest {
     }
 
     @Test
+    public void testGremlinPoolVirtualThreadsDefaultValue() throws Exception {
+        JanusGraphSettings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-without-serializers.yaml");
+
+        assertFalse(settings.isGremlinPoolVirtualThreads());
+    }
+
+    @Test
+    public void testGremlinPoolVirtualThreadsOverwriteDefaultValue() throws Exception {
+        JanusGraphSettings settings = JanusGraphSettings.read("src/test/resources/janusgraph-server-with-virtual-threads.yaml");
+
+        assertTrue(settings.isGremlinPoolVirtualThreads());
+        assertEquals(1, settings.gremlinPool);
+        assertEquals(1, settings.maxWorkQueueSize);
+    }
+
+    @Test
     public void testLoadGremlinServerCorrectly() throws Exception {
         JanusGraphSettings janusGraphSettings = JanusGraphSettings.read("src/test/resources/janusgraph-server-with-grpc.yaml");
 

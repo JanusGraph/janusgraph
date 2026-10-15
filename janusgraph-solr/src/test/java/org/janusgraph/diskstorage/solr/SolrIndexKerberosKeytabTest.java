@@ -16,7 +16,7 @@ package org.janusgraph.diskstorage.solr;
 
 import com.google.common.base.Joiner;
 import org.apache.kerby.kerberos.kerb.KrbException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;

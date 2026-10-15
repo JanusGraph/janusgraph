@@ -60,6 +60,7 @@ import org.janusgraph.diskstorage.util.DefaultTransaction;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.And;
 import org.janusgraph.graphdb.query.condition.Condition;
@@ -83,20 +84,17 @@ import java.util.Date;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
 import static org.janusgraph.diskstorage.es.ElasticSearchConstants.ES_DOC_KEY;
@@ -108,6 +106,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
+import static org.janusgraph.util.StringUtils.lowerCaseCodePoints;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -185,7 +184,71 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<Integer> ES_SCROLL_KEEP_ALIVE =
             new ConfigOption<>(ELASTICSEARCH_NS, "scroll-keep-alive",
-            "How long (in seconds) elasticsearch should keep alive the scroll context.", ConfigOption.Type.GLOBAL_OFFLINE, 60);
+            "How long (in seconds) elasticsearch should keep alive the scroll context, or the point in time, of a result " +
+                "which is read in pages.", ConfigOption.Type.GLOBAL_OFFLINE, 60);
+
+    public static final ConfigOption<String> PAGING_MODE =
+            new ConfigOption<>(ELASTICSEARCH_NS, "paging-mode",
+            String.format("How a result larger than a page (`index.[X].max-result-set-size`) is read.<br>" +
+                "Supported modes:<br>" +
+                "- `%s` - Every result is read through a scroll.<br>" +
+                "- `%s` - Every result is read through a point in time and `search_after`. A point in time isn't " +
+                "counted against `search.max_open_scroll_context`, its pages don't count the total number of hits, " +
+                "and a page which is sent again after a failure comes back the same, where a scroll may skip it. But " +
+                "it reads the pages more slowly than a scroll unless they come in the order of the index, on an " +
+                "index of one shard and in pages of up to about 500 hits; the Elasticsearch page of the " +
+                "documentation has the measurements.<br>" +
+                "- `%s` - A result is read through a point in time where that is about as fast as a scroll or " +
+                "faster: the result of a graph query without a limit and without an order, whose pages come in the " +
+                "order of the index, on an index of at most `%s` shards and with pages of at most `%s` hits. A graph " +
+                "query is limited where its traversal limits it, where `query.smart-limit` is on, and where " +
+                "`query.hard-max-limit` is lowered. Every other result is read through a scroll.<br>" +
+                "A cluster which reports an Elasticsearch version older than 7.12 scrolls in every mode, as does one " +
+                "whose version isn't asked for (`major-version` 7) or can't be, and OpenSearch, whose point in time " +
+                "lacks the tiebreaker `search_after` needs.",
+                ElasticSearchPagingMode.SCROLL.getConfigName(), ElasticSearchPagingMode.POINT_IN_TIME.getConfigName(),
+                ElasticSearchPagingMode.ADAPTIVE_POINT_IN_TIME.getConfigName(), "adaptive-point-in-time-max-shards",
+                "adaptive-point-in-time-max-page-size"),
+            ConfigOption.Type.MASKABLE, ElasticSearchPagingMode.ADAPTIVE_POINT_IN_TIME.getConfigName(),
+            mode -> ElasticSearchPagingMode.fromConfigName(mode) != null);
+
+    public static final ConfigOption<Integer> ADAPTIVE_POINT_IN_TIME_MAX_SHARDS =
+            new ConfigOption<>(ELASTICSEARCH_NS, "adaptive-point-in-time-max-shards",
+            "The most shards an index may have, as the first request of a result reports them, for `paging-mode` " +
+                "`adaptive_point_in_time` to read the result through a point in time. 1 is the recommended value: " +
+                "on Elasticsearch 9.5.4, reading the pages of an index of two or three shards through a point in " +
+                "time took 4% to 37% longer than through a scroll, even in the order of the index. Raise it only " +
+                "where a point in time keeps up with a scroll on indexes of more shards.",
+            ConfigOption.Type.MASKABLE, 1, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Integer> ADAPTIVE_POINT_IN_TIME_MAX_PAGE_SIZE =
+            new ConfigOption<>(ELASTICSEARCH_NS, "adaptive-point-in-time-max-page-size",
+            "The largest page size (`index.[X].max-result-set-size`) with which `paging-mode` " +
+                "`adaptive_point_in_time` reads a result through a point in time. 500 is the recommended value: on " +
+                "Elasticsearch 9.5.4, a point in time read the pages of an index of one shard in the order of the " +
+                "index about as fast as a scroll or faster with pages of up to 500 hits, and more slowly with pages " +
+                "of 1,000. Lower it where a point in time falls behind a scroll with smaller pages, raise it where " +
+                "it keeps up with larger ones.",
+            ConfigOption.Type.MASKABLE, 500, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Integer> LIMITED_RESULT_MAX_PAGE_SIZE =
+            new ConfigOption<>(ELASTICSEARCH_NS, "limited-result-max-page-size",
+            "The largest page of an index query with a limit which is too large for a single request, one whose " +
+                "offset and limit together go beyond 10,000 hits. Such a result is read from its first hit on in as " +
+                "few pages as this allows, all of one size, which split the hits up to the end of its limit evenly, " +
+                "but never in pages smaller than `index.[X].max-result-set-size`, the page size of a query without " +
+                "a limit. Larger pages take fewer round trips and a larger response each. `scroll-keep-alive` must " +
+                "cover consuming one page: each page renews it, and a consumer which takes longer over a page than " +
+                "the keep-alive loses the scroll context or point in time. The next page then fails, or, where the " +
+                "index's shards sit on several nodes, comes back with the hits of only some shards, which ends the " +
+                "result early or leaves hits out without an error. A slower consumer can lower this option in its " +
+                "local configuration, as it is MASKABLE, or raise `scroll-keep-alive`, which is GLOBAL_OFFLINE. " +
+                "10,000 is the practical ceiling: Elasticsearch accepts at most `index.max_result_window` hits in a " +
+                "page of a scroll or of a point in time, 10,000 by default, which JanusGraph lifts only on the " +
+                "indexes it creates; on those, the time a consumer has for each hit bounds it. A value no larger " +
+                "than `max-result-set-size` reads such results in pages of `max-result-set-size`, as earlier " +
+                "versions did.",
+            ConfigOption.Type.MASKABLE, 250, ConfigOption.positiveInt());
 
     public static final ConfigNamespace ES_INGEST_PIPELINES =
             new ConfigNamespace(ELASTICSEARCH_NS, "ingest-pipeline", "Ingest pipeline applicable to a store of an index.");
@@ -276,22 +339,40 @@ public class ElasticSearchIndex implements IndexProvider {
             "Whether JanusGraph should setup max_open_scroll_context to maximum value for the cluster or not.",
             ConfigOption.Type.MASKABLE, true);
 
+    public static final ConfigOption<Integer> MAJOR_VERSION =
+        new ConfigOption<>(ELASTICSEARCH_NS, "major-version",
+            "Major version of the Elasticsearch API which the index backend provides: 6, 7, 8 or 9. JanusGraph adapts its " +
+                "requests to it. If it isn't set, JanusGraph asks the cluster for its version. OpenSearch provides the " +
+                "Elasticsearch 7 API, which JanusGraph uses when the cluster reports an OpenSearch version. If this option " +
+                "is set for OpenSearch, which has no mapping types since version 2, keep use-mapping-for-es7 disabled.",
+            ConfigOption.Type.MASKABLE, Integer.class, ElasticMajorVersion.supportedNumbers());
+
     public static final ConfigOption<Boolean> USE_MAPPING_FOR_ES7 =
         new ConfigOption<>(ELASTICSEARCH_NS, "use-mapping-for-es7",
             "Mapping types are deprecated in ElasticSearch 7 and JanusGraph will not use mapping types by default " +
                 "for ElasticSearch 7 but if you want to preserve mapping types, you can setup this parameter to true. " +
                 "If you are updating ElasticSearch from 6 to 7 and you don't want to reindex your indexes, you may setup " +
-                "this parameter to true but we do recommend to reindex your indexes and don't use this parameter.",
+                "this parameter to true but we do recommend to reindex your indexes and don't use this parameter. " +
+                "It is ignored when the cluster reports OpenSearch, which has no mapping types since version 2.",
             ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigOption<Long> CLIENT_KEEP_ALIVE =
         new ConfigOption<>(ELASTICSEARCH_NS, "client-keep-alive",
-            "Set a keep-alive timeout (in milliseconds)",
+            "How long (in milliseconds) the Elasticsearch client keeps reusing a connection after a response. " +
+                "Without it the client keeps connections open as long as Elasticsearch does. A load balancer, NAT " +
+                "gateway or firewall between JanusGraph and Elasticsearch may drop a connection which stays idle " +
+                "longer than its own idle timeout, and the next request on it fails. Set this below that timeout.",
             ConfigOption.Type.GLOBAL_OFFLINE, Long.class);
 
     public static final ConfigOption<Integer> RETRY_ON_CONFLICT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry_on_conflict",
-            "Specify how many times should the operation be retried when a conflict occurs.", ConfigOption.Type.MASKABLE, 0);
+            "How many times Elasticsearch reattempts an update of a document which another request changed after " +
+                "the update read it. JanusGraph updates the document of an element which a transaction changes, " +
+                "and transactions which change the same element at the same time conflict this way. Elasticsearch " +
+                "reattempts the update against the latest version of the document. A conflict which survives these " +
+                "attempts fails the update with status 409, which is permanent unless `retry-error-codes` lists it. " +
+                "Set to 0 to leave conflicts unattempted.", ConfigOption.Type.MASKABLE, 3,
+            ConfigOption.nonnegativeInt());
 
     public static final ConfigOption<Boolean> ENABLE_INDEX_STORE_NAMES_CACHE =
         new ConfigOption<>(ELASTICSEARCH_NS, "enable_index_names_cache",
@@ -309,6 +390,46 @@ public class ElasticSearchIndex implements IndexProvider {
             "Sets the maximum socket timeout (in milliseconds).", ConfigOption.Type.MASKABLE,
             Integer.class, RestClientBuilder.DEFAULT_SOCKET_TIMEOUT_MILLIS);
 
+    public static final ConfigOption<Integer> MAX_CONNECTIONS_PER_HOST =
+        new ConfigOption<>(ELASTICSEARCH_NS, "max-connections-per-host",
+            "The most connections the Elasticsearch client of this index backend opens to each Elasticsearch host. " +
+                "A request waits until one of them is free, so this caps the requests which the index backend has " +
+                "in flight at a host at once, its queries and the bulk requests of its commits together. Without " +
+                "this option `max-connections` is divided evenly among the hosts, but each gets at least 10, the " +
+                "limit of the Elasticsearch client on its own. So a single host, such as a load balancer or the " +
+                "endpoint of a hosted cluster, can take all 30 connections by default, while three hosts get 10 " +
+                "each, which keeps a host which stops answering from holding every connection. A JanusGraph Server " +
+                "which runs more Gremlin threads than a host can take may need more.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Integer> MAX_CONNECTIONS =
+        new ConfigOption<>(ELASTICSEARCH_NS, "max-connections",
+            "The most connections the Elasticsearch client of this index backend opens to all Elasticsearch hosts " +
+                "together. A request waits until one of them is free. It caps `max-connections-per-host`, whose " +
+                "default it also gives.", ConfigOption.Type.MASKABLE, Integer.class, 30, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Integer> IO_THREADS =
+        new ConfigOption<>(ELASTICSEARCH_NS, "io-threads",
+            "The number of I/O threads with which the Elasticsearch client of this index backend sends requests " +
+                "and receives responses. They don't wait for Elasticsearch, so a few are enough for many " +
+                "connections. Every index backend of every graph has a client of its own, and without this option " +
+                "each client starts as many I/O threads as the JVM has processors. With `compression` on, a thread " +
+                "compresses each request it sends, and the other requests of the thread wait meanwhile.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Boolean> COMPRESSION =
+        new ConfigOption<>(ELASTICSEARCH_NS, "compression",
+            "Whether the Elasticsearch client compresses the bodies of its requests with gzip, bulk requests above " +
+                "all, and asks Elasticsearch to compress its responses, which saves network traffic at the cost of " +
+                "CPU on both sides. Elasticsearch compresses responses only if its `http.compression` setting " +
+                "allows it, which it does by default on a cluster without TLS. The client compresses a request on " +
+                "one of its I/O threads, whose other requests wait meanwhile, so a large bulk request can delay " +
+                "queries. More `io-threads` make it less likely that a query shares that thread, and a smaller " +
+                "`bulk-chunk-size-limit-bytes` shortens the wait. A compressed request is sent in chunks without a " +
+                "Content-Length header, which some request signers, such as interceptors which sign requests with " +
+                "AWS Signature Version 4, may not handle.",
+            ConfigOption.Type.MASKABLE, false);
+
     public static final ConfigOption<Integer> RETRY_LIMIT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry-limit",
             "Number of times the Elasticsearch client reattempts a request which failed transiently before giving " +
@@ -321,12 +442,16 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<Long> RETRY_INITIAL_WAIT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry-initial-wait",
-            "Sets the initial retry wait time (in milliseconds) before exponential backoff.",
+            "The backoff (in milliseconds) before the first of the `retry-limit` reattempts of the Elasticsearch " +
+                "client. The backoff before each further reattempt is ten times the one before, up to " +
+                "`retry-max-wait`. The client waits a random time between half of the backoff and all of it, so " +
+                "that requests which failed together don't all come back at the same moment.",
             ConfigOption.Type.LOCAL, Long.class, 1L);
 
     public static final ConfigOption<Long> RETRY_MAX_WAIT =
         new ConfigOption<>(ELASTICSEARCH_NS, "retry-max-wait",
-            "Sets the max retry wait time (in milliseconds).", ConfigOption.Type.LOCAL,
+            "The largest backoff (in milliseconds) before a reattempt of the Elasticsearch client. See " +
+                "`retry-initial-wait`.", ConfigOption.Type.LOCAL,
             Long.class, 1000L);
 
     public static final ConfigOption<String[]> RETRY_ERROR_CODES =
@@ -391,6 +516,36 @@ public class ElasticSearchIndex implements IndexProvider {
             "    }",
             "}");
 
+    //Every change of one document in one script - its removals, its collection additions and its single valued
+    //fields - for the update which carries the element's complete document as its upsert: Elasticsearch writes the
+    //upsert of an update whose document is missing and skips its script, so the outcome the snapshot already holds is
+    //not applied a second time. Removing one occurrence of a LIST value, or adding one, is what a second application
+    //would get wrong. A single valued field is assigned as a whole, an object value such as a geo shape included
+    private static final String PARAMETERIZED_MUTATION_SCRIPT = parameterizedScriptPrepare("",
+            "for (field in params.deletions) {",
+            "    if (field.cardinality == 'SINGLE') {",
+            "        ctx._source.remove(field.name);",
+            "    } else if (ctx._source.containsKey(field.name)) {",
+            "        def fieldIndex = ctx._source[field.name].indexOf(field.value);",
+            "        if (fieldIndex >= 0 && fieldIndex < ctx._source[field.name].size()) {",
+            "            ctx._source[field.name].remove(fieldIndex);",
+            "        }",
+            "    }",
+            "}",
+            "for (field in params.additions) {",
+            "    if (ctx._source[field.name] == null) {",
+            "        ctx._source[field.name] = [];",
+            "    }",
+            "    if (field.cardinality != 'SET' || ctx._source[field.name].indexOf(field.value) == -1) {",
+            "        ctx._source[field.name].add(field.value);",
+            "    }",
+            "}",
+            "ctx._source.putAll(params.doc);");
+
+    private static final String MUTATION_SCRIPT_DELETIONS_KEY = "deletions";
+    private static final String MUTATION_SCRIPT_ADDITIONS_KEY = "additions";
+    private static final String MUTATION_SCRIPT_DOC_KEY = "doc";
+
     private static final String PARAMETERIZED_ADDITION_SCRIPT = parameterizedScriptPrepare("",
             "for (field in params.fields) {",
             "    if (ctx._source[field.name] == null) {",
@@ -411,18 +566,13 @@ public class ElasticSearchIndex implements IndexProvider {
     private static final String MAX_OPEN_SCROLL_CONTEXT_PARAMETER = "search.max_open_scroll_context";
     private static final Map<String, Object> MAX_RESULT_WINDOW = ImmutableMap.of("index.max_result_window", Integer.MAX_VALUE);
 
-    private static final Parameter[] NULL_PARAMETERS = null;
-
-    private static final String TRACK_TOTAL_HITS_PARAMETER = "track_total_hits";
-    private static final Parameter[] TRACK_TOTAL_HITS_DISABLED_PARAMETERS = new Parameter[]{new Parameter<>(TRACK_TOTAL_HITS_PARAMETER, false)};
-    private static final Map<String, Object> TRACK_TOTAL_HITS_DISABLED_REQUEST_BODY = ImmutableMap.of(TRACK_TOTAL_HITS_PARAMETER, false);
-
     private final Function<String, String> generateIndexStoreNameFunction = this::generateIndexStoreName;
     private final Map<String, String> indexStoreNamesCache = new ConcurrentHashMap<>();
     private final boolean indexStoreNameCacheEnabled;
 
     private final AbstractESCompat compat;
     private final ElasticSearchClient client;
+    private final ElasticSearchSearcher searcher;
     private final String indexName;
     private final int batchSize;
     private final boolean useExternalMappings;
@@ -431,9 +581,9 @@ public class ElasticSearchIndex implements IndexProvider {
     private final long createSleep;
     private final boolean useAllField;
     private final Map<String, Object> ingestPipelines;
-    private final boolean useMappingForES7;
     private final String parameterizedAdditionScriptId;
     private final String parameterizedDeletionScriptId;
+    private final String parameterizedMutationScriptId;
     private final boolean supportsGeoShapePrefixTree;
     private final CircleProcessor bdbCircleProcessor;
     private final Set<Integer> retryErrorCodes;
@@ -443,12 +593,12 @@ public class ElasticSearchIndex implements IndexProvider {
         indexName = determineIndexName(config);
         parameterizedAdditionScriptId = generateScriptId("add");
         parameterizedDeletionScriptId = generateScriptId("del");
+        parameterizedMutationScriptId = generateScriptId("mut");
         useAllField = config.get(USE_ALL_FIELD);
         useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
         allowMappingUpdate = config.get(ALLOW_MAPPING_UPDATE);
         createSleep = config.get(CREATE_SLEEP);
         ingestPipelines = config.getSubset(ES_INGEST_PIPELINES);
-        useMappingForES7 = config.get(USE_MAPPING_FOR_ES7);
         indexStoreNameCacheEnabled = config.get(ENABLE_INDEX_STORE_NAMES_CACHE);
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query nb result by query to {}", batchSize);
@@ -462,6 +612,14 @@ public class ElasticSearchIndex implements IndexProvider {
         checkClusterHealth(config.get(HEALTH_REQUEST_TIMEOUT));
 
         compat = ESCompatUtils.acquireCompatForVersion(client.getMajorVersion());
+        //The option's verification rejects any other value as the configuration is read; this names it all the same
+        final String pagingModeName = config.get(PAGING_MODE);
+        final ElasticSearchPagingMode pagingMode = ElasticSearchPagingMode.fromConfigName(pagingModeName);
+        Preconditions.checkArgument(pagingMode != null, "Unknown %s: %s", PAGING_MODE.toStringWithoutRoot(),
+            pagingModeName);
+        searcher = new ElasticSearchSearcher(client, compat, batchSize, config.get(LIMITED_RESULT_MAX_PAGE_SIZE),
+            pagingMode, config.get(ADAPTIVE_POINT_IN_TIME_MAX_SHARDS),
+            config.get(ADAPTIVE_POINT_IN_TIME_MAX_PAGE_SIZE));
 
         indexSetting = ElasticSearchSetup.getSettingsFromJanusGraphConf(config);
 
@@ -487,6 +645,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private void setupStoredScripts() throws PermanentBackendException {
         setupStoredScriptIfNeeded(parameterizedAdditionScriptId, PARAMETERIZED_ADDITION_SCRIPT);
         setupStoredScriptIfNeeded(parameterizedDeletionScriptId, PARAMETERIZED_DELETION_SCRIPT);
+        setupStoredScriptIfNeeded(parameterizedMutationScriptId, PARAMETERIZED_MUTATION_SCRIPT);
     }
 
     private void setupStoredScriptIfNeeded(String storedScriptId, String source) throws PermanentBackendException {
@@ -665,6 +824,50 @@ public class ElasticSearchIndex implements IndexProvider {
         return null;
     }
 
+    //With the element's complete document in hand, the document is updated by exactly one update, which carries the
+    //complete document as its upsert, so a document which turns out to be missing is recreated whole in the same round
+    //trip - and nothing is applied on top of it: Elasticsearch writes the upsert of an update whose document is
+    //missing and skips that update's script. So every change of the document travels in one script, which either
+    //applies to the existing document or is skipped as a whole; sent separately, a later part would apply to a snapshot
+    //which already holds its outcome, and removing or adding one occurrence of a LIST value is not idempotent. Being
+    //one item, the update is also applied or rejected as a whole: a bulk request split into chunks cannot separate the
+    //changes of a document, and a reattempt of a failed document never replays a part of them which had applied.
+    //An update the complete document would make too large to send goes without it, as the client decides
+    private void addUpdatesCarryingTheCompleteDocument(List<ElasticSearchMutation> requests, String indexStoreName,
+                                                       String storeName, String documentId, IndexMutation mutation,
+                                                       KeyInformation.IndexRetriever information,
+                                                       Map<String, Object> completeDocument) throws BackendException {
+        final KeyInformation.StoreRetriever storeRetriever = information.get(storeName);
+        final List<Map<String, Object>> deletions = mutation.hasDeletions()
+            ? getParameters(storeRetriever, mutation.getDeletions(), true) : Collections.emptyList();
+        final List<Map<String, Object>> collectionAdditions = mutation.hasAdditions()
+            ? getParameters(storeRetriever, mutation.getAdditions(), false, Cardinality.SINGLE) : Collections.emptyList();
+        final Map<String, Object> singleValuedAdditions = mutation.hasAdditions()
+            ? getAdditionDoc(information, storeName, mutation) : Collections.emptyMap();
+        if (deletions.isEmpty() && collectionAdditions.isEmpty() && singleValuedAdditions.isEmpty()) {
+            return;
+        }
+        final ImmutableMap.Builder<String, Object> script = compat.prepareStoredScript(parameterizedMutationScriptId,
+            ImmutableMap.of(MUTATION_SCRIPT_DELETIONS_KEY, deletions, MUTATION_SCRIPT_ADDITIONS_KEY, collectionAdditions,
+                MUTATION_SCRIPT_DOC_KEY, singleValuedAdditions));
+        requests.add(ElasticSearchMutation.createUpdateRequestWithCompleteDocument(indexStoreName, storeName,
+            documentId, script, completeDocument, collectionAdditions.isEmpty() && singleValuedAdditions.isEmpty()));
+        log.trace("Mutation script {} with deletions {}, collection additions {} and single valued additions {}",
+            PARAMETERIZED_MUTATION_SCRIPT, deletions, collectionAdditions, singleValuedAdditions);
+    }
+
+    //The complete indexed content of the element as an Elasticsearch document, when the transaction supplied it for
+    //an update of an existing document and the element has anything indexed; null otherwise, which includes a complete
+    //document supplied empty: there is nothing to recreate a missing document from, so the mutation goes as without one
+    private Map<String, Object> completeDocument(IndexMutation mutation, KeyInformation.StoreRetriever storeRetriever)
+            throws BackendException {
+        if (mutation.isNew() || mutation.isDeleted() || !mutation.hasCompleteDocument()) {
+            return null;
+        }
+        final List<IndexEntry> entries = mutation.getCompleteDocument();
+        return entries.isEmpty() ? null : getNewDocument(entries, storeRetriever);
+    }
+
     private BackendException convert(Exception esException) {
         return convert(esException, retryErrorCodes, retryTransportFailures);
     }
@@ -773,7 +976,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private String generateIndexStoreName(String store){
-        return indexName + INDEX_NAME_SEPARATOR + store.toLowerCase();
+        return indexName + INDEX_NAME_SEPARATOR + store.toLowerCase(Locale.ROOT);
     }
 
     private String getIndexStoreName(String store) {
@@ -1071,13 +1274,20 @@ public class ElasticSearchIndex implements IndexProvider {
                     Preconditions.checkArgument(!(mutation.isNew() && mutation.isDeleted()));
                     Preconditions.checkArgument(!mutation.isNew() || !mutation.hasDeletions());
                     Preconditions.checkArgument(!mutation.isDeleted() || !mutation.hasAdditions());
-                    //Deletions first
-                    if (mutation.hasDeletions()) {
-                        if (mutation.isDeleted()) {
-                            log.trace("Deleting entire document {}", documentId);
-                            requestByStore.add(ElasticSearchMutation.createDeleteRequest(indexStoreName, storeName,
-                                    documentId));
-                        } else {
+                    //The complete indexed content of the element, when the transaction supplied it, is the upsert of
+                    //every update sent for the document: a document which turns out to be missing is recreated whole
+                    //in the same round trip, rather than from the touched fields alone or not at all
+                    final Map<String, Object> completeDocument = completeDocument(mutation, information.get(storeName));
+                    if (mutation.hasDeletions() && mutation.isDeleted()) {
+                        log.trace("Deleting entire document {}", documentId);
+                        requestByStore.add(ElasticSearchMutation.createDeleteRequest(indexStoreName, storeName,
+                                documentId));
+                    } else if (completeDocument != null) {
+                        addUpdatesCarryingTheCompleteDocument(requestByStore, indexStoreName, storeName, documentId,
+                            mutation, information, completeDocument);
+                    } else {
+                        //Deletions first
+                        if (mutation.hasDeletions()) {
                             List<Map<String, Object>> params = getParameters(information.get(storeName),
                                 mutation.getDeletions(), true);
                             Map doc = compat.prepareStoredScript(parameterizedDeletionScriptId, params).build();
@@ -1085,37 +1295,37 @@ public class ElasticSearchIndex implements IndexProvider {
                             requestByStore.add(ElasticSearchMutation.createFieldDeletionRequest(indexStoreName,
                                 storeName, documentId, doc));
                         }
-                    }
-                    if (mutation.hasAdditions()) {
-                        if (mutation.isNew()) { //Index
-                            log.trace("Adding entire document {}", documentId);
-                            final Map<String, Object> source = getNewDocument(mutation.getAdditions(),
-                                    information.get(storeName));
-                            requestByStore.add(ElasticSearchMutation.createIndexRequest(indexStoreName, storeName,
-                                    documentId, source));
-                        } else {
-                            final Map upsert;
-                            if (!mutation.hasDeletions()) {
-                                upsert = getNewDocument(mutation.getAdditions(), information.get(storeName));
+                        if (mutation.hasAdditions()) {
+                            if (mutation.isNew()) { //Index
+                                log.trace("Adding entire document {}", documentId);
+                                final Map<String, Object> source = getNewDocument(mutation.getAdditions(),
+                                        information.get(storeName));
+                                requestByStore.add(ElasticSearchMutation.createIndexRequest(indexStoreName, storeName,
+                                        documentId, source));
                             } else {
-                                upsert = null;
-                            }
+                                final Map upsert;
+                                if (!mutation.hasDeletions()) {
+                                    upsert = getNewDocument(mutation.getAdditions(), information.get(storeName));
+                                } else {
+                                    upsert = null;
+                                }
 
-                            List<Map<String, Object>> params = getParameters(information.get(storeName),
-                                    mutation.getAdditions(), false, Cardinality.SINGLE);
-                            if (!params.isEmpty()) {
-                                ImmutableMap.Builder builder = compat.prepareStoredScript(parameterizedAdditionScriptId, params);
-                                requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
-                                        documentId, builder, upsert));
-                                log.trace("Adding script {} with params {}", PARAMETERIZED_ADDITION_SCRIPT, params);
-                            }
+                                List<Map<String, Object>> params = getParameters(information.get(storeName),
+                                        mutation.getAdditions(), false, Cardinality.SINGLE);
+                                if (!params.isEmpty()) {
+                                    ImmutableMap.Builder builder = compat.prepareStoredScript(parameterizedAdditionScriptId, params);
+                                    requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
+                                            documentId, builder, upsert));
+                                    log.trace("Adding script {} with params {}", PARAMETERIZED_ADDITION_SCRIPT, params);
+                                }
 
-                            final Map<String, Object> doc = getAdditionDoc(information, storeName, mutation);
-                            if (!doc.isEmpty()) {
-                                final ImmutableMap.Builder builder = ImmutableMap.builder().put(ES_DOC_KEY, doc);
-                                requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
-                                        documentId, builder, upsert));
-                                log.trace("Adding update {}", doc);
+                                final Map<String, Object> doc = getAdditionDoc(information, storeName, mutation);
+                                if (!doc.isEmpty()) {
+                                    final ImmutableMap.Builder builder = ImmutableMap.builder().put(ES_DOC_KEY, doc);
+                                    requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
+                                            documentId, builder, upsert));
+                                    log.trace("Adding update {}", doc);
+                                }
                             }
                         }
                     }
@@ -1271,7 +1481,9 @@ public class ElasticSearchIndex implements IndexProvider {
                     throw new IllegalArgumentException("Text mapped string values only support CONTAINS and Compare queries and not: " + predicate);
                 if (mapping==Mapping.STRING && Text.HAS_CONTAINS.contains(predicate))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + predicate);
-                if (mapping==Mapping.TEXTSTRING && !(Text.HAS_CONTAINS.contains(predicate) || (predicate instanceof Cmp && predicate != Cmp.EQUAL))) {
+                //A TEXTSTRING key holds the string whole in its dual field, which it is sorted by, and its words in its
+                //text field: the predicates on words, as CONTAINS is, read the text field, and the others the string
+                if (mapping==Mapping.TEXTSTRING && !Text.HAS_CONTAINS.contains(predicate)) {
                     fieldName = getDualMappingName(key);
                 } else {
                     fieldName = key;
@@ -1289,20 +1501,20 @@ public class ElasticSearchIndex implements IndexProvider {
                         compat.boolMustNot(compat.matchPhrase(fieldName, value))));
                 } else if (predicate == Text.CONTAINS_PREFIX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
-                        value = ((String) value).toLowerCase();
+                        value = lowerCaseCodePoints((String) value);
                     return compat.prefix(fieldName, value);
                 } else if (predicate == Text.NOT_CONTAINS_PREFIX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
-                        value = ((String) value).toLowerCase();
+                        value = lowerCaseCodePoints((String) value);
                     return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
                         compat.boolMustNot(compat.prefix(fieldName, value))));
                 } else if (predicate == Text.CONTAINS_REGEX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
-                        value = ((String) value).toLowerCase();
+                        value = lowerCaseCodePoints((String) value);
                     return compat.regexp(fieldName, value);
                 } else if (predicate == Text.NOT_CONTAINS_REGEX) {
                     if (!ParameterType.TEXT_ANALYZER.hasParameter(information.get(key).getParameters()))
-                        value = ((String) value).toLowerCase();
+                        value = lowerCaseCodePoints((String) value);
                     return compat.boolMust(ImmutableList.of(compat.exists(fieldName),
                         compat.boolMustNot(compat.regexp(fieldName, value))));
                 } else if (predicate == Text.PREFIX) {
@@ -1460,35 +1672,16 @@ public class ElasticSearchIndex implements IndexProvider {
         if (!query.getOrder().isEmpty()) {
             addOrderToQuery(informations, sr, query.getOrder(), query.getStore());
         }
-        sr.setFrom(0);
-        if (query.hasLimit()) {
-            sr.setSize(Math.min(query.getLimit(), batchSize));
-        } else {
-            sr.setSize(batchSize);
-        }
-
         sr.setDisableSourceRetrieval(true);
 
-        ElasticSearchResponse response;
         try {
-            final String indexStoreName = getIndexStoreName(query.getStore());
-            final boolean useScroll = sr.getSize() >= batchSize;
-            response = client.search(indexStoreName,
-                compat.createRequestBody(sr, useScroll? NULL_PARAMETERS : TRACK_TOTAL_HITS_DISABLED_PARAMETERS),
-                useScroll);
-            log.debug("First Executed query [{}] in {} ms", query.getCondition(), response.getTook());
-            final Iterator<RawQuery.Result<String>> resultIterator = getResultsIterator(useScroll, response, sr.getSize());
-            final Stream<RawQuery.Result<String>> toReturn
-                    = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED), false);
-            return (query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn).map(RawQuery.Result::getResult);
-        } catch (final IOException | UncheckedIOException e) {
+            log.debug("Executing query [{}]", query.getCondition());
+            return searcher.search(getIndexStoreName(query.getStore()), sr, null, 0, query.getLimit())
+                .map(RawQuery.Result::getResult);
+        } catch (final IOException e) {
             //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
             throw convert(e);
         }
-    }
-
-    private Iterator<RawQuery.Result<String>> getResultsIterator(boolean useScroll, ElasticSearchResponse response, int windowSize){
-        return (useScroll)? new ElasticSearchScroll(client, response, windowSize) : response.getResults().iterator();
     }
 
     private String convertToEsDataType(Class<?> dataType, Mapping mapping) {
@@ -1523,40 +1716,15 @@ public class ElasticSearchIndex implements IndexProvider {
         return null;
     }
 
-    private ElasticSearchResponse runCommonQuery(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx, int size,
-                                                 boolean useScroll) throws BackendException{
-        final ElasticSearchRequest sr = new ElasticSearchRequest();
-        sr.setQuery(compat.queryString(query.getQuery()));
-        if (!query.getOrders().isEmpty()) {
-            addOrderToQuery(informations, sr, query.getOrders(), query.getStore());
-        }
-        sr.setFrom(0);
-        sr.setSize(size);
-        sr.setDisableSourceRetrieval(true);
-        try {
-            Map<String, Object> requestBody = compat.createRequestBody(sr, query.getParameters());
-            if(!useScroll) {
-                if (requestBody == null) {
-                    requestBody = TRACK_TOTAL_HITS_DISABLED_REQUEST_BODY;
-                } else {
-                    requestBody.put(TRACK_TOTAL_HITS_PARAMETER, false);
-                }
-            }
-            return client.search(
-                getIndexStoreName(query.getStore()),
-                requestBody,
-                useScroll);
-        } catch (final IOException | UncheckedIOException e) {
-            //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
-            throw convert(e);
-        }
-    }
-
     private long runCountQuery(RawQuery query) throws BackendException{
+        if (countsNothing(query)) {
+            return 0;
+        }
         try {
             long countTotal = client.countTotal(
                 getIndexStoreName(query.getStore()),
-                compat.createRequestBody(compat.queryString(query.getQuery()), query.getParameters()));
+                compat.createRequestBody(compat.queryString(query.getQuery()), query.getParameters()),
+                countBound(query.getOffset(), query));
             return QueryUtil.applyOffsetWithQueryLimitAfterCount(countTotal, query.getOffset(), query);
         } catch (final IOException | UncheckedIOException e) {
             //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
@@ -1572,29 +1740,29 @@ public class ElasticSearchIndex implements IndexProvider {
             final Mapping mapping = Mapping.getMapping(information);
             final Class<?> datatype = orderEntry.getDatatype();
             final String key = hasDualStringMapping(information) ? getDualMappingName(orderEntry.getKey()) : orderEntry.getKey();
-            sr.addSort(key, order.toLowerCase(), convertToEsDataType(datatype, mapping));
+            sr.addSort(key, order.toLowerCase(Locale.ROOT), convertToEsDataType(datatype, mapping));
         }
     }
 
     @Override
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information,
                                                  BaseTransaction tx) throws BackendException {
-        final int size = query.hasLimit() ? Math.min(query.getLimit() + query.getOffset(), batchSize) : batchSize;
-        final boolean useScroll = size >= batchSize;
-        final ElasticSearchResponse response = runCommonQuery(query, information, tx, size, useScroll);
-        log.debug("First Executed query [{}] in {} ms", query.getQuery(), response.getTook());
-        final Iterator<RawQuery.Result<String>> resultIterator;
+        final ElasticSearchRequest sr = new ElasticSearchRequest();
+        sr.setQuery(compat.queryString(query.getQuery()));
+        if (!query.getOrders().isEmpty()) {
+            addOrderToQuery(information, sr, query.getOrders(), query.getStore());
+        }
+        //The hits of a raw query carry their scores, and come in their order
+        sr.setRelevanceOrdered(true);
+        sr.setDisableSourceRetrieval(true);
         try {
-            //A scroll whose first page is also its last is closed right here, which is one more request that can
-            //fail the way the search itself can, so it is classified the same way
-            resultIterator = getResultsIterator(useScroll, response, size);
-        } catch (final UncheckedIOException e) {
+            log.debug("Executing query [{}]", query.getQuery());
+            return searcher.search(getIndexStoreName(query.getStore()), sr, query.getParameters(), query.getOffset(),
+                query.getLimit());
+        } catch (final IOException e) {
+            //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
             throw convert(e);
         }
-        final Stream<RawQuery.Result<String>> toReturn
-                = StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED),
-                false).skip(query.getOffset());
-        return query.hasLimit() ? toReturn.limit(query.getLimit()) : toReturn;
     }
 
     @Override
@@ -1606,7 +1774,7 @@ public class ElasticSearchIndex implements IndexProvider {
             final String indexName = getIndexStoreName(query.getStore());
             final Map<String,Object> requestData = compat.createRequestBody(sr, null);
             switch (aggregation.getType()) {
-                case COUNT: return QueryUtil.applyQueryLimitAfterCount(client.countTotal(indexName, requestData), query);
+                case COUNT: return countsNothing(query) ? 0L : QueryUtil.applyQueryLimitAfterCount(client.countTotal(indexName, requestData, countBound(0, query)), query);
                 case MIN: return client.min(indexName, requestData, aggregation.getFieldName(), aggregation.getDataType());
                 case MAX: return client.max(indexName, requestData, aggregation.getFieldName(), aggregation.getDataType());
                 case AVG: return client.avg(indexName, requestData, aggregation.getFieldName());
@@ -1617,6 +1785,29 @@ public class ElasticSearchIndex implements IndexProvider {
             //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
             throw convert(e);
         }
+    }
+
+    /**
+     * Whether a count of the given query is 0 before any match is counted: with a limit of 0, which the count would be
+     * clamped to, there is nothing to ask Elasticsearch.
+     */
+    @VisibleForTesting
+    static boolean countsNothing(Query query) {
+        return query.hasLimit() && query.getLimit() <= 0;
+    }
+
+    /**
+     * The most matches a count of the given query has to find: its offset and limit, which the count is clamped to
+     * afterwards, or 0, no bound, without a limit, and also where the two don't fit an int, as a bound no count
+     * reaches would only keep Elasticsearch from answering a count from its statistics.
+     */
+    @VisibleForTesting
+    static int countBound(int offset, Query query) {
+        if (!query.hasLimit()) {
+            return 0;
+        }
+        final long bound = (long) offset + query.getLimit();
+        return bound < Integer.MAX_VALUE ? (int) bound : 0;
     }
 
     @Override
@@ -1754,8 +1945,8 @@ public class ElasticSearchIndex implements IndexProvider {
         return client.getMajorVersion();
     }
 
-    boolean isUseMappingForES7(){
-        return useMappingForES7;
+    boolean usesMappingTypes() {
+        return client.usesMappingTypes();
     }
 
     private static String parameterizedScriptPrepare(String ... lines){

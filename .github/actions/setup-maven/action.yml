@@ -1,0 +1,34 @@
+# Copyright 2026 JanusGraph Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Maven 3.9 for the jobs which publish to Maven Central. Before it bundles the staged artifacts,
+# central-publishing-maven-plugin 0.11.0 deletes the maven-metadata-central-staging.xml which Maven 3.9 stages beside
+# the versions of each artifact, but not the maven-metadata-local.xml which Maven 3.10 stages there instead, and Maven
+# Central refuses a bundle holding it: "Bundle has content that does NOT have a .pom file"
+# (https://github.com/apache/maven/issues/13388). The GitHub runner images have had Maven 3.10.0 since October 2026.
+name: Set up Maven 3.9
+description: Puts Maven 3.9.16 first on the path of the job's later steps
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        MAVEN_VERSION=3.9.16
+        MAVEN_SHA512=831a8591fe20c8243b1dbe7d71e3244f31d1665b0804b2e825e38cbbe5ce0cafb8338851f90780735568773e0a6cd07bbec107cda0b896b008b861075358b6f6
+        curl -fsSL --retry 3 -o "$RUNNER_TEMP/maven.tar.gz" \
+          "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${MAVEN_VERSION}/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+        echo "${MAVEN_SHA512}  $RUNNER_TEMP/maven.tar.gz" | sha512sum -c -
+        tar -xzf "$RUNNER_TEMP/maven.tar.gz" -C "$RUNNER_TEMP"
+        echo "$RUNNER_TEMP/apache-maven-${MAVEN_VERSION}/bin" >> "$GITHUB_PATH"
+        "$RUNNER_TEMP/apache-maven-${MAVEN_VERSION}/bin/mvn" --version

@@ -216,7 +216,7 @@ public final class MixedIndexUpdateApplier {
 
     /**
      * Batch-loads the changed vertices (one multiget for existence, one sliced multiget for their properties, both
-     * populating the transaction's vertex-centric cache so the per-key reads in
+     * populating the transaction's vertex-centric cache so the reads of
      * {@link IndexSerializer#reindexElement} become cache hits) instead of one storage round-trip per vertex.
      * Requested ids that do not resolve (deleted vertices) are cached as {@code null} so the per-index loop routes
      * them straight to document removal without a redundant per-id existence read. EDGE/PROPERTY changes are

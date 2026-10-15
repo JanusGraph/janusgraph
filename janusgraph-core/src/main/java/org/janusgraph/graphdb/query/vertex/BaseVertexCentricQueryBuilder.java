@@ -60,6 +60,9 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
      * The relation types (labels or keys) to query for. None by default which means query for any relation type.
      */
     protected String[] types = NO_TYPES;
+    //The type of a query of one type, once resolved, and the name it was resolved for
+    private String singleTypeName;
+    private RelationType singleType;
     /**
      * The constraints added to this query. None by default.
      */
@@ -226,13 +229,29 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         return types.length > 0;
     }
 
+    /**
+     * The type of a query of exactly one type, or null without one or for an unknown type. Resolving a type by its name
+     * costs a few lookups, and a query asks for its type several times, so the type is kept once resolved, until the
+     * query is given another name.
+     */
+    protected final RelationType singleType() {
+        if (types.length != 1 || types[0] == null) {
+            return null;
+        }
+        if (singleType == null || !types[0].equals(singleTypeName)) {
+            singleTypeName = types[0];
+            singleType = schemaInspector.getRelationType(singleTypeName);
+        }
+        return singleType;
+    }
+
     protected final boolean hasSingleType() {
-        return types.length == 1 && schemaInspector.getRelationType(types[0]) != null;
+        return singleType() != null;
     }
 
     protected final RelationType getSingleType() {
         Preconditions.checkArgument(hasSingleType());
-        return schemaInspector.getRelationType(types[0]);
+        return singleType();
     }
 
     /**
@@ -245,9 +264,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
      * @return
      */
     protected final boolean isImplicitKeyQuery(RelationCategory returnType) {
-        if (types.length != 1) return false;
-        if (types[0] == null) return false;
-        return returnType != RelationCategory.EDGE && constraints.isEmpty() && schemaInspector.getRelationType(types[0]) instanceof ImplicitKey;
+        return returnType != RelationCategory.EDGE && constraints.isEmpty() && singleType() instanceof ImplicitKey;
     }
 
 

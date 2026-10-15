@@ -32,6 +32,10 @@ public class CacheVertex extends StandardVertex {
     // We use a normal map with synchronization since the likelihood of contention
     // is super low in a single transaction
     protected final Map<SliceQuery, EntryList> queryCache;
+    //How many times refresh() has cleared the cache, guarded by it: a load which a refresh overlaps does not store what
+    //it loaded before the refresh, since that may predate the change the refresh was for. loadRelations reads the count
+    //before it loads; a caller which loads before it calls, as a multi-query does, reads it through refreshes() first
+    private long refreshes;
 
     public CacheVertex(StandardJanusGraphTx tx, Object id, byte lifecycle) {
         super(tx, id, lifecycle);
@@ -40,18 +44,40 @@ public class CacheVertex extends StandardVertex {
 
     public void refresh() {
         synchronized (queryCache) {
+            refreshes++;
             queryCache.clear();
         }
     }
 
+    /**
+     * How many times {@link #refresh()} has run so far. A caller which loads relations before it hands them to
+     * {@link #loadRelations(SliceQuery, Retriever, long)} reads this before it loads, so that a refresh which overlaps
+     * the load keeps its result out of the cache.
+     */
+    public long refreshes() {
+        synchronized (queryCache) {
+            return refreshes;
+        }
+    }
+
     public EntryList getFromCache(final SliceQuery query) {
-        return queryCache.get(query);
+        synchronized (queryCache) {
+            return queryCache.get(query);
+        }
     }
 
     public void addToQueryCache(final SliceQuery query, final EntryList entries) {
         synchronized (queryCache) {
             //TODO: become smarter about what to cache and when (e.g. memory pressure)
             queryCache.put(query, entries);
+        }
+    }
+
+    //Stores what a load read unless refresh() has run since the load read the count: the result may predate the
+    //change the refresh was for, and the next load reads it again
+    private void addToQueryCache(final SliceQuery query, final EntryList entries, final long refreshesBefore) {
+        synchronized (queryCache) {
+            if (refreshes == refreshesBefore) queryCache.put(query, entries);
         }
     }
 
@@ -63,6 +89,16 @@ public class CacheVertex extends StandardVertex {
 
     @Override
     public EntryList loadRelations(final SliceQuery query, final Retriever<SliceQuery, EntryList> lookup) {
+        return loadRelations(query, lookup, refreshes());
+    }
+
+    /**
+     * As {@link #loadRelations(SliceQuery, Retriever)}, for a result the retriever has loaded before this call:
+     * {@code refreshesBefore} is what {@link #refreshes()} returned before that load, and the result is kept in the
+     * cache only if no refresh has come since.
+     */
+    public EntryList loadRelations(final SliceQuery query, final Retriever<SliceQuery, EntryList> lookup,
+                                   final long refreshesBefore) {
         if (isNew())
             return EntryList.EMPTY_LIST;
 
@@ -70,17 +106,16 @@ public class CacheVertex extends StandardVertex {
         synchronized (queryCache) {
             result = queryCache.get(query);
         }
-        if (result == null) {
-            //First check for super
-            Map.Entry<SliceQuery, EntryList> superset = getSuperResultSet(query);
-            if (superset == null || superset.getValue() == null) {
-                result = lookup.get(query);
-            } else {
-                result = query.getSubset(superset.getKey(), superset.getValue());
-            }
-            addToQueryCache(query, result);
+        return result != null ? result : load(query, lookup, refreshesBefore);
+    }
 
-        }
+    private EntryList load(final SliceQuery query, final Retriever<SliceQuery, EntryList> lookup,
+                           final long refreshesBefore) {
+        //First check for super
+        final Map.Entry<SliceQuery, EntryList> superset = getSuperResultSet(query);
+        final EntryList result = superset == null || superset.getValue() == null
+            ? lookup.get(query) : query.getSubset(superset.getKey(), superset.getValue());
+        addToQueryCache(query, result, refreshesBefore);
         return result;
     }
 

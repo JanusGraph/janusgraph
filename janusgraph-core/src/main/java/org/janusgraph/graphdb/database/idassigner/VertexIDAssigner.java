@@ -16,6 +16,7 @@ package org.janusgraph.graphdb.database.idassigner;
 
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertex;
@@ -52,11 +53,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_BLOCK_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_NS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_BUFFER_PERCENTAGE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_KEEP_ALIVE_TIME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_POOL_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_TIMEOUT;
 
 @PreInitializeConfigOptions
@@ -75,6 +82,8 @@ public class VertexIDAssigner implements AutoCloseable {
     final ConcurrentMap<Integer,PartitionIDPool> idPools;
     final StandardIDPool schemaIdPool;
     final StandardIDPool partitionVertexIdPool;
+    //Runs the renewals of all ID pools of the graph, those of each pool one at a time
+    private final ThreadPoolExecutor renewalExecutor;
 
     private final IDAuthority idAuthority;
     private final IDManager idManager;
@@ -109,11 +118,19 @@ public class VertexIDAssigner implements AutoCloseable {
         renewTimeoutMS = config.get(IDS_RENEW_TIMEOUT);
         renewBufferPercentage = config.get(IDS_RENEW_BUFFER_PERCENTAGE);
 
+        //ids.renew-pool-size threads, or a thread for every pool the instance can have: three kinds of ids per
+        //partition, the schema ids and the partitioned vertices
+        final int renewalThreads = config.has(IDS_RENEW_POOL_SIZE) ? config.get(IDS_RENEW_POOL_SIZE) : 3 * partitionIdBound + 2;
+        renewalExecutor = new ThreadPoolExecutor(renewalThreads, renewalThreads,
+                config.get(IDS_RENEW_KEEP_ALIVE_TIME).toMillis(), TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
+                new ThreadFactoryBuilder().setDaemon(false).setNameFormat("JanusGraphID-renewal-%d").build());
+        renewalExecutor.allowCoreThreadTimeOut(true);
+
         idPools = new ConcurrentHashMap<>(partitionIdBound);
         schemaIdPool = new StandardIDPool(idAuthority, IDManager.SCHEMA_PARTITION, PoolType.SCHEMA.getIDNamespace(),
-                IDManager.getSchemaCountBound(), renewTimeoutMS, renewBufferPercentage);
+                IDManager.getSchemaCountBound(), renewTimeoutMS, renewBufferPercentage, renewalExecutor);
         partitionVertexIdPool = new StandardIDPool(idAuthority, IDManager.PARTITIONED_VERTEX_PARTITION, PoolType.PARTITIONED_VERTEX.getIDNamespace(),
-                PoolType.PARTITIONED_VERTEX.getCountBound(idManager), renewTimeoutMS, renewBufferPercentage);
+                PoolType.PARTITIONED_VERTEX.getCountBound(idManager), renewTimeoutMS, renewBufferPercentage, renewalExecutor);
         setLocalPartitions(partitionBits);
     }
 
@@ -146,12 +163,21 @@ public class VertexIDAssigner implements AutoCloseable {
     }
 
     public synchronized void close() {
-        schemaIdPool.close();
-        partitionVertexIdPool.close();
-        for (PartitionIDPool pool : idPools.values()) {
-            pool.close();
+        try {
+            schemaIdPool.close();
+            partitionVertexIdPool.close();
+            for (PartitionIDPool pool : idPools.values()) {
+                pool.close();
+            }
+            idPools.clear();
+        } finally {
+            //A closed pool has waited for its renewals, but for one it gave up on and cancelled with an interrupt,
+            //as it does where the ID authority supports interruption. Idle threads end now. A thread whose renewal
+            //still runs, such a cancelled one or one a failed close gave up on, ends once it has finished: it isn't
+            //interrupted, since an interrupt can break the I/O of a storage backend, BerkeleyJE's whole environment
+            //among them
+            renewalExecutor.shutdown();
         }
-        idPools.clear();
     }
 
     public void assignID(InternalRelation relation) {
@@ -330,7 +356,8 @@ public class VertexIDAssigner implements AutoCloseable {
         } else {
             PartitionIDPool partitionPool = idPools.get(partitionID);
             if (partitionPool == null) {
-                partitionPool = new PartitionIDPool(partitionID, idAuthority, idManager, renewTimeoutMS, renewBufferPercentage);
+                partitionPool = new PartitionIDPool(partitionID, idAuthority, idManager, renewTimeoutMS, renewBufferPercentage,
+                    renewalExecutor);
                 idPools.putIfAbsent(partitionID,partitionPool);
                 partitionPool = idPools.get(partitionID);
             }
@@ -474,11 +501,13 @@ public class VertexIDAssigner implements AutoCloseable {
         private volatile long lastAccess;
         private volatile boolean exhausted;
 
-        PartitionIDPool(int partitionID, IDAuthority idAuthority, IDManager idManager, Duration renewTimeoutMS, double renewBufferPercentage) {
+        PartitionIDPool(int partitionID, IDAuthority idAuthority, IDManager idManager, Duration renewTimeoutMS, double renewBufferPercentage,
+                        Executor renewalExecutor) {
             super(PoolType.class);
             for (PoolType type : PoolType.values()) {
                 if (!type.hasOnePerPartition()) continue;
-                put(type,new StandardIDPool(idAuthority, partitionID, type.getIDNamespace(), type.getCountBound(idManager), renewTimeoutMS, renewBufferPercentage));
+                put(type,new StandardIDPool(idAuthority, partitionID, type.getIDNamespace(), type.getCountBound(idManager), renewTimeoutMS, renewBufferPercentage,
+                    renewalExecutor));
             }
         }
 

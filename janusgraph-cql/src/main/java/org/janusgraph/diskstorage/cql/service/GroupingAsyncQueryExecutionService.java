@@ -271,7 +271,7 @@ public class GroupingAsyncQueryExecutionService implements AsyncQueryExecutionSe
 
         for(KeysQueriesGroup<StaticBuffer, SliceQuery> queryGroup : multiSliceQueriesForKeys.getQueryGroups()){
             List<StaticBuffer> keys = queryGroup.getKeysGroup();
-            QueryGroups queryGroups = CQLSliceQueryUtil.getQueriesGroupedByDirectEqualityQueries(queryGroup, multiSliceQueriesForKeys.getQueryGroups().size(), sliceGroupingLimit);
+            QueryGroups queryGroups = CQLSliceQueryUtil.getQueriesGroupedByDirectEqualityQueries(queryGroup, sliceGroupingLimit);
             if(isKeysGroupingAllowed(keys)){
                 groupedExecutionStrategy.execute(futureResult, queryGroups, keys,
                     MULTI_QUERY_WITH_KEYS_GROUPING_FILLER, MULTI_QUERY_WITHOUT_KEYS_GROUPING_FILLER,
@@ -288,11 +288,11 @@ public class GroupingAsyncQueryExecutionService implements AsyncQueryExecutionSe
                                                 final StoreTransaction txh){
 
         // execute grouped queries
-        for(Map.Entry<Integer, List<SliceQuery>> sliceQueriesGroup : queryGroups.getDirectEqualityGroupedQueriesByLimit().entrySet()){
-            int limit = sliceQueriesGroup.getKey();
-            List<ByteBuffer> queryStarts = new ArrayList<>(sliceQueriesGroup.getValue().size());
-            Map<StaticBuffer, SliceQuery> columnToQueryMap = new HashMap<>(sliceQueriesGroup.getValue().size());
-            for(SliceQuery sliceQuery : sliceQueriesGroup.getValue()){
+        for(QueryGroups.DirectEqualityGroup sliceQueriesGroup : queryGroups.getDirectEqualityGroups()){
+            int limit = sliceQueriesGroup.getLimit();
+            List<ByteBuffer> queryStarts = new ArrayList<>(sliceQueriesGroup.getQueries().size());
+            Map<StaticBuffer, SliceQuery> columnToQueryMap = new HashMap<>(sliceQueriesGroup.getQueries().size());
+            for(SliceQuery sliceQuery : sliceQueriesGroup.getQueries()){
                 StaticBuffer column = sliceQuery.getSliceStart();
                 queryStarts.add(column.asByteBuffer());
                 columnToQueryMap.put(column, sliceQuery);
@@ -300,7 +300,7 @@ public class GroupingAsyncQueryExecutionService implements AsyncQueryExecutionSe
 
             CompletableFuture<EntryList> multiKeyMultiColumnResult = cqlMultiKeyMultiColumnFunction.execute(new MultiKeysMultiColumnQuery(keysGroup.getRoutingToken(), keysGroup.getRawKeys(), queryStarts, limit), txh);
             Map<SliceQuery, Map<StaticBuffer, CompletableFuture<EntryList>>> partialResultToCompute = new HashMap<>(queryStarts.size());
-            for(SliceQuery sliceQuery : sliceQueriesGroup.getValue()){
+            for(SliceQuery sliceQuery : sliceQueriesGroup.getQueries()){
                 Map<StaticBuffer, CompletableFuture<EntryList>> perKeyQueryPartialResult = new HashMap<>(keysGroup.size());
                 partialResultToCompute.put(sliceQuery, perKeyQueryPartialResult);
                 Map<StaticBuffer, CompletableFuture<EntryList>> perKeyQueryFutureResult = futureResult.computeIfAbsent(sliceQuery, q -> new HashMap<>(keysGroup.size()));
@@ -362,23 +362,23 @@ public class GroupingAsyncQueryExecutionService implements AsyncQueryExecutionSe
                                                    final StoreTransaction txh){
 
         // execute grouped queries
-        for(Map.Entry<Integer, List<SliceQuery>> sliceQueriesGroup : queryGroups.getDirectEqualityGroupedQueriesByLimit().entrySet()){
-            List<ByteBuffer> queryStarts = new ArrayList<>(sliceQueriesGroup.getValue().size());
-            for(SliceQuery sliceQuery : sliceQueriesGroup.getValue()){
+        for(QueryGroups.DirectEqualityGroup sliceQueriesGroup : queryGroups.getDirectEqualityGroups()){
+            List<ByteBuffer> queryStarts = new ArrayList<>(sliceQueriesGroup.getQueries().size());
+            for(SliceQuery sliceQuery : sliceQueriesGroup.getQueries()){
                 queryStarts.add(sliceQuery.getSliceStart().asByteBuffer());
                 futureResult.computeIfAbsent(sliceQuery, q -> new HashMap<>(keys.size()));
             }
             for(StaticBuffer key : keys){
-                CompletableFuture<EntryList> multiColumnResult = cqlSingleKeyMultiColumnFunction.execute(new SingleKeyMultiColumnQuery(key.asByteBuffer(), queryStarts, sliceQueriesGroup.getKey()), txh);
-                Map<SliceQuery, CompletableFuture<EntryList>> queryKeyFutureResult = new HashMap<>(sliceQueriesGroup.getValue().size());
-                for(SliceQuery query : sliceQueriesGroup.getValue()){
+                CompletableFuture<EntryList> multiColumnResult = cqlSingleKeyMultiColumnFunction.execute(new SingleKeyMultiColumnQuery(key.asByteBuffer(), queryStarts, sliceQueriesGroup.getLimit()), txh);
+                Map<SliceQuery, CompletableFuture<EntryList>> queryKeyFutureResult = new HashMap<>(sliceQueriesGroup.getQueries().size());
+                for(SliceQuery query : sliceQueriesGroup.getQueries()){
                     CompletableFuture<EntryList> futureQueryKeyResult = new CompletableFuture<>();
                     queryKeyFutureResult.put(query, futureQueryKeyResult);
                     futureResult.get(query).put(key, futureQueryKeyResult);
                 }
                 multiColumnResult.whenComplete((entries, throwable) -> {
                     if (throwable == null){
-                        Map<StaticBuffer, EntryList> columnToFilteredResult = new HashMap<>(sliceQueriesGroup.getValue().size());
+                        Map<StaticBuffer, EntryList> columnToFilteredResult = new HashMap<>(sliceQueriesGroup.getQueries().size());
                         entries.forEach(entry -> columnToFilteredResult.computeIfAbsent(entry.getColumn(), c -> new EntryArrayList()).add(entry));
                         queryKeyFutureResult.forEach((query, futureQueryResult) -> futureQueryResult.complete(columnToFilteredResult.getOrDefault(query.getSliceStart(), EntryList.EMPTY_LIST)));
                     } else {

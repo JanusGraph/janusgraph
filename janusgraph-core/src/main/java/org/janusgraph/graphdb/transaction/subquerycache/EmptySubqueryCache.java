@@ -57,6 +57,11 @@ public class EmptySubqueryCache implements SubqueryCache {
     }
 
     @Override
+    public int maximumCachedResultSize() {
+        return -1;
+    }
+
+    @Override
     public void close() {
     }
 }

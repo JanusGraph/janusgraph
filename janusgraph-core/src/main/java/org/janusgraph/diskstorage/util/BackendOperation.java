@@ -25,8 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -36,13 +36,14 @@ public class BackendOperation {
 
     private static final Logger log =
             LoggerFactory.getLogger(BackendOperation.class);
-    private static final Random random = new Random();
 
     private static final Duration BASE_REATTEMPT_TIME= Duration.ofMillis(50);
     private static final double PERTURBATION_PERCENTAGE = 0.2;
 
     private static Duration pertubTime(Duration duration) {
-        Duration newDuration = duration.dividedBy((int)(2.0 / (1 + (random.nextDouble() * 2 - 1.0) * PERTURBATION_PERCENTAGE)));
+        //The random generator of the thread: one shared by all threads makes them contend for its seed
+        double randomValue = ThreadLocalRandom.current().nextDouble();
+        Duration newDuration = duration.dividedBy((int)(2.0 / (1 + (randomValue * 2 - 1.0) * PERTURBATION_PERCENTAGE)));
         assert !duration.isZero() : duration;
         return newDuration;
     }
@@ -59,7 +60,9 @@ public class BackendOperation {
     public static <V> V executeDirect(Callable<V> exe, Duration totalWaitTime) throws BackendException {
         Preconditions.checkArgument(!totalWaitTime.isZero(),"Need to specify a positive waitTime: %s",totalWaitTime);
         long maxTime = System.currentTimeMillis()+totalWaitTime.toMillis();
-        Duration waitTime = pertubTime(BASE_REATTEMPT_TIME);
+        //Each wait is drawn from this at the temporary failure it follows, not before every operation, as most
+        //operations succeed at once
+        Duration waitBase = BASE_REATTEMPT_TIME;
         BackendException lastException;
         while (true) {
             try {
@@ -81,6 +84,7 @@ public class BackendOperation {
             }
             //Wait and retry
             assert lastException!=null;
+            Duration waitTime = pertubTime(waitBase);
             if (System.currentTimeMillis()+waitTime.toMillis()<maxTime) {
                 log.info("Temporary exception during backend operation ["+exe.toString()+"]. Attempting backoff retry.",lastException);
                 try {
@@ -93,7 +97,7 @@ public class BackendOperation {
             } else {
                 break;
             }
-            waitTime = pertubTime(waitTime.multipliedBy(2));
+            waitBase = waitTime.multipliedBy(2);
         }
         throw new TemporaryBackendException("Could not successfully complete backend operation due to repeated temporary exceptions after "+totalWaitTime,lastException);
     }

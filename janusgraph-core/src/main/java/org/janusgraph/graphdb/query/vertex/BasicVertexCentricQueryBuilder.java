@@ -345,13 +345,18 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             if (!hasAllCanonicalTypes()) {
                 InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
                 Iterable<JanusGraphRelation> merge = null;
+                //Each representative returns its relations in the order of a RelationComparator, which compares them
+                //by the query's orders first
+                final OrderList relationOrders = baseQuery.getOrders();
+                final Comparator<JanusGraphRelation> byOrders =
+                    (r1, r2) -> RelationComparator.compareOnOrders(r1, r2, relationOrders);
 
                 for (InternalVertex rep : representatives) {
                     Iterable<JanusGraphRelation> iterable = executeIndividualRelations(rep,baseQuery);
                     if (merge==null) {
                         merge = iterable;
                     } else {
-                        merge = ResultMergeSortIterator.mergeSort(merge, iterable, (Comparator) orders, false);
+                        merge = ResultMergeSortIterator.mergeSort(merge, iterable, byOrders, false);
                     }
                 }
                 return ResultSetIterator.wrap(merge,baseQuery.getLimit());
@@ -508,6 +513,15 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return query;
     }
 
+    //As QueryUtil.getType, but a query of one type has resolved it already
+    private InternalRelationType resolveType(String typeName) {
+        final RelationType type = types.length == 1 ? singleType() : tx.getRelationType(typeName);
+        if (type == null && !tx.getConfiguration().getAutoSchemaMaker().ignoreUndefinedQueryTypes()) {
+            throw new IllegalArgumentException("Undefined type used in query: " + typeName);
+        }
+        return (InternalRelationType) type;
+    }
+
     protected BaseVertexCentricQuery constructQuery(RelationCategory returnType) {
         QueryProfiler optProfiler = profiler.addNested(QueryProfiler.OPTIMIZATION);
         optProfiler.startTimer();
@@ -593,7 +607,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
             for (String typeName : types) {
                 if (typeName == null) continue;
-                InternalRelationType type = QueryUtil.getType(tx, typeName);
+                InternalRelationType type = resolveType(typeName);
                 if (type==null) continue;
                 Preconditions.checkArgument(!querySystem || (type instanceof SystemRelationType),
                         "Can only query for system types: %s", type);

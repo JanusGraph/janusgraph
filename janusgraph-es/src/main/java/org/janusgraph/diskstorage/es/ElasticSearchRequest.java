@@ -35,6 +35,10 @@ public class ElasticSearchRequest {
 
     private boolean disableSourceRetrieval;
 
+    //Whether the hits are wanted in the order of their scores where the request doesn't sort them, as a raw query's
+    //are; a graph query's hits may come in any order
+    private boolean relevanceOrdered;
+
     public ElasticSearchRequest() {
         this.sorts = new ArrayList<>();
         this.fields = new ArrayList<>();
@@ -86,6 +90,14 @@ public class ElasticSearchRequest {
 
     public void setDisableSourceRetrieval(boolean disableSourceRetrieval) {
         this.disableSourceRetrieval = disableSourceRetrieval;
+    }
+
+    public boolean isRelevanceOrdered() {
+        return relevanceOrdered;
+    }
+
+    public void setRelevanceOrdered(boolean relevanceOrdered) {
+        this.relevanceOrdered = relevanceOrdered;
     }
 
     public static class RestSortInfo {

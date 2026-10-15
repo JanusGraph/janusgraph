@@ -115,21 +115,21 @@ public interface JanusGraphIndexQuery {
     Stream<Result<JanusGraphVertexProperty>> propertyStream();
 
     /**
-     * Returns total vertices that match the query in the indexing backend ignoring limit and offset.
+     * Returns total vertices that match the query in the indexing backend after applying the query's offset and limit.
      *
      * @return
      */
     Long vertexTotals();
 
     /**
-     * Returns total edges that match the query in the indexing backend ignoring limit and offset.
+     * Returns total edges that match the query in the indexing backend after applying the query's offset and limit.
      *
      * @return
      */
     Long edgeTotals();
 
     /**
-     * Returns total properties that match the query in the indexing backend ignoring limit and offset.
+     * Returns total properties that match the query in the indexing backend after applying the query's offset and limit.
      *
      * @return
      */

@@ -18,8 +18,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.cloud.ConfigurableMiniSolrCloudCluster;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 
 import java.io.BufferedReader;
@@ -29,7 +27,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -40,7 +37,7 @@ public class SolrRunner {
     protected static final int NUM_SERVERS = 1;
     protected static final String[] COLLECTIONS = readCollections();
 
-    private static final String SECURITY_JSON = "{\"authentication\": {\"class\": \"org.apache.solr.security.KerberosPlugin\"}}";
+    private static final String SECURITY_JSON = "{\"authentication\": {\"class\": \"org.apache.solr.security.hadoop.KerberosPlugin\"}}";
 
     private static final String TMP_DIRECTORY = System.getProperty("java.io.tmpdir");
     private static final String TEMPLATE_DIRECTORY = "core-template";
@@ -75,17 +72,12 @@ public class SolrRunner {
         temp.deleteOnExit();
 
         final String solrXml = new String(Files.readAllBytes(new File(solrHome, "solr.xml").toPath()));
-        if(!kerberosEnabled) {
-            miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, temp.toPath(), solrXml, null, null);
-        } else {
-            JettyConfig jettyConfig = JettyConfig.builder()
-                .setContext(null)
-                .withSSLConfig(null)
-                .withFilters(null)
-                .withServlets(null)
-                .build();
-            miniSolrCloudCluster = new ConfigurableMiniSolrCloudCluster(NUM_SERVERS, temp.toPath(), solrXml, jettyConfig, null, Optional.of(SECURITY_JSON));
+        final MiniSolrCloudCluster.Builder builder = new MiniSolrCloudCluster.Builder(NUM_SERVERS, temp.toPath())
+            .withSolrXml(solrXml);
+        if (kerberosEnabled) {
+            builder.withSecurityJson(SECURITY_JSON);
         }
+        miniSolrCloudCluster = builder.build();
 
 
         for (String core : COLLECTIONS) {

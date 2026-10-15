@@ -15,9 +15,13 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.condition.And;
+import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.profile.ProfileObservable;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.types.CompositeIndexType;
@@ -105,6 +109,39 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         return queries.toString();
     }
 
+    /**
+     * Returns this query with the condition of its first subquery, which reads a mixed index, narrowed by the given
+     * condition on that index's fields. The subqueries keep their profilers, so that a profile shows the executions of
+     * the narrowed query where it would show this one's.
+     *
+     * @param condition the condition which the first subquery's results have to meet as well
+     * @return the narrowed query, of the same limit
+     */
+    public JointIndexQuery narrowFirst(Condition<JanusGraphElement> condition) {
+        final Subquery first = queries.get(0);
+        final IndexQuery mixed = first.getMixedQuery();
+        //The condition joins the conjuncts of a conjunction rather than nesting it, as Solr writes a nested conjunction
+        //without parentheses, which its query parser rejects
+        final Condition<JanusGraphElement> current = mixed.getCondition();
+        final And<JanusGraphElement> narrowedCondition;
+        if (current instanceof And) {
+            narrowedCondition = new And<>(((And<JanusGraphElement>) current).size() + 1);
+            current.getChildren().forEach(narrowedCondition::add);
+        } else {
+            narrowedCondition = new And<>(2);
+            narrowedCondition.add(current);
+        }
+        narrowedCondition.add(condition);
+        final IndexQuery narrowed = new IndexQuery(mixed.getStore(), narrowedCondition,
+            ImmutableList.copyOf(mixed.getOrder()), mixed.getLimit());
+        final List<Subquery> subqueries = new ArrayList<>(queries);
+        subqueries.set(0, first.replacedBy(narrowed));
+        final JointIndexQuery jointIndexQuery = new JointIndexQuery(subqueries);
+        jointIndexQuery.profiler = profiler;
+        jointIndexQuery.setLimit(getLimit());
+        return jointIndexQuery;
+    }
+
     @Override
     public JointIndexQuery updateLimit(int newLimit) {
         List<Subquery> subqueries;
@@ -141,6 +178,13 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
 
         public QueryProfiler getProfiler() {
             return profiler;
+        }
+
+        //This subquery's index with the given query in place of its own, observed by this subquery's profiler
+        private Subquery replacedBy(BackendQuery query) {
+            final Subquery subquery = new Subquery(index, query);
+            subquery.profiler = profiler;
+            return subquery;
         }
 
         public IndexType getIndex() {

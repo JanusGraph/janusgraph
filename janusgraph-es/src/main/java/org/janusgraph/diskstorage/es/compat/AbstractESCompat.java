@@ -26,6 +26,7 @@ import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -83,8 +84,12 @@ public abstract class AbstractESCompat {
     }
 
     public ImmutableMap.Builder<String, Object> prepareStoredScript(String scriptId, List<Map<String, Object>> fields) {
-        Map<String, Object> script = ImmutableMap.of(ES_ID_KEY, scriptId,
-            ES_PARAMS_KEY, ImmutableMap.of(ES_PARAMS_FIELDS_KEY, fields));
+        return prepareStoredScript(scriptId, ImmutableMap.of(ES_PARAMS_FIELDS_KEY, fields));
+    }
+
+    //A stored script with the given parameters, for a script which takes more than one list of fields
+    public ImmutableMap.Builder<String, Object> prepareStoredScript(String scriptId, Map<String, Object> params) {
+        Map<String, Object> script = ImmutableMap.of(ES_ID_KEY, scriptId, ES_PARAMS_KEY, params);
         return ImmutableMap.<String, Object>builder().put(ES_SCRIPT_KEY, script);
     }
 
@@ -188,7 +193,7 @@ public abstract class AbstractESCompat {
     }
 
     public Map<String,Object> geoShape(String key, Map<String,Object> geoShape, Geo predicate) {
-        final String relation = predicate == Geo.INTERSECT ? "intersects" : predicate.name().toLowerCase();
+        final String relation = predicate == Geo.INTERSECT ? "intersects" : predicate.name().toLowerCase(Locale.ROOT);
         return filter(ImmutableMap.of("geo_shape", ImmutableMap.of(key, ImmutableMap.of("shape", geoShape, "relation", relation))));
     }
 

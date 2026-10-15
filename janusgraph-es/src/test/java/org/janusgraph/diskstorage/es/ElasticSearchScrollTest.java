@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -148,6 +149,98 @@ public class ElasticSearchScrollTest {
         }
 
         Assertions.assertThrows(NoSuchElementException.class, scroll::next);
+    }
+
+    //A consumer which asked for a limit takes no more than that, so the pages beyond it are never requested and
+    //the scroll context is released as soon as the limit is within the pages already received
+    @Test
+    public void shouldStopAtTheLimitAndReleaseTheScroll() throws IOException {
+        ElasticSearchClient client = Mockito.mock(ElasticSearchClient.class);
+        ElasticSearchResponse initialResponse = Mockito.mock(ElasticSearchResponse.class);
+        ElasticSearchResponse secondResponse = Mockito.mock(ElasticSearchResponse.class);
+        int batchSize = 5;
+        int limit = 7;
+        setupResultMocks(makeTestResults(batchSize), initialResponse, "firstScrollId");
+        setupResultMocks(makeTestResults(batchSize), secondResponse, "secondScrollId");
+        Mockito.when(client.search("firstScrollId")).thenReturn(secondResponse);
+
+        ElasticSearchScroll scroll = new ElasticSearchScroll(client, initialResponse, batchSize, limit);
+        Mockito.verify(client, Mockito.never()).deleteScroll(Mockito.any());
+
+        List<RawQuery.Result<String>> delivered = new ArrayList<>();
+        scroll.forEachRemaining(delivered::add);
+
+        Assertions.assertEquals(limit, delivered.size());
+        Mockito.verify(client, Mockito.times(1)).search("firstScrollId");
+        Mockito.verify(client, Mockito.never()).search("secondScrollId");
+        Mockito.verify(client).deleteScroll("secondScrollId");
+        Assertions.assertFalse(scroll.hasNext());
+        Assertions.assertThrows(NoSuchElementException.class, scroll::next);
+    }
+
+    @Test
+    public void shouldReleaseTheScrollAtOnceWhenTheFirstPageCoversTheLimit() throws IOException {
+        ElasticSearchClient client = Mockito.mock(ElasticSearchClient.class);
+        ElasticSearchResponse initialResponse = Mockito.mock(ElasticSearchResponse.class);
+        int batchSize = 5;
+        setupResultMocks(makeTestResults(batchSize), initialResponse, "scrollId");
+
+        ElasticSearchScroll scroll = new ElasticSearchScroll(client, initialResponse, batchSize, batchSize);
+
+        Mockito.verify(client).deleteScroll("scrollId");
+        List<RawQuery.Result<String>> delivered = new ArrayList<>();
+        scroll.forEachRemaining(delivered::add);
+        Assertions.assertEquals(batchSize, delivered.size());
+        Mockito.verify(client, Mockito.never()).search(Mockito.anyString());
+    }
+
+    //A consumer which stops early closes the stream, and that must release the context instead of leaving it to
+    //expire after scroll-keep-alive
+    @Test
+    public void shouldReleaseTheScrollWhenClosedBeforeTheEnd() throws IOException {
+        ElasticSearchClient client = Mockito.mock(ElasticSearchClient.class);
+        ElasticSearchResponse initialResponse = Mockito.mock(ElasticSearchResponse.class);
+        int batchSize = 5;
+        setupResultMocks(makeTestResults(batchSize), initialResponse, "scrollId");
+
+        ElasticSearchScroll scroll = new ElasticSearchScroll(client, initialResponse, batchSize);
+        scroll.next();
+        scroll.close();
+
+        Mockito.verify(client).deleteScroll("scrollId");
+        Assertions.assertFalse(scroll.hasNext());
+        Mockito.verify(client, Mockito.never()).search(Mockito.anyString());
+    }
+
+    @Test
+    public void shouldReleaseTheScrollOnlyOnce() throws IOException {
+        ElasticSearchClient client = Mockito.mock(ElasticSearchClient.class);
+        ElasticSearchResponse initialResponse = Mockito.mock(ElasticSearchResponse.class);
+        int batchSize = 5;
+        setupResultMocks(makeTestResults(batchSize - 1), initialResponse, "scrollId");
+
+        ElasticSearchScroll scroll = new ElasticSearchScroll(client, initialResponse, batchSize);
+        scroll.close();
+        scroll.close();
+
+        Mockito.verify(client, Mockito.times(1)).deleteScroll("scrollId");
+    }
+
+    //Releasing a context is a courtesy to the cluster: the context expires on its own, so a failure to release it
+    //must not fail a search whose results are complete
+    @Test
+    public void shouldNotFailWhenTheScrollCannotBeReleased() throws IOException {
+        ElasticSearchClient client = Mockito.mock(ElasticSearchClient.class);
+        ElasticSearchResponse initialResponse = Mockito.mock(ElasticSearchResponse.class);
+        int batchSize = 5;
+        setupResultMocks(makeTestResults(batchSize - 1), initialResponse, "scrollId");
+        Mockito.doThrow(new IOException("connection reset")).when(client).deleteScroll("scrollId");
+
+        ElasticSearchScroll scroll = new ElasticSearchScroll(client, initialResponse, batchSize);
+
+        List<RawQuery.Result<String>> delivered = new ArrayList<>();
+        scroll.forEachRemaining(delivered::add);
+        Assertions.assertEquals(batchSize - 1, delivered.size());
     }
 
     private List<RawQuery.Result<String>> makeTestResults(int batchSize){

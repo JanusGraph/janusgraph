@@ -21,11 +21,12 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
+import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
+import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParseException;
-import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.apache.tinkerpop.shaded.jackson.core.type.TypeReference;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonMappingException;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
@@ -36,18 +37,19 @@ import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
+import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.diskstorage.es.ElasticMajorVersion;
 import org.janusgraph.diskstorage.es.ElasticSearchBulkFailureException;
 import org.janusgraph.diskstorage.es.ElasticSearchClient;
+import org.janusgraph.diskstorage.es.ElasticSearchIndex;
 import org.janusgraph.diskstorage.es.ElasticSearchMutation;
 import org.janusgraph.diskstorage.es.TransientFailures;
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
 import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
 import org.janusgraph.diskstorage.es.script.ESScriptResponse;
-import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,11 +66,17 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
 
@@ -92,7 +100,25 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private static final byte[] NEW_LINE_BYTES = "\n".getBytes(UTF8_CHARSET);
 
+    //Room for the action line of an item whose index name and id are of usual lengths, without growing
+    private static final int ACTION_LINE_SIZE = 128;
+
+    //The fields of a bulk response which the client asks for: each item's status and error, and errors, which tells
+    //whether any item failed. Every item keeps its status, so the items still line up with the requests they answer;
+    //everything else Elasticsearch writes for each item (index, id, version, result, shards, sequence number, primary
+    //term) would only be transferred and parsed to be thrown away. The actions are named rather than matched with a
+    //wildcard, so that the query string holds no asterisk, which a request signer would have to percent-encode the way
+    //the cluster does for the signature to match
+    private static final String BULK_RESPONSE_FILTER = "errors,"
+        + Arrays.stream(ElasticSearchMutation.RequestType.values())
+            .map(RestElasticSearchClient::action)
+            .flatMap(action -> Stream.of("items." + action + ".status", "items." + action + ".error"))
+            .collect(Collectors.joining(","));
+
     private static final Request INFO_REQUEST = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR);
+
+    //The major and minor number of a version the cluster reports, such as 7.17.8 or 8.0.0-SNAPSHOT
+    private static final Pattern VERSION_NUMBER = Pattern.compile("(\\d+)\\.(\\d+).*");
 
     private static final ObjectMapper mapper;
     private static final ObjectReader mapReader;
@@ -124,6 +150,10 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     private final boolean useMappingTypes;
 
+    //OpenSearch 2 removed the mapping types which Elasticsearch 7 still supports, and JanusGraph supports OpenSearch 2
+    //and newer only
+    private boolean mappingTypesRemoved;
+
     private final boolean esVersion7;
 
     private Integer retryOnConflict;
@@ -131,8 +161,6 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     //Whether a failure which produced no HTTP response is reattempted like a status code in retryOnErrorCodes.
     //Configured through RestClientSetup from RETRY_TRANSPORT_FAILURES, like the other optional client settings
     private boolean retryTransportFailures;
-
-    private final String retryOnConflictKey;
 
     private final int retryAttemptLimit;
 
@@ -143,16 +171,48 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     private final long retryMaxWaitMs;
 
     private final int bulkChunkSerializedLimitBytes;
+    //Set once the first rejected release of a scroll or a point in time has been logged as a warning. Every one of
+    //the index backend is released through this client with the same credentials, so later rejections repeat the
+    //same problem and are logged at debug level. Releases complete on the HTTP client's I/O threads, hence the atomic
+    //flag
+    private final AtomicBoolean warnedAboutRejectedRelease = new AtomicBoolean();
+
+    //Whether the cluster can page a result with a point in time: Elasticsearch 7.12 introduced the implicit _shard_doc
+    //tiebreaker which search_after over a point in time relies on
+    private boolean pointInTimeSupported;
 
 public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7,
                                int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
                                long retryMaxWaitMs, int bulkChunkSerializedLimitBytes) {
+        this(delegate, scrollKeepAlive, useMappingTypesForES7, retryAttemptLimit, retryOnErrorCodes, retryInitialWaitMs,
+            retryMaxWaitMs, bulkChunkSerializedLimitBytes, null);
+    }
+
+    /**
+     * @param configuredMajorVersion the major version of the Elasticsearch API to use, or {@code null} to ask the
+     * cluster for it
+     */
+    public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7,
+                                   int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
+                                   long retryMaxWaitMs, int bulkChunkSerializedLimitBytes,
+                                   ElasticMajorVersion configuredMajorVersion) {
         this.delegate = delegate;
-        majorVersion = getMajorVersion();
+        if (configuredMajorVersion != null) {
+            majorVersion = configuredMajorVersion;
+            //Without asking the cluster, only a major version whose every release has the point in time API is known
+            //to have it
+            pointInTimeSupported = supportsPointInTimeThroughout(configuredMajorVersion);
+        } else {
+            majorVersion = getMajorVersion();
+        }
         this.scrollKeepAlive = scrollKeepAlive+"s";
         esVersion7 = ElasticMajorVersion.SEVEN.equals(majorVersion);
-        useMappingTypes = majorVersion.getValue() < 7 || (useMappingTypesForES7 && esVersion7);
-        retryOnConflictKey = majorVersion.getValue() >= 7 ? "retry_on_conflict" : "_retry_on_conflict";
+        if (useMappingTypesForES7 && mappingTypesRemoved) {
+            log.warn("The option index.[X].elasticsearch.{} is ignored: the cluster is OpenSearch, and OpenSearch 2 and " +
+                "newer have no mapping types.",
+                ElasticSearchIndex.USE_MAPPING_FOR_ES7.getName());
+        }
+        useMappingTypes = majorVersion.getValue() < 7 || (useMappingTypesForES7 && esVersion7 && !mappingTypesRemoved);
         this.retryAttemptLimit = retryAttemptLimit;
         this.retryOnErrorCodes = Collections.unmodifiableSet(retryOnErrorCodes);
         this.retryInitialWaitMs = retryInitialWaitMs;
@@ -172,17 +232,92 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
 
         majorVersion = DEFAULT_VERSION;
+        //A cluster whose version can't be asked for isn't known to have a point in time, so it scrolls
+        pointInTimeSupported = false;
         try {
             final Response response = delegate.performRequest(INFO_REQUEST);
             try (final InputStream inputStream = response.getEntity().getContent()) {
                 final ClusterInfo info = mapper.readValue(inputStream, ClusterInfo.class);
-                majorVersion = ElasticMajorVersion.parse(info.getVersion() != null ? (String) info.getVersion().get("number") : null);
+                try {
+                    majorVersion = ElasticMajorVersion.fromServerVersion(info.getVersion());
+                } catch (final IllegalArgumentException e) {
+                    throw new IllegalArgumentException(e.getMessage() + ". Set index.[X].elasticsearch." +
+                        ElasticSearchIndex.MAJOR_VERSION.getName() + " if the cluster provides the API of a supported " +
+                        "Elasticsearch major version.", e);
+                }
+                pointInTimeSupported = clusterSupportsPointInTime(info.getVersion());
+                mappingTypesRemoved = ElasticMajorVersion.isOpenSearch(info.getVersion());
+                if (ElasticMajorVersion.isOpenSearch(info.getVersion())) {
+                    log.info("OpenSearch {} provides the Elasticsearch {} API, which JanusGraph uses.",
+                        info.getVersion().get("number"), majorVersion.getValue());
+                }
             }
         } catch (final IOException e) {
-            log.warn("Unable to determine Elasticsearch server version. Default to {}.", majorVersion, e);
+            log.warn("Unable to determine Elasticsearch server version. Default to {}, and to scrolls for results larger " +
+                "than a page. Set index.[X].elasticsearch.{} to skip the detection.", majorVersion,
+                ElasticSearchIndex.MAJOR_VERSION.getName(), e);
         }
 
         return majorVersion;
+    }
+
+    @Override
+    public boolean usesMappingTypes() {
+        return useMappingTypes;
+    }
+
+    /**
+     * Whether a cluster with the given {@code version} object of its root endpoint can page a result with a point in
+     * time: Elasticsearch 7.12 introduced the implicit {@code _shard_doc} tiebreaker which {@code search_after} over a
+     * point in time relies on. OpenSearch has a point in time API since 2.4, but neither the tiebreaker nor sort values
+     * for a search sorted by score, so {@code search_after} can't page a query which doesn't sort by a field of its own
+     * there, and OpenSearch scrolls in every paging mode (verified on OpenSearch 2.19 and 3.9).
+     */
+    public static boolean clusterSupportsPointInTime(Map<String, Object> version) {
+        if (ElasticMajorVersion.isOpenSearch(version)) {
+            return false;
+        }
+        final Object number = version != null ? version.get("number") : null;
+        final Matcher matcher = number instanceof String ? VERSION_NUMBER.matcher((String) number) : null;
+        if (matcher == null || !matcher.matches()) {
+            return false;
+        }
+        final int major = Integer.parseInt(matcher.group(1));
+        final int minor = Integer.parseInt(matcher.group(2));
+        return major > 7 || (major == 7 && minor >= 12);
+    }
+
+    //Whether every release of an Elasticsearch major version has the point in time API: 8 and later
+    private static boolean supportsPointInTimeThroughout(ElasticMajorVersion majorVersion) {
+        return majorVersion.getValue() >= 8;
+    }
+
+    @Override
+    public boolean supportsPointInTime() {
+        return pointInTimeSupported;
+    }
+
+    @Override
+    public String openPointInTime(String indexName) throws IOException {
+        final Request request = new Request(REQUEST_TYPE_POST, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_pit");
+        request.addParameter("keep_alive", scrollKeepAlive);
+        final Response response = performRequest(request, null);
+        try (final InputStream inputStream = response.getEntity().getContent()) {
+            return mapper.readValue(inputStream, RestPointInTimeResponse.class).getId();
+        }
+    }
+
+    @Override
+    public RestSearchResponse searchPointInTime(String pitId, Map<String, Object> requestData) throws IOException {
+        //A search of a point in time names its indexes through the point in time, not in the path
+        requestData.put("pit", ImmutableMap.of("id", pitId, "keep_alive", scrollKeepAlive));
+        return search(requestData, REQUEST_SEPARATOR + "_search");
+    }
+
+    @Override
+    public void closePointInTime(String pitId) throws IOException {
+        release(new Request(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_pit"), ImmutableMap.of("id", pitId),
+            "point in time", pitId);
     }
 
     @Override
@@ -414,30 +549,40 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         final String documentId;
 
         @VisibleForTesting
-        RequestBytes(final ElasticSearchMutation request) throws JsonProcessingException {
+        RequestBytes(final ElasticSearchMutation request) throws IOException {
             this.removesContentOnly = request.removesContentOnly();
             this.store = request.getType();
             this.documentId = request.getId();
-            Map<String, Object> requestData = new HashMap<>();
-            if (useMappingTypes) {
-                requestData.put("_index", request.getIndex());
-                requestData.put("_type", request.getType());
-                requestData.put("_id", request.getId());
-            } else {
-                requestData.put("_index", request.getIndex());
-                requestData.put("_id", request.getId());
-            }
-
-            if (retryOnConflict != null && request.getRequestType() == ElasticSearchMutation.RequestType.UPDATE) {
-                requestData.put(retryOnConflictKey, retryOnConflict);
-            }
-
-            this.requestBytes =  mapWriter.writeValueAsBytes(ImmutableMap.of(request.getRequestType().name().toLowerCase(), requestData));
+            this.requestBytes = actionLine(request);
             if (request.getSource() != null) {
                 this.requestSource = mapWriter.writeValueAsBytes(request.getSource());
             } else {
                 this.requestSource = null;
             }
+        }
+
+        //The action line, written field by field. Serializing a map of its fields through the object mapper cost a map,
+        //a serializer lookup and its own generator for each item, about as much as the item's source
+        private byte[] actionLine(final ElasticSearchMutation request) throws IOException {
+            final ByteArrayOutputStream line = new ByteArrayOutputStream(ACTION_LINE_SIZE);
+            try (JsonGenerator generator = mapper.getFactory().createGenerator(line)) {
+                generator.writeStartObject();
+                generator.writeObjectFieldStart(action(request.getRequestType()));
+                generator.writeStringField("_index", request.getIndex());
+                if (useMappingTypes) {
+                    generator.writeStringField("_type", request.getType());
+                }
+                generator.writeStringField("_id", request.getId());
+                //Elasticsearch's own default is 0, so a request needs the key only above it. Every supported version
+                //reads retry_on_conflict; Elasticsearch 6 merely deprecated the _retry_on_conflict it also accepted
+                if (retryOnConflict != null && retryOnConflict > 0
+                    && request.getRequestType() == ElasticSearchMutation.RequestType.UPDATE) {
+                    generator.writeNumberField("retry_on_conflict", retryOnConflict);
+                }
+                generator.writeEndObject();
+                generator.writeEndObject();
+            }
+            return line.toByteArray();
         }
 
         @VisibleForTesting
@@ -461,12 +606,12 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
     }
 
-    private Pair<String, byte[]> buildBulkRequestInput(List<RequestBytes> requests, String ingestPipeline) throws IOException {
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        for (final RequestBytes request : requests) {
-            request.writeTo(outputStream);
-        }
+    //The name of an action in a bulk request, in the root locale: in a Turkish one INDEX lower-cases to ındex
+    private static String action(final ElasticSearchMutation.RequestType requestType) {
+        return requestType.name().toLowerCase(Locale.ROOT);
+    }
 
+    private String bulkRequestPath(String ingestPipeline) {
         final StringBuilder bulkRequestQueryParameters = new StringBuilder();
         if (ingestPipeline != null) {
             APPEND_OP.apply(bulkRequestQueryParameters).append("pipeline=").append(ingestPipeline);
@@ -474,8 +619,170 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         if (bulkRefreshEnabled) {
             APPEND_OP.apply(bulkRequestQueryParameters).append("refresh=").append(bulkRefresh);
         }
-        final String bulkRequestPath = REQUEST_SEPARATOR + "_bulk" + bulkRequestQueryParameters;
-        return Pair.with(bulkRequestPath, outputStream.toByteArray());
+        return REQUEST_SEPARATOR + "_bulk" + bulkRequestQueryParameters;
+    }
+
+    //The body of a bulk request, which it writes from the items' serialized bytes as they are. Copying them into one
+    //array first, through a ByteArrayOutputStream which grows by doubling and then copies itself once more, held up to
+    //three more copies of the body at once, for each attempt. It can be sent again, to another node or by a
+    //reattempt, and it knows its length up front
+    @VisibleForTesting
+    static final class BulkRequestEntity extends AbstractHttpEntity {
+        private final List<RequestBytes> requests;
+        private final long contentLength;
+
+        BulkRequestEntity(final List<RequestBytes> requests) {
+            this.requests = requests;
+            long length = 0;
+            for (final RequestBytes request : requests) {
+                length += request.getSerializedSize();
+            }
+            this.contentLength = length;
+            setContentType(ContentType.APPLICATION_JSON.toString());
+        }
+
+        @Override
+        public boolean isRepeatable() {
+            return true;
+        }
+
+        @Override
+        public long getContentLength() {
+            return contentLength;
+        }
+
+        @Override
+        public InputStream getContent() {
+            return new BulkRequestInputStream(requests, contentLength);
+        }
+
+        @Override
+        public void writeTo(final OutputStream outputStream) throws IOException {
+            for (final RequestBytes request : requests) {
+                request.writeTo(outputStream);
+            }
+        }
+
+        @Override
+        public boolean isStreaming() {
+            return false;
+        }
+    }
+
+    //Reads the items' bytes in the order the entity writes them: each item's action line and a new line, then its
+    //source and another new line if it has one. It behaves as a ByteArrayInputStream over the whole body would: a read
+    //fills as much of the buffer as it can, across items, available() counts what is left, and it supports mark and
+    //reset, which request signers such as those of the AWS SDK use to hash the body before it is sent
+    private static final class BulkRequestInputStream extends InputStream {
+        //The parts of an item: its action line, a new line, its source and a new line. An item without a source has
+        //only the first two
+        private static final int ACTION = 0;
+        private static final int SOURCE = 2;
+        private static final int PARTS = 4;
+
+        private final List<RequestBytes> requests;
+        //Where the stream is: the item, -1 before the first, its part, PARTS before the first and at the end, the
+        //position in the part, and the bytes left
+        private int request = -1;
+        private int part = PARTS;
+        private int position;
+        private long remaining;
+        private byte[] current;
+        //Where reset() goes back to, the start unless mark() was called
+        private int markedRequest = -1;
+        private int markedPart = PARTS;
+        private int markedPosition;
+        private long markedRemaining;
+
+        private BulkRequestInputStream(final List<RequestBytes> requests, final long contentLength) {
+            this.requests = requests;
+            this.remaining = contentLength;
+            this.markedRemaining = contentLength;
+        }
+
+        private byte[] partBytes() {
+            if (request < 0 || part == PARTS) {
+                return null;
+            }
+            final RequestBytes item = requests.get(request);
+            return part == ACTION ? item.requestBytes : part == SOURCE ? item.requestSource : NEW_LINE_BYTES;
+        }
+
+        //Moves on to the next part which has bytes left; false at the end of the body
+        private boolean hasRemaining() {
+            while (current == null || position == current.length) {
+                if (request >= 0 && part < PARTS) {
+                    part++;
+                    if (part == SOURCE && requests.get(request).requestSource == null) {
+                        part = PARTS;
+                    }
+                }
+                if (part == PARTS) {
+                    if (request + 1 >= requests.size()) {
+                        return false;
+                    }
+                    request++;
+                    part = ACTION;
+                }
+                current = partBytes();
+                position = 0;
+            }
+            return true;
+        }
+
+        @Override
+        public int read() {
+            if (!hasRemaining()) {
+                return -1;
+            }
+            remaining--;
+            return current[position++] & 0xFF;
+        }
+
+        @Override
+        public int read(final byte[] buffer, final int offset, final int length) {
+            Objects.checkFromIndexSize(offset, length, buffer.length);
+            if (length == 0) {
+                return 0;
+            }
+            int read = 0;
+            while (read < length && hasRemaining()) {
+                final int count = Math.min(length - read, current.length - position);
+                System.arraycopy(current, position, buffer, offset + read, count);
+                position += count;
+                read += count;
+            }
+            remaining -= read;
+            return read == 0 ? -1 : read;
+        }
+
+        @Override
+        public int available() {
+            return (int) Math.min(remaining, Integer.MAX_VALUE);
+        }
+
+        @Override
+        public boolean markSupported() {
+            return true;
+        }
+
+        //The whole body is in memory, so a mark holds however far the stream is read after it
+        @Override
+        public void mark(final int readLimit) {
+            markedRequest = request;
+            markedPart = part;
+            markedPosition = position;
+            markedRemaining = remaining;
+        }
+
+        @Override
+        public void reset() {
+            request = markedRequest;
+            part = markedPart;
+            position = markedPosition;
+            remaining = markedRemaining;
+            current = partBytes();
+        }
     }
 
     private List<Triplet<Object, Integer, RequestBytes>> pairErrorsWithSubmittedMutation(
@@ -545,12 +852,19 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         private final Map<String, Set<String>> oversizedDocumentsByStore = new HashMap<>();
 
         @VisibleForTesting
-        BulkRequestChunker(List<ElasticSearchMutation> requests) throws JsonProcessingException {
+        BulkRequestChunker(List<ElasticSearchMutation> requests) throws IOException {
             List<RequestBytes> serializedRequests = new ArrayList<>(requests.size());
             List<Integer> requestSizesThatWereTooLarge = new ArrayList<>();
             for (ElasticSearchMutation request : requests) {
                 RequestBytes requestBytes = new RequestBytes(request);
                 int requestSerializedSize = requestBytes.getSerializedSize();
+                final ElasticSearchMutation withoutCompleteDocument = request.withoutCompleteDocument();
+                if (requestSerializedSize > bulkChunkSerializedLimitBytes && withoutCompleteDocument != null) {
+                    //The element's complete document only matters when the document turns out to be missing. An update
+                    //it makes too large to send goes without it, and updates an existing document exactly the same way
+                    requestBytes = new RequestBytes(withoutCompleteDocument);
+                    requestSerializedSize = requestBytes.getSerializedSize();
+                }
                 if (requestSerializedSize <= bulkChunkSerializedLimitBytes) {
                     //Only keep items that we can actually send in memory
                     serializedRequests.add(requestBytes);
@@ -611,13 +925,15 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public void bulkRequest(final List<ElasticSearchMutation> requests, String ingestPipeline) throws IOException {
+        final String bulkRequestPath = bulkRequestPath(ingestPipeline);
         BulkRequestChunker bulkRequestChunker = new BulkRequestChunker(requests);
         while (bulkRequestChunker.hasNext()) {
             List<RequestBytes> bulkRequestChunk = bulkRequestChunker.next();
             int retryCount = 0;
             while (true) {
-                final Pair<String, byte[]> bulkRequestInput = buildBulkRequestInput(bulkRequestChunk, ingestPipeline);
-                final Response response = performRequest(REQUEST_TYPE_POST, bulkRequestInput.getValue0(), bulkRequestInput.getValue1());
+                final Request bulkRequest = new Request(REQUEST_TYPE_POST, bulkRequestPath);
+                bulkRequest.addParameter("filter_path", BULK_RESPONSE_FILTER);
+                final Response response = performRequestWithEntity(bulkRequest, new BulkRequestEntity(bulkRequestChunk));
                 try (final InputStream inputStream = response.getEntity().getContent()) {
                     final RestBulkResponse bulkResponse = mapper.readValue(inputStream, RestBulkResponse.class);
                     List<Triplet<Object, Integer, RequestBytes>> bulkItemsThatFailed = pairErrorsWithSubmittedMutation(bulkResponse.getItems(), bulkRequestChunk);
@@ -670,8 +986,17 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public long countTotal(String indexName, Map<String, Object> requestData) throws IOException {
+        return countTotal(indexName, requestData, 0);
+    }
+
+    @Override
+    public long countTotal(String indexName, Map<String, Object> requestData, int atMost) throws IOException {
 
         final Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_count");
+        if (atMost > 0) {
+            // each shard stops collecting at the bound, so a count which only has to reach a limit doesn't count everything
+            request.addParameter("terminate_after", String.valueOf(atMost));
+        }
 
         final byte[] requestDataBytes = mapper.writeValueAsBytes(requestData);
         if (log.isDebugEnabled()) {
@@ -692,16 +1017,19 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
      *
      * @param indexName the name of the ElasticSearch index on which the aggregation is executed
      * @param requestData the filter query
-     * @param agg the name of the aggregation operation (min, max, avg, sum)
+     * @param agg the name of the aggregation operation (min, max, avg, stats)
      * @param fieldName the name of the field on which the aggregation is computed
      * @return the result of the aggregation
      * @throws IOException
      */
-    private double executeAggs(String indexName, Map<String, Object> requestData, String agg, String fieldName) throws IOException {
+    private RestAggValue executeAggs(String indexName, Map<String, Object> requestData, String agg, String fieldName) throws IOException {
 
         final Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_search");
 
         requestData.put("aggs", ImmutableMap.of("agg_result", ImmutableMap.of(agg, ImmutableMap.of("field", fieldName))));
+        // only the aggregation is wanted: no hits, which would come with their sources, and no count of the matches
+        requestData.put("size", 0);
+        requestData.put("track_total_hits", false);
         final byte[] requestDataBytes = mapper.writeValueAsBytes(requestData);
         if (log.isDebugEnabled()) {
             log.debug("Elasticsearch request: " + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestData));
@@ -709,11 +1037,14 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
         final Response response = performRequest(request, requestDataBytes);
         try (final InputStream inputStream = response.getEntity().getContent()) {
-            return mapper.readValue(inputStream, RestAggResponse.class).getAggregations().getAggResult().getValue();
+            return mapper.readValue(inputStream, RestAggResponse.class).getAggregations().getAggResult();
         }
     }
 
-    private Number adaptNumberType(double value, Class<? extends Number> expectedType) {
+    // null for null, which Elasticsearch answers for the minimum, maximum or mean of no values
+    private Number adaptNumberType(Double result, Class<? extends Number> expectedType) {
+        if (result == null) return null;
+        final double value = result;
         if (expectedType == null) return value;
         else if (Byte.class.isAssignableFrom(expectedType)) return (byte)value;
         else if (Short.class.isAssignableFrom(expectedType)) return (short)value;
@@ -725,23 +1056,26 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public Number min(String indexName, Map<String, Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException {
-        return adaptNumberType(executeAggs(indexName, requestData, "min", fieldName), expectedType);
+        return adaptNumberType(executeAggs(indexName, requestData, "min", fieldName).getValue(), expectedType);
     }
 
     @Override
     public Number max(String indexName, Map<String, Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException {
-        return adaptNumberType(executeAggs(indexName, requestData, "max", fieldName), expectedType);
+        return adaptNumberType(executeAggs(indexName, requestData, "max", fieldName).getValue(), expectedType);
     }
 
     @Override
-    public double avg(String indexName, Map<String, Object> requestData, String fieldName) throws IOException {
-        return executeAggs(indexName, requestData, "avg", fieldName);
+    public Double avg(String indexName, Map<String, Object> requestData, String fieldName) throws IOException {
+        return executeAggs(indexName, requestData, "avg", fieldName).getValue();
     }
 
     @Override
     public Number sum(String indexName, Map<String, Object> requestData, String fieldName, Class<? extends Number> expectedType) throws IOException {
-        Class<? extends Number> returnType;
-        double sum = executeAggs(indexName, requestData, "sum", fieldName);
+        // Elasticsearch answers a sum of no values with 0, so the statistics tell by their count that there is none
+        final RestAggValue stats = executeAggs(indexName, requestData, "stats", fieldName);
+        if (stats.getCount() == null || stats.getCount() == 0)
+            return null;
+        final double sum = stats.getSum();
         if (Float.class.isAssignableFrom(expectedType) || Double.class.isAssignableFrom(expectedType))
             return sum;
         else
@@ -768,7 +1102,47 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public void deleteScroll(String scrollId) throws IOException {
-        delegate.performRequest(new Request(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll" + REQUEST_SEPARATOR + scrollId));
+        //The id goes in the body: the path form has been deprecated since Elasticsearch 7, and an id can outgrow a URL
+        release(new Request(REQUEST_TYPE_DELETE, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll"),
+            ImmutableMap.of("scroll_id", ImmutableList.of(scrollId)), "scroll", scrollId);
+    }
+
+    //Releases a scroll context or a point in time. Releasing shouldn't cost the search a round trip, so the request
+    //goes out without waiting for its answer. Should it be lost, the context expires after the keep-alive anyway
+    private void release(Request request, Map<String, Object> body, String kind, String id) throws IOException {
+        request.setEntity(new ByteArrayEntity(mapWriter.writeValueAsBytes(body), ContentType.APPLICATION_JSON));
+        delegate.performRequestAsync(request, new ResponseListener() {
+            @Override
+            public void onSuccess(Response response) {
+            }
+
+            @Override
+            public void onFailure(Exception exception) {
+                //A release the cluster rejects, for example for want of the privilege to clear scrolls, means every
+                //context this client opens stays open until it expires, which is worth one warning. A lost request,
+                //a cluster which is momentarily unable to answer, or a context which had expired already isn't
+                if (exception instanceof ResponseException
+                    && isRejectedRelease(((ResponseException) exception).getResponse().getStatusLine().getStatusCode())
+                    && !warnedAboutRejectedRelease.getAndSet(true)) {
+                    log.warn("Elasticsearch rejected the release of the {} {}, so such contexts stay open until they " +
+                        "expire after {}. Further rejections are logged at debug level.", kind, id, scrollKeepAlive, exception);
+                } else {
+                    log.debug("Could not release the Elasticsearch {} {}, which expires after {}", kind, id, scrollKeepAlive, exception);
+                }
+            }
+        });
+    }
+
+    /**
+     * Whether a status answers the release of a scroll context or a point in time with a rejection which every later
+     * release will meet as well:
+     * a request the cluster doesn't accept (400, 405) or doesn't permit (401, 403). A context which is gone already
+     * (404), a busy cluster (429), a timed out request (408) or a server error are passing, not the release's.
+     */
+    @VisibleForTesting
+    static boolean isRejectedRelease(int statusCode) {
+        return statusCode == HttpStatus.SC_BAD_REQUEST || statusCode == HttpStatus.SC_UNAUTHORIZED
+            || statusCode == HttpStatus.SC_FORBIDDEN || statusCode == HttpStatus.SC_METHOD_NOT_ALLOWED;
     }
 
     public void setBulkRefresh(String bulkRefresh) {
@@ -818,8 +1192,16 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
     }
 
+    //Anywhere from half of the backoff to all of it, so that requests which failed together, as they do when
+    //Elasticsearch is overloaded, don't all come back at the same moment
+    @VisibleForTesting
+    long retryWaitMs(int retryCount) {
+        final long backoffMs = Math.min((long) (retryInitialWaitMs * Math.pow(10, retryCount)), retryMaxWaitMs);
+        return backoffMs / 2 + ThreadLocalRandom.current().nextLong(backoffMs - backoffMs / 2 + 1);
+    }
+
     private void performRetryWait(int retryCount) {
-        long waitDurationMs = Math.min((long) (retryInitialWaitMs * Math.pow(10, retryCount)), retryMaxWaitMs);
+        final long waitDurationMs = retryWaitMs(retryCount);
         log.warn("Retrying Elasticsearch request in {} ms. Attempt {} of {}", waitDurationMs, retryCount, retryAttemptLimit);
         try {
             Thread.sleep(waitDurationMs);
@@ -832,8 +1214,11 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     }
 
     private Response performRequest(Request request, byte[] requestData) throws IOException {
+        return performRequestWithEntity(request,
+            requestData != null ? new ByteArrayEntity(requestData, ContentType.APPLICATION_JSON) : null);
+    }
 
-        final HttpEntity entity = requestData != null ? new ByteArrayEntity(requestData, ContentType.APPLICATION_JSON) : null;
+    private Response performRequestWithEntity(Request request, HttpEntity entity) throws IOException {
 
         request.setEntity(entity);
 

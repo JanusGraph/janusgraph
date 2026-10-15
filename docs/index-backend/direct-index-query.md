@@ -151,4 +151,4 @@ data is inserted the changes may not be visible. In
 this delay is [index refresh
 interval](https://www.elastic.co/guide/en/elasticsearch/reference/5.4/index-modules.html#dynamic-index-settings).
 In [Solr](solr.md) the primary configuration option is [max
-time](https://lucene.apache.org/solr/guide/6_6/near-real-time-searching.html).
+time](https://solr.apache.org/guide/solr/9_10/configuration-guide/commits-transaction-logs.html#hard-commits-vs-soft-commits).

@@ -33,6 +33,8 @@ public class ConfigHelper
     private static final String INPUT_SPLIT_SIZE_IN_MB_CONFIG = "cassandra.input.split.size_mb";
     private static final String INPUT_WIDEROWS_CONFIG = "cassandra.input.widerows";
     private static final int DEFAULT_SPLIT_SIZE = 64 * 1024;
+    private static final String INPUT_SPLIT_THREADS_CONFIG = "cassandra.input.split.threads";
+    private static final int DEFAULT_SPLIT_THREADS = 128;
     private static final String INPUT_INITIAL_ADDRESS = "cassandra.input.address";
     private static final String READ_CONSISTENCY_LEVEL = "cassandra.consistencylevel.read";
 
@@ -71,6 +73,23 @@ public class ConfigHelper
     public static int getInputSplitSizeInMb(Configuration conf)
     {
         return conf.getInt(INPUT_SPLIT_SIZE_IN_MB_CONFIG, -1);
+    }
+
+
+    /**
+     * The most threads which fetch the splits of the input's token ranges at once, a range on each. The default is
+     * recommended; lower it to fetch them more gently, or raise it for many more token ranges.
+     * @param conf  Job configuration you are about to run
+     * @return      the number of threads, 128 if it is undefined.
+     */
+    public static int getInputSplitThreads(Configuration conf)
+    {
+        return conf.getInt(INPUT_SPLIT_THREADS_CONFIG, DEFAULT_SPLIT_THREADS);
+    }
+
+    public static void setInputSplitThreads(Configuration conf, int threads)
+    {
+        conf.setInt(INPUT_SPLIT_THREADS_CONFIG, threads);
     }
 
 

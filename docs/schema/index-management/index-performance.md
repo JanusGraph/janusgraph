@@ -296,6 +296,15 @@ When using `order().by()` it is important to note that:
 -   Only Elasticsearch and Solr mixed index backends support ordering
     property keys with **LIST** cardinality natively and efficiently.
 
+-   Strings are ordered by their code points, as the mixed index
+    backends sort them, whether a mixed index or JanusGraph sorts the
+    results. The edges and properties of a vertex, which a
+    vertex-centric index sorts, are ordered by the UTF-16 code units
+    of their sort keys instead. The two orders differ only where, at
+    the first character in which two strings differ, one has a
+    character from U+10000 up, such as an emoji, and the other one
+    from U+E000 to U+FFFF.
+
 ### Label Constraint
 
 In many cases it is desirable to only index vertices or edges with a

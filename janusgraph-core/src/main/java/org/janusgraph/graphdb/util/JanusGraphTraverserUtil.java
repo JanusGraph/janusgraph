@@ -14,43 +14,35 @@
 
 package org.janusgraph.graphdb.util;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.AbstractTraverser;
-import org.reflections8.Reflections;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Reflection based helper tool to safely get `loops` for any Traverser implementation.
  */
 public class JanusGraphTraverserUtil {
 
-    private static final Set<Class<?>> TRAVERSERS_WITH_LOOP_SUPPORT = new HashSet<>();
-    private static final Set<Class<?>> TRAVERSERS_WITHOUT_LOOP_SUPPORT = new HashSet<>();
-
-    static {
-        for(String packageToScan : Arrays.asList("org.apache.tinkerpop", "org.janusgraph")){
-            Reflections reflections = new Reflections(packageToScan);
-            Set<Class<? extends Traverser>> subTypesOfTraverser = reflections.getSubTypesOf(Traverser.class);
-            for (Class<?> traverserType : subTypesOfTraverser) {
-                addTraverserClass(traverserType);
+    // Whether a Traverser implementation may support `loops`, worked out once per class when a traverser of it is first
+    // seen. A ClassValue is safe to read and to fill from any thread, and doesn't keep the class from being unloaded
+    private static final ClassValue<Boolean> LOOPS_POTENTIALLY_SUPPORTED = new ClassValue<Boolean>() {
+        @Override
+        protected Boolean computeValue(Class<?> traverserType) {
+            try {
+                return isLoopsPotentiallySupported(traverserType.getMethod("loops").getDeclaringClass());
+            } catch (NoSuchMethodException e) {
+                return false;
+            } catch (SecurityException e) {
+                // Where reflection is denied, the call itself may still be allowed: getLoops() tries it, and falls
+                // back to 0 when it fails
+                return true;
             }
         }
-    }
+    };
 
-    private static void addTraverserClass(Class<?> traverserType){
-        try {
-            Class<?> declaredMethodClass = traverserType.getMethod("loops").getDeclaringClass();
-            if(isLoopsPotentiallySupported(declaredMethodClass)){
-                TRAVERSERS_WITH_LOOP_SUPPORT.add(traverserType);
-            } else {
-                TRAVERSERS_WITHOUT_LOOP_SUPPORT.add(traverserType);
-            }
-        } catch (NoSuchMethodException e) {
-            TRAVERSERS_WITHOUT_LOOP_SUPPORT.add(traverserType);
-        }
+    @VisibleForTesting
+    static boolean isLoopsPotentiallySupportedBy(Class<? extends Traverser> traverserType) {
+        return LOOPS_POTENTIALLY_SUPPORTED.get(traverserType);
     }
 
     private static boolean isLoopsPotentiallySupported(Class<?> type){
@@ -64,17 +56,12 @@ public class JanusGraphTraverserUtil {
      * @return `loops` result if Traverser implementation supports it or `0` otherwise.
      */
     public static int getLoops(Traverser<?> traverser){
-        if(TRAVERSERS_WITH_LOOP_SUPPORT.contains(traverser.getClass())){
+        if (LOOPS_POTENTIALLY_SUPPORTED.get(traverser.getClass())) {
             try{
                 return traverser.loops();
             } catch (Exception e){
                 // ignored
             }
-        } else if(!TRAVERSERS_WITHOUT_LOOP_SUPPORT.contains(traverser.getClass())){
-            // In case the Traverser implementation is not knows (i.e. it is an anonymous class or something which
-            // isn't placed under standard TinkerPop or JanusGraph packages) then we add this implementation.
-            addTraverserClass(traverser.getClass());
-            return getLoops(traverser);
         }
         return 0;
     }

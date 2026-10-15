@@ -39,12 +39,10 @@ import java.util.Map;
  */
 public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implements InternalRelationType {
 
-    private ConsistencyModifier consistency = null;
-    private Integer ttl = null;
-    //Both index caches are built on first read and published through their field, so they are volatile: without it a
-    //thread which shares the transaction can see the reference before the list behind it is completely built, and be
-    //handed fewer indexes than the key has. consistency and ttl hold immutable values, for which a stale read only
-    //recomputes.
+    //Built from the definition and the related schema elements on first read and cleared by resetCache(), under the
+    //same rules as the caches of JanusGraphSchemaVertex: kept only if no reset overlapped the read, and volatile.
+    private volatile ConsistencyModifier consistency = null;
+    private volatile Integer ttl = null;
     private volatile List<IndexType> indexes = null;
     private volatile List<IndexReferenceType> indexesReferences = null;
 
@@ -79,18 +77,24 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
 
     @Override
     public ConsistencyModifier getConsistencyModifier() {
-        if (consistency==null) {
-            consistency = TypeUtil.getConsistencyModifier(this);
+        ConsistencyModifier result = consistency;
+        if (result == null) {
+            final long resetsBefore = cacheResets();
+            result = TypeUtil.getConsistencyModifier(this);
+            keepUnlessReset(resetsBefore, result, value -> consistency = value);
         }
-        return consistency;
+        return result;
     }
 
     @Override
     public Integer getTTL() {
-        if (null == ttl) {
-            ttl = TypeUtil.getTTL(this);
+        Integer result = ttl;
+        if (result == null) {
+            final long resetsBefore = cacheResets();
+            result = TypeUtil.getTTL(this);
+            keepUnlessReset(resetsBefore, result, value -> ttl = value);
         }
-        return ttl;
+        return result;
     }
 
     @Override
@@ -116,8 +120,9 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
     public Iterable<IndexType> getKeyIndexes() {
         List<IndexType> result = indexes;
         if (result == null) {
+            final long resetsBefore = cacheResets();
             result = getIndexes();
-            indexes = result;
+            keepUnlessReset(resetsBefore, result, value -> indexes = value);
         }
         return result;
     }
@@ -126,8 +131,9 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
     public Iterable<IndexReferenceType> getKeyIndexesReferences() {
         List<IndexReferenceType> result = indexesReferences;
         if (result == null) {
+            final long resetsBefore = cacheResets();
             result = getIndexesReferences();
-            indexesReferences = result;
+            keepUnlessReset(resetsBefore, result, value -> indexesReferences = value);
         }
         return result;
     }
@@ -164,6 +170,8 @@ public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implemen
     @Override
     public void resetCache() {
         super.resetCache();
+        consistency = null;
+        ttl = null;
         indexes = null;
         indexesReferences = null;
     }

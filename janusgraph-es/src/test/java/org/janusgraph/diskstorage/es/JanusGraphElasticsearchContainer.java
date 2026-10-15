@@ -17,17 +17,22 @@ package org.janusgraph.diskstorage.es;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.util.system.IOUtils;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.BULK_REFRESH;
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.INTERFACE;
@@ -41,7 +46,23 @@ public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
     private static final String DEFAULT_IMAGE = "docker.elastic.co/elasticsearch/elasticsearch";
 
     public static ElasticMajorVersion getEsMajorVersion() {
-        return ElasticMajorVersion.parse(getVersion());
+        //OpenSearch provides the Elasticsearch 7 API
+        return isOpenSearch() ? ElasticMajorVersion.SEVEN : ElasticMajorVersion.parse(getVersion());
+    }
+
+    /**
+     * Whether the tests run against OpenSearch. The system property {@code elasticsearch.docker.distribution}
+     * ({@code elasticsearch} or {@code opensearch}) decides. Without it, an image whose repository is named
+     * {@code opensearch}, like {@code opensearchproject/opensearch} from any registry, is OpenSearch.
+     */
+    public static boolean isOpenSearch() {
+        final String distribution = System.getProperty("elasticsearch.docker.distribution");
+        if (distribution != null && !distribution.isEmpty()) {
+            return ElasticMajorVersion.OPENSEARCH_DISTRIBUTION.equalsIgnoreCase(distribution);
+        }
+        final String repository = DockerImageName.parse(getElasticImage()).getRepository();
+        return repository.equals(ElasticMajorVersion.OPENSEARCH_DISTRIBUTION)
+            || repository.endsWith("/" + ElasticMajorVersion.OPENSEARCH_DISTRIBUTION);
     }
 
     public static String getVersion() {
@@ -63,14 +84,21 @@ public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
     }
 
     public JanusGraphElasticsearchContainer(boolean bindDefaultPort) {
-        super(getElasticImage() + ":" + getVersion());
+        super(toDockerImageName());
         withEnv("transport.host", "0.0.0.0");
-        withEnv("xpack.security.enabled", "false");
         withEnv("action.destructive_requires_name", "false");
-        if (getEsMajorVersion().value > 6) {
-            withEnv("ingest.geoip.downloader.enabled", "false");
+        if (isOpenSearch()) {
+            //OpenSearch refuses to start with the settings of Elasticsearch's X-Pack and GeoIP downloader
+            withEnv("DISABLE_SECURITY_PLUGIN", "true");
+            withEnv("DISABLE_INSTALL_DEMO_CONFIG", "true");
+            withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m");
+        } else {
+            withEnv("xpack.security.enabled", "false");
+            if (getEsMajorVersion().value > 6) {
+                withEnv("ingest.geoip.downloader.enabled", "false");
+            }
+            withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
         }
-        withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
         if (getEsMajorVersion().value == 5) {
             withEnv("script.max_compilations_per_minute", "30");
         }
@@ -78,6 +106,12 @@ public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
         if(bindDefaultPort){
             addFixedExposedPort(ELASTIC_PORT, ELASTIC_PORT);
         }
+    }
+
+    private static DockerImageName toDockerImageName() {
+        final DockerImageName imageName = DockerImageName.parse(getElasticImage() + ":" + getVersion());
+        //Starting OpenSearch is the same as starting Elasticsearch without security: a single node which logs "started"
+        return isOpenSearch() ? imageName.asCompatibleSubstituteFor(DEFAULT_IMAGE) : imageName;
     }
 
     protected void containerIsStarted(InspectContainerResponse containerInfo) {
@@ -113,12 +147,35 @@ public class JanusGraphElasticsearchContainer extends ElasticsearchContainer {
         return config;
     }
 
+    //Removes a document behind the back of JanusGraph, which is how an index comes to disagree with the graph. The
+    //document has to be there: a test which calls this wants to take away something the graph believes to exist, so
+    //a 404 means the test is not set up the way it thinks and is a failure, not a success. Up to Elasticsearch 6 the
+    //document is addressed through its mapping type, which JanusGraph names after the store
+    public void deleteDocument(String indexName, String store, String documentId) throws IOException {
+        final HttpHost host = new HttpHost(InetAddress.getByName(getHostname()), getPort());
+        final String type = getEsMajorVersion().value <= 6 ? store : "_doc";
+        final URI uri;
+        try {
+            //Encoded as path segments, which is not what a query string encoder produces for a space or a slash
+            uri = new URIBuilder().setPathSegments(indexName, type, documentId).setParameter("refresh", "true").build();
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
+        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+             CloseableHttpResponse response = httpClient.execute(host, new HttpDelete(uri))) {
+            if (response.getStatusLine().getStatusCode() != 200) {
+                throw new IOException("Deleting " + indexName + "/" + type + "/" + documentId + " was answered with "
+                    + response.getStatusLine()
+                    + (response.getEntity() == null ? "" : ": " + EntityUtils.toString(response.getEntity())));
+            }
+        }
+    }
+
     public boolean indexExists(String name) throws IOException {
-        CloseableHttpClient httpClient = HttpClients.createDefault();
-        HttpHost host = new HttpHost(InetAddress.getByName(getHostname()), getPort());
-        final CloseableHttpResponse response = httpClient.execute(host, new HttpHead(name));
-        final boolean exists = response.getStatusLine().getStatusCode() == 200;
-        IOUtils.closeQuietly(response);
-        return exists;
+        final HttpHost host = new HttpHost(InetAddress.getByName(getHostname()), getPort());
+        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+             CloseableHttpResponse response = httpClient.execute(host, new HttpHead(name))) {
+            return response.getStatusLine().getStatusCode() == 200;
+        }
     }
 }

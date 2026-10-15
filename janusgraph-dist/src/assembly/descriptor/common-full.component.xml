@@ -64,6 +64,9 @@
             </includes>
             <excludes>
                 <exclude>${project.groupId}:janusgraph-core:jar:javadoc:${project.version}</exclude>
+                <!-- solr-solrj contains a newer copy of the org.noggit classes, which SolrJ needs (noggit 0.8 lacks
+                     ObjectBuilder.getValStrict()) and which Spatial4j's GeoJSON reader works with as well -->
+                <exclude>org.noggit:noggit</exclude>
             </excludes>
         </dependencySet>
     </dependencySets>

@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.solr;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
@@ -33,7 +34,9 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -42,11 +45,14 @@ import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.impl.PreemptiveAuth;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -55,6 +61,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.zookeeper.KeeperException;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
@@ -113,14 +120,18 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -188,9 +199,21 @@ public class SolrIndex implements IndexProvider {
             "Number of shards for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
+    /**
+     * @deprecated Only Solr 8 supports it: Solr 9 removed the {@code maxShardsPerNode} parameter of the collection
+     * creation.
+     */
+    @Deprecated
     public static final ConfigOption<Integer> MAX_SHARDS_PER_NODE = new ConfigOption<>(SOLR_NS,"max-shards-per-node",
-            "Maximum number of shards per node. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
+            "Maximum number of shards per node. This applies when creating a new collection which is only supported under the SolrCloud operation mode. " +
+            "Deprecated: only Solr 8 supports it (see major-version), Solr 9 removed the maxShardsPerNode parameter of the collection creation.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
+
+    public static final ConfigOption<Integer> SOLR_MAJOR_VERSION = new ConfigOption<>(SOLR_NS,"major-version",
+            "Major version of the Solr servers, for example 8 or 9. JanusGraph adapts the requests which Solr versions " +
+            "treat differently to it: only for Solr 8 the creation of a collection sends max-shards-per-node. If it " +
+            "isn't set, JanusGraph asks Solr for its version when it creates a collection, and assumes Solr 8 if that fails.",
+            ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.positiveInt());
 
     public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<>(SOLR_NS,"replication-factor",
             "Replication factor for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
@@ -295,7 +318,9 @@ public class SolrIndex implements IndexProvider {
                         zookeeperUrl[i] = hostAndPort;
                     }
                 }
-                final CloudSolrClient.Builder builder = new CloudSolrClient
+                // CloudLegacySolrClient is the SolrCloud client on Apache HttpClient, like the clients of the HTTP mode.
+                // SolrJ 9's CloudSolrClient.Builder builds the Jetty based CloudHttp2SolrClient instead.
+                final CloudLegacySolrClient.Builder builder = new CloudLegacySolrClient
                     .Builder(Arrays.asList(zookeeperUrl), chroot)
                     .withLBHttpSolrClientBuilder(
                         new LBHttpSolrClient.Builder()
@@ -313,8 +338,11 @@ public class SolrIndex implements IndexProvider {
                 clientParams.add(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, config.get(HTTP_MAX_CONNECTIONS_PER_HOST).toString());
                 clientParams.add(HttpClientUtil.PROP_MAX_CONNECTIONS, config.get(HTTP_GLOBAL_MAX_CONNECTIONS).toString());
                 final HttpClient client = HttpClientUtil.createClient(clientParams);
+                // SolrJ 9 takes the timeouts of the requests from the client's configuration. Keep SolrJ 8's read
+                // timeout of 120 s instead of the 10 minutes of HttpClientUtil.
                 solrClient = new LBHttpSolrClient.Builder()
                     .withHttpClient(client)
+                    .withSocketTimeout(120, TimeUnit.SECONDS)
                     .withBaseSolrUrls(config.get(HTTP_URLS))
                     .build();
 
@@ -761,28 +789,39 @@ public class SolrIndex implements IndexProvider {
         else return value.doubleValue();
     }
 
+    // Whether any matching document holds a value of the field: the minimum, maximum, sum or mean of no values is none
+    private static boolean hasValues(FieldStatsInfo stats) {
+        return stats != null && stats.getCount() != null && stats.getCount() > 0;
+    }
+
     private Number executeMax(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName, Class fieldType) throws SolrServerException, IOException {
         final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
-        solrQuery.setGetFieldStatistics("{!max=true}" + key);
+        solrQuery.setGetFieldStatistics("{!max=true count=true}" + key);
         final QueryResponse response = solrClient.query(collection, solrQuery);
         logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
-        return adaptNumberType((Number)response.getFieldStatsInfo().get(key).getMax(), fieldType);
+        final FieldStatsInfo stats = response.getFieldStatsInfo().get(key);
+        return hasValues(stats) ? adaptNumberType((Number) stats.getMax(), fieldType) : null;
     }
 
     private Number executeMin(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName, Class fieldType) throws SolrServerException, IOException {
         final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
-        solrQuery.setGetFieldStatistics("{!min=true}" + key);
+        solrQuery.setGetFieldStatistics("{!min=true count=true}" + key);
         final QueryResponse response = solrClient.query(collection, solrQuery);
         logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
-        return adaptNumberType((Number)response.getFieldStatsInfo().get(key).getMin(), fieldType);
+        final FieldStatsInfo stats = response.getFieldStatsInfo().get(key);
+        return hasValues(stats) ? adaptNumberType((Number) stats.getMin(), fieldType) : null;
     }
 
     private Number executeSum(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName, Class fieldType) throws SolrServerException, IOException {
         final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
-        solrQuery.setGetFieldStatistics("{!sum=true}" + key);
+        solrQuery.setGetFieldStatistics("{!sum=true count=true}" + key);
         final QueryResponse response = solrClient.query(collection, solrQuery);
         logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
-        Number sum = ((Number)response.getFieldStatsInfo().get(key).getSum());
+        final FieldStatsInfo stats = response.getFieldStatsInfo().get(key);
+        if (!hasValues(stats)) {
+            return null;
+        }
+        Number sum = (Number) stats.getSum();
         if (Float.class.isAssignableFrom(fieldType) || Double.class.isAssignableFrom(fieldType))
             return sum.doubleValue();
         else
@@ -791,11 +830,11 @@ public class SolrIndex implements IndexProvider {
 
     private Number executeAvg(IndexQuery query, String collection, SolrQuery solrQuery, KeyInformation.IndexRetriever information, String fieldName) throws SolrServerException, IOException {
         final String key = mapKey2Field(fieldName, information.get(collection, fieldName));
-        solrQuery.setGetFieldStatistics(key);
-        solrQuery.setGetFieldStatistics("{!mean=true}" + key);
+        solrQuery.setGetFieldStatistics("{!mean=true count=true}" + key);
         final QueryResponse response = solrClient.query(collection, solrQuery);
         logger.debug("Executed query [{}] in {} ms", query, response.getElapsedTime());
-        return ((Number)response.getFieldStatsInfo().get(key).getMean()).doubleValue();
+        final FieldStatsInfo stats = response.getFieldStatsInfo().get(key);
+        return hasValues(stats) ? ((Number) stats.getMean()).doubleValue() : null;
     }
 
     @Override
@@ -1006,7 +1045,7 @@ public class SolrIndex implements IndexProvider {
         } else if (predicate == Cmp.EQUAL) {
             return (stringKey + ":\"" + escapeValue(value) + "\"");
         } else if (predicate == Cmp.NOT_EQUAL) {
-            return (key + ":* -" + key + ":\"" + escapeValue(value) + "\"");
+            return (stringKey + ":* -" + stringKey + ":\"" + escapeValue(value) + "\"");
         } else if (predicate == Text.FUZZY) {
             return (stringKey + ":" + escapeValue(value) + "~" + Text.getMaxEditDistance(value.toString()));
         } else if (predicate == Text.CONTAINS_FUZZY) {
@@ -1084,9 +1123,17 @@ public class SolrIndex implements IndexProvider {
         }
     }
 
-    private String toIsoDate(Date value) {
+    /**
+     * A date as Solr reads it: an ISO 8601 instant in UTC, with milliseconds, in the Gregorian calendar of the root
+     * locale whatever the calendar of the default locale is.
+     *
+     * @param value the date
+     * @return the date as {@code yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}
+     */
+    @VisibleForTesting
+    static String toIsoDate(Date value) {
         final TimeZone tz = TimeZone.getTimeZone("UTC");
-        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
         df.setTimeZone(tz);
         return df.format(value);
     }
@@ -1122,7 +1169,7 @@ public class SolrIndex implements IndexProvider {
         }
         try {
             logger.debug("Clearing storage from Solr: {}", solrClient);
-            final ZkStateReader zkStateReader = ((CloudSolrClient) solrClient).getZkStateReader();
+            final ZkStateReader zkStateReader = ZkStateReader.from((CloudSolrClient) solrClient);
             zkStateReader.forciblyRefreshAllClusterStateSlow();
             final ClusterState clusterState = zkStateReader.getClusterState();
             for (final String collection : clusterState.getCollectionsMap().keySet()) {
@@ -1265,7 +1312,7 @@ public class SolrIndex implements IndexProvider {
         if (mode!=Mode.CLOUD) throw new UnsupportedOperationException("Operation only supported for SolrCloud");
         final CloudSolrClient server = (CloudSolrClient) solrClient;
         try {
-            final ZkStateReader zkStateReader = server.getZkStateReader();
+            final ZkStateReader zkStateReader = ZkStateReader.from(server);
             zkStateReader.forciblyRefreshAllClusterStateSlow();
             final ClusterState clusterState = zkStateReader.getClusterState();
             final Map<String, DocCollection> collections = clusterState.getCollectionsMap();
@@ -1340,20 +1387,8 @@ public class SolrIndex implements IndexProvider {
     private static void createCollectionIfNotExists(CloudSolrClient client, Configuration config, String collection)
             throws IOException, SolrServerException, KeeperException, InterruptedException {
         if (!checkIfCollectionExists(client, collection)) {
-            final Integer numShards = config.get(NUM_SHARDS);
-            final Integer maxShardsPerNode = config.get(MAX_SHARDS_PER_NODE);
-            final Integer replicationFactor = config.get(REPLICATION_FACTOR);
-
-
-            // Ideally this property used so a new configset is not uploaded for every single
-            // index (collection) created in solr.
-            // if a generic configSet is not set, make the configset name the same as the collection.
-            // This was the default behavior before a default configSet could be specified
-            final String  genericConfigSet = config.has(SOLR_DEFAULT_CONFIG) ? config.get(SOLR_DEFAULT_CONFIG):collection;
-
-            final CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collection, genericConfigSet, numShards, replicationFactor);
-            createRequest.setMaxShardsPerNode(maxShardsPerNode);
-
+            final CollectionAdminRequest.Create createRequest = createCollectionRequest(config, collection,
+                () -> reportedSolrMajorVersion(client));
             final CollectionAdminResponse createResponse = createRequest.process(client);
             if (createResponse.isSuccess()) {
                 logger.trace("Collection {} successfully created.", collection);
@@ -1366,10 +1401,80 @@ public class SolrIndex implements IndexProvider {
     }
 
     /**
+     * Builds the request creating the collection. Only Solr 8 supports maxShardsPerNode: the configured major version
+     * of Solr decides whether the request sends it, otherwise the version Solr reports.
+     */
+    static CollectionAdminRequest.Create createCollectionRequest(Configuration config, String collection,
+                                                                 Supplier<OptionalInt> reportedSolrMajorVersion) {
+        final Integer numShards = config.get(NUM_SHARDS);
+        final Integer replicationFactor = config.get(REPLICATION_FACTOR);
+
+        // Ideally this property used so a new configset is not uploaded for every single
+        // index (collection) created in solr.
+        // if a generic configSet is not set, make the configset name the same as the collection.
+        // This was the default behavior before a default configSet could be specified
+        final String  genericConfigSet = config.has(SOLR_DEFAULT_CONFIG) ? config.get(SOLR_DEFAULT_CONFIG):collection;
+
+        final OptionalInt solrMajorVersion = config.has(SOLR_MAJOR_VERSION)
+            ? OptionalInt.of(config.get(SOLR_MAJOR_VERSION)) : reportedSolrMajorVersion.get();
+        if (solrMajorVersion.isPresent() && solrMajorVersion.getAsInt() >= 9) {
+            if (config.has(MAX_SHARDS_PER_NODE)) {
+                logger.warn("The option index.[X].solr.{} is ignored because Solr 9 removed the maxShardsPerNode " +
+                    "parameter of the collection creation.", MAX_SHARDS_PER_NODE.getName());
+            }
+            return CollectionAdminRequest.createCollection(collection, genericConfigSet, numShards, replicationFactor);
+        }
+        // Solr 9 ignores maxShardsPerNode, so it is sent when the version of Solr is unknown too
+        return new CreateWithMaxShardsPerNode(collection, genericConfigSet, numShards, replicationFactor,
+            config.get(MAX_SHARDS_PER_NODE));
+    }
+
+    /**
+     * Returns the major version of the Solr node which answers the request, or nothing if it can't be determined.
+     */
+    private static OptionalInt reportedSolrMajorVersion(SolrClient client) {
+        Object cause;
+        try {
+            final Object version = client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH))
+                .findRecursive("lucene", "solr-spec-version");
+            if (version != null) {
+                return OptionalInt.of(Integer.parseInt(version.toString().split("\\.")[0]));
+            }
+            cause = "no lucene.solr-spec-version in " + CommonParams.SYSTEM_INFO_PATH;
+        } catch (SolrServerException | IOException | SolrException | NumberFormatException e) {
+            cause = e;
+        }
+        logger.warn("Unable to determine the version of Solr, so the collection creation assumes Solr 8. Set " +
+            "index.[X].solr.{} to skip the detection. Cause: {}", SOLR_MAJOR_VERSION.getName(), cause);
+        return OptionalInt.empty();
+    }
+
+    /**
+     * The collection creation of Solr 8 puts at most {@code maxShardsPerNode} replicas of the new collection on a node,
+     * 1 unless the request says otherwise. SolrJ 9 no longer offers this parameter, because Solr 9 removed that limit.
+     */
+    private static class CreateWithMaxShardsPerNode extends CollectionAdminRequest.Create {
+        private final int maxShardsPerNode;
+
+        private CreateWithMaxShardsPerNode(String collection, String config, Integer numShards, Integer replicationFactor,
+                                           int maxShardsPerNode) {
+            super(collection, config, numShards, replicationFactor, null, null);
+            this.maxShardsPerNode = maxShardsPerNode;
+        }
+
+        @Override
+        public SolrParams getParams() {
+            final ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+            params.set("maxShardsPerNode", maxShardsPerNode);
+            return params;
+        }
+    }
+
+    /**
      * Checks if the collection has already been created in Solr.
      */
     private static boolean checkIfCollectionExists(CloudSolrClient server, String collection) throws KeeperException, InterruptedException {
-        final ZkStateReader zkStateReader = server.getZkStateReader();
+        final ZkStateReader zkStateReader = ZkStateReader.from(server);
         zkStateReader.forceUpdateCollection(collection);
         final ClusterState clusterState = zkStateReader.getClusterState();
         return clusterState.getCollectionOrNull(collection) != null;
@@ -1379,7 +1484,7 @@ public class SolrIndex implements IndexProvider {
      * Wait for all the collection shards to be ready.
      */
     private static void waitForRecoveriesToFinish(CloudSolrClient server, String collection) throws KeeperException, InterruptedException {
-        final ZkStateReader zkStateReader = server.getZkStateReader();
+        final ZkStateReader zkStateReader = ZkStateReader.from(server);
         try {
             boolean cont = true;
 
@@ -1395,7 +1500,7 @@ public class SolrIndex implements IndexProvider {
                for (final Map.Entry<String, Slice> entry : slices.entrySet()) {
                     final Map<String, Replica> shards = entry.getValue().getReplicasMap();
                     for (final Map.Entry<String, Replica> shard : shards.entrySet()) {
-                        final String state = shard.getValue().getStr(ZkStateReader.STATE_PROP).toUpperCase();
+                        final String state = shard.getValue().getStr(ZkStateReader.STATE_PROP).toUpperCase(Locale.ROOT);
                         if ((Replica.State.RECOVERING.name().equals(state) || Replica.State.DOWN.name().equals(state))
                                 && clusterState.liveNodesContain(shard.getValue().getStr(
                                 ZkStateReader.NODE_NAME_PROP))) {

@@ -37,6 +37,11 @@ public class CQLElasticsearchCustomIdTest extends JanusGraphCustomIdIndexTest {
             cql.getConfiguration(CQLElasticsearchCustomIdTest.class.getName()), indexBackends);
         for (String indexBackend : indexBackends) {
             config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, indexBackend);
+            // A limited result beyond 10,000 hits, as a query the index can't sort reads, in many pages of 3 as well
+            config.set(ElasticSearchIndex.LIMITED_RESULT_MAX_PAGE_SIZE, 3, indexBackend);
+            // A point in time for the results which come in the order of the index, a scroll for the others
+            config.set(ElasticSearchIndex.PAGING_MODE, ElasticSearchPagingMode.ADAPTIVE_POINT_IN_TIME.getConfigName(),
+                indexBackend);
         }
         return config;
     }

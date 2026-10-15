@@ -51,15 +51,16 @@ public abstract class AbstractIDAuthority implements IDAuthority {
 
     protected final String metricsPrefix;
 
+    //Set under this authority's monitor before its first claim, which makes it the active sizer under the monitor too,
+    //so that it can't change from then on
     private IDBlockSizer blockSizer;
-    private volatile boolean isActive;
+    //The sizer of every claim, read without the monitor
+    private volatile IDBlockSizer activeBlockSizer;
 
     public AbstractIDAuthority(Configuration config) {
         this.uid = config.get(UNIQUE_INSTANCE_ID);
 
         this.uidBytes = uid.getBytes(UTF8_CHARSET);
-
-        this.isActive = false;
 
         this.idApplicationWaitMS =
                 config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT);
@@ -70,8 +71,19 @@ public abstract class AbstractIDAuthority implements IDAuthority {
     @Override
     public synchronized void setIDBlockSizer(IDBlockSizer sizer) {
         Preconditions.checkNotNull(sizer);
-        if (isActive) throw new IllegalStateException("IDBlockSizer cannot be changed after IDAuthority is in use");
+        if (activeBlockSizer != null) throw new IllegalStateException("IDBlockSizer cannot be changed after IDAuthority is in use");
         this.blockSizer = sizer;
+    }
+
+    private IDBlockSizer activeBlockSizer() {
+        IDBlockSizer sizer = activeBlockSizer;
+        if (sizer == null) {
+            synchronized (this) {
+                Preconditions.checkArgument(blockSizer != null, "Blocksizer has not yet been initialized");
+                activeBlockSizer = sizer = blockSizer;
+            }
+        }
+        return sizer;
     }
 
     @Override
@@ -94,9 +106,7 @@ public abstract class AbstractIDAuthority implements IDAuthority {
      * @return
      */
     protected long getBlockSize(final int idNamespace) {
-        Preconditions.checkArgument(blockSizer != null, "Blocksizer has not yet been initialized");
-        isActive = true;
-        long blockSize = blockSizer.getBlockSize(idNamespace);
+        long blockSize = activeBlockSizer().getBlockSize(idNamespace);
         Preconditions.checkArgument(blockSize>0,"Invalid block size: %s",blockSize);
         Preconditions.checkArgument(blockSize<getIdUpperBound(idNamespace),
                 "Block size [%s] cannot be larger than upper bound [%s] for partition [%s]",blockSize,getIdUpperBound(idNamespace),idNamespace);
@@ -104,9 +114,7 @@ public abstract class AbstractIDAuthority implements IDAuthority {
     }
 
     protected long getIdUpperBound(final int idNamespace) {
-        Preconditions.checkArgument(blockSizer != null, "Blocksizer has not yet been initialized");
-        isActive = true;
-        long upperBound = blockSizer.getIdUpperBound(idNamespace);
+        long upperBound = activeBlockSizer().getIdUpperBound(idNamespace);
         Preconditions.checkArgument(upperBound>0,"Invalid upper bound: %s",upperBound);
         return upperBound;
     }

@@ -31,37 +31,35 @@ public class CQLSliceQueryUtil {
 
     private CQLSliceQueryUtil(){}
 
-    public static QueryGroups getQueriesGroupedByDirectEqualityQueries(KeysQueriesGroup<StaticBuffer, SliceQuery> queryGroup, int totalQueryGroupsSize, int sliceGroupingLimit){
-        Map<Integer, List<SliceQuery>> directEqualityGroupedQueriesByLimit = new HashMap<>(queryGroup.getQueries().size());
-        List<SliceQuery> separateRangeQueries = new ArrayList<>(queryGroup.getQueries().size());
+    /**
+     * Groups the queries which read a single column, so that each group is read with one query per key or keys group.
+     * A group holds at most `sliceGroupingLimit` queries, and no more than the limit they share: the query of a group
+     * asks for that many columns, and a query whose column was cut off would be cached with an incomplete result.
+     * A full group is followed by another one for the same limit. Queries which read a range of columns are read
+     * separately.
+     */
+    public static QueryGroups getQueriesGroupedByDirectEqualityQueries(KeysQueriesGroup<StaticBuffer, SliceQuery> queryGroup, int sliceGroupingLimit){
+        final List<QueryGroups.DirectEqualityGroup> directEqualityGroups = new ArrayList<>();
+        //The group of each limit which still takes queries
+        final Map<Integer, List<SliceQuery>> openGroupsByLimit = new HashMap<>();
+        final List<SliceQuery> separateRangeQueries = new ArrayList<>(queryGroup.getQueries().size());
         for(SliceQuery query : queryGroup.getQueries()){
             if(query.isDirectColumnByStartOnlyAllowed()){
-                List<SliceQuery> directEqualityQueries = directEqualityGroupedQueriesByLimit.get(query.getLimit());
-                if(directEqualityQueries == null){
-                    directEqualityQueries = new ArrayList<>(totalQueryGroupsSize);
-                    directEqualityQueries.add(query);
-                    directEqualityGroupedQueriesByLimit.put(query.getLimit(), directEqualityQueries);
-                } else if(directEqualityQueries.size() < sliceGroupingLimit && (!query.hasLimit() || directEqualityQueries.size() < query.getLimit())){
-                    // We cannot group more than `query.getLimit()` queries together.
-                    // Even so it seems that it makes sense to group them together because we don't need
-                    // more column values than limit - we are still obliged to compute the result because
-                    // any separate SliceQuery can be cached into a tx-cache or db-cache with incomplete result
-                    // which may result in the wrong results for future calls of the cached Slice queries.
-                    // Thus, we add a query into the group only if it doesn't have any limit set OR the total
-                    // amount of grouped together direct equality queries is <= than the limit requested.
-                    // I.e. in other words, we must ensure that the limit won't influence the final result.
-                    directEqualityQueries.add(query);
-                } else {
-                    // In this case we couldn't group a query. Thus, we should execute this query separately.
-                    separateRangeQueries.add(query);
+                final int groupSize = query.hasLimit() ? Math.max(1, Math.min(sliceGroupingLimit, query.getLimit())) : sliceGroupingLimit;
+                List<SliceQuery> directEqualityQueries = openGroupsByLimit.get(query.getLimit());
+                if(directEqualityQueries == null || directEqualityQueries.size() >= groupSize){
+                    directEqualityQueries = new ArrayList<>(Math.min(groupSize, queryGroup.getQueries().size()));
+                    openGroupsByLimit.put(query.getLimit(), directEqualityQueries);
+                    directEqualityGroups.add(new QueryGroups.DirectEqualityGroup(query.getLimit(), directEqualityQueries));
                 }
+                directEqualityQueries.add(query);
             } else {
                 // We cannot group range queries together. Thus, they are executed separately.
                 separateRangeQueries.add(query);
             }
         }
 
-        return new QueryGroups(directEqualityGroupedQueriesByLimit, separateRangeQueries);
+        return new QueryGroups(directEqualityGroups, separateRangeQueries);
     }
 
     public static TokenRange findTokenRange(Token token, Collection<TokenRange> tokenRanges){

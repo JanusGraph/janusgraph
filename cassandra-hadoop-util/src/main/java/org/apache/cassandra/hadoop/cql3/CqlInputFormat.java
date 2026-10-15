@@ -57,16 +57,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -135,6 +135,8 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
             throw new UnsupportedOperationException("You must set the initial output address to a Cassandra node with setInputInitialAddress");
         if (ConfigHelper.getInputPartitioner(conf) == null)
             throw new UnsupportedOperationException("You must set the Cassandra partitioner class with setInputPartitioner");
+        Preconditions.checkArgument(ConfigHelper.getInputSplitThreads(conf) > 0,
+            "cassandra.input.split.threads must be positive: %s", ConfigHelper.getInputSplitThreads(conf));
     }
 
     public List<org.apache.hadoop.mapreduce.InputSplit> getSplits(JobContext context) throws IOException
@@ -148,8 +150,15 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
         partitioner = ConfigHelper.getInputPartitioner(conf);
         logger.trace("partitioner is {}", partitioner);
 
-        // canonical ranges, split into pieces, fetching the splits in parallel
-        ExecutorService executor = new ThreadPoolExecutor(0, 128, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+        // canonical ranges, split into pieces, fetching the splits in parallel on up to cassandra.input.split.threads
+        // named daemon threads, one more for each range until then
+        int splitThreads = ConfigHelper.getInputSplitThreads(conf);
+        AtomicInteger splitThreadNumber = new AtomicInteger();
+        ExecutorService executor = Executors.newFixedThreadPool(splitThreads, runnable -> {
+            Thread thread = new Thread(runnable, "CqlInputFormat-splits-" + splitThreadNumber.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        });
         List<org.apache.hadoop.mapreduce.InputSplit> splits = new ArrayList<>();
 
         String[] inputInitialAddress = ConfigHelper.getInputInitialAddress(conf).split(",");
@@ -365,7 +374,11 @@ public class CqlInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long
         // nodes are up and healthy
         ResultSet resultSet = queryTableEstimates(session, host, keyspace, table, tokenRange);
 
-        Row row = resultSet.one();
+        // Not resultSet.one(): scylla-hadoop-util runs these classes against the Scylla driver, whose ResultSet (since
+        // 3.11.2.5) only inherits one() from the generic PagingIterable, so the Row-returning one() compiled here does
+        // not exist there. iterator() links against both drivers.
+        Iterator<Row> rows = resultSet.iterator();
+        Row row = rows.hasNext() ? rows.next() : null;
 
         long meanPartitionSize = 0;
         long partitionCount = 0;

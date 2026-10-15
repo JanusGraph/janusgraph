@@ -33,6 +33,7 @@ import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -159,6 +160,32 @@ public class VertexJobConverter extends AbstractScanJob {
     @Override
     public VertexJobConverter clone() {
         return new VertexJobConverter(this);
+    }
+
+    /**
+     * Rolls back each of the given transactions, those still open, and takes them out of the queue; whatever the
+     * rollback of one throws, the others are rolled back too, and the first exception is thrown with the others
+     * suppressed.
+     */
+    protected static void rollbackAll(Queue<StandardJanusGraphTx> transactions) {
+        RuntimeException failure = null;
+        StandardJanusGraphTx tx;
+        while ((tx = transactions.poll()) != null) {
+            try {
+                if (tx.isOpen()) {
+                    tx.rollback();
+                }
+            } catch (RuntimeException e) {
+                if (failure == null) {
+                    failure = e;
+                } else {
+                    failure.addSuppressed(e);
+                }
+            }
+        }
+        if (failure != null) {
+            throw failure;
+        }
     }
 
 }

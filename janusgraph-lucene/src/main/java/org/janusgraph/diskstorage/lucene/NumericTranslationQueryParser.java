@@ -21,6 +21,7 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
@@ -85,33 +86,58 @@ public class NumericTranslationQueryParser extends QueryParser {
         return super.newWildcardQuery(t);
     }
 
+    // An open end (*) is the end of the type and stays where it is, whichever bracket it is in: Long.MIN_VALUE or
+    // Long.MAX_VALUE, or an infinity for a decimal. A strict bound with nothing beyond it matches nothing. Decimals
+    // are in Lucene's order, which is that of Double.compare: -0.0 below 0.0, and NaN above positive infinity, as the
+    // value next to it, with nothing beyond NaN, which a range reaches by a NaN bound alone
     private Query buildNumericRangeQuery(final String field, final Class<?> type, String start, String end, final boolean includeLower,
                                          final boolean includeUpper) {
+        final boolean openStart = isMatchAll(start);
+        final boolean openEnd = isMatchAll(end);
         if (AttributeUtils.isWholeNumber(type) || isTemporalType(type)) {
             long min;
             long max;
             if (isTemporalType(type)) {
-                min = isMatchAll(start) ? Long.MIN_VALUE : parseDate(start).getTime();
-                max = isMatchAll(end) ? Long.MAX_VALUE : parseDate(end).getTime();
+                min = openStart ? Long.MIN_VALUE : parseDate(start).getTime();
+                max = openEnd ? Long.MAX_VALUE : parseDate(end).getTime();
             } else {
-                min = isMatchAll(start) ? Long.MIN_VALUE : Long.parseLong(start);
-                max = isMatchAll(end) ? Long.MAX_VALUE : Long.parseLong(end);
+                min = openStart ? Long.MIN_VALUE : Long.parseLong(start);
+                max = openEnd ? Long.MAX_VALUE : Long.parseLong(end);
             }
-            if (!includeLower) {
-                min = Math.addExact(min, 1);
+            if (!includeLower && !openStart) {
+                if (min == Long.MAX_VALUE) {
+                    return new MatchNoDocsQuery();
+                }
+                min++;
             }
-            if (!includeUpper) {
-                max = Math.addExact(max, -1);
+            if (!includeUpper && !openEnd) {
+                if (max == Long.MIN_VALUE) {
+                    return new MatchNoDocsQuery();
+                }
+                max--;
+            }
+            if (min > max) {
+                // Exclusive bounds with nothing between them, as {5 TO 5]
+                return new MatchNoDocsQuery();
             }
             return LongPoint.newRangeQuery(field, min, max);
         } else {
-            double min = isMatchAll(start) ? Double.NEGATIVE_INFINITY : Double.parseDouble(start);
-            double max = isMatchAll(end) ? Double.POSITIVE_INFINITY : Double.parseDouble(end);
-            if (!includeLower) {
-                min = DoublePoint.nextUp(min);
+            double min = openStart ? Double.NEGATIVE_INFINITY : Double.parseDouble(start);
+            double max = openEnd ? Double.POSITIVE_INFINITY : Double.parseDouble(end);
+            if (!includeLower && !openStart) {
+                if (Double.isNaN(min)) {
+                    return new MatchNoDocsQuery();
+                }
+                min = min == Double.POSITIVE_INFINITY ? Double.NaN : DoublePoint.nextUp(min);
             }
-            if (!includeUpper) {
-                max = DoublePoint.nextDown(max);
+            if (!includeUpper && !openEnd) {
+                if (max == Double.NEGATIVE_INFINITY) {
+                    return new MatchNoDocsQuery();
+                }
+                max = Double.isNaN(max) ? Double.POSITIVE_INFINITY : DoublePoint.nextDown(max);
+            }
+            if (Double.compare(min, max) > 0) {
+                return new MatchNoDocsQuery();
             }
             return DoublePoint.newRangeQuery(field, min, max);
         }

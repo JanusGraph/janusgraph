@@ -33,6 +33,7 @@ import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphQuery;
+import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
@@ -72,6 +73,7 @@ import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.profile.SimpleQueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
+import org.janusgraph.graphdb.relations.RelationComparator;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.testutil.TestGraphConfigs;
 import org.janusgraph.util.datastructures.IterablesUtil;
@@ -618,14 +620,15 @@ public abstract class JanusGraphBaseTest implements JanusGraphBaseStoreFeaturesT
         }
         OrderList orders = profiler.getAnnotation(QueryProfiler.ORDERS_ANNOTATION);
 
-        //Check elements and that they are returned in the correct order
+        //Check elements and that they are returned in the correct order, that of a vertex-centric query
         int no = 0;
         JanusGraphElement previous = null;
         for (JanusGraphElement e : result) {
             assertNotNull(e);
             no++;
             if (previous != null && !orders.isEmpty()) {
-                assertTrue(orders.compare(previous, e) <= 0);
+                assertTrue(RelationComparator.compareOnOrders((JanusGraphRelation) previous, (JanusGraphRelation) e,
+                    orders) <= 0);
             }
             previous = e;
         }

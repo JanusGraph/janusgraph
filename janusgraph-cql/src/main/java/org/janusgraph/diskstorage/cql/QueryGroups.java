@@ -17,23 +17,48 @@ package org.janusgraph.diskstorage.cql;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 
 import java.util.List;
-import java.util.Map;
 
 public class QueryGroups {
 
-    private final Map<Integer, List<SliceQuery>> directEqualityGroupedQueriesByLimit;
+    private final List<DirectEqualityGroup> directEqualityGroups;
     private final List<SliceQuery> separateRangeQueries;
 
-    public QueryGroups(Map<Integer, List<SliceQuery>> directEqualityGroupedQueriesByLimit, List<SliceQuery> separateRangeQueries) {
-        this.directEqualityGroupedQueriesByLimit = directEqualityGroupedQueriesByLimit;
+    public QueryGroups(List<DirectEqualityGroup> directEqualityGroups, List<SliceQuery> separateRangeQueries) {
+        this.directEqualityGroups = directEqualityGroups;
         this.separateRangeQueries = separateRangeQueries;
     }
 
-    public Map<Integer, List<SliceQuery>> getDirectEqualityGroupedQueriesByLimit() {
-        return directEqualityGroupedQueriesByLimit;
+    /**
+     * @return the groups of queries which each read a single column, every group read with one query per key or keys
+     * group which asks for all of its columns, `column1 IN ?`
+     */
+    public List<DirectEqualityGroup> getDirectEqualityGroups() {
+        return directEqualityGroups;
     }
 
     public List<SliceQuery> getSeparateRangeQueries() {
         return separateRangeQueries;
+    }
+
+    /**
+     * Queries which each read a single column and share a limit, read together with that limit
+     */
+    public static class DirectEqualityGroup {
+
+        private final int limit;
+        private final List<SliceQuery> queries;
+
+        public DirectEqualityGroup(int limit, List<SliceQuery> queries) {
+            this.limit = limit;
+            this.queries = queries;
+        }
+
+        public int getLimit() {
+            return limit;
+        }
+
+        public List<SliceQuery> getQueries() {
+            return queries;
+        }
     }
 }

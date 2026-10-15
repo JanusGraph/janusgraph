@@ -83,8 +83,12 @@ jobs:
             name: es6
             java: 11
           - module: es
-            args: "-Pelasticsearch60"
-            name: es60
+            args: "-Popensearch3"
+            name: opensearch3
+            java: 11
+          - module: es
+            args: "-Popensearch2"
+            name: opensearch2
             java: 11
           - module: es
             args: "-Pelasticsearch9"
@@ -103,8 +107,12 @@ jobs:
             name: es6-java25
             java: 25
           - module: es
-            args: "-Pelasticsearch60"
-            name: es60-java25
+            args: "-Popensearch3"
+            name: opensearch3-java25
+            java: 25
+          - module: es
+            args: "-Popensearch2"
+            name: opensearch2-java25
             java: 25
     steps:
       - uses: actions/checkout@v4

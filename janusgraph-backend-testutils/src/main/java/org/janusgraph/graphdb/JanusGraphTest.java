@@ -119,6 +119,7 @@ import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.database.util.IndexRecordUtil;
 import org.janusgraph.graphdb.database.util.StaleIndexRecordUtil;
+import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalElement;
@@ -2523,6 +2524,58 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                 ElementCategory.EDGE, 0, new boolean[]{true, true}, "edgesByTime");
     }
 
+    //A composite index still holds the edges which the transaction removed, and a query leaves them out of what the
+    //index returns: one with a limit reads on past them
+    @Test
+    public void testLimitedQueryOfACompositeIndexReadsPastTheEdgesWhichTheTransactionRemoved() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        makeKey("weight", Long.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("roadsByKind", Edge.class).addKey(kind).buildCompositeIndex();
+        finishSchema();
+        final Vertex from = tx.addVertex();
+        final Vertex to = tx.addVertex();
+        for (long w = 1; w <= 30; w++) {
+            from.addEdge("road", to, "kind", "paved", "weight", w);
+        }
+        newTx();
+        tx.traversal().V(from).outE("road").has("weight", P.lte(25L)).toList().forEach(Edge::remove);
+
+        final List<Edge> anyThree = tx.traversal().E().has("kind", "paved").limit(3).toList();
+        assertEquals(3, anyThree.stream().distinct().count());
+        for (final Edge edge : anyThree) {
+            assertTrue(edge.<Long>value("weight") > 25);
+        }
+        assertEquals(5, tx.traversal().E().has("kind", "paved").toList().size());
+        tx.rollback();
+        newTx();
+
+        //A query which drops the edges it reads, as it reads them, before it reads on drops each of its edges once
+        tx.traversal().V(from).outE("road").has("weight", P.inside(8L, 26L)).toList().forEach(Edge::remove);
+        tx.traversal().V(from).outE("road").has("weight", P.lte(5L)).toList().forEach(Edge::remove);
+        tx.traversal().E().has("kind", "paved").limit(5).drop().iterate();
+        assertEquals(3, tx.traversal().E().has("kind", "paved").toList().size());
+    }
+
+    //A query without a limit which the index answers under one all the same, as under query.hard-max-limit, and which
+    //drops the edges it reads, as it reads them, drops each of them once it reads on past that limit
+    @Test
+    public void testQueryUnderTheHardMaxLimitDropsEveryEdgeItReads() {
+        clopen(option(HARD_MAX_LIMIT), 10);
+        final PropertyKey kind = makeKey("kind", String.class);
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("roadsByKind", Edge.class).addKey(kind).buildCompositeIndex();
+        finishSchema();
+        final Vertex from = tx.addVertex();
+        final Vertex to = tx.addVertex();
+        for (int i = 0; i < 30; i++) {
+            from.addEdge("road", to, "kind", "paved");
+        }
+        newTx();
+        tx.traversal().E().has("kind", "paved").drop().iterate();
+        assertEquals(0L, tx.traversal().V(from).outE("road").count().next());
+    }
+
     @Test
     public void testRemoveStaleEntriesActionApplicability() {
         mgmt.makePropertyKey("name").dataType(String.class).make();
@@ -4574,6 +4627,209 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             .next();
 
         assertEquals(1, g.V(next).values("name").toList().size());
+    }
+
+    /**
+     * An edge-by-id lookup for a label whose schema vertex is not yet visible must not leave that label with a
+     * cached empty definition once it becomes visible. The lookup here races the label's creation: the id is assigned
+     * when the label is made, but its schema row is only written when the creating transaction commits.
+     */
+    @Test
+    public void testEdgeByIdLookupBeforeLabelIsVisibleDoesNotPoisonSchemaCache() {
+        JanusGraphVertex a = graph.addVertex();
+        JanusGraphVertex b = graph.addVertex();
+        graph.tx().commit();
+        Object aId = a.id();
+        Object bId = b.id();
+
+        JanusGraphTransaction creator = graph.newTransaction();
+        EdgeLabel knows = creator.makeEdgeLabel("knows").multiplicity(Multiplicity.SIMPLE).make();
+
+        JanusGraphTransaction reader = graph.newTransaction();
+        RelationIdentifier notYetVisible = new RelationIdentifier(aId, knows.longId(), 1L, bId);
+        assertFalse(reader.getEdges(notYetVisible).iterator().hasNext());
+        reader.rollback();
+
+        creator.getVertex(aId).addEdge("knows", creator.getVertex(bId));
+        creator.commit();
+
+        newTx();
+        assertEquals(Multiplicity.SIMPLE, tx.getEdgeLabel("knows").multiplicity());
+        assertCount(1, tx.getVertex(aId).query().direction(Direction.OUT).labels("knows").edges());
+        assertEquals(1, tx.traversal().V(aId).outE().count().next());
+        RelationIdentifier eid = (RelationIdentifier) Iterables.getOnlyElement(tx.getVertex(aId).query().labels("knows").edges()).id();
+        assertEquals(eid, Iterables.getOnlyElement(tx.getEdges(eid)).id());
+        // malformed type ids resolve to "no edge" as before: a negative one, and one with valid type bits that lies
+        // outside the schema id range
+        assertFalse(tx.getEdges(new RelationIdentifier(aId, -knows.longId(), 1L, bId)).iterator().hasNext());
+        long typeBits = knows.longId() & ((1L << IDManager.MAX_PADDING_BITWIDTH) - 1);
+        long outOfRange = ((Long.MAX_VALUE >>> IDManager.MAX_PADDING_BITWIDTH) << IDManager.MAX_PADDING_BITWIDTH) | typeBits;
+        assertFalse(tx.getEdges(new RelationIdentifier(aId, outOfRange, 1L, bId)).iterator().hasNext());
+    }
+
+    /**
+     * Definition edges written by ordinary transactions (here connection constraints auto-created under
+     * schema.constraints=true) must be visible to later transactions on the same instance: the second edge must
+     * find the constraint the first one created instead of creating another copy.
+     */
+    @Test
+    public void testAutoCreatedConnectionConstraintIsSeenByLaterTransactions() {
+        clopen(option(SCHEMA_CONSTRAINTS), true);
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makeEdgeLabel("knows").make();
+        finishSchema();
+
+        for (int i = 0; i < 3; i++) {
+            JanusGraphTransaction t = graph.newTransaction();
+            JanusGraphVertex p1 = t.addVertex("person");
+            JanusGraphVertex p2 = t.addVertex("person");
+            p1.addEdge("knows", p2);
+            t.commit();
+        }
+
+        assertEquals(1, mgmt.getEdgeLabel("knows").mappedConnections().size());
+        assertEquals(1, mgmt.getVertexLabel("person").mappedConnections().size());
+    }
+
+    /**
+     * A transaction which was already open when another one committed a definition edge (here a connection constraint
+     * auto-created under schema.constraints=true) must not keep acting on the definition edges it had loaded: adding
+     * the same kind of edge, it must find the constraint instead of creating a second copy.
+     */
+    @Test
+    public void testAutoCreatedConnectionConstraintIsSeenByTransactionsOpenAtCommit() {
+        clopen(option(SCHEMA_CONSTRAINTS), true);
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makeEdgeLabel("knows").make();
+        finishSchema();
+
+        final JanusGraphTransaction open = graph.newTransaction();
+        assertTrue(open.getVertexLabel("person").mappedConnections().isEmpty());
+
+        final JanusGraphTransaction creator = graph.newTransaction();
+        creator.addVertex("person").addEdge("knows", creator.addVertex("person"));
+        creator.commit();
+
+        open.addVertex("person").addEdge("knows", open.addVertex("person"));
+        open.commit();
+
+        final JanusGraphManagement check = graph.openManagement();
+        try {
+            assertEquals(1, check.getEdgeLabel("knows").mappedConnections().size());
+            assertEquals(1, check.getVertexLabel("person").mappedConnections().size());
+        } finally {
+            check.rollback();
+        }
+    }
+
+    /**
+     * A transaction which had read a relation type's consistency before a management commit changed it must read the
+     * new consistency afterwards: the commit resets the type in the open transactions, and that has to clear the
+     * consistency the type had cached as well.
+     */
+    @Test
+    public void testConsistencyChangeIsSeenByTransactionsOpenAtCommit() {
+        mgmt.makePropertyKey("uid").dataType(String.class).make();
+        finishSchema();
+
+        final JanusGraphTransaction open = graph.newTransaction();
+        try {
+            assertEquals(ConsistencyModifier.DEFAULT,
+                ((InternalRelationType) open.getPropertyKey("uid")).getConsistencyModifier());
+
+            mgmt.setConsistency(mgmt.getPropertyKey("uid"), ConsistencyModifier.LOCK);
+            mgmt.commit();
+
+            assertEquals(ConsistencyModifier.LOCK,
+                ((InternalRelationType) open.getPropertyKey("uid")).getConsistencyModifier());
+        } finally {
+            open.rollback();
+        }
+    }
+
+    /**
+     * Replacing a consistency modifier removes the old modifier vertex. A transaction which had read the old
+     * consistency holds that vertex, and the commit must leave it alone there: it has no definition left to reload,
+     * and reloading it would fail inside the commit's finally block. The transaction reads the new consistency.
+     */
+    @Test
+    public void testConsistencyChangeReplacingAModifierIsSeenByTransactionsOpenAtCommit() {
+        final EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.MULTI).make();
+        mgmt.setConsistency(knows, ConsistencyModifier.LOCK);
+        finishSchema();
+
+        final JanusGraphTransaction open = graph.newTransaction();
+        try {
+            assertEquals(ConsistencyModifier.LOCK,
+                ((InternalRelationType) open.getEdgeLabel("knows")).getConsistencyModifier());
+
+            mgmt.setConsistency(mgmt.getEdgeLabel("knows"), ConsistencyModifier.FORK);
+            mgmt.commit();
+
+            assertEquals(ConsistencyModifier.FORK,
+                ((InternalRelationType) open.getEdgeLabel("knows")).getConsistencyModifier());
+        } finally {
+            open.rollback();
+        }
+    }
+
+    /**
+     * Definition edges which an ordinary transaction commits on one instance (here a connection constraint
+     * auto-created under schema.constraints=true) must reach the schema cache of another instance. Otherwise that
+     * instance keeps serving the definition edges it had cached, and adding the same kind of edge there creates a
+     * second copy of the constraint.
+     */
+    //A message whose write takes longer than the read lag is missed, as for testIndexUpdatesWithReindexAndRemove
+    @RepeatedIfExceptionsTest(repeats = 3)
+    public void testAutoCreatedConnectionConstraintReachesOtherInstances() throws InterruptedException {
+        //The read lag is left at its default of 500 ms: the test waits for the message anyway, and a shorter lag
+        //would miss it more easily
+        clopen(option(SCHEMA_CONSTRAINTS), true,
+            option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ZERO,
+            option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250));
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makeEdgeLabel("knows").make();
+        finishSchema();
+
+        //Opened from the same configuration, which sets no instance id, so the second instance gets one of its own
+        final StandardJanusGraph graph2 = (StandardJanusGraph) JanusGraphFactory.open(config);
+        try {
+            //The second instance caches the vertex label's connections while there are none
+            JanusGraphTransaction tx2 = graph2.newTransaction();
+            assertTrue(tx2.getVertexLabel("person").mappedConnections().isEmpty());
+            tx2.rollback();
+
+            //An ordinary transaction on this instance auto-creates the connection
+            final JanusGraphTransaction creator = graph.newTransaction();
+            creator.addVertex("person").addEdge("knows", creator.addVertex("person"));
+            creator.commit();
+
+            //The second instance learns about it from the management log
+            final long deadline = System.currentTimeMillis() + 30000;
+            int connections;
+            do {
+                Thread.sleep(100);
+                tx2 = graph2.newTransaction();
+                connections = tx2.getVertexLabel("person").mappedConnections().size();
+                tx2.rollback();
+            } while (connections == 0 && System.currentTimeMillis() < deadline);
+            assertEquals(1, connections);
+
+            //...and adding the same kind of edge there does not create a second copy
+            tx2 = graph2.newTransaction();
+            tx2.addVertex("person").addEdge("knows", tx2.addVertex("person"));
+            tx2.commit();
+        } finally {
+            graph2.close();
+        }
+
+        //Read fresh here as well, since this instance's own commit expired the label
+        final JanusGraphManagement check = graph.openManagement();
+        try {
+            assertEquals(1, check.getVertexLabel("person").mappedConnections().size());
+        } finally {
+            check.rollback();
+        }
     }
 
     private void createStrictSchemaForVertexProperties() {
@@ -7095,7 +7351,9 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             assertEquals(4, userChangeCounter.get(Change.REMOVED).get());
         }
 
-        clopen(option(VERBOSE_TX_RECOVERY), true);
+        clopen(option(VERBOSE_TX_RECOVERY), true,
+                option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, TRANSACTION_LOG), Duration.ofMillis(250));
         /*
         Transaction Recovery
          */

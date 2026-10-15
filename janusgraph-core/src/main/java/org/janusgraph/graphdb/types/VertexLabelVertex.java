@@ -30,7 +30,8 @@ import java.util.Collection;
  */
 public class VertexLabelVertex extends JanusGraphSchemaVertex implements InternalVertexLabel {
 
-    private Integer ttl = null;
+    //Cleared by resetCache() and kept only if no reset overlapped the read, under the rules of JanusGraphSchemaVertex
+    private volatile Integer ttl = null;
 
     public VertexLabelVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
@@ -69,10 +70,19 @@ public class VertexLabelVertex extends JanusGraphSchemaVertex implements Interna
 
     @Override
     public int getTTL() {
-        if (null == ttl) {
-            ttl = TypeUtil.getTTL(this);
+        Integer result = ttl;
+        if (result == null) {
+            final long resetsBefore = cacheResets();
+            result = TypeUtil.getTTL(this);
+            keepUnlessReset(resetsBefore, result, value -> ttl = value);
         }
-        return ttl;
+        return result;
+    }
+
+    @Override
+    public void resetCache() {
+        super.resetCache();
+        ttl = null;
     }
 
 }

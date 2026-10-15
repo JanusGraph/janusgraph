@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Abstract base class for {@link org.janusgraph.hadoop.config.job.JobClasspathConfigurer}
@@ -113,12 +114,13 @@ public abstract class AbstractDistCacheConfigurer {
     private static Conf configureByClasspath(String mapReduceJarFilename) {
         final List<Path> paths = new LinkedList<>();
         final String classpath = System.getProperty("java.class.path");
-        final String mrj = mapReduceJarFilename.toLowerCase();
+        final String mrj = mapReduceJarFilename.toLowerCase(Locale.ROOT);
         String mapReduceJarPath = null;
         for (String classPathEntry : classpath.split(File.pathSeparator)) {
-            if (classPathEntry.toLowerCase().endsWith(".jar") || classPathEntry.toLowerCase().endsWith(".properties")) {
+            final String lowerCaseEntry = classPathEntry.toLowerCase(Locale.ROOT);
+            if (lowerCaseEntry.endsWith(".jar") || lowerCaseEntry.endsWith(".properties")) {
                 paths.add(new Path(classPathEntry));
-                if (classPathEntry.toLowerCase().endsWith(mrj)) {
+                if (lowerCaseEntry.endsWith(mrj)) {
                     mapReduceJarPath = classPathEntry;
                 }
             }

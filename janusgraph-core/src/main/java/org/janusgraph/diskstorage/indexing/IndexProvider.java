@@ -89,6 +89,18 @@ public interface IndexProvider extends IndexInformation {
      */
     void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
 
+    /**
+     * Aggregates the documents which match the given query.
+     *
+     * @param query Query whose matching documents are aggregated
+     * @param information Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
+     * @param tx Enclosing transaction
+     * @param aggregation The aggregation to compute, and the field whose values it aggregates
+     * @return The number of matching documents for a count. The minimum, maximum, mean or sum of the values of the field
+     * in them otherwise, or null when none of them holds a value of the field, as TinkerPop has no result for these
+     * aggregations of no values either
+     * @throws org.janusgraph.diskstorage.BackendException
+     */
     Number queryAggregation(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx, Aggregation aggregation) throws BackendException;
 
     /**

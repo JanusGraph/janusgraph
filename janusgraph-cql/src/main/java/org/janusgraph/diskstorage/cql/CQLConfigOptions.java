@@ -51,7 +51,7 @@ public interface CQLConfigOptions {
             "edgestore table. This allows an external CDC pipeline (e.g. Debezium + Kafka, consumed by the " +
             "janusgraph-cdc worker) to capture graph mutations and keep mixed indexes eventually consistent. " +
             "Requires the Cassandra cluster to be started with cdc_enabled=true.",
-            ConfigOption.Type.GLOBAL_OFFLINE,
+            ConfigOption.Type.MASKABLE,
             false);
 
     ConfigOption<Integer> PROTOCOL_VERSION = new ConfigOption<>(
@@ -116,6 +116,18 @@ public interface CQLConfigOptions {
             "True to use Cassandra atomic batch mutation, false to use non-atomic batches",
             ConfigOption.Type.MASKABLE,
             false);
+
+    ConfigOption<Boolean> IDEMPOTENT_WRITES = new ConfigOption<>(
+            CQL_NS,
+            "idempotent-writes",
+            "Whether JanusGraph marks its writes idempotent while `graph.assign-timestamp` is `true`, so that the " +
+                "driver may send a write again, to the same node or another one, after a closed connection, an " +
+                "overloaded node or a server error, ask its retry policy about a write which timed out, and run " +
+                "speculative executions of it. A write sent again writes the same cells with the same timestamp, but " +
+                "an insert with a TTL sent again can expire later. With `false`, or without assigned timestamps, " +
+                "writes keep the driver's default idempotence, `basic.request.default-idempotence`.",
+            ConfigOption.Type.MASKABLE,
+            true);
 
     // Replication
 

@@ -36,6 +36,8 @@ loosely coupled to the principle of Depth-First-Search.
 
 ### Possible limitations
 - Traversing large neighborhoods can make the query slow.
+- A composite index lookup of several values, such as `has(key, within(values))`, reads one index row after the
+  other instead of reading them together.
 
 ### Steps to explicitly configure this option:
 - Ensure `query.batch.enabled` is set to `false`

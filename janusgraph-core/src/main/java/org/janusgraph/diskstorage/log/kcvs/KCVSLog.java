@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.log.kcvs;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
@@ -57,9 +58,11 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +72,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NUM_BUCKETS;
@@ -123,7 +129,9 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             ConfigOption.Type.MASKABLE, Duration.ofMillis(10000L));
 
     public static final ConfigOption<Duration> LOG_MAX_READ_TIME = new ConfigOption<>(LOG_NS,"max-read-time",
-            "Maximum time in ms to try reading log messages from the backend before failing.",
+            "Maximum time in ms to try reading log messages from the backend before failing. On a storage backend " +
+                    "which does not support interruption, also how often a closing log reports that it is still " +
+                    "waiting for its readers to finish, a second at the least.",
             ConfigOption.Type.MASKABLE, Duration.ofMillis(4000L));
 
     public static final ConfigOption<Duration> LOG_READ_LAG_TIME = new ConfigOption<>(LOG_NS,"read-lag-time",
@@ -162,6 +170,9 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      * Wait time after close() is called for all ongoing jobs to finish and shut down.
      */
     private static final Duration CLOSE_DOWN_WAIT = Duration.ofSeconds(10L);
+
+    //Serializes closes, see close()
+    private final ReentrantLock closeLock = new ReentrantLock();
     /**
      * Time before a registered reader starts processing messages
      */
@@ -245,7 +256,20 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     /**
      * Individual jobs that pull messages from the keys that comprise one time slice
      */
-    private MessagePuller[] msgPullers;
+    private volatile Pullers msgPullers;
+
+    /**
+     * The pullers of the registered readers, and when the read progress first found none of them reading any more:
+     * it runs on with the clock from then, see {@link #getReadProgress()}.
+     */
+    private static final class Pullers {
+        private final MessagePuller[] all;
+        private final AtomicReference<Instant> readingStoppedAt = new AtomicReference<>();
+
+        private Pullers(MessagePuller[] all) {
+            this.all = all;
+        }
+    }
 
     /**
      * Counter used to write messages to different buckets in a round-robin fashion
@@ -314,31 +338,138 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     }
 
     /**
+     * Once the reader pool has been shut down: waits for the readers to finish and writes the read markers, or
+     * interrupts the readers which are left and forgoes the markers.
+     */
+    private void finishReaders() {
+        awaitReaderTermination();
+        if (readExecutor.isTerminated()) {
+            for (MessagePuller puller : msgPullers.all) {
+                puller.close();
+            }
+        } else {
+            readExecutor.shutdownNow();
+            log.error("Reader thread pool for KCVSLog {} did not shut down in time - could not clean up or set read markers", name);
+            //shutdownNow() has interrupted this thread as well when it is one of this log's readers
+            if (closedByOwnReader()) Thread.interrupted();
+        }
+    }
+
+    //Whether the current thread is one of this log's reader threads, which cannot wait for the readers to finish
+    private boolean closedByOwnReader() {
+        final Thread thread = Thread.currentThread();
+        return thread instanceof ReaderThread && ((ReaderThread) thread).owner == this;
+    }
+
+    /**
+     * Waits for the reader threads of a shut down reader pool to finish, before the caller interrupts any that are
+     * left. An interrupt breaks the storage operation a reader is in the middle of, and BerkeleyJE invalidates its
+     * whole environment when a thread is interrupted in the middle of a file operation, reads included, so the
+     * readers of a store which does not support interruption are waited for however long they take. No time would
+     * do instead: a pull's reads and its read marker write are reattempted for up to {@link #LOG_MAX_READ_TIME} and
+     * {@link #LOG_MAX_WRITE_TIME} with no bound on any one operation, and the readers' own processing of the messages
+     * takes as long as it takes. The pool is shut down, so no new pull starts, and the wait is for the pull under way
+     * and the messages already read. After the second every store gets, such a store is waited for in steps of
+     * {@link #LOG_MAX_READ_TIME}, a second at the least, with a warning at each, and an interrupt of the waiting
+     * thread does not end that wait, since the caller would go on to interrupt the readers. The caller must not hold
+     * a monitor a reader may need meanwhile: the log manager's, which a reader takes to open a log, or the log's own,
+     * which a reader takes to register or unregister a reader; the stop of a recurring transaction recovery holds the
+     * latter, and its readers, recovery's own, take neither. A reader thread which closes its own log cannot wait for
+     * the readers, and keeps the second.
+     */
+    private void awaitReaderTermination() {
+        final boolean ownReader = closedByOwnReader();
+        if (ownReader) {
+            log.warn("KCVSLog {} is closed by one of its own reader threads, which cannot wait for the readers to "
+                + "finish", name);
+        }
+        if (ownReader || manager.storeManager.getFeatures().supportsInterruption()) {
+            try {
+                readExecutor.awaitTermination(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                //Not restored, as before: the read markers are written next, in this thread, and a close goes on to
+                //write the message counter and to close the store
+                log.error("Could not terminate reader thread pool for KCVSLog {} due to interruption", name, e);
+            }
+            return;
+        }
+        //In nanoseconds throughout: a wait of a whole number of milliseconds could fall short of the step's end and
+        //return at once for the rest, over and over
+        final long second = TimeUnit.SECONDS.toNanos(1);
+        final long step = Math.max(maxReadTime.toNanos(), second);
+        long now = System.nanoTime();
+        long stepEnd = now + second;
+        boolean terminated = false;
+        while (!terminated) {
+            boolean interrupted = false;
+            try {
+                terminated = readExecutor.awaitTermination(stepEnd - now, TimeUnit.NANOSECONDS);
+            } catch (InterruptedException e) {
+                interrupted = true;
+            }
+            if (terminated) break;
+            now = System.nanoTime();
+            if (interrupted) {
+                log.warn("Interrupted while waiting for the reader threads of KCVSLog {} to finish; waiting on, since "
+                    + "interrupting them could invalidate its storage backend", name);
+            }
+            if (now - stepEnd >= 0) {
+                log.warn("Waiting for the reader threads of KCVSLog {} to finish, since its storage backend does not "
+                    + "support interruption", name);
+                stepEnd = now + step;
+            }
+        }
+        //An interrupt which landed once the pool had terminated is still pending: a wait on a terminated pool returns
+        //without throwing. Dropped rather than restored, as before: the read markers are written next, in this
+        //thread, a close goes on to write the message counter and to close the store, and on BerkeleyJE a pending
+        //interrupt breaks the next file operation, and with it the whole environment.
+        Thread.interrupted();
+    }
+
+    /**
+     * The threads which pull and process a log's messages, so that a close from one of them can be told apart.
+     */
+    private static final class ReaderThread extends Thread {
+        private final KCVSLog owner;
+
+        private ReaderThread(KCVSLog owner, Runnable runnable, String name) {
+            super(runnable, name);
+            this.owner = owner;
+            setDaemon(false);
+            setPriority(Thread.NORM_PRIORITY);
+        }
+    }
+
+    /**
      * Closes the log by terminating all threads and waiting for their termination.
      *
      * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
-    public synchronized void close() throws BackendException {
-        if (!isOpen) return;
-        this.isOpen = false;
-        if (readExecutor!=null) readExecutor.shutdown();
-        if (sendThread!=null) sendThread.close(CLOSE_DOWN_WAIT);
-        if (readExecutor!=null) {
-            try {
-                readExecutor.awaitTermination(1,TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                log.error("Could not terminate reader thread pool for KCVSLog {} due to interruption", name, e);
-            }
-            if (!readExecutor.isTerminated()) {
-                readExecutor.shutdownNow();
-                log.error("Reader thread pool for KCVSLog {} did not shut down in time - could not clean up or set read markers", name);
-            } else {
-                for (MessagePuller puller : msgPullers) {
-                    puller.close();
-                }
-            }
+    public void close() throws BackendException {
+        //Closes are serialized by a lock of their own rather than by the log's monitor, which a reader may need
+        //while a close waits for the readers. A reader thread of this log which closes it while another thread is
+        //doing so does not wait for that close, which would be waiting for it: the close under way finishes once the
+        //reader returns
+        if (!closeLock.tryLock()) {
+            if (closedByOwnReader()) return;
+            closeLock.lock();
         }
+        try {
+            closeUnderLock();
+        } finally {
+            closeLock.unlock();
+        }
+    }
+
+    private void closeUnderLock() throws BackendException {
+        synchronized (this) {
+            if (!isOpen) return;
+            this.isOpen = false;
+            if (readExecutor!=null) readExecutor.shutdown();
+        }
+        if (sendThread!=null) sendThread.close(CLOSE_DOWN_WAIT);
+        if (readExecutor!=null) finishReaders();
 
         ExceptionWrapper exceptionWrapper = new ExceptionWrapper();
         ExecuteUtil.executeWithCatching(() -> {
@@ -682,21 +813,26 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         }
         if (firstRegistration && !this.readers.isEmpty()) {
             //Custom rejection handler so that messages are processed in-thread when executor has been closed
-            readExecutor = new ScheduledThreadPoolExecutor(numReadThreads, (r, executor) -> r.run());
-            msgPullers = new MessagePuller[manager.readPartitionIds.length*numBuckets];
+            final AtomicInteger readerThreads = new AtomicInteger();
+            readExecutor = new ScheduledThreadPoolExecutor(numReadThreads,
+                runnable -> new ReaderThread(this, runnable, name + "-reader-" + readerThreads.incrementAndGet()),
+                (r, executor) -> r.run());
+            //Filled before it is published, so that getReadProgress() never sees a puller missing
+            final MessagePuller[] pullers = new MessagePuller[manager.readPartitionIds.length*numBuckets];
             int pos = 0;
             for (int partitionId : manager.readPartitionIds) {
                 for (int bucketId = 0; bucketId < numBuckets; bucketId++) {
-                    msgPullers[pos]=new MessagePuller(partitionId,bucketId);
-
-                    log.debug("Creating log read executor: initialDelay={} delay={} unit={}", INITIAL_READER_DELAY.toNanos(), readPollingInterval.toNanos(), TimeUnit.NANOSECONDS);
-                    readExecutor.scheduleWithFixedDelay(
-                            msgPullers[pos],
-                            INITIAL_READER_DELAY.toNanos(),
-                            readPollingInterval.toNanos(),
-                            TimeUnit.NANOSECONDS);
-                    pos++;
+                    pullers[pos++]=new MessagePuller(partitionId,bucketId);
                 }
+            }
+            msgPullers = new Pullers(pullers);
+            for (MessagePuller puller : pullers) {
+                log.debug("Creating log read executor: initialDelay={} delay={} unit={}", INITIAL_READER_DELAY.toNanos(), readPollingInterval.toNanos(), TimeUnit.NANOSECONDS);
+                readExecutor.scheduleWithFixedDelay(
+                        puller,
+                        INITIAL_READER_DELAY.toNanos(),
+                        readPollingInterval.toNanos(),
+                        TimeUnit.NANOSECONDS);
             }
             readExecutor.scheduleWithFixedDelay(
                     new MessageReaderStateUpdater(),
@@ -704,6 +840,58 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     readPollingInterval.toNanos(),
                     TimeUnit.NANOSECONDS);
         }
+    }
+
+    /**
+     * The most windows of pulls which are not processed yet, or wait behind one which is not, any partition and bucket
+     * of this log holds: about as many as it has messages in processing, since the processed windows behind a held-up
+     * message merge into one.
+     */
+    @VisibleForTesting
+    public int mostPendingReadWindows() {
+        final Pullers pullers = msgPullers;
+        if (pullers == null) return 0;
+        int most = 0;
+        for (MessagePuller puller : pullers.all) {
+            most = Math.max(most, puller.pendingWindows());
+        }
+        return most;
+    }
+
+    /**
+     * How far the registered readers have got: the time before which every message of the partitions and buckets this
+     * log reads has been read and processed by the readers, the earliest of those partitions and buckets. It moves on
+     * as reading does, however far apart and however slowly the reads come, and is null before any reader has been
+     * registered. A partition and bucket whose reads have failed for good, and which nothing reads any more, is left
+     * out once the readers are done with what it had read, since nothing more comes from it. Once that goes for every
+     * one, nothing past the furthest point any of them got will ever be read, and from when this is first found the
+     * progress runs on with the clock from that point, so that whatever waits for it to pass a point, transaction
+     * recovery for one, does not wait for good.
+     *
+     * @return the time up to which the log has been read and its messages processed, or null
+     */
+    public Instant getReadProgress() {
+        final Pullers pullers = msgPullers;
+        if (pullers == null) return null;
+        Instant progress = null;
+        Instant furthest = null;
+        for (MessagePuller puller : pullers.all) {
+            final Instant processedUntil = puller.processedUntil;
+            if (puller.holdsProgress()) {
+                if (progress == null || processedUntil.isBefore(progress)) progress = processedUntil;
+            } else if (furthest == null || processedUntil.isAfter(furthest)) {
+                furthest = processedUntil;
+            }
+        }
+        if (progress != null) return progress;
+        final Instant now = times.getTime();
+        if (pullers.readingStoppedAt.compareAndSet(null, now)) {
+            log.error("KCVSLog {} is no longer read at all, since reading every partition and bucket has failed for "
+                + "good; its read progress runs on with the clock from {}", name, furthest);
+        }
+        //Set for good by now, by this thread or another: nothing resets it, the pullers being replaced as a whole
+        final Duration elapsed = Duration.between(pullers.readingStoppedAt.get(), now);
+        return elapsed.isNegative() ? furthest : furthest.plus(elapsed);
     }
 
     @Override
@@ -718,19 +906,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         if (readExecutor!=null) {
             readExecutor.shutdown();
-            try {
-                readExecutor.awaitTermination(1,TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                log.error("Could not terminate reader thread pool for KCVSLog {} due to interruption", name, e);
-            }
-            if (!readExecutor.isTerminated()) {
-                readExecutor.shutdownNow();
-                log.error("Reader thread pool for KCVSLog {} did not shut down in time - could not clean up or set read markers", name);
-            } else {
-                for (MessagePuller puller : msgPullers) {
-                    puller.close();
-                }
-            }
+            finishReaders();
         }
 
         return this.readers.remove(reader);
@@ -755,17 +931,39 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         private final int bucketId;
         private final int partitionId;
+        //The pool this puller runs on, which the log's field no longer names once readers are registered again
+        private final ScheduledExecutorService executor;
 
         private Instant messageTimeStart;
+        //Every message of this partition and bucket stamped before this has been read and processed by the readers.
+        //Each pull reads one window after the last, but with several read threads the messages of later windows can be
+        //processed first, so a window only counts once it and every window before it have been processed. While a
+        //reader holds a message up, the windows of the pulls behind it merge into one as they are processed, so the
+        //held message costs one window however long it is held.
+        private volatile Instant processedUntil;
+        private final Deque<ReadWindow> windows = new ArrayDeque<>();
+        //Set once reading this partition and bucket has failed for good and nothing reads it any more
+        private volatile boolean stopped;
+
+        //Whether the read progress waits on this partition and bucket: while it is read, and once its reads have
+        //failed for good, until the readers are done with the messages it had handed over
+        private boolean holdsProgress() {
+            if (!stopped) return true;
+            synchronized (windows) {
+                return !windows.isEmpty();
+            }
+        }
 
         private MessagePuller(final int partitionId, final int bucketId) {
             this.bucketId = bucketId;
             this.partitionId = partitionId;
+            this.executor = readExecutor;
             initializeTimepoint();
         }
 
         @Override
         public void run() {
+            ReadWindow window = null;
             try {
                 setReadMarker();
 
@@ -814,8 +1012,9 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 query.setLimit(maxReadMsg);
                 log.trace("Converted MessagePuller time window to {}", query);
 
+                window = openWindow();
                 List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
-                prepareMessageProcessing(entries);
+                prepareMessageProcessing(entries, window);
                 if (entries.size()>=maxReadMsg) {
                     /*Read another set of messages to ensure that we have exhausted all messages to the next timestamp.
                     Since we have reached the request limit, it may be possible that there are additional messages
@@ -828,14 +1027,32 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(times.getTime(messageTimeEnd)));
                     log.debug("Converted extended MessagePuller time window to {}", query);
                     List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
-                    prepareMessageProcessing(extraEntries);
+                    prepareMessageProcessing(extraEntries, window);
                 }
                 messageTimeStart = messageTimeEnd;
+                window.readUntil(messageTimeEnd);
             } catch (Throwable e) {
-                if (e.getCause() instanceof PermanentBackendException) {
+                //A permanent failure comes wrapped by BackendOperation.execute, as the cause; taken as it is as well
+                if (e instanceof PermanentBackendException || e.getCause() instanceof PermanentBackendException) {
+                    if (executor.isShutdown()) {
+                        //The interrupt of a close or stop which gave up waiting for the readers, as a rule
+                        log.debug("Reading the messages of KCVSLog {} for partition {} and bucket {} failed while its "
+                            + "readers stop", name, partitionId, bucketId, e);
+                        throw e;
+                    }
+                    //The executor stops a periodic task which throws: nothing reads this partition and bucket any more,
+                    //so the log's read progress leaves it out once the readers are done with what it had read, and
+                    //whatever waits on the progress, transaction recovery for one, does not wait for what will never
+                    //be read
+                    stopped = true;
+                    log.error("Reading the messages of KCVSLog {} for partition {} and bucket {} failed for good and "
+                        + "stops; they had been read and processed up to {}", name, partitionId, bucketId,
+                        processedUntil, e);
                     throw e;
                 }
                 log.warn("Could not read messages for timestamp [{}] (this read will be retried)",messageTimeStart,e);
+            } finally {
+                if (window != null) window.processed();
             }
         }
 
@@ -850,15 +1067,95 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 this.messageTimeStart = times.getTime(savedTimestamp);
                 log.info("Loaded identified ReadMarker start time {} into {}", messageTimeStart, this);
             }
+            this.processedUntil = messageTimeStart;
         }
 
-        private void prepareMessageProcessing(List<Entry> entries) {
+        private void prepareMessageProcessing(List<Entry> entries, ReadWindow window) {
             for (Entry entry : entries) {
                 KCVSMessage message = parseMessage(entry);
                 log.debug("Parsed message {}, about to submit this message to the reader executor", message);
                 for (MessageReader reader : readers) {
-                    readExecutor.submit(new ProcessMessageJob(message,reader));
+                    final ProcessMessageJob job = new ProcessMessageJob(message,reader);
+                    window.handedOver();
+                    try {
+                        readExecutor.submit(() -> {
+                            try {
+                                job.run();
+                            } finally {
+                                window.processed();
+                            }
+                        });
+                    } catch (RuntimeException e) {
+                        //A shut down executor runs the job in this thread, or drops it once shutdownNow() has been
+                        //called, instead of rejecting it, so this is not expected; the window must not wait for a job
+                        //which will never run
+                        window.processed();
+                        throw e;
+                    }
                 }
+            }
+        }
+
+        private ReadWindow openWindow() {
+            final ReadWindow window = new ReadWindow();
+            synchronized (windows) {
+                windows.addLast(window);
+            }
+            return window;
+        }
+
+        //Moves processedUntil to the end of the last of the windows at the head which are processed, and merges the
+        //processed windows at the tail into one: behind a message a reader holds up, they would otherwise pile up, one
+        //per pull, for as long as it is held. The merged window carries the latest end, and still waits its turn
+        private void advance() {
+            synchronized (windows) {
+                while (!windows.isEmpty() && windows.peekFirst().isProcessed()) {
+                    final Instant end = windows.pollFirst().end;
+                    if (end != null) processedUntil = end;
+                }
+                while (windows.size() > 1) {
+                    final ReadWindow last = windows.pollLast();
+                    final ReadWindow before = windows.peekLast();
+                    if (!last.isProcessed() || !before.isProcessed()) {
+                        windows.addLast(last);
+                        break;
+                    }
+                    if (last.end != null) before.readUntil(last.end);
+                }
+            }
+        }
+
+        private int pendingWindows() {
+            synchronized (windows) {
+                return windows.size();
+            }
+        }
+
+        /**
+         * The messages one pull read: processed once the pull has handed them all to the readers and the readers are
+         * done with them.
+         */
+        private final class ReadWindow {
+            //The messages handed to the readers and not processed yet, and one for the pull until it has finished
+            private final AtomicInteger unprocessed = new AtomicInteger(1);
+            //Up to when the window read, set once the pull has read it all; a pull which failed moves nothing forward,
+            //and its window is read again
+            private volatile Instant end;
+
+            private void readUntil(Instant end) {
+                this.end = end;
+            }
+
+            private void handedOver() {
+                unprocessed.incrementAndGet();
+            }
+
+            private void processed() {
+                if (unprocessed.decrementAndGet() == 0) advance();
+            }
+
+            private boolean isProcessed() {
+                return unprocessed.get() == 0;
             }
         }
 

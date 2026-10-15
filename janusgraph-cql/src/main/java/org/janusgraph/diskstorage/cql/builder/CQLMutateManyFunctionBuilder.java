@@ -29,6 +29,7 @@ import java.util.Map;
 
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
 import static org.janusgraph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
+import static org.janusgraph.diskstorage.cql.CQLConfigOptions.IDEMPOTENT_WRITES;
 
 public class CQLMutateManyFunctionBuilder {
 
@@ -40,14 +41,15 @@ public class CQLMutateManyFunctionBuilder {
 
         int batchSize = configuration.get(BATCH_STATEMENT_SIZE);
         boolean atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
+        boolean idempotentWrites = assignTimestamp && configuration.get(IDEMPOTENT_WRITES);
 
         final CQLMutateManyFunction mutateManyFunction;
         if (atomicBatch) {
             mutateManyFunction = new CQLMutateManyLoggedFunction(times,
-                assignTimestamp, openStores, session, sleepAfterWriteFunction, queriesBackPressure);
+                assignTimestamp, idempotentWrites, openStores, session, sleepAfterWriteFunction, queriesBackPressure);
         } else {
             mutateManyFunction = new CQLMutateManyUnloggedFunction(batchSize,
-                session, openStores, times, assignTimestamp, sleepAfterWriteFunction, queriesBackPressure);
+                session, openStores, times, assignTimestamp, idempotentWrites, sleepAfterWriteFunction, queriesBackPressure);
         }
 
         return mutateManyFunction;

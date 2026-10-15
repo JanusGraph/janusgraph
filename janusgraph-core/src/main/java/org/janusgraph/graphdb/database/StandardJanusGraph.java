@@ -73,6 +73,7 @@ import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphLocalQueryOp
 import org.janusgraph.graphdb.tinkerpop.optimize.strategy.JanusGraphUnusedMultiQueryRemovalStrategy;
 import org.janusgraph.graphdb.util.MultiSliceQueriesGroupingUtil;
 import org.janusgraph.util.IDUtils;
+import org.janusgraph.util.stats.MetricManager;
 import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.janusgraph.graphdb.database.index.IndexUpdate;
 import org.janusgraph.graphdb.database.util.IndexAppliesToFunction;
@@ -87,8 +88,11 @@ import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
+import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryUtil;
+import org.janusgraph.graphdb.query.vertex.MultiVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.relations.EdgeDirection;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
@@ -107,7 +111,9 @@ import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
+import org.janusgraph.graphdb.types.indextype.IndexReferenceType;
 import org.janusgraph.graphdb.types.system.BaseKey;
+import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.types.system.BaseRelationType;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.util.ExceptionFactory;
@@ -121,6 +127,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -131,7 +138,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -140,6 +149,7 @@ import javax.script.ScriptException;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_ACK_TIMEOUT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_AUTO_CLOSE_STALE_INSTANCES;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_TX_CLOSE_WAIT_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SCRIPT_EVAL_ENABLED;
@@ -223,6 +233,11 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     //Log
     private final ManagementLogger managementLogger;
+    //Runs the jobs of the graph's computers, created idle with the graph
+    private final ThreadPoolExecutor computerJobs;
+
+    //The graph's claims on the Metrics reporters which its configuration asks for
+    private final Map<MetricManager.GraphReporter, Object> metricsReporterClaims;
 
     //Shutdown hook
     private volatile ShutdownThread shutdownHook;
@@ -234,6 +249,12 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     private final GremlinScriptEngine scriptEngine;
 
     private volatile boolean isOpen;
+    /**
+     * Whether the graph's close, through {@link #close()} or the shutdown hook, has begun. The graph is closed to the
+     * outside from then on: no transaction begins to open while it tears down, so a job or a repair which starts
+     * meanwhile fails at once instead of racing the backend's close.
+     */
+    private volatile boolean closing;
     private final AtomicLong txCounter;
 
     private final Set<StandardJanusGraphTx> openTransactions;
@@ -260,8 +281,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             log.warn("Mixed index backend(s) {} are configured cdc-only (index.[X].cdc.enabled=true and "
                 + "index.[X].cdc.synchronous=false): synchronous index additions are SKIPPED for them (only "
                 + "relation-document deletions that CDC events cannot identify are still written synchronously). "
-                + "Ensure the external CDC pipeline and the janusgraph-cdc worker are running, otherwise these "
-                + "indexes will not be updated.",
+                + "Ensure the external CDC pipeline and the janusgraph-cdc worker (running with "
+                + "index.[X].cdc.enabled=true for these backends) are running, otherwise these indexes will not be "
+                + "updated.",
                 cdcOnlyBackingIndexes);
         }
         this.backend = configuration.getBackend();
@@ -299,6 +321,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         txCounter = new AtomicLong(0);
         openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<>(100, 0.75f, 1));
 
+        //Before the instance registers, so that an invalid option fails the open without leaving the instance among the
+        //open ones; the executor starts without threads
+        computerJobs = FulgoraGraphComputer.newJobExecutor(configuration.getConfiguration());
+        Duration ackTimeout = configuration.getConfiguration().get(MANAGEMENT_ACK_TIMEOUT);
+        boolean autoCloseStaleInstances = configuration.getConfiguration().get(MANAGEMENT_AUTO_CLOSE_STALE_INSTANCES);
+        Duration txCloseWaitTime = configuration.getConfiguration().get(MANAGEMENT_TX_CLOSE_WAIT_TIME);
+
         //Register instance and ensure uniqueness
         String uniqueInstanceId = configuration.getUniqueGraphId();
         ModifiableConfiguration globalConfig = getGlobalSystemConfig(backend);
@@ -312,13 +341,21 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
 
         Log managementLog = backend.getSystemMgmtLog();
-        Duration ackTimeout = configuration.getConfiguration().get(MANAGEMENT_ACK_TIMEOUT);
-        boolean autoCloseStaleInstances = configuration.getConfiguration().get(MANAGEMENT_AUTO_CLOSE_STALE_INSTANCES);
-        managementLogger = new ManagementLogger(this, managementLog, schemaCache, this.times, ackTimeout, autoCloseStaleInstances);
+        managementLogger = new ManagementLogger(this, managementLog, schemaCache, this.times, ackTimeout, autoCloseStaleInstances,
+            txCloseWaitTime);
         managementLog.registerReader(ReadMarker.fromNow(), managementLogger);
 
-        shutdownHook = new ShutdownThread(this);
-        Runtime.getRuntime().addShutdownHook(shutdownHook);
+        //Last, so that a graph which fails to open holds no claim; one which opens gives them back when it closes.
+        //A failure from here on, a reporter which can't start or a shutdown hook refused by a JVM which is shutting
+        //down, closes what the graph has opened, as no one else can
+        try {
+            metricsReporterClaims = configuration.startMetricsReporters();
+            shutdownHook = new ShutdownThread(this);
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
+        } catch (RuntimeException | Error e) {
+            closeInternal();
+            throw e;
+        }
         log.debug("Installed shutdown hook {}", shutdownHook, new Throwable("Hook creation trace"));
     }
 
@@ -359,7 +396,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     @Override
     public boolean isOpen() {
-        return isOpen;
+        return isOpen && !closing;
     }
 
     @Override
@@ -369,6 +406,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     @Override
     public synchronized void close() throws JanusGraphException {
+        closing = true;
         try {
             closeInternal();
         } finally {
@@ -397,14 +435,21 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             } catch (Exception e) {
                 log.warn("Unable to remove graph instance uniqueid {}", uniqueId, e);
             }
+            //The other instances stop waiting for this one's acknowledgements once it has left the open instances, so
+            //those which wait for the transactions closed below are dropped
+            try {
+                managementLogger.close();
+            } catch (Exception e) {
+                log.warn("Unable to close the management logger", e);
+            }
 
-            /* Assuming a couple of properties about openTransactions:
-             * 1. no concurrent modifications during graph shutdown
-             * 2. all contained txs are open
+            /* Other threads may close the open transactions meanwhile, such as the reader of the management log, which
+             * opens and closes transactions of its own until the backend closes the log below: only the rollback of a
+             * transaction which closes before this rolls it back is skipped, as its close does nothing to a closed one.
              */
             for (StandardJanusGraphTx otx : openTransactions) {
                 try {
-                    otx.rollback();
+                    otx.rollbackIfOpen();
                     otx.close();
                 } catch (RuntimeException e) {
                     // Catch and store these exceptions, but proceed wit the loop
@@ -416,6 +461,9 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
             super.close();
 
+            //Jobs which run or wait go on until they find the graph closed, jobs submitted from now on fail, and the
+            //threads end once idle
+            computerJobs.shutdown();
             IOUtils.closeQuietly(idAssigner);
             IOUtils.closeQuietly(backend);
             IOUtils.closeQuietly(queryCache);
@@ -425,6 +473,10 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
             }
         } finally {
             isOpen = false;
+            //null for a graph whose reporters failed to start, which released them itself
+            if (metricsReporterClaims != null) {
+                MetricManager.INSTANCE.releaseGraphReporters(metricsReporterClaims);
+            }
         }
 
         // Throw an exception if at least one transaction failed to close
@@ -469,6 +521,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     public IndexSelectionStrategy getIndexSelector() {
         return indexSelector;
+    }
+
+    /**
+     * @return the executor which runs the jobs of the graph's computers
+     */
+    public Executor getComputerJobExecutor() {
+        return computerJobs;
     }
 
     public Backend getBackend() {
@@ -527,7 +586,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     }
 
     public StandardJanusGraphTx newTransaction(final TransactionConfiguration configuration) {
-        if (!isOpen) ExceptionFactory.graphShutdown();
+        if (!isOpen()) ExceptionFactory.graphShutdown();
         try {
             StandardJanusGraphTx tx = new StandardJanusGraphTx(this, configuration);
             tx.setBackendTransaction(openBackendTransaction(tx));
@@ -955,9 +1014,64 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
     private void prepareCommitVertexIndexUpdates(final ListMultimap<InternalVertex, InternalRelation> mutatedProperties,
                                                  final StandardJanusGraphTx tx,
                                                  final List<IndexUpdate> indexUpdates) {
+        //The transaction's multi-query setting decides, as it does for a composite index lookup of several values,
+        //whether the labels are read together; a store without multi-key queries reads them one key at a time anyway
+        if (tx.getConfiguration().useMultiQuery() && backend.getStoreFeatures().hasMultiQuery()) {
+            loadLabelsCheckedByIndexes(mutatedProperties, tx, config.maxKeysPerRead());
+        }
         indexUpdates.addAll(mutatedProperties.keySet().parallelStream()
             .flatMap(v -> indexSerializer.getIndexUpdates(v, mutatedProperties.get(v), commitIndexAppliesToFilter, tx))
             .collect(Collectors.toList()));
+    }
+
+    /**
+     * Loads the labels which the index updates of the changed vertices check, with multi-queries of up to
+     * {@code query.batch.max-keys-per-read} vertices each. An index restricted to a vertex label applies to a vertex
+     * only if it has that label, and the check reads the label of an existing vertex which the transaction hasn't
+     * loaded - as one which changes vertices it looked up by id hasn't - with a query of its own. New vertices hold
+     * their labels, and removed ones are left to the check as before; a single vertex reads its label with a query of
+     * its own either way.
+     */
+    private static void loadLabelsCheckedByIndexes(
+        final ListMultimap<InternalVertex, InternalRelation> mutatedProperties, final StandardJanusGraphTx tx,
+        final int maxKeysPerRead) {
+        List<JanusGraphVertex> vertices = null;
+        for (InternalVertex vertex : mutatedProperties.keySet()) {
+            if (!vertex.isNew() && !vertex.isRemoved() && checksLabel(vertex, mutatedProperties.get(vertex))) {
+                if (vertices == null) {
+                    vertices = new ArrayList<>();
+                }
+                vertices.add(vertex);
+            }
+        }
+        if (vertices == null || vertices.size() < 2) {
+            return;
+        }
+        for (int from = 0; from < vertices.size(); from += maxKeysPerRead) {
+            final List<JanusGraphVertex> chunk =
+                vertices.subList(from, Math.min(vertices.size(), from + maxKeysPerRead));
+            //The query vertexLabel() makes, which then finds the label in the vertex's cache. A vertex whose label is
+            //loaded already is not read again
+            final MultiVertexCentricQueryBuilder labels = new MultiVertexCentricQueryBuilder(tx, chunk.size());
+            labels.addAllVertices(chunk);
+            BasicVertexCentricQueryUtil.withLabelVertices(labels).vertices();
+        }
+    }
+
+    //Whether an index of a changed property is one the vertex's label decides on: an index of vertices restricted to a
+    //label, which the index updates ask the vertex's label about
+    private static boolean checksLabel(final InternalVertex vertex, final List<InternalRelation> changedProperties) {
+        for (InternalRelation property : changedProperties) {
+            final InternalRelationType key = (InternalRelationType) property.getType();
+            for (IndexReferenceType indexRef : key.getKeyIndexesReferences()) {
+                final IndexType index = indexRef.getIndexType();
+                if (index.hasSchemaTypeConstraint()
+                    && IndexRecordUtil.indexAppliesToWithoutConstraints(index, vertex)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -1073,6 +1187,18 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                     itx.add(indexStore, update.getKey(), update.getEntry(), update.getElement().isNew());
                 else
                     itx.delete(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
+                //The document of an existing element may turn out to be missing from the index. Hand the provider the
+                //element's complete indexed content once, so that it recreates the document whole rather than from the
+                //touched fields. Whether the document is an existing one is the pending mutation's to say, not the
+                //element's: a property change on an edge or a vertex property replaces the relation, so its deletion
+                //arrives from a removed element and its addition from a new one, while the mutation they add up to is
+                //an update of the existing document. Read here, while the transaction can still read: the index
+                //commit runs after the storage commit. A cdc-only index writes its documents asynchronously and takes
+                //none
+                if (!isCdcOnlyMixedIndex(update.getIndex()) && itx.needsCompleteDocument(indexStore, update.getKey())) {
+                    itx.registerCompleteDocument(indexStore, update.getKey(),
+                        indexSerializer.getCompleteDocument(update.getElement(), (MixedIndexType) update.getIndex()));
+                }
             }
         }
 
@@ -1107,6 +1233,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         final KCVSLog txLog = logTransaction?backend.getSystemTxLog():null;
         final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp, times);
         ModificationSummary commitSummary;
+        final ChangedSchemaVertices changedSchemaVertices = ChangedSchemaVertices.of(addedRelations, deletedRelations);
 
         try {
             //3.1 Log transaction (write-ahead log) if enabled
@@ -1240,6 +1367,98 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 log.error("Could not roll-back transaction ["+transactionId+"] after failure due to exception",e2);
             }
             throw e;
+        } finally {
+            //4. Definition edges which no management eviction covers (constraints auto-created under
+            //   schema.constraints=true, connections and properties added through addConnection and addProperties,
+            //   by a transaction or by ManagementSystem) leave the schema caches stale. Expire the local schema cache
+            //   entries of the schema vertices they touch so this instance re-reads them, and those vertices in
+            //   the other open transactions, as ManagementSystem does, so that a transaction which was open during
+            //   this commit does not keep acting on the definition edges it had loaded. The committing transaction
+            //   is left out: it wrote the edges itself and is finishing. So are the vertices it removed, which have
+            //   no definition left to reload. The open transactions are only listed once the graph-level entries
+            //   are gone, so that a transaction which is not on the list can only load the new definition edges.
+            //   A management commit which changes definition edges gets the same from ManagementSystem.commit once
+            //   more, at the cost of a re-read...
+            if (!changedSchemaVertices.all.isEmpty()) {
+                for (Long schemaId : changedSchemaVertices.all) {
+                    schemaCache.expireSchemaElement(schemaId);
+                }
+                for (JanusGraphTransaction other : getOpenTransactions()) {
+                    if (other != tx && other.isOpen()) expireSchemaElements(other, changedSchemaVertices.kept);
+                }
+            }
+            //5. ...and tell the other instances to expire those it did not remove, with an eviction which nothing
+            //   waits to see acknowledged. Every instance expires them when it reads it, this one included, which so
+            //   expires them once more. A removed one (say the old modifier vertex of a consistency which the commit
+            //   replaced) has no definition left for anyone to reload, and nothing looks it up once the types it
+            //   belonged to are reloaded. A management commit which changes definition edges and has management
+            //   evictions of its own sends both.
+            if (!changedSchemaVertices.kept.isEmpty()) {
+                tellInstancesToExpire(changedSchemaVertices.kept);
+            }
+        }
+    }
+
+    //Runs in the finally block of a commit, so a failure is logged instead of thrown, where it would replace the
+    //outcome of the commit. Expiring an element reloads its definition, which can fail like any read; the element's
+    //caches are cleared by then, and it is reloaded when the transaction next uses it.
+    private static void expireSchemaElements(JanusGraphTransaction transaction, Set<Long> schemaIds) {
+        for (Long schemaId : schemaIds) {
+            try {
+                transaction.expireSchemaElement(schemaId);
+            } catch (RuntimeException e) {
+                log.warn("Could not expire schema element {} in transaction {}; it is reloaded when the transaction "
+                    + "next uses it", schemaId, transaction, e);
+            }
+        }
+    }
+
+    //The instances only need to re-read what they had cached, so nothing waits for them to confirm it, and a failure
+    //to tell them does not fail the commit, which has persisted everything it could by now (and runs this after a
+    //failure as well, since a backend without transaction isolation may have committed its schema part): they catch
+    //up when the elements are evicted next, or when they restart. The management log writes synchronously, so a
+    //struggling backend can hold the commit here for up to its max-write-time.
+    private void tellInstancesToExpire(final Set<Long> schemaIds) {
+        try {
+            managementLogger.sendUnacknowledgedCacheEviction(schemaIds);
+        } catch (Exception e) {
+            log.warn("Could not tell the other instances to expire the schema elements {}, whose definition edges "
+                + "this transaction changed. They keep what they had cached until these are evicted again.",
+                schemaIds, e);
+        }
+    }
+
+    /**
+     * The schema vertices at the ends of the definition edges a transaction wrote: all of them, whose graph-level
+     * cache entries are expired, and those the transaction did not remove, which the other open transactions reload
+     * and the other instances are told to expire. A removed one has no definition left to reload.
+     */
+    private static final class ChangedSchemaVertices {
+        private Set<Long> all = Collections.emptySet();
+        private Set<Long> kept = Collections.emptySet();
+
+        private static ChangedSchemaVertices of(final Collection<InternalRelation> addedRelations,
+                                                final Collection<InternalRelation> deletedRelations) {
+            final ChangedSchemaVertices changed = new ChangedSchemaVertices();
+            for (Collection<InternalRelation> relations : Arrays.asList(addedRelations, deletedRelations)) {
+                for (InternalRelation relation : relations) {
+                    if (relation.getType() != BaseLabel.SchemaDefinitionEdge) continue;
+                    for (int pos = 0; pos < relation.getArity(); pos++) {
+                        InternalVertex vertex = relation.getVertex(pos);
+                        if (vertex instanceof JanusGraphSchemaVertex) changed.add((JanusGraphSchemaVertex) vertex);
+                    }
+                }
+            }
+            return changed;
+        }
+
+        private void add(JanusGraphSchemaVertex vertex) {
+            if (all.isEmpty()) {
+                all = new HashSet<>();
+                kept = new HashSet<>();
+            }
+            all.add(vertex.longId());
+            if (!vertex.isRemoved()) kept.add(vertex.longId());
         }
     }
 
@@ -1255,6 +1474,7 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
         public void start() {
             log.debug("Shutting down graph {} using shutdown hook {}", graph, this);
 
+            graph.closing = true;
             graph.closeInternal();
             graph.shutdownHook = null;
         }

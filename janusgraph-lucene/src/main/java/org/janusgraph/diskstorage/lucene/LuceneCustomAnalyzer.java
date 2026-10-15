@@ -23,9 +23,10 @@ import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.graphdb.types.ParameterType;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * An Analyzer that allows delegating analysis to custom analyzers. The class names for the custom analyzers are
@@ -36,6 +37,12 @@ import java.util.UUID;
  * </pre>
  * <p>
  * Custom analyzers are instantiated lazily and then cached for reuse.
+ * <p>
+ * The analyzer of a store belongs to the store's index writer and serves its queries too, so every transaction which
+ * writes to or queries the store shares it. It resolves the key of each field through the key information of the call
+ * in progress on the current thread, which the supplier provides, rather than through that of any one transaction: a
+ * transaction closes, after which its key information can't read the schema, and it knows nothing of the keys added
+ * to the index after it last read them.
  *
  * @author Olivier binda (olivier.binda@wanadoo.fr)
  */
@@ -44,14 +51,19 @@ public class LuceneCustomAnalyzer extends DelegatingAnalyzerWrapper {
     private static final String STANDARD_ANALYZER = StandardAnalyzer.class.getName();
 
     private final String store;
-    private final KeyInformation.IndexRetriever informations;
+    private final Supplier<KeyInformation.IndexRetriever> keyInformationInScope;
 
-    private final Map<String, Analyzer> analyzers = new HashMap<>();
+    private final Map<String, Analyzer> analyzers = new ConcurrentHashMap<>();
 
-    public LuceneCustomAnalyzer(String store, KeyInformation.IndexRetriever informations, ReuseStrategy fallbackStrategy) {
+    /**
+     * @param keyInformationInScope the key information of the call in progress on the current thread, asked for
+     *                              each field analyzed
+     */
+    public LuceneCustomAnalyzer(String store, Supplier<KeyInformation.IndexRetriever> keyInformationInScope,
+                                ReuseStrategy fallbackStrategy) {
         super(fallbackStrategy);
         this.store = store;
-        this.informations = informations;
+        this.keyInformationInScope = keyInformationInScope;
         analyzers.put(KEYWORD_ANALYZER, new KeywordAnalyzer());
         analyzers.put(STANDARD_ANALYZER, new StandardAnalyzer());
     }
@@ -61,7 +73,7 @@ public class LuceneCustomAnalyzer extends DelegatingAnalyzerWrapper {
         if (LuceneIndex.DOCID.equals(fieldName)) {
             return analyzerFor(KEYWORD_ANALYZER);
         }
-        final KeyInformation keyInformation = informations.get(store, LuceneIndex.getOrigFieldName(fieldName));
+        final KeyInformation keyInformation = keyInformationInScope.get().get(store, LuceneIndex.getOrigFieldName(fieldName));
         if (keyInformation != null && keyInformation.getDataType().equals(UUID.class)) {
             return analyzerFor(KEYWORD_ANALYZER);
         }
@@ -98,14 +110,12 @@ public class LuceneCustomAnalyzer extends DelegatingAnalyzerWrapper {
     }
 
     private Analyzer analyzerFor(final String analyzerName) {
-        if (!analyzers.containsKey(analyzerName)) {
+        return analyzers.computeIfAbsent(analyzerName, name -> {
             try {
-                final Class classDefinition = Class.forName(analyzerName);
-                analyzers.put(analyzerName, (Analyzer) classDefinition.newInstance());
-            } catch (Exception e) {
-                throw new RuntimeException("Analyzer cannot be instanciated for class " + analyzerName, e);
+                return (Analyzer) Class.forName(name).getDeclaredConstructor().newInstance();
+            } catch (final Exception e) {
+                throw new RuntimeException("Analyzer cannot be instantiated for class " + name, e);
             }
-        }
-        return analyzers.get(analyzerName);
+        });
     }
 }

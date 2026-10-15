@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -62,7 +63,7 @@ public class Durations {
     private static final Map<String,TemporalUnit> unitNames = new HashMap<String,TemporalUnit>() {{
         for (ChronoUnit unit : Arrays.asList(ChronoUnit.NANOS, ChronoUnit.MICROS, ChronoUnit.MILLIS, ChronoUnit.SECONDS, ChronoUnit.MINUTES, ChronoUnit.HOURS, ChronoUnit.DAYS)) {
             put(abbreviate(unit),unit); //abbreviated name
-            String name = unit.toString().toLowerCase();
+            String name = unit.toString().toLowerCase(Locale.ROOT);
             put(name,unit); //abbreviated name in singular
             assert name.endsWith("s");
             put(name.substring(0,name.length()-1),unit);
@@ -71,7 +72,7 @@ public class Durations {
     }};
 
     public static TemporalUnit parse(String unitName) {
-        TemporalUnit unit = unitNames.get(unitName.toLowerCase());
+        TemporalUnit unit = unitNames.get(unitName.toLowerCase(Locale.ROOT));
         Preconditions.checkNotNull(unit,"Unknown unit time: %s",unitName);
         return unit;
     }

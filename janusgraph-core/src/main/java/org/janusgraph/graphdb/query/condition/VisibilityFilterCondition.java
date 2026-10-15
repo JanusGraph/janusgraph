@@ -21,6 +21,7 @@ import org.janusgraph.core.schema.JanusGraphSchemaElement;
 import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.types.system.SystemRelationType;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -62,6 +63,6 @@ public class VisibilityFilterCondition<E extends JanusGraphElement> extends Lite
 
     @Override
     public String toString() {
-        return "visibility:"+visibility.toString().toLowerCase();
+        return "visibility:"+visibility.toString().toLowerCase(Locale.ROOT);
     }
 }

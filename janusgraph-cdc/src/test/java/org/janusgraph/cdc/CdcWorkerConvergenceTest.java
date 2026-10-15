@@ -18,7 +18,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.MockConsumer;
-import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -116,7 +115,7 @@ public class CdcWorkerConvergenceTest {
     // ---- driving the worker through a MockConsumer ----
 
     private void process(byte[]... eventValues) {
-        MockConsumer<byte[], byte[]> consumer = new MockConsumer<>(OffsetResetStrategy.EARLIEST);
+        MockConsumer<byte[], byte[]> consumer = new MockConsumer<>("earliest");
         TopicPartition tp = new TopicPartition(TOPIC, 0);
         consumer.assign(Collections.singletonList(tp));
         consumer.updateBeginningOffsets(Collections.singletonMap(tp, 0L));

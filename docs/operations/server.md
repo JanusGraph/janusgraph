@@ -419,6 +419,93 @@ You can then use that token for authentication by using the "Authorization: Toke
 curl -v http://localhost:8182/session -XPOST -d '{"gremlin": "g.V().count()"}' -H "Authorization: Token dXNlcjoxNTA5NTQ2NjI0NDUzOkhrclhYaGhRVG9KTnVSRXJ5U2VpdndhalJRcVBtWEpSMzh5WldqRTM4MW89"
 ```
 
+### Gremlin pool on virtual threads
+
+JanusGraph Server evaluates requests in the Gremlin pool of Gremlin Server. The pool has `gremlinPool` threads, by
+default as many as the JVM has processors, and a queue for `maxWorkQueueSize` more requests, 8192 by default. A request
+which finds the queue full is rejected: with the status `TOO_MANY_REQUESTS` over WebSocket, with the status 500 over
+HTTP. Requests in a session are evaluated on a thread of their session instead, unless the deprecated
+`UnifiedChannelizer` is configured.
+
+A thread of the pool stays with its request while the request waits for the storage and index backends, and a request
+whose data isn't cached spends most of its time waiting. The pool therefore evaluates only as many requests per second
+as `gremlinPool` threads can wait for, however idle the processors are, and raising `gremlinPool` creates as many
+platform threads.
+
+On Java 24 or later, in practice Java 25, the long-term-support release, as Java 24 is out of support, the setting
+`gremlinPoolVirtualThreads` runs the pool on virtual threads:
+
+```yaml
+gremlinPool: 256
+gremlinPoolVirtualThreads: true
+```
+
+The pool keeps its bounds: `gremlinPool` requests are evaluated at once, `maxWorkQueueSize` more wait, and any further
+request is rejected as before. Its threads are named `gremlin-server-exec-<n>`, like those of Gremlin Server's pool. A
+virtual thread whose request waits for a backend releases the platform thread it ran on, so `gremlinPool` can be raised
+to the number of requests which should be evaluated at once without creating as many platform threads. A thread which
+has had no request to evaluate for a minute ends. The setting is off by default. With it on, JanusGraph Server does not
+start on Java versions older than 24: the future which `JanusGraphServer.start()` returns fails with an
+`IllegalStateException` which names the Java version it runs on, and `JanusGraphServer.main` logs the error and stops.
+
+Java 21 has virtual threads as well, but before Java 24 a virtual thread which waits inside a `synchronized` method or
+block keeps its platform thread, its carrier, so at most as many such waits proceed at once as there are carriers, by
+default one per processor. JanusGraph waits inside `synchronized` methods while a transaction commits and while it waits
+for a new block of IDs, and with `cache.db-cache` a cache miss reads the storage backend inside a `synchronized` block.
+On Java 21, a pool of 256 virtual threads committed only about half as many write transactions per second as a pool
+of 256 platform threads, 12,500 against 22,200 at 256 in flight, while the server used under two processors (measured
+as below, with the same pool built outside JanusGraph Server, which refuses the setting on Java 21).
+
+The following was measured on one machine (Apple M5 Pro, 18 processors) with Cassandra 5.0.8 in a container, a graph
+of 20,000 vertices with 10 edges each and a composite index, and JanusGraph Server on Java 25 with a 2 GB heap and the
+default graph configuration, so without `cache.db-cache`. Gremlin drivers kept a fixed number of requests in flight; a
+request is a sessionless bytecode traversal, so a transaction of its own: 40% read a vertex by id, 30% its neighbours,
+10% counted the neighbours of the neighbours, and 20% looked a vertex up by the composite index. Each cell is the mean
+of two runs of 15 s after 20 s of warm-up.
+
+| Gremlin pool | 16 in flight | 256 in flight | 1024 in flight | Platform threads of the server |
+|---|---|---|---|---|
+| 18 platform threads (the default) | 4,430 requests/s | 5,480 requests/s | 5,500 requests/s | 78–88 |
+| 256 platform threads | 4,520 requests/s | 16,800 requests/s | 18,900 requests/s | 326 |
+| 256 virtual threads | 4,420 requests/s | 20,900 requests/s | 20,700 requests/s | 90 |
+| 1024 platform threads | 3,590 requests/s | 10,200 requests/s | 3,870 requests/s | 1,094 |
+| 1024 virtual threads | 4,780 requests/s | 21,500 requests/s | 21,100 requests/s | 90 |
+
+The default pool capped the throughput at about 5,500 requests per second while the server used about one processor.
+With 256 threads, virtual threads answered a quarter more requests per second than platform threads at 256 in flight
+and took a third less processor time per request (200 instead of 306 µs). A pool of 1,024 platform threads was slower
+than one of 256 at every level and collapsed at 1,024 requests in flight, with a p99 latency of 530 ms and 1,500 µs of
+processor time per request, while 1,024 virtual threads kept the throughput of 256 on 90 platform threads. At 16
+requests in flight, where the pool isn't the bottleneck, the pools of 18 and 256 threads and the 1,024 virtual threads
+answered between 4,400 and 4,800 requests per second, the 1,024 platform threads 3,590.
+
+A mix of vertex and edge insertions, half of each, behaved alike: at 256 in flight, 256 virtual threads committed
+27,700 transactions per second against 22,800 with 256 platform threads, at 152 instead of 231 µs of processor time
+per transaction, with 115 platform threads in the server instead of 351.
+
+Before enabling the setting, consider the following:
+
+* Raise `gremlinPool` along with it. The setting doesn't change how many requests are evaluated at once, only what they
+  run on, so with the default `gremlinPool` it changes little.
+* The backends keep their own limits. The CQL backend, for example, has at most `storage.cql.back-pressure-limit`
+  requests in flight, by default 1024 for each Cassandra node, and further requests wait. A `gremlinPool` far above
+  what the backends serve at once only adds waiting requests.
+* Requests in a session are still evaluated on a platform thread of their session.
+* Java 24 lets a virtual thread release its carrier while it waits inside `synchronized`, but a virtual thread still
+  keeps its carrier while it runs native code. The virtual threads run on `jdk.virtualThreadScheduler.parallelism`
+  carriers, by default as many as the JVM has processors, and `jdk.virtualThreadScheduler.maxPoolSize`, by default 256
+  or the parallelism if that is larger, bounds the carriers the scheduler may add temporarily.
+* Code which caches per thread in a `ThreadLocal` keeps one copy for each of the `gremlinPool` threads, that is one per
+  request evaluated at once, and loses a copy when its thread ends after a minute without requests.
+* `jstack` and `jcmd <pid> Thread.print` list platform threads only. The threads of the pool don't appear in them; a
+  carrier which is running one of them is marked `Carrying virtual thread #<n>` and shows its own frames, not those of
+  the request. `jcmd <pid> Thread.dump_to_file <file>`, with or without `-format=json`, lists every thread of the pool
+  by name with its stack.
+* The official JanusGraph container images run on Java 11. The setting needs an image built from a base image with
+  Java 24 or later, which the `BASE_IMAGE` build argument of the Dockerfile selects, and the settings passed through the
+  environment of the container, `gremlinserver.gremlinPoolVirtualThreads=true` and `gremlinserver.gremlinPool=256`, as
+  the image sets `gremlinPool` to 8.
+
 ## Extending JanusGraph Server
 
 !!! note

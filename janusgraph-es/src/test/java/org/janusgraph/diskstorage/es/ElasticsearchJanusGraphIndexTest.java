@@ -16,9 +16,13 @@ package org.janusgraph.diskstorage.es;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
@@ -33,12 +37,15 @@ import org.janusgraph.diskstorage.mixed.utils.processor.FixedErrorDistanceCircle
 import org.janusgraph.diskstorage.mixed.utils.processor.NoTransformCircleProcessor;
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.util.IndexRecordUtil;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.stream.IntStream;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
@@ -46,6 +53,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IN
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PROPERTY_PREFETCHING;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -64,11 +72,97 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
         ModifiableConfiguration config =  esr.setConfiguration(getStorageConfiguration(), indexBackends);
         for (String indexBackend : indexBackends) {
             config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, indexBackend);
+            // A limited result beyond 10,000 hits, as a query the index can't sort reads, in many pages of 3 as well
+            config.set(ElasticSearchIndex.LIMITED_RESULT_MAX_PAGE_SIZE, 3, indexBackend);
+            config.set(ElasticSearchIndex.PAGING_MODE, getPagingMode().getConfigName(), indexBackend);
         }
         return config.getConfiguration();
     }
 
     public abstract ModifiableConfiguration getStorageConfiguration();
+
+    //How a result larger than a page of 3 is read: the suites of the storage backends cover different modes
+    protected ElasticSearchPagingMode getPagingMode() {
+        return ElasticSearchPagingMode.SCROLL;
+    }
+
+    //An element's document can be missing from the index while the element exists: an index write lost earlier, a
+    //document removed by hand. A later update used to recreate it from the fields it touched alone, so the vertex was
+    //findable by the property it had just changed and by nothing else. The update now recreates the whole document
+    @Test
+    public void testAnUpdateRecreatesAMissingDocumentWhole() throws Exception {
+        assertAnUpdateRecreatesAMissingDocumentWhole(true);
+    }
+
+    //A transaction which doesn't prefetch the properties of a vertex reads those of the index's keys alone for the
+    //document, rather than all of them
+    @Test
+    public void testAnUpdateWithoutPropertyPrefetchingRecreatesAMissingDocumentWhole() throws Exception {
+        assertAnUpdateRecreatesAMissingDocumentWhole(false);
+    }
+
+    private void assertAnUpdateRecreatesAMissingDocumentWhole(boolean prefetching) throws Exception {
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.makePropertyKey("note").dataType(String.class).make();
+        mgmt.buildIndex("byNameAndAge", Vertex.class).addKey(name, Mapping.STRING.asParameter()).addKey(age)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object vertexId = graph.addVertex("name", "whole", "age", 1, "note", "not indexed").id();
+        graph.tx().commit();
+        clopen(option(FORCE_INDEX_USAGE), true, option(PROPERTY_PREFETCHING), prefetching);
+        assertTrue(graph.traversal().V().has("name", "whole").hasNext());
+
+        esr.deleteDocument(INDEX_NAME.getDefaultValue() + "_bynameandage", "byNameAndAge",
+            IndexRecordUtil.element2String(vertexId));
+        //A transaction caches the result of an index query, so the absence has to be observed by a fresh one
+        graph.tx().rollback();
+        assertFalse(graph.traversal().V().has("name", "whole").hasNext());
+
+        graph.traversal().V(vertexId).property("age", 2).iterate();
+        graph.tx().commit();
+
+        //Findable by the property the update did not touch, not only by the one it did
+        assertTrue(graph.traversal().V().has("age", 2).hasNext());
+        assertTrue(graph.traversal().V().has("name", "whole").hasNext());
+    }
+
+    //The same for a relation document. A property change on an existing edge removes the edge and adds a new one
+    //with the same id, so the index updates arrive from a removed element and from a new one, while the mutation they
+    //add up to is an update of the existing document; that mutation, not the elements, decides that the complete
+    //document is supplied. Dropping a property in the same commit keeps a deletion in the mutation, which is the
+    //shape which could not recreate the document at all before
+    @Test
+    public void testAnEdgeUpdateRecreatesAMissingDocumentWhole() throws Exception {
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        final PropertyKey weight = mgmt.makePropertyKey("weight").dataType(Integer.class).make();
+        final PropertyKey since = mgmt.makePropertyKey("since").dataType(Integer.class).make();
+        mgmt.makeEdgeLabel("knows").make();
+        mgmt.buildIndex("edgesByNameWeightSince", Edge.class).addKey(name, Mapping.STRING.asParameter())
+            .addKey(weight).addKey(since).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Vertex a = graph.addVertex();
+        final Vertex b = graph.addVertex();
+        final Object edgeId = a.addEdge("knows", b, "name", "whole", "weight", 1, "since", 2020).id();
+        graph.tx().commit();
+        clopen(option(FORCE_INDEX_USAGE), true);
+        assertTrue(graph.traversal().E().has("name", "whole").hasNext());
+
+        esr.deleteDocument(INDEX_NAME.getDefaultValue() + "_edgesbynameweightsince", "edgesByNameWeightSince",
+            IndexRecordUtil.element2String(edgeId));
+        graph.tx().rollback();
+        assertFalse(graph.traversal().E().has("name", "whole").hasNext());
+
+        graph.traversal().E(edgeId).property("weight", 2).iterate();
+        graph.traversal().E(edgeId).properties("since").drop().iterate();
+        graph.tx().commit();
+
+        assertTrue(graph.traversal().E().has("weight", 2).hasNext());
+        assertTrue(graph.traversal().E().has("name", "whole").hasNext());
+        assertFalse(graph.traversal().E().has("since", 2020).hasNext());
+    }
 
     @Test
     public void indexShouldExistAfterCreation() throws Exception {
@@ -262,4 +356,29 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
             .toList().stream().anyMatch(vertex -> addedVertex.id().equals(vertex.id()) && circle.equals(vertex.value("foo")));
     }
 
+    //Elasticsearch answers a geoContains of a geo_shape of several values in BKD by leaving out a document which holds
+    //a value that falls within the shape asked about, while in memory one value which contains the shape is enough: a
+    //query in a transaction finds a vertex once the transaction removed such a value
+    @Test
+    public void testTransactionFindsAVertexWhichARemovalMadeContainAShape() {
+        //Elasticsearch 6 answers no geoContains of a geo_shape in BKD
+        Assumptions.assumeTrue(esr.getEsMajorVersion().getValue() >= 7);
+        final PropertyKey shapes = mgmt.makePropertyKey("shapes").dataType(Geoshape.class).cardinality(Cardinality.SET)
+            .make();
+        mgmt.buildIndex("byShapes", Vertex.class).addKey(shapes, Mapping.BKD.asParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex vertex = tx.addVertex();
+        vertex.property(VertexProperty.Cardinality.set, "shapes", Geoshape.box(0, 0, 10, 10));
+        vertex.property(VertexProperty.Cardinality.set, "shapes", Geoshape.point(5, 5));
+        final Object id = vertex.id();
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        g.V(id).properties("shapes").hasValue(Geoshape.point(5, 5)).drop().iterate();
+        Assertions.assertEquals(Collections.singletonList(id),
+            g.V().has("shapes", Geo.geoContains(Geoshape.box(4, 4, 6, 6))).id().toList());
+        tx.rollback();
+    }
 }

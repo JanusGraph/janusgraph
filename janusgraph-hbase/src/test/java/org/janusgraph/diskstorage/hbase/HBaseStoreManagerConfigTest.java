@@ -51,7 +51,7 @@ public class HBaseStoreManagerConfigTest {
     public void testShortCfNames() throws Exception {
         org.apache.logging.log4j.core.Logger log = (org.apache.logging.log4j.core.Logger)LogManager.getLogger(HBaseStoreManager.class);
         StringWriter writer = new StringWriter();
-        Appender appender = WriterAppender.createAppender(PatternLayout.newBuilder().withPattern("%p: %m%n").build(), LevelMatchFilter.newBuilder().setLevel(Level.WARN).build(), writer, "test", false, false);
+        Appender appender = WriterAppender.createAppender(PatternLayout.newBuilder().setPattern("%p: %m%n").build(), LevelMatchFilter.newBuilder().setLevel(Level.WARN).build(), writer, "test", false, false);
         appender.start();
         log.addAppender(appender);
 
@@ -112,7 +112,7 @@ public class HBaseStoreManagerConfigTest {
         Level savedLevel = log.getLevel();
         log.setLevel(Level.DEBUG);
         StringWriter writer = new StringWriter();
-        Appender appender = WriterAppender.createAppender(PatternLayout.newBuilder().withPattern("%p: %m%n").build(), LevelMatchFilter.newBuilder().setLevel(Level.DEBUG).build(), writer, "test", false, false);
+        Appender appender = WriterAppender.createAppender(PatternLayout.newBuilder().setPattern("%p: %m%n").build(), LevelMatchFilter.newBuilder().setLevel(Level.DEBUG).build(), writer, "test", false, false);
         appender.start();
         log.addAppender(appender);
 

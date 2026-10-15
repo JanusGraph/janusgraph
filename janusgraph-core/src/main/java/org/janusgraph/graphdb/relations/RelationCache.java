@@ -18,6 +18,7 @@ import com.carrotsearch.hppc.LongObjectHashMap;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
+import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -45,14 +46,36 @@ public class RelationCache implements Iterable<LongObjectCursor<Object>> {
         this.properties = (properties == null || properties.size() > 0) ? properties : EMPTY;
     }
 
+    /**
+     * A relation parsed header-only: its type, direction, id and other end are known, its properties are not.
+     */
     public RelationCache(final Direction direction, final long typeId, final long relationId,
                          final Object other) {
         this(direction,typeId,relationId,other,null);
     }
 
+    /**
+     * A relation parsed with its properties, of which it has none: {@link #isFullyParsed()} and not
+     * {@link #hasProperties()}.
+     */
+    public static RelationCache withoutProperties(final Direction direction, final long typeId, final long relationId,
+                                                  final Object other) {
+        return new RelationCache(direction, typeId, relationId, other, EMPTY);
+    }
+
     @SuppressWarnings("unchecked")
     public <O> O get(long key) {
         return (O) properties.get(key);
+    }
+
+    /**
+     * Whether the properties of the relation were parsed. Only a fully parsed cache answers {@link #get(long)},
+     * {@link #numProperties()} and iteration; a cache parsed header-only has to be parsed again for them. A fully
+     * parsed relation without properties is fully parsed all the same, which is what tells it apart from a
+     * header-only one.
+     */
+    public boolean isFullyParsed() {
+        return properties != null;
     }
 
     public boolean hasProperties() {
@@ -72,7 +95,9 @@ public class RelationCache implements Iterable<LongObjectCursor<Object>> {
     }
 
     public Iterator<LongObjectCursor<Object>> propertyIterator() {
-        return properties.iterator();
+        //Iterating an HPPC map writes its iteration seed, and the empty map is shared by every relation without
+        //properties, so it isn't iterated
+        return properties.isEmpty() ? Collections.emptyIterator() : properties.iterator();
     }
 
     @Override
