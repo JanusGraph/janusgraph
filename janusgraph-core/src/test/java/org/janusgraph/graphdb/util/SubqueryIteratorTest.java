@@ -25,12 +25,15 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -157,6 +160,39 @@ public class SubqueryIteratorTest {
         assertTrue(closed.get());
     }
 
+    //An index stream which counts how often it is closed. A stream of the JDK runs its close handlers once however
+    //often it is closed, which would hide a second close
+    private static Stream<?> countingCloses(Stream<?> stream, AtomicInteger closes) {
+        return (Stream<?>) Proxy.newProxyInstance(SubqueryIteratorTest.class.getClassLoader(),
+            new Class<?>[]{Stream.class}, (proxy, method, args) -> {
+                if ("close".equals(method.getName())) {
+                    closes.incrementAndGet();
+                }
+                try {
+                    return method.invoke(stream, args);
+                } catch (InvocationTargetException e) {
+                    throw e.getCause();
+                }
+            });
+    }
+
+    //Closing the iterator again, after it closed itself at its end or after its consumer closed it, closes the index
+    //stream no second time, so that a resource behind it is handed back once
+    @Test
+    public void shouldCloseTheIndexStreamOnceHoweverOftenTheIteratorIsClosed() {
+        final AtomicInteger closes = new AtomicInteger();
+        final SubqueryIterator exhausted = iteratorOver(countingCloses(Stream.of(1L, 2L), closes));
+        exhausted.forEachRemaining(element -> { });
+        exhausted.close();
+        assertEquals(1, closes.get());
+
+        final SubqueryIterator closedEarly = iteratorOver(countingCloses(Stream.of(1L, 2L, 3L), closes));
+        closedEarly.next();
+        closedEarly.close();
+        closedEarly.close();
+        assertEquals(2, closes.get());
+    }
+
     //An iterator over the ids of a subquery read under a limit, from the index or from the cache, of which the ids
     //without an element, as those of relations which the transaction removed, convert to null
     private SubqueryIterator limitedIterator(List<Object> ids, boolean fromCache, int limit, Object idWithoutElement) {
@@ -260,6 +296,20 @@ public class SubqueryIteratorTest {
         verify(indexCache).put(subQuery, Arrays.asList(1L, 2L, 3L, 4L, 5L));
     }
 
+    //A read under a larger limit may find its ids in the cache, where an earlier query put them, and skips them alike
+    @Test
+    public void shouldSkipIdsFromTheCacheWithoutTurningThemIntoElements() {
+        final SubqueryCache indexCache = mock(SubqueryCache.class);
+        when(indexCache.getIfPresent(any())).thenReturn(Arrays.asList(11L, 12L, 13L, 14L, 15L));
+        final List<Object> converted = new ArrayList<>();
+        final SubqueryIterator iterator = skippingIterator(subqueryLimitedToFive(), indexCache, converted);
+        iterator.skipBackendResults(2);
+        assertEquals(3, countElements(iterator));
+        assertEquals(Arrays.asList(13L, 14L, 15L), converted);
+        assertEquals(5, iterator.getBackendResultsRead());
+        assertTrue(iterator.hasBackendReachedLimit());
+    }
+
     @Test
     public void shouldSkipOnlyACountOfAtLeastZeroBeforeTheIteratorLooksForItsFirstElement() {
         final SubqueryIterator iterator = skippingIterator(subqueryLimitedToFive(), emptyCache(), new ArrayList<>());
@@ -347,6 +397,43 @@ public class SubqueryIteratorTest {
         assertEquals(Arrays.asList(1L, 2L, 3L), converted);
         assertEquals(2, iterator.getBackendResultsRead());
         assertFalse(iterator.hasBackendReachedLimit());
+    }
+
+    //An iterator which found as many elements as its read limit allows takes no further id from the index, not even
+    //to tell whether one follows, where a consumer stops at the limit and closes it: a stream which reads the index in
+    //pages could read a page for it
+    @Test
+    public void shouldTakeNoIdFromTheIndexPastTheReadLimit() {
+        final AtomicInteger taken = new AtomicInteger();
+        final IndexSerializer indexSerializer = mock(IndexSerializer.class);
+        when(indexSerializer.query(any(), any(), any()))
+            .thenAnswer(invocation -> Stream.of(1L, 2L, 3L, 4L, 5L).peek(id -> taken.incrementAndGet()));
+        final SubqueryIterator iterator = new SubqueryIterator(subqueryLimitedToFive(), indexSerializer,
+            mock(BackendTransaction.class), mock(StandardJanusGraphTx.class), emptyCache(), 2,
+            id -> mock(JanusGraphElement.class), null);
+        iterator.next();
+        iterator.next();
+        iterator.close();
+        assertEquals(2, taken.get());
+    }
+
+    //The probe of closing looks ahead as hasNext does: a read after it returns the element which the probe found,
+    //without turning its id into an element again
+    @Test
+    public void shouldReturnTheElementWhichTheProbeOfClosingFoundToTheNextRead() {
+        final IndexSerializer indexSerializer = mock(IndexSerializer.class);
+        when(indexSerializer.query(any(), any(), any())).thenAnswer(invocation -> Stream.of(1L, 2L, 3L, 4L, 5L));
+        final List<Object> converted = new ArrayList<>();
+        final SubqueryIterator iterator = new SubqueryIterator(subqueryLimitedToFive(), indexSerializer,
+            mock(BackendTransaction.class), mock(StandardJanusGraphTx.class), emptyCache(), 5, id -> {
+                converted.add(id);
+                return elementOf(id);
+            }, null);
+        iterator.next();
+        iterator.close();
+        assertEquals(Arrays.asList(1L, 2L), converted);
+        assertEquals(2L, iterator.next().id());
+        assertEquals(Arrays.asList(1L, 2L), converted);
     }
 
     @Test
