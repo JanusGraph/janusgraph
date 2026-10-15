@@ -19,6 +19,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.internal.AbstractElement;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
@@ -102,7 +103,8 @@ public class RelationComparator implements Comparator<InternalRelation> {
             if (!o1.equals(o2)) {
                 final int objectCompare;
                 if (Comparable.class.isAssignableFrom(((PropertyKey) t1).dataType())) {
-                    objectCompare = ((Comparable) o1).compareTo(o2);
+                    //UUIDs by their unsigned bits, as the storage backend holds the values of a SET key
+                    objectCompare = AttributeUtils.compareValues(o1, o2);
                 } else {
                     objectCompare = System.identityHashCode(o1) - System.identityHashCode(o2);
                 }
@@ -123,9 +125,9 @@ public class RelationComparator implements Comparator<InternalRelation> {
 
     /**
      * Compares two relations by the values of the keys of the given orders only, as {@link #compare} compares them
-     * first: as {@link #compareValues(Object, Object, Order)} does, which compares strings by UTF-16 code unit, the
-     * order in which the storage backend holds the sort keys of relations, and puts a missing value first when
-     * descending.
+     * first: as {@link #compareValues(Object, Object, Order)} does, which compares strings by UTF-16 code unit and
+     * UUIDs by their bits as unsigned numbers, the order in which the storage backend holds the sort keys of relations,
+     * and puts a missing value first when descending.
      */
     public static int compareOnOrders(JanusGraphRelation r1, JanusGraphRelation r2, OrderList orders) {
         for (int i = 0; i < orders.size(); i++) {
@@ -147,7 +149,8 @@ public class RelationComparator implements Comparator<InternalRelation> {
             else return 0;
         } else {
             Preconditions.checkArgument(v1 instanceof Comparable && v2 instanceof Comparable, "Encountered invalid values");
-            return ((Comparable) v1).compareTo(v2);
+            //As the storage backend holds the sort keys, UUIDs by their unsigned bits, unlike UUID.compareTo
+            return AttributeUtils.compareValues(v1, v2);
         }
     }
 

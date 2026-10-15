@@ -1171,6 +1171,108 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     }
 
+    /**
+     * UUIDs come in the order of their string forms, by which Elasticsearch, OpenSearch and Solr sort them: by their
+     * bits as unsigned numbers, where UUID.compareTo compares them as signed numbers. So the transaction's new vertices
+     * come where the index puts the others, a key which no index holds is sorted in the same order, and so are the
+     * ranges of UUIDs, which JanusGraph checks itself, as no index answers them: keyset paging comes through them all.
+     */
+    @Test
+    public void testUUIDsAreOrderedAsTheirStringForms() {
+        final PropertyKey tag = makeKey("tag", String.class);
+        final PropertyKey uid = makeKey("uid", UUID.class);
+        makeKey("unindexedUid", UUID.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(tag, getStringMapping()).addKey(uid).buildMixedIndex(INDEX);
+        finishSchema();
+        //The first digit of either half of each UUID from 8 up, or below it
+        final List<UUID> byString = Arrays.asList(UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            UUID.fromString("12345678-0000-0000-7fff-ffffffffffff"),
+            UUID.fromString("12345678-0000-0000-8000-000000000000"),
+            UUID.fromString("7fffffff-ffff-ffff-ffff-ffffffffffff"),
+            UUID.fromString("80000000-0000-0000-0000-000000000000"),
+            UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff"));
+        for (int i = 0; i < byString.size(); i += 2) {
+            tx.addVertex("tag", "t", "uid", byString.get(i), "unindexedUid", byString.get(i));
+        }
+        clopen();
+        final GraphTraversalSource g = tx.traversal();
+        for (int i = 1; i < byString.size(); i += 2) {
+            tx.addVertex("tag", "t", "uid", byString.get(i), "unindexedUid", byString.get(i));
+        }
+        final List<UUID> reversed = ImmutableList.copyOf(byString).reverse();
+        for (final String key : supportsOrderingByUUID() ? Arrays.asList("uid", "unindexedUid")
+                : Collections.singletonList("unindexedUid")) {
+            //Sorted by the index, with the new vertices merged in, or in memory, by a key which no index holds
+            assertEquals(byString, g.V().has("tag", "t").order().by(key, asc).values(key).toList(), key);
+            assertEquals(byString.subList(0, 3), g.V().has("tag", "t").order().by(key, asc).limit(3).values(key)
+                .toList(), key);
+            assertEquals(reversed.subList(0, 3), g.V().has("tag", "t").order().by(key, desc).limit(3).values(key)
+                .toList(), key);
+            //Ranges in the same order
+            assertEquals(byString.subList(2, 6), g.V().has("tag", "t").has(key, P.gt(byString.get(1)))
+                .order().by(key, asc).values(key).toList(), key);
+            assertEquals(byString.subList(1, 3), g.V().has("tag", "t")
+                .has(key, P.between(byString.get(1), byString.get(3))).order().by(key, asc).values(key).toList(), key);
+            //Keyset paging, each page from the last UUID of the page before
+            final List<UUID> paged = new ArrayList<>();
+            List<UUID> page = g.V().has("tag", "t").order().by(key, asc).limit(2).<UUID>values(key).toList();
+            for (int i = 0; !page.isEmpty(); i++) {
+                assertTrue(i < 10, "pages without end: " + paged);
+                paged.addAll(page);
+                page = g.V().has("tag", "t").has(key, P.gt(page.get(page.size() - 1))).order().by(key, asc).limit(2)
+                    .<UUID>values(key).toList();
+            }
+            assertEquals(byString, paged, key);
+        }
+    }
+
+    /**
+     * An index which sorts by a UUID key puts the elements without the key last, whichever the direction, as
+     * JanusGraph does where it orders elements itself, so that the transaction's new vertices are merged in where they
+     * belong. Solr put them first when ascending, as the uuid field type of its schema didn't sort them last. A graph
+     * query keeps the elements without the key; a traversal is checked on the elements which have it.
+     */
+    @Test
+    public void testOrderByUUIDPutsElementsWithoutTheKeyLast() {
+        if (!supportsOrderingByUUID()) {
+            return;
+        }
+        final PropertyKey tag = makeKey("tag", String.class);
+        final PropertyKey uid = makeKey("uid", UUID.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(tag, getStringMapping()).addKey(uid).buildMixedIndex(INDEX);
+        finishSchema();
+        final Object first = tx.addVertex("tag", "t", "uid", UUID.fromString("00000000-0000-0000-0000-000000000001"))
+            .id();
+        final Object without = tx.addVertex("tag", "t").id();
+        tx.commit();
+
+        newTx();
+        final Object last = tx.addVertex("tag", "t", "uid", UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff"))
+            .id();
+        assertEquals(Arrays.asList(first, last),
+            idsOfVerticesOf(tx.query().has("tag", "t").orderBy("uid", asc).limit(2)));
+        assertEquals(Arrays.asList(first, last, without),
+            idsOfVerticesOf(tx.query().has("tag", "t").orderBy("uid", asc)));
+        assertEquals(Arrays.asList(last, first, without),
+            idsOfVerticesOf(tx.query().has("tag", "t").orderBy("uid", desc)));
+        final GraphTraversalSource g = tx.traversal();
+        assertEquals(Arrays.asList(first, last),
+            g.V().has("tag", "t").has("uid").order().by("uid", asc).id().toList());
+        assertEquals(Arrays.asList(last, first),
+            g.V().has("tag", "t").has("uid").order().by("uid", desc).id().toList());
+    }
+
+    private static List<Object> idsOfVerticesOf(JanusGraphQuery<?> query) {
+        final List<Object> ids = new ArrayList<>();
+        query.vertices().forEach(vertex -> ids.add(vertex.id()));
+        return ids;
+    }
+
+    //Whether the index sorts by a UUID key, which Lucene doesn't
+    protected boolean supportsOrderingByUUID() {
+        return true;
+    }
+
 
     /**
      * Tests conditional indexing and the different management features
