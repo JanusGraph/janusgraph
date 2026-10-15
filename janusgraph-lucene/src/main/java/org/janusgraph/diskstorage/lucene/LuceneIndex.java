@@ -74,6 +74,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
@@ -543,7 +544,10 @@ public class LuceneIndex implements IndexProvider {
     private String convertToStringValue(final Mapping mapping, Object value) {
         String converted;
         if (value instanceof Number) {
-            converted = value.toString();
+            //As buildStoreField stores it: a float as the double which it widens to, whose decimal string differs from
+            //the float's for most floats, such as 0.10000000149011612 for 0.1f
+            converted = AttributeUtils.isWholeNumber((Number) value) ? String.valueOf(((Number) value).longValue())
+                : String.valueOf(((Number) value).doubleValue());
         } else if (AttributeUtils.isString(value)) {
             converted = storesLowerCase(mapping, value) ? lowerCaseCodePoints((String) value) : (String) value;
         } else if (value instanceof Date) {
@@ -557,7 +561,9 @@ public class LuceneIndex implements IndexProvider {
         } else {
             throw new IllegalArgumentException("Unsupported type: " + value);
         }
-        return converted;
+        //Lucene stores a string in UTF-8, with U+FFFD in place of each unpaired surrogate
+        return AttributeUtils.isString(value) && !UnicodeUtil.validUTF16String(converted)
+            ? new BytesRef(converted).utf8ToString() : converted;
     }
 
     // NOTE: new SET/LIST store fields must be sync with convertToStringValue
