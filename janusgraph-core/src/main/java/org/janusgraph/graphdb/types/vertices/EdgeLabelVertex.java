@@ -56,6 +56,7 @@ public class EdgeLabelVertex extends RelationTypeVertex implements EdgeLabel {
         String name = name();
         return getRelated(TypeDefinitionCategory.UPDATE_CONNECTION_EDGE, Direction.OUT).stream()
             .map(entry -> (JanusGraphSchemaVertex) entry.getSchemaType())
+            .distinct()
             .flatMap(s -> IterablesUtil.stream(s.getEdges(TypeDefinitionCategory.CONNECTION_EDGE, Direction.OUT)))
             .map(Connection::new)
             .filter(s -> s.getEdgeLabel().equals(name))
