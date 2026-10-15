@@ -37,6 +37,7 @@ import org.apache.tinkerpop.gremlin.process.computer.traversal.step.map.Traversa
 import org.apache.tinkerpop.gremlin.process.computer.util.EmptyMemory;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -64,6 +65,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -74,6 +77,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BinaryOperator;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
@@ -86,7 +91,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The transactions and schema changes of the OLAP jobs of {@code FulgoraGraphComputer}: the elements a job's scans read
  * stay usable until the job ends, the job leaves no transaction open after that, so that the graph goes on
- * acknowledging schema changes, and jobs which run at once create a missing compute key once.
+ * acknowledging schema changes, and jobs which run at once create a missing compute key once. Also the memory of a
+ * job: the workers of an iteration read the values of the iteration before while others add to them.
  */
 public class InMemoryOlapJobsTest {
 
@@ -239,6 +245,93 @@ public class InMemoryOlapJobsTest {
         assertEquals(59, paths.get(0).size());
         assertTrue(paths.get(0).<Object>get(1) instanceof Edge);
         graph.tx().rollback();
+    }
+
+    @Test
+    public void theWorkersOfAnIterationReadASideEffectWhileOthersAddToIt() {
+        //In the job's first iteration, on eight processors, each vertex reads the collection of the side effect x, in
+        //where(), and then adds itself to it, in aggregate(), while the other processors read it
+        graph = openGraph(graphBuilder(), VERTICES);
+
+        for (int i = 0; i < 3; i++) {
+            assertEquals(VERTICES, (long) graph.traversal().withComputer(Computer.compute().workers(8)).V()
+                .where(P.without("x")).aggregate("x").count().next());
+            graph.tx().rollback();
+        }
+    }
+
+    @Test
+    public void theWorkersOfAnIterationReadTheBroadcastValuesOfTheIterationBefore() throws Exception {
+        graph = openGraph(graphBuilder(), VERTICES);
+
+        //Eight processors read the list of a broadcast key while they add to it, for three iterations, with TinkerPop's
+        //addAll and with a reducer of the program's own, which adds to its first argument as well
+        for (BinaryOperator<Object> reducer : Arrays.asList(Operator.addAll, ReadingProgram.OWN_ADD_ALL)) {
+            final ComputerResult result = graph.compute().workers(8).program(new ReadingProgram(reducer)).submit()
+                .get();
+            final long misreads = result.memory().get(ReadingProgram.MISREADS);
+            final List<Object> seen = result.memory().get(ReadingProgram.SEEN);
+            result.close();
+
+            assertEquals(0, misreads);
+            assertEquals(ReadingProgram.ITERATIONS * VERTICES, seen.size());
+        }
+    }
+
+    @Test
+    public void aSideEffectWhichAggregateFillsInTwoIterationsKeepsTheFirstOnesElements() {
+        //The first aggregate() fills the empty side effect, whose place its elements take, and the second adds to the
+        //side effect, which then holds them
+        graph = openGraph(graphBuilder(), 0);
+        final JanusGraphTransaction tx = graph.newTransaction();
+        final List<JanusGraphVertex> vertices = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            vertices.add(tx.addVertex());
+        }
+        for (int i = 0; i < 30; i++) {
+            vertices.get(i).addEdge("knows", vertices.get((i + 1) % 30));
+            vertices.get(i).addEdge("knows", vertices.get((i + 7) % 30));
+        }
+        tx.commit();
+
+        assertEquals(90, graph.traversal().V().aggregate("x").out().aggregate("x").<Collection<?>>cap("x").next()
+            .size());
+        graph.tx().rollback();
+        for (int i = 0; i < 3; i++) {
+            assertEquals(90, graph.traversal().withComputer(Computer.compute().workers(4)).V().aggregate("x").out()
+                .aggregate("x").<Collection<?>>cap("x").next().size());
+            graph.tx().rollback();
+        }
+    }
+
+    @Test
+    public void aBroadcastKeyOfANonAssociativeOperatorTakesEachAdditionInTurn() throws Exception {
+        graph = openGraph(graphBuilder(), VERTICES);
+
+        //Operator.minus returns a new value, so each addition is subtracted from the key's value at once, whichever
+        //order they come in, rather than from the iteration's other additions
+        final ComputerResult result = graph.compute().workers(8)
+            .program(new AddingProgram(0L, () -> 1L, Operator.minus)).submit().get();
+        final long value = result.memory().get(AddingProgram.KEY);
+        result.close();
+
+        assertEquals(-VERTICES, value);
+    }
+
+    @Test
+    public void aBroadcastValueWhichCanNotTakeTheIterationsAdditionsFailsTheJobNamingItsKey() {
+        graph = openGraph(graphBuilder(), VERTICES);
+
+        //The additions are reduced with each other, and into the empty list which setup() set, which can't take them,
+        //once the iteration's workers have ended
+        final ExecutionException failure = assertThrows(ExecutionException.class, () -> graph.compute().workers(8)
+            .program(new AddingProgram(Collections.emptyList(), () -> new ArrayList<>(Collections.singletonList(1)),
+                Operator.addAll)).submit().get());
+
+        assertTrue(failure.getCause() instanceof JanusGraphException, failure.toString());
+        assertTrue(failure.getCause().getMessage().contains("memory key [" + AddingProgram.KEY + "] in vertex program "
+            + "iteration [1]"), failure.getCause().getMessage());
+        assertTrue(failure.getCause().getCause() instanceof UnsupportedOperationException, failure.toString());
     }
 
     @Test
@@ -410,6 +503,121 @@ public class InMemoryOlapJobsTest {
             //one, which the program follows to the known vertices; it sends no messages
             return adjacent && memory.getIteration() < 1
                 ? Collections.singleton(MessageScope.Local.of(__::inE)) : Collections.emptySet();
+        }
+
+        @Override
+        public GraphComputer.ResultGraph getPreferredResultGraph() {
+            return GraphComputer.ResultGraph.ORIGINAL;
+        }
+
+        @Override
+        public GraphComputer.Persist getPreferredPersist() {
+            return GraphComputer.Persist.NOTHING;
+        }
+    }
+
+    //In each iteration, every vertex reads the ids which the vertices of the iterations before added to a broadcast
+    //key, counting a read which finds fewer or more of them, and then adds its own id, while other vertices read
+    private static class ReadingProgram extends StaticVertexProgram<Object> {
+
+        static final String SEEN = "seen";
+        static final String MISREADS = "misreads";
+        static final int ITERATIONS = 3;
+        @SuppressWarnings("unchecked")
+        static final BinaryOperator<Object> OWN_ADD_ALL = (a, b) -> {
+            ((List<Object>) a).addAll((List<Object>) b);
+            return a;
+        };
+
+        private final BinaryOperator<Object> reducer;
+
+        ReadingProgram(BinaryOperator<Object> reducer) {
+            this.reducer = reducer;
+        }
+
+        @Override
+        public void setup(Memory memory) {
+            memory.set(SEEN, new ArrayList<>());
+            memory.set(MISREADS, 0L);
+        }
+
+        @Override
+        public void execute(Vertex vertex, Messenger<Object> messenger, Memory memory) {
+            long read = 0;
+            for (Object ignored : memory.<List<Object>>get(SEEN)) {
+                read++;
+            }
+            if (read != (long) memory.getIteration() * VERTICES) {
+                memory.add(MISREADS, 1L);
+            }
+            memory.add(SEEN, new ArrayList<>(Collections.singletonList(vertex.id())));
+        }
+
+        @Override
+        public boolean terminate(Memory memory) {
+            return memory.getIteration() >= ITERATIONS - 1;
+        }
+
+        @Override
+        public Set<MemoryComputeKey> getMemoryComputeKeys() {
+            return new HashSet<>(Arrays.asList(MemoryComputeKey.of(SEEN, reducer, true, false),
+                MemoryComputeKey.of(MISREADS, Operator.sumLong, false, false)));
+        }
+
+        @Override
+        public Set<MessageScope> getMessageScopes(Memory memory) {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public GraphComputer.ResultGraph getPreferredResultGraph() {
+            return GraphComputer.ResultGraph.ORIGINAL;
+        }
+
+        @Override
+        public GraphComputer.Persist getPreferredPersist() {
+            return GraphComputer.Persist.NOTHING;
+        }
+    }
+
+    //Sets a broadcast key to the seed and adds a value to it from every vertex, in one iteration
+    private static class AddingProgram extends StaticVertexProgram<Object> {
+
+        static final String KEY = "added";
+
+        private final Object seed;
+        private final Supplier<Object> addition;
+        private final BinaryOperator<Object> reducer;
+
+        AddingProgram(Object seed, Supplier<Object> addition, BinaryOperator<Object> reducer) {
+            this.seed = seed;
+            this.addition = addition;
+            this.reducer = reducer;
+        }
+
+        @Override
+        public void setup(Memory memory) {
+            memory.set(KEY, seed);
+        }
+
+        @Override
+        public void execute(Vertex vertex, Messenger<Object> messenger, Memory memory) {
+            memory.add(KEY, addition.get());
+        }
+
+        @Override
+        public boolean terminate(Memory memory) {
+            return true;
+        }
+
+        @Override
+        public Set<MemoryComputeKey> getMemoryComputeKeys() {
+            return Collections.singleton(MemoryComputeKey.of(KEY, reducer, true, false));
+        }
+
+        @Override
+        public Set<MessageScope> getMessageScopes(Memory memory) {
+            return Collections.emptySet();
         }
 
         @Override
