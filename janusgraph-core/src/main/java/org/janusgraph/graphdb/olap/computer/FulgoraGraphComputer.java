@@ -367,11 +367,13 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
     }
 
     private void executeOnPartitionedVertices(int iteration, PartitionedVertexProgramExecutor programExecutor, ScanMetrics jobResult) {
-        programExecutor.run(numThreads, jobResult);
+        programExecutor.run(jobId, numThreads, jobResult);
         long failures = jobResult.getCustom(PartitionedVertexProgramExecutor.PARTITION_VERTEX_POSTFAIL);
         if (failures > 0) {
+            //Caused by what stopped the execution on the partitioned vertices, if anything did, as the failures of the
+            //vertices themselves are only logged
             throw new JanusGraphException("Failed to process [" + failures + "] partitioned vertices in vertex " +
-                "program iteration [" + iteration + "]. Computer is aborting.");
+                "program iteration [" + iteration + "]. Computer is aborting.", programExecutor.getFailure());
         }
     }
 
@@ -425,14 +427,20 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
             mapEmitter.complete(mapReduce); // sort results if a map output sort is defined
             if (mapReduce.doStage(MapReduce.Stage.REDUCE)) {
                 final FulgoraReduceEmitter<?, ?> reduceEmitter = new FulgoraReduceEmitter<>();
-                try (WorkerPool workers = new WorkerPool(numThreads)) {
-                    workers.submit(() -> mapReduce.workerStart(MapReduce.Stage.REDUCE));
-                    for (final Map.Entry queueEntry : mapEmitter.reduceMap.entrySet()) {
-                        if (null == queueEntry) break;
-                        workers.submit(() -> mapReduce.reduce(queueEntry.getKey(),
-                            ((Iterable) queueEntry.getValue()).iterator(), reduceEmitter));
+                try {
+                    //The stage's keys are one chunk, which the pool's threads reduce: workerStart() comes before any
+                    //reduce, and workerEnd() once the pool has ended, as resources close in reverse order, also after a
+                    //failure, as it may release what workerStart() took
+                    mapReduce.workerStart(MapReduce.Stage.REDUCE);
+                    try (AutoCloseable workerEnd = () -> mapReduce.workerEnd(MapReduce.Stage.REDUCE);
+                         WorkerPool workers = new WorkerPool("reduce stage of map-reduce [" + mapReduce.getMemoryKey() +
+                             "] of job [" + name + "]", numThreads, taskProgressTimeout())) {
+                        for (final Map.Entry queueEntry : mapEmitter.reduceMap.entrySet()) {
+                            if (null == queueEntry) break;
+                            workers.submit(() -> mapReduce.reduce(queueEntry.getKey(),
+                                ((Iterable) queueEntry.getValue()).iterator(), reduceEmitter));
+                        }
                     }
-                    workers.submit(() -> mapReduce.workerEnd(MapReduce.Stage.REDUCE));
                 } catch (Exception e) {
                     throw new JanusGraphException("Exception while executing reduce phase", e);
                 }
@@ -474,7 +482,8 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
 
             if (resultGraphMode == ResultGraph.ORIGINAL) {
                 AtomicInteger failures = new AtomicInteger(0);
-                try (WorkerPool workers = new WorkerPool(numThreads)) {
+                try (WorkerPool workers = new WorkerPool("writing of the computed properties of job [" + name + "]",
+                        numThreads, taskProgressTimeout())) {
                     List<Map.Entry<Long, Map<String, Object>>> subset = new ArrayList<>(writeBatchSize / vertexProgram.getVertexComputeKeys().size());
                     int currentSize = 0;
                     for (Map.Entry<Long, Map<String, Object>> entry : mutatedProperties.entrySet()) {
@@ -593,6 +602,11 @@ public class FulgoraGraphComputer implements JanusGraphComputer {
         } finally {
             management.rollback();
         }
+    }
+
+    private Duration taskProgressTimeout() {
+        return graph.getConfiguration().getConfiguration()
+            .get(GraphDatabaseConfiguration.COMPUTER_TASK_PROGRESS_TIMEOUT);
     }
 
     /**
