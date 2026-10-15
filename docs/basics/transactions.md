@@ -85,6 +85,11 @@ latest = committed.traversal().V().has("kind", "k").order().by("updatedAt", desc
 committed.rollback()
 ```
 
+Direct index queries, through `graph.indexQuery()` or a transaction's `indexQuery()`, read the index alone. They leave
+out the elements which the transaction removed, but its other changes don't change what they find: they don't find the
+elements which the transaction added or changed to match, and they return those which it changed to no longer match,
+with their new values. Their totals, such as `vertexTotals()`, count what the index holds.
+
 ## Transaction Failures
 
 When committing a transaction, JanusGraph will attempt to persist all

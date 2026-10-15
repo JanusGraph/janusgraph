@@ -205,6 +205,12 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
      */
     private static final long MIN_VERTEX_CACHE_SIZE = 100L;
 
+    //The character which most indexes hold in place of a surrogate without its pair (rangeBound)
+    private static final char REPLACEMENT_CHARACTER = 0xFFFD;
+
+    //The longest bound of a string range, in UTF-8 bytes, which every index takes (rangeBound)
+    private static final int MAX_RANGE_BOUND_BYTES = 1000;
+
 
     private final StandardJanusGraph graph;
     private final TransactionConfiguration config;
@@ -1869,10 +1875,11 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         /*
          * The index query without the results whose value of the query's first order key comes after the given value:
          * its first subquery, which reads the mixed index that sorts the results, takes a range on that key along with
-         * its condition, at least the value for a descending order and at most it for an ascending one. Elements
-         * without a value of the key, which the range leaves out, come last. The range is taken only for a key of one
-         * value, on a field whose values every index compares with the given one as memory orders them
-         * (isRangedAsOrdered), and where the index can take it.
+         * its condition: at most the value for an ascending order, and at least it for a descending one, or at least a
+         * bound below it for some strings (rangeBound). Elements without a value of the key, which the range leaves
+         * out, come last. The range is taken only for a key of one value, on a field whose values every index compares
+         * with the given one as memory orders them (isRangedAsOrdered), where every index can build it from its bound
+         * (rangeBound), and where the index can take it.
          */
         @Override
         public JointIndexQuery withoutResultsAfter(GraphCentricQuery query, JointIndexQuery indexQuery, Object value) {
@@ -1892,7 +1899,11 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             if (!indexSerializer.supports(index, field, range)) {
                 return indexQuery;
             }
-            return indexQuery.narrowFirst(new PredicateCondition<>(IndexRecordUtil.key2Field(field), range, value));
+            final Object bound = rangeBound(value, descending);
+            if (bound == null) {
+                return indexQuery;
+            }
+            return indexQuery.narrowFirst(new PredicateCondition<>(IndexRecordUtil.key2Field(field), range, bound));
         }
 
         @Override
@@ -1950,14 +1961,13 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     /*
      * Whether every index compares the value with those of the field as memory orders them, so that a range from the
-     * value in the direction of the order leaves out only elements which memory orders after it. That holds on an
-     * enabled field without custom parameters, which may map it otherwise, for a long, int, short, byte or date; for an
-     * instant of whole milliseconds, as the indexes keep instants by the millisecond and Solr takes no finer one; for a
-     * float or double in an ascending order, as a descending one puts NaN first, which no range holds; and for a
-     * string with no character at or above U+D800 on a field mapped as STRING without an analyzer. Memory orders
-     * strings by code point, as the indexes do, but an index holds a surrogate without its pair as U+FFFD, which a
-     * string below U+D800 can't hold; an index may compare a TEXTSTRING field by its analyzed terms, and an analyzer
-     * may change the terms which a range compares.
+     * value in the direction of the order leaves out only elements which memory orders after it, but for some stored
+     * strings which aren't valid UTF-16 (rangeBound). That holds on an enabled field without custom parameters, which
+     * may map it otherwise, for a long, int, short, byte or date; for an instant of whole milliseconds, as the indexes
+     * keep instants by the millisecond and Solr takes no finer one; for a float or double in an ascending order, as a
+     * descending one puts NaN first, which no range holds; and for a string on a field which compares its strings
+     * whole (isComparedWhole), unless the string has a surrogate without its pair: such a string isn't valid UTF-16,
+     * and no index holds it as it is. Memory orders valid strings by code point, as the indexes do.
      */
     static boolean isRangedAsOrdered(Object value, ParameterIndexField field, boolean descending) {
         if (field.getStatus() != SchemaStatus.ENABLED) {
@@ -1972,7 +1982,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             return !descending && !Double.isNaN(((Number) value).doubleValue());
         }
         if (value instanceof String) {
-            return isComparedWhole(field) && isBelowTheSurrogates((String) value);
+            return isComparedWhole(field) && !hasUnpairedSurrogate((String) value);
         }
         if (value instanceof Instant) {
             return ((Instant) value).getNano() % 1_000_000 == 0;
@@ -1981,9 +1991,17 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
             || value instanceof Date;
     }
 
-    //Whether a string field's values are compared whole, as they are sorted: mapped as STRING, without an analyzer
+    /*
+     * Whether a string field's values are compared whole, as they are sorted: mapped as STRING, or as TEXTSTRING, whose
+     * ranges and order read the field which holds its strings whole rather than its words, without a string analyzer,
+     * which may change the terms that a range compares. A text analyzer shapes the words of a TEXTSTRING key rather
+     * than its whole strings, but a key with one is left out as well, out of caution. On Solr, the schema defines the
+     * field of the whole strings, as it defines a STRING key's: the schema JanusGraph ships keeps the strings of both
+     * whole.
+     */
     private static boolean isComparedWhole(ParameterIndexField field) {
-        if (Mapping.getMapping(IndexRecordUtil.getKeyInformation(field)) != Mapping.STRING) {
+        final Mapping mapping = Mapping.getMapping(IndexRecordUtil.getKeyInformation(field));
+        if (mapping != Mapping.STRING && mapping != Mapping.TEXTSTRING) {
             return false;
         }
         for (final Parameter parameter : field.getParameters()) {
@@ -1995,13 +2013,82 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
         return true;
     }
 
-    private static boolean isBelowTheSurrogates(String string) {
+    private static boolean hasUnpairedSurrogate(String string) {
         for (int i = 0; i < string.length(); i++) {
-            if (string.charAt(i) >= Character.MIN_SURROGATE) {
-                return false;
+            final char c = string.charAt(i);
+            if (Character.isHighSurrogate(c) && i + 1 < string.length()
+                    && Character.isLowSurrogate(string.charAt(i + 1))) {
+                i++;
+            } else if (Character.isSurrogate(c)) {
+                return true;
             }
         }
-        return true;
+        return false;
+    }
+
+    /*
+     * The bound of the range from the value in the direction of the order, or null where no range can be taken from it:
+     * the value itself, but for a string as follows.
+     *
+     * In a descending order, the string up to its first character from U+FFFD up followed by U+FFFD, where it has one.
+     * A surrogate without its pair isn't valid UTF-16, and no index holds it as it is: Lucene, Solr, OpenSearch and
+     * Elasticsearch up to 8 hold it as U+FFFD, Elasticsearch 9.5 as a question mark. Storage keeps a string of up to
+     * 16,000 UTF-16 units as it was written, and memory places such a surrogate in it after U+FFFF. An index which
+     * holds U+FFFD compares such a stored string with the value as memory does, unless the string has the surrogate at
+     * the first unit in which the two differ, and the value a character from U+FFFD up there: memory then places the
+     * stored string above the value, and the index at or below it. An ascending range holds such a string, which comes
+     * after the value anyway. A descending range holds it from this bound, as the index holds it with the value's units
+     * up to the value's first character from U+FFFD up, and U+FFFD or more in place of that character. Two cases
+     * remain. Elasticsearch 9.5 places such a surrogate below the letters, so its descending range from nearly any
+     * string may leave out a stored string with one, which only a bound with a question mark in place of the value's
+     * first character from a question mark up would hold. And a longer stored string which storage holds with a
+     * question mark in place of such a surrogate, as it does where it compresses the string from its UTF-8 bytes, may
+     * be left out of an ascending range of an index which holds U+FFFD.
+     *
+     * A bound takes at most 1,000 UTF-8 bytes. JanusGraph's Lucene backend, OpenSearch 2 and Elasticsearch 6 to 8 build
+     * a range from a lower bound up to the greatest string by following its bytes one by one, and fail beyond a depth
+     * of 1,000 bytes with "input automaton is too large" (Lucene 9's Operations.isFinite). Solr builds such a range
+     * without that limit, but JanusGraph sends it a query in the URL of a GET request, which Solr takes up to 8 KB
+     * long, and ClientUtils.escapeQueryChars and the URL make up to six characters of a byte. So a descending bound is
+     * cut further, to its longest prefix of whole characters of at most 1,000 UTF-8 bytes: a lower bound still, from
+     * which the range holds all that the range from the string itself would. An upper bound can't be cut, so no
+     * ascending range is taken from a string of more than 1,000 UTF-8 bytes.
+     */
+    static Object rangeBound(Object value, boolean descending) {
+        if (!(value instanceof String)) {
+            return value;
+        }
+        final String string = (String) value;
+        if (!descending) {
+            return prefixOfUtf8Bytes(string, MAX_RANGE_BOUND_BYTES).length() == string.length() ? string : null;
+        }
+        String bound = string;
+        //The search ends where the bytes of the string so far exceed the bound's: the bound is cut before them anyway
+        int bytes = 0;
+        for (int i = 0; i < string.length() && bytes <= MAX_RANGE_BOUND_BYTES; i++) {
+            final char c = string.charAt(i);
+            //A surrogate here begins a character from U+10000 up, as the string has none without its pair
+            if (c >= REPLACEMENT_CHARACTER || Character.isSurrogate(c)) {
+                bound = string.substring(0, i) + REPLACEMENT_CHARACTER;
+                break;
+            }
+            bytes += c < 0x80 ? 1 : c < 0x800 ? 2 : 3;
+        }
+        return prefixOfUtf8Bytes(bound, MAX_RANGE_BOUND_BYTES);
+    }
+
+    //The longest prefix of the string, of whole characters, whose UTF-8 bytes number at most the given many
+    private static String prefixOfUtf8Bytes(String string, int maxBytes) {
+        int bytes = 0;
+        for (int i = 0; i < string.length(); ) {
+            final int codePoint = string.codePointAt(i);
+            bytes += codePoint < 0x80 ? 1 : codePoint < 0x800 ? 2 : codePoint < 0x10000 ? 3 : 4;
+            if (bytes > maxBytes) {
+                return string.substring(0, i);
+            }
+            i += Character.charCount(codePoint);
+        }
+        return string;
     }
 
     public Function<Object, ? extends JanusGraphElement> getConversionFunction(final ElementCategory elementCategory) {
