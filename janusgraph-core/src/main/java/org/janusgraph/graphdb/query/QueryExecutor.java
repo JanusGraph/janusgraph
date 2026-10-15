@@ -66,15 +66,16 @@ public interface QueryExecutor<Q extends ElementQuery,R extends JanusGraphElemen
     Iterator<R> execute(Q query, B subquery, Object executionInfo, QueryProfiler profiler);
 
     /**
-     * Returns a sub-query which returns only those results of the given one whose value of the query's first order key
-     * doesn't come after the given value in the query's order. The {@link QueryProcessor} asks for it where the
-     * transaction's new elements fill the query's limit, and the given value is that of the last of them within it: no
-     * result whose value comes after it can come within the limit. Returns the given sub-query itself where its backend
-     * can't leave the other results out, which is what this default does.
+     * Returns a sub-query which leaves out results of the given one whose value of the query's first order key comes
+     * after the given value in the query's order: all of them, or those beyond a bound after the value where its
+     * backend may place some results otherwise than the query orders them. The {@link QueryProcessor} asks for it where
+     * the transaction's new elements fill the query's limit, and the given value is that of the last of them within it:
+     * no result whose value comes after it can come within the limit. Returns the given sub-query itself where its
+     * backend can't leave those results out, which is what this default does.
      *
      * @param query the query, which has a limit and an order
      * @param subquery a sub-query of the query whose backend returns its results in the query's order
-     * @param value the value of the query's first order key which no result returned may come after
+     * @param value the value of the query's first order key after which no result can come within the limit
      * @return the narrowed sub-query, or the given one
      */
     default B withoutResultsAfter(Q query, B subquery, Object value) {
