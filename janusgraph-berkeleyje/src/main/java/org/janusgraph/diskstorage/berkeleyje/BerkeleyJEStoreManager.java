@@ -48,9 +48,11 @@ import org.janusgraph.util.system.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
 
@@ -113,6 +115,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     protected Environment environment;
     protected final StoreFeatures features;
+    private BerkeleyJELocks locks;
 
     public BerkeleyJEStoreManager(Configuration configuration) throws BackendException {
         super(configuration);
@@ -139,6 +142,12 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     }
 
     private void initialize(int cachePercent, final boolean sharedCache, final CacheMode cacheMode) throws BackendException {
+        final String canonicalDirectory;
+        try {
+            canonicalDirectory = directory.getCanonicalPath();
+        } catch (IOException e) {
+            throw new PermanentBackendException("Could not resolve the BerkeleyJE directory " + directory, e);
+        }
         try {
             EnvironmentConfig envConfig = new EnvironmentConfig();
             envConfig.setAllowCreate(true);
@@ -162,6 +171,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         } catch (DatabaseException e) {
             throw new PermanentBackendException("Error during BerkeleyJE initialization: ", e);
         }
+        locks = BerkeleyJELocks.open(canonicalDirectory);
     }
 
     public static String toBerkeleyConfigKey(String janusGraphConfigKey){
@@ -284,6 +294,10 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         }
     }
 
+    ConcurrentMap<StaticBuffer, BerkeleyJETx> getLockHolders(String database) {
+        return locks.holders(database);
+    }
+
     void removeDatabase(BerkeleyJEKeyValueStore db) {
         if (!stores.containsKey(db.getName())) {
             throw new IllegalArgumentException("Tried to remove an unknown database from the storage manager");
@@ -310,6 +324,11 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
                 environment.close();
             } catch (DatabaseException e) {
                 throw new PermanentBackendException("Could not close BerkeleyJE database", e);
+            } finally {
+                if (locks != null) {
+                    locks.close();
+                    locks = null;
+                }
             }
         }
 

@@ -23,6 +23,8 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.EnvironmentFailureException;
 import com.sleepycat.je.Get;
+import com.sleepycat.je.LockConflictException;
+import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationResult;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Put;
@@ -37,6 +39,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KVQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeySelector;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
+import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.slf4j.Logger;
@@ -47,6 +50,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -63,12 +68,14 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     private final Database db;
     private final String name;
     private final BerkeleyJEStoreManager manager;
+    private final ConcurrentMap<StaticBuffer, BerkeleyJETx> lockHolders;
     private boolean isOpen;
 
     public BerkeleyJEKeyValueStore(String n, Database data, BerkeleyJEStoreManager m) {
         db = data;
         name = n;
         manager = m;
+        lockHolders = m.getLockHolders(n);
         isOpen = true;
     }
 
@@ -137,11 +144,68 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         return get(key,txh)!=null;
     }
 
+    /**
+     * Takes the lock of the key for the transaction until it commits or rolls back. The lock fails at once if another
+     * transaction of this BerkeleyJE environment holds it, whichever graph instance of this JVM opened it. The first
+     * mutation of the transaction checks that the key still has the expected value, and fails otherwise.
+     * <p>
+     * Without transactions ({@code storage.transactions=false}), nothing is locked.
+     *
+     * @throws PermanentLockingException if another transaction holds the lock, or the transaction has started its
+     *                                   mutations
+     */
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
         if (getTransaction(txh) == null) {
             log.warn("Attempt to acquire lock with transactions disabled");
-        } //else we need no locking
+            return;
+        }
+        log.trace("db={}, op=acquireLock, tx={}", name, txh);
+        ((BerkeleyJETx) txh).lock(this, key, expectedValue);
+    }
+
+    /**
+     * @return whether the transaction took the lock now, rather than holding it already
+     * @throws PermanentLockingException if another transaction holds the lock
+     */
+    boolean lock(StaticBuffer key, BerkeleyJETx tx) throws PermanentLockingException {
+        final BerkeleyJETx holder = lockHolders.putIfAbsent(key, tx);
+        if (holder == null) return true;
+        if (holder == tx) return false;
+        //Fails at once like JanusGraph's other lockers on contention within a JVM, and so it never waits while the
+        //transaction holds BerkeleyJE's record locks
+        throw new PermanentLockingException("Local lock contention: another transaction holds the lock of " + key
+            + " (store=" + name + ")");
+    }
+
+    void unlock(StaticBuffer key, BerkeleyJETx tx) {
+        lockHolders.remove(key, tx);
+    }
+
+    /**
+     * Reads the committed value of a locked key with a write lock, which keeps a record that exists as it is until the
+     * transaction ends, and compares it with the expected one.
+     *
+     * @throws PermanentLockingException if the values differ, or another transaction holds a conflicting record lock
+     */
+    void checkExpectedValue(StaticBuffer key, StaticBuffer expectedValue, BerkeleyJETx tx) throws BackendException {
+        final DatabaseEntry data = new DatabaseEntry();
+        final OperationResult result;
+        try {
+            result = db.get(tx.getTransaction(), key.as(ENTRY_FACTORY), data, Get.SEARCH,
+                new ReadOptions().setCacheMode(tx.getCacheMode()).setLockMode(LockMode.RMW));
+        } catch (LockConflictException e) {
+            //BerkeleyJE invalidated the transaction, which only a new transaction can retry
+            throw new PermanentLockingException("Could not read the value of locked key " + key + " (store=" + name
+                + ") since another transaction holds a conflicting lock of its record", e);
+        } catch (DatabaseException e) {
+            throw new PermanentBackendException(e);
+        }
+        final StaticBuffer actualValue = result == null ? null : getBuffer(data);
+        if (!Objects.equals(expectedValue, actualValue)) {
+            throw new PermanentLockingException("Expected value mismatch for " + key + ": expected=" + expectedValue
+                + " vs actual=" + actualValue + " (store=" + name + ")");
+        }
     }
 
     @Override
@@ -227,6 +291,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
     public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh, boolean allowOverwrite, Integer ttl) throws BackendException {
         Transaction tx = getTransaction(txh);
+        ((BerkeleyJETx) txh).prepareForMutations();
         OperationStatus status;
 
         log.trace("db={}, op=insert, tx={}", name, txh);
@@ -255,6 +320,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     public void delete(StaticBuffer key, StoreTransaction txh) throws BackendException {
         log.trace("Deletion");
         Transaction tx = getTransaction(txh);
+        ((BerkeleyJETx) txh).prepareForMutations();
         try {
             log.trace("db={}, op=delete, tx={}", name, txh);
             OperationStatus status = db.delete(tx, key.as(ENTRY_FACTORY));

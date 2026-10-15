@@ -95,6 +95,7 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJobFuture;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
+import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 import org.janusgraph.diskstorage.log.Log;
 import org.janusgraph.diskstorage.log.Message;
 import org.janusgraph.diskstorage.log.MessageReader;
@@ -202,7 +203,11 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -3721,10 +3726,13 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
 
     /**
      * Execute multiple identical transactions concurrently. Note that since these transactions are running in the same process,
-     * {@link org.janusgraph.diskstorage.locking.LocalLockMediator} is used to resolve lock contentions. If there is only
-     * one lock needed in the whole transaction, exactly one transaction shall succeed and others shall fail due to local
-     * lock contention. If there is more than one lock needed in the transaction, at most one transaction shall succeed
-     * and others shall fail due to local lock contention.
+     * lock contentions are resolved within it: by {@link org.janusgraph.diskstorage.locking.LocalLockMediator} for
+     * JanusGraph's own locker, and by the locks of the storage backend where it has them, as BerkeleyJE does. If there
+     * is only one lock needed in the whole transaction, exactly one transaction shall succeed and others shall fail due
+     * to local lock contention. If there is more than one lock needed in the transaction, at most one transaction shall
+     * succeed and others shall fail due to local lock contention. A transaction which takes a lock only once the one
+     * which succeeded has released it fails on the value it expected instead, which a thread a few milliseconds late
+     * does on BerkeleyJE, whose locks last as long as the commit which takes them.
      * @throws Exception
      */
     @Test
@@ -3788,7 +3796,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
      * Execute multiple transactions in different threads concurrently to test locking
      * @param job A transaction job which triggers locking
      * @param concurrency Number of threads, each of which runs a transaction
-     * @return [number of successful transactions, number of transactions failed due to local lock contention]
+     * @return [number of successful transactions, number of transactions which failed on a lock]
      */
     private int[] executeParallelTransactions(final TransactionJob job, int concurrency) {
         final CountDownLatch startLatch = new CountDownLatch(concurrency);
@@ -3810,8 +3818,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
                     } catch (Exception ex) {
                         ex.printStackTrace();
                         if (tx.isOpen()) tx.rollback();
-                        if (ex.getCause() instanceof PermanentLockingException &&
-                            ex.getCause().getMessage().contains("Local lock contention")) {
+                        if (isLockingFailure(ex)) {
                             lockingExCount.incrementAndGet();
                         }
                     } finally {
@@ -3836,6 +3843,150 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             e.printStackTrace();
         }
         return new int[] {txSuccess.get(), lockingExCount.get()};
+    }
+
+    /**
+     * Transactions which add a vertex of the same value of a unique index with LOCK consistency commit at once: one of
+     * them adds it, and the commits of the others fail on the lock of the index entry.
+     */
+    @Test
+    public void testConcurrentTransactionsCannotAddTheSameValueOfALockedUniqueIndex() throws Exception {
+        makeLockedUniqueName();
+        assertEquals(1, addVerticesAtOnce(Collections.singletonList(graph), 8, "same"));
+        newTx();
+        assertEquals(1, verticesNamed(tx, "same").size());
+    }
+
+    /**
+     * A transaction which adds a value of a unique index with LOCK consistency that another transaction committed after
+     * it began fails to commit, as the locked index entry no longer has the value it read, and releases the lock.
+     */
+    @Test
+    public void testCommitWhichFailsOnALockReleasesIt() {
+        makeLockedUniqueName();
+        final JanusGraphTransaction late = graph.newTransaction();
+        late.addVertex("name", "one");
+        tx.addVertex("name", "one");
+        newTx();
+        final JanusGraphException failure = assertThrows(JanusGraphException.class, late::commit);
+        assertTrue(isLockingFailure(failure), () -> "Not a locking failure: " + failure);
+
+        //Removing the vertex and adding the value again lock the index entry too, which a leaked lock would fail
+        Iterables.getOnlyElement(tx.query().has("name", "one").vertices()).remove();
+        newTx();
+        tx.addVertex("name", "one");
+        newTx();
+        assertEquals(1, verticesNamed(tx, "one").size());
+    }
+
+    protected void makeLockedUniqueName() {
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.setConsistency(mgmt.buildIndex("byName", Vertex.class).addKey(name).unique().buildCompositeIndex(),
+            ConsistencyModifier.LOCK);
+        finishSchema();
+    }
+
+    /**
+     * Adds a vertex of the given name in a transaction of each thread, of the graphs in turn, which all commit at once.
+     * The commits which fail must fail on a lock.
+     *
+     * @return the number of transactions which committed
+     */
+    protected static int addVerticesAtOnce(List<? extends JanusGraph> graphs, int threads, String name)
+            throws Exception {
+        final CyclicBarrier readyToCommit = new CyclicBarrier(threads);
+        final ExecutorService executor = Executors.newFixedThreadPool(threads);
+        try {
+            final List<Future<?>> commits = new ArrayList<>();
+            for (int i = 0; i < threads; i++) {
+                final JanusGraph threadGraph = graphs.get(i % graphs.size());
+                commits.add(executor.submit(() -> {
+                    final JanusGraphTransaction transaction = threadGraph.newTransaction();
+                    try {
+                        transaction.addVertex("name", name);
+                        readyToCommit.await(30, TimeUnit.SECONDS);
+                        transaction.commit();
+                        return null;
+                    } catch (Exception e) {
+                        //A rollback which fails as well mustn't hide why the transaction failed
+                        try {
+                            if (transaction.isOpen()) transaction.rollback();
+                        } catch (RuntimeException rollbackFailure) {
+                            e.addSuppressed(rollbackFailure);
+                        }
+                        throw e;
+                    }
+                }));
+            }
+            int committed = 0;
+            for (Future<?> commit : commits) {
+                try {
+                    commit.get(60, TimeUnit.SECONDS);
+                    committed++;
+                } catch (ExecutionException e) {
+                    assertTrue(isLockingFailure(e.getCause()), () -> "Not a locking failure: " + e.getCause());
+                }
+            }
+            return committed;
+        } finally {
+            //Not interrupted, as BerkeleyJE invalidates its environment when a thread is interrupted in it
+            executor.shutdown();
+        }
+    }
+
+    //Every vertex of the name, which a unique index can't tell, as it holds one entry for each value
+    protected static List<JanusGraphVertex> verticesNamed(JanusGraphTransaction transaction, String name) {
+        final List<JanusGraphVertex> named = new ArrayList<>();
+        for (JanusGraphVertex vertex : transaction.query().vertices()) {
+            if (name.equals(vertex.valueOrNull(transaction.getPropertyKey("name")))) named.add(vertex);
+        }
+        return named;
+    }
+
+    /**
+     * Two management systems which create a type of the same name: the commit of the second one fails on the lock of
+     * the schema name, and the schema keeps the first type alone. The failed commit releases the lock: renaming the
+     * type takes it again.
+     */
+    @Test
+    public void testManagementSystemsCannotBothCreateATypeOfOneName() {
+        final JanusGraphManagement first = graph.openManagement();
+        final JanusGraphManagement second = graph.openManagement();
+        first.makePropertyKey("age").dataType(Integer.class).make();
+        second.makePropertyKey("age").dataType(Long.class).make();
+        first.commit();
+        final JanusGraphException failure = assertThrows(JanusGraphException.class, second::commit);
+        assertTrue(isLockingFailure(failure), () -> "Not a locking failure: " + failure);
+        if (second.isOpen()) second.rollback();
+
+        final JanusGraphManagement schema = graph.openManagement();
+        try {
+            final List<Class<?>> ages = new ArrayList<>();
+            for (PropertyKey key : schema.getRelationTypes(PropertyKey.class)) {
+                if (key.name().equals("age")) ages.add(key.dataType());
+            }
+            assertEquals(Collections.singletonList(Integer.class), ages);
+        } finally {
+            schema.rollback();
+        }
+
+        final JanusGraphManagement rename = graph.openManagement();
+        rename.changeName(rename.getPropertyKey("age"), "years");
+        rename.commit();
+        final JanusGraphManagement renamed = graph.openManagement();
+        try {
+            assertFalse(renamed.containsPropertyKey("age"));
+            assertEquals(Integer.class, renamed.getPropertyKey("years").dataType());
+        } finally {
+            renamed.rollback();
+        }
+    }
+
+    protected static boolean isLockingFailure(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof PermanentLockingException || cause instanceof TemporaryLockingException) return true;
+        }
+        return false;
     }
 
    /* ==================================================================================

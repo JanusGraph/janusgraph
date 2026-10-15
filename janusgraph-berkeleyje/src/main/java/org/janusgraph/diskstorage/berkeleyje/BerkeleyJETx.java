@@ -24,7 +24,9 @@ import com.sleepycat.je.Transaction;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
+import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +42,8 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
     private final List<Cursor> openCursors = new ArrayList<>();
     private final LockMode lockMode;
     private final CacheMode cacheMode;
+    private final List<Lock> locks = new ArrayList<>();
+    private volatile boolean mutationStarted;
 
     public BerkeleyJETx(Transaction t, LockMode lockMode, CacheMode cacheMode, BaseTransactionConfig config) {
         super(config);
@@ -87,6 +91,47 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         return lockMode;
     }
 
+    /**
+     * Takes the lock of the key for this transaction, unless it holds it already, and keeps the value which the key is
+     * expected to have, which the first mutation checks.
+     *
+     * @throws PermanentLockingException if another transaction holds the lock, or this one has started its mutations
+     */
+    synchronized void lock(BerkeleyJEKeyValueStore store, StaticBuffer key, StaticBuffer expectedValue)
+            throws BackendException {
+        if (mutationStarted) {
+            throw new PermanentLockingException("Attempted to obtain a lock after mutations had been persisted");
+        }
+        if (store.lock(key, this)) {
+            locks.add(new Lock(store, key, expectedValue));
+        }
+    }
+
+    /**
+     * Checks the expected values of the locked keys before the first mutation of this transaction. The keys stay as
+     * they are checked until the transaction ends: their locks keep out other transactions which lock them, and the
+     * check takes BerkeleyJE's write locks of the records which exist.
+     */
+    void prepareForMutations() throws BackendException {
+        if (mutationStarted) return;
+        synchronized (this) {
+            if (mutationStarted) return;
+            for (Lock lock : locks) {
+                lock.store.checkExpectedValue(lock.key, lock.expectedValue, this);
+            }
+            mutationStarted = true;
+        }
+    }
+
+    //Once BerkeleyJE has committed or aborted the transaction, or failed to, so that the next holder of a lock reads
+    //the outcome
+    private void releaseLocks() {
+        for (Lock lock : locks) {
+            lock.store.unlock(lock.key, this);
+        }
+        locks.clear();
+    }
+
     @Override
     public synchronized void rollback() throws BackendException {
         super.rollback();
@@ -100,6 +145,8 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
             tx = null;
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
+        } finally {
+            releaseLocks();
         }
     }
 
@@ -116,12 +163,26 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
             tx = null;
         } catch (DatabaseException e) {
             throw new PermanentBackendException(e);
+        } finally {
+            releaseLocks();
         }
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + (null == tx ? "nulltx" : tx.toString());
+    }
+
+    private static final class Lock {
+        private final BerkeleyJEKeyValueStore store;
+        private final StaticBuffer key;
+        private final StaticBuffer expectedValue;
+
+        private Lock(BerkeleyJEKeyValueStore store, StaticBuffer key, StaticBuffer expectedValue) {
+            this.store = store;
+            this.key = key;
+            this.expectedValue = expectedValue;
+        }
     }
 
     private static class TransactionClose extends Exception {

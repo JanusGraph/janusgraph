@@ -1276,6 +1276,13 @@ public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
                 } catch (Throwable e) {
                     //[FAILURE] Primary persistence failed => abort and escalate exception, nothing should have been persisted
                     log.error("Could not commit transaction ["+transactionId+"] due to storage exception in system-commit",e);
+                    //The failed commit, which may have failed on the expected value of a lock, still holds the locks of
+                    //the schema transaction: in this JVM's lock mediator until they expire, and in the lock store
+                    try {
+                        schemaMutator.rollback();
+                    } catch (Throwable e2) {
+                        log.error("Could not roll-back the system-commit of transaction ["+transactionId+"]",e2);
+                    }
                     throw e;
                 }
             }
