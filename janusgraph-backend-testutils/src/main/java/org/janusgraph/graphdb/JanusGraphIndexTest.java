@@ -35,6 +35,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
@@ -52,6 +53,7 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
@@ -1302,11 +1304,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertEquals(QueryProfiler.GRAPH_CENTRIC_QUERY, nested.getName());
             assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
             annotations = new HashMap() {{
-                put("condition", "(((name = bob) OR (prop = val2)) AND ((name = alex) OR (prop = val)))");
+                put("condition", "((name = bob OR prop = val2) AND (name = alex OR prop = val))");
                 put("orders", "[]");
                 put("isFitted", "true");
                 put("isOrdered", "true");
-                put("query", "[(((name = bob) OR (prop = val2)) AND ((name = alex) OR (prop = val)))]:mixed");
+                put("query", "[((name = bob OR prop = val2) AND (name = alex OR prop = val))]:mixed");
                 put("index", "mixed");
                 put("index_impl", "search");
             }};
@@ -1337,12 +1339,13 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             assertTrue(nested.getDuration(TimeUnit.MICROSECONDS) > 0);
             Map<String, Object> metricsAnnotations = nested.getAnnotations();
             assertEquals(5, metricsAnnotations.size());
-            assertEquals("(((name = alex) OR (prop = val2)) AND ((desc textContains coding) OR (pet textContains cats)))", metricsAnnotations.get("condition"));
+            assertEquals("((name = alex OR prop = val2) AND (desc textContains coding OR pet textContains cats))", metricsAnnotations.get("condition"));
             assertEquals("[]", metricsAnnotations.get("orders"));
             assertEquals("true", metricsAnnotations.get("isFitted"));
             assertEquals("true", metricsAnnotations.get("isOrdered"));
-            assertTrue(metricsAnnotations.get("query").equals("[mixed:[(((name = alex) OR (prop = val2)))]:mixed, mi:[(((desc textContains coding) OR (pet textContains cats)))]:mi]") ||
-                metricsAnnotations.get("query").equals("[mi:[(((desc textContains coding) OR (pet textContains cats)))]:mi, mixed:[(((name = alex) OR (prop = val2)))]:mixed]"));
+            assertTrue(metricsAnnotations.get("query").equals("[mixed:[((name = alex OR prop = val2))]:mixed, mi:[((desc textContains coding OR pet textContains cats))]:mi]") ||
+                metricsAnnotations.get("query").equals("[mi:[((desc textContains coding OR pet textContains cats))]:mi, mixed:[((name = alex OR prop = val2))]:mixed]"),
+                metricsAnnotations.get("query").toString());
         }
 
         // satisfied by two graph-centric queries, one is mixed index query and the other one is full scan
@@ -4160,12 +4163,19 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertTraversal(g.V().or(__.has("name", "Totoro"),__.has("age", 2)).order().by(ORDER_AGE_ASC), totoro, hiro);
         assertTraversal(g.V().or(__.has("name", "Hiro"),__.has("age", 2)).order().by(ORDER_AGE_ASC), hiro);
 
-        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_LENGTH_DESC)), totoro, john, hiro);
-        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_LENGTH_ASC)), totoro, hiro, john);
-        assertTraversal(g.V().or(__.has("name", "John"), __.has("length", P.lte(120)).order().by(ORDER_LENGTH_ASC)), john, hiro);
+        //An or() checks each element against each of its branches on its own, as TinkerPop does, so an order() of a
+        //branch doesn't order its results
+        assertTraversalInAnyOrder(g.V().or(__.has("name", "Totoro"),
+            __.has("length", P.lte(120)).order().by(ORDER_LENGTH_DESC)), totoro, john, hiro);
+        assertTraversalInAnyOrder(g.V().or(__.has("name", "Totoro"),
+            __.has("length", P.lte(120)).order().by(ORDER_LENGTH_ASC)), totoro, hiro, john);
+        assertTraversalInAnyOrder(g.V().or(__.has("name", "John"),
+            __.has("length", P.lte(120)).order().by(ORDER_LENGTH_ASC)), john, hiro);
 
-        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_AGE_DESC)), totoro, john, hiro);
-        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_AGE_ASC)), totoro, hiro, john);
+        assertTraversalInAnyOrder(g.V().or(__.has("name", "Totoro"),
+            __.has("length", P.lte(120)).order().by(ORDER_AGE_DESC)), totoro, john, hiro);
+        assertTraversalInAnyOrder(g.V().or(__.has("name", "Totoro"),
+            __.has("length", P.lte(120)).order().by(ORDER_AGE_ASC)), totoro, hiro, john);
 
         assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_LENGTH_DESC)).order().by(ORDER_AGE_ASC), totoro, hiro, john);
         assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120)).order().by(ORDER_LENGTH_ASC)).order().by(ORDER_AGE_DESC), john, hiro, totoro);
@@ -4173,10 +4183,15 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120))).order().by(ORDER_AGE_ASC).limit(2), totoro, hiro);
         assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(120))).order().by(ORDER_AGE_ASC).range(2, 3), john);
 
-        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(130)).order().by(ORDER_LENGTH_ASC).limit(1)), totoro, hiro);
-        assertTraversal(g.V().or(__.has("name", "Hiro"), __.has("length", P.lte(130)).order().by(ORDER_LENGTH_ASC).limit(1)), hiro);
-        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(130)).order().by(ORDER_LENGTH_ASC).range(1, 2)), totoro, john);
-        assertTraversal(g.V().or(__.has("name", "Totoro"), __.has("length", P.lte(130)).order().by(ORDER_LENGTH_ASC).range(1, 3)).limit(2), totoro, john);
+        //and a limit() of a branch lets each element through, while a range() which skips one lets none through
+        assertTraversalInAnyOrder(g.V().or(__.has("name", "Totoro"),
+            __.has("length", P.lte(130)).order().by(ORDER_LENGTH_ASC).limit(1)), totoro, hiro, john, mike);
+        assertTraversalInAnyOrder(g.V().or(__.has("name", "Hiro"),
+            __.has("length", P.lte(130)).order().by(ORDER_LENGTH_ASC).limit(1)), hiro, john, mike);
+        assertTraversal(g.V().or(__.has("name", "Totoro"),
+            __.has("length", P.lte(130)).order().by(ORDER_LENGTH_ASC).range(1, 2)), totoro);
+        assertTraversal(g.V().or(__.has("name", "Totoro"),
+            __.has("length", P.lte(130)).order().by(ORDER_LENGTH_ASC).range(1, 3)).limit(2), totoro);
 
         assertTraversal(g.V().has("length", P.gte(130).or(P.lt(100))).order().by(ORDER_AGE_ASC), hiro, mike);
         assertTraversal(g.V().has("length", P.gte(80).and(P.gte(130).or(P.lt(100)))).order().by(ORDER_AGE_ASC), hiro, mike);
@@ -4210,6 +4225,184 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 JanusGraphFactory.close(customGraph);
             }
         }
+    }
+
+    //The elements which the traversal returns, each once, in any order
+    @SafeVarargs
+    private static <E extends Element> void assertTraversalInAnyOrder(GraphTraversal<?, E> traversal, E... expected) {
+        final List<E> results = traversal.toList();
+        assertEquals(expected.length, results.size(), results.toString());
+        assertEquals(new HashSet<>(Arrays.asList(expected)), new HashSet<>(results));
+    }
+
+    /**
+     * TinkerPop runs each branch of an or() for each element on its own, so a limit() or range() in a branch lets the
+     * element through, unless it skips it or its limit is 0, and an order() lets it through where each of its
+     * by(key) modulators has a value. JanusGraph answers the or() by one query, which a mixed index answers, or by a
+     * query of each branch where no index answers the or() as a whole, and returns what a TinkerGraph which holds the
+     * same elements does
+     */
+    @Test
+    public void testOrBranchesCheckEachElementAsTinkerGraphDoes() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        final PropertyKey ckind = makeKey("ckind", String.class);
+        makeKey("uid", Integer.class);
+        makeKey("tag", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(name, getStringMapping())
+            .addKey(age).buildMixedIndex(INDEX);
+        mgmt.buildIndex("byCkind", Vertex.class).addKey(ckind).buildCompositeIndex();
+        finishSchema();
+
+        final GraphTraversalSource reference = TinkerGraph.open().traversal();
+        //uid, kind, name and age; every vertex has a name, and some have no age
+        final Object[][] vertices = {{1, "p", "c", 5}, {2, "p", "a", 3}, {3, "p", "f", null}, {4, "p", "e", null},
+            {5, "p", "g", 1}, {6, "p", "b", 2}, {7, "q", "d", 7}, {8, "q", "h", null}, {9, "q", "i", 8},
+            {10, "r", "j", 9}};
+        for (final GraphTraversalSource g : Arrays.asList(tx.traversal(), reference)) {
+            for (final Object[] vertex : vertices) {
+                final GraphTraversal<Vertex, Vertex> added = g.addV().property("uid", vertex[0])
+                    .property("kind", vertex[1]).property("ckind", vertex[1]).property("name", vertex[2])
+                    .property("tag", "q".equals(vertex[1]) ? "u" : "t");
+                (vertex[3] == null ? added : added.property("age", vertex[3])).iterate();
+            }
+        }
+        tx.commit();
+        newTx();
+
+        final List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> unordered = Arrays.asList(
+            g -> g.V().or(__.has("kind", "p").limit(1), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "q"), __.has("kind", "p").limit(1)),
+            g -> g.V().or(__.has("kind", "p").limit(2), __.has("kind", "q").limit(1)),
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "p").range(0, 3), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "p").limit(0), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "p").order().by("age").limit(1), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "p").order().by("age").order().by("name", desc), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "p").limit(1).has("age", 3), __.has("kind", "q")),
+            g -> g.V().or(__.limit(1).has("kind", "p"), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "p").has("age"), __.has("kind", "q")),
+            //Every element has an id and a label, which a branch's order by them needs
+            g -> g.V().or(__.has("kind", "p").order().by(T.label), __.has("kind", "q")),
+            g -> g.V().or(__.has("kind", "p").order().by(T.id, desc).limit(1), __.has("name", "d")),
+            //TinkerPop merges ranges next to each other into one
+            g -> g.V().or(__.has("kind", "p").range(0, 2).has("age").range(1, 2), __.has("kind", "q")),
+            //No branch lets an element through
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q").limit(0)),
+            //Two or() steps, with offsets and orders in branches, or a branch on a key which doesn't exist
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q"))
+                .or(__.has("age", 1), __.has("name", "d")),
+            g -> g.V().or(__.has("kind", "p").order().by("age").limit(1), __.has("kind", "q"))
+                .or(__.has("age", 1), __.has("name", "d")),
+            g -> g.V().or(__.has("nickname", "x"), __.has("kind", "p")).or(__.has("age", 1), __.has("name", "d")),
+            //The step's has() is copied into each branch, so the second branch of the first or() repeats the within()
+            g -> g.V().has("kind", P.within("p", "q")).or(__.has("name", "a"), __.has("kind", P.within("p", "q")))
+                .or(__.has("age", 1), __.has("name", "b")),
+            //A not-equal among the branches of an or() next to another or(), which Solr writes as two clauses
+            g -> g.V().or(__.has("kind", P.neq("p")), __.has("name", "a")).or(__.has("age", 3), __.has("name", "d")),
+            //No index answers these or() steps as a whole: a composite index, and a key which no index holds
+            g -> g.V().or(__.has("ckind", "p").limit(1), __.has("ckind", "q")),
+            g -> g.V().or(__.has("ckind", "p").order().by("age").range(0, 1), __.has("tag", "t").limit(1)),
+            g -> g.V().or(__.has("tag", "u").range(1, 2), __.has("ckind", "q")),
+            //The vertices of given ids, each checked against the branches
+            g -> g.V().hasId(withUids(g, 1, 3, 7, 10)).or(__.has("kind", "p"), __.has("name", "d")),
+            g -> g.V().hasId(withUids(g, 1, 3, 7, 10)).or(__.has("kind", "p").limit(1),
+                __.has("kind", "q").has("age", 7)),
+            g -> g.V().hasId(withUids(g, 1, 3, 7, 10)).or(__.has("kind", "p").order().by("age"), __.has("name", "d")),
+            g -> g.V().hasId(withUids(g, 1, 3, 7, 10)).or(__.has("kind", "p").range(1, 2), __.has("name", "j")),
+            g -> g.V().hasId(withUids(g, 1, 3, 7, 10)).has("age").or(__.has("kind", "p"), __.has("name", "j")),
+            g -> g.V().hasId(withUids(g, 1, 3, 7, 10)).or(__.has("kind", "p").range(1, 3),
+                __.has("kind", "q").limit(0)));
+        final List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> ordered = Arrays.asList(
+            g -> g.V().or(__.has("kind", "p").order().by("age", desc).limit(2), __.has("kind", "q")).order().by("name"),
+            g -> g.V().or(__.has("kind", "p").limit(1), __.has("kind", "q")).order().by("name").limit(3),
+            g -> g.V().or(__.has("kind", "p").limit(1), __.has("kind", "q")).order().by("name", desc).range(2, 5),
+            g -> g.V().or(__.has("kind", "p").limit(1), __.has("kind", "q")).count(),
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q")).count(),
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q").limit(0)).count(),
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q").limit(0)).order().by("name"),
+            g -> g.V().or(__.has("kind", "p").range(1, 3), __.has("kind", "q").limit(0)).order().by("name", desc)
+                .limit(2),
+            g -> g.V().or(__.has("tag", "u").range(1, 2), __.has("ckind", "p").limit(1)).order().by("name").limit(2));
+        final Function<GraphTraversal<?, ?>, List<Object>> toUids = traversal -> traversal.toList().stream()
+            .map(result -> result instanceof Element ? ((Element) result).value("uid") : result)
+            .collect(Collectors.toList());
+        for (final Function<GraphTraversalSource, GraphTraversal<?, ?>> traversal : unordered) {
+            final List<Object> expected = toUids.apply(traversal.apply(reference));
+            final List<Object> actual = toUids.apply(traversal.apply(tx.traversal()));
+            expected.sort(Comparator.comparing(uid -> (Integer) uid));
+            actual.sort(Comparator.comparing(uid -> (Integer) uid));
+            assertEquals(expected, actual, traversal.apply(reference).toString());
+        }
+        for (final Function<GraphTraversalSource, GraphTraversal<?, ?>> traversal : ordered) {
+            assertEquals(toUids.apply(traversal.apply(reference)), toUids.apply(traversal.apply(tx.traversal())),
+                traversal.apply(reference).toString());
+        }
+
+        //A branch of the API's or() which every element holds, as one which asks for no value of a key which doesn't
+        //exist, makes the or() hold for every element
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+            uidsOfOr(tx.query(), tx.query().hasNot("nickname"), tx.query().has("kind", "p")));
+        assertEquals(Arrays.asList(7, 8, 9),
+            uidsOfOr(tx.query().has("kind", "q"), tx.query().hasNot("nickname"), tx.query().has("name", "a")));
+        //A not-equal among the sub-queries of an or() call next to a condition of the query
+        assertEquals(Collections.singletonList(2), uidsOfOr(tx.query().has("age", 3),
+            tx.query().has("kind", Cmp.NOT_EQUAL, "p"), tx.query().has("name", "a")));
+        //The or() calls of a sub-query hold along with its own conditions
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9), uidsOfOr(tx.query(),
+            withOr(tx.query(), tx.query().has("kind", "p"), tx.query().has("kind", "q")), tx.query().has("name", "a")));
+        assertEquals(Arrays.asList(2, 5, 8), uidsOfOr(tx.query(),
+            withOr(tx.query().has("kind", "p"), tx.query().has("age", 1), tx.query().has("age", 3)),
+            tx.query().has("name", "h")));
+
+        //A union() of traversals which start from V() takes the first elements of a branch, by a query of each branch,
+        //which forced index usage allows
+        clopen(option(FORCE_INDEX_USAGE), true);
+        assertEquals(4L, (long) tx.traversal().union(__.V().has("kind", "p").limit(1), __.V().has("kind", "q"))
+            .dedup().count().next());
+        //and so does an or() with a branch ordered by the label
+        assertEquals(9L, (long) tx.traversal().V().or(__.has("kind", "p").order().by(T.label), __.has("kind", "q"))
+            .count().next());
+        //The query's own conditions, and those of an or() call of one branch, are one conjunction, of which the
+        //composite index answers a part
+        assertEquals(Collections.singletonList(7), uidsOfOr(tx.query().has("uid", 7), tx.query().has("ckind", "q")));
+        assertEquals(Collections.emptyList(), uidsOfOr(tx.query().has("uid", 5), tx.query().has("ckind", "q")));
+        //An or() call of sub-queries of a single condition each joins that conjunction as a disjunction of those
+        //conditions, which keeps it in the normal form which the composite index needs, also where one is a within()
+        assertEquals(Arrays.asList(7, 8, 9),
+            uidsOfOr(tx.query().has("ckind", "q"), tx.query().has("tag", "t"), tx.query().has("tag", "u")));
+        assertEquals(Arrays.asList(7, 9),
+            uidsOfOr(tx.query().has("ckind", "q"), tx.query().has("uid", 7), tx.query().has("uid", 9)));
+        assertEquals(Arrays.asList(7, 8, 9), uidsOfOr(tx.query().has("ckind", "q"),
+            tx.query().has("uid", Contain.IN, Arrays.asList(7, 8)),
+            tx.query().has("name", "i")));
+        //as is the disjunction of a sub-query's own or() call of such sub-queries
+        assertEquals(Arrays.asList(7, 8, 9), uidsOfOr(tx.query().has("ckind", "q"),
+            withOr(tx.query(), tx.query().has("tag", "t"), tx.query().has("tag", "u"))));
+        //and the composite index answers such a disjunction on its key
+        assertEquals(Arrays.asList(7, 8, 9),
+            uidsOfOr(tx.query().has("tag", "u"), tx.query().has("ckind", "p"), tx.query().has("ckind", "q")));
+    }
+
+    //The uids of the vertices of the query and an or() call of the given branches, in the order of the uids
+    private static List<Object> uidsOfOr(JanusGraphQuery<?> query, JanusGraphQuery<?>... branches) {
+        final List<Object> uids = new ArrayList<>();
+        withOr(query, branches).vertices().forEach(vertex -> uids.add(vertex.value("uid")));
+        uids.sort(Comparator.comparing(uid -> (Integer) uid));
+        return uids;
+    }
+
+    //The query with an or() call of the given branches
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static JanusGraphQuery<?> withOr(JanusGraphQuery<?> query, JanusGraphQuery<?>... branches) {
+        ((JanusGraphQuery) query).or(Arrays.asList(branches));
+        return query;
+    }
+
+    //The ids of the vertices of the given uids
+    private static P<Object> withUids(GraphTraversalSource g, Object... uids) {
+        return P.within(g.V().has("uid", P.within(uids)).id().toList());
     }
 
     @Test

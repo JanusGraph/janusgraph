@@ -81,10 +81,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     private final List<PredicateCondition<String, JanusGraphElement>> constraints = new ArrayList<>(5);
 
     /**
-     * List of constraints added to one or more Or queries. If there are multiple they will be added to an And query.
-     * None by default.
+     * The sub-queries of each or() call, as they were when it was made. Each or() call holds along with the query's own
+     * constraints. None by default.
      */
-    private final List<List<List<PredicateCondition<String, JanusGraphElement>>>> globalConstraints = new ArrayList<>();
+    private final List<List<SubQuery>> globalConstraints = new ArrayList<>();
     /**
      * The order in which the elements should be returned. None by default.
      */
@@ -210,9 +210,9 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
 
     @Override
     public GraphCentricQueryBuilder or(Collection<GraphCentricQueryBuilder> subQueries) {
-        final List<List<PredicateCondition<String, JanusGraphElement>>> constraints = new ArrayList<>(subQueries.size());
-        subQueries.forEach(subQuery -> constraints.add(subQuery.getConstraints()));
-        this.globalConstraints.add(constraints);
+        final List<SubQuery> branches = new ArrayList<>(subQueries.size());
+        subQueries.forEach(subQuery -> branches.add(new SubQuery(subQuery)));
+        this.globalConstraints.add(branches);
         return this;
     }
 
@@ -263,25 +263,24 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         Preconditions.checkNotNull(resultType);
         if (limit == 0) return GraphCentricQuery.emptyQuery(resultType);
 
-        if (globalConstraints.isEmpty()) {
-            globalConstraints.add(Collections.singletonList(constraints));
+        //The query's own conditions, and those of each or() call with a single sub-query which an element can hold,
+        //are one conjunction, along with which each or() of several such sub-queries holds
+        final List<Or<JanusGraphElement>> disjunctions = new ArrayList<>(globalConstraints.size());
+        final And<JanusGraphElement> conjunction = conjunction(constraints, globalConstraints, disjunctions);
+        if (conjunction == null) {
+            return GraphCentricQuery.emptyQuery(resultType);
         }
         //Prepare constraints
         final MultiCondition<JanusGraphElement> conditions;
-        if (this.globalConstraints.size() == 1 && this.globalConstraints.get(0).size() == 1) {
-            conditions = QueryUtil.constraints2QNF(tx, globalConstraints.get(0).get(0));
-            if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
+        //An or() alone is its disjunction, as before. Next to other conditions, each or() is written flat where its
+        //sub-queries have a single condition each, so that the condition stays in the normal form which a composite
+        //index, and a mixed index which takes no other form, need to answer any of it
+        if (conjunction.isEmpty() && disjunctions.size() == 1) {
+            conditions = disjunctions.get(0);
         } else {
-            if (this.globalConstraints.size() == 1) {
-                conditions = constructOrCondition(this.globalConstraints.get(0));
-                if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
-            } else {
-                conditions = new And<>();
-                for (List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraint : this.globalConstraints) {
-                    Or<JanusGraphElement> or = constructOrCondition(globalConstraint);
-                    if (or == null) return GraphCentricQuery.emptyQuery(resultType);
-                    conditions.add(or);
-                }
+            conditions = conjunction;
+            for (final Or<JanusGraphElement> or : disjunctions) {
+                conditions.add(flattened(or));
             }
         }
 
@@ -311,13 +310,119 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return new GraphCentricQuery(resultType, conditions, orders, query, limit);
     }
 
-    private Or<JanusGraphElement> constructOrCondition(List<List<PredicateCondition<String, JanusGraphElement>>> globalConstraint) {
-        Or<JanusGraphElement> or = new Or<>();
-        for (final List<PredicateCondition<String, JanusGraphElement>> child : globalConstraint){
-            final And<JanusGraphElement> localconditions = QueryUtil.constraints2QNF(tx, child);
-            if (localconditions == null) return null;
-            or.add(localconditions);
+    /*
+     * The conjunction of the conditions of a query, or of a sub-query of an or() call, and of those of each of its or()
+     * calls with a single sub-query which an element can hold, without repeating an atom, as constraints2QNF doesn't;
+     * each or() call of several such sub-queries is added to the given disjunctions instead. Null where no element can
+     * hold the conditions.
+     */
+    private And<JanusGraphElement> conjunction(final List<PredicateCondition<String, JanusGraphElement>> own,
+            final List<List<SubQuery>> ors, final List<Or<JanusGraphElement>> disjunctions) {
+        final And<JanusGraphElement> conjunction = QueryUtil.constraints2QNF(tx, own);
+        if (conjunction == null) {
+            return null;
         }
-        return or;
+        final Set<Condition<JanusGraphElement>> atoms = atomsOf(conjunction);
+        for (final List<SubQuery> subQueries : ors) {
+            final Or<JanusGraphElement> or = disjunction(subQueries);
+            if (or == null) {
+                return null;
+            }
+            if (or.size() == 1) {
+                for (final Condition<JanusGraphElement> condition : or.get(0).getChildren()) {
+                    addOnce(conjunction, atoms, condition);
+                }
+            } else {
+                disjunctions.add(or);
+            }
+        }
+        return conjunction;
+    }
+
+    /*
+     * The disjunction of the sub-queries of an or() call which an element can hold, each the conjunction of its
+     * conditions and of its own or() calls; null where it can hold none, as in an or() of no sub-queries: a sub-query
+     * which no element can hold, such as one on a key which doesn't exist, adds nothing to the others. A sub-query
+     * which every element holds, as one of no conditions, is the or()'s only one, as the or() holds for every element.
+     */
+    private Or<JanusGraphElement> disjunction(final List<SubQuery> subQueries) {
+        final Or<JanusGraphElement> or = new Or<>(subQueries.size());
+        for (final SubQuery subQuery : subQueries) {
+            final List<Or<JanusGraphElement>> nested = new ArrayList<>(subQuery.ors.size());
+            final And<JanusGraphElement> conditions = conjunction(subQuery.constraints, subQuery.ors, nested);
+            if (conditions == null) {
+                continue;
+            }
+            for (final Or<JanusGraphElement> inner : nested) {
+                conditions.add(flattened(inner));
+            }
+            if (conditions.isEmpty()) {
+                final Or<JanusGraphElement> always = new Or<>(1);
+                always.add(conditions);
+                return always;
+            }
+            or.add(conditions);
+        }
+        return or.isEmpty() ? null : or;
+    }
+
+    /*
+     * The disjunction with each branch of a single condition written as that condition, and each disjunction which is
+     * one, as that of a within(), written as its own branches, without repeating an atom: next to other conditions, a
+     * disjunction of single atoms is then in normal form, as is one of a within(), though not one of a P.or() with an
+     * and() in it. A branch of several conditions stays a conjunction: JanusGraph checks it in memory, unless a mixed
+     * index which takes conditions that aren't in normal form covers the whole condition, as Elasticsearch and Lucene
+     * take them.
+     */
+    private static Or<JanusGraphElement> flattened(final Or<JanusGraphElement> or) {
+        final Or<JanusGraphElement> flat = new Or<>(or.size());
+        final Set<Condition<JanusGraphElement>> atoms = new HashSet<>();
+        for (final Condition<JanusGraphElement> branch : or.getChildren()) {
+            final Condition<JanusGraphElement> single = branch instanceof And && branch.numChildren() == 1
+                ? branch.getChildren().iterator().next() : branch;
+            for (final Condition<JanusGraphElement> condition
+                    : single instanceof Or ? single.getChildren() : Collections.singletonList(single)) {
+                addOnce(flat, atoms, condition);
+            }
+        }
+        return flat;
+    }
+
+    /*
+     * The atoms among the conditions. A set of them tells which conditions an atom repeats, as in
+     * QueryUtil.addConstraints: looking each one up in the list would make a long without() quadratic in its values.
+     * Only atoms are compared: MultiCondition.equals() takes a conjunction for another one of as many conditions which
+     * holds each of its own, so that one of X and X would equal one of X and Y.
+     */
+    private static Set<Condition<JanusGraphElement>> atomsOf(final MultiCondition<JanusGraphElement> conditions) {
+        final Set<Condition<JanusGraphElement>> atoms = new HashSet<>();
+        for (final Condition<JanusGraphElement> condition : conditions) {
+            if (condition instanceof PredicateCondition) {
+                atoms.add(condition);
+            }
+        }
+        return atoms;
+    }
+
+    //Adds the condition unless it is an atom which the conditions hold already, as the given atoms tell
+    private static void addOnce(final MultiCondition<JanusGraphElement> conditions,
+            final Set<Condition<JanusGraphElement>> atoms, final Condition<JanusGraphElement> condition) {
+        if (!(condition instanceof PredicateCondition) || atoms.add(condition)) {
+            conditions.add(condition);
+        }
+    }
+
+    /*
+     * The conditions of a sub-query of an or() call when the call was made: its own constraints and the sub-queries of
+     * its own or() calls, which are kept in the same way, so that a later change of the sub-query changes neither
+     */
+    private static final class SubQuery {
+        private final List<PredicateCondition<String, JanusGraphElement>> constraints;
+        private final List<List<SubQuery>> ors;
+
+        private SubQuery(final GraphCentricQueryBuilder query) {
+            constraints = new ArrayList<>(query.constraints);
+            ors = new ArrayList<>(query.globalConstraints);
+        }
     }
 }
