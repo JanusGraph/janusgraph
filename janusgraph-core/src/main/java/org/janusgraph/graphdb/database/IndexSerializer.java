@@ -470,7 +470,7 @@ public class IndexSerializer {
                 }
             });
         ImmutableList<IndexQuery.OrderEntry> newOrders = IndexQuery.NO_ORDER;
-        if (!orders.isEmpty() && IndexSelectionUtil.indexCoversOrder(index,orders)) {
+        if (!orders.isEmpty() && IndexSelectionUtil.indexCoversOrder(index, orders, this)) {
             final ImmutableList.Builder<IndexQuery.OrderEntry> lb = ImmutableList.builder();
             for (int i = 0; i < orders.size(); i++) {
                 lb.add(new IndexQuery.OrderEntry(key2Field(index,orders.getKey(i)), orders.getOrder(i), orders.getKey(i).dataType()));

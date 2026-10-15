@@ -67,7 +67,7 @@ public class ApproximateIndexSelectionStrategy
                 boolean supportsSort =
                     orders.isEmpty() ||
                     coveredClauses.isEmpty() && index.isMixedIndex() &&
-                        IndexSelectionUtil.indexCoversOrder((MixedIndexType) index, orders);
+                        IndexSelectionUtil.indexCoversOrder((MixedIndexType) index, orders, serializer);
                 indexCandidate.setScore(calculateIndexCandidateScore(indexCandidate, coveredClauses, supportsSort));
 
                 if (!coveredClauses.containsAll(indexCandidate.getSubCover()) &&

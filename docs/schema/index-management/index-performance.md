@@ -296,6 +296,18 @@ When using `order().by()` it is important to note that:
 
 -   Only Elasticsearch and Solr mixed index backends support ordering
     property keys with **LIST** cardinality natively and efficiently.
+    They order an element with several values of a key of **LIST** or
+    **SET** cardinality by the least of them in an ascending order and
+    by the greatest in a descending one. JanusGraph orders such
+    elements in the same way where it sorts the results of
+    `graph.query()` itself, as it does those of a composite index, or
+    of a Lucene index, which can't sort by such a key. A traversal's
+    `order().by()` of vertices by such a key is folded into
+    JanusGraph's query only where the graph has mixed index backends
+    and every one of them can sort by it; otherwise TinkerPop sorts the
+    vertices, and fails on one with several values of the key. An order
+    of edges, each of which holds one value of a key at most, is folded
+    in whatever the cardinality of the key.
 
 -   Strings are ordered by their code points, as the mixed index
     backends sort them, whether a mixed index or JanusGraph sorts the

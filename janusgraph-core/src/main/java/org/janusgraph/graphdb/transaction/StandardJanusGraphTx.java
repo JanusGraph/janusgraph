@@ -1700,8 +1700,9 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
          * added, or, for a condition which a removal can make hold, removed. The vertices which the indexes do return
          * are checked against what they hold now, so a condition on any other key needs no vertices of its own here.
          * An index which sorts what it returns sorts the vertices by the values they held before the transaction, so
-         * where every order key has one value, the vertices whose value of an order key the transaction changed are
-         * taken too, which the query then places by what they hold now instead of where the index has them.
+         * the vertices whose value of an order key the transaction changed are taken too, which the query then places
+         * by what they hold now instead of where the index has them; by a key of several values, as the index does,
+         * by the least of them for an ascending order and the greatest for a descending one (OrderList).
          */
         private void addLoadedVertices(GraphCentricQuery query, List<QueryPredicate> predicates,
                                        List<Iterable<JanusGraphVertex>> candidates) {
@@ -1722,7 +1723,7 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     candidates.add(verticesOf(addedPropertyIndex.get(key, predicate.condition.getValue(), false)));
                 }
             }
-            if (isSortedByAnIndex(query) && hasOrderKeysOfOneValue(query)) {
+            if (isSortedByAnIndex(query)) {
                 final OrderList orders = query.getOrder();
                 for (int i = 0; i < orders.size(); i++) {
                     final PropertyKey key = orders.getKey(i);
@@ -1764,23 +1765,6 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                 }
             }
             return false;
-        }
-
-        /*
-         * Whether every order key of the query has one value at most. The vertices which the query places itself are
-         * compared by each of its order keys, and a vertex with several values of a key can't be ordered by it in
-         * memory. So where a key of several values orders the query, which only an index can sort by, the vertices
-         * whose order key the transaction changed keep the places which the index gives them, as the query leaves
-         * them to it.
-         */
-        private boolean hasOrderKeysOfOneValue(GraphCentricQuery query) {
-            final OrderList orders = query.getOrder();
-            for (int i = 0; i < orders.size(); i++) {
-                if (orders.getKey(i).cardinality() != Cardinality.SINGLE) {
-                    return false;
-                }
-            }
-            return true;
         }
 
         /*
