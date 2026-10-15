@@ -2543,6 +2543,46 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertEquals(Collections.singletonList(id), tx.traversal().V().has("alias", "zed").id().toList());
     }
 
+    //The values of a SET key which differ only in case have the same words, which the key holds for each of them:
+    //removing one of the values leaves the words of the other, and a value put back is held once
+    @ParameterizedTest
+    @ValueSource(strings = {"DEFAULT", "TEXT", "TEXTSTRING"})
+    public void testWordsOfASetValueStayWhenACaseVariantOfItIsRemoved(Mapping mapping) {
+        if (!indexFeatures.supportsCardinality(Cardinality.SET)
+                || (mapping != Mapping.DEFAULT && !indexFeatures.supportsStringMapping(mapping))) return;
+
+        final PropertyKey alias = mgmt.makePropertyKey("alias").dataType(String.class).cardinality(Cardinality.SET)
+            .make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(alias, mapping.asParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object addedLater = tx.addVertex("alias", "zed").id();
+        final JanusGraphVertex vertex = tx.addVertex("alias", "abc");
+        vertex.property(VertexProperty.Cardinality.set, "alias", "ABC");
+        final Object addedTogether = vertex.id();
+        final Object putBack = tx.addVertex("alias", "qq").id();
+        clopen();
+        //A case variant added in a transaction of its own, and a value set again, which replaces its property
+        tx.traversal().V(addedLater).property(VertexProperty.Cardinality.set, "alias", "Zed").iterate();
+        tx.traversal().V(putBack).property(VertexProperty.Cardinality.set, "alias", "qq").iterate();
+        clopen();
+        tx.traversal().V(addedLater).properties("alias").hasValue("zed").drop().iterate();
+        tx.traversal().V(addedTogether).properties("alias").hasValue("abc").drop().iterate();
+        tx.traversal().V(putBack).properties("alias").drop().iterate();
+        clopen();
+
+        assertEquals(Collections.singletonList(addedLater),
+            tx.traversal().V().has("alias", Text.textContains("zed")).id().toList());
+        assertEquals(Collections.singletonList(addedTogether),
+            tx.traversal().V().has("alias", Text.textContains("abc")).id().toList());
+        assertFalse(tx.traversal().V().has("alias", Text.textContains("qq")).hasNext());
+        if (mapping == Mapping.TEXTSTRING) {
+            assertEquals(Collections.singletonList(addedLater), tx.traversal().V().has("alias", "Zed").id().toList());
+            assertFalse(tx.traversal().V().has("alias", "zed").hasNext());
+            assertFalse(tx.traversal().V().has("alias", "qq").hasNext());
+        }
+    }
+
     //Vertices with names of mixed case and several words, by their ids
     private Map<Object, String> addNamedVertices() {
         final Map<Object, String> names = new HashMap<>();
@@ -2585,6 +2625,11 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         evaluateQuery(tx.query().has("name", Text.CONTAINS_PREFIX, "Lon"), ElementCategory.VERTEX,
                 2, new boolean[]{true, true}, "mixed");
         evaluateQuery(tx.query().has("name", Text.CONTAINS_REGEX, "Lit*le"), ElementCategory.VERTEX,
+                1, new boolean[]{true, true}, "mixed");
+        //The expression matches a word whole, not a part of it: "lit" none, "l.*e" only "little" and not "middle"
+        evaluateQuery(tx.query().has("name", Text.CONTAINS_REGEX, "lit"), ElementCategory.VERTEX,
+                0, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS_REGEX, "l.*e"), ElementCategory.VERTEX,
                 1, new boolean[]{true, true}, "mixed");
         evaluateQuery(tx.query().has("name", Text.REGEX, "Long.*"), ElementCategory.VERTEX,
                 2, new boolean[]{true, true}, "mixed");

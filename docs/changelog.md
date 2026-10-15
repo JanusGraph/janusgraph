@@ -402,6 +402,60 @@ On Lucene, Elasticsearch and OpenSearch, a `TEXTSTRING` key with a custom `strin
 analyzer in the field of its whole strings, as a key mapped as `STRING` with that analyzer does: a range compares its
 value, which isn't analyzed, with those terms, while `eq` and `neq` first split their value with that analyzer.
 
+##### Fixes to text predicates and `SET` keys on Lucene and Solr
+
+Lucene now finds the elements which Elasticsearch and OpenSearch find in three more cases.
+
+`textContainsRegex` on a key mapped as `TEXTSTRING` matched its expression anywhere in a word, so
+`textContainsRegex("lit")` found "Long Little Lewis", and `textContainsRegex("l.*e")` found "Middle Sister Mabel" too.
+A word now matches when the expression matches it whole, as the predicate is defined. An expression which was valid
+only within the `.*` around it now fails, as on Elasticsearch: one which ends in a backslash, or `abc|`, which matched
+every word. The expression is put in lower case, as the words are, as before: `textContainsRegex("Lit*le")` finds "Long
+Little Lewis", as on Elasticsearch and Solr, while the predicate checked in memory, as on the elements a transaction
+changed, doesn't. Putting it in lower case also turns an escape such as `\W` into `\w`, as on Elasticsearch.
+
+A `SET` key mapped as `DEFAULT`, `TEXT` or `TEXTSTRING` holds the words of each of its values in lower case, so two
+values which differ only in case have the same words. A value added beside such a variant of it, in the same
+transaction or a later one, took the place of the variant's words instead of adding its own, and once one of the two
+values was removed, the other had no words left: with "zed" and "Zed", removing "zed" made `textContains("zed")` miss
+the vertex. Lucene now replaces the words of an added value only where the document holds the value itself: as the
+field of the whole strings of a `TEXTSTRING` key tells, and on a `DEFAULT` or `TEXT` key, which has no such field, where
+a transaction puts the value back, as when a vertex property is replaced by one of the same value. An index provider
+tells such an addition by the new `IndexMutation.isReAddition`. On a `DEFAULT` or `TEXT` key, a value which reaches the
+index twice otherwise has its words twice, and they stay findable after the value is removed, until the element is
+reindexed. That takes a reindex or the transaction recovery which writes the element between the storage commit of the
+transaction which added the value and its index mutation, or a reattempt of a write whose commit failed after Lucene
+wrote it (see below). Both are rare, and the values of `LIST` keys already behave so. Words lost before this fix stay
+lost until the index is reindexed.
+
+On Solr, a value of a `SET` or `LIST` key which a transaction removed and added back was held twice, as when a
+transaction sets a value which a `SET` key holds and so replaces its property. The mutation drops such a removal and
+keeps the addition, which Solr's atomic update `add` appended to the values the document holds, while a later removal,
+Solr's `remove`, takes out one occurrence of a value. So once the value was removed, `textContains`, `eq` and the other
+predicates still found the element, on every mapping. Solr now leaves out an addition which puts back a value the
+mutation removed, as the document still holds it. Elasticsearch adds a value to a `SET` key only where the key doesn't
+hold it already. A value of a `LIST` key which a transaction removes and adds back is still held twice on Lucene and
+Elasticsearch.
+
+A mutation which Lucene reattempts after a failure is now applied once, save where a store's commit failed after Lucene
+wrote it. The stores which committed before the failure are left out of the reattempt, and the store which failed
+discards what it wrote before it failed. Before, the reattempt applied those changes again: it added the values of
+`LIST` keys a second time, and removed a second entry of a removed value of a `LIST` key, or the words of a case variant
+of a removed value of a `SET` key. And what a store wrote before it failed, also in a restore, was made to last by the
+next commit of the store, or by closing the index, where no reattempt followed. A commit which fails after Lucene wrote
+it takes an I/O error at its very end, such as a missing file of the previous commit, and the reattempt then applies
+its store again. A writer which a failure closed outside a write, such as a background merge which fails on a full
+disk, is now replaced by the next write of its store, which failed before, and a failure to open a writer, such as too
+many open files, is reattempted.
+
+`eq`, `neq` and `textContains` of a value which the analyzer gives no terms for, such as punctuation or a stop word of a
+custom analyzer, added no condition to the query: alone, they found every element in the index, with the key or
+without it, and a count of them failed with "Query must not be null". (`eq` and `neq` split their value only on a key
+with a custom `string-analyzer`.) Now `eq` and `textContains` find no element, and `neq` every element with a value.
+A `neq` of a value of several terms found the elements which hold none of its terms, and the elements without a value,
+instead of the elements with a value which `eq` doesn't find, which lack one of its terms or more: with "Tom and Jerry"
+and "Spike" under the English analyzer, `neq("Tom Spike")` found neither of the two, only an element without a value.
+
 ##### Faster mixed-index reindex with batched document restores
 
 Mixed-index reindex jobs (`SchemaAction.REINDEX` against an Elasticsearch, Solr or Lucene index) now

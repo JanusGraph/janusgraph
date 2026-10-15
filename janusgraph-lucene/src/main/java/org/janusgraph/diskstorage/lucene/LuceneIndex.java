@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.lucene;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
@@ -34,6 +35,7 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
@@ -72,6 +74,7 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Cmp;
@@ -123,6 +126,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -132,6 +136,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -221,18 +226,24 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
+    //A writer which a tragic event closed (Lucene's term for a failure which closes the writer, such as a background
+    //merge failing on a full disk) is replaced rather than failing every later write of its store: closing released
+    //its lock of the store's directory
     private IndexWriter getWriter(String store) throws BackendException {
         Preconditions.checkArgument(writerLock.isHeldByCurrentThread());
         IndexWriter writer = writers.get(store);
-        if (writer == null) {
+        if (writer == null || !writer.isOpen()) {
             final LuceneCustomAnalyzer analyzer = delegatingAnalyzerFor(store);
             final IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
             iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
             try {
                 writer = new IndexWriter(getStoreDirectory(store), iwc);
                 writers.put(store, writer);
-            } catch (final IOException e) {
+            } catch (final LockObtainFailedException | CorruptIndexException e) {
                 throw new PermanentBackendException("Could not create writer", e);
+            } catch (final IOException e) {
+                //Such as too many open files, which may pass: BackendOperation reattempts the write
+                throw new TemporaryBackendException("Could not create writer", e);
             }
         }
         return writer;
@@ -285,24 +296,47 @@ public class LuceneIndex implements IndexProvider {
     @Override
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         final Transaction ltx = (Transaction) tx;
+        final Set<String> committedStores = new HashSet<>();
         writerLock.lock();
         try (KeyInformationScope ignored = analyzeWith(information)) {
             for (final Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 mutateStores(stores, information);
+                committedStores.add(stores.getKey());
             }
             ltx.postCommit();
         } catch (final IOException e) {
+            retainUncommittedStores(mutations, committedStores);
             throw new TemporaryBackendException("Could not update Lucene index", e);
+        } catch (final TemporaryBackendException e) {
+            //A store's writer could not be opened, which may pass
+            retainUncommittedStores(mutations, committedStores);
+            throw e;
         } finally {
             writerLock.unlock();
         }
     }
 
-    private void mutateStores(Map.Entry<String, Map<String, IndexMutation>> stores, KeyInformation.IndexRetriever information) throws IOException, BackendException {
-        IndexReader reader = null;
+    //BackendOperation reattempts a temporary failure by calling mutate again with the same map. Each store commits its
+    //changes on its own, and the store which failed rolls its changes back, so take out of the map the stores which
+    //committed before the failure. Applied again, they would add and remove their values once more: a value of a LIST
+    //key twice, or the words of a SET key's value, also those which a case variant of it shares
+    @VisibleForTesting
+    static void retainUncommittedStores(Map<String, Map<String, IndexMutation>> mutations,
+                                        Set<String> committedStores) {
         try {
-            final String storeName = stores.getKey();
-            final IndexWriter writer = getWriter(storeName);
+            mutations.keySet().removeAll(committedStores);
+        } catch (final UnsupportedOperationException e) {
+            //A map which the caller does not allow to change is applied whole again
+            log.debug("Could not take the committed stores out of the Lucene mutation before its reattempt", e);
+        }
+    }
+
+    private void mutateStores(Map.Entry<String, Map<String, IndexMutation>> stores, KeyInformation.IndexRetriever information) throws IOException, BackendException {
+        final String storeName = stores.getKey();
+        final IndexWriter writer = getWriter(storeName);
+        IndexReader reader = null;
+        boolean committed = false;
+        try {
             reader = DirectoryReader.open(writer, true, true);
             final IndexSearcher searcher = new IndexSearcher(reader);
             final KeyInformation.StoreRetriever storeRetriever = information.get(storeName);
@@ -331,14 +365,33 @@ public class LuceneIndex implements IndexProvider {
                     removeField(doc, del, ki);
                 }
 
-                addToDocument(doc, mutation.getAdditions(), storeRetriever, false);
+                addToDocument(doc, mutation.getAdditions(), storeRetriever, false, mutation::isReAddition);
 
                 //write the old document to the index with the modifications
                 writer.updateDocument(new Term(DOCID, documentId), doc);
             }
             writer.commit();
+            committed = true;
         } finally {
             IOUtils.closeQuietly(reader);
+            if (!committed) {
+                rollback(storeName, writer);
+            }
+        }
+    }
+
+    //Discards what a store's writer holds since its last commit, which is the writes of an attempt which failed
+    //before it committed: every write of a store commits while it holds writerLock. Left in the writer, they would be
+    //read by the reader of a reattempt, which would then apply them again, and made to last by the next commit of
+    //the store or by close(). The next write of the store opens a new writer from the last commit
+    private void rollback(String store, IndexWriter writer) {
+        writers.remove(store);
+        try {
+            writer.rollback();
+        } catch (final IOException | RuntimeException e) {
+            //The failure which led here is the one to report; a writer closes and releases its lock in a rollback
+            //which fails as well
+            log.warn("Could not roll back the uncommitted writes to Lucene store {}", store, e);
         }
     }
 
@@ -347,10 +400,11 @@ public class LuceneIndex implements IndexProvider {
         writerLock.lock();
         try (KeyInformationScope ignored = analyzeWith(information)) {
             for (final Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
+                final String store = stores.getKey();
+                final IndexWriter writer = getWriter(store);
                 IndexReader reader = null;
+                boolean committed = false;
                 try {
-                    final String store = stores.getKey();
-                    final IndexWriter writer = getWriter(store);
                     final KeyInformation.StoreRetriever storeRetriever = information.get(store);
                     reader = DirectoryReader.open(writer, true, true);
                     final IndexSearcher searcher = new IndexSearcher(reader);
@@ -369,14 +423,18 @@ public class LuceneIndex implements IndexProvider {
 
                         final Document doc = retrieveOrCreate(docID, searcher);
                         Iterators.removeIf(doc.iterator(), field -> !field.name().equals(DOCID));
-                        addToDocument(doc, content, storeRetriever, true);
+                        addToDocument(doc, content, storeRetriever, true, addition -> false);
 
                         //write the old document to the index with the modifications
                         writer.updateDocument(new Term(DOCID, docID), doc);
                     }
                     writer.commit();
+                    committed = true;
                 } finally {
                     IOUtils.closeQuietly(reader);
+                    if (!committed) {
+                        rollback(store, writer);
+                    }
                 }
             }
             tx.commit();
@@ -411,7 +469,8 @@ public class LuceneIndex implements IndexProvider {
         return doc;
     }
 
-    private void addToDocument(Document doc, List<IndexEntry> content, final KeyInformation.StoreRetriever information, boolean isNew) {
+    private void addToDocument(Document doc, List<IndexEntry> content, final KeyInformation.StoreRetriever information,
+                               boolean isNew, Predicate<IndexEntry> isReAddition) {
         Preconditions.checkNotNull(doc);
 
         for (final IndexEntry e : content) {
@@ -420,8 +479,10 @@ public class LuceneIndex implements IndexProvider {
                 log.trace("Adding field [{}] on document [{}]", e.field, doc.get(DOCID));
             }
             KeyInformation ki = information.get(e.field);
-            if (!(isNew || ki.getCardinality() == Cardinality.LIST)) {
+            if (!isNew && ki.getCardinality() == Cardinality.SINGLE) {
                 removeField(doc, e, ki);
+            } else if (!isNew && ki.getCardinality() == Cardinality.SET) {
+                removeHeldValue(doc, e, ki, isReAddition.test(e));
             }
             doc.add(buildStoreField(e.field, e.value, Mapping.getMapping(ki)));
             getDualFieldName(e.field, ki)
@@ -438,8 +499,26 @@ public class LuceneIndex implements IndexProvider {
             .ifPresent(dualFieldName -> removeFieldIfNeeded(doc, dualFieldName, e.value, ki, getDualMapping(ki)));
     }
 
-    private void removeFieldIfNeeded(Document doc, String fieldName, Object fieldValue, KeyInformation ki,
-                                     Mapping mapping) {
+    //A SET holds each of its values once: a value added again, which the document holds, replaces its entries. A field
+    //which stores the value as it is has an entry equal to it only if the document holds the value. The text field of
+    //a string stores the value in lower case, in an entry which a case variant of it, another value of the SET, has as
+    //well, so that entry is replaced only if the document holds the value itself: as the field of the whole strings of
+    //a TEXTSTRING key tells, or for a DEFAULT or TEXT key, which has no such field, as when the mutation puts back a
+    //value which it deleted
+    private void removeHeldValue(Document doc, IndexEntry e, KeyInformation ki, boolean isReAddition) {
+        final Mapping mapping = Mapping.getMapping(ki);
+        final Optional<String> dualFieldName = getDualFieldName(e.field, ki);
+        final boolean isHeld = dualFieldName.isPresent()
+            ? removeFieldIfNeeded(doc, dualFieldName.get(), e.value, ki, getDualMapping(ki))
+            : isReAddition;
+        if (isHeld || !storesLowerCase(mapping, e.value)) {
+            removeFieldIfNeeded(doc, e.field, e.value, ki, mapping);
+        }
+    }
+
+    //Removes the field's entry equal to the value, or its entry of a SINGLE key, and tells whether there was one
+    private boolean removeFieldIfNeeded(Document doc, String fieldName, Object fieldValue, KeyInformation ki,
+                                        Mapping mapping) {
         boolean isSingle = ki.getCardinality() == Cardinality.SINGLE;
         final String storedValue = isSingle ? null : convertToStringValue(mapping, fieldValue);
         Iterator<IndexableField> it = doc.iterator();
@@ -450,9 +529,16 @@ public class LuceneIndex implements IndexProvider {
             }
             if (isSingle || storedValue.equals(field.stringValue())) {
                 it.remove();
-                break;
+                return true;
             }
         }
+        return false;
+    }
+
+    //Whether a field of the mapping stores the value in lower case, as the text of a string for case-insensitive search
+    private static boolean storesLowerCase(Mapping mapping, Object value) {
+        return AttributeUtils.isString(value)
+            && (mapping == Mapping.DEFAULT || mapping == Mapping.TEXT || mapping == Mapping.TEXTSTRING);
     }
 
     //The value as a field of the mapping stores it
@@ -461,11 +547,7 @@ public class LuceneIndex implements IndexProvider {
         if (value instanceof Number) {
             converted = value.toString();
         } else if (AttributeUtils.isString(value)) {
-            if (mapping == Mapping.DEFAULT || mapping == Mapping.TEXT || mapping == Mapping.TEXTSTRING) {
-                converted = lowerCaseCodePoints((String) value);
-            } else {
-                converted = (String) value;
-            }
+            converted = storesLowerCase(mapping, value) ? lowerCaseCodePoints((String) value) : (String) value;
         } else if (value instanceof Date) {
             converted = String.valueOf(((Date) value).getTime());
         } else if (value instanceof Instant) {
@@ -807,7 +889,17 @@ public class LuceneIndex implements IndexProvider {
     private void tokenize(SearchParams params, final Mapping mapping, final LuceneCustomAnalyzer delegatingAnalyzer, String value, String key, JanusGraphPredicate janusgraphPredicate) {
         final Analyzer analyzer = delegatingAnalyzer.getWrappedAnalyzer(key);
         final List<List<String>> terms = customTokenize(analyzer, key, value);
-        if (terms.isEmpty()) {
+        if (janusgraphPredicate == Cmp.NOT_EQUAL) {
+            //The documents with a value which the equality doesn't find, as on Elasticsearch: those which lack one of
+            //the terms or more, and all of them when the analyzer gives no term
+            final BooleanQuery.Builder q = new BooleanQuery.Builder();
+            q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
+            q.add(allTerms(key, terms), BooleanClause.Occur.MUST_NOT);
+            params.addQuery(q.build(), BooleanClause.Occur.MUST);
+            final SearchParams existParams = new SearchParams();
+            addExistsQuery(existParams, key);
+            params.addParams(existParams, BooleanClause.Occur.MUST);
+        } else if (terms.isEmpty()) {
             // This might happen with very short terms
             if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
                 final Term term;
@@ -817,18 +909,12 @@ public class LuceneIndex implements IndexProvider {
                     term = new Term(key, lowerCaseCodePoints(value));
                 }
                 params.addQuery(new PrefixQuery(term), BooleanClause.Occur.MUST);
+            } else {
+                params.addQuery(allTerms(key, terms));
             }
         } else if (terms.size() == 1) {
             if (janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Text.CONTAINS) {
                 params.addQuery(combineTerms(key, terms.get(0), TermQuery::new));
-            } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                final BooleanQuery.Builder q = new BooleanQuery.Builder();
-                q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-                q.add(combineTerms(key, terms.get(0), TermQuery::new), BooleanClause.Occur.MUST_NOT);
-                params.addQuery(q.build(), BooleanClause.Occur.MUST);
-                final SearchParams existParams = new SearchParams();
-                addExistsQuery(existParams, key);
-                params.addParams(existParams, BooleanClause.Occur.MUST);
             } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
                 List<String> preparedTerms = new ArrayList<>(terms.get(0));
                 if (mapping != Mapping.STRING) {
@@ -837,20 +923,25 @@ public class LuceneIndex implements IndexProvider {
                 params.addQuery(combineTerms(key, preparedTerms, PrefixQuery::new), BooleanClause.Occur.MUST);
             } else throw new IllegalArgumentException("LuceneIndex does not support this predicate with 1 token : " + janusgraphPredicate);
         } else {
-            // at the moment, this is only walked for EQUAL, NOT_EQUAL and Text.CONTAINS (String and Text mappings)
-            final BooleanQuery.Builder q = new BooleanQuery.Builder();
-            BooleanClause.Occur occur;
-            if (janusgraphPredicate == Cmp.NOT_EQUAL) {
-                q.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-                occur = BooleanClause.Occur.MUST_NOT;
-            } else {
-                occur = BooleanClause.Occur.MUST;
-            }
-            for (final List<String> stems : terms) {
-                q.add(combineTerms(key, stems, TermQuery::new), occur);
-            }
-            params.addQuery(q.build());
+            // at the moment, this is only walked for EQUAL, Text.CONTAINS and Text.CONTAINS_PREFIX
+            params.addQuery(allTerms(key, terms));
         }
+    }
+
+    //The documents which hold every term of the value, any one of the terms at a position. A value the analyzer gives
+    //no term for, such as a stop word or punctuation, matches none, as on Elasticsearch
+    private Query allTerms(String key, List<List<String>> terms) {
+        if (terms.size() == 1) {
+            return combineTerms(key, terms.get(0), TermQuery::new);
+        }
+        if (terms.isEmpty()) {
+            return new MatchNoDocsQuery("No terms for key " + key);
+        }
+        final BooleanQuery.Builder q = new BooleanQuery.Builder();
+        for (final List<String> stems : terms) {
+            q.add(combineTerms(key, stems, TermQuery::new), BooleanClause.Occur.MUST);
+        }
+        return q.build();
     }
 
     private void addExistsQuery(final SearchParams params, final String key) {
@@ -960,10 +1051,11 @@ public class LuceneIndex implements IndexProvider {
                         final RegexpQuery rq = new RegexpQuery(new Term(stringFieldKey, (String) value));
                         params.addQuery(rq);
                     } else if (janusgraphPredicate == Text.CONTAINS_REGEX) {
-                        // This is terrible -- there is probably a better way
-                        // putting this to lowercase because Text search is supposed to be case insensitive
-                        final RegexpQuery rq = new RegexpQuery(new Term(key, ".*" + lowerCaseCodePoints((String) value) + ".*"));
-                        params.addQuery(rq);
+                        //A word matches when the expression matches it whole, as a term matches a regexp query on
+                        //Elasticsearch and Solr. The words are in lower case, and the expression is put in lower case
+                        //as on Elasticsearch, so that its letters match whatever their case. That also turns an escape
+                        //such as \W into another one, \w, which matches what \W doesn't
+                        params.addQuery(new RegexpQuery(new Term(key, lowerCaseCodePoints((String) value))));
                     } else if (janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Cmp.NOT_EQUAL) {
                         tokenize(params, map, delegatingAnalyzer, (String) value, stringFieldKey, janusgraphPredicate);
                     } else if (janusgraphPredicate == Text.FUZZY) {
@@ -1256,8 +1348,7 @@ public class LuceneIndex implements IndexProvider {
                     return janusgraphPredicate instanceof Cmp || janusgraphPredicate == Text.PREFIX || janusgraphPredicate == Text.REGEX || janusgraphPredicate == Text.FUZZY;
                 case TEXTSTRING:
                     //The predicates convertQuery has a query for; the negated text predicates and CONTAINS_PHRASE are
-                    //checked in memory. Its query for CONTAINS_REGEX matches the expression, lower-cased, anywhere in a
-                    //word rather than a whole word, as it always has
+                    //checked in memory
                     return janusgraphPredicate instanceof Cmp || janusgraphPredicate == Text.PREFIX
                         || janusgraphPredicate == Text.REGEX || janusgraphPredicate == Text.FUZZY
                         || janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX
@@ -1300,10 +1391,14 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public void close() throws BackendException {
+        //Closing a writer commits it, so it takes writerLock as every other commit of a store does
+        writerLock.lock();
         try {
             for (final IndexWriter w : writers.values()) w.close();
         } catch (final IOException e) {
             throw new PermanentBackendException("Could not close writers", e);
+        } finally {
+            writerLock.unlock();
         }
     }
 

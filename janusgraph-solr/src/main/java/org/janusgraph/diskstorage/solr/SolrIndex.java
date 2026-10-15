@@ -481,7 +481,13 @@ public class SolrIndex implements IndexProvider {
                         }
                     }
 
-                    if (mutation.hasAdditions()) {
+                    //A value which the mutation removed and adds again, as a vertex property replaced by one of the
+                    //same value, is one the document still holds, as consolidate() dropped its removal. The atomic
+                    //update "add" would append it once more, and "remove" takes out one occurrence of a value, so a
+                    //SET or LIST field would keep the value after it is removed
+                    final List<IndexEntry> additions = mutation.getAdditions().stream()
+                        .filter(addition -> !mutation.isReAddition(addition)).collect(Collectors.toList());
+                    if (!additions.isEmpty()) {
                         final int ttl = mutation.determineTTL();
 
                         final SolrInputDocument doc = new SolrInputDocument();
@@ -491,8 +497,7 @@ public class SolrIndex implements IndexProvider {
 
                         if (isNewDoc)
                             logger.trace("Adding new document {}", docId);
-                        final Map<String, Object> adds = collectFieldValues(mutation.getAdditions(), collectionName,
-                                information);
+                        final Map<String, Object> adds = collectFieldValues(additions, collectionName, information);
                         // If cardinality is not single then we should use the "add" operation to update
                         // the index so we don't overwrite existing values.
                         adds.forEach((k, v) -> {
