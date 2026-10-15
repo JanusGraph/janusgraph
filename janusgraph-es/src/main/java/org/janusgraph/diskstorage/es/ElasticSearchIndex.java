@@ -1724,6 +1724,10 @@ public class ElasticSearchIndex implements IndexProvider {
         else if (Geoshape.class.isAssignableFrom(dataType)) {
             return mapping == Mapping.DEFAULT ? "geo_point" : "geo_shape";
         }
+        else if (UUID.class.isAssignableFrom(dataType)) {
+            //Mapped as a keyword, so sorted by its string form
+            return "keyword";
+        }
 
         return null;
     }

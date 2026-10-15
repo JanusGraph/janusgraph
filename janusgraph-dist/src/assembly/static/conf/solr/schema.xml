@@ -523,7 +523,8 @@
     <!--JanusGraph specific-->
     <fieldType name="uuid"
                class="solr.UUIDField"
-               indexed="true" />
+               indexed="true"
+               sortMissingLast="true" />
 
     <fieldType name="geo"
                class="solr.SpatialRecursivePrefixTreeFieldType"

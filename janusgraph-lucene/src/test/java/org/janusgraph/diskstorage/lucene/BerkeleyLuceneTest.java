@@ -80,6 +80,11 @@ public class BerkeleyLuceneTest extends JanusGraphIndexTest {
         return false;
     }
 
+    @Override
+    protected boolean supportsOrderingByUUID() {
+        return false;
+    }
+
     @Test
     public void testPrintSchemaElements() {
         GraphOfTheGodsFactory.load(graph);

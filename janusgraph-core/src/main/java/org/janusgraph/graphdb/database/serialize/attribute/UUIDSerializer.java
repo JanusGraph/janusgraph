@@ -17,11 +17,17 @@ package org.janusgraph.graphdb.database.serialize.attribute;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.ScanBuffer;
 import org.janusgraph.diskstorage.WriteBuffer;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
 
 import java.util.UUID;
 
 /**
+ * Writes a UUID as its two halves, the most significant first, each as eight bytes, in byte order too. So the storage
+ * backend holds UUIDs which are sort keys by their bits as unsigned numbers, which is the order of their string forms,
+ * and in which JanusGraph compares them ({@link AttributeUtils#compareValues}), rather than in that of
+ * {@link UUID#compareTo}, which compares each half as a signed number.
+ *
  *  @author Bryn Cooke (bryn.cooke@datastax.com)
  */
 public class UUIDSerializer implements OrderPreservingSerializer<UUID>  {
