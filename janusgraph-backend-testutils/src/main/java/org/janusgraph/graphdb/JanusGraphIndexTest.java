@@ -809,6 +809,118 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertCount(0, tx.query().has("alias", Text.CONTAINS, "Marko").vertices());
     }
 
+    //A float removed from a key of several values is no longer found, also one whose decimal string changes when it is
+    //widened to a double, as Lucene stores it: 0.1f as 0.10000000149011612
+    @ParameterizedTest
+    @ValueSource(strings = {"LIST", "SET"})
+    public void testRemovedFloatsOfAKeyOfSeveralValuesAreNotFound(Cardinality cardinality) {
+        if (!indexFeatures.supportsCardinality(cardinality)) return;
+
+        final PropertyKey weights = mgmt.makePropertyKey("weights").dataType(Float.class).cardinality(cardinality)
+            .make();
+        final PropertyKey kind = makeKey("kind", String.class);
+        makeLabel("knows");
+        mgmt.buildIndex("mixed", Vertex.class).addKey(weights).buildMixedIndex(INDEX);
+        mgmt.buildIndex("edges", Edge.class).addKey(weights).addKey(kind, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        //Each float but 1.5f has a decimal string other than the double's which it widens to
+        final float[] removed = {0.1f, -0.3f, 3.14f, Float.MIN_VALUE, Float.MAX_VALUE, 1.5f};
+        final JanusGraphVertex some = tx.addVertex();
+        final JanusGraphVertex none = tx.addVertex();
+        for (final float value : removed) {
+            some.property(cardinality.convert(), "weights", value);
+            none.property(cardinality.convert(), "weights", value);
+        }
+        some.property(cardinality.convert(), "weights", -2.5f);
+        //The float of an edge is replaced, and that of another edge removed, which keeps its document by its kind
+        final Object replaced = some.addEdge("knows", none, "weights", 0.1f).id();
+        final Object cleared = some.addEdge("knows", none, "weights", 0.1f, "kind", "k").id();
+        clopen();
+
+        GraphTraversalSource g = tx.traversal();
+        for (final float value : removed) {
+            g.V(some.id(), none.id()).properties("weights").hasValue(value).drop().iterate();
+        }
+        g.E(replaced).property("weights", 3.14f).iterate();
+        g.E(cleared).properties("weights").drop().iterate();
+        clopen(option(FORCE_INDEX_USAGE), true);
+
+        g = tx.traversal();
+        for (final float value : removed) {
+            assertFalse(g.V().has("weights", value).hasNext(), Float.toString(value));
+            assertEquals(0L, g.V().has("weights", value).count().next(), Float.toString(value));
+        }
+        assertEquals(Collections.singletonList(some.id()), g.V().has("weights", -2.5f).id().toList());
+        //A range of every finite float doesn't find the vertex whose floats were all removed
+        assertEquals(Collections.singletonList(some.id()), g.V().has("weights", P.gte(-Float.MAX_VALUE)).id().toList());
+        assertEquals(1L, g.V().has("weights", P.gte(-Float.MAX_VALUE)).count().next());
+        assertFalse(g.E().has("weights", 0.1f).hasNext());
+        assertEquals(0L, g.E().has("weights", 0.1f).count().next());
+        assertEquals(Collections.singletonList(replaced), g.E().has("weights", 3.14f).id().toList());
+        assertEquals(Collections.singletonList(replaced), g.E().has("weights", P.gte(-Float.MAX_VALUE)).id().toList());
+        assertEquals(1L, g.E().has("weights", P.gte(-Float.MAX_VALUE)).count().next());
+        assertEquals(Collections.singletonList(cleared), g.E().has("kind", "k").id().toList());
+    }
+
+    //A removed string of a key of several values is no longer found, also one with an unpaired surrogate, which UTF-8
+    //has no encoding for: Lucene stores U+FFFD in its place
+    @ParameterizedTest
+    @ValueSource(strings = {"LIST", "SET"})
+    public void testRemovedStringsWithUnpairedSurrogatesOfAKeyOfSeveralValuesAreNotFound(Cardinality cardinality) {
+        if (!indexFeatures.supportsCardinality(cardinality)) return;
+
+        final List<Object[]> keys = new ArrayList<>();
+        for (final Object[] key : new Object[][]{{"defaultString", Mapping.DEFAULT}, {"text", Mapping.TEXT},
+                {"string", Mapping.STRING}, {"textString", Mapping.TEXTSTRING}}) {
+            if (key[1] == Mapping.DEFAULT || indexFeatures.supportsStringMapping((Mapping) key[1])) {
+                keys.add(key);
+            }
+        }
+        final JanusGraphManagement.IndexBuilder index = mgmt.buildIndex("mixed", Vertex.class);
+        for (final Object[] key : keys) {
+            index.addKey(mgmt.makePropertyKey((String) key[0]).dataType(String.class).cardinality(cardinality).make(),
+                ((Mapping) key[1]).asParameter());
+        }
+        index.buildMixedIndex(INDEX);
+        finishSchema();
+
+        final String removed = "Ab\uD800c Removed";
+        final JanusGraphVertex some = tx.addVertex();
+        final JanusGraphVertex none = tx.addVertex();
+        for (final Object[] key : keys) {
+            some.property(cardinality.convert(), (String) key[0], removed);
+            some.property(cardinality.convert(), (String) key[0], "Kept");
+            none.property(cardinality.convert(), (String) key[0], removed);
+        }
+        clopen(option(FORCE_INDEX_USAGE), true);
+        assertStringsFound(keys, "removed", "Ab", Sets.newHashSet(some.id(), none.id()));
+
+        for (final Object[] key : keys) {
+            tx.traversal().V(some.id(), none.id()).properties((String) key[0]).hasValue(removed).drop().iterate();
+        }
+        clopen(option(FORCE_INDEX_USAGE), true);
+        assertStringsFound(keys, "removed", "Ab", Collections.emptySet());
+        assertStringsFound(keys, "kept", "Kept", Collections.singleton(some.id()));
+    }
+
+    //The vertices found by a word, on a key mapped to the words of its strings, and by a prefix, on a key mapped to its
+    //whole strings: eq of a string with an unpaired surrogate finds nothing on Elasticsearch and Solr
+    private void assertStringsFound(List<Object[]> keys, String word, String prefix, Set<Object> expected) {
+        final GraphTraversalSource g = tx.traversal();
+        for (final Object[] key : keys) {
+            final String name = (String) key[0];
+            if (key[1] != Mapping.STRING) {
+                assertEquals(expected, g.V().has(name, Text.textContains(word)).id().toSet(), name);
+                assertEquals((long) expected.size(), g.V().has(name, Text.textContains(word)).count().next(), name);
+            }
+            if (key[1] == Mapping.STRING || key[1] == Mapping.TEXTSTRING) {
+                assertEquals(expected, g.V().has(name, Text.textPrefix(prefix)).id().toSet(), name);
+                assertEquals((long) expected.size(), g.V().has(name, Text.textPrefix(prefix)).count().next(), name);
+            }
+        }
+    }
+
     @Test
     public void testIndexing() throws InterruptedException {
 
