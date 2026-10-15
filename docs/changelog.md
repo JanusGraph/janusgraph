@@ -1552,6 +1552,23 @@ the upgrade, each such eviction costs an older instance the thread which waits f
 it acknowledges, for up to a minute, and one with a transaction open for longer than that logs the stale-transaction
 error it logs for any eviction it waited that long for.
 
+##### A connection or property which the schema has already is not added again
+
+`addConnection(edgeLabel, outLabel, inLabel)`, on a transaction or on the management system, wrote the connection, and a
+link from the edge label to the outgoing vertex label, each time it was called, and `addProperties(label, keys...)`
+wrote the property of a vertex or edge label on each call. `mappedConnections()` and `mappedProperties()` list each
+copy, so a connection which was added twice was listed twice by both labels.
+
+With `schema.constraints=true` and a schema maker which creates missing constraints, a transaction checks the
+connections and properties of the committed schema, so it added a connection or a property which that schema lacked
+for each edge or element of it: three such edges in one transaction left the connection listed three times by both
+labels, and three vertices with a property new to their label left the property listed three times.
+
+Now `addConnection` and `addProperties` write a connection, link or property only where the schema hasn't got it,
+committed or written earlier by the same transaction. The copies which earlier versions wrote stay, and so do those
+of two transactions which add the same constraint at the same time. Renaming an edge label renames each copy of its
+connections.
+
 ##### Closing a graph no longer fails on a transaction which another thread closes meanwhile
 
 Closing a graph rolls back the transactions which are still open. If another thread closed one of them after the graph

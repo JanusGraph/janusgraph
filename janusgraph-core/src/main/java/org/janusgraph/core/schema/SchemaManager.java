@@ -59,7 +59,9 @@ public interface SchemaManager extends SchemaInspector {
     VertexLabelMaker makeVertexLabel(String name);
 
     /**
-     * Add property constraints for a given vertex label.
+     * Add property constraints for a given vertex label. A property which the label has already, committed or added
+     * earlier in this transaction, isn't added again, unless another thread of a threaded transaction adds it at the
+     * same time.
      *
      * @param vertexLabel to which the constraints applies.
      * @param keys defines the properties which should be added to the {@link VertexLabel} as constraints.
@@ -68,7 +70,9 @@ public interface SchemaManager extends SchemaInspector {
     VertexLabel addProperties(VertexLabel vertexLabel, PropertyKey... keys);
 
     /**
-     * Add property constraints for a given edge label.
+     * Add property constraints for a given edge label. A property which the label has already, committed or added
+     * earlier in this transaction, isn't added again, unless another thread of a threaded transaction adds it at the
+     * same time.
      *
      * @param edgeLabel to which the constraints applies.
      * @param keys defines the properties which should be added to the {@link EdgeLabel} as constraints.
@@ -77,7 +81,9 @@ public interface SchemaManager extends SchemaInspector {
     EdgeLabel addProperties(EdgeLabel edgeLabel, PropertyKey... keys);
 
     /**
-     * Add a constraint on which vertices the given edge label can connect.
+     * Add a constraint on which vertices the given edge label can connect. A connection which the schema already has,
+     * committed or added earlier in this transaction, isn't added again, unless another thread of a threaded
+     * transaction adds it at the same time.
      *
      * @param edgeLabel to which the constraint applies.
      * @param outVLabel specifies the outgoing vertex for this connection.
