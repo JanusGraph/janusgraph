@@ -98,6 +98,9 @@ public class RestElasticSearchClient implements ElasticSearchClient {
 
     public static final String INCLUDE_TYPE_NAME_PARAMETER = "include_type_name";
 
+    //Tells Elasticsearch to fail a search which some shards failed, rather than answer with the hits of the others
+    public static final String ALLOW_PARTIAL_SEARCH_RESULTS_PARAMETER = "allow_partial_search_results";
+
     private static final byte[] NEW_LINE_BYTES = "\n".getBytes(UTF8_CHARSET);
 
     //Room for the action line of an item whose index name and id are of usual lengths, without growing
@@ -180,6 +183,10 @@ public class RestElasticSearchClient implements ElasticSearchClient {
     //Whether the cluster can page a result with a point in time: Elasticsearch 7.12 introduced the implicit _shard_doc
     //tiebreaker which search_after over a point in time relies on
     private boolean pointInTimeSupported;
+
+    //Whether a search, a page of a scroll or of a point in time, a count or an aggregation may use the results of the
+    //shards which answered where others didn't. Configured through RestClientSetup from ALLOW_PARTIAL_RESULTS
+    private boolean allowPartialResults;
 
 public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean useMappingTypesForES7,
                                int retryAttemptLimit, Set<Integer> retryOnErrorCodes, long retryInitialWaitMs,
@@ -311,7 +318,8 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     public RestSearchResponse searchPointInTime(String pitId, Map<String, Object> requestData) throws IOException {
         //A search of a point in time names its indexes through the point in time, not in the path
         requestData.put("pit", ImmutableMap.of("id", pitId, "keep_alive", scrollKeepAlive));
-        return search(requestData, REQUEST_SEPARATOR + "_search");
+        return search(requestData, searchRequest(REQUEST_TYPE_POST, REQUEST_SEPARATOR + "_search"),
+            "a page of a point in time");
     }
 
     @Override
@@ -992,7 +1000,12 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
     @Override
     public long countTotal(String indexName, Map<String, Object> requestData, int atMost) throws IOException {
 
-        final Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_count");
+        //A search for no hits which counts them all, which is what the count API runs. The search API can be told not
+        //to allow partial results, which the count API rejects
+        final Request request = searchRequest(REQUEST_TYPE_GET,
+            REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_search");
+        requestData.put("size", 0);
+        requestData.put("track_total_hits", true);
         if (atMost > 0) {
             // each shard stops collecting at the bound, so a count which only has to reach a limit doesn't count everything
             request.addParameter("terminate_after", String.valueOf(atMost));
@@ -1004,9 +1017,12 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
 
         final Response response = performRequest(request, requestDataBytes);
+        final RestCountResponse countResponse;
         try (final InputStream inputStream = response.getEntity().getContent()) {
-            return mapper.readValue(inputStream, RestCountResponse.class).getCount();
+            countResponse = mapper.readValue(inputStream, RestCountResponse.class);
         }
+        requireEveryShard(countResponse.getShards(), countResponse.isTimedOut(), "a count");
+        return countResponse.getCount();
     }
 
     /**
@@ -1024,7 +1040,8 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
      */
     private RestAggValue executeAggs(String indexName, Map<String, Object> requestData, String agg, String fieldName) throws IOException {
 
-        final Request request = new Request(REQUEST_TYPE_GET, REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_search");
+        final Request request = searchRequest(REQUEST_TYPE_GET,
+            REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_search");
 
         requestData.put("aggs", ImmutableMap.of("agg_result", ImmutableMap.of(agg, ImmutableMap.of("field", fieldName))));
         // only the aggregation is wanted: no hits, which would come with their sources, and no count of the matches
@@ -1036,9 +1053,12 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
 
         final Response response = performRequest(request, requestDataBytes);
+        final RestAggResponse aggResponse;
         try (final InputStream inputStream = response.getEntity().getContent()) {
-            return mapper.readValue(inputStream, RestAggResponse.class).getAggregations().getAggResult();
+            aggResponse = mapper.readValue(inputStream, RestAggResponse.class);
         }
+        requireEveryShard(aggResponse.getShards(), aggResponse.isTimedOut(), "an aggregation");
+        return aggResponse.getAggregations().getAggResult();
     }
 
     // null for null, which Elasticsearch answers for the minimum, maximum or mean of no values
@@ -1084,12 +1104,12 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
 
     @Override
     public RestSearchResponse search(String indexName, Map<String,Object> requestData, boolean useScroll) throws IOException {
-        final StringBuilder path = new StringBuilder(REQUEST_SEPARATOR).append(indexName);
-        path.append(REQUEST_SEPARATOR).append("_search");
+        final Request request = searchRequest(REQUEST_TYPE_POST,
+            REQUEST_SEPARATOR + indexName + REQUEST_SEPARATOR + "_search");
         if (useScroll) {
-            path.append(REQUEST_PARAM_BEGINNING).append("scroll=").append(scrollKeepAlive);
+            request.addParameter("scroll", scrollKeepAlive);
         }
-        return search(requestData, path.toString());
+        return search(requestData, request, "a search");
     }
 
     @Override
@@ -1097,7 +1117,11 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         final Map<String, Object> requestData = new HashMap<>();
         requestData.put("scroll", scrollKeepAlive);
         requestData.put("scroll_id", scrollId);
-        return search(requestData, REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll");
+        //A later page of a scroll takes no allow_partial_search_results, even where the scroll was opened with it, and
+        //comes back with the hits of the shards which answered where others failed, which only the check catches
+        final Request request = new Request(REQUEST_TYPE_POST,
+            REQUEST_SEPARATOR + "_search" + REQUEST_SEPARATOR + "scroll");
+        return search(requestData, request, "a page of a scroll");
     }
 
     @Override
@@ -1150,9 +1174,15 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         bulkRefreshEnabled = bulkRefresh != null && !bulkRefresh.equalsIgnoreCase("false");
     }
 
-    private RestSearchResponse search(Map<String, Object> requestData, String path) throws IOException {
+    public void setAllowPartialResults(boolean allowPartialResults) {
+        this.allowPartialResults = allowPartialResults;
+    }
 
-        final Request request = new Request(REQUEST_TYPE_POST, path);
+    /**
+     * @param answered what the request is, as the failure of an answer which lacks the results of some shards names it
+     */
+    private RestSearchResponse search(Map<String, Object> requestData, Request request, String answered)
+            throws IOException {
 
         final byte[] requestDataBytes = mapper.writeValueAsBytes(requestData);
         if (log.isDebugEnabled()) {
@@ -1160,8 +1190,45 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
         }
 
         final Response response = performRequest(request, requestDataBytes);
+        final RestSearchResponse searchResponse;
         try (final InputStream inputStream = response.getEntity().getContent()) {
-            return mapper.readValue(inputStream, RestSearchResponse.class);
+            searchResponse = mapper.readValue(inputStream, RestSearchResponse.class);
+        }
+        requireEveryShard(searchResponse.getShards(), searchResponse.isTimedOut(), answered);
+        return searchResponse;
+    }
+
+    //A request to the search API: a search, the first page of a scroll, a page of a point in time, a count or an
+    //aggregation, which Elasticsearch answers with the results of the shards which answered where others failed, unless
+    //it is told not to allow partial results. Elasticsearch 7 and later, and OpenSearch, are told so. Releases of
+    //Elasticsearch 6 before 6.3 reject the parameter, and the major version doesn't tell them apart, so Elasticsearch 6
+    //only gets its answers checked
+    private Request searchRequest(String method, String path) {
+        final Request request = new Request(method, path);
+        if (!allowPartialResults && majorVersion.getValue() >= 7) {
+            request.addParameter(ALLOW_PARTIAL_SEARCH_RESULTS_PARAMETER, "false");
+        }
+        return request;
+    }
+
+    //Elasticsearch fails a request only where every shard failed, unless it was told not to allow partial results,
+    //which a later page of a scroll can't be. So every answer is checked for shards which failed, for those which
+    //weren't available, which OpenSearch counts as neither successful nor failed, and for shards which ran out of time
+    private void requireEveryShard(RestShardStatistics shards, boolean timedOut, String answered) throws IOException {
+        if (allowPartialResults) {
+            return;
+        }
+        final String allowThem = ". Set index.[X].elasticsearch." + ElasticSearchIndex.ALLOW_PARTIAL_RESULTS.getName()
+            + " to true to use such results.";
+        if (shards != null && !shards.isComplete()) {
+            final String failures = shards.describeFailures();
+            throw new IOException("Elasticsearch answered " + answered + " with the results of only "
+                + shards.getSuccessful() + " of " + shards.getTotal() + " shards"
+                + (failures.isEmpty() ? "" : ": " + failures) + allowThem);
+        }
+        if (timedOut) {
+            throw new IOException("Elasticsearch answered " + answered + " with the results which its shards found "
+                + "before they ran out of time" + allowThem);
         }
     }
 
@@ -1179,7 +1246,8 @@ public RestElasticSearchClient(RestClient delegate, int scrollKeepAlive, boolean
             try {
                 return delegate.performRequest(request);
             } catch (ResponseException e) {
-                if (!retryOnErrorCodes.contains(e.getResponse().getStatusLine().getStatusCode()) || retryCount >= retryAttemptLimit) {
+                if (!retryOnErrorCodes.contains(e.getResponse().getStatusLine().getStatusCode())
+                    || TransientFailures.isSearchTimeout(e) || retryCount >= retryAttemptLimit) {
                     throw e;
                 }
             } catch (IOException e) {

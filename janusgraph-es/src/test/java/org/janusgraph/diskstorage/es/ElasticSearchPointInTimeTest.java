@@ -148,16 +148,21 @@ public class ElasticSearchPointInTimeTest {
         assertFalse(pages.hasNext());
     }
 
-    //A page which fails, with an I/O error or at runtime, ends the pages, and the point in time with them
+    //A page which fails, with an I/O error or at runtime, ends the pages, and the point in time with them. Every later
+    //call fails with it, so that the hits read before it aren't taken for the whole result
     @Test
     public void shouldCloseThePointInTimeWhenALaterPageFails() throws IOException {
         when(client.searchPointInTime(eq("pit-1"), any())).thenThrow(new IOException("connection reset"));
         final ElasticSearchPointInTime pages = new ElasticSearchPointInTime(client, "pit-1", requestBody,
             page(0, 3, "pit-1"), PAGE_SIZE, Long.MAX_VALUE);
         drainFirstPage(pages);
-        assertThrows(UncheckedIOException.class, pages::hasNext);
+        final UncheckedIOException failure = assertThrows(UncheckedIOException.class, pages::hasNext);
         verify(client, times(1)).closePointInTime("pit-1");
-        assertFalse(pages.hasNext());
+        assertSame(failure, assertThrows(UncheckedIOException.class, pages::hasNext));
+        assertSame(failure, assertThrows(UncheckedIOException.class, pages::next));
+        pages.close();
+        verify(client, times(1)).searchPointInTime(any(), any());
+        verify(client, times(1)).closePointInTime(any());
     }
 
     @Test
@@ -169,7 +174,9 @@ public class ElasticSearchPointInTimeTest {
         drainFirstPage(pages);
         assertSame(interrupted, assertThrows(IllegalStateException.class, pages::hasNext));
         verify(client, times(1)).closePointInTime("pit-1");
-        assertFalse(pages.hasNext());
+        assertSame(interrupted, assertThrows(IllegalStateException.class, pages::hasNext));
+        verify(client, times(1)).searchPointInTime(any(), any());
+        verify(client, times(1)).closePointInTime(any());
     }
 
     private static void drainFirstPage(ElasticSearchPointInTime pages) {

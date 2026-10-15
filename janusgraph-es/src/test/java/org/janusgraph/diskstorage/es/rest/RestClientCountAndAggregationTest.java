@@ -46,8 +46,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * A count which only has to reach a limit tells each shard to stop there, and an aggregation asks for the aggregation
- * alone, without hits or a count of the matches.
+ * A count is a search for no hits which counts them all, and one which only has to reach a limit tells each shard to
+ * stop there. An aggregation asks for the aggregation alone, without hits or a count of the matches.
  */
 @ExtendWith(MockitoExtension.class)
 public class RestClientCountAndAggregationTest {
@@ -83,19 +83,29 @@ public class RestClientCountAndAggregationTest {
         return requestCaptor.getValue();
     }
 
+    //The answer of Elasticsearch 7 and later to a count of a search, whose total is an object
+    private static String countAnswer(long total) {
+        return "{\"took\":1,\"timed_out\":false,\"terminated_early\":true,\"hits\":{\"total\":{\"value\":" + total
+            + ",\"relation\":\"eq\"},\"max_score\":null,\"hits\":[]}}";
+    }
+
     @Test
     public void shouldStopEachShardOfABoundedCountAtTheBound() throws IOException {
-        try (RestElasticSearchClient client = createClient("{\"count\": 7, \"terminated_early\": true}")) {
+        try (RestElasticSearchClient client = createClient(countAnswer(7))) {
             assertEquals(7, client.countTotal("store", query(), 25));
             final Request request = requestSent();
-            assertEquals("/store/_count", request.getEndpoint());
+            assertEquals("/store/_search", request.getEndpoint());
             assertEquals("25", request.getParameters().get("terminate_after"));
+            final Map<?, ?> body = new ObjectMapper().readValue(EntityUtils.toString(request.getEntity()), Map.class);
+            assertEquals(0, body.get("size"));
+            assertEquals(Boolean.TRUE, body.get("track_total_hits"));
+            assertEquals(query().get("query"), body.get("query"));
         }
     }
 
     @Test
     public void shouldCountEverythingWithoutABound() throws IOException {
-        try (RestElasticSearchClient client = createClient("{\"count\": 70000}")) {
+        try (RestElasticSearchClient client = createClient(countAnswer(70000))) {
             assertEquals(70000, client.countTotal("store", query(), 0));
             assertNull(requestSent().getParameters().get("terminate_after"));
         }
@@ -103,9 +113,18 @@ public class RestClientCountAndAggregationTest {
 
     @Test
     public void shouldCountEverythingThroughTheUnboundedMethod() throws IOException {
-        try (RestElasticSearchClient client = createClient("{\"count\": 70000}")) {
+        try (RestElasticSearchClient client = createClient(countAnswer(70000))) {
             assertEquals(70000, client.countTotal("store", query()));
             assertNull(requestSent().getParameters().get("terminate_after"));
+        }
+    }
+
+    //Elasticsearch 6 answers with the total as a number
+    @Test
+    public void shouldReadTheTotalOfElasticsearch6() throws IOException {
+        try (RestElasticSearchClient client =
+                 createClient("{\"timed_out\":false,\"hits\":{\"total\":42,\"hits\":[]}}")) {
+            assertEquals(42, client.countTotal("store", query()));
         }
     }
 

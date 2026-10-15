@@ -261,6 +261,7 @@ public class RestClientSetupTest {
                 put("index." + INDEX_NAME + ".elasticsearch.retry-max-wait", String.valueOf(RETRY_MAX_WAIT)).
                 put("index." + INDEX_NAME + ".elasticsearch.retry-error-codes", "408,429").
                 put("index." + INDEX_NAME + ".elasticsearch.bulk-chunk-size-limit-bytes", "1000000").
+                put("index." + INDEX_NAME + ".elasticsearch.allow-partial-results", "true").
                 build());
 
         assertNotNull(hostsConfigured);
@@ -288,6 +289,7 @@ public class RestClientSetupTest {
 
         verify(restElasticSearchClientMock).setBulkRefresh(eq(ES_BULK_REFRESH));
         verify(restElasticSearchClientMock).setRetryOnConflict(eq(RETRY_ON_CONFLICT));
+        verify(restElasticSearchClientMock).setAllowPartialResults(true);
     }
 
     @Test
@@ -314,6 +316,8 @@ public class RestClientSetupTest {
         verify(restElasticSearchClientMock, never()).setBulkRefresh(anyString());
         //Updates are reattempted on a version conflict unless configured otherwise
         verify(restElasticSearchClientMock, times(1)).setRetryOnConflict(3);
+        //An answer which lacks the results of some shards fails unless configured otherwise
+        verify(restElasticSearchClientMock).setAllowPartialResults(false);
     }
 
     private HttpAsyncClientBuilder customizedHttpClient(Map<String, String> extraConfigValues) throws Exception {

@@ -107,6 +107,10 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
     //that point, so close falls back to asking the iterator
     private boolean exhausted;
 
+    //Set when reading the index failed. What follows the failure is unknown, so close neither asks the index whether
+    //the result ended, which may fail again and hide the first failure from the caller, nor caches the ids read
+    private boolean failed;
+
     public SubqueryIterator(JointIndexQuery.Subquery subQuery, IndexSerializer indexSerializer,
                             BackendTransaction backendTx,
                             StandardJanusGraphTx tx,
@@ -202,7 +206,12 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
         if (next != null) {
             probed = null;
         } else {
-            next = findNext();
+            try {
+                next = findNext();
+            } catch (RuntimeException e) {
+                failed = true;
+                throw e;
+            }
         }
         if (next != null) {
             //Counted as the element is returned, because the count decides whether the result is safe to cache and
@@ -242,7 +251,7 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                     //the limit, which leaves the probe nothing to read; a consumer which stops it for good has the
                     //probe read up to the next element, as for a read which skipped nothing
                     final boolean mayProbe = toSkip == 0 || subQuery.hasLimit();
-                    if (currentIds != null && (exhausted || (mayProbe && !probe()))) {
+                    if (currentIds != null && !failed && (exhausted || (mayProbe && !probe()))) {
                         //The probe may have read on past what the cache keeps, which drops the ids
                         final List<Object> collected = currentIds;
                         if (collected != null && isSafeToCache()) {

@@ -20,7 +20,6 @@ import org.janusgraph.diskstorage.es.ElasticSearchResponse;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 @JsonIgnoreProperties(ignoreUnknown=true)
@@ -33,6 +32,11 @@ public class RestSearchResponse extends ElasticSearchResponse {
 
     @JsonProperty("_scroll_id")
     private String scrollId;
+
+    private RestShardStatistics shards;
+
+    @JsonProperty("timed_out")
+    private boolean timedOut;
 
     @Override
     public long getTook() {
@@ -81,11 +85,24 @@ public class RestSearchResponse extends ElasticSearchResponse {
         this.scrollId = scrollId;
     }
 
-    //Of the shards the search ran on, only their number is read
+    /**
+     * Whether a shard ran out of the search's time, and answered with the hits it found until then.
+     */
+    public boolean isTimedOut() {
+        return timedOut;
+    }
+
+    /**
+     * The shards the search ran on and which of them answered; null where the response doesn't tell.
+     */
+    public RestShardStatistics getShards() {
+        return shards;
+    }
+
     @JsonProperty("_shards")
-    public void setShards(Map<String, Object> shards) {
-        final Object total = shards == null ? null : shards.get("total");
-        setTotalShards(total instanceof Number ? ((Number) total).intValue() : 0);
+    public void setShards(RestShardStatistics shards) {
+        this.shards = shards;
+        setTotalShards(shards == null ? 0 : shards.getTotal());
     }
 
     //The point in time is the parent's field; the annotation names it in the response
