@@ -93,6 +93,7 @@ import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
+import org.janusgraph.graphdb.predicate.OrJanusPredicate;
 import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
@@ -3772,6 +3773,43 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
         final JanusGraphVertex r = Iterables.get(graph.query().has("name", Text.CONTAINS, "hercules here").vertices(), 0);
         assertEquals(r.property("name").value(), "hercules was here");
+    }
+
+    @Test
+    // A CONTAINS condition of several words is, in Solr, a conjunction of its words, and a not-equal one requires the
+    // key and excludes the value. Their clauses have to stay together within another condition: a conjunction ("++"
+    // doesn't parse), or a disjunction, whose other alternatives they would restrict
+    public void testConditionsOfSeveralClausesWithinOtherConditions() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey num = makeKey("num", Integer.class);
+        mgmt.buildIndex("store1", Vertex.class).addKey(name).addKey(num).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex redGreen = tx.addVertex("name", "red green", "num", 1);
+        final JanusGraphVertex redBlue = tx.addVertex("name", "red blue", "num", 2);
+        final JanusGraphVertex greenBlue = tx.addVertex("name", "green blue", "num", 3);
+        final JanusGraphVertex redGreenBlue = tx.addVertex("name", "red green blue", "num", 4);
+        final JanusGraphVertex yellow = tx.addVertex("name", "yellow", "num", 5);
+        final JanusGraphVertex nameless = tx.addVertex("num", 6);
+        newTx();
+
+        // the index answers each condition whole
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "red green").has("num", Cmp.LESS_THAN, 4),
+            ElementCategory.VERTEX, 1, new boolean[]{true, true}, "store1");
+        evaluateQuery(tx.query().has("name", new OrJanusPredicate(Arrays.asList(Text.CONTAINS, Text.CONTAINS)),
+            Arrays.asList("red green", "yellow")), ElementCategory.VERTEX, 3, new boolean[]{true, true}, "store1");
+        evaluateQuery(tx.query().has("num", new OrJanusPredicate(Arrays.asList(Cmp.NOT_EQUAL, Cmp.LESS_THAN)),
+            Arrays.asList(3, 4)), ElementCategory.VERTEX, 6, new boolean[]{true, true}, "store1");
+
+        final GraphTraversalSource g = tx.traversal();
+        assertEquals(Collections.singletonList(redGreen),
+            g.V().has("name", Text.textContains("red green")).has("num", P.lt(4)).toList());
+        assertEquals(Arrays.asList(redGreen, redGreenBlue, yellow),
+            g.V().has("name", Text.textContains("red green").or(Text.textContains("yellow"))).order().by("num")
+                .toList());
+        // 3 isn't excluded from all of the disjunction
+        assertEquals(Arrays.asList(redGreen, redBlue, greenBlue, redGreenBlue, yellow, nameless),
+            g.V().has("num", P.neq(3).or(P.lt(4))).order().by("num").toList());
     }
 
     private void testNestedWrites(String initialValue, String updatedValue, TestInfo testInfo) throws BackendException {
