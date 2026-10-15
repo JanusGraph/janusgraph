@@ -86,7 +86,7 @@ public class BruteForceIndexSelectionStrategy
             isSorted =
                 orders.isEmpty() || bestIndexes.get(0).getIndex().isMixedIndex() &&
                                         IndexSelectionUtil.indexCoversOrder(
-                                            (MixedIndexType) bestIndexes.get(0).getIndex(), orders);
+                                            (MixedIndexType) bestIndexes.get(0).getIndex(), orders, serializer);
             for (IndexCandidate c : bestIndexes) {
                 addToJointQuery(c, jointQuery, serializer, orders);
             }

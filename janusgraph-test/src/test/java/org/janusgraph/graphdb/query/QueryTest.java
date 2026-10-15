@@ -60,6 +60,7 @@ import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.janusgraph.testutil.JanusGraphAssert.assertNoBackendHit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -269,6 +270,68 @@ public class QueryTest {
         assertTrue(ol3.compare(v2,v3)>0);
         assertTrue(ol3.compare(v1,v3)>0);
 
+    }
+
+    //An element with several values of an order key, LIST or SET, is compared by the least of them in an ascending
+    //order and by the greatest in a descending one, as Elasticsearch, OpenSearch and Solr sort such a key, its values
+    //compared as any two values of the key are, strings by code point; an element without a value comes last
+    @Test
+    public void testOrderListComparesAKeyOfSeveralValuesByItsLeastOrGreatestValue() {
+        final PropertyKey names = tx.makePropertyKey("names").dataType(String.class).cardinality(Cardinality.LIST)
+            .make();
+        final PropertyKey scores = tx.makePropertyKey("scores").dataType(Integer.class).cardinality(Cardinality.SET)
+            .make();
+        final OrderList namesAscending = orderBy(names, Order.ASC);
+        final OrderList namesDescending = orderBy(names, Order.DESC);
+        final OrderList scoresAscending = orderBy(scores, Order.ASC);
+        final OrderList scoresDescending = orderBy(scores, Order.DESC);
+
+        //U+FFFF comes before U+1F600 by code point, but after it by UTF-16 unit, and U+FFFF U+0001 comes between them
+        final JanusGraphVertex several = tx.addVertex();
+        several.property("names", "\uFFFF");
+        several.property("names", "\uD83D\uDE00");
+        several.property("scores", 7);
+        several.property("scores", 1);
+        final JanusGraphVertex one = tx.addVertex("names", "\uFFFF\u0001", "scores", 3);
+        final JanusGraphVertex none = tx.addVertex();
+
+        assertEquals("\uFFFF", namesAscending.value(several, 0));
+        assertEquals("\uD83D\uDE00", namesDescending.value(several, 0));
+        assertEquals(1, scoresAscending.value(several, 0));
+        assertEquals(7, scoresDescending.value(several, 0));
+        assertNull(namesAscending.value(none, 0));
+        //several comes first in either direction: by U+FFFF before U+FFFF U+0001, and by U+1F600 after it; by 1 before
+        //3, and by 7 after it
+        for (final OrderList order
+                : Arrays.asList(namesAscending, namesDescending, scoresAscending, scoresDescending)) {
+            final List<JanusGraphVertex> vertices = new ArrayList<>(Arrays.asList(none, one, several));
+            vertices.sort(order);
+            assertEquals(Arrays.asList(several, one, none), vertices, order.toString());
+            //and so by the values read once, as a query sorts the elements which its transaction added
+            assertTrue(order.compareValues(order.values(several), order.values(one)) < 0, order.toString());
+            assertTrue(order.compareValues(order.values(one), order.values(none)) < 0, order.toString());
+        }
+
+        //A value which the element gains counts, also next to a key of one value
+        one.property("names", "\uD83D\uDE01");
+        assertTrue(namesDescending.compare(one, several) < 0);
+        final PropertyKey name = tx.makePropertyKey("name").dataType(String.class).make();
+        final OrderList byScoresThenName = new OrderList();
+        byScoresThenName.add(scores, Order.DESC);
+        byScoresThenName.add(name, Order.ASC);
+        byScoresThenName.makeImmutable();
+        several.property("name", "b");
+        final JanusGraphVertex tied = tx.addVertex("name", "a", "scores", 7);
+        tied.property("scores", 2);
+        assertTrue(byScoresThenName.compare(tied, several) < 0);
+        assertTrue(byScoresThenName.compare(several, one) < 0);
+    }
+
+    private static OrderList orderBy(PropertyKey key, Order order) {
+        final OrderList orders = new OrderList();
+        orders.add(key, order);
+        orders.makeImmutable();
+        return orders;
     }
 
     @Test

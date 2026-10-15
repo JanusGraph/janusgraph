@@ -259,6 +259,46 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         return query;
     }
 
+    /*
+     * The indexes which the strategy selected, sorted only where the first of them takes the query's order, each of its
+     * keys in its direction: a strategy may hold an index to sort the results to which IndexSerializer gave no order,
+     * as it doesn't give an index whose backend can't sort by a key of several values an order by such a key, and a
+     * custom strategy which decides by the deprecated IndexSelectionUtil.indexCoversOrder(MixedIndexType, OrderList)
+     * would, as would one which gives the index only part of the order. JanusGraph sorts such results.
+     */
+    private IndexSelectionStrategy.SelectedIndexQuery sortedOnlyWhereTheIndexSorts(
+            final IndexSelectionStrategy.SelectedIndexQuery selected) {
+        final JointIndexQuery query = selected.getQuery();
+        if (!selected.isSorted() || orders.isEmpty() || takesTheOrder(query)) {
+            return selected;
+        }
+        return new IndexSelectionStrategy.SelectedIndexQuery(query, false);
+    }
+
+    //Whether the first index of the query is a mixed index which sorts the results by the query's order: by each of its
+    //keys in its direction, and by no other key
+    private boolean takesTheOrder(final JointIndexQuery query) {
+        if (query.isEmpty() || !query.getQuery(0).getIndex().isMixedIndex()) {
+            return false;
+        }
+        final org.janusgraph.graphdb.types.MixedIndexType index =
+            (org.janusgraph.graphdb.types.MixedIndexType) query.getQuery(0).getIndex();
+        final List<org.janusgraph.diskstorage.indexing.IndexQuery.OrderEntry> order =
+            query.getQuery(0).getMixedQuery().getOrder();
+        if (order.size() != orders.size()) {
+            return false;
+        }
+        for (int i = 0; i < orders.size(); i++) {
+            final PropertyKey key = orders.getKey(i);
+            if (!index.indexesKey(key) || order.get(i).getOrder() != orders.getOrder(i)
+                    || !org.janusgraph.graphdb.database.util.IndexRecordUtil.key2Field(index, key)
+                        .equals(order.get(i).getKey())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public GraphCentricQuery constructQueryWithoutProfile(final ElementCategory resultType) {
         Preconditions.checkNotNull(resultType);
         if (limit == 0) return GraphCentricQuery.emptyQuery(resultType);
@@ -291,8 +331,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
         final Set<Condition> coveredClauses = new HashSet<>();
-        final IndexSelectionStrategy.SelectedIndexQuery selectedIndex = indexSelector.selectIndices(
-            resultType, conditions, coveredClauses, orders, serializer);
+        final IndexSelectionStrategy.SelectedIndexQuery selectedIndex = sortedOnlyWhereTheIndexSorts(
+            indexSelector.selectIndices(resultType, conditions, coveredClauses, orders, serializer));
 
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {

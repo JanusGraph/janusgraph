@@ -52,6 +52,7 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.attribute.Text;
@@ -6101,12 +6102,20 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             tFullscanSingle, v1, v2, v3, v4, v5, v6
         );
 
-        // ordering without using index on LIST cardinality property with multiple values
-        // throws IllegalStateException with message "Multiple properties exist for the provided key, use Vertex.properties(name2)"
-        Exception exception = assertThrows(IllegalStateException.class, () -> {
-            g.V().order().by("name2").toList();
-        });
-        assertTrue(exception.getMessage().contains("Multiple properties exist for the provided key, use Vertex.properties(name2)"));
+        // ordering without using index on LIST cardinality property with multiple values: where every mixed index
+        // backend can sort by such a key, JanusGraph folds the order into its query and sorts the vertices itself, by
+        // the least of their values for an ascending order and the greatest for a descending one, as the index
+        // backends do; otherwise TinkerPop sorts them, and fails on a vertex with several values
+        if (supportsOrderingListProperty) {
+            assertEquals(Arrays.asList(v1, v2, v3, v4, v5, v6), g.V().order().by("name2").toList());
+            assertEquals(Arrays.asList(v3, v4, v6, v5, v2, v1), g.V().order().by("name2", ORDER_DESC).toList());
+        } else {
+            Exception exception = assertThrows(IllegalStateException.class, () -> {
+                g.V().order().by("name2").toList();
+            });
+            assertTrue(exception.getMessage()
+                .contains("Multiple properties exist for the provided key, use Vertex.properties(name2)"));
+        }
 
         ///////////////////////////////////////////////////
         // ordering SINGLE cardinality properties
@@ -6297,11 +6306,12 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         tx.rollback();
     }
 
-    //A vertex with several values of a key can't be ordered by the key in memory, which an index that sorts by such a
-    //key does on its own: a change of the key in the transaction, or of another order key of the query, leaves the
-    //vertices where the index places them, without failing
+    //An index which sorts by a key of several values places a vertex by the values which it held before the
+    //transaction: the least of them for an ascending order, the greatest for a descending one. The vertices whose
+    //values of the key the transaction changed come where the values they hold now place them, which JanusGraph
+    //compares in the same way, also where the transaction changed another order key of the query
     @Test
-    public void testTransactionKeepsTheIndexOrderOfAKeyOfSeveralValues() {
+    public void testTransactionOrdersVerticesByTheValuesOfAKeyOfSeveralValuesWhichTheyHoldNow() {
         if (!supportsOrderingListProperty) {
             return;
         }
@@ -6322,14 +6332,202 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         newTx();
 
         final GraphTraversalSource g = tx.traversal();
-        final Set<Object> both = new HashSet<>(Arrays.asList(one.id(), two.id()));
-        g.V(one.id()).property(VertexProperty.Cardinality.list, "names", "d").iterate();
-        assertEquals(both, new HashSet<>(g.V().has("gender", "female").order().by("names", desc).id().toList()));
+        //The index has two, of a and b, after one, of c, descending, and before it ascending
+        g.V(two.id()).property(VertexProperty.Cardinality.list, "names", "z").iterate();
+        g.V(one.id()).property(VertexProperty.Cardinality.list, "names", "0").iterate();
+        assertEquals(Arrays.asList(two.id(), one.id()),
+            g.V().has("gender", "female").order().by("names", desc).id().toList());
+        assertEquals(Arrays.asList(one.id(), two.id()),
+            g.V().has("gender", "female").order().by("names", asc).id().toList());
         //An order key of one value which the transaction changed on a vertex with several values of the first
         g.V(two.id()).property("age", 40).iterate();
-        assertEquals(both,
-            new HashSet<>(g.V().has("gender", "female").order().by("names", desc).by("age").id().toList()));
+        assertEquals(Arrays.asList(two.id(), one.id()),
+            g.V().has("gender", "female").order().by("names", desc).by("age").id().toList());
         tx.rollback();
+    }
+
+    /**
+     * An order by a key of several values compares an element by the least of its values in an ascending order and by
+     * the greatest in a descending one, as Elasticsearch, OpenSearch and Solr sort such a key. JanusGraph compares the
+     * elements in the same way where it sorts them itself: the results of a composite index, or of a mixed index which
+     * can't sort by such a key, as Lucene's can't, and the vertices which a transaction added or changed, which it
+     * merges with those of the index, as it merges the results of the branches of an or(). An element without a value
+     * of the key comes last.
+     */
+    @Test
+    public void testOrderByAKeyOfSeveralValuesComparesItsLeastOrGreatestValue() {
+        final PropertyKey gender = makeKey("gender", String.class);
+        final PropertyKey uid = makeKey("uid", String.class);
+        final PropertyKey names = mgmt.makePropertyKey("names").dataType(String.class).cardinality(Cardinality.LIST)
+            .make();
+        final PropertyKey scores = mgmt.makePropertyKey("scores").dataType(Integer.class).cardinality(Cardinality.SET)
+            .make();
+        mgmt.buildIndex("byUid", Vertex.class).addKey(uid).buildCompositeIndex();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(gender, getStringMapping()).addKey(names, getStringMapping())
+            .addKey(scores).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final JanusGraphVertex two = tx.addVertex("gender", "female", "uid", "u2");
+        two.property(VertexProperty.Cardinality.list, "names", "b");
+        two.property(VertexProperty.Cardinality.list, "names", "d");
+        two.property(VertexProperty.Cardinality.set, "scores", 5);
+        two.property(VertexProperty.Cardinality.set, "scores", 1);
+        final JanusGraphVertex one = tx.addVertex("gender", "female", "uid", "u1");
+        one.property(VertexProperty.Cardinality.list, "names", "c");
+        one.property(VertexProperty.Cardinality.set, "scores", 3);
+        final JanusGraphVertex none = tx.addVertex("gender", "female", "uid", "u3");
+        final JanusGraphVertex other = tx.addVertex("gender", "male", "uid", "u4");
+        other.property(VertexProperty.Cardinality.list, "names", "a");
+        other.property(VertexProperty.Cardinality.list, "names", "z");
+        tx.commit();
+        newTx();
+
+        //two comes before one in either direction: by b before c, and by d before c; by 1 before 3, and by 5 before 3
+        final List<Object> expected = Arrays.asList(two.id(), one.id(), none.id());
+        for (final org.apache.tinkerpop.gremlin.process.traversal.Order order : Arrays.asList(asc, desc)) {
+            final String message = order.toString();
+            assertEquals(expected, vertexIds(tx.query().has("gender", "female").orderBy("names", order)), message);
+            assertEquals(expected, vertexIds(tx.query().has("gender", "female").orderBy("scores", order)), message);
+            assertEquals(expected, vertexIds(tx.query().has("uid", Contain.IN, Arrays.asList("u1", "u2", "u3"))
+                .orderBy("names", order)), message);
+            if (supportsOrderingListProperty) {
+                assertEquals(expected,
+                    tx.traversal().V().has("gender", "female").order().by("names", order).id().toList(), message);
+                assertEquals(expected, tx.traversal().V().or(__.has("uid", "u1"), __.has("uid", "u2"),
+                    __.has("uid", "u3")).order().by("names", order).id().toList(), message);
+            }
+        }
+
+        //The transaction makes other, of a and z, match the query, and gives one, of c, the value e
+        tx.traversal().V(other.id()).property("gender", "female").iterate();
+        tx.traversal().V(one.id()).property(VertexProperty.Cardinality.list, "names", "e").iterate();
+        final List<Object> ascending = Arrays.asList(other.id(), two.id(), one.id(), none.id());
+        final List<Object> descending = Arrays.asList(other.id(), one.id(), two.id(), none.id());
+        assertEquals(ascending, vertexIds(tx.query().has("gender", "female").orderBy("names", asc)));
+        assertEquals(descending, vertexIds(tx.query().has("gender", "female").orderBy("names", desc)));
+        assertEquals(descending.subList(0, 2),
+            vertexIds(tx.query().has("gender", "female").orderBy("names", desc).limit(2)));
+        assertEquals(ascending, vertexIds(tx.query().has("uid", Contain.IN, Arrays.asList("u1", "u2", "u3", "u4"))
+            .orderBy("names", asc)));
+        if (supportsOrderingListProperty) {
+            final GraphTraversalSource g = tx.traversal();
+            assertEquals(ascending, g.V().has("gender", "female").order().by("names", asc).id().toList());
+            assertEquals(descending, g.V().has("gender", "female").order().by("names", desc).id().toList());
+            assertEquals(descending.subList(0, 2),
+                g.V().has("gender", "female").order().by("names", desc).limit(2).id().toList());
+        }
+        tx.rollback();
+    }
+
+    /**
+     * An index selection strategy may hold an index to sort the results by a key of several values which the index's
+     * backend can't sort by, as Lucene's can't, which the index then isn't given: as one which decides by the
+     * deprecated IndexSelectionUtil.indexCoversOrder(MixedIndexType, OrderList) does. JanusGraph sorts the results
+     * itself.
+     */
+    @Test
+    public void testResultsWhichAStrategyHoldsSortedByAnIndexWithoutTheOrderAreSortedInMemory() {
+        clopen(option(INDEX_SELECT_STRATEGY), DeprecatedOrderCoverageIndexSelectionStrategy.class.getName());
+        final PropertyKey gender = makeKey("gender", String.class);
+        makeKey("uid", String.class);
+        final PropertyKey names = mgmt.makePropertyKey("names").dataType(String.class).cardinality(Cardinality.LIST)
+            .make();
+        mgmt.buildIndex("mixed", Vertex.class).addKey(gender, getStringMapping()).addKey(names, getStringMapping())
+            .buildMixedIndex(INDEX);
+        finishSchema();
+        tx.addVertex("gender", "female", "uid", "d");
+        tx.addVertex("gender", "female", "uid", "c").property(VertexProperty.Cardinality.list, "names", "n");
+        final JanusGraphVertex b = tx.addVertex("gender", "female", "uid", "b");
+        b.property(VertexProperty.Cardinality.list, "names", "b");
+        b.property(VertexProperty.Cardinality.list, "names", "z");
+        final JanusGraphVertex a = tx.addVertex("gender", "female", "uid", "a");
+        a.property(VertexProperty.Cardinality.list, "names", "m");
+        a.property(VertexProperty.Cardinality.list, "names", "a");
+        tx.commit();
+        newTx();
+
+        for (final org.apache.tinkerpop.gremlin.process.traversal.Order order : Arrays.asList(asc, desc)) {
+            final List<Object> uids = new ArrayList<>();
+            tx.query().has("gender", "female").orderBy("names", order).vertices()
+                .forEach(v -> uids.add(v.value("uid")));
+            //by a, b, n, and no name ascending; by z, n, m, and no name descending
+            assertEquals(order == asc ? Arrays.asList("a", "b", "c", "d") : Arrays.asList("b", "c", "a", "d"), uids,
+                order.toString());
+        }
+    }
+
+    /**
+     * An index selection strategy may give the index which it holds to sort the results only part of the query's
+     * order, as one which gives it only the first key of the order does: the index then sorts the ties of that key in
+     * its own order. JanusGraph sorts such results itself.
+     */
+    @Test
+    public void testResultsWhichAStrategyHoldsSortedByAnIndexGivenPartOfTheOrderAreSortedInMemory() {
+        clopen(option(INDEX_SELECT_STRATEGY), PartialOrderIndexSelectionStrategy.class.getName());
+        final PropertyKey gender = makeKey("gender", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey age = makeKey("age", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(gender, getStringMapping()).addKey(name, getStringMapping())
+            .addKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+        for (final int years : new int[] {3, 1, 2}) {
+            tx.addVertex("gender", "female", "name", "a", "age", years);
+        }
+        tx.addVertex("gender", "female", "name", "b", "age", 0);
+        tx.commit();
+        newTx();
+
+        //The index holds the ties of the name a in an order of its own, which can't be both that of their ages and its
+        //reverse
+        for (final org.apache.tinkerpop.gremlin.process.traversal.Order order : Arrays.asList(asc, desc)) {
+            final List<Object> ages = new ArrayList<>();
+            tx.query().has("gender", "female").orderBy("name", asc).orderBy("age", order).vertices()
+                .forEach(v -> ages.add(v.value("age")));
+            assertEquals(order == asc ? Arrays.asList(1, 2, 3, 0) : Arrays.asList(3, 2, 1, 0), ages, order.toString());
+        }
+    }
+
+    /**
+     * An edge holds one value of a key at most, also of one declared to hold several, so an order of edges by such a
+     * key is folded into the query on every index backend, and sorted by JanusGraph where the index backend can't sort
+     * by a key of several values, as Lucene's can't.
+     */
+    @Test
+    public void testOrderOfEdgesByAKeyDeclaredToHoldSeveralValues() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey weights = mgmt.makePropertyKey("weights").dataType(Integer.class)
+            .cardinality(Cardinality.LIST).make();
+        mgmt.makeEdgeLabel("road").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildIndex("edges", Edge.class).addKey(kind, getStringMapping()).addKey(weights).buildMixedIndex(INDEX);
+        finishSchema();
+        final Vertex from = tx.addVertex();
+        final Vertex to = tx.addVertex();
+        for (final int weight : new int[] {3, 1, 2}) {
+            from.addEdge("road", to, "kind", "paved", "weights", weight);
+        }
+        from.addEdge("road", to, "kind", "paved");
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        assertEquals(Arrays.asList(1, 2, 3),
+            g.E().has("kind", "paved").order().by("weights", asc).values("weights").toList());
+        assertEquals(Arrays.asList(3, 2, 1),
+            g.E().has("kind", "paved").order().by("weights", desc).values("weights").toList());
+        final List<Object> weightsOfEdges = new ArrayList<>();
+        tx.query().has("kind", "paved").orderBy("weights", asc).edges()
+            .forEach(edge -> weightsOfEdges.add(edge.valueOrNull(weights)));
+        assertEquals(Arrays.asList(1, 2, 3, null), weightsOfEdges);
+        weightsOfEdges.clear();
+        tx.query().has("kind", "paved").orderBy("weights", desc).edges()
+            .forEach(edge -> weightsOfEdges.add(edge.valueOrNull(weights)));
+        assertEquals(Arrays.asList(3, 2, 1, null), weightsOfEdges);
+    }
+
+    private static List<Object> vertexIds(JanusGraphQuery<?> query) {
+        final List<Object> ids = new ArrayList<>();
+        query.vertices().forEach(vertex -> ids.add(vertex.id()));
+        return ids;
     }
 
     //A disjunction, which an index that takes any condition is given whole, finds the vertices which the transaction's
