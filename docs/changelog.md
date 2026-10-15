@@ -1188,6 +1188,14 @@ properties (`indexQuery(...).edgeStream()` or `propertyStream()`) threw a `NullP
 leaves it out, though it doesn't read on, so with a limit it still returns fewer than its limit in such a transaction.
 Vertices weren't affected.
 
+##### Graph queries turn the ids which an index returns into elements faster
+
+A graph query which an index answers checks each id the index returns against the other indexes of the query, if
+any, and turns it into an element. It did that in the steps of a stream, and now does it in a loop of its own: on the
+inmemory backend, a query which reads 100,000 vertices from a composite index takes 24.7 ms instead of 27.2 with the
+steps of a stream, about 25 ns less for each id. Where reading the index takes most of the time, as on Elasticsearch, the gain was within the
+noise of the measurement.
+
 ##### Queries of a vertex read only the relations of their types among those it gained in the transaction
 
 A query of the relations of a vertex, such as its edges of some labels or its properties of some keys, reads the

@@ -35,11 +35,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * @author davidclement90@laposte.net
@@ -51,8 +48,14 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
 
     private final SubqueryCache indexCache;
 
-    //Built on the first read, so that skipBackendResults can still leave out the ids before it
-    private Iterator<? extends JanusGraphElement> elementIterator;
+    //The ids, from the index or from the cache, counted as they are taken from here, one at a time, however the index
+    //builds its stream: a stream which flatMaps pages pushes a whole page through its steps at once, so a step added to
+    //it would count the ids of the page past the element found. findNext skips, checks and converts them itself, as a
+    //stream built on this iterator would cost every id a second pipeline
+    private final Iterator<?> ids;
+
+    //Set once the iterator looked for its first element, after which skipBackendResults can't leave out ids any more
+    private boolean started;
 
     //The results the other indexes of a joint query agreed on, which an id has to be among, or null for none
     private final Set<Object> otherResultSet;
@@ -62,14 +65,21 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
     //How many ids the read skips before it turns any into an element, which skipBackendResults sets
     private long toSkip;
 
+    //How many of those it skipped so far
+    private long skipped;
+
     //Kept to be closed: an index backend may hold a resource behind its stream, such as an Elasticsearch scroll
-    //context, which closing the stream hands back
-    private final Stream<?> indexStream;
+    //context, which closing the stream hands back. Null for a result from the cache, and once closed, so that it is
+    //closed once however often the iterator is
+    private Stream<?> indexStream;
 
     //The ids read from the index, collected for the cache while it could keep them. Null once there are more than the
     //cache keeps, as the cache would drop the list, and null when the result came from the cache or the cache keeps
     //no list
     private List<Object> currentIds;
+
+    //How many ids the cache keeps in a list, which currentIds holds no more than
+    private final int maximumCachedResultSize;
 
     //How many ids were read, from the index or from the cache, those skipped included, for the profile of a read of
     //the index
@@ -90,6 +100,9 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
 
     private int emittedCount;
 
+    //The element which the probe of close found, which the next read returns
+    private JanusGraphElement probed;
+
     //Set when computeNext saw the stream end. Not the whole story: a caller which stops at the limit never reaches
     //that point, so close falls back to asking the iterator
     private boolean exhausted;
@@ -102,29 +115,21 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
         this.subQuery = subQuery;
         this.indexCache = indexCache;
         this.readLimit = readLimit;
+        this.maximumCachedResultSize = indexCache.maximumCachedResultSize();
         final List<Object> cacheResponse = indexCache.getIfPresent(subQuery);
-        final Stream<?> stream;
         if (cacheResponse != null) {
-            stream = cacheResponse.stream().peek(id -> readCount++);
+            ids = cacheResponse.iterator();
         } else {
             try {
-                final int maximumCachedResultSize = indexCache.maximumCachedResultSize();
                 currentIds = maximumCachedResultSize >= 0 ? new ArrayList<>() : null;
                 profiler = QueryProfiler.startProfile(subQuery.getProfiler(), subQuery);
                 isTimerRunning = true;
-                final Stream<?> fromIndex = indexSerializer.query(subQuery, backendTx, tx);
-                //Taken one id at a time, however the index builds its stream, so that each is counted as it is taken: a
-                //stream which flatMaps pages pushes a whole page through the stream at once, which would count the ids
-                //of the page past the element found. Closing the stream still closes the index's
-                stream = StreamSupport.stream(
-                        Spliterators.spliteratorUnknownSize(fromIndex.iterator(), Spliterator.ORDERED), false)
-                    .onClose(fromIndex::close)
-                    .peek(r -> collect(r, maximumCachedResultSize));
+                indexStream = indexSerializer.query(subQuery, backendTx, tx);
+                ids = indexStream.iterator();
             } catch (final Exception e) {
                 throw new JanusGraphException("Could not call index", e);
             }
         }
-        indexStream = stream;
         //Membership is tested once for every element the first index returns, and otherResults is deliberately
         //unbounded: StandardJanusGraphTx passes NO_LIMIT to processIntersectingRetrievals so that the intersection is
         //complete. Scanning the list for each element would make the intersection cost O(n*m).
@@ -135,28 +140,29 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
         this.function = function;
     }
 
-    //The ids past the skipped ones turned into elements. The skipped ids are read, counted and collected for the cache
-    //all the same, as the stream counts and collects them before it skips them
-    private Iterator<? extends JanusGraphElement> elements() {
-        if (elementIterator == null) {
-            elementIterator = indexStream
-                .skip(toSkip)
-                .filter(e -> otherResultSet == null || otherResultSet.contains(e))
-                .map(e -> {
-                    JanusGraphElement r = function.apply(e);
-                    if (r == null) {
-                        log.warn("Subquery returned invalid element id: {}", e);
-                    }
-                    return r;
-                })
-                .filter(r -> r != null) // ignore invalid elements
-                .limit(readLimit)
-                .iterator();
+    //The next element past the skipped ids, or null where the ids ran out, or where the iterator found as many elements
+    //as readLimit allows, without reading a further id then. The skipped ids are read, counted and collected for the
+    //cache all the same. Called only while no element which the probe of close found waits, so that emittedCount is how
+    //many elements were found
+    private JanusGraphElement findNext() {
+        started = true;
+        while (emittedCount < readLimit && ids.hasNext()) {
+            final Object id = ids.next();
+            collect(id);
+            if (skipped < toSkip) {
+                skipped++;
+            } else if (otherResultSet == null || otherResultSet.contains(id)) {
+                final JanusGraphElement element = function.apply(id);
+                if (element != null) {
+                    return element;
+                }
+                log.warn("Subquery returned invalid element id: {}", id);
+            }
         }
-        return elementIterator;
+        return null;
     }
 
-    private void collect(Object id, int maximumCachedResultSize) {
+    private void collect(Object id) {
         readCount++;
         if (currentIds != null) {
             if (currentIds.size() < maximumCachedResultSize) {
@@ -185,19 +191,23 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
     @Override
     public void skipBackendResults(long count) {
         Preconditions.checkArgument(count >= 0, "Can't skip a negative number of results: %s", count);
-        Preconditions.checkState(elementIterator == null,
+        Preconditions.checkState(!started,
             "Ids can only be skipped before the iterator looks for its first element");
         toSkip = count;
     }
 
     @Override
     protected JanusGraphElement computeNext() {
-        final Iterator<? extends JanusGraphElement> elements = elements();
-        if (elements.hasNext()) {
-            //Counted here rather than in the stream, because the count decides whether the result is safe to cache
-            //and so is part of the contract rather than an observation of it. Counted once the element is in hand,
-            //so that a next() which threw cannot leave the count reporting an element that was never produced
-            final JanusGraphElement next = elements.next();
+        JanusGraphElement next = probed;
+        if (next != null) {
+            probed = null;
+        } else {
+            next = findNext();
+        }
+        if (next != null) {
+            //Counted as the element is returned, because the count decides whether the result is safe to cache and
+            //so is part of the contract rather than an observation of it. Counted once the element is in hand, so
+            //that a read which threw cannot leave the count reporting an element that was never produced
             emittedCount++;
             position = readCount;
             return next;
@@ -221,7 +231,7 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                     //computeNext records the stream ending, which spares the probe below on the common path. The probe
                     //is still needed when it did not: a caller which took exactly as many elements as the limit
                     //allowed stops without ever driving the iterator to its end, and that result is complete and
-                    //worth caching. Asking hasNext is the only way to tell that apart from a caller which stopped
+                    //worth caching. Looking ahead is the only way to tell that apart from a caller which stopped
                     //early by choice. Ids the cache wouldn't keep aren't worth the probe. Nor is that of an iterator
                     //which skipped ids of the first index of a joint query, which has no limit: its caller, which
                     //counts the elements of the reads before it too, may have stopped it short of the iterator's own
@@ -232,11 +242,11 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
                     //the limit, which leaves the probe nothing to read; a consumer which stops it for good has the
                     //probe read up to the next element, as for a read which skipped nothing
                     final boolean mayProbe = toSkip == 0 || subQuery.hasLimit();
-                    if (currentIds != null && (exhausted || (mayProbe && !elements().hasNext()))) {
+                    if (currentIds != null && (exhausted || (mayProbe && !probe()))) {
                         //The probe may have read on past what the cache keeps, which drops the ids
-                        final List<Object> ids = currentIds;
-                        if (ids != null && isSafeToCache()) {
-                            indexCache.put(subQuery, ids);
+                        final List<Object> collected = currentIds;
+                        if (collected != null && isSafeToCache()) {
+                            indexCache.put(subQuery, collected);
                         }
                     }
                 } finally {
@@ -246,9 +256,21 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
             }
         } finally {
             //After the probe above, which may still read from it, and whether or not it failed: an index backend may
-            //hold a resource behind its stream. Closing a stream twice is harmless
-            indexStream.close();
+            //hold a resource behind its stream
+            final Stream<?> stream = indexStream;
+            if (stream != null) {
+                indexStream = null;
+                stream.close();
+            }
         }
+    }
+
+    //Whether another element follows, which is kept for a read after the probe
+    private boolean probe() {
+        if (probed == null) {
+            probed = findNext();
+        }
+        return probed != null;
     }
 
     /**
