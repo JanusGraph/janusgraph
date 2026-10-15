@@ -875,6 +875,39 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     /**
+     * A mixed index sorts by a Byte or a Short key, as by any other whole number, for a graph query and for a direct
+     * index query. Elasticsearch failed such a sort, which JanusGraph gave an unmapped type of null.
+     */
+    @Test
+    public void testMixedIndexOrdersByBytesAndShorts() {
+        final PropertyKey tag = makeKey("tag", String.class);
+        final PropertyKey small = makeKey("small", Byte.class);
+        final PropertyKey medium = makeKey("medium", Short.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(tag, getStringMapping()).addKey(small).addKey(medium)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final Object min = tx.addVertex("tag", "t", "small", Byte.MIN_VALUE, "medium", Short.MIN_VALUE).id();
+        final Object zero = tx.addVertex("tag", "t", "small", (byte) 0, "medium", (short) 0).id();
+        final Object max = tx.addVertex("tag", "t", "small", Byte.MAX_VALUE, "medium", Short.MAX_VALUE).id();
+        final Object minusOne = tx.addVertex("tag", "t", "small", (byte) -1, "medium", (short) -1).id();
+        tx.commit();
+
+        newTx();
+        for (final String key : Arrays.asList("small", "medium")) {
+            assertEquals(Arrays.asList(min, minusOne, zero, max),
+                tx.traversal().V().has("tag", "t").order().by(key, asc).id().toList(), key);
+            assertEquals(Arrays.asList(max, zero, minusOne, min),
+                tx.traversal().V().has("tag", "t").order().by(key, desc).id().toList(), key);
+            assertEquals(Arrays.asList(min, minusOne),
+                tx.traversal().V().has("tag", "t").order().by(key, asc).limit(2).id().toList(), key);
+            assertEquals(Arrays.asList(max, zero, minusOne, min),
+                tx.indexQuery("mixed", "v.tag:t").orderBy(key, desc).vertexStream()
+                    .map(result -> result.getElement().id()).collect(Collectors.toList()), key);
+        }
+    }
+
+    /**
      * Tests indexing boolean
      */
     @Test

@@ -985,6 +985,21 @@ where the same failure during a commit is reattempted. It now runs through `Back
 reattempted with backoff for up to `storage.write-time`, and only then reported. A restore writes whole documents, so
 a reattempt is idempotent.
 
+##### Elasticsearch sorts by Byte and Short keys
+
+A graph query which a mixed index on Elasticsearch answered in the order of a `Byte` or a `Short` key, such as
+`g.V().has('tag', 't').order().by('small')`, failed with `Could not call index`, and an index query (`indexQuery`)
+with `orderBy` on such a key failed too: JanusGraph gave the sort an `unmapped_type` of `null`, which Elasticsearch and
+OpenSearch reject with a 400 (`[field_sort] unmapped_type doesn't support values of type: VALUE_NULL`). The sort now
+names the `byte` or `short` type which JanusGraph maps such a key to.
+
+A sort by a string key named the type `string`, which Elasticsearch 5 replaced with `text` and `keyword`. Where the
+index had no mapping of the key, as under an external dynamic mapping
+(`index.[X].elasticsearch.create.use-external-mappings` without `index.[X].elasticsearch.create.allow-mapping-update`)
+before any document held the key, Elasticsearch 8 and 9 rejected the sort (`No mapper found for type [string]`), and
+Elasticsearch 6 and 7 sorted by `keyword` in its place, with a deprecation warning. It now names `keyword`, the type
+which JanusGraph maps the field a sort by a string key reads to, unless the key has a custom string analyzer.
+
 ##### Transient Elasticsearch read failures are reattempted
 
 A mixed index query, count or aggregation against Elasticsearch wrapped every failure in a `PermanentBackendException`,
