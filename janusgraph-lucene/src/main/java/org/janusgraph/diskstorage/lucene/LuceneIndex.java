@@ -74,6 +74,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
@@ -570,7 +571,7 @@ public class LuceneIndex implements IndexProvider {
                 field = new StoredField(fieldName, ((Number) value).doubleValue());
             }
         } else if (AttributeUtils.isString(value)) {
-            final String str = (String) value;
+            final String str = withoutUnpairedSurrogates((String) value);
             switch (mapping) {
                 case DEFAULT:
                 case TEXTSTRING:
@@ -600,6 +601,15 @@ public class LuceneIndex implements IndexProvider {
             throw new IllegalArgumentException("Unsupported type: " + value);
         }
         return field;
+    }
+
+    //The string as Lucene stores it, with U+FFFD in place of each unpaired surrogate. Lucene's own conversion of a
+    //long stored string, ByteBuffersDataOutput.writeLongString, can corrupt the document where an unpaired high
+    //surrogate before a surrogate pair ends one of the 1,023-unit windows it writes. Fields are analyzed from this
+    //string too, as a later write of the document analyzes the stored one, and so are query values: the standard
+    //tokenizer drops the last words of a text which ends in an unpaired high surrogate.
+    private static String withoutUnpairedSurrogates(String value) {
+        return UnicodeUtil.validUTF16String(value) ? value : new BytesRef(value).utf8ToString();
     }
 
     private List<IndexableField> buildIndexFields(final Document doc, final KeyInformation.StoreRetriever information) {
@@ -1039,6 +1049,8 @@ public class LuceneIndex implements IndexProvider {
                 Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: %s", janusgraphPredicate);
                 params.addQuery(numericQuery(key, (Cmp) janusgraphPredicate, (Number) value));
             } else if (value instanceof String) {
+                //Analyzed as the indexed strings are, see withoutUnpairedSurrogates
+                value = withoutUnpairedSurrogates((String) value);
                 //A TEXTSTRING key holds the string whole in its dual field, which it is sorted by, and its words in its
                 //text field: the predicates on words, as CONTAINS is, read the text field, and the others the string
                 final String stringFieldKey = ki == null ? key : getDualFieldName(key, ki).orElse(key);

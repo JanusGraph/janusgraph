@@ -4023,6 +4023,28 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         return true;
     }
 
+    //A string longer than 1,024 units with an unpaired high surrogate right before a surrogate pair, which Lucene's
+    //stored fields wrote two bytes longer than they counted where the surrogate ended a window of 1,023 units, can be
+    //read back, and keeps its words when an update of the element writes it again from what the index stored
+    @Test
+    public void testAStringWithAnUnpairedSurrogateBeforeAPairKeepsItsWordsAfterAnUpdate() {
+        final PropertyKey text = makeKey("text", String.class);
+        final PropertyKey name = makeKey("name", String.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(text).addKey(name, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final String value = "x".repeat(1022) + "\uD800\uD83D\uDE00 tail words";
+        final Object alone = tx.addVertex("text", value).id();
+        final Object named = tx.addVertex("text", value, "name", "first").id();
+        clopen(option(FORCE_INDEX_USAGE), true);
+        tx.traversal().V(alone, named).property("name", "second").iterate();
+        clopen(option(FORCE_INDEX_USAGE), true);
+
+        final GraphTraversalSource g = tx.traversal();
+        assertEquals(Sets.newHashSet(alone, named), g.V().has("text", Text.textContains("words")).id().toSet());
+        assertEquals(Sets.newHashSet(alone, named), g.V().has("name", "second").id().toSet());
+    }
+
     /**
      * Tests indexing using _all virtual field
      */

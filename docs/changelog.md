@@ -550,6 +550,18 @@ instance already, as their exact, prefix, regex, fuzzy and range queries compare
 standard analyzer indexed. The analyzer now resolves each field through the key information of the transaction on
 whose behalf the field is analyzed.
 
+##### Lucene finds the words of a string which ends in an unpaired high surrogate
+
+On a Lucene mixed index, a string value of a key mapped as `DEFAULT`, `TEXT` or `TEXTSTRING` which ended in an unpaired
+high surrogate, a unit from U+D800 to U+DBFF without the low half of its pair after it, was indexed without the words
+which Lucene's standard tokenizer read last along with the surrogate, all of them in a short value:
+`textContains("words")` didn't find an element whose value was `"Tail Words\uD800"`. A later write of the element's
+document found them, as it analyzed the string as Lucene had stored it, with U+FFFD in place of the surrogate. Such a
+string is now analyzed with U+FFFD from its first write, and so is a query value: a `textContains` value which ended in
+an unpaired high surrogate gave no words and found every element of the index, and a `textContainsPrefix` value found
+none, where both now find the elements with its words. A value written before keeps its words missing until its
+element's document is written again, as by a reindex or an update of another of its values in the index.
+
 ##### Faster OLAP scans (signal-based row hand-off)
 
 The OLAP scan pipeline behind reindex and other scan jobs now hands rows between its internal threads
