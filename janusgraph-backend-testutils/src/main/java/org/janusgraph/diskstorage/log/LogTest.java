@@ -147,6 +147,28 @@ public abstract class LogTest {
     }
 
     @Test
+    public void testSeparateReadersAndLogsInSharedManager() throws Exception {
+        final int n = 5;
+        Log[] logs = new Log[n];
+        CountingReader[] counts = new CountingReader[n];
+        for (int i = 0; i < n; i++) {
+            counts[i] = new CountingReader(1, true);
+            logs[i] = manager.openLog("loner" + i);
+        }
+        for (int i = 0; i < n; i++) {
+            logs[i].registerReader(ReadMarker.fromNow(),counts[i]);
+            logs[i].add(BufferUtil.getLongBuffer(1L << (i + 1)));
+        }
+        // Check message receipt.
+        for (int i = 0; i < n; i++) {
+            log.debug("Awaiting CountingReader[{}]", i);
+            counts[i].await(TIMEOUT_MS);
+            assertEquals(1L << (i + 1), counts[i].totalValue.get());
+            assertEquals(1, counts[i].totalMsg.get());
+        }
+    }
+
+    @Test
     @Tag(LogTest.requiresOrderPreserving)
     public void testMultipleLogsWithSingleReaderSerial() throws Exception {
         final int nl = 3;
@@ -172,28 +194,6 @@ public abstract class LogTest {
         count.await(TIMEOUT_MS);
         assertEquals(3, count.totalMsg.get());
         assertEquals(value - 1, count.totalValue.get());
-    }
-
-    @Test
-    public void testSeparateReadersAndLogsInSharedManager() throws Exception {
-        final int n = 5;
-        Log[] logs = new Log[n];
-        CountingReader[] counts = new CountingReader[n];
-        for (int i = 0; i < n; i++) {
-            counts[i] = new CountingReader(1, true);
-            logs[i] = manager.openLog("loner" + i);
-        }
-        for (int i = 0; i < n; i++) {
-            logs[i].registerReader(ReadMarker.fromNow(),counts[i]);
-            logs[i].add(BufferUtil.getLongBuffer(1L << (i + 1)));
-        }
-        // Check message receipt.
-        for (int i = 0; i < n; i++) {
-            log.debug("Awaiting CountingReader[{}]", i);
-            counts[i].await(TIMEOUT_MS);
-            assertEquals(1L << (i + 1), counts[i].totalValue.get());
-            assertEquals(1, counts[i].totalMsg.get());
-        }
     }
 
     @Test
