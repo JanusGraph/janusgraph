@@ -212,22 +212,22 @@ public class SerializerTest extends SerializerTestCommon {
         out.writeObject(null,TClass1.class);
 
         //Test failure
-        for (Object o : new Object[]{new TClass2("abc",2),Calendar.getInstance(), Lists.newArrayList()}) {
+        for (Object o : new Object[]{new TClass2("abc",2), Calendar.getInstance(), new java.util.ArrayList<>()}) {
             try {
                 out.writeObjectNotNull(o);
-                fail();
+                fail("Expected an exception but none was thrown");
             } catch (Exception ignored) {
 
             }
         }
 
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
-        assertEquals(t1, serialize.readClassAndObject(b));
-        assertNull(serialize.readClassAndObject(b));
-        assertEquals(t1, serialize.readObject(b, TClass1.class));
-        assertNull(serialize.readObject(b, TClass1.class));
+        assertEquals(t1, serialize.readClassAndObject(b), "The first object read does not match the expected TClass1 instance");
+        assertNull(serialize.readClassAndObject(b), "Expected null for the second read but found a non-null value");
+        assertEquals(t1, serialize.readObject(b, TClass1.class), "The third object read does not match the expected TClass1 instance");
+        assertNull(serialize.readObject(b, TClass1.class), "Expected null for the fourth read but found a non-null value");
 
-        assertFalse(b.hasRemaining());
+        assertFalse(b.hasRemaining(), "Buffer should have no remaining data after all reads");
     }
 
 
@@ -245,8 +245,8 @@ public class SerializerTest extends SerializerTestCommon {
         out.writeObjectNotNull(str.toString());
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
-        assertEquals(str.toString(), serialize.readObjectNotNull(b, String.class));
-        assertFalse(b.hasRemaining());
+        assertEquals(str.toString(), serialize.readObjectNotNull(b, String.class), "Serialized string does not match the original string");
+        assertFalse(b.hasRemaining(), "The buffer has remaining data after reading");
     }
 
     @Test
