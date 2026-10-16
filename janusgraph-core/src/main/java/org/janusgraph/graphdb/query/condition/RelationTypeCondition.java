@@ -59,4 +59,8 @@ public class RelationTypeCondition<E extends JanusGraphElement> extends Literal<
     public String toString() {
         return "type["+ relationType.toString()+"]";
     }
+
+    public RelationType getRelationType() {
+        return this.relationType;
+    }
 }
