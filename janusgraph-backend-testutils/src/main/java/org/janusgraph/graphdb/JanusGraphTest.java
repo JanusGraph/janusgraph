@@ -281,6 +281,7 @@ import static org.janusgraph.testutil.JanusGraphAssert.assertContains;
 import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.janusgraph.testutil.JanusGraphAssert.assertEmpty;
 import static org.janusgraph.testutil.JanusGraphAssert.assertNotEmpty;
+import static org.janusgraph.testutil.JanusGraphAssert.assertSameChars;
 import static org.janusgraph.testutil.JanusGraphAssert.getLastStepMetrics;
 import static org.janusgraph.testutil.JanusGraphAssert.getStepMetrics;
 import static org.janusgraph.testutil.JanusGraphAssert.queryProfilerAnnotationIsPresent;
@@ -1405,6 +1406,41 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         // ######## CHECK AFTER REOPEN ##########
         assertTrue(a.verifyValue(v.value("propertyKey")));
 
+    }
+
+    //A string longer than 16,000 characters is stored compressed. It keeps its unpaired surrogates, as a shorter string
+    //does, in its property and in the key of a composite index
+    @Test
+    public void testLongStringsKeepUnpairedSurrogates() {
+        makeVertexIndexedUniqueKey("text", String.class);
+        mgmt.makePropertyKey("tags").dataType(String.class).cardinality(Cardinality.SET).make();
+        finishSchema();
+        final String text = (char) 0xDC00 + "a".repeat(8000) + (char) 0xD800 + new String(Character.toChars(0x1F600))
+            + "b".repeat(8000) + (char) 0xDBFF;
+        final Object id = tx.addVertex("text", text).id();
+        newTx();
+        assertSameChars(text, getV(tx, id).value("text"));
+        assertEquals(id, tx.traversal().V().has("text", text).id().next());
+        //Earlier versions wrote each unpaired surrogate of such a string as '?', in the index key too. So the string
+        //with '?' in their place found the vertex, and a unique index took a string which differs from it only in an
+        //unpaired surrogate for a duplicate
+        final String withQuestionMarks = new String(text.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+        assertFalse(tx.traversal().V().has("text", withQuestionMarks).hasNext());
+        final String otherSurrogate = text.substring(0, text.length() - 1) + (char) 0xDC00;
+        final Object other = tx.addVertex("text", otherSurrogate).id();
+        newTx();
+        assertEquals(other, tx.traversal().V().has("text", otherSurrogate).id().next());
+        assertEquals(id, tx.traversal().V().has("text", text).id().next());
+        //Values of a SET which differ only in an unpaired surrogate, or in a '?' in its place, were written alike, and
+        //so kept as one
+        final String base = "c".repeat(16000);
+        final List<String> tags = Arrays.asList(base + (char) 0xD800, base + (char) 0xDC00, base + "?");
+        final JanusGraphVertex tagged = tx.addVertex();
+        tags.forEach(tag -> tagged.property(VertexProperty.Cardinality.set, "tags", tag));
+        newTx();
+        final List<Object> read = tx.traversal().V(tagged.id()).values("tags").toList();
+        assertEquals(3, read.size());
+        tags.forEach(tag -> assertTrue(read.contains(tag)));
     }
 
     /**
