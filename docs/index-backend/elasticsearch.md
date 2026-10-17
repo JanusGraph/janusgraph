@@ -508,15 +508,34 @@ one page of 10,000 would do.
 
 `index.[X].elasticsearch.scroll-keep-alive` must cover consuming one page. Each page renews the keep-alive of its
 scroll context or point in time, and a consumer which takes longer over a page lets it expire. The next page then
-fails, or, where the index's shards sit on several nodes, comes back with the hits of only some shards, which ends
-the result early or leaves hits out without an error. With the default keep-alive of 60 s, a page of 250 hits, the
-default, leaves 240 ms for each hit, a page of 1,000 hits 60 ms, a page of 10,000 hits 6 ms, and a page of 50 hits
-1.2 s: think of JanusGraph Server streaming a result to a slow client, or of a traversal which reads more for each
-vertex. A slower consumer can lower
+fails, also where the index's shards sit on several nodes and only some of them lost their context, as described
+below. With the default keep-alive of 60 s, a page of 250 hits, the default, leaves 240 ms for each hit, a page of
+1,000 hits 60 ms, a page of 10,000 hits 6 ms, and a page of 50 hits 1.2 s: think of JanusGraph Server streaming a
+result to a slow client, or of a traversal which reads more for each vertex. A slower consumer can lower
 `limited-result-max-page-size` in its local configuration, as it is MASKABLE, to `max-result-set-size` or below for
 the pages of earlier versions, or raise `scroll-keep-alive`, which is GLOBAL_OFFLINE. 10,000 is the practical
 ceiling of `limited-result-max-page-size`: `index.max_result_window` is 10,000 by default on an index which
 JanusGraph did not create, and on the indexes JanusGraph creates, the time a consumer has for each hit bounds it.
+
+A search, a page of a scroll or of a point in time, a count or an aggregation fails when some shards of the index
+didn't answer it, or ran out of time, with the shard failures in its error. Elasticsearch answers such a request
+with the results of the shards which answered, and fails it only when every shard failed. A shard fails where, for
+example, its search context expired on its node but not on the others, it isn't available, or it rejects the
+request; it runs out of time where a search has a `timeout`, set as a parameter of a [direct index
+query](direct-index-query.md) or by the cluster's `search.default_search_timeout`, and answers with the hits it
+found until then. A page which lacked the hits of some shards would end the result early, as a page with fewer hits
+than its size is taken for the last, and a count or an aggregation would leave those shards out. So JanusGraph sends
+its searches, the first page of a scroll, the pages of a point in time and counts among them, with
+`allow_partial_search_results=false` to Elasticsearch 7 and later and to OpenSearch, which then fail them
+themselves, and fails every answer which reports shards that didn't answer or ran out of time, as the later pages of
+a scroll take no such parameter. A search which Elasticsearch fails because a shard isn't available is answered with
+status 503, which `index.[X].elasticsearch.retry-error-codes` lists by default, so it is reattempted like other
+transient read failures. JanusGraph doesn't reattempt a search which ran out of time, whatever its status, as it
+would run as long again on a cluster which was too slow for it already. Where several hosts are configured, the
+Elasticsearch client still sends a request answered with 502, 503 or 504 to its next host, and takes the host for
+dead for a while: Elasticsearch 8.15.3 answers a time-out with 504. Set
+`index.[X].elasticsearch.allow-partial-results`, which is MASKABLE, to `true` to use the results of the shards which
+answered instead, and the hits found before a search ran out of time, as earlier versions did.
 
 ### Write Optimization
 

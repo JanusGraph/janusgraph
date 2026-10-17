@@ -1059,10 +1059,9 @@ asks for one hit more than a page, so a small result needs no scroll context or 
 without a limit keeps its pages of `max-result-set-size`. `index.[X].elasticsearch.scroll-keep-alive` must cover
 consuming one page, as each page renews it: with its default of 60 s, a page of 250 hits leaves 240 ms for each hit, a
 page of 1,000 hits 60 ms, and a page of 10,000 hits, the practical ceiling of the option, 6 ms. A consumer which takes
-longer loses the scroll context or point in time: the next page fails, or, where the index's shards sit on several
-nodes, comes back with the hits of only some shards, which ends the result early or leaves hits out without an error. A
-slower consumer can lower the option in its local configuration, to `max-result-set-size` or below for the pages of
-earlier versions, or raise `scroll-keep-alive`, which is GLOBAL_OFFLINE.
+longer loses the scroll context or point in time, and the next page fails. A slower consumer can lower the option in
+its local configuration, to `max-result-set-size` or below for the pages of earlier versions, or raise
+`scroll-keep-alive`, which is GLOBAL_OFFLINE.
 
 On Elasticsearch 9.5.4, with 50,000 vertices in an index of one shard, a
 `has("kind", "k").order().by("updatedAt", desc).limit(10)` in a transaction which had changed the `kind` of 20,000 of
@@ -1074,6 +1073,36 @@ and 0.37 s, 25 and 0.72 s, 7 and 67 ms, and 10.3 ms. Under load, with 16 threads
 first hit ran at 3,879 a second instead of 4,197, and the reads after 20,000 changed vertices at 17.7 a second instead
 of 9.9; with 32 threads, at 5,331 instead of 6,900, and at 18.3 instead of 11.7. Pages of up to 1,000 cost the reads
 which stop early about half their rate or more there.
+
+##### An Elasticsearch read which only some shards answered now fails
+
+A search, a page of a scroll or of a point in time, a count or an aggregation which Elasticsearch answered with the
+results of only some shards was taken as complete. Elasticsearch answers a request which some shards fail with the
+results of the others, and fails it only when every shard failed, but JanusGraph didn't check how many shards answered.
+A page with fewer hits than its size is taken for the last, so a page which lacked the hits of some shards ended the
+result early, and a count or an aggregation left those shards out, without an error. A shard fails where, for example,
+its search context expired on its node but not on the others, as where a consumer takes longer over a page than
+`index.[X].elasticsearch.scroll-keep-alive` and the index's shards sit on several nodes, where it isn't available, or
+where it rejects the request. A shard which runs out of the time of a search, which a direct index query sets as its
+`timeout` parameter or the cluster as `search.default_search_timeout`, answers with the hits it found until then, which
+the answer to a count didn't even tell.
+
+Such a read now fails, with the shard failures in its error. JanusGraph sends its searches, the first page of a scroll,
+the pages of a point in time and counts among them, with `allow_partial_search_results=false` to Elasticsearch 7 and
+later and to OpenSearch, which then fail them themselves. A count is now a search for no hits which counts them all,
+which is what the count API runs, as the count API doesn't take that parameter; it also applies the parameters of a
+direct index query, which the count API rejected. Every answer which reports shards that didn't answer or ran out of
+time fails as well, the later pages of a scroll among them, which don't take the parameter. A search which Elasticsearch
+fails because a shard isn't available is answered with status 503, which `index.[X].elasticsearch.retry-error-codes`
+lists by default, so it is reattempted like other transient read failures before it fails. JanusGraph doesn't reattempt
+a search which ran out of time, whatever its status, 429 on Elasticsearch 9.5.4 and 504 on 8.15.3, as it would run as
+long again; where several hosts are configured, the Elasticsearch client still sends a request answered with 502, 503 or
+504 to its next host. A page of a scroll which fails releases the scroll context, as one of a point in time closes the
+point in time. Closing a traversal after a read of an index failed no longer asks the index whether the result ended,
+which could fail again and throw that failure, wrapped, in place of the read's, and the transaction's cache of index
+results no longer keeps the hits read before the failure as the whole result, which it could after a page of a point in
+time failed. The new option `index.[X].elasticsearch.allow-partial-results` (MASKABLE, `false` by default) uses the
+results of the shards which answered instead, and the hits found before a search ran out of time, as before.
 
 ##### Relations without properties are parsed once
 
