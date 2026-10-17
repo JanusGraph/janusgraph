@@ -19,8 +19,10 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
+import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.util.ElementHelper;
 
@@ -36,18 +38,49 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
     private final K key;
     private final JanusGraphPredicate predicate;
     private final Object value;
+    private final boolean stringsByCodePoint;
 
     public PredicateCondition(K key, JanusGraphPredicate predicate, Object value) {
+        this(key, predicate, value, false);
+    }
+
+    /**
+     * @param stringsByCodePoint whether a range of {@link Cmp} compares two strings by their code points
+     *                           ({@link OrderList#compareByCodePoint}), as a graph-centric query does, in the order of
+     *                           the mixed indexes and of the order which JanusGraph gives the query, rather than by
+     *                           UTF-16 code unit, as {@link Cmp#test} does and a vertex-centric query, in the order in
+     *                           which the storage backend holds the sort keys of a vertex's relations. It is kept only
+     *                           for such a range with a string value, so that any other condition equals its twin
+     *                           made with the other order, as a query which leaves out a repeated condition expects
+     */
+    public PredicateCondition(K key, JanusGraphPredicate predicate, Object value, boolean stringsByCodePoint) {
         if (key != null) {
             Preconditions.checkArgument(key instanceof String || key instanceof RelationType);
         }
         this.key = key;
         this.predicate = Preconditions.checkNotNull(predicate);
         this.value = value;
+        this.stringsByCodePoint = stringsByCodePoint && isRange(predicate) && value instanceof String;
+    }
+
+    private static boolean isRange(JanusGraphPredicate predicate) {
+        return predicate == Cmp.LESS_THAN || predicate == Cmp.LESS_THAN_EQUAL || predicate == Cmp.GREATER_THAN
+            || predicate == Cmp.GREATER_THAN_EQUAL;
     }
 
 
     private boolean satisfiesCondition(Object value) {
+        //Set for a range of Cmp with a string value only
+        if (stringsByCodePoint && value instanceof String) {
+            final int cmp = OrderList.compareByCodePoint((String) value, (String) this.value);
+            switch ((Cmp) predicate) {
+                case LESS_THAN: return cmp < 0;
+                case LESS_THAN_EQUAL: return cmp <= 0;
+                case GREATER_THAN: return cmp > 0;
+                case GREATER_THAN_EQUAL: return cmp >= 0;
+                default: throw new AssertionError("Not a range: " + predicate);
+            }
+        }
         return predicate.test(value, this.value);
     }
 
@@ -98,7 +131,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
 
     @Override
     public int hashCode() {
-        return Objects.hash(getType(), key, predicate, value);
+        return Objects.hash(getType(), key, predicate, value, stringsByCodePoint);
     }
 
     @Override
@@ -110,7 +143,8 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
             return false;
 
         PredicateCondition oth = (PredicateCondition) other;
-        return key.equals(oth.key) && predicate.equals(oth.predicate) && Objects.equals(value, oth.value);
+        return Objects.equals(key, oth.key) && predicate.equals(oth.predicate) && Objects.equals(value, oth.value)
+            && stringsByCodePoint == oth.stringsByCodePoint;
     }
 
     @Override

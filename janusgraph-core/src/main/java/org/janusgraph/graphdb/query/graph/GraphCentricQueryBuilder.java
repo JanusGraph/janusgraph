@@ -266,7 +266,8 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (globalConstraints.isEmpty()) {
             globalConstraints.add(Collections.singletonList(constraints));
         }
-        //Prepare constraints
+        //Prepare constraints, whose conditions compare strings by code point where JanusGraph checks them itself, as
+        //the mixed indexes which answer them and the query's order do (see constraints2QNF)
         final MultiCondition<JanusGraphElement> conditions;
         if (this.globalConstraints.size() == 1 && this.globalConstraints.get(0).size() == 1) {
             conditions = QueryUtil.constraints2QNF(tx, globalConstraints.get(0).get(0));

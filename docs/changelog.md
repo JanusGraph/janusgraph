@@ -956,13 +956,6 @@ holds them. A partitioned vertex put an edge without the key of a descending ord
 edges which its representatives hold, where a vertex which isn't partitioned puts it first; it now merges them as each
 representative orders them.
 
-Conditions on strings which JanusGraph checks in memory, such as a `gt()` in a query which no mixed index answers or
-against the vertices a transaction changed, still compare by UTF-16 unit, while an index compares by code point. So
-where JanusGraph checks such a condition in memory, it can disagree with the order: paging with
-`has(key, gt(last)).order().by(key)` can skip strings like these, as with a composite index on `kind` and the names
-`a`, U+E000, U+FFFF and U+1F600, of which the page after U+E000 leaves out U+1F600. The conditions stay as they are,
-as they also select the edges and properties of a vertex, which the storage backend holds in UTF-16 order.
-
 For code built on these classes: `MultiDistinctOrderedIterator` takes the `Comparator` to merge by in place of a list
 of `HasStepFolder.OrderEntry`.
 
@@ -975,6 +968,45 @@ only in case, such as `byName` and `byname`, shared one backend index: each othe
 `IllegalArgumentException` which names the existing index. Existing definitions are not touched: a graph which already
 holds such a pair keeps working as before, and is repaired by discarding one of the two and recreating it under a
 distinct name. Composite indexes have no backend index and are not affected.
+
+##### Conditions on the strings of a graph query compare them by code point, as its order does
+
+A condition on strings in a graph query, such as `has('name', gt('m'))` or a `gte()`, `lt()`, `lte()`, `between()`,
+`inside()` or `outside()`, now compares two strings by their code points also where JanusGraph checks it itself, as
+Elasticsearch, OpenSearch, Lucene and Solr compare them where they answer it, and as JanusGraph orders the query where
+it folds the `order()` into it. JanusGraph compared them by UTF-16 code unit there, which differs where the first
+character in which two strings differ is one from U+10000 up, such as an emoji, in one of them and one from U+E000 to
+U+FFFF in the other. JanusGraph checks such a condition itself:
+
+* in a query which no mixed index answers, such as one which reads a composite index or scans the graph;
+* on what a mixed index returns where it doesn't answer the whole query, as when the query has a condition on a key
+  which the index doesn't hold;
+* on the vertices and edges which the transaction added or changed, which the indexes hold as they were before it.
+
+So such a condition left out strings which an index returned, and disagreed with the order of the query: keyset paging
+with `g.V().has('kind', 'k').has('name', gt(last)).order().by('name').limit(2)`, with a composite index on `kind` and
+the names `a`, U+E000, U+FFFF and U+1F600, returned `a` and U+E000, then U+FFFF alone, and never U+1F600, which the
+order puts last.
+
+An `order()` which JanusGraph doesn't fold into the query is TinkerPop's and still compares strings by UTF-16 unit: one
+with a tie-breaker which isn't a property key, such as `order().by('name').by(T.id)`, or one after a `dedup()`. Where no
+mixed index answered the query, such an order agreed with these conditions, and now disagrees with them: keyset paging
+with `order().by('name').by(T.id)` over the names above returns `a` and U+1F600, and then nothing. Keyset paging needs
+an order which JanusGraph folds, such as `order().by('name')`: by property keys alone, right after the `has()` steps of
+the query, and for vertices by keys of `SINGLE` cardinality, unless every mixed index backend of the graph can order by
+a key of several values. That is the trade-off of this change: the conditions which JanusGraph checks itself now agree
+with the mixed indexes and with the orders which JanusGraph folds, which compare strings by code point, and no longer
+with the orders which TinkerPop sorts.
+
+The conditions on the edges and properties of a vertex, such as `g.V(v).outE('link').has('name', gt('m'))`, still
+compare strings by UTF-16 unit, as the storage backend holds them by their sort keys in that order. So does a `has()`
+which JanusGraph doesn't turn into a graph query, such as one after an `out()`, a `V()` of ids or a `hasId()`, inside a
+`not()`, or in a `g.withComputer()` traversal: TinkerPop's predicate checks it, or, after a `hasId()`, `Cmp` an `and()`
+or `or()` of predicates, such as a `between()`, by UTF-16 unit either way.
+
+For code built on these classes: `PredicateCondition` takes whether the ranges of `Cmp` compare strings by code point,
+`QueryUtil.constraints2QNF` makes conditions which do unless it is asked for those of a vertex-centric query, and
+`OrderList.compareByCodePoint` is public.
 
 ##### Index restores are reattempted after a transient failure
 
