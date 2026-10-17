@@ -14,10 +14,13 @@
 
 package org.janusgraph.graphdb.database.serialize.attribute;
 
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.ReadArrayBuffer;
 import org.janusgraph.diskstorage.util.WriteByteBuffer;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 import org.junit.jupiter.api.Test;
 
+import java.util.Random;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,6 +58,31 @@ public class UUIDSerializerTest {
         UUID uuid2 = serializer.readByteOrder(readBuffer);
 
         assertEquals(uuid1, uuid2);
+    }
+
+    /**
+     * The byte order of UUIDs is that of their bits as unsigned numbers, the order of their string forms, in which
+     * JanusGraph compares them, rather than that of UUID.compareTo, which compares them as signed numbers.
+     */
+    @Test
+    public void testByteOrderIsTheOrderOfTheStringForms() {
+        final UUIDSerializer serializer = new UUIDSerializer();
+        final Random random = new Random(3);
+        for (int n = 0; n < 20000; n++) {
+            final UUID u1 = new UUID(random.nextLong(), random.nextLong());
+            final UUID u2 = random.nextBoolean() ? new UUID(u1.getMostSignificantBits(), random.nextLong())
+                : new UUID(random.nextLong(), random.nextLong());
+            final int byString = Integer.signum(u1.toString().compareTo(u2.toString()));
+            assertEquals(byString, Integer.signum(byteOrder(serializer, u1).compareTo(byteOrder(serializer, u2))),
+                u1 + " vs " + u2);
+            assertEquals(byString, Integer.signum(AttributeUtils.compareValues(u1, u2)), u1 + " vs " + u2);
+        }
+    }
+
+    private static StaticBuffer byteOrder(UUIDSerializer serializer, UUID uuid) {
+        final WriteByteBuffer buffer = new WriteByteBuffer();
+        serializer.writeByteOrder(buffer, uuid);
+        return buffer.getStaticBuffer();
     }
 
     @Test

@@ -299,10 +299,10 @@ them, for an order which a mixed index answers, it places the documents
 without a value of a field as the `sortMissingLast` and
 `sortMissingFirst` attributes of the field, or of its type, say. If
 neither is declared, Solr sorts the documents without a numeric or date
-value as if their value were 0. The string, boolean, numeric and date
-types of the example `schema.xml` declare `sortMissingLast="true"`, and
-a schema of your own needs it as well to order these elements as
-JanusGraph does.
+value as if their value were 0, and those without a UUID value first
+when ascending. The string, boolean, numeric, date and UUID types of the
+example `schema.xml` declare `sortMissingLast="true"`, and a schema of
+your own needs it as well to order these elements as JanusGraph does.
 
 ## Troubleshooting
 

@@ -207,6 +207,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
@@ -9361,6 +9362,124 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             .edgeCount());
         assertEquals(2, v1.query().direction(OUT).labels("bought").hasNot("time").edgeCount());
         assertEquals(5, v1.query().direction(OUT).labels("bought").edgeCount());
+    }
+
+    //UUIDs in the order of their string forms, the first digit of either half of each from 8 up, or below it
+    private static final List<UUID> UUIDS_BY_STRING = Arrays.asList(
+        UUID.fromString("00000000-0000-0000-0000-000000000001"),
+        UUID.fromString("12345678-0000-0000-7fff-ffffffffffff"),
+        UUID.fromString("12345678-0000-0000-8000-000000000000"),
+        UUID.fromString("7fffffff-ffff-ffff-ffff-ffffffffffff"),
+        UUID.fromString("80000000-0000-0000-0000-000000000000"),
+        UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff"));
+
+    /**
+     * The storage backend holds UUIDs which are sort keys by their bits as unsigned numbers, the order of their string
+     * forms, where UUID.compareTo compares them as signed numbers. A vertex-centric query compares them in that order:
+     * the edges which the transaction added come among the stored ones where the storage backend has those, and a range
+     * holds the UUIDs between its ends in that order, which select the slice of the stored ones.
+     */
+    @Test
+    public void testVertexCentricQueriesCompareUUIDsAsTheStorageBackendHoldsThem() {
+        final PropertyKey uid = mgmt.makePropertyKey("uid").dataType(UUID.class).make();
+        final EdgeLabel link = mgmt.makeEdgeLabel("link").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildEdgeIndex(link, "linkByUid", Direction.OUT, asc, uid);
+        finishSchema();
+        final List<UUID> byString = UUIDS_BY_STRING;
+        JanusGraphVertex v = tx.addVertex();
+        for (int i = 0; i < byString.size(); i += 2) {
+            v.addEdge("link", tx.addVertex(), "uid", byString.get(i));
+        }
+        newTx();
+        v = getV(tx, v);
+        for (int i = 1; i < byString.size(); i += 2) {
+            v.addEdge("link", tx.addVertex(), "uid", byString.get(i));
+        }
+        final List<UUID> reversed = new ArrayList<>(byString);
+        Collections.reverse(reversed);
+        assertEquals(byString, edgeUids(v.query().labels("link").direction(OUT).orderBy("uid", asc).edges()));
+        assertEquals(reversed, edgeUids(v.query().labels("link").direction(OUT).orderBy("uid", desc).edges()));
+        //Through a traversal whose order of the edges JanusGraph folds into the vertex-centric query
+        assertEquals(byString,
+            tx.traversal().V(v).local(__.outE("link").order().by("uid", asc)).values("uid").toList());
+        assertEquals(byString.subList(2, 6), edgeUids(v.query().labels("link").direction(OUT)
+            .has("uid", Cmp.GREATER_THAN, byString.get(1)).orderBy("uid", asc).edges()));
+        assertEquals(byString.subList(0, 3), edgeUids(v.query().labels("link").direction(OUT)
+            .has("uid", Cmp.LESS_THAN_EQUAL, byString.get(2)).orderBy("uid", asc).edges()));
+        //Ranges whose ends are in order only as unsigned numbers, or only as signed ones
+        assertEquals(byString.subList(4, 5), edgeUids(v.query().labels("link").direction(OUT)
+            .has("uid", Cmp.GREATER_THAN, byString.get(3)).has("uid", Cmp.LESS_THAN, byString.get(5)).edges()));
+        assertEquals(Collections.emptyList(), edgeUids(v.query().labels("link").direction(OUT)
+            .has("uid", Cmp.GREATER_THAN, byString.get(5)).has("uid", Cmp.LESS_THAN, byString.get(0)).edges()));
+    }
+
+    private static List<UUID> edgeUids(Iterable<JanusGraphEdge> edges) {
+        final List<UUID> uids = new ArrayList<>();
+        edges.forEach(edge -> uids.add(edge.value("uid")));
+        return uids;
+    }
+
+    /**
+     * A graph query which JanusGraph answers in memory, through a composite index or by a scan, orders UUIDs and checks
+     * ranges of them as the indexes sort them, by their string forms, with the vertices the transaction added.
+     */
+    @Test
+    public void testGraphQueriesCompareUUIDsInMemoryAsTheirStringForms() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        makeKey("uid", UUID.class);
+        mgmt.buildIndex("byKind", Vertex.class).addKey(kind).buildCompositeIndex();
+        finishSchema();
+        final List<UUID> byString = UUIDS_BY_STRING;
+        for (int i = 0; i < byString.size(); i += 2) {
+            tx.addVertex("kind", "k", "uid", byString.get(i));
+        }
+        newTx();
+        for (int i = 1; i < byString.size(); i += 2) {
+            tx.addVertex("kind", "k", "uid", byString.get(i));
+        }
+        final GraphTraversalSource g = tx.traversal();
+        final List<UUID> reversed = new ArrayList<>(byString);
+        Collections.reverse(reversed);
+        //Through the composite index on the kind, and by a scan
+        for (final String kindOrScan : Arrays.asList("k", null)) {
+            assertEquals(byString, withKindOrUid(g, kindOrScan).order().by("uid", asc).values("uid").toList());
+            assertEquals(reversed.subList(0, 4),
+                withKindOrUid(g, kindOrScan).order().by("uid", desc).limit(4).values("uid").toList());
+            assertEquals(byString.subList(2, 6), withKindOrUid(g, kindOrScan).has("uid", P.gt(byString.get(1)))
+                .order().by("uid", asc).values("uid").toList());
+            assertEquals(byString.subList(0, 4), withKindOrUid(g, kindOrScan).has("uid", P.lte(byString.get(3)))
+                .order().by("uid", asc).values("uid").toList());
+        }
+    }
+
+    private static GraphTraversal<Vertex, Vertex> withKindOrUid(GraphTraversalSource g, String kind) {
+        return kind == null ? g.V().has("uid") : g.V().has("kind", kind);
+    }
+
+    /**
+     * The values of a key of SET cardinality come in the order in which the storage backend holds them, by their bits
+     * as unsigned numbers for UUIDs, with the values which the transaction added among the stored ones.
+     */
+    @Test
+    public void testUUIDsOfASetComeInTheOrderOfTheStorageBackend() {
+        mgmt.makePropertyKey("uids").dataType(UUID.class).cardinality(Cardinality.SET).make();
+        finishSchema();
+        JanusGraphVertex v = tx.addVertex();
+        for (int i = 0; i < UUIDS_BY_STRING.size(); i += 2) {
+            v.property("uids", UUIDS_BY_STRING.get(i));
+        }
+        newTx();
+        v = getV(tx, v);
+        for (int i = 1; i < UUIDS_BY_STRING.size(); i += 2) {
+            v.property("uids", UUIDS_BY_STRING.get(i));
+        }
+        final List<Object> uids = new ArrayList<>();
+        v.properties("uids").forEachRemaining(property -> uids.add(property.value()));
+        assertEquals(UUIDS_BY_STRING, uids);
+        newTx();
+        uids.clear();
+        getV(tx, v).properties("uids").forEachRemaining(property -> uids.add(property.value()));
+        assertEquals(UUIDS_BY_STRING, uids);
     }
 
     //Add more removal operations, different transaction contexts

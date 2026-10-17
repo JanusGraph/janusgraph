@@ -17,6 +17,7 @@ package org.janusgraph.graphdb.internal;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.PropertyKey;
+import org.janusgraph.graphdb.database.serialize.AttributeUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -148,10 +149,13 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
     /**
      * Compares two values of an order key in the order of a graph query, which a mixed index sorts the query by when
      * it can: a missing value, {@code null}, comes last in either direction, two strings are compared by code point,
-     * and any other values by their natural order. Elasticsearch, OpenSearch, Lucene and Solr sort strings by their
-     * UTF-8 bytes, which is the order of their code points, where {@link String#compareTo} compares UTF-16 code units;
-     * so the elements a transaction added, and those sorted in memory, come where the index puts the others, as long as
-     * the strings are valid UTF-16 and the index's field sorts them as they are, without a normalizer.
+     * two UUIDs as their string forms, and any other values by their natural order. Elasticsearch, OpenSearch, Lucene
+     * and Solr sort strings by their UTF-8 bytes, which is the order of their code points, where
+     * {@link String#compareTo} compares UTF-16 code units; so the elements a transaction added, and those sorted in
+     * memory, come where the index puts the others, as long as the strings are valid UTF-16 and the index's field sorts
+     * them as they are, without a normalizer. Elasticsearch, OpenSearch and Solr sort UUIDs by their string forms, the
+     * order of their bits as unsigned numbers ({@link AttributeUtils#compareUnsigned}), where
+     * {@link java.util.UUID#compareTo} compares them as signed numbers.
      */
     public static int compareOrderValues(Object value1, Object value2, Order order) {
         if (value1 == null) {
@@ -160,7 +164,7 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
             return -1;
         }
         return order.modulateNaturalOrder(value1 instanceof String && value2 instanceof String
-            ? compareByCodePoint((String) value1, (String) value2) : ((Comparable) value1).compareTo(value2));
+            ? compareByCodePoint((String) value1, (String) value2) : AttributeUtils.compareValues(value1, value2));
     }
 
     /*
