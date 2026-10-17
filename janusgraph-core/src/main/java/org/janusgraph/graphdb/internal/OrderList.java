@@ -15,6 +15,7 @@
 package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
+import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.PropertyKey;
 
@@ -129,9 +130,17 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
     public Object[] values(JanusGraphElement element) {
         final Object[] values = new Object[list.size()];
         for (int i = 0; i < values.length; i++) {
-            values[i] = element.valueOrNull(list.get(i).getKey());
+            values[i] = list.get(i).value(element);
         }
         return values;
+    }
+
+    /**
+     * The value of the element by which this order compares it by its key at the given position, as
+     * {@link OrderEntry#value(JanusGraphElement)} has it.
+     */
+    public Object value(JanusGraphElement element, int position) {
+        return list.get(position).value(element);
     }
 
     /**
@@ -198,12 +207,15 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
 
         private final PropertyKey key;
         private final Order order;
+        private final boolean severalValues;
 
         public OrderEntry(PropertyKey key, Order order) {
             Preconditions.checkNotNull(key);
             Preconditions.checkNotNull(order);
             this.key = key;
             this.order = order;
+            final Cardinality cardinality = key.cardinality();
+            this.severalValues = cardinality == Cardinality.LIST || cardinality == Cardinality.SET;
         }
 
         public PropertyKey getKey() {
@@ -221,7 +233,28 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
 
         @Override
         public int compare(JanusGraphElement o1, JanusGraphElement o2) {
-            return compareValues(o1.valueOrNull(key), o2.valueOrNull(key));
+            return compareValues(value(o1), value(o2));
+        }
+
+        /**
+         * The value of the element by which this order compares it: its value of the key, or, for a key of several
+         * values ({@link Cardinality#LIST} or {@link Cardinality#SET}), the first of its values in this order, the
+         * least for an ascending order and the greatest for a descending one, which is the one by which
+         * Elasticsearch, OpenSearch and Solr sort such a key; {@code null} where the element has no value of the key.
+         * So the elements which a transaction added or changed, and those sorted in memory, come where the index puts
+         * the others.
+         */
+        public Object value(JanusGraphElement element) {
+            if (!severalValues) {
+                return element.valueOrNull(key);
+            }
+            Object first = null;
+            for (final Object value : org.janusgraph.graphdb.util.ElementHelper.getValues(element, key)) {
+                if (first == null || compareValues(value, first) < 0) {
+                    first = value;
+                }
+            }
+            return first;
         }
 
         //A missing value comes last, in either direction, and strings compare by code point

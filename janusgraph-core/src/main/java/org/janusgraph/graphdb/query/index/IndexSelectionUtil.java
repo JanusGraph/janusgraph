@@ -16,8 +16,11 @@ package org.janusgraph.graphdb.query.index;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
+import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.condition.Condition;
@@ -35,10 +38,40 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public class IndexSelectionUtil {
+
+    /**
+     * Whether the mixed index holds each key of the order. An index whose backend can't sort by a key of several
+     * values isn't given an order by such a key, so where a strategy holds such an index to sort the results by this
+     * method, JanusGraph sorts them itself.
+     *
+     * @deprecated use {@link #indexCoversOrder(MixedIndexType, OrderList, IndexSerializer)}, which also checks that
+     * the index backend can sort by a key of several values
+     */
+    @Deprecated
     public static boolean indexCoversOrder(MixedIndexType index, OrderList orders) {
         for (int i = 0; i < orders.size(); i++) {
             if (!index.indexesKey(orders.getKey(i)))
                 return false;
+        }
+        return true;
+    }
+
+    /**
+     * Whether the mixed index can sort the elements in the order: it holds each of the order keys, and its backend can
+     * sort by a key of several values, {@link Cardinality#LIST} or {@link Cardinality#SET}, where the order has one,
+     * as Elasticsearch, OpenSearch and Solr can and Lucene can't. Where it can't, JanusGraph sorts the elements itself.
+     */
+    public static boolean indexCoversOrder(MixedIndexType index, OrderList orders, IndexSerializer serializer) {
+        for (int i = 0; i < orders.size(); i++) {
+            final PropertyKey key = orders.getKey(i);
+            if (!index.indexesKey(key)) {
+                return false;
+            }
+            final Cardinality cardinality = key.cardinality();
+            if ((cardinality == Cardinality.LIST || cardinality == Cardinality.SET)
+                    && !serializer.features(index).supportsOrderingListProperty()) {
+                return false;
+            }
         }
         return true;
     }

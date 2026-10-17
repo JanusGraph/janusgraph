@@ -1192,6 +1192,44 @@ with the relations added. On the inmemory backend, a transaction which adds 1,00
 edge each allocates 9% less, one which sets a property of 1,000 existing vertices 24% less, and one which sets a
 property of an edge of each 22% less.
 
+##### Orders by a key of several values compare its least or greatest value
+
+A graph query ordered by a key of several values, of `LIST` or `SET` cardinality, failed with an `IllegalStateException`
+("Multiple properties exist for the provided key") wherever JanusGraph compared the elements by the key itself and met
+one with several values: where it sorted the results in memory, as those of a composite index; where it merged the
+vertices which the transaction added or changed with those of a mixed index, as a vertex which the transaction made
+match the query; and where it merged the queries of the branches of an `or()`. JanusGraph now compares such an element
+by the least of its values in an ascending order and by the greatest in a descending one, as Elasticsearch, OpenSearch
+and Solr sort such a key, so that the elements which it places come where the index puts the others. An element without
+a value of the key still comes last.
+
+That holds for the queries of JanusGraph's API, such as
+`graph.query().has('kind', 'k').orderBy('names', asc).vertices()`, and for the orders which a traversal folds into its
+query. A traversal folds an order of vertices by such a key in only where the graph has mixed index backends and every
+one of them can sort by it, as Elasticsearch, OpenSearch and Solr can: there, `g.V().order().by('names')`, which no
+index answers, and the order of what a composite index returns, are now sorted where they failed. Elsewhere, as on a
+graph with a Lucene index backend, or without a mixed index backend, TinkerPop sorts the vertices, and fails on one with
+several values of the key, as before. A traversal folds an order of edges, each of which holds one value of a key at
+most, in whatever the cardinality of the key.
+
+Lucene can't sort by a key of several values: a query of JanusGraph's API, or a traversal's order of edges, by such a
+key, which a Lucene index holding the key answered, failed with "Could not call index". JanusGraph now sorts the results
+of such a query itself, which reads every match first, as for any query whose order no index covers, and fails with a
+`QueryException` at 1,000,000 of them.
+
+A vertex whose values of such a key a transaction changed kept the place which an index that sorts by the key gave it,
+by its values before the transaction; it now comes where the values it holds place it, as for a key of one value. A
+query which reads the index only up to the last new vertex within its limit does so only by a first order key of one
+value, as before.
+
+For a custom index backend or index selection strategy: JanusGraph gives an index an order by a key of several values
+only where its backend declares `IndexFeatures.supportsOrderingListProperty`, and sorts the results of any other index
+itself, reading every match; before, it gave such an order to any index which held the key. A backend which can sort by
+such a key should declare it. `IndexSelectionUtil.indexCoversOrder(MixedIndexType, OrderList)` is deprecated in favour
+of `indexCoversOrder(MixedIndexType, OrderList, IndexSerializer)`, which also checks that the backend of the index can
+sort by such a key. Where a strategy holds an index to sort the results which wasn't given the query's order, as one
+which decides by the old form may, or was given only part of it, JanusGraph sorts them itself.
+
 ##### Graph queries in a transaction find the vertices it changed, whatever the order of their conditions
 
 A graph query in a transaction which had changed vertices could miss a vertex which those changes made match: with a
@@ -1207,7 +1245,7 @@ gained the asked value, and the new vertices with the values of one of its equal
 ordered query which an index sorts placed a vertex whose order key the transaction changed where its old value goes:
 after the transaction raised a vertex's `age` above the others,
 `g.V().has("kind", "x").order().by("age", desc).limit(1)` returned another vertex. It now places such a vertex by what
-it holds, where every order key has one value, and returns a changed vertex once when the index returns it too. And a
+it holds, also by a key of several values, and returns a changed vertex once when the index returns it too. And a
 query with a disjunction, such as `g.V().or(has("name", "bob"), has("tag", "t"))`, threw an `IllegalArgumentException`
 in a transaction with any change on Lucene, Elasticsearch and OpenSearch, which are given such a condition whole.
 
@@ -1227,7 +1265,7 @@ transaction added, which takes about 9 ms for 50,000 of them, so a query which m
 missing the vertices which the transaction made match, is slower by that much once: ten such queries with an equality on
 a composite-indexed key take 11 ms instead of 4.9.
 
-A query which an index sorts by keys of one value also looks at the properties of its order keys which the transaction
+A query which an index sorts, whatever its keys, also looks at the properties of its order keys which the transaction
 changed, and checks every vertex they changed against its condition, whatever its limit, to place it by what it holds.
 Where those which match fill the limit, it reads from the index only the elements whose value of the first order key
 doesn't come after that of the last of them within the limit, where every index compares that value as memory orders

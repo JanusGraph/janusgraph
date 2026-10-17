@@ -162,17 +162,17 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
     }
 
     /*
-     * The value of the first order key of the last new element within the query's limit, where the new elements fill
-     * it, so that no element whose value comes after it in the query's order can come within the limit. Null where they
-     * don't fill it, where the query may return an element twice, where its order isn't one of order keys, or where
-     * that element has no value of the key, as a missing value comes last.
+     * The value by which the first order key orders the last new element within the query's limit, where the new
+     * elements fill it, so that no element whose value comes after it in the query's order can come within the limit.
+     * Null where they don't fill it, where the query may return an element twice, where its order isn't one of order
+     * keys, or where that element has no value of the key, as a missing value comes last.
      */
     private Object lastFirstOrderValueWithinLimit(List<R> sortedNew) {
         if (!query.hasLimit() || query.hasDuplicateResults() || sortedNew.size() < query.getLimit()
                 || !(query.getSortOrder() instanceof OrderList)) {
             return null;
         }
-        return sortedNew.get(query.getLimit() - 1).valueOrNull(((OrderList) query.getSortOrder()).getKey(0));
+        return ((OrderList) query.getSortOrder()).value(sortedNew.get(query.getLimit() - 1), 0);
     }
 
     /*
