@@ -19,6 +19,7 @@ import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
@@ -27,7 +28,9 @@ import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -48,6 +51,9 @@ public class PartitionedVertexProgramExecutor<M> {
     public static final String PARTITION_VERTEX_POSTSUCCESS = "partition-success";
     public static final String PARTITION_VERTEX_POSTFAIL = "partition-fail";
 
+    //What stopped the execution of the program on the partitioned vertices, if anything did, see run()
+    private volatile Throwable failure;
+
     public PartitionedVertexProgramExecutor(StandardJanusGraph graph, FulgoraMemory memory,
                                  FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
         this.graph=graph;
@@ -58,11 +64,38 @@ public class PartitionedVertexProgramExecutor<M> {
     }
 
     public void run(int numThreads, ScanMetrics metrics) {
+        run("job", numThreads, metrics);
+    }
+
+    /**
+     * @return what stopped the execution of the program on the partitioned vertices in the last {@link #run}, if
+     * anything did, or null
+     */
+    public Throwable getFailure() {
+        return failure;
+    }
+
+    /**
+     * Executes the program on each partitioned vertex which the job's scan aggregated, on a pool of the given number of
+     * threads, which waits for them all, as long as some keep ending, see {@link WorkerPool#close()}. Where the
+     * execution stops, as the pool does, each vertex on which the program hadn't ended by then counts as a failure,
+     * those which it didn't reach included, and {@link #getFailure()} tells what stopped it. A vertex on which the
+     * program still ran, which the pool interrupted, counts itself as well once the program ends there, so the
+     * failures may then exceed the vertices by as many as were running.
+     *
+     * @param jobId the job's id, which the pool's log messages and failures name
+     */
+    public void run(String jobId, int numThreads, ScanMetrics metrics) {
+        failure = null;
         StandardJanusGraphTx tx=null;
         Map<Long,EntryList> pVertexAggregates = vertexMemory.retrievePartitionAggregates();
         if (pVertexAggregates.isEmpty()) return; //Nothing to do here
 
-        try (WorkerPool workers = new WorkerPool(numThreads)) {
+        final Duration progressTimeout = graph.getConfiguration().getConfiguration()
+            .get(GraphDatabaseConfiguration.COMPUTER_TASK_PROGRESS_TIMEOUT);
+        final long vertices = pVertexAggregates.values().stream().filter(Objects::nonNull).count();
+        try (WorkerPool workers = new WorkerPool("execution of the program on the partitioned vertices of job [" +
+                jobId + "]", numThreads, progressTimeout)) {
             tx = startTransaction(graph);
             for (Map.Entry<Long,EntryList> partitionedVertices : pVertexAggregates.entrySet()) {
                 if (partitionedVertices.getValue()==null) {
@@ -73,7 +106,10 @@ public class PartitionedVertexProgramExecutor<M> {
             }
         } catch (Throwable ex) {
             log.error("Could not post-process partitioned vertices", ex);
-            metrics.incrementCustom(PARTITION_VERTEX_POSTFAIL);
+            failure = ex;
+            final long ended = metrics.getCustom(PARTITION_VERTEX_POSTSUCCESS) +
+                metrics.getCustom(PARTITION_VERTEX_POSTFAIL);
+            metrics.incrementCustom(PARTITION_VERTEX_POSTFAIL, Math.max(1, vertices - ended));
         } finally {
             if (tx!=null && tx.isOpen()) tx.rollback();
         }
