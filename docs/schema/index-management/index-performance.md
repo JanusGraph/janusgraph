@@ -296,6 +296,15 @@ When using `order().by()` it is important to note that:
 -   Only Elasticsearch and Solr mixed index backends support ordering
     property keys with **LIST** cardinality natively and efficiently.
 
+-   An element which has no value of a key the results are ordered by
+    is left out of them, as TinkerPop leaves out an element for which a
+    `by()` modulator has no value. A mixed index which holds the key
+    skips such elements itself. An order of vertices which has a key of
+    **LIST** or **SET** cardinality keeps them, last. To keep them,
+    order by a traversal which gives them a value, such as
+    `order().by(coalesce(values('age'), constant(0)))`, which TinkerPop
+    sorts in memory.
+
 -   Strings are ordered by their code points, as the mixed index
     backends sort them, whether a mixed index or JanusGraph sorts the
     results. The edges and properties of a vertex, which a

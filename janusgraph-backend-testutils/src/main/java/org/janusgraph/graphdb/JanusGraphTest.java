@@ -46,6 +46,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.TestCategory;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
@@ -55,6 +56,7 @@ import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
@@ -207,6 +209,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -1958,6 +1961,95 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
             PROPERTY, 4, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC);
         tx.commit();
         finishSchema();
+    }
+
+    /**
+     * An order().by(key) of the edges or properties of a vertex, which JanusGraph folds into its query, leaves out
+     * those without the key, as TinkerPop does: whether the storage backend sorts them by the sort key of a
+     * vertex-centric index or JanusGraph sorts them, and whether the traversal fetches them in batches or not. The
+     * results are those of a TinkerGraph which holds the same elements. A query of the vertex keeps them.
+     */
+    @Test
+    public void testVertexCentricOrderLeavesOutTheRelationsWithoutTheKey() {
+        final PropertyKey weight = mgmt.makePropertyKey("weight").dataType(Integer.class).make();
+        mgmt.makePropertyKey("uid").dataType(Integer.class).make();
+        mgmt.makePropertyKey("at").dataType(Integer.class).make();
+        mgmt.makePropertyKey("visit").dataType(String.class).cardinality(Cardinality.LIST).make();
+        mgmt.makeEdgeLabel("plain").make();
+        final EdgeLabel sorted = mgmt.makeEdgeLabel("sorted").make();
+        mgmt.buildEdgeIndex(sorted, "byWeight", Direction.OUT, desc, weight);
+        finishSchema();
+
+        final GraphTraversalSource reference = TinkerGraph.open().traversal();
+        final List<GraphTraversalSource> both = Arrays.asList(tx.traversal(), reference);
+        for (final GraphTraversalSource g : both) {
+            for (int uid = 1; uid <= 7; uid++) {
+                g.addV().property("uid", uid).iterate();
+            }
+            //Edges of either label from vertex 1 to the others, and properties of vertex 1, some without the key
+            final Integer[] weights = {3, null, 1, 2, null, 5};
+            for (int i = 0; i < weights.length; i++) {
+                for (final String label : Arrays.asList("plain", "sorted")) {
+                    GraphTraversal<Vertex, Edge> edge = g.V().has("uid", 1).addE(label).to(__.V().has("uid", i + 2))
+                        .property("uid", (label.equals("plain") ? 10 : 20) + i);
+                    if (weights[i] != null) edge = edge.property("weight", weights[i]);
+                    edge.iterate();
+                }
+            }
+            final Integer[] ats = {2, null, 4, 1};
+            for (int i = 0; i < ats.length; i++) {
+                if (ats[i] == null) {
+                    g.V().has("uid", 1).property(VertexProperty.Cardinality.list, "visit", "v" + i).iterate();
+                } else {
+                    g.V().has("uid", 1).property(VertexProperty.Cardinality.list, "visit", "v" + i, "at", ats[i])
+                        .iterate();
+                }
+            }
+        }
+        tx.commit();
+
+        final List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> traversals = new ArrayList<>();
+        for (final String label : Arrays.asList("plain", "sorted")) {
+            traversals.add(g -> g.V().has("uid", 1).local(__.outE(label).order().by("weight")));
+            traversals.add(g -> g.V().has("uid", 1).local(__.outE(label).order().by("weight", desc)));
+            traversals.add(g -> g.V().has("uid", 1).local(__.outE(label).order().by("weight").limit(2)));
+            traversals.add(g -> g.V().has("uid", 1).local(__.outE(label).order().by("weight", desc).limit(3)));
+            //An order of two keys, which the query of a vertex's edges doesn't take, is TinkerPop's
+            traversals.add(g -> g.V().has("uid", 1).local(__.outE(label).order().by("weight", desc).by("uid")));
+        }
+        traversals.add(g -> g.V().has("uid", 1).local(__.properties("visit").order().by("at")));
+        traversals.add(g -> g.V().has("uid", 1).local(__.properties("visit").order().by("at", desc).limit(2)));
+        for (final boolean batch : new boolean[]{true, false}) {
+            final JanusGraphTransaction batchTx = graph.buildTransaction().multiQuery(batch).start();
+            for (final Function<GraphTraversalSource, GraphTraversal<?, ?>> traversal : traversals) {
+                assertEquals(relationResults(traversal.apply(reference)),
+                    relationResults(traversal.apply(batchTx.traversal())),
+                    (batch ? "batch: " : "") + traversal.apply(reference));
+            }
+            //A query of the vertex keeps the edges without the key, last when ascending, in a batch too
+            final JanusGraphVertex v = (JanusGraphVertex) batchTx.traversal().V().has("uid", 1).next();
+            final List<Object> weights = relationResults(
+                v.query().labels("plain").direction(OUT).orderBy("weight", asc).edges(), "weight");
+            assertEquals(Arrays.asList(1, 2, 3, 5, null, null), weights);
+            assertEquals(weights, relationResults(batchTx.multiQuery(v).labels("plain").direction(OUT)
+                .orderBy("weight", asc).edges().get(v), "weight"));
+            batchTx.rollback();
+        }
+    }
+
+    //The uids of the edges, and the values of the properties, which the traversal returns, in its order
+    private static List<Object> relationResults(GraphTraversal<?, ?> traversal) {
+        final List<Object> results = new ArrayList<>();
+        traversal.forEachRemaining(result -> results.add(result instanceof VertexProperty
+            ? ((VertexProperty<?>) result).value() : ((Element) result).value("uid")));
+        return results;
+    }
+
+    //Each relation's value of the key, null where it has none
+    private static List<Object> relationResults(Iterable<? extends JanusGraphRelation> relations, String key) {
+        final List<Object> values = new ArrayList<>();
+        relations.forEach(relation -> values.add(relation.property(key).orElse(null)));
+        return values;
     }
 
     // flaky test: https://github.com/JanusGraph/janusgraph/issues/1498

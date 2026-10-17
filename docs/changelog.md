@@ -931,6 +931,58 @@ For code built on these classes: `ElasticSearchClient.avg` returns a `Double`, a
 `MixedIndexAggQuery.execute` return null when there is no value to aggregate; and Lucene's `SumCollector` is now
 `StatsCollector`.
 
+##### Ordered traversals leave out the elements which have no value of an order key
+
+JanusGraph folds an `order().by(key)` of a traversal into its query, which an index sorts where it can, and the query
+returned the elements which have no value of the key as well, after the others. TinkerPop leaves such an element out, as
+a `by()` modulator which yields no value filters the traverser, and so does TinkerGraph. So
+`g.V().has('kind', 'k').order().by('name')` returned the vertices of kind `k` without a `name` too, and now leaves them
+out, and a `count()` after it no longer counts them. This holds wherever JanusGraph folds the order in: in a query which
+a mixed index sorts, which now skips these elements itself, in one which JanusGraph sorts in memory, for the elements
+which a transaction added or changed, and in an order of the edges or properties of a vertex, such as
+`local(outE('knows').order().by('weight').limit(10))`. Several `order()` steps in a row, such as
+`order().by('a').order().by('b')`, leave out the elements without `a` or `b`, and are now folded in together, ordering
+by `b` and then by `a`, as TinkerPop's sorts, which keep the order of ties, do. JanusGraph dropped all but the last of
+them. Where the index which sorts the query doesn't hold the key of an earlier step, as with only `b` indexed in
+`order().by('a').order().by('b').limit(10)`, JanusGraph now sorts every match in memory, where it read the first ten by
+`b` from the index and left their ties unordered. An order by the same key twice, such as
+`order().by('name').by('name', desc)`, failed with an `IllegalArgumentException`, and now orders by the first.
+
+To keep the elements without the key, order by a traversal which gives them a value, such as
+`order().by(coalesce(values('name'), constant('')))`, which places them where the empty string sorts. JanusGraph doesn't
+fold such an order into its query, and TinkerPop sorts the elements in memory. A query of JanusGraph's API, such as
+`graph.query().has('kind', 'k').orderBy('name', asc).vertices()`, keeps them, and places them last. So does an order of
+vertices by a key of several values, `LIST` or `SET`, which JanusGraph folds in where every mixed index backend can sort
+by such a key, as Elasticsearch and Solr can, and it keeps the vertices without a value of its other keys too, as in
+`order().by('names').by('age')`: JanusGraph can't order vertices by such a key in memory, which the vertices that a
+transaction changed would need, and TinkerPop fails on a vertex with several values of the key. An edge holds one value
+of a key at most, so an order of edges leaves out those without the key whatever its cardinality.
+
+Some orders which JanusGraph folded in are now left to TinkerPop:
+
+* `order().by(key, shuffle)`, which failed with an `AssertionError`;
+* an order of the edges or properties of a vertex by several keys, such as
+  `local(outE('knows').order().by('weight').by('time'))`, which failed with an `IllegalArgumentException`, as such a
+  query takes a single key;
+* an order whose `by()` modulator has a bypass traversal: the deprecated `ProductiveByStrategy` gives it one which
+  yields null where the key has none, which TinkerPop places first when ascending, and `SubgraphStrategy` with a filter
+  of vertex properties one which reads only the properties which the filter keeps;
+* an order of other elements than the step's by an `ElementValueComparator`, such as
+  `order().by(out('knows'), new ElementValueComparator('name', asc))`, which JanusGraph folded in as an order of the
+  step's own elements;
+* `order()` steps in a row of which one isn't by a key;
+* an `or()` with a branch whose `order()` JanusGraph doesn't fold in and which may leave the element out, such as
+  `__.has('kind', 'p').order().by('name', shuffle)`, which JanusGraph folded in without that order. Such an `or()`, and
+  the `has()` steps after it, now go to TinkerPop, which checks every element which the query of the `has()` steps
+  before the `or()` returns, every vertex where there are none, and so fails under `query.force-index`. That holds for a
+  branch ordered by any traversal, as JanusGraph can't tell that one such as `by(__.values('age').count())` leaves no
+  element out.
+
+The edges or properties of a vertex which a traversal fetches in a batch, as `query.batch.enabled` has it by default,
+could come in the order of the storage backend rather than the one which the traversal folded in, where no
+vertex-centric index sorts them in that order; so could those of an ordered `JanusGraphMultiVertexQuery`. They are now
+sorted.
+
 ##### The strings of an ordered graph query come in the order of their code points
 
 A graph query ordered by a string key, such as `g.V().has('kind', 'k').order().by('name')`, now orders the strings by
@@ -947,8 +999,8 @@ these came out of order:
 * in a traversal whose `or()` branches JanusGraph answers by queries of their own, as it does when no index answers
   the `or()`, and in most cases when a branch has a `range()` or a `limit()` of its own, which merged the results of
   those queries by UTF-16 unit. That merge also failed with an `IllegalStateException` when it compared an element
-  without the order key with one of another branch; such an element now comes last, as in any ordered graph query
-  which JanusGraph answers.
+  without the order key with one of another branch; the traversal now leaves such an element out, as the section
+  *Ordered traversals leave out the elements which have no value of an order key* describes.
 
 An `order()` which JanusGraph doesn't fold into its query, such as one by a traversal, is TinkerPop's and still compares
 strings by UTF-16 unit, and so does the order of a vertex's edges or properties by a key, in which the storage backend

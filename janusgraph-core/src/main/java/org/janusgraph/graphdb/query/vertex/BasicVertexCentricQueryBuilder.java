@@ -376,8 +376,10 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         Iterable<JanusGraphRelation> merge = null;
         if (vertex instanceof CacheVertex && !isPartitionedVertex(vertex) && vertex.isLoaded()) {
             CacheVertex cacheVertex = (CacheVertex) vertex;
+            //The cached relations come in the order of the storage backend, which a query in another order sorts on the
+            //default path
             boolean hasNotCachedQueries = baseQuery.getQueries().stream()
-                .anyMatch(q -> cacheVertex.getFromCache(q.getBackendQuery()) == null || !q.isFitted());
+                .anyMatch(q -> cacheVertex.getFromCache(q.getBackendQuery()) == null || !q.isFitted() || !q.isSorted());
             if (hasNotCachedQueries) {
                 //Fall back to default path
                 return executeRelations(vertex, baseQuery);
