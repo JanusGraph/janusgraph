@@ -18,6 +18,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
@@ -25,6 +26,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.CoalesceStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.NoOpBarrierStep;
@@ -177,12 +179,18 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         Step<?, ?> currentStep = janusgraphStep.getNextStep();
         while (true) {
             if (currentStep instanceof OrStep && janusgraphStep instanceof JanusGraphStep) {
+                boolean anyPasses = false;
                 for (final Traversal.Admin<?, ?> child : ((OrStep<?>) currentStep).getLocalChildren()) {
-                    if (!validFoldInHasContainer(child.getStartStep(), false)){
+                    if (!validFoldInOrBranch(child)) {
                         return;
                     }
+                    anyPasses |= branchPassesElements(child);
                 }
-                ((OrStep<?>) currentStep).getLocalChildren().forEach(t ->localFoldInHasContainer(janusgraphStep, t.getStartStep(), t, rootTraversal));
+                ((OrStep<?>) currentStep).getLocalChildren().forEach(t -> localFoldInHasContainer(janusgraphStep, t));
+                if (!anyPasses) {
+                    //An or() which lets no element through, as each of its branches skips the element
+                    ((JanusGraphStep<?, ?>) janusgraphStep).addLocalHasContainersOfNoBranch((OrStep<?>) currentStep);
+                }
                 currentStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(currentStep);
             } else if (currentStep instanceof HasContainerHolder && validFoldInHasContainer(currentStep, true)){
@@ -203,25 +211,116 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
     }
 
-    static void localFoldInHasContainer(final HasStepFolder janusgraphStep, final Step<?, ?>  tinkerpopStep, final Traversal.Admin<?, ?> traversal,
-            final Traversal<?, ?> rootTraversal){
-        Step<?, ?> currentStep = tinkerpopStep;
-        while (true) {
-            if (currentStep instanceof HasContainerHolder) {
-                List<HasContainer> localHasContainers = janusgraphStep.addLocalHasContainersConvertingAndPContainers(
-                    traversal.getParent(), ((HasContainerHolder<?, ?>) currentStep).getHasContainers());
-                currentStep.getLabels().forEach(janusgraphStep::addLabel);
-                traversal.removeStep(currentStep);
-                currentStep = foldInOrder(janusgraphStep, currentStep, traversal, rootTraversal, janusgraphStep instanceof JanusGraphStep && ((JanusGraphStep)janusgraphStep).returnsVertex(), localHasContainers);
-                foldInRange(janusgraphStep, currentStep, traversal, localHasContainers);
-            } else if (isExistsStep(currentStep)) {
-                currentStep = foldInHasFilter(traversal, (TraversalFilterStep) currentStep);
-                continue;
-            } else if (!(currentStep instanceof IdentityStep) && !(currentStep instanceof NoOpBarrierStep)) {
-                break;
+    /*
+     * Folds a branch of an or() into the step as the conditions which the branch holds an element to, unless it lets
+     * no element through. TinkerPop checks each element against the branch on its own, so that each of its steps is a
+     * condition on that element, whatever their order: a has() as it is, a range() or limit() which lets the element
+     * through unless it skips it or its limit is 0, and an order() which lets it through where each of its by(key)
+     * modulators has a value
+     */
+    static void localFoldInHasContainer(final HasStepFolder janusgraphStep, final Traversal.Admin<?, ?> branch) {
+        final List<HasContainer> conditions = new ArrayList<>();
+        for (final Step<?, ?> step : branch.getSteps()) {
+            if (step instanceof HasContainerHolder) {
+                conditions.addAll(((HasContainerHolder<?, ?>) step).getHasContainers());
+            } else if (isExistsStep(step)) {
+                final PropertiesStep<?> properties = (PropertiesStep<?>) ((TraversalFilterStep<?>) step)
+                    .getLocalChildren().get(0).getStartStep();
+                conditions.add(new HasContainer(properties.getPropertyKeys()[0], P.neq(null)));
+            } else if (step instanceof OrderGlobalStep) {
+                for (final String key : keysWithValues((OrderGlobalStep<?, ?>) step)) {
+                    conditions.add(new HasContainer(key, P.neq(null)));
+                }
             }
-            currentStep = currentStep.getNextStep();
+            step.getLabels().forEach(janusgraphStep::addLabel);
         }
+        if (branchPassesElements(branch)) {
+            janusgraphStep.addLocalHasContainersConvertingAndPContainers(branch.getParent(), conditions);
+        }
+    }
+
+    //Whether each step of an or() branch is a condition on the element which it is run for, at least one a has()
+    static boolean validFoldInOrBranch(final Traversal.Admin<?, ?> branch) {
+        boolean hasCondition = false;
+        for (final Step<?, ?> step : branch.getSteps()) {
+            if (step instanceof HasContainerHolder) {
+                if (!validJanusGraphHas(((HasContainerHolder<?, ?>) step).getHasContainers())) {
+                    return false;
+                }
+                hasCondition = true;
+            } else if (isExistsStep(step)) {
+                hasCondition = true;
+            } else if (step instanceof OrderGlobalStep) {
+                if (keysWithValues((OrderGlobalStep<?, ?>) step) == null) {
+                    return false;
+                }
+            } else if (!(step instanceof RangeGlobalStep) && !(step instanceof IdentityStep)
+                    && !(step instanceof NoOpBarrierStep)) {
+                return false;
+            }
+        }
+        return hasCondition;
+    }
+
+    //Whether an or() branch, run for a single element, can let it through: none of its ranges skips it or takes none
+    static boolean branchPassesElements(final Traversal.Admin<?, ?> branch) {
+        for (final Step<?, ?> step : branch.getSteps()) {
+            if (step instanceof RangeGlobalStep) {
+                final RangeGlobalStep<?> range = (RangeGlobalStep<?>) step;
+                if (range.getLowRange() > 0 || range.getHighRange() == 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /*
+     * The keys of which an order(), run for a single element, needs a value to let it through, as TinkerPop leaves out
+     * an element for which a by() modulator yields nothing; null where a modulator may yield nothing otherwise than for
+     * a missing key. A by() of the element itself, as an ElementValueComparator takes it, or of its id or label lets
+     * it through, as a single element isn't compared and every element has an id and a label, and so does a by(key)
+     * which ProductiveByStrategy makes yield null where the key has none
+     */
+    static List<String> keysWithValues(final OrderGlobalStep<?, ?> order) {
+        final List<String> keys = new ArrayList<>();
+        for (final Pair<? extends Traversal.Admin<?, ?>, ?> comparator : order.getComparators()) {
+            final Traversal.Admin<?, ?> modulator = comparator.getValue0();
+            if (modulator instanceof ValueTraversal) {
+                final Traversal.Admin<?, ?> bypass = ((ValueTraversal<?, ?>) modulator).getBypassTraversal();
+                if (bypass == null) {
+                    keys.add(((ValueTraversal<?, ?>) modulator).getPropertyKey());
+                } else if (!yieldsNullWithoutAValue(bypass)) {
+                    return null;
+                }
+            } else if (!(modulator instanceof IdentityTraversal) && !isTokenOfEveryElement(modulator)) {
+                return null;
+            }
+        }
+        return keys;
+    }
+
+    //Whether the bypass traversal of a by(key) is ProductiveByStrategy's, a coalesce() of the value and a constant null
+    static boolean yieldsNullWithoutAValue(final Traversal.Admin<?, ?> bypass) {
+        if (!(bypass.getStartStep() instanceof CoalesceStep)) {
+            return false;
+        }
+        final List<? extends Traversal.Admin<?, ?>> children =
+            ((CoalesceStep<?, ?>) bypass.getStartStep()).getLocalChildren();
+        final Traversal.Admin<?, ?> last = children.get(children.size() - 1);
+        return last instanceof org.apache.tinkerpop.gremlin.process.traversal.lambda.ConstantTraversal
+            && ((org.apache.tinkerpop.gremlin.process.traversal.lambda.ConstantTraversal<?, ?>) last).next() == null;
+    }
+
+    //Whether a by() modulator is T.id or T.label, of which every element has a value
+    static boolean isTokenOfEveryElement(final Traversal.Admin<?, ?> modulator) {
+        if (!(modulator instanceof org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal)) {
+            return false;
+        }
+        final org.apache.tinkerpop.gremlin.structure.T token =
+            ((org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal<?, ?>) modulator).getToken();
+        return token == org.apache.tinkerpop.gremlin.structure.T.id
+            || token == org.apache.tinkerpop.gremlin.structure.T.label;
     }
 
     static boolean validFoldInHasContainer(final Step<?, ?>  tinkerpopStep, final boolean defaultValue){
