@@ -58,6 +58,7 @@ In additional to the web-based graph visualizer, JanusGraph supports a range of 
 * [Graphlytic](https://graphlytic.com/)
 * [Gremlin-Visualizer](https://github.com/prabushitha/gremlin-visualizer) - the original repository on which [JanusGraph-Visualizer](https://github.com/JanusGraph/janusgraph-visualizer) is based on.
 * [G.V() - Gremlin IDE](https://gdotv.com)
+* [Janus Studio](https://github.com/Zorabi/janus-studio) - a cross-platform desktop IDE for JanusGraph and Apache TinkerPop with interactive graph visualization.
 * [KeyLines by Cambridge Intelligence](https://cambridge-intelligence.com/keylines/janusgraph/)
 * [Ogma by Linkurious](https://doc.linkurious.com/ogma/latest/tutorials/janusgraph/)
 * [ReGraph by Cambridge Intelligence](https://cambridge-intelligence.com/regraph/)
