@@ -154,6 +154,24 @@ public class SerializerTest extends SerializerTestCommon {
         assertFalse(serialize.writesMissingValuesLast(byte[].class));
     }
 
+    /**
+     * Every NaN, whatever its sign and payload, is written in byte order as the same value, after +∞, so that the slice
+     * of a vertex-centric index which ends before NaN holds every other value, and that of NaN every NaN
+     */
+    @Test
+    public void testEveryNaNIsWrittenInByteOrderAsOneValueAfterPositiveInfinity() {
+        final StaticBuffer doubleNaN = byteOrder(Double.NaN, Double.class);
+        assertTrue(byteOrder(Double.POSITIVE_INFINITY, Double.class).compareTo(doubleNaN) < 0);
+        for (final long bits : new long[]{0x7ff0000000000001L, 0x7fffffffffffffffL, 0xfff8000000000000L, -1L}) {
+            assertEquals(doubleNaN, byteOrder(Double.longBitsToDouble(bits), Double.class), Long.toHexString(bits));
+        }
+        final StaticBuffer floatNaN = byteOrder(Float.NaN, Float.class);
+        assertTrue(byteOrder(Float.POSITIVE_INFINITY, Float.class).compareTo(floatNaN) < 0);
+        for (final int bits : new int[]{0x7f800001, 0x7fffffff, 0xffc00000, -1}) {
+            assertEquals(floatNaN, byteOrder(Float.intBitsToFloat(bits), Float.class), Integer.toHexString(bits));
+        }
+    }
+
     private StaticBuffer byteOrder(Object value, Class<?> type) {
         final DataOutput out = serialize.getDataOutput(64);
         out.writeObjectByteOrder(value, type);
