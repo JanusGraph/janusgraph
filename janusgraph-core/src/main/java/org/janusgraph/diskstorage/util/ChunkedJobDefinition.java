@@ -14,6 +14,8 @@
 
 package org.janusgraph.diskstorage.util;
 
+import com.google.common.base.Preconditions;
+
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -60,7 +62,19 @@ public class ChunkedJobDefinition<T, C, R> {
     /**
      * Final computed result
      */
-    private final CompletableFuture<R> result = new CompletableFuture<>();
+    private final CompletableFuture<R> result;
+
+    public ChunkedJobDefinition() {
+        this(new CompletableFuture<>());
+    }
+
+    /**
+     * @param result the future to complete with the final result, which lets a producer that has handed out the future
+     *               already switch to processing in chunks
+     */
+    public ChunkedJobDefinition(CompletableFuture<R> result) {
+        this.result = Preconditions.checkNotNull(result, "The future to complete is required");
+    }
 
     public Queue<T> getDataChunks() {
         return dataChunks;
