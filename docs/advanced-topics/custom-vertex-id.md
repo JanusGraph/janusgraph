@@ -49,12 +49,18 @@ all gremlin clients as it is a JanusGraph specific utility. You can create verti
 
 ```groovy
 g = graph.traversal()
-g.addV().property(T.id, graph.getIDManager().toVertexID(123L)).next()
+g.addV().property(T.id, graph.getIDManager().toVertexId(123L)).next()
 g.tx().commit()
 ```
 
 Note that if you want to get back the original ID you provided, you need to call
-`graph.getIDManager().fromVertexID(long)`.
+`graph.getIDManager().fromVertexId(long)`.
+
+The ID JanusGraph stores — and the ID it prints in errors — is that transformed
+value, not the number you passed in. If you convert `1` with `toVertexId`, a
+second insert fails with `Vertex with given id already exists: 256` (or another
+internal id), not `1`. Call `fromVertexId` on the number in the message to
+recover the original.
 
 ## Custom String ID
 
