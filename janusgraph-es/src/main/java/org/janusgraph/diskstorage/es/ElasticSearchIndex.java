@@ -1461,23 +1461,47 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
+    //A decimal comparison finds what it finds in memory, as Cmp.test has it. Elasticsearch holds finite values only, as
+    //it rejects a document with an infinity or NaN, and some versions fail a query with one, or read a range up to NaN
+    //as one which reaches every value. Every finite value compares with an infinity or NaN as 0.0 does, a value of a
+    //Float key too, as Cmp compares numbers by their doubleValue and no finite value equals such a bound: a comparison
+    //with one finds every value or none
     private Map<String, Object> getRelationFromCmp(final Cmp cmp, String key, final Object value) {
+        if (value instanceof Number && !Double.isFinite(((Number) value).doubleValue())) {
+            return cmp.test(0.0, value) ? compat.exists(key) : compat.matchNone();
+        }
         switch (cmp) {
             case EQUAL:
                 return compat.term(key, value);
             case NOT_EQUAL:
                 return compat.boolMust(ImmutableList.of(compat.exists(key), compat.boolMustNot(compat.term(key, value))));
             case LESS_THAN:
-                return compat.lt(key, value);
+                return compat.lt(key, lowerZero(value));
             case LESS_THAN_EQUAL:
-                return compat.lte(key, value);
+                return compat.lte(key, upperZero(value));
             case GREATER_THAN:
-                return compat.gt(key, value);
+                return compat.gt(key, upperZero(value));
             case GREATER_THAN_EQUAL:
-                return compat.gte(key, value);
+                return compat.gte(key, lowerZero(value));
             default:
                 throw new IllegalArgumentException("Unexpected relation: " + cmp);
         }
+    }
+
+    //Elasticsearch orders -0.0 below 0.0, while a comparison, as AttributeUtils.compare, holds them equal, and only
+    //equality, as Double.equals, tells them apart. A comparison's decimal bound at either zero spans both: an inclusive
+    //bound moves to the zero on its far side and a strict one to the zero on its near side, beyond which
+    //Elasticsearch's neighbour skips both
+    private static Object lowerZero(Object bound) {
+        return isDecimalZero(bound) ? -0.0 : bound;
+    }
+
+    private static Object upperZero(Object bound) {
+        return isDecimalZero(bound) ? 0.0 : bound;
+    }
+
+    private static boolean isDecimalZero(Object value) {
+        return (value instanceof Double || value instanceof Float) && ((Number) value).doubleValue() == 0.0;
     }
 
     public Map<String,Object> getFilter(Condition<?> condition, KeyInformation.StoreRetriever information) {

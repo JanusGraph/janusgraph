@@ -468,6 +468,31 @@ which holds none as it is. To clear those too, stop the instances, delete the di
 `index.[X].directory/<index name>`, and reindex those indexes. They stay enabled meanwhile, so until the reindex has
 finished, their queries miss the elements which it hasn't written yet.
 
+##### Elasticsearch, OpenSearch and Solr compare decimals with zero, NaN and the infinities as JanusGraph does
+
+A comparison of a `Float` or `Double` key with a bound at zero didn't find on an Elasticsearch, OpenSearch or Solr
+mixed index what it finds without an index. These indexes order `-0.0` below `0.0`, while JanusGraph's comparisons
+hold the two zeros equal, and only `eq` and `neq` tell them apart: `has("score", lt(0.0))` found the elements with a
+score of `-0.0`, `gt(-0.0)` those with `0.0`, `gte(0.0)` missed those with `-0.0`, and `lte(-0.0)` those with `0.0`.
+Now a bound at either zero finds the same elements whichever sign its zero has, as on Lucene.
+
+These indexes also order NaN above positive infinity, while NaN equals NaN alone and compares to no other value. On
+Solr, `lt` and `lte` of NaN found every value, and `gte` of NaN missed NaN. Now `eq`, `lte` and `gte` of NaN find NaN,
+`lt` and `gt` of NaN nothing, and `neq` of NaN every other value, as on Lucene.
+
+Elasticsearch and OpenSearch hold neither NaN nor the infinities: they reject the document, or the update of the
+document, of an element with such a value of a `Float` or `Double` key, so that the mixed index misses a new element,
+or keeps an existing element's document as it was before the change, and JanusGraph logs that the index mutation
+failed. Yet `lt` and `lte` of NaN found every value of a `Double` key on Elasticsearch 7 and later and on OpenSearch,
+and of a `Float` key on Elasticsearch 8 and later. And a comparison with NaN or an infinity failed with "Could not call
+index" where the cluster rejected the query: `eq` and `neq` of a `Double` key on Elasticsearch 6 to 8 and on
+OpenSearch, every comparison of a `Float` key on Elasticsearch 6 and 7 and on OpenSearch, and every comparison of either
+key on Elasticsearch 6. Now such a comparison isn't sent to them: as every value they hold is finite, it finds every
+element with a value of the key where any finite value passes it, as `lt` of positive infinity and `neq` of NaN do, and
+none otherwise.
+
+Only the queries change, so no reindexing is needed.
+
 ##### Ranges and not-equals of a `TEXTSTRING` key compare its strings whole
 
 A key mapped as `TEXTSTRING` holds each string whole in a field of its own, which the index sorts the key by, and its

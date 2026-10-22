@@ -20,6 +20,11 @@ are some of the Elasticsearch features supported by JanusGraph:
     for indexing. Supports circles, boxes and polygons for querying
     point properties and all shapes for querying non-point properties.
 -   **Numeric Range**: Supports all numeric comparisons in `Compare`.
+    Elasticsearch and OpenSearch hold finite `Float` and `Double` values
+    only: they reject the document, or the update of the document, of an
+    element with NaN or an infinity, so that the mixed index misses a new
+    element, or keeps an existing element's document as it was before
+    the change.
 -   **Flexible Configuration**: Supports remote operation and open-ended
     settings customization.
 -   **Collections**: Supports indexing SET and LIST cardinality

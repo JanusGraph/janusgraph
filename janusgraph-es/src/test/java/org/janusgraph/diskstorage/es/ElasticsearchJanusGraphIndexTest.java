@@ -278,6 +278,12 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
         return esr.getEsMajorVersion().getValue() <= 7;
     }
 
+    //Elasticsearch and OpenSearch reject a document with a float or a double which isn't finite
+    @Override
+    protected boolean supportsNonFiniteDecimals() {
+        return false;
+    }
+
     @Test
     public void testCircleBKDIndexMappingCanBeUsedWithDefaultProcessor(){
         clopen();

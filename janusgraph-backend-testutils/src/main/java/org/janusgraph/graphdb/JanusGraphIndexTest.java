@@ -1124,6 +1124,67 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     /**
+     * A comparison of decimals finds what it finds in memory, as Cmp.test has it, on every index: a bound at either
+     * zero finds the same elements, as a comparison holds -0.0 and 0.0 equal and only equality tells them apart, while
+     * the indexes order -0.0 below 0.0; NaN, which they order above positive infinity, equals NaN alone and compares to
+     * no other value; and an infinity is beyond every other value. Elasticsearch, which holds neither NaN nor the
+     * infinities, compares its values with them too.
+     */
+    @Test
+    public void testComparisonsOfDecimalsFindWhatTheyFindInMemory() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey dbl = makeKey("dbl", Double.class);
+        final PropertyKey flt = makeKey("flt", Float.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(dbl).addKey(flt)
+            .buildMixedIndex(INDEX);
+        finishSchema();
+
+        final List<Double> values = new ArrayList<>(Arrays.asList(-0.0, 0.0, -1.5, 1.5));
+        if (supportsNonFiniteDecimals()) {
+            values.addAll(Arrays.asList(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN));
+        }
+        final Map<Object, Double> doubles = new HashMap<>();
+        final Map<Object, Float> floats = new HashMap<>();
+        for (final double value : values) {
+            final Object id = tx.addVertex("kind", "k", "dbl", value, "flt", (float) value).id();
+            doubles.put(id, value);
+            floats.put(id, (float) value);
+        }
+        //A document without either key, which no comparison finds
+        final Object without = tx.addVertex("kind", "k").id();
+        doubles.put(without, null);
+        floats.put(without, null);
+        clopen();
+
+        for (final double bound : new double[]{0.0, -0.0, 1.5, -1.5, Double.POSITIVE_INFINITY,
+                Double.NEGATIVE_INFINITY, Double.NaN}) {
+            for (final Cmp relation : Cmp.values()) {
+                assertDecimalsFound(doubles, "dbl", relation, bound);
+                assertDecimalsFound(floats, "flt", relation, (float) bound);
+            }
+        }
+        //The mixed index answers them alone, without memory
+        newTx();
+        evaluateQuery(tx.query().has("dbl", Cmp.LESS_THAN, 0.0), ElementCategory.VERTEX,
+            supportsNonFiniteDecimals() ? 2 : 1, new boolean[]{true, true}, "mixed");
+    }
+
+    //Whether the index holds the decimals which aren't finite, NaN and the infinities, which Elasticsearch rejects
+    protected boolean supportsNonFiniteDecimals() {
+        return true;
+    }
+
+    //The vertices which a comparison of the key finds, and their count, against those whose value passes it in memory
+    private void assertDecimalsFound(Map<Object, ? extends Number> values, String key, Cmp relation, Number bound) {
+        final Set<Object> expected = values.entrySet().stream().filter(e -> relation.test(e.getValue(), bound))
+            .map(Map.Entry::getKey).collect(Collectors.toSet());
+        final GraphTraversalSource g = tx.traversal();
+        final String message = key + " " + relation + " " + bound;
+        assertEquals(expected, g.V().has(key, new P<>(relation, bound)).id().toSet(), message);
+        assertEquals((long) expected.size(), g.V().has(key, new P<>(relation, bound)).count().next(), message);
+    }
+
+    /**
      * Tests indexing boolean
      */
     @Test

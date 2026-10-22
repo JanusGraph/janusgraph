@@ -54,6 +54,8 @@ public class SolrIndexQueryFilterTest {
 
     private static final String INDEX = "solr";
     private static final String NUM = "num_i";
+    private static final String DBL = "dbl_d";
+    private static final String FLT = "flt_f";
     private static final String TEXT = "text_t";
     private static final String NAME = "name_s";
     private static final String POINT = "point_g";
@@ -62,6 +64,8 @@ public class SolrIndexQueryFilterTest {
 
     static {
         KEYS.put(NUM, new StandardKeyInformation(Integer.class, Cardinality.SINGLE));
+        KEYS.put(DBL, new StandardKeyInformation(Double.class, Cardinality.SINGLE));
+        KEYS.put(FLT, new StandardKeyInformation(Float.class, Cardinality.SINGLE));
         KEYS.put(TEXT, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.TEXT.asParameter()));
         // an analyzer which splits a string into its words
         KEYS.put(NAME, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.STRING.asParameter(),
@@ -92,6 +96,14 @@ public class SolrIndexQueryFilterTest {
 
     private static Condition<JanusGraphElement> num(Cmp cmp, int value) {
         return PredicateCondition.of(NUM, cmp, value);
+    }
+
+    private static Condition<JanusGraphElement> dbl(Cmp cmp, double value) {
+        return PredicateCondition.of(DBL, cmp, value);
+    }
+
+    private static Condition<JanusGraphElement> flt(Cmp cmp, float value) {
+        return PredicateCondition.of(FLT, cmp, value);
     }
 
     private static Condition<JanusGraphElement> words(String words) {
@@ -160,6 +172,33 @@ public class SolrIndexQueryFilterTest {
         assertEquals("((*:* -(num_i:1) -(num_i:2) ) OR num_i:1)",
             filter(or(and(not(num(Cmp.EQUAL, 1)), not(num(Cmp.EQUAL, 2))), num(Cmp.EQUAL, 1))));
         assertEquals("((num_i:1 ) OR num_i:2)", filter(or(and(num(Cmp.EQUAL, 1)), num(Cmp.EQUAL, 2))));
+    }
+
+    @Test
+    public void testDecimalComparisonsAtZeroAndWithNaN() {
+        // Solr orders -0.0 below 0.0, which a comparison holds equal: a range's bound at either zero spans both, while
+        // equality tells them apart
+        assertEquals("dbl_d:[* TO \\-0.0}", filter(dbl(Cmp.LESS_THAN, 0.0)));
+        assertEquals("dbl_d:[* TO 0.0]", filter(dbl(Cmp.LESS_THAN_EQUAL, -0.0)));
+        assertEquals("dbl_d:{0.0 TO *]", filter(dbl(Cmp.GREATER_THAN, -0.0)));
+        assertEquals("dbl_d:[\\-0.0 TO *]", filter(dbl(Cmp.GREATER_THAN_EQUAL, 0.0)));
+        assertEquals("flt_f:[* TO \\-0.0}", filter(flt(Cmp.LESS_THAN, 0.0f)));
+        assertEquals("flt_f:{0.0 TO *]", filter(flt(Cmp.GREATER_THAN, -0.0f)));
+        assertEquals("dbl_d:\\-0.0", filter(dbl(Cmp.EQUAL, -0.0)));
+        assertEquals("dbl_d:* -dbl_d:0.0", filter(dbl(Cmp.NOT_EQUAL, 0.0)));
+        // equality and an inclusive comparison with NaN find NaN alone, a strict one nothing, and a not-equal every
+        // other value
+        assertEquals("dbl_d:NaN", filter(dbl(Cmp.EQUAL, Double.NaN)));
+        assertEquals("dbl_d:NaN", filter(dbl(Cmp.LESS_THAN_EQUAL, Double.NaN)));
+        assertEquals("dbl_d:NaN", filter(dbl(Cmp.GREATER_THAN_EQUAL, Double.NaN)));
+        assertEquals("dbl_d:{Infinity TO *]", filter(dbl(Cmp.LESS_THAN, Double.NaN)));
+        assertEquals("dbl_d:{Infinity TO *]", filter(dbl(Cmp.GREATER_THAN, Double.NaN)));
+        assertEquals("dbl_d:* -dbl_d:NaN", filter(dbl(Cmp.NOT_EQUAL, Double.NaN)));
+        assertEquals("flt_f:NaN", filter(flt(Cmp.LESS_THAN_EQUAL, Float.NaN)));
+        assertEquals("flt_f:{Infinity TO *]", filter(flt(Cmp.LESS_THAN, Float.NaN)));
+        // a whole number keeps its bound
+        assertEquals("num_i:[* TO 0}", filter(num(Cmp.LESS_THAN, 0)));
+        assertEquals("num_i:[0 TO *]", filter(num(Cmp.GREATER_THAN_EQUAL, 0)));
     }
 
     @Test
