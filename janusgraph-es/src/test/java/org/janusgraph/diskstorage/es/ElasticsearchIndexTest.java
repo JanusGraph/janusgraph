@@ -94,6 +94,7 @@ import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -263,6 +264,26 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, Mapping.BKD.asParameter()), Geo.INTERSECT));
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, Mapping.BKD.asParameter()), Geo.CONTAINS));
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, Mapping.BKD.asParameter()), Geo.DISJOINT));
+    }
+
+    //Elasticsearch sorts by a keyword, which a STRING key and the dual field of a TEXTSTRING key are without a custom
+    //string analyzer, and by numbers, dates, booleans and UUIDs, and not by a text field
+    @Test
+    public void testOrderingSupport() {
+        assertTrue(index.supportsOrdering(allKeys.get(NAME)));
+        assertTrue(index.supportsOrdering(allKeys.get(TEXT_STRING)));
+        assertTrue(index.supportsOrdering(of(String.class, Cardinality.SINGLE, Mapping.TEXTSTRING.asParameter(),
+            new Parameter<>(ParameterType.TEXT_ANALYZER.getName(), getEnglishAnalyzerName()))));
+        assertFalse(index.supportsOrdering(allKeys.get(STRING)));
+        assertFalse(index.supportsOrdering(allKeys.get(FULL_TEXT)));
+        assertFalse(index.supportsOrdering(allKeys.get(TEXT)));
+        assertFalse(index.supportsOrdering(allKeys.get(KEYWORD)));
+        assertFalse(index.supportsOrdering(of(String.class, Cardinality.SINGLE)));
+        for (final Class<?> dataType : Arrays.asList(Byte.class, Short.class, Integer.class, Long.class, Float.class,
+                Double.class, Date.class, Instant.class, Boolean.class, UUID.class)) {
+            assertTrue(index.supportsOrdering(of(dataType, Cardinality.SINGLE)), dataType.toString());
+        }
+        assertFalse(index.supportsOrdering(of(Geoshape.class, Cardinality.SINGLE)));
     }
 
     @Test

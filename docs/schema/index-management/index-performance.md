@@ -287,12 +287,25 @@ When using `order().by()` it is important to note that:
     For large result sets, this can be very expensive.
 
 -   Mixed indexes support ordering property keys with **SINGLE** cardinality
-    natively and efficiently. However,
+    natively and efficiently, by the keys which their backends can sort
+    by, as the next point describes. However,
     the property key used in the order().by() method must have been
     previously added to the mixed indexed for native result ordering
     support. This is important in cases where the the order().by() key
     is different from the query keys. If the property key is not part of
     the index, then sorting requires loading all results into memory.
+
+-   A mixed index sorts the results only by a key which its backend
+    can sort by. None of JanusGraph's index backends sorts by a string
+    key of **TEXT** mapping, which is the default for strings, as the
+    index holds the words of each string rather than the string.
+    Elasticsearch and OpenSearch don't sort by a key of **STRING** or
+    **TEXTSTRING** mapping with a custom `string-analyzer`, which
+    makes its whole strings a text field, and Lucene doesn't sort by a
+    UUID key. JanusGraph sorts the results of an order by such a key
+    itself, which requires loading all results into memory. To have
+    the index sort by a string key, map it as **STRING**, or as
+    **TEXTSTRING** to search its words too.
 
 -   Only Elasticsearch and Solr mixed index backends support ordering
     property keys with **LIST** cardinality natively and efficiently.
@@ -336,10 +349,8 @@ When using `order().by()` it is important to note that:
     paging with such an order, such as
     `has('uid', gt(last)).order().by('uid').by(T.id)`, can skip UUIDs,
     so it needs an order which JanusGraph folds, such as
-    `order().by('uid')`. Lucene doesn't sort by a UUID key: a query
-    which a Lucene index answers, ordered by a UUID key which the
-    index holds, fails with "Could not call index", and JanusGraph
-    doesn't sort the results itself instead.
+    `order().by('uid')`. Lucene doesn't sort by a UUID key, so
+    JanusGraph sorts the results of such an order itself.
 
 ### Label Constraint
 

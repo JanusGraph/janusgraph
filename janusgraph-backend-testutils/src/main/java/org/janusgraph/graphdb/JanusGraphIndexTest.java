@@ -1314,9 +1314,9 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             tx.addVertex("tag", "t", "uid", byString.get(i), "unindexedUid", byString.get(i));
         }
         final List<UUID> reversed = ImmutableList.copyOf(byString).reverse();
-        for (final String key : supportsOrderingByUUID() ? Arrays.asList("uid", "unindexedUid")
-                : Collections.singletonList("unindexedUid")) {
-            //Sorted by the index, with the new vertices merged in, or in memory, by a key which no index holds
+        for (final String key : Arrays.asList("uid", "unindexedUid")) {
+            //Sorted by the index, with the new vertices merged in, or in memory, by a key which no index holds or which
+            //the index can't sort by, as Lucene can't by a UUID key
             assertEquals(byString, g.V().has("tag", "t").order().by(key, asc).values(key).toList(), key);
             assertEquals(byString.subList(0, 3), g.V().has("tag", "t").order().by(key, asc).limit(3).values(key)
                 .toList(), key);
@@ -1348,9 +1348,6 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
      */
     @Test
     public void testOrderByUUIDPutsElementsWithoutTheKeyLast() {
-        if (!supportsOrderingByUUID()) {
-            return;
-        }
         final PropertyKey tag = makeKey("tag", String.class);
         final PropertyKey uid = makeKey("uid", UUID.class);
         mgmt.buildIndex("mixed", Vertex.class).addKey(tag, getStringMapping()).addKey(uid).buildMixedIndex(INDEX);
@@ -1380,11 +1377,6 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         final List<Object> ids = new ArrayList<>();
         query.vertices().forEach(vertex -> ids.add(vertex.id()));
         return ids;
-    }
-
-    //Whether the index sorts by a UUID key, which Lucene doesn't
-    protected boolean supportsOrderingByUUID() {
-        return true;
     }
 
 
@@ -6427,13 +6419,13 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     //Applies the change to the transaction of the test and to the reference graph
-    private void onBoth(GraphTraversalSource reference, Function<GraphTraversalSource, GraphTraversal<?, ?>> change) {
+    protected void onBoth(GraphTraversalSource reference, Function<GraphTraversalSource, GraphTraversal<?, ?>> change) {
         change.apply(tx.traversal()).iterate();
         change.apply(reference).iterate();
     }
 
     //The uids of the elements which the traversal returns, in its order, or its values which aren't elements
-    private static List<Object> results(GraphTraversal<?, ?> traversal) {
+    protected static List<Object> results(GraphTraversal<?, ?> traversal) {
         final List<Object> results = new ArrayList<>();
         traversal.forEachRemaining(result -> results.add(result instanceof Element
             ? ((Element) result).value("uid") : result));
@@ -6938,10 +6930,122 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
     }
 
     /**
-     * An index selection strategy may hold an index to sort the results by a key of several values which the index's
-     * backend can't sort by, as Lucene's can't, which the index then isn't given: as one which decides by the
-     * deprecated IndexSelectionUtil.indexCoversOrder(MixedIndexType, OrderList) does. JanusGraph sorts the results
-     * itself.
+     * A mixed index isn't given an order by a key which its backend can't sort by, and JanusGraph sorts the results
+     * itself: none of JanusGraph's index backends sorts by a string key of TEXT mapping, which DEFAULT is for strings,
+     * as it holds the words of the strings rather than the strings. That holds for an order by such a key and by one
+     * which the index can sort by, either way round, too. An order by a TEXTSTRING key is still sorted by the index, by
+     * its whole strings. The traversals return what a TinkerGraph which holds the same vertices returns, also next to a
+     * text predicate which the index answers, and in a transaction which changes the vertices.
+     */
+    @Test
+    public void testOrderByATextKeyIsSortedByJanusGraph() {
+        if (!indexFeatures.supportsStringMapping(Mapping.TEXT)) {
+            return;
+        }
+        final boolean textString = indexFeatures.supportsStringMapping(Mapping.TEXTSTRING);
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey title = makeKey("title", String.class);
+        final PropertyKey note = makeKey("note", String.class);
+        final PropertyKey heading = makeKey("heading", String.class);
+        makeKey("uid", Integer.class);
+        //A title of TEXT mapping, a note of the DEFAULT one, and a heading, which holds the title, of TEXTSTRING
+        final JanusGraphManagement.IndexBuilder mixed = mgmt.buildIndex("mixed", Vertex.class)
+            .addKey(kind, getStringMapping()).addKey(title, Mapping.TEXT.asParameter()).addKey(note);
+        if (textString) {
+            mixed.addKey(heading, Mapping.TEXTSTRING.asParameter());
+        }
+        mixed.buildMixedIndex(INDEX);
+        finishSchema();
+
+        final GraphTraversalSource reference = TinkerGraph.open().traversal();
+        //uid, kind, title and note: in mixed case, so that the order of the strings is none of the orders of their
+        //words, which the index holds
+        final Object[][] vertices = {{1, "p", "word of mouth", "some notes"}, {2, "p", "Zebra word", "More notes"},
+            {3, "p", "a word apart", null}, {4, "p", null, "notes again"}, {5, "p", "big deal", "Notes on notes"},
+            {6, "q", "another word", "extra notes"}, {7, "p", "word", "last notes"}};
+        for (final Object[] vertex : vertices) {
+            onBoth(reference, g -> {
+                GraphTraversal<Vertex, Vertex> added = g.addV().property("uid", vertex[0]).property("kind", vertex[1]);
+                if (vertex[2] != null) {
+                    added = added.property("title", vertex[2]).property("heading", vertex[2]);
+                }
+                return vertex[3] == null ? added : added.property("note", vertex[3]);
+            });
+        }
+        tx.commit();
+        newTx();
+
+        final List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> traversals = new ArrayList<>(Arrays.asList(
+            g -> g.V().has("kind", "p").order().by("title"),
+            g -> g.V().has("kind", "p").order().by("title", desc),
+            g -> g.V().has("kind", "p").order().by("title").limit(2),
+            g -> g.V().has("kind", "p").order().by("title", desc).limit(2),
+            g -> g.V().has("kind", "p").order().by("note").limit(3),
+            g -> g.V().has("kind", "p").order().by("note", desc).range(1, 3),
+            g -> g.V().has("kind", "p").order().by("title").by("note"),
+            //by a key which the index can sort by and one which it can't, either way round
+            g -> g.V().has("title", Text.textContains("word")).order().by("kind", desc).by("title"),
+            g -> g.V().has("kind", "p").order().by("title", desc).by("kind").limit(3),
+            g -> g.V().has("kind", "p").order().by("title").count(),
+            g -> g.V().has("title", Text.textContains("word")).order().by("title"),
+            g -> g.V().has("title", Text.textContains("word")).order().by("title", desc).limit(2),
+            g -> g.V().has("note", Text.textContains("notes")).order().by("note", desc).limit(3)));
+        if (textString) {
+            traversals.addAll(Arrays.asList(
+                g -> g.V().has("kind", "p").order().by("heading"),
+                g -> g.V().has("kind", "p").order().by("heading", desc).limit(2),
+                g -> g.V().has("heading", Text.textContains("word")).order().by("heading").limit(3)));
+        }
+        for (final Function<GraphTraversalSource, GraphTraversal<?, ?>> traversal : traversals) {
+            assertEquals(results(traversal.apply(reference)), results(traversal.apply(tx.traversal())),
+                traversal.apply(reference).toString());
+        }
+        //The index sorts only the order by the TEXTSTRING key, as a new transaction's profile shows
+        tx.rollback();
+        newTx();
+        final GraphTraversalSource g = tx.traversal();
+        assertFalse(indexSortsBy(g.V().has("kind", "p").order().by("title").limit(2), "title"));
+        assertFalse(indexSortsBy(g.V().has("kind", "p").order().by("note", desc), "note"));
+        assertFalse(indexSortsBy(g.V().has("title", Text.textContains("word")).order().by("title"), "title"));
+        assertFalse(indexSortsBy(g.V().has("title", Text.textContains("word")).order().by("kind", desc).by("title"),
+            "kind"));
+        if (textString) {
+            assertTrue(indexSortsBy(g.V().has("kind", "p").order().by("heading").limit(2), "heading"));
+        }
+        tx.rollback();
+
+        //A transaction adds a vertex, gives one a title and takes another one's, and changes a title and a note
+        newTx();
+        onBoth(reference, g2 -> g2.addV().property("uid", 8).property("kind", "p").property("title", "Alpha word")
+            .property("heading", "Alpha word").property("note", "new notes"));
+        onBoth(reference, g2 -> g2.V().has("uid", 4).property("title", "word play").property("heading", "word play"));
+        onBoth(reference, g2 -> g2.V().has("uid", 7).properties("title", "heading").drop());
+        onBoth(reference, g2 -> g2.V().has("uid", 2).property("title", "zebra crossing")
+            .property("heading", "zebra crossing"));
+        onBoth(reference, g2 -> g2.V().has("uid", 5).property("note", "a note"));
+        for (final Function<GraphTraversalSource, GraphTraversal<?, ?>> traversal : traversals) {
+            assertEquals(results(traversal.apply(reference)), results(traversal.apply(tx.traversal())),
+                "in a transaction: " + traversal.apply(reference));
+        }
+        tx.rollback();
+    }
+
+    //Whether a mixed index sorts the traversal's results by the key, as the order of its query in the profile shows
+    protected static boolean indexSortsBy(GraphTraversal<?, ?> traversal, String key) {
+        final List<String> queries = new ArrayList<>();
+        for (final Metrics metrics : traversal.profile().next().getMetrics()) {
+            collectBackendQueries(metrics, queries);
+        }
+        //Solr's field names may carry the suffix of a dynamic field
+        final String pattern = "(?s).*\\b(ASC|DESC)\\(" + key + "(_[a-z]+)?\\).*";
+        return queries.stream().anyMatch(query -> query.matches(pattern));
+    }
+
+    /**
+     * An index selection strategy may hold an index to sort the results by a key which the index's backend can't sort
+     * by, which the index then isn't given: a key of several values, as Lucene can't sort by one, or a string key of
+     * TEXT mapping, as no backend can, as one which decides by the deprecated
+     * IndexSelectionUtil.indexCoversOrder(MixedIndexType, OrderList) does. JanusGraph sorts the results itself.
      */
     @Test
     public void testResultsWhichAStrategyHoldsSortedByAnIndexWithoutTheOrderAreSortedInMemory() {
@@ -6950,15 +7054,17 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         makeKey("uid", String.class);
         final PropertyKey names = mgmt.makePropertyKey("names").dataType(String.class).cardinality(Cardinality.LIST)
             .make();
+        final PropertyKey title = makeKey("title", String.class);
         mgmt.buildIndex("mixed", Vertex.class).addKey(gender, getStringMapping()).addKey(names, getStringMapping())
-            .buildMixedIndex(INDEX);
+            .addKey(title, getTextMapping()).buildMixedIndex(INDEX);
         finishSchema();
         tx.addVertex("gender", "female", "uid", "d");
-        tx.addVertex("gender", "female", "uid", "c").property(VertexProperty.Cardinality.list, "names", "n");
-        final JanusGraphVertex b = tx.addVertex("gender", "female", "uid", "b");
+        tx.addVertex("gender", "female", "uid", "c", "title", "a word")
+            .property(VertexProperty.Cardinality.list, "names", "n");
+        final JanusGraphVertex b = tx.addVertex("gender", "female", "uid", "b", "title", "about it");
         b.property(VertexProperty.Cardinality.list, "names", "b");
         b.property(VertexProperty.Cardinality.list, "names", "z");
-        final JanusGraphVertex a = tx.addVertex("gender", "female", "uid", "a");
+        final JanusGraphVertex a = tx.addVertex("gender", "female", "uid", "a", "title", "Hello world");
         a.property(VertexProperty.Cardinality.list, "names", "m");
         a.property(VertexProperty.Cardinality.list, "names", "a");
         tx.commit();
@@ -6970,6 +7076,12 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
                 .forEach(v -> uids.add(v.value("uid")));
             //by a, b, n, and no name ascending; by z, n, m, and no name descending
             assertEquals(order == asc ? Arrays.asList("a", "b", "c", "d") : Arrays.asList("b", "c", "a", "d"), uids,
+                order.toString());
+            uids.clear();
+            tx.query().has("gender", "female").orderBy("title", order).vertices()
+                .forEach(v -> uids.add(v.value("uid")));
+            //by the whole titles, and no title last
+            assertEquals(order == asc ? Arrays.asList("a", "c", "b", "d") : Arrays.asList("b", "c", "a", "d"), uids,
                 order.toString());
         }
     }

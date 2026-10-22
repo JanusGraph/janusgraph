@@ -178,6 +178,10 @@ public class IndexSerializer {
         return getMixedIndex(index).supports(getKeyInformation(field),predicate);
     }
 
+    public boolean supportsOrdering(final MixedIndexType index, final ParameterIndexField field) {
+        return getMixedIndex(index).supportsOrdering(getKeyInformation(field));
+    }
+
     public boolean supportsExistsQuery(final MixedIndexType index, final ParameterIndexField field) {
         if (Geoshape.class.equals(getKeyInformation(field).getDataType())) {
             return getMixedIndex(index).getFeatures().supportsGeoExists();

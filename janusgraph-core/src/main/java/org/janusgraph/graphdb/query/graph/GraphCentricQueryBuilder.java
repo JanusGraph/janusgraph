@@ -287,9 +287,10 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     /*
      * The indexes which the strategy selected, sorted only where the first of them takes the query's order, each of its
      * keys in its direction: a strategy may hold an index to sort the results to which IndexSerializer gave no order,
-     * as it doesn't give an index whose backend can't sort by a key of several values an order by such a key, and a
-     * custom strategy which decides by the deprecated IndexSelectionUtil.indexCoversOrder(MixedIndexType, OrderList)
-     * would, as would one which gives the index only part of the order. JanusGraph sorts such results.
+     * as it doesn't give an index an order by a key which its backend can't sort by, such as a key of several values
+     * or a string key of TEXT mapping, and a custom strategy which decides by the deprecated
+     * IndexSelectionUtil.indexCoversOrder(MixedIndexType, OrderList) would, as would one which gives the index only
+     * part of the order. JanusGraph sorts such results.
      */
     private IndexSelectionStrategy.SelectedIndexQuery sortedOnlyWhereTheIndexSorts(
             final IndexSelectionStrategy.SelectedIndexQuery selected) {

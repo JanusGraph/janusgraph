@@ -16,16 +16,19 @@ package org.janusgraph.diskstorage.es;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
@@ -38,6 +41,7 @@ import org.janusgraph.diskstorage.mixed.utils.processor.NoTransformCircleProcess
 import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.util.IndexRecordUtil;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
@@ -45,9 +49,13 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
@@ -379,6 +387,57 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
         g.V(id).properties("shapes").hasValue(Geoshape.point(5, 5)).drop().iterate();
         Assertions.assertEquals(Collections.singletonList(id),
             g.V().has("shapes", Geo.geoContains(Geoshape.box(4, 4, 6, 6))).id().toList());
+        tx.rollback();
+    }
+
+    //A STRING key with a custom string analyzer, and the field of the whole strings of such a TEXTSTRING key, are text
+    //fields rather than keywords, which Elasticsearch doesn't sort by: JanusGraph sorts an order by such a key itself,
+    //as a TinkerGraph which holds the same vertices does
+    @Test
+    public void testOrderByAStringKeyWithAStringAnalyzerIsSortedByJanusGraph() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey code = makeKey("code", String.class);
+        final PropertyKey caption = makeKey("caption", String.class);
+        makeKey("uid", Integer.class);
+        final Parameter<String> analyzer = ParameterType.STRING_ANALYZER.getParameter("standard");
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, Mapping.STRING.asParameter())
+            .addKey(code, Mapping.STRING.asParameter(), analyzer)
+            .addKey(caption, Mapping.TEXTSTRING.asParameter(), analyzer).buildMixedIndex(INDEX);
+        finishSchema();
+
+        final GraphTraversalSource reference = TinkerGraph.open().traversal();
+        //uid, kind, and the code and caption, whose order isn't that of their words
+        final Object[][] vertices = {{1, "p", "Beta two"}, {2, "p", "alpha"}, {3, "p", null}, {4, "p", "alpha beta"},
+            {5, "p", "Alpha one"}, {6, "q", "beta"}};
+        for (final Object[] vertex : vertices) {
+            onBoth(reference, g -> {
+                final GraphTraversal<Vertex, Vertex> added = g.addV().property("uid", vertex[0])
+                    .property("kind", vertex[1]);
+                return vertex[2] == null ? added : added.property("code", vertex[2]).property("caption", vertex[2]);
+            });
+        }
+        tx.commit();
+        newTx();
+
+        final List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> traversals = Arrays.asList(
+            g -> g.V().has("kind", "p").order().by("code"),
+            g -> g.V().has("kind", "p").order().by("code", desc).limit(2),
+            g -> g.V().has("kind", "p").order().by("caption").limit(3),
+            g -> g.V().has("kind", "p").order().by("caption", desc),
+            g -> g.V().has("caption", Text.textContains("beta")).order().by("caption"));
+        for (final Function<GraphTraversalSource, GraphTraversal<?, ?>> traversal : traversals) {
+            Assertions.assertEquals(results(traversal.apply(reference)), results(traversal.apply(tx.traversal())),
+                traversal.apply(reference).toString());
+        }
+        //The index sorts by kind, a STRING key without an analyzer, and not by the others, as a new transaction's
+        //profile shows
+        tx.rollback();
+        newTx();
+        final GraphTraversalSource g = tx.traversal();
+        Assertions.assertTrue(indexSortsBy(g.V().has("caption", Text.textContains("beta")).order().by("kind").limit(2),
+            "kind"));
+        Assertions.assertFalse(indexSortsBy(g.V().has("kind", "p").order().by("code").limit(2), "code"));
+        Assertions.assertFalse(indexSortsBy(g.V().has("kind", "p").order().by("caption").limit(2), "caption"));
         tx.rollback();
     }
 }

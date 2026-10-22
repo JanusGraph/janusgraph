@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -200,6 +201,26 @@ public class LuceneIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter<>(MAPPING, Mapping.PREFIX_TREE)), Geo.CONTAINS));
         assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter<>(MAPPING, Mapping.PREFIX_TREE)), Geo.INTERSECT));
         assertFalse(index.supports(of(Geoshape.class, Cardinality.SINGLE, new Parameter<>(MAPPING, Mapping.PREFIX_TREE)), Geo.DISJOINT));
+    }
+
+    //Lucene sorts by the doc values of the whole strings, which a STRING key and the dual field of a TEXTSTRING key
+    //hold, whatever their analyzers, and of numbers, dates and booleans, and has none of the words of a TEXT key, or
+    //of UUIDs
+    @Test
+    public void testOrderingSupport() {
+        assertTrue(index.supportsOrdering(allKeys.get(NAME)));
+        assertTrue(index.supportsOrdering(allKeys.get(STRING)));
+        assertTrue(index.supportsOrdering(allKeys.get(TEXT_STRING)));
+        assertTrue(index.supportsOrdering(allKeys.get(FULL_TEXT)));
+        assertFalse(index.supportsOrdering(allKeys.get(TEXT)));
+        assertFalse(index.supportsOrdering(allKeys.get(ANALYZED)));
+        assertFalse(index.supportsOrdering(of(String.class, Cardinality.SINGLE)));
+        for (final Class<?> dataType : Arrays.asList(Byte.class, Short.class, Integer.class, Long.class, Float.class,
+                Double.class, Date.class, Instant.class, Boolean.class)) {
+            assertTrue(index.supportsOrdering(of(dataType, Cardinality.SINGLE)), dataType.toString());
+        }
+        assertFalse(index.supportsOrdering(of(UUID.class, Cardinality.SINGLE)));
+        assertFalse(index.supportsOrdering(of(Geoshape.class, Cardinality.SINGLE)));
     }
 
 

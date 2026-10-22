@@ -1917,6 +1917,20 @@ public class ElasticSearchIndex implements IndexProvider {
         return false;
     }
 
+    //Elasticsearch doesn't sort by a text field, to which pushMapping maps a TEXT or DEFAULT string key, a STRING key
+    //with a custom string analyzer, and the dual field of a TEXTSTRING key with one, by which addOrderToQuery sorts it
+    @Override
+    public boolean supportsOrdering(KeyInformation information) {
+        final Class<?> dataType = information.getDataType();
+        if (AttributeUtils.isString(dataType)) {
+            final Mapping mapping = getStringMapping(information);
+            return (mapping == Mapping.STRING || mapping == Mapping.TEXTSTRING)
+                && !ParameterType.STRING_ANALYZER.hasParameter(information.getParameters());
+        }
+        return Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType == Instant.class
+            || dataType == Boolean.class || dataType == UUID.class;
+    }
+
     @Override
     public String mapKey2Field(String key, KeyInformation information) {
         IndexProvider.checkKeyValidity(key);
