@@ -471,6 +471,31 @@ stores and orders above positive infinity, also finds what it does without the i
 NaN, `lt` and `gt` of NaN nothing, and `neq` of any other value finds NaN as well. A raw range reaches NaN by a NaN
 bound, as in `score:[5 TO NaN]`.
 
+##### Vertex-centric ranges of `Float` and `Double` keys hold what their comparisons hold
+
+Where a vertex-centric index sorts the edges or properties of a vertex by a `Float` or `Double` key, it holds them in an
+order which puts `-0.0` before `0.0` and NaN after positive infinity, while the comparisons of a range take `-0.0` and
+`0.0` as equal, and NaN as equal to NaN alone and comparable with no other value. A range of the key with an end
+returned the relations which the index holds between its bounds, and the slice of a range from a start without an end,
+which JanusGraph checked in memory, began at its start. So `outE('rated').has('score', lt(0.0d))` returned an edge with
+a score of `-0.0`, `lte(-0.0d)` missed one of `0.0`, `lt(Double.NaN)` returned every edge with a score but NaN,
+`lte(Double.NaN)` every edge with a score, and `gte(0.0d)` missed an edge with a score of `-0.0`, also up to an end, as
+in `between(0.0d, 1.0d)`. Two conditions on such a key were combined in the order of the index too, also where no index
+sorts by the key, and so were two of a `Float` or `Double` value on a key of type `Object`:
+`has('score', gte(0.0d)).has('score', lte(-0.0d))` and `has('score', -0.0d).has('score', gte(0.0d))` returned nothing,
+and `has('score', Double.NaN).has('score', gt(1.0d))` returned the edges scored NaN where an index sorts by the score.
+These queries now return the relations whose values the comparisons hold, as a Lucene mixed index finds them (see
+"Lucene range queries reach zero, negative decimals, the infinities and the ends of `long`"): a bound at either zero
+holds both zeros where it is inclusive and neither where it is strict, `lte` and `gte` of NaN hold NaN, and `lt` and
+`gt` of NaN nothing. An equality still tells `-0.0` from `0.0`, as it does without the index. The examples write their
+decimals with a `d`, as Groovy, which the Gremlin Console runs, reads `-0.0` as a `BigDecimal`, which has no negative
+zero.
+
+The slice of a range from a start, such as `outE('rated').has('score', gt(1.0d))`, now ends before NaN, so that the
+index answers such a range of a `Float` or `Double` key alone, where JanusGraph checked it in memory, as it answers a
+range of a key of another type (see "Ordered traversals leave out the elements which have no value of an order key").
+What the index holds doesn't change, so nothing needs to be reindexed.
+
 ##### Lucene no longer keeps the floats, and the strings with unpaired surrogates, removed from `LIST` and `SET` keys
 
 On a Lucene mixed index, most floats (`Float`) removed from a key of `LIST` or `SET` cardinality stayed in the
@@ -1198,10 +1223,11 @@ order reads leaves out those without the key, and so do the slices of a `has(key
 `outE('knows').has('since')`, and of a range of the key which is open toward the larger values, such as
 `outE('knows').has('since', gt(2020))`, which JanusGraph checked in memory before. The slice ends before them, as
 JanusGraph writes a missing value after every value of the key, except for a key whose data type is `Class` or one with
-a custom serializer which writes null itself, for which JanusGraph still checks them in memory. It also still checks a
-range of a `Float` or `Double` key from a start in memory, as the slice holds NaN, which sorts after the other values,
-and +0.0 after -0.0, which the comparisons of the range reject. A `has(key)` of the edges or properties of a vertex now
-reads such an index, so that with a limit and no order it may return other relations than before.
+a custom serializer which writes null itself, for which JanusGraph still checks them in memory. The slice of a range of
+a `Float` or `Double` key from a start ends before NaN, which sorts after the other values and which the comparisons of
+the range reject (see "Vertex-centric ranges of `Float` and `Double` keys hold what their comparisons hold"). A
+`has(key)` of the edges or properties of a vertex now reads such an index, so that with a limit and no order it may
+return other relations than before.
 
 Some orders which JanusGraph folded in are now left to TinkerPop:
 

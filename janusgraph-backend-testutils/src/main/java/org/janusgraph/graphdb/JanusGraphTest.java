@@ -48,6 +48,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.TestCategory;
+import org.janusgraph.core.BaseVertexQuery;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.Connection;
 import org.janusgraph.core.EdgeLabel;
@@ -57,10 +58,12 @@ import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphMultiVertexQuery;
 import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.JanusGraphVertexQuery;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.ReadOnlyTransactionException;
@@ -132,12 +135,14 @@ import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
 import org.janusgraph.graphdb.olap.job.StaleIndexEntryRemoveJob;
 import org.janusgraph.graphdb.predicate.AndJanusPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.query.condition.MultiCondition;
@@ -2245,13 +2250,14 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         final JanusGraphVertex to = (JanusGraphVertex) check.traversal().V().has("uid", 2).next();
         evaluateQuery(v.query().labels("plain").direction(OUT).adjacent(to).has(ImplicitKey.JANUSGRAPHID.name()),
             EDGE, 1, 1, new boolean[]{false, true});
-        //and so does a range of floating point numbers from a start: its slice holds NaN, which they sort after the
-        //others, and +0.0 after -0.0, which the comparisons of the range reject. A has(key) holds them all
+        //A range of floating point numbers from a start is fitted too, where an index sorts the edges by the key: its
+        //slice ends before NaN, which they sort after the others, and starts after +0.0 where its start is a strict
+        //zero, as the range takes the zeros as equal. A has(key) holds them all
         evaluateQuery(v.query().labels("scored").direction(OUT).has("score"), EDGE, 4, 1, new boolean[]{true, true});
         evaluateQuery(v.query().labels("scored").direction(OUT).has("score", Cmp.GREATER_THAN, 1.0), EDGE, 1, 1,
-            new boolean[]{false, true});
+            new boolean[]{true, true});
         evaluateQuery(v.query().labels("scored").direction(OUT).has("score", Cmp.GREATER_THAN, -0.0), EDGE, 1, 1,
-            new boolean[]{false, true});
+            new boolean[]{true, true});
         check.rollback();
     }
 
@@ -2268,6 +2274,182 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         final List<Object> values = new ArrayList<>();
         relations.forEach(relation -> values.add(relation.property(key).orElse(null)));
         return values;
+    }
+
+    /**
+     * A range of a Float or Double key of the edges or properties of a vertex returns those whose values its conditions
+     * hold ({@link JanusGraphPredicate#test}), which take -0.0 and +0.0 as equal, and NaN as equal to NaN alone and
+     * comparable with no other value, also where a vertex-centric index sorts them by the key, ascending or descending,
+     * in an order which puts -0.0 before +0.0 and NaN after positive infinity: on such indexes of edges, alone or after
+     * another key, and of properties, as on a label which no index sorts, where a key of type Object holds the same
+     * values. Each condition, and each pair of conditions but those at the infinities, runs in a transaction of its
+     * own, which reads the slices from the storage backend, and each condition alone in a multi-query too, of the
+     * vertex and of the one which its edges go to, which reads the slices of both at once and returns their relations
+     * from the vertices' caches. The slices hold what the conditions hold, so the queries which they answer are fitted,
+     * that of a range from a start too.
+     */
+    @Test
+    public void testVertexCentricRangesOfFloatsAndDoublesHoldWhatTheirComparisonsHold() {
+        final PropertyKey score = mgmt.makePropertyKey("score").dataType(Double.class).make();
+        final PropertyKey rate = mgmt.makePropertyKey("rate").dataType(Float.class).make();
+        mgmt.makePropertyKey("any").dataType(Object.class).make();
+        mgmt.makePropertyKey("uid").dataType(Integer.class).make();
+        final PropertyKey group = mgmt.makePropertyKey("group").dataType(Integer.class).make();
+        mgmt.makeEdgeLabel("plain").make();
+        for (final PropertyKey key : Arrays.asList(score, rate)) {
+            mgmt.buildEdgeIndex(mgmt.makeEdgeLabel(key.name() + "Asc").make(), "by" + key.name(), OUT, asc, key);
+            mgmt.buildEdgeIndex(mgmt.makeEdgeLabel(key.name() + "Desc").make(), "by" + key.name(), OUT, desc, key);
+            mgmt.buildEdgeIndex(mgmt.makeEdgeLabel(key.name() + "Grouped").make(), "by" + key.name(), OUT,
+                key == score ? asc : desc, group, key);
+            mgmt.buildPropertyIndex(mgmt.makePropertyKey(key.name() + "Notes").dataType(String.class)
+                .cardinality(Cardinality.LIST).make(), "by" + key.name(), key == score ? desc : asc, key);
+        }
+        finishSchema();
+
+        //Edges of each label and properties of each key with these values of the keys, the last without them
+        final Double[] values = {Double.NaN, -0.0, 0.0, -1.5, 1.5, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
+            null};
+        final JanusGraphVertex v = tx.addVertex();
+        final JanusGraphVertex to = tx.addVertex();
+        for (int uid = 0; uid < values.length; uid++) {
+            for (final String type : Arrays.asList("plain", "scoreAsc", "scoreDesc", "scoreGrouped", "rateAsc",
+                    "rateDesc", "rateGrouped", "scoreNotes", "rateNotes")) {
+                final JanusGraphRelation relation = type.endsWith("Notes")
+                    ? v.property(VertexProperty.Cardinality.list, type, "note") : v.addEdge(type, to, "group", 1);
+                relation.property("uid", uid);
+                if (values[uid] != null) {
+                    relation.property("score", values[uid]);
+                    relation.property("rate", values[uid].floatValue());
+                    relation.property("any", values[uid]);
+                }
+            }
+        }
+        tx.commit();
+
+        //A key of type Object, which no index can sort, is read on the label without an index alone
+        for (final String key : Arrays.asList("score", "rate", "any")) {
+            final Function<Double, Object> typed = key.equals("rate") ? Double::floatValue : value -> value;
+            final List<String> types = key.equals("any") ? Collections.singletonList("plain")
+                : Arrays.asList("plain", key + "Asc", key + "Desc", key + "Grouped", key + "Notes");
+            //Each range at each bound, the equalities of both zeros and of NaN, two within(), and has(key), as pairs
+            //of a predicate and its value
+            final List<Object[]> conditions = new ArrayList<>();
+            for (final double bound : new double[]{Double.NEGATIVE_INFINITY, -1.5, -0.0, 0.0, 1.5,
+                    Double.POSITIVE_INFINITY, Double.NaN}) {
+                for (final Cmp cmp : new Cmp[]{Cmp.LESS_THAN, Cmp.LESS_THAN_EQUAL, Cmp.GREATER_THAN,
+                        Cmp.GREATER_THAN_EQUAL}) {
+                    conditions.add(new Object[]{cmp, typed.apply(bound)});
+                }
+            }
+            for (final double point : new double[]{-0.0, 0.0, Double.NaN}) {
+                conditions.add(new Object[]{Cmp.EQUAL, typed.apply(point)});
+            }
+            conditions.add(new Object[]{Contain.IN, Arrays.asList(typed.apply(-0.0), typed.apply(0.0))});
+            conditions.add(new Object[]{Contain.IN, Arrays.asList(typed.apply(Double.NaN), typed.apply(1.5))});
+            conditions.add(new Object[]{Cmp.NOT_EQUAL, null});
+            //Each condition alone, and each pair of them but for the bounds at the infinities, in either order
+            final List<List<Object[]>> queries = new ArrayList<>();
+            conditions.forEach(condition -> queries.add(Collections.singletonList(condition)));
+            for (final Object[] first : conditions) {
+                for (final Object[] second : conditions) {
+                    if (first != second && !isInfinite(first[1]) && !isInfinite(second[1])) {
+                        queries.add(Arrays.asList(first, second));
+                    }
+                }
+            }
+            for (final List<Object[]> query : queries) {
+                final List<Integer> expected = new ArrayList<>();
+                for (int uid = 0; uid < values.length; uid++) {
+                    final Object value = values[uid] == null ? null : typed.apply(values[uid]);
+                    if (query.stream().allMatch(condition -> ((JanusGraphPredicate) condition[0]).test(value,
+                            condition[1]))) {
+                        expected.add(uid);
+                    }
+                }
+                final String conditionsText = query.stream().map(condition -> key + " " + condition[0] + " "
+                    + condition[1]).collect(Collectors.joining(", "));
+                for (final boolean batch : query.size() == 1 ? new boolean[]{false, true} : new boolean[]{false}) {
+                    final JanusGraphTransaction check = graph.newTransaction();
+                    final JanusGraphVertex vertex = check.getVertex(v.id());
+                    for (final String type : types) {
+                        final List<Integer> uids;
+                        if (batch) {
+                            //Together with the vertex which the edges go to, which has no such edges out nor properties
+                            final JanusGraphVertex other = check.getVertex(to.id());
+                            final JanusGraphMultiVertexQuery relations = (JanusGraphMultiVertexQuery)
+                                relationsOf(check.multiQuery(vertex, other), type, key, query);
+                            final Map<JanusGraphVertex, ?> results = type.endsWith("Notes")
+                                ? relations.properties() : relations.edges();
+                            assertTrue(Iterables.isEmpty((Iterable<?>) results.get(other)),
+                                type + ": " + conditionsText);
+                            uids = sortedUids((Iterable<? extends JanusGraphRelation>) results.get(vertex));
+                        } else {
+                            final JanusGraphVertexQuery relations =
+                                (JanusGraphVertexQuery) relationsOf(vertex.query(), type, key, query);
+                            uids = sortedUids(type.endsWith("Notes") ? relations.properties() : relations.edges());
+                        }
+                        assertEquals(expected, uids, (batch ? "batch: " : "") + type + ": " + conditionsText);
+                    }
+                    check.rollback();
+                }
+            }
+        }
+
+        //A range from a start, which ends before NaN, one which ends at a zero, has(key), a range of NaN, which holds
+        //NaN alone, and both zeros, a slice each, are fitted where an index sorts the relations by the key, and
+        //checked in memory where none does
+        final JanusGraphTransaction plan = graph.newTransaction();
+        final JanusGraphVertex vertex = plan.getVertex(v.id());
+        for (final String key : Arrays.asList("score", "rate")) {
+            final Function<Double, Object> typed = key.equals("rate") ? Double::floatValue : value -> value;
+            for (final String type : Arrays.asList(key + "Asc", key + "Desc", key + "Grouped", key + "Notes")) {
+                final RelationCategory category = type.endsWith("Notes") ? PROPERTY : EDGE;
+                final Function<Object[], JanusGraphVertexQuery> relations = condition -> (JanusGraphVertexQuery)
+                    relationsOf(vertex.query(), type, key, Collections.singletonList(condition));
+                evaluateQuery(relations.apply(new Object[]{Cmp.GREATER_THAN, typed.apply(1.5)}),
+                    category, 1, 1, new boolean[]{true, true});
+                evaluateQuery(relations.apply(new Object[]{Cmp.GREATER_THAN_EQUAL, typed.apply(0.0)}),
+                    category, 4, 1, new boolean[]{true, true});
+                evaluateQuery(relations.apply(new Object[]{Cmp.LESS_THAN, typed.apply(-0.0)}),
+                    category, 2, 1, new boolean[]{true, true});
+                evaluateQuery(relations.apply(new Object[]{Cmp.LESS_THAN_EQUAL, typed.apply(0.0)}),
+                    category, 4, 1, new boolean[]{true, true});
+                evaluateQuery(relations.apply(new Object[]{Cmp.NOT_EQUAL, null}),
+                    category, 7, 1, new boolean[]{true, true});
+                evaluateQuery(relations.apply(new Object[]{Cmp.LESS_THAN_EQUAL, typed.apply(Double.NaN)}),
+                    category, 1, 1, new boolean[]{true, true});
+                evaluateQuery(relations.apply(new Object[]{Contain.IN,
+                    Arrays.asList(typed.apply(-0.0), typed.apply(0.0))}), category, 2, 2, new boolean[]{true, true});
+            }
+            evaluateQuery((JanusGraphVertexQuery) relationsOf(vertex.query(), "plain", key,
+                    Collections.singletonList(new Object[]{Cmp.GREATER_THAN, typed.apply(1.5)})),
+                EDGE, 1, 1, new boolean[]{false, true});
+        }
+        plan.rollback();
+    }
+
+    //The query of the vertex's properties of the type, a key whose name ends in "Notes", or of its edges of the label,
+    //out, of group 1 where the label's index sorts them by the group first, under the conditions on the key
+    private static BaseVertexQuery relationsOf(BaseVertexQuery query, String type, String key,
+                                               List<Object[]> conditions) {
+        query = type.endsWith("Notes") ? query.keys(type) : query.labels(type).direction(OUT);
+        if (type.endsWith("Grouped")) query = query.has("group", 1);
+        for (final Object[] condition : conditions) {
+            query = query.has(key, (JanusGraphPredicate) condition[0], condition[1]);
+        }
+        return query;
+    }
+
+    private static boolean isInfinite(Object value) {
+        return value instanceof Number && Double.isInfinite(((Number) value).doubleValue());
+    }
+
+    //The uids of the relations, ascending
+    private static List<Integer> sortedUids(Iterable<? extends JanusGraphRelation> relations) {
+        final List<Integer> uids = new ArrayList<>();
+        relations.forEach(relation -> uids.add(relation.value("uid")));
+        Collections.sort(uids);
+        return uids;
     }
 
     // flaky test: https://github.com/JanusGraph/janusgraph/issues/1498
@@ -5038,7 +5220,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         u = getV(tx, u);
 
         evaluateQuery(v.query().keys("name").has("weight", Cmp.GREATER_THAN, 3.6),
-                PROPERTY, 2 * numV / 10, 1, new boolean[]{false, true});
+                PROPERTY, 2 * numV / 10, 1, new boolean[]{true, true});
         evaluateQuery(v.query().keys("name").has("weight", Cmp.LESS_THAN, 0.9).orderBy("weight", asc),
                 PROPERTY, 2 * numV / 10, 1, new boolean[]{true, true}, weight, Order.ASC);
         evaluateQuery(v.query().keys("name").interval("weight", 1.1, 2.2).orderBy("weight", desc).limit(numV / 10),
@@ -5122,7 +5304,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         u = getV(tx, u);
 
         evaluateQuery(v.query().keys("name").has("weight", Cmp.GREATER_THAN, 3.6),
-                PROPERTY, 2 * numV / 10, 1, new boolean[]{false, true});
+                PROPERTY, 2 * numV / 10, 1, new boolean[]{true, true});
         evaluateQuery(v.query().keys("name").has("weight", Cmp.LESS_THAN, 0.9).orderBy("weight", asc),
                 PROPERTY, 2 * numV / 10, 1, new boolean[]{true, true}, weight, Order.ASC);
         evaluateQuery(v.query().keys("name").interval("weight", 1.1, 2.2).orderBy("weight", desc).limit(numV / 10),
@@ -5218,7 +5400,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         //######### UPDATED QUERIES ##########
 
         evaluateQuery(v.query().keys("name").has("weight", Cmp.GREATER_THAN, 3.6),
-                PROPERTY, 2 * numV / 10, 1, new boolean[]{false, true});
+                PROPERTY, 2 * numV / 10, 1, new boolean[]{true, true});
         evaluateQuery(v.query().keys("name").interval("time", numV / 2 - 10, numV / 2 + 10),
                 PROPERTY, 10, 1, new boolean[]{false, true});
         evaluateQuery(v.query().keys("name").interval("time", numV / 2 - 10, numV / 2 + 10).orderBy("weight", desc),
@@ -5254,7 +5436,7 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         //######### UPDATED QUERIES (copied from above) ##########
 
         evaluateQuery(v.query().keys("name").has("weight", Cmp.GREATER_THAN, 3.6),
-                PROPERTY, 2 * numV / 10, 1, new boolean[]{false, true});
+                PROPERTY, 2 * numV / 10, 1, new boolean[]{true, true});
         evaluateQuery(v.query().keys("name").interval("time", numV / 2 - 10, numV / 2 + 10),
                 PROPERTY, 10, 1, new boolean[]{false, true});
         evaluateQuery(v.query().keys("name").interval("time", numV / 2 - 10, numV / 2 + 10).orderBy("weight", desc),

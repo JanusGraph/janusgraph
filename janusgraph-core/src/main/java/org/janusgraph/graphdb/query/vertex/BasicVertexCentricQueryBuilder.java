@@ -762,13 +762,11 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         boolean isFitted = isIntervalFittedConditions && position==intervalConstraints.size();
         if (isFitted && position>0) {
             //If the last interval is open ended toward the larger values, then it's only fitted where the slice leaves
-            //out the NULL values, which are serialized with -1 (largest value) byte up front (see EdgeSerializer), and
-            //holds only the values which the condition holds: the slice of floating point numbers from a start holds
-            //NaN, which they sort after the others, and +0.0 after -0.0, which the comparisons of a range reject
+            //out the NULL values, which are serialized with -1 (largest value) byte up front (see EdgeSerializer). The
+            //interval of a range of floating point numbers from a start ends before NaN instead (see range)
             EdgeSerializer.TypedInterval lastInterval = sortKeyConstraints[position-1];
             if (!lastInterval.interval.isPoints() && lastInterval.interval.getEnd()==null
-                    && (!serializer.leavesOutMissingValues(lastInterval.key) || lastInterval.interval.getStart() != null
-                        && AttributeUtils.isDecimal(lastInterval.key.dataType()))) isFitted=false;
+                    && !serializer.leavesOutMissingValues(lastInterval.key)) isFitted=false;
         }
         SliceQuery q = serializer.getQuery(bestCandidate, direction, sortKeyConstraints);
         q.setLimit(computeLimit(intervalConstraints.size()-position, sliceLimit));
@@ -863,22 +861,44 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                     if (value != null || type instanceof ImplicitKey) return null;
                     return pint != null ? pint : new RangeInterval<>();
                 case LESS_THAN:
-                    newInt = new RangeInterval().setEnd(value, false);
-                    break;
                 case LESS_THAN_EQUAL:
-                    newInt = new RangeInterval().setEnd(value, true);
-                    break;
                 case GREATER_THAN:
-                    newInt = new RangeInterval().setStart(value, false);
-                    break;
                 case GREATER_THAN_EQUAL:
-                    newInt = new RangeInterval().setStart(value, true);
+                    newInt = range((Cmp) predicate, value);
                     break;
                 default: throw new AssertionError();
             }
         } else return null;
         assert newInt!=null;
         return pint!=null?intersect(pint, newInt):newInt;
+    }
+
+    //The interval of the values which the range holds, in the order in which the storage backend holds them as sort
+    //keys, which puts -0.0 before +0.0 and NaN after positive infinity, whereas the comparisons of a range of floating
+    //point numbers (AttributeUtils.compare) take -0.0 and +0.0 as equal, and NaN as equal to NaN alone and comparable
+    //with no other value. So, as in LuceneIndex.numericQuery, a bound at either zero holds both zeros where it is
+    //inclusive and neither where it is strict, a bound of NaN holds NaN alone where it is inclusive and nothing where
+    //it is strict, and a range from a start ends before NaN. The intersections of the intervals of several conditions
+    //then hold what the conditions hold, and so do the slices which EdgeSerializer writes from them
+    private static Interval range(Cmp cmp, Object value) {
+        final boolean inclusive = cmp == Cmp.LESS_THAN_EQUAL || cmp == Cmp.GREATER_THAN_EQUAL;
+        final boolean fromStart = cmp == Cmp.GREATER_THAN || cmp == Cmp.GREATER_THAN_EQUAL;
+        if (!AttributeUtils.isDecimal(value.getClass())) {
+            return fromStart ? new RangeInterval<>().setStart(value, inclusive)
+                : new RangeInterval<>().setEnd(value, inclusive);
+        }
+        final double bound = ((Number) value).doubleValue();
+        if (Double.isNaN(bound)) return new RangeInterval<>().setStart(value, inclusive).setEnd(value, inclusive);
+        //A start from -0.0 or after +0.0, an end up to +0.0 or before -0.0
+        if (bound == 0) value = decimal(value, fromStart == inclusive ? -0.0 : 0.0);
+        return fromStart ? new RangeInterval<>().setStart(value, inclusive).setEnd(decimal(value, Double.NaN), false)
+            : new RangeInterval<>().setEnd(value, inclusive);
+    }
+
+    //The number as a Float or a Double, whichever the given one is
+    private static Object decimal(Object type, double number) {
+        if (type instanceof Float) return (float) number;
+        return number;
     }
 
     //The intersection of the intervals, or null where their values are of different types, as those of a key of any
