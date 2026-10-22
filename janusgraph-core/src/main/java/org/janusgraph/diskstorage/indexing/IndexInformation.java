@@ -39,6 +39,21 @@ public interface IndexInformation {
      */
     boolean supports(KeyInformation information);
 
+    /**
+     * Whether the index can sort documents by a key with the given information, by its whole values, as an
+     * {@link IndexQuery} ordered by the key asks it to. An index which holds the words of the strings of a key, as of
+     * one of {@link org.janusgraph.core.schema.Mapping#TEXT} mapping, can't. JanusGraph gives the index no order by a
+     * key which it can't sort by, and sorts the results itself. Whether the index can sort by a key of several values
+     * is told by {@link IndexFeatures#supportsOrderingListProperty()} instead.
+     * <p>
+     * True by default, so that the index is given an order by any key which it holds.
+     *
+     * @param information Information on the key
+     * @return Whether the index can sort by the key
+     */
+    default boolean supportsOrdering(KeyInformation information) {
+        return true;
+    }
 
     /**
      * Adjusts the name of the key so that it is a valid field name that can be used in the index.

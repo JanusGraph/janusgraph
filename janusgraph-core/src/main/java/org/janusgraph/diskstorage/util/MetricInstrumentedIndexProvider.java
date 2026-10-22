@@ -133,6 +133,11 @@ public class MetricInstrumentedIndexProvider implements IndexProvider {
     }
 
     @Override
+    public boolean supportsOrdering(final KeyInformation information) {
+        return indexProvider.supportsOrdering(information);
+    }
+
+    @Override
     public String mapKey2Field(final String key, final KeyInformation information) {
         return indexProvider.mapKey2Field(key, information);
     }

@@ -1365,6 +1365,19 @@ public class SolrIndex implements IndexProvider {
         return false;
     }
 
+    //A TEXT or DEFAULT string key is a field of a text type, as the *_t of the example schema, which holds the words
+    //of its strings, so that Solr sorts the documents by the least word of each. A STRING key, and the dual field of a
+    //TEXTSTRING key, by which addOrderToQuery sorts it, are of the string type, as *_s, whatever the analyzer
+    @Override
+    public boolean supportsOrdering(KeyInformation information) {
+        final Class<?> dataType = information.getDataType();
+        if (AttributeUtils.isString(dataType)) {
+            return getStringMapping(information) != Mapping.TEXT;
+        }
+        return Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType == Instant.class
+            || dataType == Boolean.class || dataType == UUID.class;
+    }
+
     @Override
     public String mapKey2Field(String key, KeyInformation keyInfo) {
         IndexProvider.checkKeyValidity(key);

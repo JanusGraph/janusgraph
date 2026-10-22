@@ -1076,9 +1076,9 @@ order too. So UUIDs like these came out of order:
 
 Elasticsearch failed a graph query ordered by a UUID key which its index holds with "Could not call index", as
 JanusGraph asked it to sort by the key with an `unmapped_type` of null, which it rejects. JanusGraph now gives
-`keyword`, the type which it maps UUIDs to. Lucene still doesn't sort by a UUID key: a graph query which a Lucene index
-answers, ordered by a UUID key which the index holds, fails with "Could not call index", and JanusGraph doesn't sort the
-results itself instead.
+`keyword`, the type which it maps UUIDs to. Lucene doesn't sort by a UUID key, and failed such a query as well:
+JanusGraph now sorts its results itself, as the section *Orders by a key which the index backend can't sort by are
+sorted by JanusGraph* describes.
 
 On Solr, an ascending order by a UUID key which keeps the elements without the key, such as that of
 `graph.query().has('tag', 't').orderBy('uid', asc)`, put those elements first, where JanusGraph and Elasticsearch put
@@ -1400,6 +1400,42 @@ index had no mapping of the key, as under an external dynamic mapping
 before any document held the key, Elasticsearch 8 and 9 rejected the sort (`No mapper found for type [string]`), and
 Elasticsearch 6 and 7 sorted by `keyword` in its place, with a deprecation warning. It now names `keyword`, the type
 which JanusGraph maps the field a sort by a string key reads to, unless the key has a custom string analyzer.
+
+##### Orders by a key which the index backend can't sort by are sorted by JanusGraph
+
+A graph query which a mixed index answers, ordered by a key which the index holds, had the index sort the results by the
+key whatever its mapping. None of JanusGraph's index backends sorts by the strings of a key of `TEXT` mapping, which is
+the default for strings, as the index holds the words of each string rather than the string. So, for such a `title`,
+the traversal `g.V().has('kind', 'p').order().by('title')` failed with `Could not call index` on Lucene, which reported
+`unexpected docvalues type NONE for field 'title'`, and on Elasticsearch and OpenSearch, which don't sort by a text
+field (`Text fields are not optimised for operations that require per-document field data`), while Solr ordered the
+vertices by the least word of each title, ascending or descending, and a query of JanusGraph's API put those without a
+title first when ascending. Elasticsearch and OpenSearch failed in the same way on a key of `STRING` mapping with a
+custom `string-analyzer`, which JanusGraph maps to a text field, and on one of `TEXTSTRING` mapping with one, whose
+whole strings, by which the index sorts the key, are then a text field too. And Lucene failed on a UUID key, by which it
+doesn't sort (`Unsupported order specified on field [uid] with datatype [class java.util.UUID]`).
+
+JanusGraph now gives the index an order only by the keys which its backend can sort by, and sorts the results of the
+other orders itself, by the whole values. That holds for the queries of JanusGraph's API and for the orders which a
+traversal folds into its query, also under a custom index selection strategy which decides by the deprecated
+`IndexSelectionUtil.indexCoversOrder(MixedIndexType, OrderList)` whether the index sorts the results. As for any query
+whose order no index covers, JanusGraph reads every match before it returns the first one, and fails with a
+`QueryException` where there are 1,000,000 of them or more.
+
+Solr answered these orders from the index, reading only up to the limit of the query, and gave a key of the `DEFAULT`
+mapping, the default for strings, the right order but for the case of the letters where each of its values is a single
+word. Such a query now reads every match, and so fails where there are 1,000,000 of them or more. To have the index
+sort by a string key, on any backend, map it as `STRING`, or as `TEXTSTRING` to search its words as well, without a
+custom `string-analyzer` on Elasticsearch and OpenSearch: the index sorts such a key by its whole strings. An index
+keeps the mapping which it holds a key with, so that takes a new key, or a new index of the key and a reindex.
+
+For code built on these classes: `IndexInformation`, and so `IndexProvider`, has a new method
+`supportsOrdering(KeyInformation)`, which tells whether the index can sort by a key with the given information. It is
+true by default, so that an index provider which doesn't implement it is given every order, as before. A provider which
+can't sort by some keys should implement it, and one which hands its calls to another provider must forward it, as
+`MetricInstrumentedIndexProvider` now does, or the index is given every order again.
+`IndexSerializer.supportsOrdering(MixedIndexType, ParameterIndexField)` is new, and
+`IndexSelectionUtil.indexCoversOrder(MixedIndexType, OrderList, IndexSerializer)` checks it for each key of the order.
 
 ##### Transient Elasticsearch read failures are reattempted
 

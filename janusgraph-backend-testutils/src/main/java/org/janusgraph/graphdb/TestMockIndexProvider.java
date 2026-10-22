@@ -156,6 +156,11 @@ public class TestMockIndexProvider implements IndexProvider {
     }
 
     @Override
+    public boolean supportsOrdering(KeyInformation information) {
+        return index.supportsOrdering(information);
+    }
+
+    @Override
     public String mapKey2Field(String key, KeyInformation information) {
         return index.mapKey2Field(key,information);
     }

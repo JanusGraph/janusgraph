@@ -40,12 +40,12 @@ import java.util.function.Predicate;
 public class IndexSelectionUtil {
 
     /**
-     * Whether the mixed index holds each key of the order. An index whose backend can't sort by a key of several
-     * values isn't given an order by such a key, so where a strategy holds such an index to sort the results by this
-     * method, JanusGraph sorts them itself.
+     * Whether the mixed index holds each key of the order. An index whose backend can't sort by a key, such as a key
+     * of several values or a string key of TEXT mapping, isn't given an order by it, so where a strategy holds such an
+     * index to sort the results by this method, JanusGraph sorts them itself.
      *
      * @deprecated use {@link #indexCoversOrder(MixedIndexType, OrderList, IndexSerializer)}, which also checks that
-     * the index backend can sort by a key of several values
+     * the index backend can sort by each key
      */
     @Deprecated
     public static boolean indexCoversOrder(MixedIndexType index, OrderList orders) {
@@ -57,14 +57,16 @@ public class IndexSelectionUtil {
     }
 
     /**
-     * Whether the mixed index can sort the elements in the order: it holds each of the order keys, and its backend can
-     * sort by a key of several values, {@link Cardinality#LIST} or {@link Cardinality#SET}, where the order has one,
-     * as Elasticsearch, OpenSearch and Solr can and Lucene can't. Where it can't, JanusGraph sorts the elements itself.
+     * Whether the mixed index can sort the elements in the order: it holds each of the order keys, its backend can
+     * sort by each of them ({@link IndexSerializer#supportsOrdering}), as none of JanusGraph's backends can sort by a
+     * string key of TEXT mapping, and its backend can sort by a key of several values, {@link Cardinality#LIST} or
+     * {@link Cardinality#SET}, where the order has one, as Elasticsearch, OpenSearch and Solr can and Lucene can't.
+     * Where it can't, JanusGraph sorts the elements itself.
      */
     public static boolean indexCoversOrder(MixedIndexType index, OrderList orders, IndexSerializer serializer) {
         for (int i = 0; i < orders.size(); i++) {
             final PropertyKey key = orders.getKey(i);
-            if (!index.indexesKey(key)) {
+            if (!index.indexesKey(key) || !serializer.supportsOrdering(index, index.getField(key))) {
                 return false;
             }
             final Cardinality cardinality = key.cardinality();

@@ -14,6 +14,8 @@
 
 package org.janusgraph.diskstorage.util;
 
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.BaseTransactionConfigurable;
@@ -21,6 +23,7 @@ import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexMutation;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.util.stats.MetricManager;
 import org.junit.jupiter.api.Test;
@@ -37,6 +40,7 @@ import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_
 import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_MUTATE;
 import static org.janusgraph.diskstorage.util.MetricInstrumentedIndexProvider.M_RESTORE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -93,6 +97,17 @@ public class MetricInstrumentedIndexProviderTest {
 
         verify(indexProvider, times(1)).mutate(mutations, information, tx);
         assertEquals(1, MetricManager.INSTANCE.getCounter(group, prefix, M_MUTATE, M_CALLS).getCount());
+    }
+
+    //A graph with metrics enabled puts the wrapper around each index provider, which must still tell which keys the
+    //provider can sort by: the default of the interface would have the index sort by any key
+    @Test
+    public void supportsOrderingShouldBeTheProvidersAnswer() {
+        final KeyInformation text = new StandardKeyInformation(String.class, Cardinality.SINGLE,
+            Mapping.TEXT.asParameter());
+        when(indexProvider.supportsOrdering(text)).thenReturn(false);
+
+        assertFalse(new MetricInstrumentedIndexProvider(indexProvider, prefix).supportsOrdering(text));
     }
 
     private static BaseTransactionConfig configWithGroupName(String groupName) {

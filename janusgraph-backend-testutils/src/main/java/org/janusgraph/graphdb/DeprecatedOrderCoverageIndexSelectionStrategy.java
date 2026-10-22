@@ -31,8 +31,8 @@ import java.util.Set;
 /**
  * An index selection strategy which decides whether the first index it selects sorts the results by the deprecated
  * {@link IndexSelectionUtil#indexCoversOrder(MixedIndexType, OrderList)}, as one written before it took the
- * {@link IndexSerializer} would: it holds an index to sort by a key of several values which it holds whether or not the
- * index backend can sort by such a key.
+ * {@link IndexSerializer} would: it holds an index to sort by any key which the index holds, whether or not the index
+ * backend can sort by it, as by a key of several values or a string key of TEXT mapping.
  */
 public class DeprecatedOrderCoverageIndexSelectionStrategy extends BruteForceIndexSelectionStrategy {
 

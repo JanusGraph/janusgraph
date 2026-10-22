@@ -1411,6 +1411,20 @@ public class LuceneIndex implements IndexProvider {
         return false;
     }
 
+    //getSortOrder sorts by the doc values which buildIndexFields adds: of numbers, dates and booleans, and of the
+    //whole strings of a STRING key and of the dual field of a TEXTSTRING key. A TEXT or DEFAULT key, which holds the
+    //words of its strings, and a UUID key have none.
+    @Override
+    public boolean supportsOrdering(KeyInformation information) {
+        final Class<?> dataType = information.getDataType();
+        if (AttributeUtils.isString(dataType)) {
+            final Mapping mapping = Mapping.getMapping(information);
+            return mapping == Mapping.STRING || mapping == Mapping.TEXTSTRING;
+        }
+        return Number.class.isAssignableFrom(dataType) || dataType == Date.class || dataType == Instant.class
+            || dataType == Boolean.class;
+    }
+
     @Override
     public String mapKey2Field(String key, KeyInformation information) {
         IndexProvider.checkKeyValidity(key);

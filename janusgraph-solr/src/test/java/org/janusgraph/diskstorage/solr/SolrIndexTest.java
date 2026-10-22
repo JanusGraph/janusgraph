@@ -153,6 +153,25 @@ public abstract class SolrIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(UUID.class, Cardinality.SINGLE), Cmp.NOT_EQUAL));
     }
 
+    //Solr sorts by the string type of a STRING key and of the dual field of a TEXTSTRING key, whatever the analyzer,
+    //and by numbers, dates, booleans and UUIDs, and not by the whole strings of a TEXT key, of a text type
+    @Test
+    public void testOrderingSupport() {
+        assertTrue(index.supportsOrdering(allKeys.get(NAME)));
+        assertTrue(index.supportsOrdering(allKeys.get(STRING)));
+        assertTrue(index.supportsOrdering(allKeys.get(TEXT_STRING)));
+        assertTrue(index.supportsOrdering(allKeys.get(FULL_TEXT)));
+        assertFalse(index.supportsOrdering(allKeys.get(TEXT)));
+        assertFalse(index.supportsOrdering(allKeys.get(ANALYZED)));
+        assertFalse(index.supportsOrdering(of(String.class, Cardinality.SINGLE)));
+        for (final Class<?> dataType : ImmutableList.of(Byte.class, Short.class, Integer.class, Long.class, Float.class,
+                Double.class, Date.class, Boolean.class, UUID.class)) {
+            assertTrue(index.supportsOrdering(of(dataType, Cardinality.SINGLE)), dataType.toString());
+        }
+        assertTrue(index.supportsOrdering(allKeys.get(DATE)), "an Instant");
+        assertFalse(index.supportsOrdering(of(Geoshape.class, Cardinality.SINGLE)));
+    }
+
     /*
      * Dropping collection is not implemented with Solr Cloud to accommodate use case where collection is created
      * outside of JanusGraph and associated with a config set with a different name.
