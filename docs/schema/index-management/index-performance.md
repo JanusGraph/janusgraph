@@ -331,6 +331,32 @@ When using `order().by()` it is important to note that:
     value, such as `order().by(coalesce(values('age'), constant(0)))`,
     which TinkerPop sorts in memory.
 
+-   A traversal ordered by a key, which has no condition that an index
+    answers, such as `g.V().order().by('age').limit(10)`, reads a mixed
+    index which holds every order key and answers every condition of the
+    traversal, as it reads it for
+    `g.V().has('age').order().by('age').limit(10)`: the index returns
+    the elements with a value of the keys, sorted by them, where
+    JanusGraph would otherwise read every element and sort them in
+    memory. A mixed index restricted to a label answers such an order of
+    the elements of that label, as in
+    `g.V().hasLabel('person').order().by('age')`. Where an index answers
+    a condition of the traversal, JanusGraph reads the indexes which
+    answer its conditions, as without the order. It reads every element
+    where no single mixed index answers the traversal whole, as for
+    `g.V().has('tag', 't').order().by('age')` with no index on `tag`, or
+    for `g.V().hasLabel('person').order().by('age')` with `age` in an
+    index which isn't restricted to persons: a single mixed index which
+    holds every order key and answers the traversal's conditions,
+    restricted to its label where it has one, answers it. JanusGraph
+    reads for such an order only an index whose backend sorts by every
+    order key as JanusGraph orders its values: none sorts by a string
+    mapped as `TEXT`, which is how mixed indexes map strings by default,
+    Elasticsearch and OpenSearch don't by a string with a
+    `string-analyzer`, and Lucene doesn't by a `UUID`, nor by a key of
+    **LIST** or **SET** cardinality. Nor does it read one which holds an
+    order key with custom parameters.
+
 -   Strings are ordered by their code points, as the mixed index
     backends sort them, whether a mixed index or JanusGraph sorts the
     results. The edges and properties of a vertex, which a

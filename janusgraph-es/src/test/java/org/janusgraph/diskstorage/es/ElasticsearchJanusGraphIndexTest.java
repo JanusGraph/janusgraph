@@ -376,6 +376,42 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
             .toList().stream().anyMatch(vertex -> addedVertex.id().equals(vertex.id()) && circle.equals(vertex.value("foo")));
     }
 
+    //Elasticsearch maps a string key with a string analyzer as a text, as it maps the field which holds the whole
+    //strings of a TEXTSTRING key with one, and takes the custom parameters of a key into its mapping, which may keep it
+    //from sorting by the key, as doc_values false does: a traversal's order by such a key, where no index answers the
+    //traversal's conditions, still reads every element rather than the index, which would fail the query, also after a
+    //key which it sorts by
+    @Test
+    public void testOrderByAKeyWhichElasticsearchMayNotSortByReadsEveryElement() {
+        final PropertyKey name = makeKey("name", String.class);
+        final PropertyKey title = makeKey("title", String.class);
+        final PropertyKey tag = makeKey("tag", String.class);
+        final PropertyKey plain = makeKey("plain", String.class);
+        final Parameter keywordAnalyzer = Parameter.of(ParameterType.STRING_ANALYZER.getName(), "keyword");
+        final Parameter noDocValues = Parameter.of(ParameterType.customParameterName("doc_values"), false);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.STRING.asParameter(), keywordAnalyzer)
+            .addKey(title, Mapping.TEXTSTRING.asParameter(), keywordAnalyzer)
+            .addKey(tag, Mapping.STRING.asParameter(), noDocValues).addKey(plain, Mapping.STRING.asParameter())
+            .buildMixedIndex(INDEX);
+        finishSchema();
+        tx.addVertex("name", "b", "title", "b", "tag", "b", "plain", "p");
+        tx.addVertex("name", "a", "title", "a", "tag", "a", "plain", "p");
+        tx.addVertex();
+        tx.commit();
+        newTx();
+
+        final GraphTraversalSource g = tx.traversal();
+        for (final String key : Arrays.asList("name", "title", "tag")) {
+            Assertions.assertEquals(Arrays.asList("a", "b"), g.V().order().by(key).values(key).toList(), key);
+            Assertions.assertEquals(Collections.singletonList("b"),
+                g.V().order().by(key, desc).limit(1).values(key).toList(), key);
+            assertReadsEveryElement(g.V().order().by(key).limit(1));
+        }
+        Assertions.assertEquals(Arrays.asList("a", "b"), g.V().order().by("plain").by("tag").values("tag").toList());
+        assertReadsEveryElement(g.V().order().by("plain").by("tag").limit(1));
+        tx.rollback();
+    }
+
     //Elasticsearch answers a geoContains of a geo_shape of several values in BKD by leaving out a document which holds
     //a value that falls within the shape asked about, while in memory one value which contains the shape is enough: a
     //query in a transaction finds a vertex once the transaction removed such a value

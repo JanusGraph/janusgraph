@@ -25,6 +25,7 @@ import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
+import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
@@ -45,11 +46,14 @@ import org.janusgraph.graphdb.query.condition.MultiCondition;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.index.IndexSelectionStrategy;
+import org.janusgraph.graphdb.query.index.IndexSelectionUtil;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
+import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.graphdb.util.CloseableIteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,9 +144,12 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
     /**
      * Leaves the elements without a value of an order key out of the result, as TinkerPop's {@code order().by(key)}
      * does, rather than placing them last. Unlike a condition of {@link #has(String)}, this one doesn't take part in
-     * choosing the indexes which answer the query, so that an index which holds the key isn't read for every element
-     * which has a value of it: a mixed index which the query reads for its other conditions checks it where it holds
-     * the key, and the query checks it in memory otherwise.
+     * choosing the indexes which answer the query's other conditions, so that an index which holds the key isn't read
+     * for every element which has a value of it next to one which answers them: a mixed index which the query reads
+     * for its other conditions checks it where it holds the key, and the query checks it in memory otherwise. It takes
+     * part only where no index answers the other conditions: the query then reads a single mixed index which answers
+     * all of its conditions along with this one, as for a {@code has(key)}, rather than every element, where one does
+     * whose backend sorts by each order key as JanusGraph orders its values.
      *
      * @return this query builder
      */
@@ -353,7 +360,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
         final Set<Condition> coveredClauses = new HashSet<>();
-        final IndexSelectionStrategy.SelectedIndexQuery selectedIndex = sortedOnlyWhereTheIndexSorts(
+        IndexSelectionStrategy.SelectedIndexQuery selectedIndex = sortedOnlyWhereTheIndexSorts(
             indexSelector.selectIndices(resultType, conditions, coveredClauses, orders, serializer));
 
         JointIndexQuery indexQuery = selectedIndex.getQuery();
@@ -369,12 +376,37 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             } else {
                 withValues.add(conditions);
             }
+            final List<PredicateCondition<PropertyKey, JanusGraphElement>> hasValues = new ArrayList<>(orders.size());
             for (int i = 0; i < orders.size(); i++) {
                 final PredicateCondition<PropertyKey, JanusGraphElement> hasValue =
                     new PredicateCondition<>(orders.getKey(i), Cmp.NOT_EQUAL, null);
                 if (!withValues.contains(hasValue)) {
                     withValues.add(hasValue);
-                    final JointIndexQuery narrowed = requireValues(indexQuery, orders.getKey(i));
+                    hasValues.add(hasValue);
+                }
+            }
+            //Where no index answers the other conditions, the query would read every element. A single mixed index
+            //which answers them all along with these ones is read instead, as for a has(key): the strategy chooses
+            //among the mixed indexes whose backends sort by every order key as JanusGraph orders its values, and a
+            //choice of another index, which a strategy may make, is left aside. Every element is still read where no
+            //such index answers the query whole: checking a condition in memory would read the index in growing
+            //batches and look each element up, and a joint query of several indexes reads all but the first whole
+            if (indexQuery.isEmpty()) {
+                final Set<IndexType> candidates = sortingIndexes(resultType, withValues);
+                final Set<Condition> coveredWithValues = new HashSet<>();
+                final IndexSelectionStrategy.SelectedIndexQuery selectedWithValues = sortedOnlyWhereTheIndexSorts(
+                    indexSelector.selectIndices(candidates, withValues, coveredWithValues, orders, serializer));
+                final JointIndexQuery withValuesQuery = selectedWithValues.getQuery();
+                if (withValuesQuery.size() == 1 && coveredWithValues.size() == withValues.numChildren()
+                        && candidates.contains(withValuesQuery.getQuery(0).getIndex())) {
+                    selectedIndex = selectedWithValues;
+                    indexQuery = withValuesQuery;
+                    coveredClauses.addAll(coveredWithValues);
+                }
+            }
+            for (final PredicateCondition<PropertyKey, JanusGraphElement> hasValue : hasValues) {
+                if (!coveredClauses.contains(hasValue)) {
+                    final JointIndexQuery narrowed = requireValues(indexQuery, hasValue.getKey());
                     if (narrowed != indexQuery) {
                         indexQuery = narrowed;
                         coveredClauses.add(hasValue);
@@ -401,6 +433,35 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
             query = new BackendQueryHolder<>(new JointIndexQuery(), false, selectedIndex.isSorted());
         }
         return new GraphCentricQuery(resultType, queryConditions, orders, query, limit);
+    }
+
+    /*
+     * The mixed indexes of the result type which may answer the conditions, as the strategies find their candidates
+     * (AbstractIndexSelectionStrategy.createIndexRawCandidates), and which sort the elements by the query's order: they
+     * hold every order key, which their backend sorts by as JanusGraph orders its values, also where the key has
+     * several values (IndexSelectionUtil.indexCoversOrder), and none of them with custom parameters, which may keep
+     * the backend from sorting by it, as Elasticsearch takes them into its mapping. The brute-force strategy weighs an
+     * index which holds a key as a TEXT, which no backend sorts by, as one which holds it as a STRING: where both
+     * answer the query alike, it would take either. The composite indexes are left out, as they can't answer the
+     * presence of a key, a condition of key <> null.
+     */
+    private Set<IndexType> sortingIndexes(final ElementCategory resultType,
+                                          final MultiCondition<JanusGraphElement> conditions) {
+        return IndexSelectionUtil.getMatchingIndexes(conditions, index -> index.getElement() == resultType
+            && index.isMixedIndex() && IndexSelectionUtil.indexCoversOrder((MixedIndexType) index, orders, serializer)
+            && holdsNoOrderKeyWithCustomParameters((MixedIndexType) index));
+    }
+
+    //Whether the mixed index, which holds every order key, holds none of them with custom parameters
+    private boolean holdsNoOrderKeyWithCustomParameters(final MixedIndexType index) {
+        for (int i = 0; i < orders.size(); i++) {
+            for (final Parameter parameter : index.getField(orders.getKey(i)).getParameters()) {
+                if (parameter.key().startsWith(ParameterType.CUSTOM_PARAMETER_PREFIX)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /*
