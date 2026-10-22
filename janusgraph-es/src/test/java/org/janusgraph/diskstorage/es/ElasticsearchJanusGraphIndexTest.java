@@ -86,6 +86,12 @@ public abstract class ElasticsearchJanusGraphIndexTest extends JanusGraphIndexTe
         return ElasticSearchPagingMode.SCROLL;
     }
 
+    //Elasticsearch's standard analyzer, which splits a string as Lucene's StandardAnalyzer does
+    @Override
+    protected String getStandardAnalyzerName() {
+        return "standard";
+    }
+
     //An element's document can be missing from the index while the element exists: an index write lost earlier, a
     //document removed by hand. A later update used to recreate it from the fields it touched alone, so the vertex was
     //findable by the property it had just changed and by nothing else. The update now recreates the whole document

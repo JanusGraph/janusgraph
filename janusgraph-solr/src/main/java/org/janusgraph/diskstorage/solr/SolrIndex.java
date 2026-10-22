@@ -153,6 +153,9 @@ public class SolrIndex implements IndexProvider {
     private static final String TEXT_SUFFIX_MULTI = "_txt";
     private static final String STRING_SUFFIX = "_s";
     private static final String STRING_SUFFIX_MULTI = "_ss";
+    // A query which matches no document, for a condition which finds nothing. Solr's query parser drops a clause whose
+    // value the field's analyzer turns into no terms, which then leaves the other clauses to match on their own
+    private static final String MATCH_NOTHING = "(*:* -*:*)";
 
     private enum Mode {
         HTTP, CLOUD;
@@ -907,12 +910,11 @@ public class SolrIndex implements IndexProvider {
                 if (map==Mapping.STRING && Text.HAS_CONTAINS.contains(predicate))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + predicate);
                 //Special case
-                if (predicate == Text.CONTAINS) {
+                if (predicate == Text.CONTAINS || predicate == Text.CONTAINS_PHRASE) {
                     return tokenize(ParameterType.TEXT_ANALYZER, information, value, key, predicate);
                 } else if (predicate == Text.PREFIX || predicate == Text.CONTAINS_PREFIX
                            || predicate == Text.REGEX || predicate == Text.CONTAINS_REGEX
-                           || predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY
-                           || predicate == Text.CONTAINS_PHRASE) {
+                           || predicate == Text.FUZZY || predicate == Text.CONTAINS_FUZZY) {
                     return buildQueryFilterStringValue(key, (String) value, predicate, information);
                 } else if (predicate == Cmp.LESS_THAN || predicate == Cmp.LESS_THAN_EQUAL
                            || predicate == Cmp.GREATER_THAN || predicate == Cmp.GREATER_THAN_EQUAL) {
@@ -1057,14 +1059,7 @@ public class SolrIndex implements IndexProvider {
     }
 
     public String buildQueryFilterStringValue(String key, String value, JanusGraphPredicate predicate, KeyInformation.StoreRetriever information) {
-        KeyInformation keyInformation = information.get(key);
-        final Mapping map = getStringMapping(keyInformation);
-        final String stringKey;
-        if (map == Mapping.TEXTSTRING && !Text.HAS_CONTAINS.contains(predicate)) {
-            stringKey = getDualFieldName(key, keyInformation).orElse(key);
-        } else {
-            stringKey = key;
-        }
+        final String stringKey = stringField(key, information.get(key), predicate);
         if (predicate == Text.CONTAINS) {
             return (key + ":(" + escapeValue(value) + ")");
         } else if (predicate == Text.PREFIX) {
@@ -1114,29 +1109,50 @@ public class SolrIndex implements IndexProvider {
         } else {
             return buildQueryFilterStringValue(key, (String) value, janusgraphPredicate, information);
         }
-        if (terms.isEmpty()) {
-            return "";
+        if (janusgraphPredicate == Cmp.NOT_EQUAL && terms.size() != 1) {
+            //The documents with a value which the equality doesn't find, as on Lucene and Elasticsearch: those which
+            //lack one of the terms or more, and all of them when the analyzer gives no term
+            final String withValue = stringField(key, information.get(key), janusgraphPredicate) + ":*";
+            return terms.isEmpty() ? withValue
+                : withValue + " -" + group(allTerms(key, terms, Cmp.EQUAL, information));
+        } else if (terms.isEmpty()) {
+            //A value which the analyzer gives no term for, such as punctuation or a stop word, matches no document, as
+            //on Lucene and Elasticsearch
+            return MATCH_NOTHING;
+        } else if (janusgraphPredicate == Text.CONTAINS_PHRASE) {
+            //Solr splits the phrase into its terms itself
+            return buildQueryFilterStringValue(key, (String) value, janusgraphPredicate, information);
         } else if (terms.size() == 1) {
             return buildQueryFilterStringValue(key, terms.get(0), janusgraphPredicate, information);
         } else {
-            final And<JanusGraphElement> andTerms = new And<>();
-            for (final String term : terms) {
-                andTerms.add(new PredicateCondition<>(key, janusgraphPredicate, term));
-            }
-            return buildQueryFilter(andTerms, information);
+            return allTerms(key, terms, janusgraphPredicate, information);
         }
     }
 
-    @SuppressWarnings("unchecked")
+    // The documents which hold every term: a conjunction of the queries of the terms as the analyzer gave them, which
+    // aren't analyzed again here, where another pass could change or drop a term, as a stem may be a stop word. Solr's
+    // query parser still analyzes each of them with the query analyzer of the field
+    private String allTerms(String key, List<String> terms, JanusGraphPredicate predicate,
+                            KeyInformation.StoreRetriever information) {
+        final StringBuilder sb = new StringBuilder();
+        for (final String term : terms) {
+            sb.append("+").append(buildQueryFilterStringValue(key, term, predicate, information)).append(" ");
+        }
+        return sb.toString();
+    }
+
+    // The field which a predicate on a string reads: a TEXTSTRING key holds the string whole in its dual field, and its
+    // words in its text field, which the predicates on words read
+    private static String stringField(String key, KeyInformation keyInformation, JanusGraphPredicate predicate) {
+        if (getStringMapping(keyInformation) == Mapping.TEXTSTRING && !Text.HAS_CONTAINS.contains(predicate)) {
+            return getDualFieldName(key, keyInformation).orElse(key);
+        }
+        return key;
+    }
+
     private List<String> customTokenize(String analyzerClass, String fieldName, String value) {
         Map<Integer, List<String>> stemsByOffset = new HashMap<>();
-        final Analyzer analyzer;
-        try {
-            analyzer = ((Constructor<Analyzer>) ClassLoader.getSystemClassLoader().loadClass(analyzerClass)
-                                                           .getConstructor()).newInstance();
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
-        }
+        final Analyzer analyzer = newAnalyzer(analyzerClass);
         try (CachingTokenFilter stream = new CachingTokenFilter(analyzer.tokenStream(fieldName, value))) {
             final OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
             final TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
@@ -1151,11 +1167,32 @@ public class SolrIndex implements IndexProvider {
                 }
                 stemList.add(stem);
             }
-            List<String> terms = stemsByOffset.values().stream().map(l -> l.get(0)).collect(Collectors.toList());
-            return terms.isEmpty() ? Collections.singletonList(value) : terms;
+            return stemsByOffset.values().stream().map(l -> l.get(0)).collect(Collectors.toList());
         } catch (IOException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
+    }
+
+    // The analyzer which a string-analyzer or text-analyzer parameter names, by the class of an analyzer or of a
+    // tokenizer, as the documentation has it. A tokenizer splits the value alone, as before JanusGraph took analyzers
+    private static Analyzer newAnalyzer(String analyzerClass) {
+        final Object instance;
+        try {
+            instance = ClassLoader.getSystemClassLoader().loadClass(analyzerClass).getConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+        if (instance instanceof Analyzer) {
+            return (Analyzer) instance;
+        } else if (instance instanceof Tokenizer) {
+            return new Analyzer() {
+                @Override
+                protected TokenStreamComponents createComponents(String fieldName) {
+                    return new TokenStreamComponents((Tokenizer) instance);
+                }
+            };
+        }
+        throw new IllegalArgumentException("Neither an analyzer nor a tokenizer: " + analyzerClass);
     }
 
     /**

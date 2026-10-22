@@ -334,6 +334,36 @@ larger than 0, such as 0.025 in Solr's sample `location_rpt` field, such a query
 cells along the shape's edge; in the configset in `conf/solr`, it is 0 already, so nothing changes there. A `geofilt`
 query takes no such option and gets none.
 
+##### Solr no longer ignores a condition whose value has no terms
+
+On Solr, a condition whose value the key's analyzer turns into no terms, such as punctuation or a stop word, matched
+what the other conditions matched: JanusGraph sent no clause for it, or a clause which Solr's query parser dropped. So
+`g.V().has('kind', 'p').has('title', textContains('!!!'))` found every vertex of kind `p`, also those without a title,
+`g.V().has('title', textContains('!!!'))` alone found every element of the mixed index, and its `count()` counted them
+all. `textContainsPhrase`, `textContains` of a key with a custom `text-analyzer` and `eq` of a key with a custom
+`string-analyzer` found nothing alone, but what the other conditions found next to them. Now such a condition finds
+nothing, as on Lucene, Elasticsearch and OpenSearch, and as the text predicates find in memory, while a `neq` of such a
+value still finds every element with a value.
+
+A `neq` of a value which a custom `string-analyzer` splits into several terms found only the elements which hold none of
+the terms on Solr. It now finds the elements with a value which `eq` doesn't find, those which lack one of the terms or
+more, as on Lucene, Elasticsearch and OpenSearch: with "Tom and Jerry" and "Spike" under the standard analyzer,
+`neq('Tom Spike')` found neither of them, and now finds both.
+
+JanusGraph splits the value of a condition with the key's `text-analyzer` or `string-analyzer`, or with the standard
+tokenizer for a text key without one, while Solr analyzes the key's field as its schema says, so the two should agree.
+Where they don't, a stop word which only the field's type drops, of a key without an analyzer parameter, is still
+ignored. And a value which only JanusGraph's analysis drops, such as symbols which the field keeps, now matches nothing:
+`textContainsPhrase`, and `textContains` and `eq` of a key with a custom analyzer, find nothing for it, where they found
+the elements which hold it, and `neq` finds these elements too.
+
+The `string-analyzer` or `text-analyzer` of a key on Solr may name a tokenizer, such as
+`org.apache.lucene.analysis.core.WhitespaceTokenizer`, as the documentation of the field mappings says, as well as an
+analyzer. Since JanusGraph 1.0, a tokenizer made `textContains`, `eq` and `neq` fail with a `ClassCastException`: it now
+splits their values alone, as it did in JanusGraph 0.6.
+
+No reindexing is needed: only the queries change.
+
 ##### Lucene counts more than a thousand matches exactly
 
 A `count()` which a Lucene mixed index answers, such as `g.V().has('age', lt(2000)).count()`, and the totals of a direct

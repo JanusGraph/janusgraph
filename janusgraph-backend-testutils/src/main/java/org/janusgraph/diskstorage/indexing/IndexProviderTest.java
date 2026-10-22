@@ -44,6 +44,7 @@ import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.testutil.RandomGenerator;
 import org.junit.Assume;
@@ -1383,6 +1384,33 @@ public abstract class IndexProviderTest {
         assertEquals(ImmutableSet.of("d1", "d2"), query(store, Not.of(And.of(Not.of(time1), Not.of(time2)))));
         assertEquals(ImmutableSet.of("d1", "d3", "d4"),
             query(store, Or.of(And.of(Not.of(time1), Not.of(time2)), time1)));
+    }
+
+    // A condition of a value which the analyzer turns into no terms, such as punctuation, finds no document: on its
+    // own, counted, within a conjunction and as an alternative; negated, it finds every document. Solr dropped such a
+    // condition, so it found every document on its own and what the other conditions found within them
+    @Test
+    public void conditionOfAValueWithoutTermsFindsNoDocument() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Object[][] docs = {{"d1", 1L, "Tom and Jerry"}, {"d2", 2L, "Spike"}, {"d3", 3L, null}};
+        for (final Object[] d : docs) {
+            final Multimap<String, Object> doc = HashMultimap.create();
+            doc.put(TIME, d[1]);
+            if (d[2] != null) doc.put(TEXT, d[2]);
+            add(store, (String) d[0], doc, true);
+        }
+        clopen();
+        final Condition<JanusGraphElement> withoutTerms = PredicateCondition.of(TEXT, Text.CONTAINS, "!!!");
+        final Condition<JanusGraphElement> time1 = PredicateCondition.of(TIME, Cmp.EQUAL, 1L);
+
+        assertEquals(ImmutableSet.of(), query(store, withoutTerms));
+        assertEquals(0L, tx.queryAggregation(new IndexQuery(store, withoutTerms), Aggregation.COUNT));
+        assertEquals(ImmutableSet.of(), query(store, And.of(time1, withoutTerms)));
+        assertEquals(ImmutableSet.of("d1"), query(store, Or.of(withoutTerms, time1)));
+        assertEquals(ImmutableSet.of("d1", "d2", "d3"), query(store, Not.of(withoutTerms)));
+        assertEquals(ImmutableSet.of("d1"), query(store, And.of(time1, Not.of(withoutTerms))));
+        assertEquals(ImmutableSet.of("d2", "d3"), query(store, Not.of(Or.of(withoutTerms, time1))));
     }
 
     // A geo condition matches by its shape alone: on its own, as either alternative of a disjunction, and negated. Solr

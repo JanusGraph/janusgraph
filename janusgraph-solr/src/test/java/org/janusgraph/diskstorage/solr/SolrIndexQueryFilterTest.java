@@ -14,7 +14,10 @@
 
 package org.janusgraph.diskstorage.solr;
 
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.attribute.Cmp;
@@ -48,7 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * The filter queries which Solr gets for conditions. Solr's standard query parser rejects a "+" before a clause which
  * starts with one, applies the "+" and "-" clauses of an alternative to the whole disjunction, and matches nothing
  * with a group of only "-" clauses. So a condition nested in another one has to be written as a query which means on
- * its own what it means there. The queries which were right before are unchanged.
+ * its own what it means there. The parser also drops a clause whose value the field's analyzer turns into no terms,
+ * so a condition which finds nothing gets a query which matches nothing. The queries which were right before are
+ * unchanged.
  */
 public class SolrIndexQueryFilterTest {
 
@@ -56,6 +61,11 @@ public class SolrIndexQueryFilterTest {
     private static final String NUM = "num_i";
     private static final String TEXT = "text_t";
     private static final String NAME = "name_s";
+    private static final String ANALYZED = "analyzed_t";
+    private static final String FULL = "full_t";
+    private static final String ENGLISH = "english_s";
+    private static final String TOKENIZED = "tokenized_t";
+    private static final String TOKENS = "tokens_s";
     private static final String POINT = "point_g";
     private static final String SHAPE = "shape_g";
     private static final Map<String, KeyInformation> KEYS = new HashMap<>();
@@ -66,6 +76,18 @@ public class SolrIndexQueryFilterTest {
         // an analyzer which splits a string into its words
         KEYS.put(NAME, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.STRING.asParameter(),
             new Parameter<>(ParameterType.STRING_ANALYZER.getName(), StandardAnalyzer.class.getName())));
+        KEYS.put(ANALYZED, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.TEXT.asParameter(),
+            new Parameter<>(ParameterType.TEXT_ANALYZER.getName(), StandardAnalyzer.class.getName())));
+        // the whole strings, which the equalities read, are in the dual field full_s
+        KEYS.put(FULL, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.TEXTSTRING.asParameter(),
+            new Parameter<>(ParameterType.STRING_ANALYZER.getName(), StandardAnalyzer.class.getName())));
+        KEYS.put(ENGLISH, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.STRING.asParameter(),
+            new Parameter<>(ParameterType.STRING_ANALYZER.getName(), EnglishAnalyzer.class.getName())));
+        // tokenizers, as the documentation of the field mappings names them
+        KEYS.put(TOKENIZED, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.TEXT.asParameter(),
+            new Parameter<>(ParameterType.TEXT_ANALYZER.getName(), WhitespaceTokenizer.class.getName())));
+        KEYS.put(TOKENS, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.STRING.asParameter(),
+            new Parameter<>(ParameterType.STRING_ANALYZER.getName(), StandardTokenizer.class.getName())));
         KEYS.put(POINT, new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE));
         KEYS.put(SHAPE, new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE,
             Mapping.PREFIX_TREE.asParameter()));
@@ -168,6 +190,63 @@ public class SolrIndexQueryFilterTest {
         assertEquals("-(*:* -(num_i:1))", filter(not(not(num(Cmp.EQUAL, 1)))));
         assertEquals("-(*:* -(num_i:1) -(num_i:2) )",
             filter(not(and(not(num(Cmp.EQUAL, 1)), not(num(Cmp.EQUAL, 2))))));
+    }
+
+    @Test
+    public void testConditionOfAValueWithoutTermsMatchesNothing() {
+        // the analyzers find no word in punctuation, also the custom one of a text, which Solr got as it was
+        final String nothing = "(*:* -*:*)";
+        assertEquals(nothing, filter(words("!!!")));
+        assertEquals(nothing, filter(PredicateCondition.of(TEXT, Text.CONTAINS_PHRASE, "!!!")));
+        assertEquals(nothing, filter(PredicateCondition.of(ANALYZED, Text.CONTAINS, "!!!")));
+        assertEquals(nothing, filter(PredicateCondition.of(ANALYZED, Text.CONTAINS_PHRASE, "!!!")));
+        assertEquals(nothing, filter(PredicateCondition.of(NAME, Cmp.EQUAL, "!!!")));
+        assertEquals(nothing, filter(PredicateCondition.of(FULL, Cmp.EQUAL, "!!!")));
+        // nothing is left out of a conjunction, nor taken from a disjunction, and a negation excludes nothing
+        assertEquals("+" + nothing + " +num_i:1 ", filter(and(words("!!!"), num(Cmp.EQUAL, 1))));
+        assertEquals("(" + nothing + " OR num_i:1)", filter(or(words("!!!"), num(Cmp.EQUAL, 1))));
+        assertEquals("-(" + nothing + ")", filter(not(words("!!!"))));
+        assertEquals("+num_i:1 -(" + nothing + ") ", filter(and(num(Cmp.EQUAL, 1), not(words("!!!")))));
+        // Solr splits a phrase with terms, as before
+        assertEquals("text_t:\"red\\ green\"", filter(PredicateCondition.of(TEXT, Text.CONTAINS_PHRASE, "red green")));
+    }
+
+    @Test
+    public void testNotEqualOfAnAnalyzedStringFindsTheDocumentsWithAValueWhichTheEqualityDoesNot() {
+        // every document with a value, of the field of the whole strings of a dual mapped key
+        assertEquals("name_s:*", filter(PredicateCondition.of(NAME, Cmp.NOT_EQUAL, "!!!")));
+        assertEquals("full_s:*", filter(PredicateCondition.of(FULL, Cmp.NOT_EQUAL, "!!!")));
+        // those which lack one of the terms or more, rather than those which lack them all
+        assertEquals("name_s:* -(+name_s:\"red\" +name_s:\"green\" )",
+            filter(PredicateCondition.of(NAME, Cmp.NOT_EQUAL, "red green")));
+        assertEquals("full_s:* -(+full_s:\"red\" +full_s:\"green\" )",
+            filter(PredicateCondition.of(FULL, Cmp.NOT_EQUAL, "red green")));
+        assertEquals("+name_s:* -(+name_s:\"red\" +name_s:\"green\" ) +num_i:1 ",
+            filter(and(PredicateCondition.of(NAME, Cmp.NOT_EQUAL, "red green"), num(Cmp.EQUAL, 1))));
+        assertEquals("((name_s:* -(+name_s:\"red\" +name_s:\"green\" )) OR num_i:1)",
+            filter(or(PredicateCondition.of(NAME, Cmp.NOT_EQUAL, "red green"), num(Cmp.EQUAL, 1))));
+        // one term, as before
+        assertEquals("name_s:* -name_s:\"red\"", filter(PredicateCondition.of(NAME, Cmp.NOT_EQUAL, "red")));
+    }
+
+    @Test
+    public void testTermsOfTheAnalyzerAreNotAnalyzedAgain() {
+        // the English analyzer stems "ands" to "and", which it would drop as a stop word
+        assertEquals("+english_s:\"tom\" +english_s:\"and\" +english_s:\"jerri\" ",
+            filter(PredicateCondition.of(ENGLISH, Cmp.EQUAL, "Tom ands Jerry")));
+    }
+
+    @Test
+    public void testAnalyzerParameterMayNameATokenizer() {
+        // the tokenizer alone splits the value, as before JanusGraph took analyzers, since when the cast to an analyzer
+        // failed. The terms keep their case: Solr's query analyzer of the field puts them in lower case
+        assertEquals("+tokenized_t:(Red) +tokenized_t:(Green) ",
+            filter(PredicateCondition.of(TOKENIZED, Text.CONTAINS, "Red Green")));
+        assertEquals("tokenized_t:\"Red\\ Green\"",
+            filter(PredicateCondition.of(TOKENIZED, Text.CONTAINS_PHRASE, "Red Green")));
+        assertEquals("+tokens_s:\"Red\" +tokens_s:\"Green\" ",
+            filter(PredicateCondition.of(TOKENS, Cmp.EQUAL, "Red, Green!")));
+        assertEquals("(*:* -*:*)", filter(PredicateCondition.of(TOKENS, Cmp.EQUAL, "!!!")));
     }
 
     @Test

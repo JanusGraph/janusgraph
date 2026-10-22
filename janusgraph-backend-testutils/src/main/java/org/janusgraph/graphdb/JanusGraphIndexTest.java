@@ -266,6 +266,12 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         return propertyKey;
     }
 
+    //The name by which a key's string-analyzer or text-analyzer parameter gives the index Lucene's StandardAnalyzer,
+    //which splits a string into its words in lower case
+    protected String getStandardAnalyzerName() {
+        return "org.apache.lucene.analysis.standard.StandardAnalyzer";
+    }
+
     @Override
     public void open(WriteConfiguration config) {
         super.open(config);
@@ -4213,6 +4219,123 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             g.V().has("num", P.neq(3).or(P.lt(4))).order().by("num").toList());
     }
 
+    /**
+     * A text predicate of a value which the analyzer turns into no terms, such as punctuation, finds no element, as
+     * JanusGraph finds none in memory: alone, next to another condition, counted and as an alternative to a condition
+     * which finds elements, also where the key has a custom text analyzer, and its negation finds every element with a
+     * value. Solr dropped such a condition, so it found what the other conditions found, and a count of it alone
+     * counted every document. The results are those of a TinkerGraph which holds the same elements.
+     */
+    @Test
+    public void testTextPredicatesOfAValueWithoutTermsFindNothing() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey title = makeKey("title", String.class);
+        final PropertyKey text = makeKey("text", String.class);
+        makeKey("uid", Integer.class);
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(title, getTextMapping())
+            .addKey(text, getTextMapping(), ParameterType.TEXT_ANALYZER.getParameter(getStandardAnalyzerName()))
+            .buildMixedIndex(INDEX);
+        finishSchema();
+        final GraphTraversalSource reference = TinkerGraph.open().traversal();
+        addVerticesWithWords(reference, "title", "text");
+
+        // the index answers the condition with the other one
+        evaluateQuery(tx.query().has("kind", "p").has("title", Text.CONTAINS, "!!!"), ElementCategory.VERTEX, 0,
+            new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("kind", "p").has("text", Text.CONTAINS, "!!!"), ElementCategory.VERTEX, 0,
+            new boolean[]{true, true}, "mixed");
+        for (final String key : new String[]{"title", "text"}) {
+            for (final Function<String, P<Object>> predicate : Arrays.<Function<String, P<Object>>>asList(
+                    Text::textContains, Text::textContainsPhrase, Text::textNotContains, Text::textNotContainsPhrase)) {
+                final List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> traversals =
+                    traversalsOfACondition(key, () -> predicate.apply("!!!"), () -> Text.textContains("Tom"));
+                assertFindsAsTheReference(reference, traversals, traversals);
+            }
+        }
+    }
+
+    /**
+     * A key with a custom string analyzer equals a value where it holds every term which the analyzer gives for the
+     * value, in any order, as a text contains them, and a not-equal finds the other elements with a value: those which
+     * lack one of the terms or more. So the equality of a value without terms, such as punctuation, finds no element,
+     * and its not-equal every element with a value. Solr dropped such an equality, so it found what the other
+     * conditions found, and its not-equal of several terms found only the elements which lack all of them. The results
+     * are those which a TinkerGraph holding the same elements gives for textContains and textNotContains, which split
+     * these strings into the same words as the standard analyzer.
+     */
+    @Test
+    public void testEqualityOfAKeyWithAStringAnalyzerComparesTheTermsOfTheValue() {
+        final PropertyKey kind = makeKey("kind", String.class);
+        final PropertyKey words = makeKey("words", String.class);
+        makeKey("uid", Integer.class);
+        // Solr analyzes a field as its schema says, and the custom analyzer splits the value of a condition alone: the
+        // field is that of a text key, which Solr's schema analyzes as the standard analyzer does
+        mgmt.buildIndex("mixed", Vertex.class).addKey(kind, getStringMapping()).addKey(words, getStringMapping(),
+            ParameterType.STRING_ANALYZER.getParameter(getStandardAnalyzerName()),
+            ParameterType.MAPPED_NAME.getParameter(getTextField("words"))).buildMixedIndex(INDEX);
+        finishSchema();
+        final GraphTraversalSource reference = TinkerGraph.open().traversal();
+        addVerticesWithWords(reference, "words");
+
+        // the index answers the condition with the other one
+        evaluateQuery(tx.query().has("kind", "p").has("words", Cmp.EQUAL, "!!!"), ElementCategory.VERTEX, 0,
+            new boolean[]{true, true}, "mixed");
+        for (final String value : new String[]{"!!!", "Tom", "Jerry Tom", "Tom Spike"}) {
+            assertFindsAsTheReference(reference,
+                traversalsOfACondition("words", () -> Text.textContains(value), () -> Text.textContains("Spike")),
+                traversalsOfACondition("words", () -> P.eq(value), () -> P.eq("Spike")));
+            assertFindsAsTheReference(reference,
+                traversalsOfACondition("words", () -> Text.textNotContains(value), () -> Text.textContains("Spike")),
+                traversalsOfACondition("words", () -> P.neq(value), () -> P.eq("Spike")));
+        }
+    }
+
+    //Commits vertices of a uid and a kind, "p" or "q", and the same words under each of the keys, which some lack, and
+    //adds them to the reference graph
+    private void addVerticesWithWords(GraphTraversalSource reference, String... keys) {
+        final Object[][] vertices = {{1, "p", "Tom and Jerry"}, {2, "p", "Spike"}, {3, "p", null}, {4, "q", "Tom"},
+            {5, "q", null}};
+        for (final Object[] vertex : vertices) {
+            onBoth(reference, g -> {
+                final GraphTraversal<Vertex, Vertex> added = g.addV().property("uid", vertex[0])
+                    .property("kind", vertex[1]);
+                if (vertex[2] != null) {
+                    for (final String key : keys) {
+                        added.property(key, vertex[2]);
+                    }
+                }
+                return added;
+            });
+        }
+        tx.commit();
+        newTx();
+    }
+
+    //Traversals of a condition on the key of the vertices of addVerticesWithWords: alone, next to a condition on their
+    //kind, counted, and as an alternative to a condition on their kind or to another one on the key
+    private static List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> traversalsOfACondition(String key,
+            Supplier<P<Object>> condition, Supplier<P<Object>> alternative) {
+        return Arrays.asList(
+            g -> g.V().has(key, condition.get()),
+            g -> g.V().has("kind", "p").has(key, condition.get()),
+            g -> g.V().has(key, condition.get()).count(),
+            g -> g.V().has("kind", "p").has(key, condition.get()).count(),
+            g -> g.V().or(__.has(key, condition.get()), __.has("kind", "q")),
+            g -> g.V().has(key, condition.get().or(alternative.get())));
+    }
+
+    //Each traversal finds in the transaction of the test, in any order, what the reference graph finds with the
+    //reference traversal at the same position
+    private void assertFindsAsTheReference(GraphTraversalSource reference,
+                                           List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> references,
+                                           List<Function<GraphTraversalSource, GraphTraversal<?, ?>>> traversals) {
+        for (int i = 0; i < traversals.size(); i++) {
+            assertEquals(new HashSet<>(results(references.get(i).apply(reference))),
+                new HashSet<>(results(traversals.get(i).apply(tx.traversal()))),
+                traversals.get(i).apply(tx.traversal()).toString());
+        }
+    }
+
     private void testNestedWrites(String initialValue, String updatedValue, TestInfo testInfo) throws BackendException {
         // This method touches a single vertex with multiple transactions,
         // leading to deadlock under BDB and cascading test failures. Check for
@@ -6399,7 +6522,7 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
         assertTrue(readsIndexWith(tx.traversal().V().has("kind", "p").order().by("name").limit(3), "name <> null"));
         assertTrue(readsIndexWith(tx.traversal().E().has("ekind", "e").order().by("weight"), "weight <> null"));
         //also next to another condition on the key, as an index may find that one in documents without the key: Solr
-        //drops the clause of a text predicate whose value its analyzer turns into no terms, where the other backends
+        //dropped the clause of a text predicate whose value its analyzer turns into no terms, where the other backends
         //find nothing
         final List<Vertex> titled = tx.traversal().V().has("kind", "p").has("title", Text.textContains("!!!"))
             .order().by("title").toList();
