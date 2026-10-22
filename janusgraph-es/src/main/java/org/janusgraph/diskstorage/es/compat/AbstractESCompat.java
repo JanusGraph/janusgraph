@@ -46,6 +46,8 @@ public abstract class AbstractESCompat {
 
     static final Map<String,Object> MATCH_ALL = ImmutableMap.of("match_all", Collections.EMPTY_MAP);
 
+    static final Map<String,Object> MATCH_NONE = ImmutableMap.of("match_none", Collections.EMPTY_MAP);
+
     static IndexFeatures.Builder coreFeatures() {
         return new IndexFeatures.Builder()
             .setDefaultStringMapping(Mapping.TEXT)
@@ -154,6 +156,10 @@ public abstract class AbstractESCompat {
 
     public Map<String,Object> exists(String key) {
         return ImmutableMap.of("exists", ImmutableMap.of("field", key));
+    }
+
+    public Map<String,Object> matchNone() {
+        return MATCH_NONE;
     }
 
     public Map<String,Object> match(String key, Object value) {

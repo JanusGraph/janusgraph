@@ -880,6 +880,9 @@ public class SolrIndex implements IndexProvider {
                 Preconditions.checkArgument(predicate instanceof Cmp,
                         "Relation not supported on numeric types: %s", predicate);
                 final Cmp numRel = (Cmp) predicate;
+                if (Double.isNaN(((Number) value).doubleValue())) {
+                    return nanQueryFilter(key, numRel);
+                }
                 switch (numRel) {
                     case EQUAL:
                         return (key + ":" + queryValue);
@@ -887,14 +890,14 @@ public class SolrIndex implements IndexProvider {
                         return (key + ":* -" + key + ":" + queryValue);
                     case LESS_THAN:
                         //use right curly to mean up to but not including value
-                        return (key + ":[* TO " + queryValue + "}");
+                        return (key + ":[* TO " + escapeValue(lowerZero(value)) + "}");
                     case LESS_THAN_EQUAL:
-                        return (key + ":[* TO " + queryValue + "]");
+                        return (key + ":[* TO " + escapeValue(upperZero(value)) + "]");
                     case GREATER_THAN:
                         //use left curly to mean greater than but not including value
-                        return (key + ":{" + queryValue + " TO *]");
+                        return (key + ":{" + escapeValue(upperZero(value)) + " TO *]");
                     case GREATER_THAN_EQUAL:
-                        return (key + ":[" + queryValue + " TO *]");
+                        return (key + ":[" + escapeValue(lowerZero(value)) + " TO *]");
                     default: throw new IllegalArgumentException("Unexpected relation: " + numRel);
                 }
             } else if (value instanceof String) {
@@ -1054,6 +1057,43 @@ public class SolrIndex implements IndexProvider {
         if (!(condition instanceof PredicateCondition) || query.startsWith("+")) return false;
         final PredicateCondition<?, ?> atom = (PredicateCondition<?, ?>) condition;
         return atom.getPredicate() != Cmp.NOT_EQUAL || atom.getValue() == null;
+    }
+
+    // A comparison with NaN finds what it finds in memory, as Cmp.test has it: NaN, which Solr orders above positive
+    // infinity, equals NaN alone and compares to no other value. An equality or an inclusive comparison with NaN finds
+    // NaN, a not-equal every other value, and a strict comparison nothing, as the range {Infinity TO *] does, NaN
+    // included: Solr matches no document with an exclusive lower bound of positive infinity, and a range's open end,
+    // *, stands for positive infinity rather than NaN
+    private static String nanQueryFilter(String key, Cmp relation) {
+        switch (relation) {
+            case EQUAL:
+            case LESS_THAN_EQUAL:
+            case GREATER_THAN_EQUAL:
+                return key + ":NaN";
+            case NOT_EQUAL:
+                return key + ":* -" + key + ":NaN";
+            case LESS_THAN:
+            case GREATER_THAN:
+                return key + ":{Infinity TO *]";
+            default:
+                throw new IllegalArgumentException("Unexpected relation: " + relation);
+        }
+    }
+
+    // Solr orders -0.0 below 0.0, while a comparison, as AttributeUtils.compare, holds them equal, and only equality,
+    // as Double.equals, tells them apart. A comparison's decimal bound at either zero spans both: an inclusive bound
+    // moves to the zero on its far side and a strict one to the zero on its near side, beyond which Solr's neighbour
+    // skips both
+    private static Object lowerZero(Object bound) {
+        return isDecimalZero(bound) ? -0.0 : bound;
+    }
+
+    private static Object upperZero(Object bound) {
+        return isDecimalZero(bound) ? 0.0 : bound;
+    }
+
+    private static boolean isDecimalZero(Object value) {
+        return (value instanceof Double || value instanceof Float) && ((Number) value).doubleValue() == 0.0;
     }
 
     public String buildQueryFilterStringValue(String key, String value, JanusGraphPredicate predicate, KeyInformation.StoreRetriever information) {
