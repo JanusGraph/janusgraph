@@ -55,9 +55,9 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                 //range steps so that they can be handled by TinkerPop.
                 if (ArrayUtils.isEmpty(janusGraphStep.getIds())) {
                     //Fold in ordering steps like order().by(key) step
-                    HasStepFolder.foldInOrder(janusGraphStep, janusGraphStep.getNextStep(), traversal, traversal, janusGraphStep.returnsVertex(), null);
+                    HasStepFolder.foldInOrder(janusGraphStep, janusGraphStep.getNextStep(), traversal, traversal, janusGraphStep.returnsVertex());
                     //Fold in range steps like limit(number) and range(lowLimit, highLimit)
-                    HasStepFolder.foldInRange(janusGraphStep, JanusGraphTraversalUtil.getNextNonIdentityStep(janusGraphStep), traversal, null);
+                    HasStepFolder.foldInRange(janusGraphStep, JanusGraphTraversalUtil.getNextNonIdentityStep(janusGraphStep), traversal);
                 }
             } else {
                 //Make sure that any provided "start" elements are instantiated in the current transaction

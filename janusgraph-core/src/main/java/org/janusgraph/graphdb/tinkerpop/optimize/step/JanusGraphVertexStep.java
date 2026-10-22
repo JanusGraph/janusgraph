@@ -170,19 +170,9 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     }
 
     @Override
-    public void localOrderBy(TraversalParent parent, List<HasContainer> hasContainers, String key, Order order) {
-       throw new UnsupportedOperationException("localOrderBy is not supported for graph vertex step.");
-    }
-
-    @Override
     public void setLimit(int low, int high) {
         Preconditions.checkArgument(low == 0, "Offset is not supported for properties step.");
         this.limit = high;
-    }
-
-    @Override
-    public void setLocalLimit(TraversalParent parent, List<HasContainer> hasContainers, int low, int high) {
-        throw new UnsupportedOperationException("setLocalLimit is not supported for graph vertex step.");
     }
 
     @Override
@@ -191,18 +181,8 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     }
 
     @Override
-    public int getLocalLowLimit(TraversalParent parent, List<HasContainer> hasContainers) {
-        throw new UnsupportedOperationException("getLocalLowLimit is not supported for properties step.");
-    }
-
-    @Override
     public int getHighLimit() {
         return this.limit;
-    }
-
-    @Override
-    public int getLocalHighLimit(TraversalParent parent, List<HasContainer> hasContainers) {
-        throw new UnsupportedOperationException("getLocalHighLimit is not supported for graph vertex step.");
     }
 
     @Override

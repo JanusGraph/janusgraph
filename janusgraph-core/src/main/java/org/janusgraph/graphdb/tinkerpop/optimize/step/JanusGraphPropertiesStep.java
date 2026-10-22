@@ -230,19 +230,9 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     @Override
-    public void localOrderBy(TraversalParent parent, List<HasContainer> hasContainers, String key, Order order) {
-        throw new UnsupportedOperationException("LocalOrderBy is not supported for properties step.");
-    }
-
-    @Override
     public void setLimit(int low, int high) {
         Preconditions.checkArgument(low == 0, "Offset is not supported for properties step.");
         this.limit = high;
-    }
-
-    @Override
-    public void setLocalLimit(TraversalParent parent, List<HasContainer> hasContainers, int low, int high) {
-        throw new UnsupportedOperationException("LocalLimit is not supported for properties step.");
     }
 
     @Override
@@ -251,18 +241,8 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     @Override
-    public int getLocalLowLimit(TraversalParent parent, List<HasContainer> hasContainers) {
-        throw new UnsupportedOperationException("getLocalLowLimit is not supported for properties step.");
-    }
-
-    @Override
     public int getHighLimit() {
         return this.limit;
-    }
-
-    @Override
-    public int getLocalHighLimit(TraversalParent parent, List<HasContainer> hasContainers) {
-        throw new UnsupportedOperationException("getLocalHighLimit is not supported for properties step.");
     }
 
     @Override
