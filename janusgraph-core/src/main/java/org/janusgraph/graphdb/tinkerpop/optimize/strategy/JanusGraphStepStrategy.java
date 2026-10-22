@@ -25,6 +25,9 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.HasStepFolder;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.JanusGraphStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.util.VertexLookupUtil;
+
+import java.util.Collections;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -72,8 +75,9 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                         elementIds[i] = ids[i];
                     }
                 }
+                //Along with the existence of each vertex, the lookup reads what the next step reads of it anyway
                 originalGraphStep.setIteratorSupplier(() -> originalGraphStep.returnsVertex() ?
-                    ((Graph) originalGraphStep.getTraversal().getGraph().get()).vertices(elementIds) :
+                    VertexLookupUtil.vertices(originalGraphStep, Collections.emptyList(), elementIds) :
                     ((Graph) originalGraphStep.getTraversal().getGraph().get()).edges(elementIds));
             }
 

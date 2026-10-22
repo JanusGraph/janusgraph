@@ -1484,6 +1484,27 @@ batching for traversal steps. Building the condition of a `within()` or `without
 value before it to drop duplicates, so it grew with the square of the number of values; it now takes time in proportion
 to them. `query.batch.max-keys-per-read` sets the most rows a call reads, 1,000 by default.
 
+##### A vertex looked up by id has what the traversal reads of it next read along with its existence
+
+A traversal which looks vertices up by id (`g.V(ids)`, `g.V().hasId(ids)`) read the existence marker of each vertex
+from the storage backend, and the step after the lookup then read what it needed of the vertex, its label or its
+properties, in another read of the same row: a second round trip on a remote backend, and a third for a step which
+reads both, such as `elementMap()`. The marker, the label and the properties are stored next to each other, ahead of
+the edges, so the lookup now reads what the step after it reads of each vertex anyway along with the existence, in one
+slice of up to `query.fast-property-lookup-limit` cells (1000 by default), and keeps it in the vertex's cache, from
+which the step then reads it: the label for `label()` and `hasLabel(...)`, and the label and all properties for
+`valueMap()`, `elementMap()`, `values()` and `properties()` without keys and for a `has(...)` on a property with
+`query.fast-property`. Where the next step reads neither, such as `g.V(id).out()`, or only some properties, such as
+`values("name")`, the lookup reads the existence alone, as before; so do a lookup outside a traversal
+(`tx.getVertex(id)`, `graph.vertices(ids)`) and a lookup with `cache.db-cache`. Several vertices whose next step
+reads them in one batch are looked up with one such read on a backend with multi-key reads (CQL, HBase). On Cassandra,
+with vertices of 20 properties, `g.V(id).valueMap()` takes 1.8 ms instead of 3.2, `g.V(id).label()` 1.5 ms instead of
+2.9, `g.V(id).elementMap()` 1.9 ms instead of 4.7 and `g.V(ids).valueMap()` of ten vertices 2.1 ms instead of 3.6, while
+`g.V(id).out()` and `g.V(id).values("p0")` take as long as before. A vertex with at least that many cells is read more
+slowly than before where the next step reads all its properties: the lookup reads the cells up to the limit and discards
+them, and the step reads the properties again, so that `g.V(id).valueMap()` of a vertex of 2,000 properties takes 10.0
+ms instead of 8.0. A graph with vertices that wide can raise the limit above their number of cells, or set it to 0.
+
 ##### A vertex which gains relations in a transaction allocates about 2 KB less
 
 Every vertex which gains a relation in a transaction keeps the relations it gained, and since JanusGraph 1.1.0 it sized

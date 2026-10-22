@@ -96,6 +96,29 @@ public class JanusGraphElementMapStep <K, E> extends ElementMapStep<K, E> implem
         }
     }
 
+    /**
+     * Whether the step reads the vertices of its traversers in batches, see {@link #setUseMultiQuery(boolean)}.
+     */
+    public boolean isUseMultiQuery() {
+        return useMultiQuery;
+    }
+
+    /**
+     * The most vertices a batch of the step reads at once.
+     */
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    /**
+     * Whether {@code query.batch.properties-mode} {@code all_properties} applies to the step: its batches then read all
+     * properties of each vertex where it asks for two keys or more, and a single key alone, see
+     * {@code PropertiesFetchingUtil.isExplicitKeysPrefetchNeeded}.
+     */
+    public boolean isPrefetchAllPropertiesRequired() {
+        return prefetchAllPropertiesRequired;
+    }
+
     @Override
     public void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = prefetchingAllowed && useMultiQuery;
