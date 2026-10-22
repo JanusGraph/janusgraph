@@ -1267,8 +1267,11 @@ and Elasticsearch failed with `Could not call index`. Such an `or()` now reads e
 too, as it did without an index, where Lucene returned the vertices of kind `p` and Elasticsearch failed.
 
 For code built on these classes: `HasStepFolder.localFoldInHasContainer` takes the step and the branch, as
-`(HasStepFolder, Traversal.Admin)`, and `JanusGraphStep.setLocalLimit` and `localOrderBy` apply the range and the order
-of a branch to each element, as TinkerPop does, instead of limiting and ordering the query of the branch.
+`(HasStepFolder, Traversal.Admin)`. As the `limit()`, `range()` and `order()` steps of a branch are conditions on each
+element, a branch no longer has limits or an order of its own: `HasStepFolder.localOrderBy`, `setLocalLimit`,
+`getLocalLowLimit` and `getLocalHighLimit` are removed, with their implementations in `JanusGraphStep`,
+`JanusGraphVertexStep` and `JanusGraphPropertiesStep`, and so are `QueryInfo` and the last parameter of
+`HasStepFolder.foldInOrder` and `foldInRange`, which took the has containers of a branch. `foldInOrder` returns nothing.
 
 ##### Mixed index names on one backing index must now differ in more than case
 

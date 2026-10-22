@@ -52,7 +52,6 @@ import org.janusgraph.StorageSetup;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -86,7 +85,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -171,46 +169,6 @@ public class JanusGraphStepStrategyTest {
         assertEquals(2, localHasContainers.size());
     }
 
-    /**
-     * The range and the order of a branch of an or(), which a JanusGraphStep can be given, apply to each element on its
-     * own, as TinkerPop runs the branch for each element: a range lets the element through unless it skips it, and an
-     * order where each of its keys has a value
-     */
-    @Test
-    @SuppressWarnings("unchecked")
-    public void shouldApplyTheRangeAndOrderOfAnOrBranchToEachElement() {
-        final JanusGraph graph = StorageSetup.getInMemoryGraph();
-        try {
-            final JanusGraphManagement mgmt = graph.openManagement();
-            mgmt.makePropertyKey("kind").dataType(String.class).make();
-            mgmt.makePropertyKey("age").dataType(Integer.class).make();
-            mgmt.commit();
-            final JanusGraphTransaction tx = graph.newTransaction();
-            final Object older = tx.addVertex("kind", "p", "age", 3).id();
-            final Object younger = tx.addVertex("kind", "p", "age", 1).id();
-            tx.addVertex("kind", "p");
-            tx.addVertex("kind", "q", "age", 2);
-            tx.commit();
-            final GraphTraversal.Admin<Vertex, Vertex> traversal = graph.traversal().V().asAdmin();
-            traversal.applyStrategies();
-            final JanusGraphStep<Vertex, Vertex> step = (JanusGraphStep<Vertex, Vertex>) traversal.getStartStep();
-            final OrStep<Vertex> or = new OrStep<>(traversal);
-            final List<HasContainer> ofP = step.addLocalHasContainersConvertingAndPContainers(or,
-                Collections.singletonList(new HasContainer("kind", P.eq("p"))));
-            step.setLocalLimit(or, ofP, 0, 1);
-            step.localOrderBy(or, ofP, "age", Order.asc);
-            final List<HasContainer> ofQ = step.addLocalHasContainersConvertingAndPContainers(or,
-                Collections.singletonList(new HasContainer("kind", P.eq("q"))));
-            step.setLocalLimit(or, ofQ, 1, 2);
-            final List<Object> ids = new ArrayList<>();
-            traversal.forEachRemaining(vertex -> ids.add(vertex.id()));
-            assertEquals(new HashSet<>(Arrays.asList(older, younger)), new HashSet<>(ids));
-            assertEquals(2, ids.size());
-        } finally {
-            graph.close();
-        }
-    }
-
     private void applyMultiQueryTraversalSteps(Traversal.Admin<?,?> traversal) {
         // JanusGraphMultiQueryStrategy replaces RepeatSteps with JanusGraphRepeatSteps when limited batches are used
         TraversalHelper.getStepsOfAssignableClassRecursively(RepeatStep.class, traversal).stream()
@@ -276,8 +234,6 @@ public class JanusGraphStepStrategyTest {
                 for (final Traversal.Admin<?, ?> child : orStep.getLocalChildren()) {
                     final JanusGraphStep<Vertex, Vertex> localGraphStep = ((JanusGraphStep<Vertex, Vertex>) ((DefaultGraphTraversal) child).getStartStep());
                     graphStep.addLocalHasContainersConvertingAndPContainers(orStep, localGraphStep.getHasContainers());
-                    localGraphStep.getOrders().forEach(orderEntry -> graphStep.localOrderBy(orStep, localGraphStep.getHasContainers(), orderEntry.key, orderEntry.order));
-                    graphStep.setLocalLimit(orStep, localGraphStep.getHasContainers(), localGraphStep.getLowLimit(), localGraphStep.getHighLimit());
                 }
             } else if (hasKeyValues[i] instanceof DefaultGraphTraversal &&  ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep() instanceof RangeGlobalStep){
                 final RangeGlobalStep range = (RangeGlobalStep) ((DefaultGraphTraversal) hasKeyValues[i]).getStartStep();

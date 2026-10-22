@@ -172,9 +172,9 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
 
                 if (JanusGraphTraversalUtil.isEdgeReturnStep(vertexStep)) {
                     HasStepFolder.foldInHasContainer(vertexStep, localTraversal, traversal);
-                    HasStepFolder.foldInOrder(vertexStep, vertexStep.getNextStep(), localTraversal, traversal, false, null);
+                    HasStepFolder.foldInOrder(vertexStep, vertexStep.getNextStep(), localTraversal, traversal, false);
                 }
-                HasStepFolder.foldInRange(vertexStep, JanusGraphTraversalUtil.getNextNonIdentityStep(vertexStep), localTraversal, null);
+                HasStepFolder.foldInRange(vertexStep, JanusGraphTraversalUtil.getNextNonIdentityStep(vertexStep), localTraversal);
                 unfoldLocalTraversal(traversal, localStep, localTraversal, vertexStep);
 
             } else if (localStart instanceof PropertiesStep) {
@@ -188,9 +188,9 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
 
                 if (propertiesStep.getReturnType().forProperties()) {
                     HasStepFolder.foldInHasContainer(propertiesStep, localTraversal, traversal);
-                    HasStepFolder.foldInOrder(propertiesStep, propertiesStep.getNextStep(), localTraversal, traversal, false, null);
+                    HasStepFolder.foldInOrder(propertiesStep, propertiesStep.getNextStep(), localTraversal, traversal, false);
                 }
-                HasStepFolder.foldInRange(propertiesStep, JanusGraphTraversalUtil.getNextNonIdentityStep(propertiesStep), localTraversal, null);
+                HasStepFolder.foldInRange(propertiesStep, JanusGraphTraversalUtil.getNextNonIdentityStep(propertiesStep), localTraversal);
                 unfoldLocalTraversal(traversal, localStep, localTraversal, propertiesStep);
             }
         });

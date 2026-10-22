@@ -77,19 +77,11 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
 
     void orderBy(String key, Order order);
 
-    void localOrderBy(TraversalParent parent, List<HasContainer> hasContainers, String key, Order order);
-
     void setLimit(int low, int high);
-
-    void setLocalLimit(TraversalParent parent, List<HasContainer> hasContainers, int low, int high);
 
     int getLowLimit();
 
-    int getLocalLowLimit(TraversalParent parent, List<HasContainer> hasContainers);
-
     int getHighLimit();
-
-    int getLocalHighLimit(TraversalParent parent, List<HasContainer> hasContainers);
 
     static boolean validJanusGraphHas(HasContainer has) {
         if (has.getPredicate() instanceof ConnectiveP) {
@@ -385,8 +377,8 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         return hasStep;
     }
 
-    static Step<?, ?> foldInOrder(final HasStepFolder janusgraphStep, final Step<?, ?>  tinkerpopStep, final Traversal.Admin<?, ?> traversal,
-                                   final Traversal<?, ?> rootTraversal, boolean isVertexOrder, final List<HasContainer> hasContainers) {
+    static void foldInOrder(final HasStepFolder janusgraphStep, final Step<?, ?>  tinkerpopStep, final Traversal.Admin<?, ?> traversal,
+                            final Traversal<?, ?> rootTraversal, boolean isVertexOrder) {
         Step<?, ?> currentStep = tinkerpopStep;
         final List<OrderGlobalStep<?, ?>> orderSteps = new ArrayList<>();
         while (true) {
@@ -404,7 +396,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         final List<OrderEntry> orders = new ArrayList<>();
         for (int i = orderSteps.size() - 1; i >= 0; i--) {
             if (!validJanusGraphOrder(orderSteps.get(i), rootTraversal, isVertexOrder)) {
-                return currentStep;
+                return;
             }
             final List<Pair<Traversal.Admin<Object, Comparable>, Comparator<Object>>> comparators =
                 (List<Pair<Traversal.Admin<Object, Comparable>, Comparator<Object>>>)
@@ -430,21 +422,16 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
         //A query of the edges or properties of a vertex takes a single order key
         if (orders.isEmpty() || orders.size() > 1 && !(janusgraphStep instanceof JanusGraphStep)) {
-            return currentStep;
+            return;
         }
         //Add orders to HasStepFolder
         for (final OrderEntry order : orders) {
-            if (hasContainers == null) {
-                janusgraphStep.orderBy(order.key, order.order);
-            } else {
-                janusgraphStep.localOrderBy(traversal.getParent(), hasContainers, order.key, order.order);
-            }
+            janusgraphStep.orderBy(order.key, order.order);
         }
         for (final OrderGlobalStep<?, ?> orderStep : orderSteps) {
             orderStep.getLabels().forEach(janusgraphStep::addLabel);
             traversal.removeStep(orderStep);
         }
-        return currentStep;
     }
 
     static void splitAndP(final List<HasContainer> hasContainers, final HasContainer hasContainer) {
@@ -494,22 +481,18 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
     }
 
-    static void foldInRange(final HasStepFolder janusgraphStep, final Step<?, ?>  tinkerpopStep, final Traversal.Admin<?, ?> traversal, final List<HasContainer> hasContainers) {
+    static void foldInRange(final HasStepFolder janusgraphStep, final Step<?, ?>  tinkerpopStep, final Traversal.Admin<?, ?> traversal) {
         final Step<?, ?> nextStep = tinkerpopStep instanceof IdentityStep ? JanusGraphTraversalUtil.getNextNonIdentityStep(tinkerpopStep): tinkerpopStep;
         if (nextStep instanceof RangeGlobalStep) {
             final RangeGlobalStep range = (RangeGlobalStep) nextStep;
             int low = 0;
             if (janusgraphStep instanceof JanusGraphStep) {
                 low = QueryUtil.convertLimit(range.getLowRange());
-                low = QueryUtil.mergeLowLimits(low, hasContainers == null ? janusgraphStep.getLowLimit(): janusgraphStep.getLocalLowLimit(traversal.getParent(), hasContainers));
+                low = QueryUtil.mergeLowLimits(low, janusgraphStep.getLowLimit());
             }
             int high = QueryUtil.convertLimit(range.getHighRange());
-            high = QueryUtil.mergeHighLimits(high, hasContainers == null ? janusgraphStep.getHighLimit(): janusgraphStep.getLocalHighLimit(traversal.getParent(), hasContainers));
-            if (hasContainers == null) {
-                janusgraphStep.setLimit(low, high);
-            } else {
-                janusgraphStep.setLocalLimit(traversal.getParent(), hasContainers, low, high);
-            }
+            high = QueryUtil.mergeHighLimits(high, janusgraphStep.getHighLimit());
+            janusgraphStep.setLimit(low, high);
             if (janusgraphStep instanceof JanusGraphStep || range.getLowRange() == 0) { //Range can be removed since there is JanusGraphStep or no offset
                 nextStep.getLabels().forEach(janusgraphStep::addLabel);
                 traversal.removeStep(nextStep);
