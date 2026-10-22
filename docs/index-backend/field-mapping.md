@@ -65,7 +65,8 @@ property key *string* and the *english* analyzer for property key
 
 #### For Solr
 
-The class of the tokenizer must be set as parameter value.
+The class of an analyzer, or of a tokenizer, must be set as parameter
+value.
 ```java
 mgmt = graph.openManagement()
 string = mgmt.makePropertyKey('string').dataType(String.class).make()
@@ -77,7 +78,9 @@ mgmt.commit()
 
 With these settings, JanusGraph will use the *standard* tokenizer for
 property key *string* and the *whitespace* tokenizer for property key
-*text*.
+*text*. JanusGraph splits the values of the conditions on a key with
+it, while Solr analyzes the key's field as the schema defines it, so the
+field's type should analyze the values alike.
 
 
 #### For Lucene

@@ -15,9 +15,12 @@
 package org.janusgraph.diskstorage.solr;
 
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.attribute.Cmp;
@@ -31,15 +34,25 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
+import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -233,6 +246,51 @@ public abstract class SolrIndexTest extends IndexProviderTest {
             .count());
         assertEquals(1, tx.queryStream(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "2")))
             .count());
+    }
+
+    // A string-analyzer or text-analyzer parameter may name a tokenizer, as the documentation of the field mappings
+    // has it: the tokenizer alone splits the value of a condition, as before JanusGraph took analyzers, since when the
+    // cast to an analyzer failed. The fields text and xtext of the test configset are text_general, which splits these
+    // values as the tokenizers do and puts them in lower case
+    @Test
+    public void analyzerParameterMayNameATokenizer() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final String words = "xtext";
+        final Map<String, KeyInformation> keys = new HashMap<>();
+        keys.put(TEXT, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.TEXT.asParameter(),
+            new Parameter<>(ParameterType.TEXT_ANALYZER.getName(), WhitespaceTokenizer.class.getName())));
+        keys.put(words, new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.STRING.asParameter(),
+            new Parameter<>(ParameterType.STRING_ANALYZER.getName(), StandardTokenizer.class.getName())));
+        final IndexTransaction addition = openTx(getIndexRetriever(keys));
+        for (final Map.Entry<String, KeyInformation> key : keys.entrySet()) {
+            addition.register(store, key.getKey(), key.getValue());
+        }
+        for (final String[] doc : new String[][]{{"tomAndJerry", "Tom and Jerry"}, {"spike", "Spike"}}) {
+            addition.add(store, doc[0], TEXT, doc[1], true);
+            addition.add(store, doc[0], words, doc[1], true);
+        }
+        addition.commit();
+
+        final IndexTransaction query = openTx(getIndexRetriever(keys));
+        assertEquals(ImmutableSet.of("tomAndJerry"), find(query, store, TEXT, Text.CONTAINS, "Jerry Tom"));
+        assertEquals(ImmutableSet.of("tomAndJerry"), find(query, store, TEXT, Text.CONTAINS_PHRASE, "Tom and"));
+        assertEquals(ImmutableSet.of(), find(query, store, TEXT, Text.CONTAINS_PHRASE, "Jerry Tom"));
+        assertEquals(ImmutableSet.of("tomAndJerry"), find(query, store, words, Cmp.EQUAL, "Jerry Tom"));
+        assertEquals(ImmutableSet.of("spike"), find(query, store, words, Cmp.NOT_EQUAL, "Jerry Tom"));
+        assertEquals(ImmutableSet.of(), find(query, store, words, Cmp.EQUAL, "!!!"));
+        query.commit();
+    }
+
+    private IndexTransaction openTx(KeyInformation.IndexRetriever retriever) throws BackendException {
+        return new IndexTransaction(index, retriever, StandardBaseTransactionConfig.of(TimestampProviders.MILLI),
+            Duration.ofMillis(2000L));
+    }
+
+    private static Set<String> find(IndexTransaction tx, String store, String key, JanusGraphPredicate predicate,
+                                    String value) throws BackendException {
+        return tx.queryStream(new IndexQuery(store, PredicateCondition.of(key, predicate, value)))
+            .collect(Collectors.toSet());
     }
 
     @Override
