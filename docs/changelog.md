@@ -1588,6 +1588,37 @@ first hit ran at 3,879 a second instead of 4,197, and the reads after 20,000 cha
 of 9.9; with 32 threads, at 5,331 instead of 6,900, and at 18.3 instead of 11.7. Pages of up to 1,000 cost the reads
 which stop early about half their rate or more there.
 
+##### Solr reads a result larger than a page in growing pages
+
+A result larger than a page (`index.[X].max-result-set-size`, 50 by default) was read from Solr in pages of that size,
+each at its offset. For each page, Solr collects and sorts every hit before its offset again, so a result read whole
+took time which grew with the square of its size: on Solr 9.10.1, `g.V().has('name').order().by('name')` read 31,846
+hits in 5.9 s in pages of 50 and in 0.52 s in pages of 1,000, and its `range(20000, 20010)` took 2.9 s in pages of 50.
+The first page of such a result still holds `max-result-set-size` hits, or the limit if that is less, and every page
+after it now holds twice as many as the page before, up to the new option `index.[X].solr.max-page-size` (MASKABLE,
+10,000 by default), but never more than the limit leaves. So `max-result-set-size` no longer needs raising for large
+results to be read in good time. The pages only grow while a result is read on, so a read which stops early asks for no
+more than twice the hits it takes, plus a first page. A result of many pages of `max-page-size` still costs each page
+the hits before it; a larger `max-page-size` takes fewer pages, at the price of a larger response each. A
+`max-page-size` no larger than `max-result-set-size` reads every result in pages of `max-result-set-size`, as before.
+
+A query whose limit a page holds is one request, as before, and so is a result which a page holds. Graph queries and
+direct index queries read their pages alike, a direct index query from its offset on, whatever parameters of its own it
+has but `rows`. One with a `rows` parameter is read in pages of its `rows`, as before, but its later pages now ask for
+no more hits than its limit leaves, where they asked for whole pages: `rows` 100 with a limit of 150 reads pages of 100
+and 50 hits. A `start` which a parameter sets now carries over to the later pages, which were read at the query's offset
+plus the pages before, and `totals` count the hits from it, where they counted from the offset. The requests are
+otherwise those of earlier versions, with the same sort.
+
+A read also waited forever where another transaction deleted some of its hits meanwhile: it read on until it had as many
+hits as its first page had found, and asked for a page only where the hits read so far filled whole pages. It still
+takes no more hits than its first page found, so that hits which other transactions add meanwhile can't keep it going,
+and its last page now asks for no more; but it now also ends with a page which comes back empty, or after which Solr
+found no more hits, as the count of hits of that page says. A direct index query which sets `minExactCount`, whose
+counts may then be lower bounds, is read until such a page alone. As before, a deletion or an addition ahead of the hits
+read moves the hits after it, so that a page may skip a hit or repeat one, and a read may leave out hits added
+meanwhile.
+
 ##### An Elasticsearch read which only some shards answered now fails
 
 A search, a page of a scroll or of a point in time, a count or an aggregation which Elasticsearch answered with the

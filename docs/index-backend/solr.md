@@ -307,6 +307,51 @@ when ascending. The string, boolean, numeric, date and UUID types of the
 example `schema.xml` declare `sortMissingLast="true"`, and a schema of
 your own needs it as well to order these elements as JanusGraph does.
 
+## Search Requests
+
+JanusGraph reads the result of a mixed index query from Solr in pages,
+each page at its offset in the result:
+
+-   The first page holds `index.[X].max-result-set-size` hits (50 by
+    default), or as many as the query's limit asks for if that is less.
+-   Every page after it holds twice as many hits as the page before, up
+    to `index.[X].solr.max-page-size` hits (10,000 by default), but
+    never more than the limit leaves: 50, 100, 200 and so on.
+-   The read takes no more hits than the limit, nor than the response to
+    the first page counted after the query's offset, and no page asks
+    for more, so that hits which other transactions add meanwhile can't
+    keep a read going. It ends earlier with a page which comes back
+    empty, or with a page after which Solr found no more hits, as the
+    count of hits in its response says. So a query whose limit a page
+    holds is one request, and so is a result which a page holds.
+
+For each page, Solr collects and sorts every hit before its offset
+again, so a result read in pages of one size takes time which grows with
+the square of its size. Pages which grow take far fewer such passes, so
+large results no longer need a larger `max-result-set-size` to be read
+in good time. They only grow while the result is read on: a read which
+stops early, as a traversal which needs only its first elements, asks
+for no more than twice the hits it takes, plus a first page. A larger
+`max-page-size` takes fewer pages for a large result, at the price of a
+larger response each, which JanusGraph holds until it is read, and every
+page of that size still costs Solr the hits before it. A `max-page-size`
+no larger than `max-result-set-size` reads every result in pages of
+`max-result-set-size`, as JanusGraph 1.1 did.
+
+A [direct index query](direct-index-query.md) is read in the same pages,
+from its offset, or from the `start` which a parameter of its own sets,
+as its parameters reach Solr as they are. One with a `rows` parameter is
+read in pages of its `rows`, and its later pages ask for no more hits
+than its limit leaves. One which sets `minExactCount`, whose counts may
+then be lower bounds, isn't bound by the count of its first page. Its
+`totals` count the hits from the same start as its read.
+
+Each page is read in the state which the index has when it is asked for:
+a hit which another transaction deletes or adds meanwhile, ahead of the
+hits read so far, moves the hits after it, so that a page may skip a hit
+or repeat one. And a read may leave out hits which other transactions
+add meanwhile, as it takes no more than its first page found.
+
 ## Troubleshooting
 
 ### Collection Does Not Exist

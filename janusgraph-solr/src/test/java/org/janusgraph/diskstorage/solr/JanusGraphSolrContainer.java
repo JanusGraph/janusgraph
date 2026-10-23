@@ -105,6 +105,7 @@ public class JanusGraphSolrContainer extends SolrContainer {
             config.set(SolrIndex.HTTP_URLS, new String[]{"http://" + getHost() + ":" + getSolrPort() + "/solr"}, indexBackend);
             config.set(SolrIndex.WAIT_SEARCHER, true, indexBackend);
             config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, indexBackend);
+            config.set(SolrIndex.MAX_PAGE_SIZE, 12, indexBackend);
         }
         return config;
     }

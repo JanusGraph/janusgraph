@@ -1219,7 +1219,9 @@ public class GraphDatabaseConfiguration {
             "Maximum number of results to return if no limit is specified. For index backends that support scrolling, it represents " +
                     "the number of results in each batch, except that Elasticsearch reads a query with a limit " +
                     "too large for a single request in batches of up to " +
-                    "`index.[X].elasticsearch.limited-result-max-page-size` results, though never smaller than this",
+                    "`index.[X].elasticsearch.limited-result-max-page-size` results, and Solr reads every batch " +
+                    "after the first one twice as large as the one before, up to " +
+                    "`index.[X].solr.max-page-size` results, though never smaller than this",
             ConfigOption.Type.MASKABLE, 50);
 
     public static final ConfigOption<Boolean> INDEX_NAME_MAPPING = new ConfigOption<>(INDEX_NS,"map-name",
