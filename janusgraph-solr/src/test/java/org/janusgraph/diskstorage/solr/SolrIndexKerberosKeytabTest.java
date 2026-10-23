@@ -94,6 +94,7 @@ public class SolrIndexKerberosKeytabTest extends SolrIndexTest {
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getZookeeperUrls(), index);
         config.set(SolrIndex.WAIT_SEARCHER, true, index);
         config.set(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE, 3, index);
+        config.set(SolrIndex.MAX_PAGE_SIZE, 12, index);
         config.set(SolrIndex.KERBEROS_ENABLED, true, index);
         return config.restrictTo(index);
     }

@@ -64,6 +64,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -75,6 +76,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -1158,6 +1160,150 @@ public abstract class IndexProviderTest {
         assertEquals(4, tx.queryStream(new IndexQuery(store, PredicateCondition.of(TIME, Cmp.EQUAL, 1002), 4)).count());
         //Test limit % batchSize == 0
         assertEquals(6, tx.queryStream(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "Hello world"), 6)).count());
+    }
+
+    // A result of several pages, as Elasticsearch and Solr read it, comes whole and in order, also where its order has
+    // ties: ascending and descending, by one key and by two, without an order, and by relevance. Its documents come in
+    // one order whatever the limit, and whatever the offset and the limit of a direct index query, so in pages of
+    // whatever size, as JanusGraph expects where it reads a query again with a larger limit and skips the results it
+    // read before. The index holds the documents in another order than that of their ids, the second half first, in a
+    // transaction of its own, so that reads which broke ties by the id and by the index would differ, and the
+    // documents of the second half are the more relevant ones, holding both words of a text where the others hold one
+    @Test
+    public void resultsOfSeveralPagesComeWholeInOneOrderWhateverTheirLimit() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        final Map<String, Multimap<String, Object>> docs = new HashMap<>();
+        for (int i = 0; i < 20; i++) {
+            final Multimap<String, Object> doc = HashMultimap.create();
+            doc.put(TIME, (long) (i % 4));
+            doc.put(NAME, "n" + (i % 5));
+            doc.put(TEXT, i < 10 ? "alpha" : "alpha beta");
+            docs.put("d" + (100 + i), doc);
+        }
+        for (final boolean firstHalf : new boolean[]{false, true}) {
+            docs.forEach((id, doc) -> {
+                if (id.compareTo("d110") < 0 == firstHalf) add(store, id, doc, true);
+            });
+            newTx();
+        }
+        clopen();
+
+        final IndexQuery.OrderEntry timeAsc = new IndexQuery.OrderEntry(TIME, Order.ASC, Long.class);
+        final IndexQuery.OrderEntry timeDesc = new IndexQuery.OrderEntry(TIME, Order.DESC, Long.class);
+        final IndexQuery.OrderEntry nameAsc = new IndexQuery.OrderEntry(NAME, Order.ASC, String.class);
+        final IndexQuery.OrderEntry nameDesc = new IndexQuery.OrderEntry(NAME, Order.DESC, String.class);
+        final Condition<JanusGraphElement> all = PredicateCondition.of(TIME, Cmp.GREATER_THAN_EQUAL, 0L);
+        for (final ImmutableList<IndexQuery.OrderEntry> order : ImmutableList.of(IndexQuery.NO_ORDER,
+                ImmutableList.of(timeAsc), ImmutableList.of(timeDesc), ImmutableList.of(nameAsc),
+                ImmutableList.of(nameDesc), ImmutableList.of(timeAsc, nameDesc))) {
+            final List<String> whole = tx.queryStream(new IndexQuery(store, all, order)).collect(Collectors.toList());
+            assertEquals(docs.size(), whole.size(), order.toString());
+            assertEquals(docs.keySet(), ImmutableSet.copyOf(whole), order.toString());
+            for (int i = 1; i < whole.size(); i++) {
+                assertTrue(compare(order, docs.get(whole.get(i - 1)), docs.get(whole.get(i))) <= 0,
+                    order + ": " + whole);
+            }
+            for (final int limit : new int[]{1, 2, 3, 4, 6, 7, 10, 19, 20, 21}) {
+                assertEquals(whole.subList(0, Math.min(limit, whole.size())),
+                    tx.queryStream(new IndexQuery(store, all, order, limit)).collect(Collectors.toList()),
+                    order + " limit " + limit);
+            }
+        }
+
+        if (!supportsLuceneStyleQueries()) return;
+        for (final ImmutableList<IndexQuery.OrderEntry> order : ImmutableList.of(IndexQuery.NO_ORDER,
+                ImmutableList.of(timeAsc), ImmutableList.of(nameDesc))) {
+            final List<String> whole = rawQuery(store, "time:[0 TO *]", order, 0, null);
+            assertEquals(docs.keySet(), ImmutableSet.copyOf(whole), order.toString());
+            assertSlicesOfTheWhole(store, "time:[0 TO *]", order, whole);
+        }
+        final List<String> byRelevance = rawQuery(store, "text:(alpha beta)", IndexQuery.NO_ORDER, 0, null);
+        assertEquals(docs.keySet(), ImmutableSet.copyOf(byRelevance));
+        assertEquals(Sets.filter(docs.keySet(), id -> id.compareTo("d110") >= 0),
+            ImmutableSet.copyOf(byRelevance.subList(0, 10)), byRelevance.toString());
+        assertSlicesOfTheWhole(store, "text:(alpha beta)", IndexQuery.NO_ORDER, byRelevance);
+    }
+
+    // A direct index query with an offset, a limit or both returns that slice of its whole result, which its totals
+    // count
+    private void assertSlicesOfTheWhole(String store, String query, ImmutableList<IndexQuery.OrderEntry> order,
+                                        List<String> whole) throws BackendException {
+        for (final int offset : new int[]{0, 2, 3, 7, 19, 20, 21}) {
+            for (final Integer limit : new Integer[]{null, 1, 2, 4, 7}) {
+                final List<String> expected = whole.subList(Math.min(offset, whole.size()),
+                    limit == null ? whole.size() : Math.min(offset + limit, whole.size()));
+                final String message = query + " " + order + " offset " + offset + " limit " + limit;
+                assertEquals(expected, rawQuery(store, query, order, offset, limit), message);
+                final RawQuery totals = new RawQuery(store, query, order, NO_PARAS).setOffset(offset);
+                if (limit != null) totals.setLimit(limit);
+                assertEquals(expected.size(), tx.totals(totals).intValue(), message);
+            }
+        }
+    }
+
+    private List<String> rawQuery(String store, String query, ImmutableList<IndexQuery.OrderEntry> order, int offset,
+                                  Integer limit) throws BackendException {
+        final RawQuery rawQuery = new RawQuery(store, query, order, NO_PARAS).setOffset(offset);
+        if (limit != null) rawQuery.setLimit(limit);
+        return tx.queryStream(rawQuery).map(RawQuery.Result::getResult).collect(Collectors.toList());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static int compare(List<IndexQuery.OrderEntry> order, Multimap<String, Object> a,
+                               Multimap<String, Object> b) {
+        for (final IndexQuery.OrderEntry entry : order) {
+            final int comparison = ((Comparable<Object>) a.get(entry.getKey()).iterator().next())
+                .compareTo(b.get(entry.getKey()).iterator().next());
+            if (comparison != 0) return entry.getOrder() == Order.ASC ? comparison : -comparison;
+        }
+        return 0;
+    }
+
+    // A read of a result of several pages ends, with documents of the result alone, while another transaction deletes
+    // or adds documents, as a traversal reads on while another transaction removes or adds elements. The ordered
+    // documents lose the first one read and the last one, and gain two in the middle; the unordered ones lose the
+    // first one read and d119. Elasticsearch reads all the pages in the state which the index had at the first one, and
+    // Solr each page at its offset in the state of the moment, so that a deletion or an addition ahead of the read may
+    // make a page skip a document, or repeat one. Solr read on until it had as many documents as the first page found,
+    // so that it waited forever where fewer were left
+    @Test
+    public void readsOfSeveralPagesEndWhileDocumentsAreDeletedOrAdded() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        for (int i = 0; i < 20; i++) {
+            final Multimap<String, Object> doc = HashMultimap.create();
+            doc.put(TIME, (long) i);
+            doc.put(NAME, i % 2 == 0 ? "ordered" : "unordered");
+            add(store, "d" + (100 + i), doc, true);
+        }
+        clopen();
+        final ImmutableList<IndexQuery.OrderEntry> timeAsc =
+            ImmutableList.of(new IndexQuery.OrderEntry(TIME, Order.ASC, Long.class));
+        for (final boolean ordered : new boolean[]{true, false}) {
+            final String name = ordered ? "ordered" : "unordered";
+            final Condition<JanusGraphElement> condition = PredicateCondition.of(NAME, Cmp.EQUAL, name);
+            final Set<String> found = tx.queryStream(new IndexQuery(store, condition)).collect(Collectors.toSet());
+            assertEquals(10, found.size(), name);
+            final String last = ordered ? "d118" : "d119";
+            final Set<String> added = ordered ? ImmutableSet.of("added1", "added2") : ImmutableSet.of();
+            final IndexQuery query = new IndexQuery(store, condition, ordered ? timeAsc : IndexQuery.NO_ORDER);
+            final List<String> read = assertTimeoutPreemptively(Duration.ofSeconds(60), () -> {
+                final Iterator<String> results = tx.queryStream(query).iterator();
+                final List<String> taken = new ArrayList<>(Arrays.asList(results.next(), results.next()));
+                final IndexTransaction other = openTx();
+                other.delete(store, taken.get(0), NAME, name, true);
+                other.delete(store, last, NAME, name, true);
+                for (final String doc : added) {
+                    other.add(store, doc, NAME, name, true);
+                    other.add(store, doc, TIME, 9L, true);
+                }
+                other.commit();
+                results.forEachRemaining(taken::add);
+                return taken;
+            }, name);
+            assertTrue(Sets.union(found, added).containsAll(read), name + ": " + read);
+        }
     }
 
     @Test

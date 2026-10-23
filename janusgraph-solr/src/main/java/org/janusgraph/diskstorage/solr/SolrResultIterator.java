@@ -19,6 +19,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.params.CommonParams;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,6 +29,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 
 /**
+ * The results of a query, read from Solr a page at a time, each page at its offset, for which Solr collects and sorts
+ * every result before it again. The first page holds the query's rows, and every page after it twice as many results
+ * as the page before, up to the largest page, but never more than the limit leaves, nor than the first page found after
+ * the query's start: a large result takes few pages, a read which stops early asks for no more than twice the results
+ * it takes, plus a first page, and results which other transactions add meanwhile can't keep a read going.
+ *
  * @author David Clement (david.clement90@laposte.net)
  */
 class SolrResultIterator<E> implements Iterator<E> {
@@ -35,26 +42,37 @@ class SolrResultIterator<E> implements Iterator<E> {
     private final SolrClient solrClient;
     private final BlockingQueue<E> queue;
     private int count;
-    private int numBatches;
-    private final Long limit;
-    private final int offset;
-    private final int batchSize;
+    // The results which the read takes at most: the limit, and those which its first page found after the query's start
+    private final long limit;
+    private final int start;
+    private final int maxRows;
+    private int rows;
     private final String collection;
     private final SolrQuery solrQuery;
     private final Function<SolrDocument, E> getFieldValue;
+    private boolean lastPage;
 
-    public SolrResultIterator(SolrClient solrClient, Integer limit, int offset, int nbDocByQuery, String collection, SolrQuery solrQuery, Function<SolrDocument, E> function) throws SolrServerException, IOException {
+    /**
+     * @param maxRows the largest page; one no larger than the query's rows reads every page in pages of that size
+     */
+    public SolrResultIterator(SolrClient solrClient, Integer limit, int maxRows, String collection,
+                              SolrQuery solrQuery, Function<SolrDocument, E> function)
+            throws SolrServerException, IOException {
         this.solrClient = solrClient;
         count = 0;
-        this.offset = offset;
-        this.batchSize = nbDocByQuery;
+        start = solrQuery.getStart() != null ? solrQuery.getStart() : 0;
+        rows = solrQuery.getRows();
+        this.maxRows = Math.max(maxRows, rows);
         queue = new LinkedBlockingQueue<>();
         this.collection = collection;
         this.solrQuery = solrQuery;
         this.getFieldValue = function;
-        final long nbFound = solrClient.queryAndStreamResponse(collection, solrQuery, new SolrCallbackHandler(this, function)).getResults().getNumFound() - offset;
-        this.limit = limit != null ? Math.min(nbFound, limit) : nbFound;
-        numBatches = 1;
+        final long found = readPage();
+        // The read takes no more results than its first page found after the query's start, so that results which other
+        // transactions add meanwhile can't keep it going; but the count of a request which sets minExactCount, as a
+        // direct index query may, can be a lower bound, which bounds no read
+        final long first = solrQuery.get(CommonParams.MIN_EXACT_COUNT) == null ? found - start : Long.MAX_VALUE;
+        this.limit = Math.min(limit != null ? limit : Long.MAX_VALUE, first);
     }
 
     public BlockingQueue<E> getQueue(){
@@ -63,18 +81,34 @@ class SolrResultIterator<E> implements Iterator<E> {
 
     @Override
     public boolean hasNext() {
-        if (count != 0 && count % batchSize == 0 && count < limit) {
+        if (queue.isEmpty() && !lastPage && count < limit) {
+            rows = (int) Math.min(Math.min(2L * rows, maxRows), limit - count);
             try {
-                solrQuery.setStart(numBatches * batchSize + offset);
-                solrClient.queryAndStreamResponse(collection, solrQuery, new SolrCallbackHandler(this, getFieldValue));
-                numBatches++;
+                readPage();
             } catch (final SolrServerException e) {
                 throw new UncheckedSolrException(e.getMessage(), e);
             } catch (final IOException e) {
                 throw new UncheckedIOException(e.getMessage(), e);
             }
         }
-        return count < limit;
+        return count < limit && !queue.isEmpty();
+    }
+
+    //Reads the page of the given rows after the results read so far into the queue, which they have left empty, and
+    //returns the count of the results which Solr found. The page is the last one where it comes back empty, whatever
+    //its count, so that every read ends, or where Solr found no more results than those up to its end, as it says in
+    //the page's own count, as where other transactions deleted results since the first page. A page which comes back
+    //short isn't the last one where the count says that more remain: a distributed request leaves out a result which
+    //was deleted between its phases, and takes it off the count. A count which isn't exact, as where a request sets
+    //minExactCount, is a lower bound past the end of the page, as Solr counts exactly up to there at least, so it ends
+    //no read
+    private long readPage() throws SolrServerException, IOException {
+        solrQuery.setStart(start + count);
+        solrQuery.setRows(rows);
+        final long found = solrClient.queryAndStreamResponse(collection, solrQuery,
+            new SolrCallbackHandler(this, getFieldValue)).getResults().getNumFound();
+        lastPage = queue.isEmpty() || found <= start + count + queue.size();
+        return found;
     }
 
     @Override

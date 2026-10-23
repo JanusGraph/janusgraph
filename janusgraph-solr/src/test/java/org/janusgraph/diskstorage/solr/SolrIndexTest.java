@@ -14,6 +14,11 @@
 
 package org.janusgraph.diskstorage.solr;
 
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.protocol.HttpContext;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
@@ -22,7 +27,10 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.params.CommonParams;
 import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Geoshape;
@@ -36,6 +44,7 @@ import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
@@ -46,13 +55,18 @@ import org.janusgraph.graphdb.types.ParameterType;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -299,6 +313,120 @@ public abstract class SolrIndexTest extends IndexProviderTest {
         assertEquals(ImmutableSet.of("spike"), find(query, store, words, Cmp.NOT_EQUAL, "Jerry Tom"));
         assertEquals(ImmutableSet.of(), find(query, store, words, Cmp.EQUAL, "!!!"));
         query.commit();
+    }
+
+    // A result larger than a page (max-result-set-size, 3 here) is read at offsets in pages which double from the first
+    // one up to the largest page (max-page-size, 12 here), but never past the limit, nor past the documents which the
+    // first page found: 3, 6, 12, 12 and 7 documents. A page is the last one where Solr found no more documents than
+    // those up to its end, so a result which a page holds is one request. The requests are otherwise those of a single
+    // page, with the query's sort alone, if any. A direct index query is read in the same pages from its offset, or
+    // from the start which a parameter sets, also with other parameters of its own; one whose parameters set its rows
+    // is read in pages of that size, also below max-result-set-size or beyond the limit, and its later pages ask for no
+    // more than the limit leaves. Its totals take one request, and count the documents from the same start as its read
+    @Test
+    public void resultsLargerThanAPageAreReadInGrowingPages() throws Exception {
+        final String store = "vertex";
+        initialize(store);
+        for (int i = 0; i < 40; i++) {
+            final Multimap<String, Object> doc = HashMultimap.create();
+            doc.put(TIME, (long) i);
+            add(store, "d" + i, doc, true);
+        }
+        clopen();
+        final ImmutableList<IndexQuery.OrderEntry> timeAsc =
+            ImmutableList.of(new IndexQuery.OrderEntry(TIME, Order.ASC, Long.class));
+        final PredicateCondition<String, JanusGraphElement> all =
+            PredicateCondition.of(TIME, Cmp.GREATER_THAN_EQUAL, 0L);
+        final RawQuery rawQuery = new RawQuery(store, "time:[0 TO *]", new Parameter[0]);
+
+        try (Searches searches = new Searches()) {
+            assertEquals(documents(0, 40),
+                tx.queryStream(new IndexQuery(store, all, timeAsc)).collect(Collectors.toList()));
+            assertPages(searches.next(), "time asc", 0, 3, 3, 6, 9, 12, 21, 12, 33, 7);
+            assertEquals(documents(0, 20),
+                tx.queryStream(new IndexQuery(store, all, timeAsc, 20)).collect(Collectors.toList()));
+            assertPages(searches.next(), "time asc", 0, 3, 3, 6, 9, 11);
+            assertEquals(ImmutableSet.copyOf(documents(0, 40)),
+                tx.queryStream(new IndexQuery(store, all)).collect(Collectors.toSet()));
+            assertPages(searches.next(), null, 0, 3, 3, 6, 9, 12, 21, 12, 33, 7);
+            assertEquals(documents(0, 3),
+                tx.queryStream(new IndexQuery(store, all, timeAsc, 3)).collect(Collectors.toList()));
+            assertPages(searches.next(), "time asc", 0, 3);
+            assertEquals(3,
+                tx.queryStream(new IndexQuery(store, PredicateCondition.of(TIME, Cmp.LESS_THAN, 3L))).count());
+            assertPages(searches.next(), null, 0, 3);
+
+            assertEquals(40, tx.queryStream(rawQuery).count());
+            assertPages(searches.next(), null, 0, 3, 3, 6, 9, 12, 21, 12, 33, 7);
+            assertEquals(38,
+                tx.queryStream(new RawQuery(store, "time:[0 TO *]", new Parameter[0]).setOffset(2)).count());
+            assertPages(searches.next(), null, 2, 3, 5, 6, 11, 12, 23, 12, 35, 5);
+            assertEquals(10, tx.queryStream(new RawQuery(store, "time:[0 TO 9]",
+                new Parameter[]{new Parameter<>("defType", "lucene")})).count());
+            assertPages(searches.next(), null, 0, 3, 3, 6, 9, 1);
+            assertEquals(5, tx.queryStream(new RawQuery(store, "time:[0 TO *]",
+                new Parameter[]{new Parameter<>(CommonParams.ROWS, "2")}).setLimit(5)).count());
+            assertPages(searches.next(), null, 0, 2, 2, 2, 4, 1);
+            assertEquals(5, tx.queryStream(new RawQuery(store, "time:[0 TO *]",
+                new Parameter[]{new Parameter<>(CommonParams.ROWS, "10")}).setLimit(5)).count());
+            assertPages(searches.next(), null, 0, 10);
+            final RawQuery fromStart = new RawQuery(store, "time:[0 TO *]",
+                new Parameter[]{new Parameter<>(CommonParams.START, "24")});
+            assertEquals(16, tx.queryStream(fromStart).count());
+            assertPages(searches.next(), null, 24, 3, 27, 6, 33, 7);
+            assertEquals(40L, tx.totals(rawQuery).longValue());
+            assertPages(searches.next(), null, 0, 3);
+            assertEquals(16L, tx.totals(fromStart).longValue());
+            assertPages(searches.next(), null, 24, 3);
+        }
+    }
+
+    private static List<String> documents(int from, int to) {
+        return IntStream.range(from, to).mapToObj(i -> "d" + i).collect(Collectors.toList());
+    }
+
+    // The searches asked for these offsets and rows, in pairs, and sorted by the sort, or by none
+    private static void assertPages(List<Map<String, String>> searches, String sort, int... startsAndRows) {
+        assertEquals(startsAndRows.length / 2, searches.size(), searches.toString());
+        for (int i = 0; i < searches.size(); i++) {
+            final Map<String, String> search = searches.get(i);
+            assertEquals(String.valueOf(startsAndRows[2 * i]), search.get(CommonParams.START), searches.toString());
+            assertEquals(String.valueOf(startsAndRows[2 * i + 1]), search.get(CommonParams.ROWS),
+                searches.toString());
+            assertEquals(sort, search.get(CommonParams.SORT), searches.toString());
+        }
+    }
+
+    // The parameters of the searches which this thread sends to Solr through the clients of SolrJ's HttpClientUtil
+    private static final class Searches implements HttpRequestInterceptor, AutoCloseable {
+
+        private final Thread thread = Thread.currentThread();
+        private final List<Map<String, String>> searches = new ArrayList<>();
+
+        private Searches() {
+            HttpClientUtil.addRequestInterceptor(this);
+        }
+
+        @Override
+        public void process(HttpRequest request, HttpContext context) {
+            final URI uri = URI.create(request.getRequestLine().getUri());
+            if (Thread.currentThread() == thread && uri.getPath().endsWith("/select")) {
+                searches.add(URLEncodedUtils.parse(uri, StandardCharsets.UTF_8).stream()
+                    .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue, (a, b) -> a + "," + b)));
+            }
+        }
+
+        // The searches since the last call
+        private List<Map<String, String>> next() {
+            final List<Map<String, String>> next = new ArrayList<>(searches);
+            searches.clear();
+            return next;
+        }
+
+        @Override
+        public void close() {
+            HttpClientUtil.removeRequestInterceptor(this);
+        }
     }
 
     private IndexTransaction openTx(KeyInformation.IndexRetriever retriever) throws BackendException {

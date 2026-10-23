@@ -189,6 +189,20 @@ public class SolrIndex implements IndexProvider {
             "Name of the TTL field for Solr collections.",
             ConfigOption.Type.GLOBAL_OFFLINE, "ttl");
 
+    public static final ConfigOption<Integer> MAX_PAGE_SIZE = new ConfigOption<>(SOLR_NS, "max-page-size",
+            "The largest page in which a result larger than a page is read. The first page of a result holds " +
+                "`index.[X].max-result-set-size` hits, or the limit if that is less, and every page after it twice " +
+                "as many hits as the page before, up to this many, but never more than the limit leaves. Solr reads " +
+                "each page at its offset, collecting and sorting every hit before it again, so a result read in " +
+                "pages of one size takes time which grows with the square of its size. Larger pages take fewer such " +
+                "passes, at the price of a larger response each, which JanusGraph holds until it is read. As the " +
+                "pages only grow while a result is read on, a read which stops early asks for no more than twice " +
+                "the hits it takes, plus a first page. 10,000, the largest page of Elasticsearch by default " +
+                "(`index.max_result_window`), is the recommended value: with it, a result of a million hits takes " +
+                "about 100 pages, each of which still costs Solr the hits before it. A value no larger than " +
+                "`max-result-set-size` reads every result in pages of `max-result-set-size`, as earlier versions did.",
+            ConfigOption.Type.MASKABLE, 10_000, ConfigOption.positiveInt());
+
     /** SolrCloud Configuration */
     /*
      * TODO Rename ZOOKEEPER_URL and "zookeeper-url" to ZOOKEEPER_URLS and
@@ -281,6 +295,7 @@ public class SolrIndex implements IndexProvider {
     private final Map<String, String> keyFieldIds;
     private final String ttlField;
     private final int batchSize;
+    private final int maxPageSize;
     private final boolean waitSearcher;
     private final boolean kerberosEnabled;
 
@@ -292,6 +307,7 @@ public class SolrIndex implements IndexProvider {
         dynFields = config.get(DYNAMIC_FIELDS);
         keyFieldIds = parseKeyFieldsForCollections(config);
         batchSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
+        maxPageSize = config.get(MAX_PAGE_SIZE);
         ttlField = config.get(TTL_FIELD);
         waitSearcher = config.get(WAIT_SEARCHER);
 
@@ -685,7 +701,7 @@ public class SolrIndex implements IndexProvider {
         } else {
             solrQuery.setRows(batchSize);
         }
-        return executeQuery(query.hasLimit() ? query.getLimit() : null, 0, collection, solrQuery,
+        return executeQuery(query.hasLimit() ? query.getLimit() : null, maxPageSize, collection, solrQuery,
             doc -> doc.getFieldValue(keyIdField).toString());
     }
 
@@ -701,11 +717,12 @@ public class SolrIndex implements IndexProvider {
         }
     }
 
-    private <E> Stream<E> executeQuery(Integer limit, int offset, String collection, SolrQuery solrQuery,
+    // The pages after the first one grow up to maxRows, see SolrResultIterator
+    private <E> Stream<E> executeQuery(Integer limit, int maxRows, String collection, SolrQuery solrQuery,
                                        Function<SolrDocument, E> function) throws PermanentBackendException {
         try {
-            final SolrResultIterator<E> resultIterator = new SolrResultIterator<>(solrClient, limit, offset,
-                solrQuery.getRows(), collection, solrQuery, function);
+            final SolrResultIterator<E> resultIterator = new SolrResultIterator<>(solrClient, limit, maxRows,
+                collection, solrQuery, function);
             return StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, Spliterator.ORDERED),
                 false);
         } catch (final IOException | UncheckedIOException e) {
@@ -748,8 +765,13 @@ public class SolrIndex implements IndexProvider {
                                                  BaseTransaction tx) throws BackendException {
         final String collection = query.getStore();
         final String keyIdField = getKeyFieldId(collection);
-        return executeQuery(query.hasLimit() ? query.getLimit() : null, query.getOffset(), collection,
-            runCommonQuery(query, information, tx, collection, keyIdField), doc -> {
+        final SolrQuery solrQuery = runCommonQuery(query, information, tx, collection, keyIdField);
+        // The parameters of a direct index query reach Solr as they are: a rows parameter sets the size of every page.
+        // The pages of a query without one grow, as no other parameter keeps pages at offsets from growing
+        final boolean rowsParameter = Arrays.stream(query.getParameters())
+            .anyMatch(parameter -> CommonParams.ROWS.equals(parameter.key()));
+        final int maxRows = rowsParameter ? solrQuery.getRows() : maxPageSize;
+        return executeQuery(query.hasLimit() ? query.getLimit() : null, maxRows, collection, solrQuery, doc -> {
             final double score = Double.parseDouble(doc.getFieldValue("score").toString());
             return new RawQuery.Result<>(doc.getFieldValue(keyIdField).toString(), score);
         });
@@ -851,10 +873,13 @@ public class SolrIndex implements IndexProvider {
         try {
             final String collection = query.getStore();
             final String keyIdField = getKeyFieldId(collection);
-            final QueryResponse response = solrClient.query(collection, runCommonQuery(query, information, tx,
-                    collection, keyIdField));
+            final SolrQuery solrQuery = runCommonQuery(query, information, tx, collection, keyIdField);
+            final QueryResponse response = solrClient.query(collection, solrQuery);
             logger.debug("Executed query [{}] in {} ms", query.getQuery(), response.getElapsedTime());
-            return QueryUtil.applyOffsetWithQueryLimitAfterCount(response.getResults().getNumFound(), query.getOffset(), query);
+            // The hits from the start of the query, which a parameter may set, as its read returns them
+            final Integer start = solrQuery.getStart();
+            return QueryUtil.applyOffsetWithQueryLimitAfterCount(response.getResults().getNumFound(),
+                start != null ? start : 0, query);
         } catch (final IOException e) {
             logger.error("Query did not complete : ", e);
             throw new PermanentBackendException(e);
