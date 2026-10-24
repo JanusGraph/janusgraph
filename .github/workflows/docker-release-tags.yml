@@ -19,7 +19,7 @@ on:
     types: [released,edited]
 
 env:
-  LATEST_RELEASE: 1.1
+  LATEST_RELEASE: 1.2
 
 jobs:
   tagging:
