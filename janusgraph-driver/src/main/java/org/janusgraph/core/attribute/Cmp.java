@@ -77,7 +77,7 @@ public enum Cmp implements JanusGraphPredicate {
             // To align with TinkerPop behaviour, if an element does not have property p, then has(p, neq(anything))
             // should always evaluate to false. Note that JanusGraph does not support null value, so the "value == null"
             // here implies the element does not have such property.
-            return value != null && !value.equals(condition);
+            return value != null && !EQUAL.test(value, condition);
         }
 
         @Override
