@@ -29,8 +29,11 @@ public class PolygonSerializer extends GeoshapeTypeSerializer {
 
     @Override
     public Geoshape readNonNullableGeoshapeValue(final Buffer buffer, final GraphBinaryReader context) {
-        final List<double[]> points = pointCollectionSerializer.readPoints(buffer);
-        return Geoshape.polygon(points);
+        final List<List<double[]>> rings = pointCollectionSerializer.readRings(buffer);
+        if (rings.size() == 1) {
+            return Geoshape.polygon(rings.get(0));
+        }
+        return Geoshape.geoshape(pointCollectionSerializer.polygonBuilder(rings).build());
     }
 
     @Override

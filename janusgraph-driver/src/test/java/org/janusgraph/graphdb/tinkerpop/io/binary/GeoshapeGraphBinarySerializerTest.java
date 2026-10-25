@@ -53,6 +53,13 @@ public class GeoshapeGraphBinarySerializerTest {
             Geoshape.box(29.7154388159, 23.72, 38.97, 24.72),
             Geoshape.line(Arrays.asList(new double[] {37.97, 23.72}, new double[] {38.97, 24.72})),
             Geoshape.polygon(Arrays.asList(new double[] {119.0, 59.0}, new double[] {121.0, 59.0}, new double[] {121.0, 61.0}, new double[] {119.0, 61.0}, new double[] {119.0, 59.0})),
+            //Polygon with two holes
+            Geoshape.geoshape(Geoshape.getShapeFactory().polygon()
+                .pointXY(119.0, 59.0).pointXY(121.0, 59.0).pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)
+                .hole().pointXY(119.5, 59.5).pointXY(120.0, 59.5).pointXY(120.0, 60.0).pointXY(119.5, 60.0).pointXY(119.5, 59.5)
+                .endHole()
+                .hole().pointXY(120.5, 60.0).pointXY(120.9, 60.0).pointXY(120.9, 60.5).pointXY(120.5, 60.5).pointXY(120.5, 60.0)
+                .endHole().build()),
             //MultiPoint
             Geoshape.geoshape(Geoshape.getShapeFactory().multiPoint().pointXY(60.0, 60.0).pointXY(120.0, 60.0).build()),
             //MultiLine
@@ -65,6 +72,14 @@ public class GeoshapeGraphBinarySerializerTest {
                     .pointXY(61.0, 61.0).pointXY(59.0, 61.0).pointXY(59.0, 59.0))
                 .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0)
                     .pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)).build()),
+            //MultiPolygon with a hole in the second polygon
+            Geoshape.geoshape(Geoshape.getShapeFactory().multiPolygon()
+                .add(Geoshape.getShapeFactory().polygon().pointXY(59.0, 59.0).pointXY(61.0, 59.0)
+                    .pointXY(61.0, 61.0).pointXY(59.0, 61.0).pointXY(59.0, 59.0))
+                .add(Geoshape.getShapeFactory().polygon().pointXY(119.0, 59.0).pointXY(121.0, 59.0)
+                    .pointXY(121.0, 61.0).pointXY(119.0, 61.0).pointXY(119.0, 59.0)
+                    .hole().pointXY(119.5, 59.5).pointXY(120.5, 59.5).pointXY(120.5, 60.5).pointXY(119.5, 60.5).pointXY(119.5, 59.5)
+                    .endHole()).build()),
             //GeometryCollection
             Geoshape.geoshape(Geoshape.getGeometryCollectionBuilder()
                 .add(Geoshape.getShapeFactory().pointXY(60.0, 60.0))

@@ -24,8 +24,6 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory;
 import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 
-import java.util.List;
-
 public class MultiPolygonSerializer extends GeoshapeTypeSerializer {
     private static final PointCollectionSerializer pointCollectionSerializer = new PointCollectionSerializer();
 
@@ -36,12 +34,7 @@ public class MultiPolygonSerializer extends GeoshapeTypeSerializer {
         final int nrPolygons = buffer.readInt();
         final ShapeFactory.MultiPolygonBuilder multiPolygonBuilder = Geoshape.getShapeFactory().multiPolygon();
         for (int i = 0; i < nrPolygons; i++) {
-            final List<double[]> polygonPoints = pointCollectionSerializer.readPoints(buffer);
-            final ShapeFactory.PolygonBuilder polygon = Geoshape.getShapeFactory().polygon();
-            for (double[] point : polygonPoints) {
-                polygon.pointXY(point[0], point[1]);
-            }
-            multiPolygonBuilder.add(polygon);
+            multiPolygonBuilder.add(pointCollectionSerializer.polygonBuilder(pointCollectionSerializer.readRings(buffer)));
         }
         return Geoshape.geoshape(multiPolygonBuilder.build());
     }
