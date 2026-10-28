@@ -44,7 +44,7 @@ jobs:
   build-all:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
@@ -108,7 +108,7 @@ jobs:
             name: murmur-core-java25
             java: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
       - uses: actions/cache@v4
