@@ -51,6 +51,57 @@ The versions of JanusGraph listed below are outdated and will no longer receive 
 
 ## Release Notes
 
+### Version 1.3.0 (Release Date: <month> <day>, <year>>)
+
+/// tab | Maven
+```xml
+<dependency>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph-core</artifactId>
+    <version>1.3.0</version>
+</dependency>
+```
+///
+
+/// tab | Gradle
+```groovy
+compile "org.janusgraph:janusgraph-core:1.3.0"
+```
+///
+
+**Tested Compatibility:**
+
+* Apache Cassandra 3.11.10, 4.0.6, 5.0.8
+* Apache HBase 2.6.0
+* Oracle BerkeleyJE 7.5.11
+* ScyllaDB 6.2.0
+* Elasticsearch 6.6.0, 7.17.8, 8.15.3, 9.5.4
+* OpenSearch 2.19.6, 3.9.0
+* Apache Lucene 9.12.3
+* Apache Solr 8.11.4, 9.10.1
+* Apache TinkerPop 3.8.2
+* Java 11, 17, 21, 25 (OLAP with Apache Spark: Java 11 and 17 only)
+
+**Installed versions in the Pre-Packaged Distribution:**
+
+* Cassandra 5.0.9
+* Elasticsearch 7.17.29
+
+#### Changes
+
+For more information on features and bug fixes in 1.3.0, see the GitHub milestone:
+
+-   <https://github.com/JanusGraph/janusgraph/milestone/31?closed=1>
+
+#### Assets
+
+* [JavaDoc](https://javadoc.io/doc/org.janusgraph/janusgraph-core/1.3.0)
+* [GitHub Release](https://github.com/JanusGraph/janusgraph/releases/tag/v1.3.0)
+* [JanusGraph zip](https://github.com/JanusGraph/janusgraph/releases/download/v1.3.0/janusgraph-1.3.0.zip)
+* [JanusGraph zip with embedded Cassandra and ElasticSearch](https://github.com/JanusGraph/janusgraph/releases/download/v1.3.0/janusgraph-full-1.3.0.zip)
+
+#### Upgrade Instructions
+
 ### Version 1.2.0 (Release Date: October 28, 2026)
 
 /// tab | Maven
