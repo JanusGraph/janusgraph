@@ -44,7 +44,7 @@ jobs:
   build-all:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
@@ -226,7 +226,7 @@ jobs:
             name: cassandra5-murmur-client-auth-java25
             java: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
       - uses: actions/cache@v4
@@ -279,7 +279,7 @@ jobs:
           - module: cql
             args: "-Pcassandra3-murmur-client-auth -Dtest=\"**/diskstorage/cql/CQLStoreTest.java\""
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/cache@v4
         with:
           path: ~/.m2/repository
