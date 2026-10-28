@@ -119,7 +119,7 @@
         <jcabi.version>2.2.0</jcabi.version>
         <jmh.version>1.37</jmh.version>
         <!-- align with org.apache.solr:solr-solrj -->
-        <jetty.version>10.0.26</jetty.version>
+        <jetty.version>11.0.25</jetty.version>
         <log4j2.version>2.26.1</log4j2.version>
         <graalvm-nativeimage.version>24.0.2</graalvm-nativeimage.version>
         <caffeine.version>3.3.0</caffeine.version>
