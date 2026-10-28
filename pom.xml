@@ -50,7 +50,7 @@
     <properties>
         <titan.compatible-versions>1.0.0,1.1.0-SNAPSHOT</titan.compatible-versions>
         <tinkerpop.version>3.8.2</tinkerpop.version>
-        <avro.version>1.11.5</avro.version>
+        <avro.version>1.12.2</avro.version>
         <junit-platform.version>1.14.4</junit-platform.version>
         <junit.version>5.14.4</junit.version>
         <mockito.version>5.24.0</mockito.version>
