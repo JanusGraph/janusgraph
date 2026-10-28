@@ -20,7 +20,7 @@ See the relevant issue [here.](https://issues.sonatype.org/browse/OSSRH-28274)
 * [ ] Create Pull Requests with version updates
 * [ ] Validate all changes have been merged upstream
 * [ ] Push a release tag
-* [ ] **For Manual release flow only** Run Deploy to create [Sonatype](https://oss.sonatype.org/#welcome) staging repository and Generate artifacts for release page
+* [ ] **For Manual release flow only** Run Deploy to create [Sonatype](https://central.sonatype.com) staging repository and Generate artifacts for release page
 * [ ] **For Manual release flow only** Create a draft release and upload artifacts to it
 * [ ] Update release description of draft release
 * [ ] Close the staging repository in [Sonatype](https://central.sonatype.com/publishing)
@@ -316,7 +316,7 @@ In addition to the artifacts in `~/jg-staging/` a `KEYS` file must also be added
 
 ### Close the staging repository
 
-Log into [Sonatype](https://oss.sonatype.org/#welcome) and select Staging Repositories under Build Promotion.
+Log into [Sonatype](https://central.sonatype.com) and select Staging Repositories under Build Promotion.
 If you recently uploaded you can easily find your staged release by doing a descending sort.
 Verify that the contents look complete and then check the release before clicking close.
 
