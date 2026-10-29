@@ -14,14 +14,17 @@
 
 package org.janusgraph.graphdb.tinkerpop.io.binary.geoshape;
 
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.io.Buffer;
 import org.janusgraph.core.attribute.Geoshape;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory;
 import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 class PointCollectionSerializer {
@@ -35,6 +38,49 @@ class PointCollectionSerializer {
             points.add(new double[] {x, y});
         }
         return points;
+    }
+
+    /**
+     * Splits the flat coordinate list written by {@link #writePoints} back into its linear rings.
+     * Each ring is written closed, i.e. it ends with a repeat of its first coordinate, so a polygon
+     * with holes survives the round trip.
+     */
+    public List<List<double[]>> readRings(final Buffer buffer) {
+        final List<double[]> points = readPoints(buffer);
+        final List<List<double[]>> rings = new ArrayList<>();
+        int ringStart = 0;
+        while (ringStart < points.size()) {
+            int ringEnd = ringStart + 1;
+            while (ringEnd < points.size() && !Arrays.equals(points.get(ringStart), points.get(ringEnd))) {
+                ringEnd++;
+            }
+            rings.add(points.subList(ringStart, Math.min(ringEnd + 1, points.size())));
+            ringStart = ringEnd + 1;
+        }
+        return rings;
+    }
+
+    public ShapeFactory.PolygonBuilder polygonBuilder(final List<List<double[]>> rings) {
+        Preconditions.checkArgument(!rings.isEmpty(), "No coordinate ring provided");
+        final ShapeFactory.PolygonBuilder builder = Geoshape.getShapeFactory().polygon();
+        for (double[] point : rings.get(0)) {
+            checkCoordinate(point);
+            builder.pointXY(point[0], point[1]);
+        }
+        for (int i = 1; i < rings.size(); i++) {
+            final ShapeFactory.PolygonBuilder.HoleBuilder hole = builder.hole();
+            for (double[] point : rings.get(i)) {
+                checkCoordinate(point);
+                hole.pointXY(point[0], point[1]);
+            }
+            hole.endHole();
+        }
+        return builder;
+    }
+
+    private void checkCoordinate(final double[] point) {
+        Preconditions.checkArgument(point.length == 2 && Geoshape.isValidCoordinate(point[1], point[0]),
+            "Invalid coordinate provided");
     }
 
     public void writePointCollectionGeoshape(final Geoshape geoshape, final Buffer buffer) {
