@@ -34,8 +34,12 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.idmanagement.UniqueInstanceIdRetriever;
+import org.janusgraph.util.system.LoggerUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Map;
@@ -48,21 +52,24 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.RO
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG_DEFAULT_TTL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
  * Builder for {@link GraphDatabaseConfiguration}
  */
 public class GraphDatabaseConfigurationBuilder {
 
+    private static final Logger log = LoggerFactory.getLogger(GraphDatabaseConfigurationBuilder.class);
+
     public GraphDatabaseConfiguration build(ReadConfiguration localConfig){
 
         Preconditions.checkNotNull(localConfig);
 
-        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS,localConfig, BasicConfiguration.Restriction.NONE);
-        ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
+        ModifiableConfiguration storageConfiguration = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
+        final KeyColumnValueStoreManager storeManager = getStorageManagerAndConfiguration(storageConfiguration, localConfig);
 
-        final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localBasicConfiguration);
-        final StoreFeatures storeFeatures = storeManager.getFeatures();
+        ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
+        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS,storageConfiguration.getConfiguration(), BasicConfiguration.Restriction.NONE);
 
         final ReadConfiguration globalConfig = new ReadConfigurationBuilder().buildGlobalConfiguration(
             localConfig, localBasicConfiguration, overwrite, storeManager,
@@ -78,7 +85,7 @@ public class GraphDatabaseConfigurationBuilder {
         String uniqueGraphId = UniqueInstanceIdRetriever.getInstance().getOrGenerateUniqueInstanceId(combinedConfig);
         overwrite.set(UNIQUE_INSTANCE_ID, uniqueGraphId);
 
-        checkAndOverwriteTransactionLogConfiguration(combinedConfig, overwrite, storeFeatures);
+        checkAndOverwriteTransactionLogConfiguration(combinedConfig, overwrite, storeManager.getFeatures());
         checkAndOverwriteSystemManagementLogConfiguration(combinedConfig, overwrite);
 
         MergedConfiguration configuration = new MergedConfiguration(overwrite,combinedConfig);
@@ -121,6 +128,33 @@ public class GraphDatabaseConfigurationBuilder {
         Preconditions.checkArgument(!combinedConfig.has(KCVSLogManager.LOG_FIXED_PARTITION,MANAGEMENT_LOG)
             || combinedConfig.get(KCVSLogManager.LOG_FIXED_PARTITION,MANAGEMENT_LOG),"Fixed partitions must be enabled for management log");
         overwrite.set(KCVSLogManager.LOG_FIXED_PARTITION,true,MANAGEMENT_LOG);
+    }
+
+    private KeyColumnValueStoreManager getStorageManagerAndConfiguration(ModifiableConfiguration storageConfiguration, ReadConfiguration localConfig) {
+        BasicConfiguration localBasicConfig = new BasicConfiguration(ROOT_NS,localConfig, BasicConfiguration.Restriction.NONE);
+        storageConfiguration.setAll(localBasicConfig.getAll());
+        KeyColumnValueStoreManager storeManager = Backend.getStorageManager(storageConfiguration);
+
+        if (!localBasicConfig.has(TIMESTAMP_PROVIDER)) {
+            StoreFeatures f = storeManager.getFeatures();
+            final TimestampProviders backendPreference = f.hasTimestamps() ? f.getPreferredTimestamps() : null;
+
+            if (backendPreference != null && backendPreference != TIMESTAMP_PROVIDER.getDefaultValue()) {
+                storageConfiguration.set(TIMESTAMP_PROVIDER, backendPreference);
+                storeManager = Backend.getStorageManager(storageConfiguration);
+                log.info("Set timestamps to {} according to storage backend preference",
+                    LoggerUtil.sanitizeAndLaunder(storageConfiguration.get(TIMESTAMP_PROVIDER)));
+            } else {
+                storageConfiguration.set(TIMESTAMP_PROVIDER, TIMESTAMP_PROVIDER.getDefaultValue());
+                log.info("Set default timestamp provider {}",
+                    LoggerUtil.sanitizeAndLaunder(storageConfiguration.get(TIMESTAMP_PROVIDER)));
+            }
+        } else {
+            log.info("Using configured timestamp provider {}", localBasicConfig.get(TIMESTAMP_PROVIDER));
+        }
+
+        storageConfiguration.freezeConfiguration();
+        return storeManager;
     }
 
 }
