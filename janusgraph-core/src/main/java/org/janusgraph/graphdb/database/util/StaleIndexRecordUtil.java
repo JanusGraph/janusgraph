@@ -41,6 +41,7 @@ import org.janusgraph.graphdb.vertices.CacheVertex;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -378,17 +379,19 @@ public class StaleIndexRecordUtil {
 
         JanusGraphSchemaVertex indexSchemaVertex = managementSystem.getSchemaVertex(index);
         MixedIndexType indexType = (MixedIndexType) indexSchemaVertex.asIndexType();
-        String elementKey = IndexRecordUtil.element2String(elementIdToRemoveFromIndex);
+        List<String> elementKeys = IndexRecordUtil.element2Strings(elementIdToRemoveFromIndex);
 
         StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
         BackendTransaction transaction = tx.getTxHandle();
         IndexTransaction indexTransaction = transaction.getIndexTransaction(indexType.getBackingIndexName());
 
         try{
-            for(IndexRecordEntry indexRecordEntry : indexRecord){
-                indexTransaction.delete(indexType.getStoreName(), elementKey,
-                    IndexRecordUtil.key2Field(indexType, indexRecordEntry.getKey()),
-                    indexRecordEntry.getValue(), false);
+            for (String elementKey : elementKeys) {
+                for(IndexRecordEntry indexRecordEntry : indexRecord){
+                    indexTransaction.delete(indexType.getStoreName(), elementKey,
+                        IndexRecordUtil.key2Field(indexType, indexRecordEntry.getKey()),
+                        indexRecordEntry.getValue(), false);
+                }
             }
         } finally {
             try{
@@ -408,14 +411,16 @@ public class StaleIndexRecordUtil {
 
         JanusGraphSchemaVertex indexSchemaVertex = managementSystem.getSchemaVertex(index);
         MixedIndexType indexType = (MixedIndexType) indexSchemaVertex.asIndexType();
-        String elementKey = IndexRecordUtil.element2String(elementIdToRemoveFromIndex);
+        List<String> elementKeys = IndexRecordUtil.element2Strings(elementIdToRemoveFromIndex);
 
         StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
         BackendTransaction transaction = tx.getTxHandle();
         IndexTransaction indexTransaction = transaction.getIndexTransaction(indexType.getBackingIndexName());
 
         try{
-            indexTransaction.delete(indexType.getStoreName(), elementKey, ANY_UPDATE_KEY, ANY_UPDATE_VALUE, true);
+            for (String elementKey : elementKeys) {
+                indexTransaction.delete(indexType.getStoreName(), elementKey, ANY_UPDATE_KEY, ANY_UPDATE_VALUE, true);
+            }
         } finally {
             try{
                 transaction.commit();

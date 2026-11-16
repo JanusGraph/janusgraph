@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.util.ser.AbstractMessageSerializer.TOKEN_IO_REGISTRIES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RelationIdentifierGraphBinarySerializerTest {
 
@@ -51,8 +52,41 @@ public class RelationIdentifierGraphBinarySerializerTest {
             new RelationIdentifier(1000, 4000, 1000, "in_vertex_id"),
             new RelationIdentifier("out_vertex_id", 1000, 8000, 8000),
             new RelationIdentifier("out_vertex_id", 1000, 8000, "in_vertex_id"),
-        new RelationIdentifier("out_vertex_id", 1000, 8000, null)
+            new RelationIdentifier("out_vertex_id", 1000, 8000, null),
+            new RelationIdentifier(1000, 1000, 8000, 8000).withSortKey("00800000000000002a"),
+            new RelationIdentifier(1000, 4000, 1000, "in_vertex_id").withSortKey("ff"),
+            new RelationIdentifier("out_vertex_id", 1000, 8000, 8000).withSortKey("0102030405"),
+            new RelationIdentifier("out_vertex_id", 1000, 8000, "in_vertex_id").withSortKey("00800000000000002a")
         );
+    }
+
+    /**
+     * Identifiers without a sort key must keep the original byte format, so that drivers that predate sort keys can
+     * still read them.
+     */
+    @ParameterizedTest
+    @MethodSource("relationIdentifierProvider")
+    public void identifiersWithoutSortKeyKeepTheOriginalFormat(final RelationIdentifier relationIdentifier) throws IOException {
+        final TypeSerializerRegistry registry = TypeSerializerRegistry.build()
+            .addCustomType(RelationIdentifier.class, new RelationIdentifierGraphBinarySerializer()).create();
+        final GraphBinaryWriter writer = new GraphBinaryWriter(registry);
+        final Buffer withSortKey = bufferFactory.create(allocator.buffer());
+        final Buffer withoutSortKey = bufferFactory.create(allocator.buffer());
+        writer.writeValue(relationIdentifier, withSortKey, false);
+        writer.writeValue(relationIdentifier.withoutSortKey(), withoutSortKey, false);
+
+        final Object inVertexId = relationIdentifier.getInVertexId();
+        final int inVertexBytes = inVertexId instanceof String ? ((String) inVertexId).length() : Long.BYTES;
+        final int sortKeyBytes = relationIdentifier.hasSortKey()
+            ? Integer.BYTES + RelationIdentifier.decodeSortKey(relationIdentifier.getSortKey()).length : 0;
+        assertEquals(withoutSortKey.readableBytes() + sortKeyBytes, withSortKey.readableBytes());
+        final byte[] legacyBytes = new byte[withoutSortKey.readableBytes()];
+        withoutSortKey.readBytes(legacyBytes);
+        final byte legacyMarker = legacyBytes[legacyBytes.length - 1 - inVertexBytes];
+        assertTrue(legacyMarker == RelationIdentifierGraphBinarySerializer.LONG_MARKER
+            || legacyMarker == RelationIdentifierGraphBinarySerializer.STRING_MARKER);
+        withSortKey.release();
+        withoutSortKey.release();
     }
 
     @ParameterizedTest

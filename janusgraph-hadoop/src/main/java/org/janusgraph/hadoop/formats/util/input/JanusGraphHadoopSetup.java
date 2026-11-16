@@ -15,6 +15,7 @@
 package org.janusgraph.hadoop.formats.util.input;
 
 import org.janusgraph.graphdb.database.RelationReader;
+import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.types.TypeInspector;
 
@@ -34,5 +35,20 @@ public interface JanusGraphHadoopSetup {
     void close();
 
     boolean getFilterPartitionedVertices();
+
+    /**
+     * Whether edge ids carry the edge's sort-key values, as configured by
+     * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#RELATION_ID_SORT_KEY}.
+     */
+    default boolean hasRelationIdSortKey() {
+        return false;
+    }
+
+    /**
+     * The graph's attribute serializer, needed to encode sort-key values when {@link #hasRelationIdSortKey()}.
+     */
+    default Serializer getDataSerializer() {
+        throw new UnsupportedOperationException();
+    }
 
 }

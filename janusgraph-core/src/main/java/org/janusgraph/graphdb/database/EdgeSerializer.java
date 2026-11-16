@@ -471,7 +471,9 @@ public class EdgeSerializer implements RelationReader {
                                                   (i==sortKeyIDs.length || i==sortKeyIDs.length+1));
                     assert colStart.getPosition()==colEnd.getPosition();
                     assert interval==null || interval.isPoints();
-                    keyEndPos = colStart.getPosition();
+                    // The sort key ends where the first implicit key (adjacent vertex or relation id) begins. Only
+                    // that span is byte-flipped for DESC, so it must not move once the implicit keys are written.
+                    if (keyEndPos < 0) keyEndPos = colStart.getPosition();
 
                 } else {
                     assert !type.multiplicity().isConstrained();

@@ -26,6 +26,7 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
@@ -34,9 +35,13 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.relations.RelationCache;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.util.datastructures.PointInterval;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -53,6 +58,55 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class EdgeSerializerTest {
+
+    /**
+     * A query that constrains every column component of a MULTI edge with a sort key (the sort key, the adjacent
+     * vertex and the relation id) must slice exactly the edge's column, for either sort order. With a DESC sort key
+     * only the sort-key bytes are flipped; flipping into the adjacent vertex id made the slice miss the column.
+     */
+    @Test
+    public void testFullyConstrainedSortKeyQueryCoversTheColumn() {
+        for (org.janusgraph.graphdb.internal.Order order : new org.janusgraph.graphdb.internal.Order[]{
+            org.janusgraph.graphdb.internal.Order.ASC, org.janusgraph.graphdb.internal.Order.DESC}) {
+            StandardJanusGraph graph = (StandardJanusGraph) StorageSetup.getInMemoryGraph();
+            try {
+                JanusGraphManagement management = graph.openManagement();
+                PropertyKey version = management.makePropertyKey("version").dataType(Long.class).make();
+                ((StandardEdgeLabelMaker) management.makeEdgeLabel("calls").multiplicity(Multiplicity.MULTI))
+                    .sortKey(version).sortOrder(order).make();
+                management.commit();
+
+                JanusGraphVertex out = graph.addVertex(), in = graph.addVertex();
+                out.addEdge("calls", in, "version", 41L);
+                JanusGraphEdge edge = out.addEdge("calls", in, "version", 42L);
+                out.addEdge("calls", in, "version", 43L);
+                graph.tx().commit();
+
+                StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
+                InternalRelation relation = (InternalRelation) tx.getEdges((RelationIdentifier) edge.id()).iterator().next();
+                InternalRelationType type = (InternalRelationType) relation.getType();
+                EdgeSerializer serializer = graph.getEdgeSerializer();
+                Entry column = serializer.writeRelation(relation, 0, tx);
+
+                SliceQuery slice = serializer.getQuery(type, Direction.OUT, new EdgeSerializer.TypedInterval[]{
+                    new EdgeSerializer.TypedInterval(tx.getPropertyKey("version"), new PointInterval(42L)),
+                    new EdgeSerializer.TypedInterval(ImplicitKey.ADJACENT_ID, new PointInterval(in.id())),
+                    new EdgeSerializer.TypedInterval(ImplicitKey.JANUSGRAPHID, new PointInterval(relation.longId()))});
+                assertTrue(slice.contains(column.getColumn()), order + ": " + slice + " must cover " + column.getColumn());
+
+                long found = 0;
+                for (Object e : ((VertexCentricQueryBuilder) tx.getVertex(out.id()).query()).types(type)
+                    .direction(Direction.OUT).adjacent(tx.getVertex(in.id())).has("version", 42L)
+                    .has(ImplicitKey.JANUSGRAPHID.name(), relation.longId()).edges()) {
+                    found++;
+                }
+                assertEquals(1, found, order.toString());
+                tx.rollback();
+            } finally {
+                graph.close();
+            }
+        }
+    }
 
     @Test
     public void testValueOrdering() {

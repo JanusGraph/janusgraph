@@ -102,6 +102,32 @@ For more information on features and bug fixes in 1.3.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### Edge ids can carry the sort key of their edge
+
+An edge whose label is `MULTI` and has a sort key is stored under a column that holds its sort-key
+values ahead of the adjacent vertex and the relation id. An edge id does not contain those values, so
+resolving it (`g.E(id)`, and every edge returned by a mixed or composite edge index) reads every edge
+with that label on the vertex and filters them in memory.
+
+The new option `graph.relation-id-sort-key` (default `false`) makes the ids of such edges carry their
+sort-key values. They are then resolved with a read of a single column. The string form gains a fifth
+token, for example `4qp-360-2dx-3yo-K00800000000000002a`, and the GraphBinary form gains the sort-key
+bytes. Ids without sort-key values remain valid and resolve as before, and an id with them is equal to
+the same id without them. Labels with `FORK` consistency, and edges whose encoded sort-key values exceed
+64 bytes, keep ids without them. So do ids taken from an edge after its transaction has closed, and ids
+sent with Gryo or Java serialization, which keep their existing format.
+
+With the default, nothing changes. Before enabling the option:
+
+* Upgrade every JanusGraph instance and every client driver to this version first. Older versions cannot
+  parse ids that carry sort-key values.
+* Ids stored outside JanusGraph keep working, but their string form differs from the id JanusGraph returns
+  once the option is enabled. Compare ids with `equals`, not by their strings.
+* Mixed index documents of these edges are written under the new id once the option is enabled. Documents
+  written under the old id stay readable, and deleting or reindexing an edge removes the document under
+  either id, so instances can run with different settings during a rolling change. Pipelines that write
+  mixed index documents themselves must use the same id.
+
 ### Version 1.2.0 (Release Date: October 28, 2026)
 
 /// tab | Maven

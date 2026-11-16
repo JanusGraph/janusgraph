@@ -49,6 +49,8 @@ import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.util.stats.MetricManager;
@@ -464,6 +466,123 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 3L));
         verifyStoreMetrics(EDGESTORE_NAME, schemaPrefix, ImmutableMap.of(M_GET_SLICE, 2L));
         tx.commit();
+    }
+
+    // The entries returned by reads of the edge store since the metrics were reset
+    private long edgeStoreEntriesRead() {
+        return metric.getCounter(metricsPrefix, EDGESTORE_NAME, M_GET_SLICE, MetricInstrumentedStore.M_ENTRIES_COUNT)
+            .getCount();
+    }
+
+    private long entriesReadToResolve(RelationIdentifier id, long expectedVersion) {
+        resetMetrics();
+        JanusGraphTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
+        try {
+            JanusGraphEdge edge = Iterables.getOnlyElement(tx.getEdges(id));
+            assertEquals(id, edge.id());
+            assertEquals(expectedVersion, (long) edge.value("version"));
+            return edgeStoreEntriesRead();
+        } finally {
+            tx.rollback();
+        }
+    }
+
+    /**
+     * An edge of a MULTI label with a sort key is stored under [label][sort key][adjacent vertex][relation id]. With
+     * graph.relation-id-sort-key its id carries the sort-key values and resolves with a read of that one column;
+     * an id without them resolves by reading every edge of the label on the vertex.
+     */
+    @Test
+    public void testEdgeByIdWithSortKeyReadsOneColumn() {
+        metricsPrefix = "testEdgeByIdWithSortKeyReadsOneColumn";
+        clopen(option(GraphDatabaseConfiguration.RELATION_ID_SORT_KEY), true);
+        PropertyKey version = mgmt.makePropertyKey("version").dataType(Long.class).make();
+        PropertyKey region = mgmt.makePropertyKey("region").dataType(String.class).make();
+        ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("callsAsc").multiplicity(Multiplicity.MULTI))
+            .sortKey(version).sortOrder(Order.ASC).make();
+        ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("callsDesc").multiplicity(Multiplicity.MULTI))
+            .sortKey(version).sortOrder(Order.DESC).make();
+        ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("callsComposite").multiplicity(Multiplicity.MULTI))
+            .sortKey(region, version).sortOrder(Order.DESC).make();
+        EdgeLabel forked = ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("callsFork").multiplicity(Multiplicity.MULTI))
+            .sortKey(version).make();
+        mgmt.setConsistency(forked, ConsistencyModifier.FORK);
+        finishSchema();
+
+        final int degree = 100;
+        for (String label : new String[]{"callsAsc", "callsDesc", "callsComposite"}) {
+            JanusGraphVertex out = tx.addVertex();
+            JanusGraphVertex target = tx.addVertex();
+            RelationIdentifier needle = null;
+            for (int i = 0; i < degree; i++) {
+                JanusGraphEdge e = out.addEdge(label, i % 2 == 0 ? target : tx.addVertex(),
+                    "version", (long) i, "region", "r" + (i % 3));
+                if (i == 42) needle = (RelationIdentifier) e.id();
+            }
+            newTx();
+            needle = (RelationIdentifier) Iterables.getOnlyElement(tx.getEdges(needle)).id();
+            newTx();
+            assertTrue(needle.hasSortKey(), label);
+
+            long withSortKey = entriesReadToResolve(needle, 42L);
+            long withoutSortKey = entriesReadToResolve(needle.withoutSortKey(), 42L);
+            assertEquals(1, withSortKey, label);
+            assertTrue(withoutSortKey >= degree, label + ": " + withoutSortKey);
+            // the string form a client hands back resolves the same way
+            assertEquals(1, entriesReadToResolve(RelationIdentifier.parse(needle.toString()), 42L), label);
+        }
+
+        // FORK labels keep identifiers without a sort key
+        RelationIdentifier forkId = (RelationIdentifier) tx.addVertex()
+            .addEdge("callsFork", tx.addVertex(), "version", 1L).id();
+        newTx();
+        assertFalse(((RelationIdentifier) Iterables.getOnlyElement(tx.getEdges(forkId)).id()).hasSortKey());
+    }
+
+    /**
+     * Composite edge index entries carry the sort key of the edge id after the in-vertex, so an index hit resolves with
+     * a read of one column. Entries written without it still resolve.
+     */
+    @Test
+    public void testCompositeEdgeIndexHitWithSortKeyReadsOneColumn() {
+        metricsPrefix = "testCompositeEdgeIndexHitWithSortKeyReadsOneColumn";
+        clopen(option(GraphDatabaseConfiguration.RELATION_ID_SORT_KEY), false);
+        PropertyKey version = mgmt.makePropertyKey("version").dataType(Long.class).make();
+        PropertyKey tag = mgmt.makePropertyKey("tag").dataType(String.class).make();
+        ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel("calls").multiplicity(Multiplicity.MULTI))
+            .sortKey(version).sortOrder(Order.DESC).make();
+        mgmt.buildIndex("callsByTag", Edge.class).addKey(tag).buildCompositeIndex();
+        finishSchema();
+
+        final int degree = 100;
+        JanusGraphVertex out = tx.addVertex();
+        for (int i = 0; i < degree; i++) {
+            out.addEdge("calls", tx.addVertex(), "version", (long) i, "tag", i == 42 ? "legacy" : "hay");
+        }
+        newTx();
+
+        // an index entry written by an instance with the option off resolves as before
+        clopen(option(GraphDatabaseConfiguration.RELATION_ID_SORT_KEY), true);
+        out = tx.getVertex(out.id());
+        out.addEdge("calls", tx.addVertex(), "version", 500L, "tag", "keyed");
+        newTx();
+
+        for (String tagValue : new String[]{"legacy", "keyed"}) {
+            resetMetrics();
+            JanusGraphTransaction lookupTx = graph.buildTransaction().groupName(metricsPrefix).start();
+            JanusGraphEdge hit = Iterables.getOnlyElement(lookupTx.query().has("tag", tagValue).edges());
+            long entries = edgeStoreEntriesRead();
+            RelationIdentifier hitId = (RelationIdentifier) hit.id();
+            lookupTx.rollback();
+            // an edge whose transaction has closed reports its id without the sort key, and id() does not fail
+            assertEquals(hitId.withoutSortKey().toString(), hit.id().toString());
+            if (tagValue.equals("keyed")) {
+                assertTrue(hitId.hasSortKey());
+                assertEquals(1, entries, tagValue);
+            } else {
+                assertTrue(entries >= degree, tagValue + ": " + entries);
+            }
+        }
     }
 
     @Test

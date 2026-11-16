@@ -124,6 +124,15 @@ public class GraphDatabaseConfiguration {
             "this is enabled, you have to provide vertex id when creating new vertices. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
 
+    public static final ConfigOption<Boolean> RELATION_ID_SORT_KEY = new ConfigOption<>(GRAPH_NS, "relation-id-sort-key",
+            "Whether the ids of edges whose label is MULTI and has a sort key carry the edge's sort-key values. Such an " +
+            "id can be resolved to its edge with a single column read; without the values, resolving it reads every edge " +
+            "with that label on the vertex. This applies to g.E(id), to edges returned by mixed and composite edge " +
+            "indexes, and to mixed index document ids. Ids without sort-key values remain valid and resolve as before, " +
+            "and ids with them are equal to ids without them. Enable only after every JanusGraph instance and client " +
+            "driver is on a version that reads them, because older versions cannot parse these ids.",
+            ConfigOption.Type.MASKABLE, false);
+
     public static final ConfigOption<Boolean> ALLOW_CUSTOM_VERTEX_ID_TYPES = new ConfigOption<>(GRAPH_NS, "allow-custom-vid-types",
             "Whether non long-type vertex ids are allowed. " + ALLOW_SETTING_VERTEX_ID.getName() +
             " must be enabled in order to use this functionality. Currently, only string-type is supported. This does not " +
@@ -1625,6 +1634,7 @@ public class GraphDatabaseConfiguration {
     private boolean flushIDs;
     private boolean forceIndexUsage;
     private boolean batchLoading;
+    private boolean relationIdSortKey;
     private int txVertexCacheSize;
     private int txDirtyVertexSize;
     private DefaultSchemaMaker defaultSchemaMaker;
@@ -1709,6 +1719,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean isBatchLoading() {
         return batchLoading;
+    }
+
+    public boolean hasRelationIdSortKey() {
+        return relationIdSortKey;
     }
 
     public String getUniqueGraphId() {
@@ -2044,6 +2058,7 @@ public class GraphDatabaseConfiguration {
         flushIDs = configuration.get(IDS_FLUSH);
         forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
         batchLoading = configuration.get(STORAGE_BATCH);
+        relationIdSortKey = configuration.get(RELATION_ID_SORT_KEY);
         String autoTypeMakerName = configuration.get(AUTO_TYPE);
         if (PREREGISTERED_AUTO_TYPE.containsKey(autoTypeMakerName))
             defaultSchemaMaker = PREREGISTERED_AUTO_TYPE.get(autoTypeMakerName);
