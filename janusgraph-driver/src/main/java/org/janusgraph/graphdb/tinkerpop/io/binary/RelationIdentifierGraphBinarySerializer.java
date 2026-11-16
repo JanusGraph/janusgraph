@@ -32,6 +32,13 @@ public class RelationIdentifierGraphBinarySerializer extends JanusGraphTypeSeria
 
     public static final byte LONG_MARKER = 0;
     public static final byte STRING_MARKER = 1;
+    /**
+     * In-vertex markers of an edge identifier that carries a sort key: the in-vertex id as for
+     * {@link #LONG_MARKER} / {@link #STRING_MARKER}, followed by the sort-key length (int) and bytes.
+     * Only written when a sort key is present, so identifiers without one keep the original format.
+     */
+    public static final byte LONG_WITH_SORT_KEY_MARKER = 2;
+    public static final byte STRING_WITH_SORT_KEY_MARKER = 3;
 
     public RelationIdentifierGraphBinarySerializer() {
         super(GraphBinaryType.RelationIdentifier);
@@ -72,7 +79,7 @@ public class RelationIdentifierGraphBinarySerializer extends JanusGraphTypeSeria
         final long relationId = buffer.readLong();
         final byte inVertexIdMarker = buffer.readByte();
         Object inVertexId;
-        if (inVertexIdMarker == STRING_MARKER) {
+        if (inVertexIdMarker == STRING_MARKER || inVertexIdMarker == STRING_WITH_SORT_KEY_MARKER) {
             inVertexId = readString(buffer);
         } else {
             inVertexId = buffer.readLong();
@@ -80,7 +87,13 @@ public class RelationIdentifierGraphBinarySerializer extends JanusGraphTypeSeria
                 inVertexId = null;
             }
         }
-        return new RelationIdentifier(outVertexId, typeId, relationId, inVertexId);
+        final RelationIdentifier relationIdentifier = new RelationIdentifier(outVertexId, typeId, relationId, inVertexId);
+        if (inVertexIdMarker == LONG_WITH_SORT_KEY_MARKER || inVertexIdMarker == STRING_WITH_SORT_KEY_MARKER) {
+            final byte[] sortKey = new byte[buffer.readInt()];
+            buffer.readBytes(sortKey);
+            return relationIdentifier.withSortKey(RelationIdentifier.encodeSortKey(sortKey));
+        }
+        return relationIdentifier;
     }
 
     @Override
@@ -102,12 +115,17 @@ public class RelationIdentifierGraphBinarySerializer extends JanusGraphTypeSeria
             buffer.writeByte(LONG_MARKER);
             buffer.writeLong(0);
         } else if (inVertexId instanceof Number) {
-            buffer.writeByte(LONG_MARKER);
+            buffer.writeByte(value.hasSortKey() ? LONG_WITH_SORT_KEY_MARKER : LONG_MARKER);
             buffer.writeLong(((Number) inVertexId).longValue());
         } else {
             assert inVertexId instanceof String;
-            buffer.writeByte(STRING_MARKER);
+            buffer.writeByte(value.hasSortKey() ? STRING_WITH_SORT_KEY_MARKER : STRING_MARKER);
             writeString(buffer, (String) inVertexId);
+        }
+        if (inVertexId != null && value.hasSortKey()) {
+            final byte[] sortKey = RelationIdentifier.decodeSortKey(value.getSortKey());
+            buffer.writeInt(sortKey.length);
+            buffer.writeBytes(sortKey);
         }
     }
 }

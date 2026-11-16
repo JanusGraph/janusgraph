@@ -25,6 +25,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.graphdb.database.RelationReader;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.query.QueryUtil;
@@ -127,5 +128,15 @@ public class JanusGraphHadoopSetupImpl implements JanusGraphHadoopSetup {
     @Override
     public boolean getFilterPartitionedVertices() {
         return scanConf.get(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES, true);
+    }
+
+    @Override
+    public boolean hasRelationIdSortKey() {
+        return graph.getConfiguration().hasRelationIdSortKey();
+    }
+
+    @Override
+    public Serializer getDataSerializer() {
+        return graph.getDataSerializer();
     }
 }

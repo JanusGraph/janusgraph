@@ -25,21 +25,40 @@ import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.graphdb.vertices.AbstractVertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 
 public class RelationIdentifierUtils {
+    private static final Logger log = LoggerFactory.getLogger(RelationIdentifierUtils.class);
+
     public static RelationIdentifier get(InternalRelation r, long relationId) {
         if (relationId > 0) {
             RelationIdentifier rId = new RelationIdentifier(r.getVertex(0).id(),
                 r.getType().longId(),
                 relationId, (r.isEdge() ? r.getVertex(1).id() : null));
+            if (r.isEdge() && isOwnTxOpen(r) && r.tx().getGraph().getConfiguration().hasRelationIdSortKey()) {
+                rId = RelationSortKey.withSortKey(rId, r, r.tx().getGraph().getDataSerializer());
+            }
             return rId;
         } else return null;
+    }
+
+    /**
+     * The sort key is read from the relation's own transaction, which resolves the sort-key property types. Once that
+     * transaction is closed the identifier is returned without a sort key, as before: reading it would need another
+     * transaction (or fail for unbound ones), and {@code id()} must neither fail nor access storage.
+     */
+    private static boolean isOwnTxOpen(InternalRelation r) {
+        final InternalVertex v = r.getVertex(0);
+        return v instanceof AbstractVertex && ((AbstractVertex) v).isTxOpen();
     }
 
     protected static JanusGraphRelation findRelation(RelationIdentifier rId, JanusGraphTransaction tx) {
@@ -74,8 +93,21 @@ public class RelationIdentifierUtils {
             typeVertex = stx.getExistingRelationType(typeId);
         }
 
-        Iterable<? extends JanusGraphRelation> relations = getJanusGraphRelations(rId, tx, v, typeVertex);
+        JanusGraphRelation found = matchRelation(rId, getJanusGraphRelations(rId, tx, v, typeVertex, true));
+        if (found == null && rId.hasSortKey() && typeVertex.isEdgeLabel()
+            && RelationSortKey.supports((InternalRelationType) typeVertex)) {
+            // The single-column read found nothing: the edge is gone, or the identifier's sort key does not match the
+            // stored column (for instance an identifier built outside JanusGraph). Resolve it as an identifier
+            // without a sort key, so a wrong sort key can never hide an edge.
+            found = matchRelation(rId, getJanusGraphRelations(rId, tx, v, typeVertex, false));
+            if (found != null) {
+                log.warn("Sort key of relation identifier {} does not match its stored edge", rId);
+            }
+        }
+        return found;
+    }
 
+    private static JanusGraphRelation matchRelation(RelationIdentifier rId, Iterable<? extends JanusGraphRelation> relations) {
         for (JanusGraphRelation r : relations) {
             //Find current or previous relation
             if (r.longId() == rId.getRelationId() ||
@@ -84,15 +116,30 @@ public class RelationIdentifierUtils {
         return null;
     }
 
-    private static Iterable<? extends JanusGraphRelation> getJanusGraphRelations(RelationIdentifier rId, JanusGraphTransaction tx, JanusGraphVertex v, RelationType typeVertex) {
+    private static Iterable<? extends JanusGraphRelation> getJanusGraphRelations(RelationIdentifier rId, JanusGraphTransaction tx, JanusGraphVertex v,
+                                                                                 RelationType typeVertex, boolean useSortKey) {
         if (typeVertex.isEdgeLabel()) {
-            return findEdgeRelations(v, typeVertex, rId, tx);
+            return findEdgeRelations(v, typeVertex, rId, tx, useSortKey);
         } else {
             return ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types(typeVertex).properties();
         }
     }
 
     public static Iterable<? extends JanusGraphRelation> findEdgeRelations(JanusGraphVertex v, RelationType type, RelationIdentifier rId, JanusGraphTransaction tx){
+        return findEdgeRelations(v, type, rId, tx, true);
+    }
+
+    /**
+     * Builds the vertex-centric query that resolves an edge identifier.
+     *
+     * <p>For an edge label with a sort key, the sort key precedes the adjacent vertex id and relation id in the
+     * column. If the identifier carries the sort-key values (see {@link RelationIdentifier#getSortKey()}) and
+     * {@code useSortKey} is set, every column component is constrained and the query reads a single column.
+     * Otherwise it can only slice on the label and direction, and filters the adjacent vertex and relation id over
+     * every edge of that label on the vertex.
+     */
+    public static Iterable<? extends JanusGraphRelation> findEdgeRelations(JanusGraphVertex v, RelationType type, RelationIdentifier rId,
+                                                                           JanusGraphTransaction tx, boolean useSortKey){
         Direction dir = Direction.OUT;
         JanusGraphVertex other = ((StandardJanusGraphTx)tx).getInternalVertex(rId.getInVertexId());
         if (other==null || other.isRemoved()) {
@@ -109,9 +156,19 @@ public class RelationIdentifierUtils {
         VertexCentricQueryBuilder query =
             ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types(type).direction(dir).adjacent(other);
 
-        RelationType internalVertex = ((StandardJanusGraphTx) tx).getExistingRelationType(type.longId());
-        if (((InternalRelationType) internalVertex).getConsistencyModifier() != ConsistencyModifier.FORK) {
+        StandardJanusGraphTx stx = (StandardJanusGraphTx) tx;
+        InternalRelationType internalType = (InternalRelationType) stx.getExistingRelationType(type.longId());
+        if (internalType.getConsistencyModifier() != ConsistencyModifier.FORK) {
             query.has(ImplicitKey.JANUSGRAPHID.name(), rId.getRelationId());
+        }
+        if (useSortKey) {
+            Object[] values = RelationSortKey.decode(rId, internalType, stx, stx.getGraph().getDataSerializer());
+            if (values != null) {
+                long[] sortKey = internalType.getSortKey();
+                for (int i = 0; i < sortKey.length; i++) {
+                    query.has(stx.getExistingPropertyKey(sortKey[i]).name(), values[i]);
+                }
+            }
         }
         return query.edges();
     }

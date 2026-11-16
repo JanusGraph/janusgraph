@@ -121,6 +121,19 @@ public class IndexRecordUtil {
         }
     }
 
+    /**
+     * Every mixed index document id the element with this id may be stored under. An edge identifier that carries
+     * a sort key (see {@link RelationIdentifier#getSortKey()}) may also have been indexed by an instance that wrote
+     * identifiers without one, so both forms are returned; otherwise just {@link #element2String(Object)}.
+     */
+    public static List<String> element2Strings(Object elementId) {
+        final String docId = element2String(elementId);
+        if (elementId instanceof RelationIdentifier && ((RelationIdentifier) elementId).hasSortKey()) {
+            return Arrays.asList(docId, element2String(((RelationIdentifier) elementId).withoutSortKey()));
+        }
+        return Collections.singletonList(docId);
+    }
+
     public static Object string2ElementId(String str) {
         if (StringUtils.isEmpty(str)) {
             throw new IllegalArgumentException("Empty string cannot be converted to a valid id");
@@ -172,7 +185,12 @@ public class IndexRecordUtil {
         } else {
             relationId = Arrays.copyOfRange(relationId,0,3);
         }
-        return RelationIdentifier.get(relationId);
+        final RelationIdentifier rid = RelationIdentifier.get(relationId);
+        if (relationId.length == 4 && b.hasRemaining() && RelationIdentifier.SORT_KEY_SUPPORTED) {
+            final byte[] sortKey = b.getBytes((int) VariableLong.readPositive(b));
+            return rid.withSortKey(RelationIdentifier.encodeSortKey(sortKey));
+        }
+        return rid;
     }
 
     public static StandardKeyInformation getKeyInformation(final ParameterIndexField field) {
@@ -325,6 +343,12 @@ public class IndexRecordUtil {
             VariableLong.writePositive(out, rid.getTypeId());
             if (rid.getInVertexId() != null) {
                 IDHandler.writeVertexId(out, rid.getInVertexId(), true);
+                if (rid.hasSortKey()) {
+                    // Trailing, so readers that predate sort keys stop after the in-vertex id and ignore it
+                    final byte[] sortKey = RelationIdentifier.decodeSortKey(rid.getSortKey());
+                    VariableLong.writePositive(out, sortKey.length);
+                    out.putBytes(sortKey);
+                }
             }
         }
         return new StaticArrayEntry(out.getStaticBuffer(), valuePosition);
@@ -415,7 +439,13 @@ public class IndexRecordUtil {
 
     public static IndexUpdate<String, IndexEntry> getMixedIndexUpdate(JanusGraphElement element, PropertyKey key, Object value,
                                                                       MixedIndexType index, IndexMutationType updateType)  {
-        return new IndexUpdate<>(index, updateType, element2String(element), new IndexEntry(key2Field(index.getField(key)), value), element);
+        return getMixedIndexUpdate(element2String(element), element, key, value, index, updateType);
+    }
+
+    public static IndexUpdate<String, IndexEntry> getMixedIndexUpdate(String docId, JanusGraphElement element, PropertyKey key,
+                                                                      Object value, MixedIndexType index,
+                                                                      IndexMutationType updateType)  {
+        return new IndexUpdate<>(index, updateType, docId, new IndexEntry(key2Field(index.getField(key)), value), element);
     }
 
     public static int getInlinePropertiesSize(List<Entry> inlineProperties) {

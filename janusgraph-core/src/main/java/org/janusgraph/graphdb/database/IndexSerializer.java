@@ -74,6 +74,7 @@ import org.janusgraph.graphdb.query.graph.MultiKeySliceQuery;
 import org.janusgraph.graphdb.query.index.IndexSelectionUtil;
 import org.janusgraph.graphdb.query.vertex.VertexWithInlineProps;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.relations.RelationSortKey;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
@@ -254,8 +255,15 @@ public class IndexSerializer {
                     update = getCompositeIndexUpdate(iIndex, updateType, record, relation, serializer, typeInspector, edgeSerializer, hashKeys, hashLength);
                 } else {
                     assert relation.valueOrNull(type)!=null;
-                    if (((MixedIndexType)index).getField(type).getStatus()== SchemaStatus.DISABLED) continue;
-                    update = getMixedIndexUpdate(relation, type, relation.valueOrNull(type), (MixedIndexType) index, updateType);
+                    final MixedIndexType mixedIndex = (MixedIndexType) index;
+                    if (mixedIndex.getField(type).getStatus()== SchemaStatus.DISABLED) continue;
+                    for (final String docId : mixedIndexDocIds(relation, updateType)) {
+                        final IndexUpdate mixedUpdate = getMixedIndexUpdate(docId, relation, type,
+                            relation.valueOrNull(type), mixedIndex, updateType);
+                        if (ttl>0) mixedUpdate.setTTL(ttl);
+                        updates.add(mixedUpdate);
+                    }
+                    continue;
                 }
                 if (ttl>0) update.setTTL(ttl);
                 updates.add(update);
@@ -322,8 +330,36 @@ public class IndexSerializer {
         final List<IndexEntry> entries = getCompleteDocument(element, index);
         if (entries.isEmpty())
             return false;
-        getDocuments(documentsPerStore, index).put(element2String(element), entries);
+        final Map<String, List<IndexEntry>> documents = getDocuments(documentsPerStore, index);
+        final String docId = element2String(element);
+        documents.put(docId, entries);
+        if (element instanceof InternalRelation) {
+            // Remove the document under the relation's other id form, so a document written by an instance with the
+            // other graph.relation-id-sort-key setting is not left behind as a duplicate.
+            for (final String otherDocId : relationDocIds((InternalRelation) element)) {
+                if (!otherDocId.equals(docId)) documents.put(otherDocId, new ArrayList<>());
+            }
+        }
         return true;
+    }
+
+    /**
+     * The mixed index document ids an update of this relation touches. An addition writes the document under the
+     * relation's id, which carries its sort key exactly when graph.relation-id-sort-key is enabled. A deletion
+     * removes both forms of the id, because the document may have been written by an instance with the other
+     * setting.
+     */
+    private List<String> mixedIndexDocIds(InternalRelation relation, IndexMutationType updateType) {
+        if (updateType == IndexMutationType.DELETE) return relationDocIds(relation);
+        return Collections.singletonList(element2String(relation));
+    }
+
+    private List<String> relationDocIds(InternalRelation relation) {
+        final RelationIdentifier id = (RelationIdentifier) relation.id();
+        final RelationIdentifier withSortKey = RelationSortKey.withSortKey(id, relation, serializer);
+        return withSortKey.hasSortKey()
+            ? IndexRecordUtil.element2Strings(withSortKey)
+            : Collections.singletonList(element2String(id));
     }
 
     //The complete indexed content of the element in this index, as a restore writes the document: every value of
@@ -384,7 +420,9 @@ public class IndexSerializer {
         //encodes it, so accept the same ids that method does
         Preconditions.checkArgument((index.getElement()==ElementCategory.VERTEX && (elementId instanceof Long || elementId instanceof String)) ||
             (index.getElement().isRelation() && elementId instanceof RelationIdentifier),"Invalid element id [%s] provided for index: %s",elementId,index);
-        getDocuments(documentsPerStore,index).put(element2String(elementId),new ArrayList<>());
+        for (final String docId : IndexRecordUtil.element2Strings(elementId)) {
+            getDocuments(documentsPerStore,index).put(docId,new ArrayList<>());
+        }
     }
 
     public Set<IndexUpdate<StaticBuffer,Entry>> reindexElement(JanusGraphElement element, CompositeIndexType index, TypeInspector typeInspector) {

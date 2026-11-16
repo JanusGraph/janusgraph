@@ -33,6 +33,7 @@ import org.janusgraph.util.IDUtils;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.relations.RelationCache;
+import org.janusgraph.graphdb.relations.RelationSortKey;
 import org.janusgraph.graphdb.types.TypeInspector;
 import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetup;
 import org.janusgraph.hadoop.formats.util.input.SystemTypeInspector;
@@ -177,6 +178,10 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
                         typeManager.getRelationType(type.name()).longId(),
                         relation.relationId,
                         inVertexId);
+                    if (setup.hasRelationIdSortKey()) {
+                        String sortKey = RelationSortKey.encode((InternalRelationType) type, relation::get, typeManager, setup.getDataSerializer());
+                        if (sortKey != null) relationIdentifier = relationIdentifier.withSortKey(sortKey);
+                    }
 
                     if (relation.direction.equals(Direction.IN)) {
                         se = (StarGraph.StarEdge)adjacentVertex.addEdge(type.name(), sv, T.id, relationIdentifier.toString());
