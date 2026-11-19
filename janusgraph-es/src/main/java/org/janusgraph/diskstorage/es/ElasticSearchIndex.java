@@ -45,10 +45,12 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.es.compat.AbstractESCompat;
 import org.janusgraph.diskstorage.es.compat.ESCompatUtils;
 import org.janusgraph.diskstorage.es.mapping.IndexMapping;
+import org.janusgraph.diskstorage.es.rest.RestSearchResponse;
 import org.janusgraph.diskstorage.es.rest.util.HttpAuthTypes;
 import org.janusgraph.diskstorage.es.script.ESScriptResponse;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
+import org.janusgraph.diskstorage.indexing.IndexHit;
 import org.janusgraph.diskstorage.indexing.IndexMutation;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
@@ -106,6 +108,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GR
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_STORE_EDGE_SORT_KEY;
 import static org.janusgraph.util.StringUtils.lowerCaseCodePoints;
 
 /**
@@ -596,6 +599,13 @@ public class ElasticSearchIndex implements IndexProvider {
     private final int batchSize;
     private final boolean useExternalMappings;
     private final boolean allowMappingUpdate;
+    //Whether the edge documents this instance writes carry EDGE_SORT_KEY_FIELD: index.[X].store-edge-sort-key, the
+    //option the core reads from the same configuration to decide whether it writes the field
+    private final boolean storesEdgeSortKey;
+    //The stores whose mapping holds EDGE_SORT_KEY_FIELD, and the stores whose mapping cannot hold it and whose
+    //documents are written without it, as far as this instance knows, see mapSortKeyField
+    private final Set<String> storesWithSortKeyField = ConcurrentHashMap.newKeySet();
+    private final Set<String> storesWithoutSortKeyField = ConcurrentHashMap.newKeySet();
     private final Map<String, Object> indexSetting;
     private final long createSleep;
     private final boolean useAllField;
@@ -616,6 +626,7 @@ public class ElasticSearchIndex implements IndexProvider {
         useAllField = config.get(USE_ALL_FIELD);
         useExternalMappings = config.get(USE_EXTERNAL_MAPPINGS);
         allowMappingUpdate = config.get(ALLOW_MAPPING_UPDATE);
+        storesEdgeSortKey = config.get(INDEX_STORE_EDGE_SORT_KEY);
         createSleep = config.get(CREATE_SLEEP);
         ingestPipelines = config.getSubset(ES_INGEST_PIPELINES);
         indexStoreNameCacheEnabled = config.get(ENABLE_INDEX_STORE_NAMES_CACHE);
@@ -855,14 +866,17 @@ public class ElasticSearchIndex implements IndexProvider {
     private void addUpdatesCarryingTheCompleteDocument(List<ElasticSearchMutation> requests, String indexStoreName,
                                                        String storeName, String documentId, IndexMutation mutation,
                                                        KeyInformation.IndexRetriever information,
-                                                       Map<String, Object> completeDocument) throws BackendException {
+                                                       Map<String, Object> completeDocument, boolean withoutSortKey)
+            throws BackendException {
         final KeyInformation.StoreRetriever storeRetriever = information.get(storeName);
         final List<Map<String, Object>> deletions = mutation.hasDeletions()
-            ? getParameters(storeRetriever, mutation.getDeletions(), true) : Collections.emptyList();
+            ? getParameters(storeRetriever, written(mutation.getDeletions(), withoutSortKey), true)
+            : Collections.emptyList();
+        final List<IndexEntry> additions = written(mutation.getAdditions(), withoutSortKey);
         final List<Map<String, Object>> collectionAdditions = mutation.hasAdditions()
-            ? getParameters(storeRetriever, mutation.getAdditions(), false, Cardinality.SINGLE) : Collections.emptyList();
+            ? getParameters(storeRetriever, additions, false, Cardinality.SINGLE) : Collections.emptyList();
         final Map<String, Object> singleValuedAdditions = mutation.hasAdditions()
-            ? getAdditionDoc(information, storeName, mutation) : Collections.emptyMap();
+            ? getAdditionDoc(information, storeName, additions) : Collections.emptyMap();
         if (deletions.isEmpty() && collectionAdditions.isEmpty() && singleValuedAdditions.isEmpty()) {
             return;
         }
@@ -875,16 +889,93 @@ public class ElasticSearchIndex implements IndexProvider {
             PARAMETERIZED_MUTATION_SCRIPT, deletions, collectionAdditions, singleValuedAdditions);
     }
 
+    //The mapping of EDGE_SORT_KEY_FIELD: a keyword which is neither indexed nor has doc values. It is read back from
+    //_source with each hit only, and cannot be searched
+    private static final Map<String, Object> SORT_KEY_FIELD_MAPPING = ImmutableMap.of("properties",
+        ImmutableMap.of(EDGE_SORT_KEY_FIELD, ImmutableMap.of(ES_TYPE_KEY, "keyword", "index", false, "doc_values", false)));
+
+    private static boolean hasSortKeyField(Collection<IndexEntry> entries) {
+        for (final IndexEntry entry : entries) {
+            if (EDGE_SORT_KEY_FIELD.equals(entry.field)) return true;
+        }
+        return false;
+    }
+
+    //The entries a document of a store is written with: all of them, or all but EDGE_SORT_KEY_FIELD where the store's
+    //mapping cannot hold it, see mapSortKeyField
+    private static List<IndexEntry> written(List<IndexEntry> entries, boolean withoutSortKey) {
+        if (!withoutSortKey || !hasSortKeyField(entries)) return entries;
+        return entries.stream().filter(entry -> !EDGE_SORT_KEY_FIELD.equals(entry.field)).collect(Collectors.toList());
+    }
+
+    //Decides, on the first write of the store by this instance, whether its documents carry EDGE_SORT_KEY_FIELD. Only
+    //edge stores can, and only when the option is enabled: the core describes the field for the stores of edge
+    //indexes alone, see IndexInfoRetriever. Each store is decided once, whether or not the write carries the field, so
+    //that no write looks through its entries for it
+    private void prepareSortKeyField(String store, KeyInformation.StoreRetriever storeRetriever)
+            throws BackendException {
+        if (!storesEdgeSortKey || storesWithSortKeyField.contains(store) || storesWithoutSortKeyField.contains(store)
+                || storeRetriever.get(EDGE_SORT_KEY_FIELD) == null) {
+            return;
+        }
+        mapSortKeyField(store);
+    }
+
+    //Maps EDGE_SORT_KEY_FIELD in the store before the first document which carries it is written. Elasticsearch would
+    //otherwise map it dynamically as a searchable text field, and an index created with an explicit mapping cannot
+    //change the field's type later. Where the mapping cannot hold the field, which JanusGraph may not change, the
+    //store's documents are written without it rather than rejected: the field only spares reads, and a hit without it
+    //is read as before
+    private void mapSortKeyField(String store) throws BackendException {
+        final String indexStoreName = getIndexStoreName(store);
+        final String unusable;
+        try {
+            final IndexMapping mappings = client.getMapping(indexStoreName, store);
+            final Object field = mappings == null || mappings.getProperties() == null
+                ? null : mappings.getProperties().get(EDGE_SORT_KEY_FIELD);
+            if (field != null) {
+                unusable = holdsSortKey(field) ? null : "maps it as " + field;
+            } else if (!useExternalMappings || allowMappingUpdate && mappings != null && mappings.isDynamic()) {
+                client.createMapping(indexStoreName, store, SORT_KEY_FIELD_MAPPING);
+                unusable = null;
+            } else if (mappings != null && !mappings.isDynamic() && !mappings.isStrict()) {
+                //A mapping which ignores the fields it does not have keeps the field in _source, unmapped, which is
+                //where a hit reads it from
+                unusable = null;
+            } else {
+                unusable = mappings == null ? "is missing" : "does not have it, and may not be updated";
+            }
+        } catch (final IOException e) {
+            throw convert(e);
+        }
+        if (unusable == null) {
+            storesWithSortKeyField.add(store);
+        } else {
+            storesWithoutSortKeyField.add(store);
+            log.warn("The mapping of Elasticsearch index '{}' {} for the field '{}', which "
+                    + "index.[X].store-edge-sort-key writes, so its edge documents are written without the field, and "
+                    + "their edges read as before. "
+                    + "Map it as {\"type\":\"keyword\",\"index\":false,\"doc_values\":false} and restart to use it",
+                indexStoreName, unusable, EDGE_SORT_KEY_FIELD);
+        }
+    }
+
+    //Whether a field mapped this way holds the encoded sort key, a hex string read back from _source
+    private static boolean holdsSortKey(Object fieldMapping) {
+        final Object type = fieldMapping instanceof Map ? ((Map<?, ?>) fieldMapping).get(ES_TYPE_KEY) : null;
+        return "keyword".equals(type) || "text".equals(type);
+    }
+
     //The complete indexed content of the element as an Elasticsearch document, when the transaction supplied it for
     //an update of an existing document and the element has anything indexed; null otherwise, which includes a complete
     //document supplied empty: there is nothing to recreate a missing document from, so the mutation goes as without one
-    private Map<String, Object> completeDocument(IndexMutation mutation, KeyInformation.StoreRetriever storeRetriever)
-            throws BackendException {
+    private Map<String, Object> completeDocument(IndexMutation mutation, KeyInformation.StoreRetriever storeRetriever,
+                                                 boolean withoutSortKey) throws BackendException {
         if (mutation.isNew() || mutation.isDeleted() || !mutation.hasCompleteDocument()) {
             return null;
         }
         final List<IndexEntry> entries = mutation.getCompleteDocument();
-        return entries.isEmpty() ? null : getNewDocument(entries, storeRetriever);
+        return entries.isEmpty() ? null : getNewDocument(written(entries, withoutSortKey), storeRetriever);
     }
 
     private BackendException convert(Exception esException) {
@@ -1286,6 +1377,8 @@ public class ElasticSearchIndex implements IndexProvider {
                 final List<ElasticSearchMutation> requestByStore = new ArrayList<>();
                 final String storeName = stores.getKey();
                 final String indexStoreName = getIndexStoreName(storeName);
+                prepareSortKeyField(storeName, information.get(storeName));
+                final boolean withoutSortKey = storesWithoutSortKeyField.contains(storeName);
                 for (final Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     final String documentId = entry.getKey();
                     final IndexMutation mutation = entry.getValue();
@@ -1296,41 +1389,45 @@ public class ElasticSearchIndex implements IndexProvider {
                     //The complete indexed content of the element, when the transaction supplied it, is the upsert of
                     //every update sent for the document: a document which turns out to be missing is recreated whole
                     //in the same round trip, rather than from the touched fields alone or not at all
-                    final Map<String, Object> completeDocument = completeDocument(mutation, information.get(storeName));
+                    final Map<String, Object> completeDocument = completeDocument(mutation, information.get(storeName),
+                        withoutSortKey);
                     if (mutation.hasDeletions() && mutation.isDeleted()) {
                         log.trace("Deleting entire document {}", documentId);
                         requestByStore.add(ElasticSearchMutation.createDeleteRequest(indexStoreName, storeName,
                                 documentId));
                     } else if (completeDocument != null) {
                         addUpdatesCarryingTheCompleteDocument(requestByStore, indexStoreName, storeName, documentId,
-                            mutation, information, completeDocument);
+                            mutation, information, completeDocument, withoutSortKey);
                     } else {
-                        //Deletions first
-                        if (mutation.hasDeletions()) {
-                            List<Map<String, Object>> params = getParameters(information.get(storeName),
-                                mutation.getDeletions(), true);
-                            Map doc = compat.prepareStoredScript(parameterizedDeletionScriptId, params).build();
-                            log.trace("Deletion script {} with params {}", PARAMETERIZED_DELETION_SCRIPT, params);
+                        final List<IndexEntry> additions = written(mutation.getAdditions(), withoutSortKey);
+                        //Deletions first. Without the sort key, a mutation may have none left to send
+                        final List<Map<String, Object>> deletions = mutation.hasDeletions()
+                            ? getParameters(information.get(storeName),
+                                written(mutation.getDeletions(), withoutSortKey), true)
+                            : Collections.emptyList();
+                        if (!deletions.isEmpty()) {
+                            Map doc = compat.prepareStoredScript(parameterizedDeletionScriptId, deletions).build();
+                            log.trace("Deletion script {} with params {}", PARAMETERIZED_DELETION_SCRIPT, deletions);
                             requestByStore.add(ElasticSearchMutation.createFieldDeletionRequest(indexStoreName,
                                 storeName, documentId, doc));
                         }
-                        if (mutation.hasAdditions()) {
+                        if (!additions.isEmpty()) {
                             if (mutation.isNew()) { //Index
                                 log.trace("Adding entire document {}", documentId);
-                                final Map<String, Object> source = getNewDocument(mutation.getAdditions(),
+                                final Map<String, Object> source = getNewDocument(additions,
                                         information.get(storeName));
                                 requestByStore.add(ElasticSearchMutation.createIndexRequest(indexStoreName, storeName,
                                         documentId, source));
                             } else {
                                 final Map upsert;
                                 if (!mutation.hasDeletions()) {
-                                    upsert = getNewDocument(mutation.getAdditions(), information.get(storeName));
+                                    upsert = getNewDocument(additions, information.get(storeName));
                                 } else {
                                     upsert = null;
                                 }
 
                                 List<Map<String, Object>> params = getParameters(information.get(storeName),
-                                        mutation.getAdditions(), false, Cardinality.SINGLE);
+                                        additions, false, Cardinality.SINGLE);
                                 if (!params.isEmpty()) {
                                     ImmutableMap.Builder builder = compat.prepareStoredScript(parameterizedAdditionScriptId, params);
                                     requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
@@ -1338,7 +1435,7 @@ public class ElasticSearchIndex implements IndexProvider {
                                     log.trace("Adding script {} with params {}", PARAMETERIZED_ADDITION_SCRIPT, params);
                                 }
 
-                                final Map<String, Object> doc = getAdditionDoc(information, storeName, mutation);
+                                final Map<String, Object> doc = getAdditionDoc(information, storeName, additions);
                                 if (!doc.isEmpty()) {
                                     final ImmutableMap.Builder builder = ImmutableMap.builder().put(ES_DOC_KEY, doc);
                                     requestByStore.add(ElasticSearchMutation.createUpdateRequest(indexStoreName, storeName,
@@ -1406,9 +1503,10 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private Map<String,Object> getAdditionDoc(KeyInformation.IndexRetriever information,
-                                              String store, IndexMutation mutation) throws PermanentBackendException {
+                                              String store, List<IndexEntry> additions)
+            throws PermanentBackendException {
         final Map<String,Object> doc = new HashMap<>();
-        for (final IndexEntry e : mutation.getAdditions()) {
+        for (final IndexEntry e : additions) {
             final KeyInformation keyInformation = information.get(store).get(e.field);
             if (keyInformation.getCardinality() == Cardinality.SINGLE) {
                 doc.put(e.field, convertToEsType(e.value, Mapping.getMapping(keyInformation)));
@@ -1430,6 +1528,8 @@ public class ElasticSearchIndex implements IndexProvider {
                 final List<ElasticSearchMutation> requestByStore = new ArrayList<>();
                 final String store = stores.getKey();
                 final String indexStoreName = getIndexStoreName(store);
+                prepareSortKeyField(store, information.get(store));
+                final boolean withoutSortKey = storesWithoutSortKeyField.contains(store);
                 for (final Map.Entry<String, List<IndexEntry>> entry : stores.getValue().entrySet()) {
                     final String docID = entry.getKey();
                     final List<IndexEntry> content = entry.getValue();
@@ -1443,7 +1543,8 @@ public class ElasticSearchIndex implements IndexProvider {
                         // Add
                         if (log.isTraceEnabled())
                             log.trace("Adding entire document {}", docID);
-                        final Map<String, Object> source = getNewDocument(content, information.get(store));
+                        final Map<String, Object> source = getNewDocument(written(content, withoutSortKey),
+                            information.get(store));
                         requestByStore.add(ElasticSearchMutation.createIndexRequest(indexStoreName, store, docID,
                                 source));
                     }
@@ -1709,18 +1810,44 @@ public class ElasticSearchIndex implements IndexProvider {
     @Override
     public Stream<String> query(IndexQuery query, KeyInformation.IndexRetriever informations,
                                 BaseTransaction tx) throws BackendException {
+        return search(query, informations, false).map(RawQuery.Result::getResult);
+    }
+
+    @Override
+    public Stream<IndexHit> queryHits(IndexQuery query, KeyInformation.IndexRetriever informations,
+                                      BaseTransaction tx, boolean withSortKey) throws BackendException {
+        return search(query, informations, withSortKey).map(r -> hit(r));
+    }
+
+    //The hit of a search result, with the sort key of the document if it carries one
+    private static IndexHit hit(RawQuery.Result<String> result) {
+        return new IndexHit(result.getResult(),
+            result instanceof RestSearchResponse.SortKeyedResult ? ((RestSearchResponse.SortKeyedResult) result).getSortKey() : null);
+    }
+
+    //Requests EDGE_SORT_KEY_FIELD from the _source of each hit, or no _source at all, as for a store whose documents
+    //are written without the field
+    private void requestSource(ElasticSearchRequest sr, String store, boolean withSortKey) {
+        if (withSortKey && !storesWithoutSortKeyField.contains(store)) {
+            sr.setFields(Collections.singletonList(EDGE_SORT_KEY_FIELD));
+        } else {
+            sr.setDisableSourceRetrieval(true);
+        }
+    }
+
+    private Stream<RawQuery.Result<String>> search(IndexQuery query, KeyInformation.IndexRetriever informations,
+                                                   boolean withSortKey) throws BackendException {
         final ElasticSearchRequest sr = new ElasticSearchRequest();
         final Map<String,Object> esQuery = getFilter(query.getCondition(), informations.get(query.getStore()));
         sr.setQuery(compat.prepareQuery(esQuery));
         if (!query.getOrder().isEmpty()) {
             addOrderToQuery(informations, sr, query.getOrder(), query.getStore());
         }
-        sr.setDisableSourceRetrieval(true);
+        requestSource(sr, query.getStore(), withSortKey);
 
         try {
             log.debug("Executing query [{}]", query.getCondition());
-            return searcher.search(getIndexStoreName(query.getStore()), sr, null, 0, query.getLimit())
-                .map(RawQuery.Result::getResult);
+            return searcher.search(getIndexStoreName(query.getStore()), sr, null, 0, query.getLimit());
         } catch (final IOException e) {
             //Classified like a write failure, so that BackendOperation reattempts a transient one within the read time
             throw convert(e);
@@ -1806,6 +1933,17 @@ public class ElasticSearchIndex implements IndexProvider {
     @Override
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information,
                                                  BaseTransaction tx) throws BackendException {
+        return search(query, information, false);
+    }
+
+    @Override
+    public Stream<RawQuery.Result<IndexHit>> queryHits(RawQuery query, KeyInformation.IndexRetriever information,
+                                                       BaseTransaction tx, boolean withSortKey) throws BackendException {
+        return search(query, information, withSortKey).map(r -> new RawQuery.Result<>(hit(r), r.getScore()));
+    }
+
+    private Stream<RawQuery.Result<String>> search(RawQuery query, KeyInformation.IndexRetriever information,
+                                                   boolean withSortKey) throws BackendException {
         final ElasticSearchRequest sr = new ElasticSearchRequest();
         sr.setQuery(compat.queryString(query.getQuery()));
         if (!query.getOrders().isEmpty()) {
@@ -1813,7 +1951,7 @@ public class ElasticSearchIndex implements IndexProvider {
         }
         //The hits of a raw query carry their scores, and come in their order
         sr.setRelevanceOrdered(true);
-        sr.setDisableSourceRetrieval(true);
+        requestSource(sr, query.getStore(), withSortKey);
         try {
             log.debug("Executing query [{}]", query.getQuery());
             return searcher.search(getIndexStoreName(query.getStore()), sr, query.getParameters(), query.getOffset(),
@@ -2003,6 +2141,9 @@ public class ElasticSearchIndex implements IndexProvider {
             throw new PermanentBackendException("Could not clear store " + storeName
                 + " (Elasticsearch index " + indexStoreName + ")", e);
         }
+        //The Elasticsearch index is gone with its mapping: a store recreated under this name is decided again
+        storesWithSortKeyField.remove(storeName);
+        storesWithoutSortKeyField.remove(storeName);
     }
 
     @Override

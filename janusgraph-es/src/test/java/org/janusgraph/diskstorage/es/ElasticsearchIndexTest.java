@@ -204,6 +204,8 @@ public class ElasticsearchIndexTest extends IndexProviderTest {
             cc.set("index." + index + ".elasticsearch.create.ext.number_of_shards", numberOfShards);
         }
         cc.set("index." + index + ".elasticsearch.allow-partial-results", allowPartialResults);
+        //The provider writes the sort-key field the core describes, see IndexProviderTest.describeSortKeyField
+        cc.set("index." + index + ".store-edge-sort-key", true);
         return makeESTestConfig(index, cc);
     }
 

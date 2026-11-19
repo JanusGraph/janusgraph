@@ -1230,6 +1230,14 @@ public class GraphDatabaseConfiguration {
                     "and its the developers responsibility to avoid field collisions.",
             ConfigOption.Type.GLOBAL, true);
 
+    public static final ConfigOption<Boolean> INDEX_STORE_EDGE_SORT_KEY = new ConfigOption<>(INDEX_NS,"store-edge-sort-key",
+            "Whether edge documents of this mixed index carry the encoded sort-key values of their edge in a " +
+            "retrieval-only field, for edge labels with MULTI multiplicity and a sort key. Edges returned by the index " +
+            "are then read with a single column lookup instead of reading every edge of that label on the vertex. " +
+            "Supported by the Elasticsearch backend. Documents written before the option was enabled lack the field " +
+            "until they are reindexed, and are read as before.",
+            ConfigOption.Type.MASKABLE, false);
+
     public static final ConfigNamespace INDEX_CDC_NS = new ConfigNamespace(INDEX_NS, "cdc",
             "Configuration options for Change-Data-Capture (CDC) based maintenance of this mixed index backend");
 

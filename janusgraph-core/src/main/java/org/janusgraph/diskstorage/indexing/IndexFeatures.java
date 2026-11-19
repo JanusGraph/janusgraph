@@ -41,11 +41,22 @@ public class IndexFeatures {
     private final boolean supportsNotQueryNormalForm;
     private final boolean supportsOrderingListProperty;
     private final Set<Cardinality> supportedCardinalities;
+    private final boolean supportsEdgeSortKeyField;
 
     public IndexFeatures(boolean supportsDocumentTTL, Mapping defaultMap, Set<Mapping> supportedMap,
                          String wildcardField, Set<Cardinality> supportedCardinalities, boolean supportsNanoseconds,
                          boolean supportCustomAnalyzer, boolean supportsGeoContains, boolean supportGeoExists,
                          boolean supportsNotQueryNormalForm, boolean supportsOrderingListProperty) {
+        this(supportsDocumentTTL, defaultMap, supportedMap, wildcardField, supportedCardinalities, supportsNanoseconds,
+            supportCustomAnalyzer, supportsGeoContains, supportGeoExists, supportsNotQueryNormalForm,
+            supportsOrderingListProperty, false);
+    }
+
+    public IndexFeatures(boolean supportsDocumentTTL, Mapping defaultMap, Set<Mapping> supportedMap,
+                         String wildcardField, Set<Cardinality> supportedCardinalities, boolean supportsNanoseconds,
+                         boolean supportCustomAnalyzer, boolean supportsGeoContains, boolean supportGeoExists,
+                         boolean supportsNotQueryNormalForm, boolean supportsOrderingListProperty,
+                         boolean supportsEdgeSortKeyField) {
 
         Preconditions.checkArgument(defaultMap!=null && defaultMap!=Mapping.DEFAULT);
         Preconditions.checkArgument(supportedMap!=null && !supportedMap.isEmpty()
@@ -61,6 +72,7 @@ public class IndexFeatures {
         this.supportsGeoExists = supportGeoExists;
         this.supportsNotQueryNormalForm = supportsNotQueryNormalForm;
         this.supportsOrderingListProperty = supportsOrderingListProperty;
+        this.supportsEdgeSortKeyField = supportsEdgeSortKeyField;
     }
 
     public boolean supportsDocumentTTL() {
@@ -107,6 +119,12 @@ public class IndexFeatures {
         return supportsOrderingListProperty;
     }
 
+    // Whether the index can store IndexProvider.EDGE_SORT_KEY_FIELD as a retrieval-only field of edge documents and
+    // return it with each hit of IndexProvider.queryHits
+    public boolean supportsEdgeSortKeyField() {
+        return supportsEdgeSortKeyField;
+    }
+
     public static class Builder {
 
         private boolean supportsDocumentTTL = false;
@@ -120,6 +138,7 @@ public class IndexFeatures {
         private boolean supportsGeoExists;
         private boolean supportNotQueryNormalForm;
         private boolean supportsOrderingListProperty;
+        private boolean supportsEdgeSortKeyField;
 
         public Builder supportsDocumentTTL() {
             supportsDocumentTTL=true;
@@ -176,10 +195,16 @@ public class IndexFeatures {
             return this;
         }
 
+        public Builder supportsEdgeSortKeyField() {
+            this.supportsEdgeSortKeyField = true;
+            return this;
+        }
+
         public IndexFeatures build() {
             return new IndexFeatures(supportsDocumentTTL, defaultStringMapping, Collections.unmodifiableSet(new HashSet<>(supportedMappings)),
                 wildcardField,  Collections.unmodifiableSet(new HashSet<>(supportedCardinalities)), supportsNanoseconds, supportsCustomAnalyzer,
-                supportsGeoContains, supportsGeoExists, supportNotQueryNormalForm, supportsOrderingListProperty);
+                supportsGeoContains, supportsGeoExists, supportNotQueryNormalForm, supportsOrderingListProperty,
+                supportsEdgeSortKeyField);
         }
     }
 }

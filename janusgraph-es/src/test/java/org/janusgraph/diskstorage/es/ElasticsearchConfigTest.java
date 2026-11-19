@@ -45,6 +45,8 @@ import org.janusgraph.diskstorage.es.mapping.IndexMapping;
 import org.janusgraph.diskstorage.es.mapping.TypedIndexMappings;
 import org.janusgraph.diskstorage.es.mapping.TypelessIndexMappings;
 import org.janusgraph.diskstorage.es.rest.RestElasticSearchClient;
+import org.janusgraph.diskstorage.indexing.IndexEntry;
+import org.janusgraph.diskstorage.indexing.IndexHit;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexProviderTest;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
@@ -60,7 +62,9 @@ import org.janusgraph.util.system.ConfigurationUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,12 +79,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.ALLOW_MAPPING_UPDATE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_STORE_EDGE_SORT_KEY;
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.USE_EXTERNAL_MAPPINGS;
 import static org.janusgraph.diskstorage.es.ElasticSearchIndex.USE_MAPPING_FOR_ES7;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
@@ -322,6 +328,61 @@ public class ElasticsearchConfigTest {
                 itx.queryStream(byNickname).collect(Collectors.toList()));
         } finally {
             itx.rollback();
+        }
+    }
+
+    // Under an external mapping which JanusGraph may not update, and which does not have the sort-key field, a strict
+    // or dynamic mapping has the edge documents written without the field rather than rejected, and their hits come
+    // without a sort key. A mapping which ignores the fields it does not have keeps the field unmapped in _source,
+    // where the hits read it from
+    @ParameterizedTest
+    @ValueSource(strings = {"strict", "true", "false"})
+    public void testSortKeyFieldUnderAnExternalMappingWithoutIt(String dynamic) throws Exception {
+        final String storeName = "test_mapping";
+        final Configuration indexConfig = esr
+            .setConfiguration(GraphDatabaseConfiguration.buildGraphConfiguration(), INDEX_NAME)
+            .set(USE_EXTERNAL_MAPPINGS, true, INDEX_NAME)
+            .set(ALLOW_MAPPING_UPDATE, false, INDEX_NAME)
+            .set(INDEX_STORE_EDGE_SORT_KEY, true, INDEX_NAME)
+            .restrictTo(INDEX_NAME);
+        final IndexProvider idx = open(indexConfig);
+        try {
+            //Written as is rather than read into IndexMapping, which does not keep "strict" apart from "false"
+            final Map<String, Object> typeMapping = new HashMap<>();
+            typeMapping.put("dynamic", dynamic);
+            typeMapping.put("properties", Collections.singletonMap(IndexProviderTest.TIME,
+                Collections.singletonMap("type", "long")));
+            executeRequestWithStringEntity(idx, "janusgraph_" + storeName, Collections.singletonMap("mappings",
+                isMappingUsed(idx) ? Collections.singletonMap(storeName, typeMapping) : typeMapping));
+            final Map<String, KeyInformation> keys = new HashMap<>(IndexProviderTest.getMapping(idx.getFeatures(),
+                ANALYZER_ENGLISH, ANALYZER_KEYWORD, preferredGeoShapeMapping()));
+            keys.put(IndexProvider.EDGE_SORT_KEY_FIELD, IndexInfoRetriever.EDGE_SORT_KEY_INFORMATION);
+            final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest.getIndexRetriever(keys);
+            final BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
+            final Duration maxWrite = Duration.ofMillis(2000L);
+            IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
+            idx.register(storeName, IndexProviderTest.TIME, keys.get(IndexProviderTest.TIME), itx);
+            itx.add(storeName, "doc", new IndexEntry(IndexProviderTest.TIME, 1L), true);
+            itx.add(storeName, "doc", new IndexEntry(IndexProvider.EDGE_SORT_KEY_FIELD, "0a0b"), true);
+            itx.commit();
+            try (ElasticSearchClient client = ElasticSearchSetup.REST_CLIENT.connect(indexConfig).getClient()) {
+                final IndexMapping mapping = client.getMapping("janusgraph_" + storeName, storeName);
+                assertFalse(mapping.getProperties().containsKey(IndexProvider.EDGE_SORT_KEY_FIELD),
+                    mapping.getProperties().toString());
+            }
+
+            itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
+            try {
+                final List<IndexHit> hits = itx.queryHits(new IndexQuery(storeName,
+                    PredicateCondition.of(IndexProviderTest.TIME, Cmp.EQUAL, 1L)), true).collect(Collectors.toList());
+                assertEquals(1, hits.size());
+                assertEquals("doc", hits.get(0).getId());
+                assertEquals("false".equals(dynamic) ? "0a0b" : null, hits.get(0).getSortKey());
+            } finally {
+                itx.rollback();
+            }
+        } finally {
+            idx.close();
         }
     }
 

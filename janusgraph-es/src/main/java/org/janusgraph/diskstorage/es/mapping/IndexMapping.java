@@ -14,6 +14,7 @@
 
 package org.janusgraph.diskstorage.es.mapping;
 
+import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnore;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Map;
@@ -38,6 +39,13 @@ public class IndexMapping {
 
     public boolean isDynamic() {
         return dynamic == null || "true".equalsIgnoreCase(dynamic);
+    }
+
+    //Whether documents with a field the mapping does not have are rejected. Not a property of the mapping, which
+    //Elasticsearch would reject when the mapping is written back
+    @JsonIgnore
+    public boolean isStrict() {
+        return "strict".equalsIgnoreCase(dynamic);
     }
 
     public void setDynamic(String dynamic) {

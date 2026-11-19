@@ -51,6 +51,7 @@ import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
@@ -431,6 +432,74 @@ public class IndexSerializerTest {
         management.updateIndex(management.getGraphIndex(REINDEX_TEST_INDEX_NAME), SchemaAction.REINDEX, 1).get();
         management.commit();
         ManagementSystem.awaitGraphIndexStatus(graph, REINDEX_TEST_INDEX_NAME).status(SchemaStatus.ENABLED).call();
+    }
+
+    // An edge document carries the encoded sort key of its edge where index.[X].store-edge-sort-key is enabled and the
+    // index backend supports the field. A backend without it, as a third-party one, gets the indexed fields alone
+    @Test
+    public void anEdgeDocumentCarriesItsSortKeyWhereTheBackendSupportsIt() throws Exception {
+        assertEquals(Collections.singletonList("needle"), edgeDocument(RecordingIndexProvider.class, true).stream()
+            .map(entry -> entry.value).collect(Collectors.toList()));
+        assertEquals(Collections.singletonList("needle"), edgeDocument(SortKeyRecordingIndexProvider.class, false).stream()
+            .map(entry -> entry.value).collect(Collectors.toList()));
+
+        final List<IndexEntry> document = edgeDocument(SortKeyRecordingIndexProvider.class, true);
+        assertEquals(2, document.size());
+        assertEquals("needle", document.get(0).value);
+        assertEquals(IndexProvider.EDGE_SORT_KEY_FIELD, document.get(1).field);
+    }
+
+    // The complete document of an edge of a MULTI label sorted by version, in a mixed edge index of its tag
+    private static List<IndexEntry> edgeDocument(Class<? extends IndexProvider> provider, boolean storeSortKey) throws Exception {
+        final ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
+        config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "inmemory");
+        config.set(GraphDatabaseConfiguration.INDEX_BACKEND, provider.getName(), REINDEX_TEST_INDEX_BACKEND_NAME);
+        config.set(GraphDatabaseConfiguration.INDEX_STORE_EDGE_SORT_KEY, storeSortKey, REINDEX_TEST_INDEX_BACKEND_NAME);
+        final JanusGraph graph = JanusGraphFactory.open(config.getConfiguration());
+        try {
+            final JanusGraphManagement management = graph.openManagement();
+            final PropertyKey version = management.makePropertyKey("version").dataType(Long.class).make();
+            final PropertyKey tag = management.makePropertyKey("tag").dataType(String.class).make();
+            ((org.janusgraph.graphdb.types.StandardEdgeLabelMaker) management.makeEdgeLabel("sorted")
+                .multiplicity(org.janusgraph.core.Multiplicity.MULTI)).sortKey(version).make();
+            management.buildIndex("edgesByTag", org.apache.tinkerpop.gremlin.structure.Edge.class).addKey(tag)
+                .buildMixedIndex(REINDEX_TEST_INDEX_BACKEND_NAME);
+            management.commit();
+            final JanusGraphVertex out = graph.addVertex();
+            final RelationIdentifier id = (RelationIdentifier) out.addEdge("sorted", graph.addVertex(), "version", 42L, "tag", "needle").id();
+            graph.tx().commit();
+
+            final JanusGraphTransaction tx = graph.newTransaction();
+            try {
+                final JanusGraphEdge edge = tx.getEdges(id).iterator().next();
+                final MixedIndexType mixedIndex = (MixedIndexType) StreamSupport.stream(
+                        ((InternalRelationType) tx.getPropertyKey("tag")).getKeyIndexes().spliterator(), false)
+                    .filter(IndexType::isMixedIndex).findFirst().orElseThrow(AssertionError::new);
+                return ((StandardJanusGraph) graph).getIndexSerializer().getCompleteDocument(edge, mixedIndex);
+            } finally {
+                tx.rollback();
+            }
+        } finally {
+            graph.close();
+        }
+    }
+
+    public static class SortKeyRecordingIndexProvider extends RecordingIndexProvider {
+
+        private static final IndexFeatures FEATURES = new IndexFeatures.Builder()
+            .supportedStringMappings(org.janusgraph.core.schema.Mapping.TEXT, org.janusgraph.core.schema.Mapping.STRING)
+            .supportsCardinality(Cardinality.SINGLE)
+            .supportsEdgeSortKeyField()
+            .build();
+
+        public SortKeyRecordingIndexProvider(Configuration config) {
+            super(config);
+        }
+
+        @Override
+        public IndexFeatures getFeatures() {
+            return FEATURES;
+        }
     }
 
     public static class RecordingIndexProvider implements IndexProvider {

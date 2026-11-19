@@ -16,9 +16,14 @@ package org.janusgraph.graphdb.database.index;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.diskstorage.indexing.StandardKeyInformation;
 import org.janusgraph.graphdb.database.util.IndexRecordUtil;
+import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.ParameterIndexField;
@@ -27,6 +32,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class IndexInfoRetriever implements KeyInformation.Retriever {
+
+    // The field that holds the encoded sort key of an edge document, see IndexSerializer.storesEdgeSortKey
+    public static final KeyInformation EDGE_SORT_KEY_INFORMATION =
+        new StandardKeyInformation(String.class, Cardinality.SINGLE, Mapping.STRING.asParameter());
 
     private final StandardJanusGraphTx transaction;
 
@@ -60,7 +69,16 @@ public class IndexInfoRetriever implements KeyInformation.Retriever {
                     } catch (IllegalArgumentException e) {
                         throw new JanusGraphException("Duplicate index field names found, likely you have multiple properties mapped to the same index field", e);
                     }
-                    final KeyInformation.StoreRetriever storeRetriever = infoMap::get;
+                    final boolean edgeIndex = extIndex.getElement() == ElementCategory.EDGE
+                        && !infoMap.containsKey(IndexProvider.EDGE_SORT_KEY_FIELD);
+                    final KeyInformation.StoreRetriever storeRetriever = key -> {
+                        final KeyInformation info = infoMap.get(key);
+                        //Edge documents may carry their sort key, which is not a property key of the index
+                        if (info == null && edgeIndex && IndexProvider.EDGE_SORT_KEY_FIELD.equals(key)) {
+                            return EDGE_SORT_KEY_INFORMATION;
+                        }
+                        return info;
+                    };
                     indexes.put(store,storeRetriever);
                 }
                 return indexes.get(store);

@@ -101,6 +101,7 @@ import org.janusgraph.graphdb.query.vertex.MultiVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQuery;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.query.vertex.VertexWithInlineProps;
+import org.janusgraph.graphdb.relations.EdgeIdWithSortKey;
 import org.janusgraph.graphdb.relations.RelationComparator;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.relations.RelationIdentifierUtils;
@@ -1901,8 +1902,10 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
                     retrievals.add(limit -> {
                         final JointIndexQuery.Subquery adjustedQuery = subquery.updateLimit(limit);
                         try {
-                            return indexCache.get(adjustedQuery,
-                                () -> QueryProfiler.profile(subquery.getProfiler(), adjustedQuery, q -> indexSerializer.query(q, txHandle, StandardJanusGraphTx.this).collect(Collectors.toList())));
+                            //Plain ids: these results are intersected in hash sets, where a plain id would not find an
+                            //id carrying a sort key (see EdgeIdWithSortKey)
+                            return withoutEdgeSortKeys(indexCache.get(adjustedQuery,
+                                () -> QueryProfiler.profile(subquery.getProfiler(), adjustedQuery, q -> indexSerializer.query(q, txHandle, StandardJanusGraphTx.this).collect(Collectors.toList()))));
                         } catch (Exception e) {
                             throw new JanusGraphException("Could not call index", e);
                         }
@@ -2104,9 +2107,24 @@ public class StandardJanusGraphTx extends JanusGraphBlueprintsTransaction implem
 
     private final Function<Object, JanusGraphEdge> edgeIDConversionFct = id -> {
         Preconditions.checkNotNull(id);
+        if (id instanceof EdgeIdWithSortKey) {
+            final EdgeIdWithSortKey edgeId = (EdgeIdWithSortKey) id;
+            return RelationIdentifierUtils.findEdge(edgeId.getId(), edgeId.getSortKey(), StandardJanusGraphTx.this);
+        }
         Preconditions.checkArgument(id instanceof RelationIdentifier);
         return RelationIdentifierUtils.findEdge((RelationIdentifier)id, StandardJanusGraphTx.this);
     };
+
+    private static List<Object> withoutEdgeSortKeys(List<Object> ids) {
+        for (int i = 0; i < ids.size(); i++) {
+            if (ids.get(i) instanceof EdgeIdWithSortKey) {
+                final List<Object> plain = new ArrayList<>(ids.size());
+                for (final Object id : ids) plain.add(EdgeIdWithSortKey.unwrap(id));
+                return plain;
+            }
+        }
+        return ids;
+    }
 
     private final Function<Object, JanusGraphVertexProperty> propertyIDConversionFct = id -> {
         Preconditions.checkNotNull(id);

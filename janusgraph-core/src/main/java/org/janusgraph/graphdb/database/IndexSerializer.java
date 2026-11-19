@@ -40,6 +40,7 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
+import org.janusgraph.diskstorage.indexing.IndexHit;
 import org.janusgraph.diskstorage.indexing.IndexInformation;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
@@ -73,7 +74,9 @@ import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.graph.MultiKeySliceQuery;
 import org.janusgraph.graphdb.query.index.IndexSelectionUtil;
 import org.janusgraph.graphdb.query.vertex.VertexWithInlineProps;
+import org.janusgraph.graphdb.relations.EdgeIdWithSortKey;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.relations.RelationSortKey;
 import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
@@ -96,10 +99,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_STORE_EDGE_SORT_KEY;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.FULL_INDEX_APPLIES_TO_FILTER;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.INDEX_APPLIES_TO_NO_CONSTRAINTS_FILTER;
 import static org.janusgraph.graphdb.database.util.IndexRecordUtil.bytebuffer2RelationId;
@@ -132,6 +137,8 @@ public class IndexSerializer {
 
     private final boolean hashKeys;
     private final HashingUtil.HashLength hashLength = HashingUtil.HashLength.SHORT;
+    //Per backing index name: whether its edge documents carry their sort key, see storesEdgeSortKey
+    private final Map<String, Boolean> storesEdgeSortKey = new ConcurrentHashMap<>();
 
     public IndexSerializer(Configuration config,
                            EdgeSerializer edgeSerializer,
@@ -203,6 +210,24 @@ public class IndexSerializer {
         return true;
     }
 
+    //Whether the edge documents of this index carry the encoded sort key of their edge in
+    //IndexProvider.EDGE_SORT_KEY_FIELD: enabled with index.[X].store-edge-sort-key and supported by the index backend.
+    //Edges of labels without a usable sort key are indexed without it (see RelationSortKey.encode)
+    public boolean storesEdgeSortKey(final MixedIndexType index) {
+        if (index.getElement() != ElementCategory.EDGE) return false;
+        final String indexName = index.getBackingIndexName();
+        return storesEdgeSortKey.computeIfAbsent(indexName, name -> mixedIndexes.containsKey(name)
+            && configuration.get(INDEX_STORE_EDGE_SORT_KEY, name)
+            && mixedIndexes.get(name).getFeatures().supportsEdgeSortKeyField());
+    }
+
+    //The sort-key entry of the relation's document in this index, or null if it carries none
+    private IndexEntry edgeSortKeyEntry(final JanusGraphElement element, final MixedIndexType index) {
+        if (!(element instanceof InternalRelation) || !storesEdgeSortKey(index)) return null;
+        final String sortKey = RelationSortKey.encode((InternalRelation) element, serializer);
+        return sortKey == null ? null : new IndexEntry(IndexProvider.EDGE_SORT_KEY_FIELD, sortKey);
+    }
+
     public IndexFeatures features(final MixedIndexType index) {
         return getMixedIndex(index).getFeatures();
     }
@@ -242,6 +267,7 @@ public class IndexSerializer {
         final Set<IndexUpdate> updates = new HashSet<>();
         final IndexMutationType updateType = getUpdateType(relation, false);
         final int ttl = updateType == IndexMutationType.DELETE ? 0: StandardJanusGraph.getTTL(relation);
+        Set<MixedIndexType> writtenMixedIndexes = null;
         for (final PropertyKey type : relation.getPropertyKeysDirect()) {
             if (type == null) continue;
             for (final IndexType index : ((InternalRelationType) type).getKeyIndexes()) {
@@ -256,7 +282,20 @@ public class IndexSerializer {
                     assert relation.valueOrNull(type)!=null;
                     if (((MixedIndexType)index).getField(type).getStatus()== SchemaStatus.DISABLED) continue;
                     update = getMixedIndexUpdate(relation, type, relation.valueOrNull(type), (MixedIndexType) index, updateType);
+                    if (writtenMixedIndexes == null) writtenMixedIndexes = new HashSet<>();
+                    writtenMixedIndexes.add((MixedIndexType) index);
                 }
+                if (ttl>0) update.setTTL(ttl);
+                updates.add(update);
+            }
+        }
+        if (writtenMixedIndexes != null) {
+            //The relation's document in each mixed index it is written to also carries its sort key, if the index
+            //stores it. Added and removed with the indexed fields, so it follows the document through updates
+            for (final MixedIndexType index : writtenMixedIndexes) {
+                final IndexEntry sortKey = edgeSortKeyEntry(relation, index);
+                if (sortKey == null) continue;
+                final IndexUpdate update = new IndexUpdate<>(index, updateType, element2String(relation), sortKey, relation);
                 if (ttl>0) update.setTTL(ttl);
                 updates.add(update);
             }
@@ -353,6 +392,10 @@ public class IndexSerializer {
                 for (final Object value : values) entries.add(new IndexEntry(fieldName, value));
             }
         }
+        if (!entries.isEmpty()) {
+            final IndexEntry sortKey = edgeSortKeyEntry(element, index);
+            if (sortKey != null) entries.add(sortKey);
+        }
         return entries;
     }
 
@@ -440,9 +483,18 @@ public class IndexSerializer {
                 }
             }
             return results.stream();
+        } else if (storesEdgeSortKey((MixedIndexType) index)) {
+            return tx.indexQueryHits(index.getBackingIndexName(), query.getMixedQuery(), true).map(IndexSerializer::hit2ElementId);
         } else {
             return tx.indexQuery(index.getBackingIndexName(), query.getMixedQuery()).map(IndexRecordUtil::string2ElementId);
         }
+    }
+
+    //The element id of an index hit, together with the edge's sort key if the hit carries it
+    private static Object hit2ElementId(final IndexHit hit) {
+        final Object id = string2ElementId(hit.getId());
+        return hit.getSortKey() != null && id instanceof RelationIdentifier
+            ? new EdgeIdWithSortKey((RelationIdentifier) id, hit.getSortKey()) : id;
     }
 
     public Number queryAggregation(final JointIndexQuery.Subquery query, final BackendTransaction tx, final Aggregation aggregation) {
@@ -577,6 +629,10 @@ public class IndexSerializer {
         final RawQuery rawQuery = new RawQuery(index.getStoreName(),queryStr,orders,query.getParameters());
         if (query.hasLimit()) rawQuery.setLimit(query.getLimit());
         rawQuery.setOffset(query.getOffset());
+        if (resultType == ElementCategory.EDGE && storesEdgeSortKey(index)) {
+            return backendTx.rawQueryHits(index.getBackingIndexName(), rawQuery, true)
+                .map(result -> new RawQuery.Result(hit2ElementId(result.getResult()), result.getScore()));
+        }
         return backendTx.rawQuery(index.getBackingIndexName(), rawQuery).map(result ->  new RawQuery.Result(string2ElementId(result.getResult()), result.getScore()));
     }
 
