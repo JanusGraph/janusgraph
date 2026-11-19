@@ -146,6 +146,14 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         return index.query(query, keyInformation,indexTx);
     }
 
+    public Stream<IndexHit> queryHits(IndexQuery query, boolean withSortKey) throws BackendException {
+        return index.queryHits(query, keyInformation, indexTx, withSortKey);
+    }
+
+    public Stream<RawQuery.Result<IndexHit>> queryHits(RawQuery query, boolean withSortKey) throws BackendException {
+        return index.queryHits(query, keyInformation, indexTx, withSortKey);
+    }
+
     public Long totals(RawQuery query) throws BackendException {
         return index.totals(query, keyInformation,indexTx);
     }

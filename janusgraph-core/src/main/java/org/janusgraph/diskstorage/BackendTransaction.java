@@ -18,6 +18,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.diskstorage.indexing.IndexHit;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.indexing.RawQuery;
@@ -519,6 +520,38 @@ public class BackendTransaction implements LoggableTransaction {
             @Override
             public Stream<RawQuery.Result<String>> call() throws Exception {
                 return indexTx.queryStream(query);
+            }
+
+            @Override
+            public String toString() {
+                return "RawQuery";
+            }
+        });
+    }
+
+    // indexQuery, also returning each edge document's sort-key field when withSortKey is set
+    public Stream<IndexHit> indexQueryHits(final String index, final IndexQuery query, final boolean withSortKey) {
+        final IndexTransaction indexTx = getIndexTransaction(index);
+        return executeRead(new Callable<Stream<IndexHit>>() {
+            @Override
+            public Stream<IndexHit> call() throws Exception {
+                return indexTx.queryHits(query, withSortKey);
+            }
+
+            @Override
+            public String toString() {
+                return "IndexQuery";
+            }
+        });
+    }
+
+    // rawQuery, also returning each edge document's sort-key field when withSortKey is set
+    public Stream<RawQuery.Result<IndexHit>> rawQueryHits(final String index, final RawQuery query, final boolean withSortKey) {
+        final IndexTransaction indexTx = getIndexTransaction(index);
+        return executeRead(new Callable<Stream<RawQuery.Result<IndexHit>>>() {
+            @Override
+            public Stream<RawQuery.Result<IndexHit>> call() throws Exception {
+                return indexTx.queryHits(query, withSortKey);
             }
 
             @Override

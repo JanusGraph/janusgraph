@@ -61,6 +61,7 @@ public abstract class AbstractESCompat {
             .supportsGeoExists()
             .supportNotQueryNormalForm()
             .supportsOrderingListProperty()
+            .supportsEdgeSortKeyField()
         ;
     }
 
@@ -224,6 +225,9 @@ public abstract class AbstractESCompat {
 
         if(request.isDisableSourceRetrieval()){
             requestBody.put("_source", false);
+        } else if (!request.getFields().isEmpty()) {
+            //Only these fields of each hit's _source
+            requestBody.put("_source", request.getFields());
         }
 
         return requestBody;

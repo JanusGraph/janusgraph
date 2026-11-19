@@ -61,6 +61,7 @@ import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.TransactionalConfiguration;
 import org.janusgraph.diskstorage.configuration.UserModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
+import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.EmptyScanJobFuture;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJobFuture;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -789,6 +790,8 @@ public class ManagementSystem implements JanusGraphManagement {
         if (addMappingParameter) extendedParas[arrPosition++] = ParameterType.MAPPED_NAME.getParameter(
                 graph.getIndexSerializer().getDefaultFieldName(key, parameters, indexType.getBackingIndexName()));
         extendedParas[arrPosition] = ParameterType.STATUS.getParameter(key.isNew() ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
+        Preconditions.checkArgument(!IndexProvider.EDGE_SORT_KEY_FIELD.equals(ParameterType.MAPPED_NAME.findParameter(extendedParas, null)),
+            "Index field name [%s] is reserved for the sort key of edge documents", IndexProvider.EDGE_SORT_KEY_FIELD);
 
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
         updateSchemaVertex(indexVertex);

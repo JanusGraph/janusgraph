@@ -102,6 +102,30 @@ For more information on features and bug fixes in 1.3.0, see the GitHub mileston
 
 #### Upgrade Instructions
 
+##### Mixed index hits on edges of sort-keyed labels can be read with a single column lookup
+
+An edge of a `MULTI` label with a sort key is stored under a column which starts with its sort-key values, ahead of
+the adjacent vertex and the relation id. An edge id doesn't hold these values, so every edge which a mixed index
+returns for such a label used to be read by reading every edge of that label on its vertex: a query with `N` hits on
+vertices of degree `d` read `N × d` edges.
+
+The new option `index.[X].store-edge-sort-key` (default `false`) stores the encoded sort-key values of each such edge
+in a retrieval-only field of its mixed index document, `jg_system____sortkey`, and returns it with each hit, so that
+the edge is read with a single column lookup. Edge ids, document ids and the composite index format are unchanged.
+Edges of `FORK` labels and edges whose encoded sort-key values exceed 256 bytes are indexed without the field and read
+as before, as is any hit whose sort key doesn't match its edge.
+
+The option is supported by the Elasticsearch backend; other index backends ignore it. Before enabling it:
+
+* JanusGraph maps the field itself as a `keyword` which is neither indexed nor has doc values. An
+  [external mapping](index-backend/elasticsearch.md#edge-sort-keys) with `"dynamic": "strict"` needs the field added.
+  A mapping which can't hold the field has its edge documents written without it, and their edges are read as
+  before; JanusGraph logs a warning.
+* Documents written before the option was enabled don't have the field. Reindex the mixed edge indexes to add it;
+  until then their hits are read as before.
+
+A mixed index field can no longer be named `jg_system____sortkey`.
+
 ### Version 1.2.0 (Release Date: October 28, 2026)
 
 /// tab | Maven

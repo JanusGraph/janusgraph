@@ -26,6 +26,7 @@ import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
+import org.janusgraph.diskstorage.indexing.IndexHit;
 import org.janusgraph.diskstorage.indexing.IndexMutation;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
@@ -113,6 +114,18 @@ public class TestMockIndexProvider implements IndexProvider {
     @Override
     public Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         return index.query(query, information,tx);
+    }
+
+    @Override
+    public Stream<IndexHit> queryHits(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx,
+                                      boolean withSortKey) throws BackendException {
+        return index.queryHits(query, information, tx, withSortKey);
+    }
+
+    @Override
+    public Stream<RawQuery.Result<IndexHit>> queryHits(RawQuery query, KeyInformation.IndexRetriever information,
+                                                       BaseTransaction tx, boolean withSortKey) throws BackendException {
+        return index.queryHits(query, information, tx, withSortKey);
     }
 
     @Override

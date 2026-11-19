@@ -17,6 +17,7 @@ package org.janusgraph.diskstorage.es.rest;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonIgnoreProperties;
 import org.apache.tinkerpop.shaded.jackson.annotation.JsonProperty;
 import org.janusgraph.diskstorage.es.ElasticSearchResponse;
+import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.RawQuery;
 
 import java.util.List;
@@ -66,8 +67,28 @@ public class RestSearchResponse extends ElasticSearchResponse {
 
     @Override
     public Stream<RawQuery.Result<String>> getResults() {
-        return hits.getHits().stream()
-            .map(hit -> new RawQuery.Result<>(hit.getId(), hit.getScore() != null ? hit.getScore() : 0f));
+        return hits.getHits().stream().map(hit -> {
+            final double score = hit.getScore() != null ? hit.getScore() : 0f;
+            final Object sortKey = hit.getSource() == null ? null : hit.getSource().get(IndexProvider.EDGE_SORT_KEY_FIELD);
+            return sortKey instanceof String ? new SortKeyedResult(hit.getId(), score, (String) sortKey)
+                : new RawQuery.Result<>(hit.getId(), score);
+        });
+    }
+
+    //The result of a hit whose document carries the encoded sort key of its edge, see IndexProvider.EDGE_SORT_KEY_FIELD.
+    //A result like any other where the sort key isn't wanted, so that it passes through scrolls and points in time
+    public static final class SortKeyedResult extends RawQuery.Result<String> {
+
+        private final String sortKey;
+
+        public SortKeyedResult(String id, double score, String sortKey) {
+            super(id, score);
+            this.sortKey = sortKey;
+        }
+
+        public String getSortKey() {
+            return sortKey;
+        }
     }
 
     @Override

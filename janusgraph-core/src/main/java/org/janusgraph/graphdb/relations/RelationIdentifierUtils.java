@@ -29,10 +29,14 @@ import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 
 public class RelationIdentifierUtils {
+    private static final Logger log = LoggerFactory.getLogger(RelationIdentifierUtils.class);
+
     public static RelationIdentifier get(InternalRelation r, long relationId) {
         if (relationId > 0) {
             RelationIdentifier rId = new RelationIdentifier(r.getVertex(0).id(),
@@ -43,27 +47,49 @@ public class RelationIdentifierUtils {
     }
 
     protected static JanusGraphRelation findRelation(RelationIdentifier rId, JanusGraphTransaction tx) {
+        return findRelation(rId, null, tx);
+    }
+
+    // sortKey: the edge's encoded sort-key values (see RelationSortKey), as a mixed index returns them with a hit, or
+    // null. With them the edge is read with a single column lookup; without them, or when they do not match the
+    // stored edge, every edge of the label on the vertex is read.
+    private static JanusGraphRelation findRelation(RelationIdentifier rId, String sortKey, JanusGraphTransaction tx) {
         JanusGraphVertex v = ((StandardJanusGraphTx)tx).getInternalVertex(rId.getOutVertexId());
         if (v == null || v.isRemoved()) return null;
 
         StandardJanusGraphTx stx = (StandardJanusGraphTx) tx;
-        long typeId = rId.getTypeId();
-        RelationType typeVertex;
+        RelationType typeVertex = findRelationType(rId.getTypeId(), stx);
+        if (typeVertex == null) return null;
+
+        final Object[] sortKeyValues = sortKey == null || !typeVertex.isEdgeLabel() ? null
+            : RelationSortKey.decode(sortKey, (InternalRelationType) typeVertex, stx, stx.getGraph().getDataSerializer());
+        if (sortKeyValues != null) {
+            final JanusGraphRelation found = matchRelation(rId, findEdgeRelations(v, typeVertex, rId, tx, sortKeyValues));
+            if (found != null) return found;
+            // The edge is gone, or its sort key changed after the index document was written. Read it without the
+            // sort key, so a stale value can never hide an edge.
+            log.debug("Sort key {} of relation {} does not match a stored edge", sortKey, rId);
+        }
+        return matchRelation(rId, getJanusGraphRelations(rId, tx, v, typeVertex));
+    }
+
+    // The relation type an identifier names, or null if there is none
+    private static RelationType findRelationType(long typeId, StandardJanusGraphTx stx) {
         if (typeId <= 0 || !stx.getIdInspector().isRelationTypeId(typeId)
             || (typeId >>> IDManager.MAX_PADDING_BITWIDTH) >= IDManager.getSchemaCountBound()) {
             // Malformed identifier (not a relation type id, or one outside the schema id range): not on the hot path,
             // keep the original resolution so behaviour is unchanged (no edge if nothing exists under that id,
             // IllegalArgumentException if a non-type vertex does).
-            JanusGraphVertex vertex = tx.getVertex(typeId);
+            JanusGraphVertex vertex = stx.getVertex(typeId);
             if (vertex == null) return null;
             if (!(vertex instanceof RelationType))
                 throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a type");
-            typeVertex = (RelationType) vertex;
+            return (RelationType) vertex;
         } else if (IDManager.isSystemRelationTypeId(typeId) || stx.isVertexCached(typeId)) {
             // System types, and types created or already loaded in this transaction, need no storage access.
             // A cached handle may also be the removed stub left behind by an earlier existence check that found nothing.
-            typeVertex = stx.getExistingRelationType(typeId);
-            if (typeVertex == null || typeVertex.isRemoved()) return null; // unknown system type id, or known to be missing
+            RelationType type = stx.getExistingRelationType(typeId);
+            return type == null || type.isRemoved() ? null : type; // unknown system type id, or known to be missing
         } else if (stx.getGraph().getSchemaCache().getSchemaRelations(typeId, BaseKey.SchemaDefinitionProperty, Direction.OUT).isEmpty()) {
             // No such type in storage (stale or foreign identifier). Resolved through the schema cache instead of
             // tx.getVertex(), which would issue a vertex-existence read against the schema row in every transaction.
@@ -71,11 +97,11 @@ public class RelationIdentifierUtils {
             // the next lookup, and nothing is added to this transaction's vertex cache for it.
             return null;
         } else {
-            typeVertex = stx.getExistingRelationType(typeId);
+            return stx.getExistingRelationType(typeId);
         }
+    }
 
-        Iterable<? extends JanusGraphRelation> relations = getJanusGraphRelations(rId, tx, v, typeVertex);
-
+    private static JanusGraphRelation matchRelation(RelationIdentifier rId, Iterable<? extends JanusGraphRelation> relations) {
         for (JanusGraphRelation r : relations) {
             //Find current or previous relation
             if (r.longId() == rId.getRelationId() ||
@@ -93,6 +119,14 @@ public class RelationIdentifierUtils {
     }
 
     public static Iterable<? extends JanusGraphRelation> findEdgeRelations(JanusGraphVertex v, RelationType type, RelationIdentifier rId, JanusGraphTransaction tx){
+        return findEdgeRelations(v, type, rId, tx, null);
+    }
+
+    // sortKeyValues: the edge's sort-key values in sort-key order, or null. The sort key precedes the adjacent vertex
+    // id and relation id in the column, so only with them is every column component constrained and a single column
+    // read. Without them the query slices on the label and direction and filters every edge of that label.
+    private static Iterable<? extends JanusGraphRelation> findEdgeRelations(JanusGraphVertex v, RelationType type, RelationIdentifier rId,
+                                                                            JanusGraphTransaction tx, Object[] sortKeyValues){
         Direction dir = Direction.OUT;
         JanusGraphVertex other = ((StandardJanusGraphTx)tx).getInternalVertex(rId.getInVertexId());
         if (other==null || other.isRemoved()) {
@@ -109,15 +143,27 @@ public class RelationIdentifierUtils {
         VertexCentricQueryBuilder query =
             ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types(type).direction(dir).adjacent(other);
 
-        RelationType internalVertex = ((StandardJanusGraphTx) tx).getExistingRelationType(type.longId());
-        if (((InternalRelationType) internalVertex).getConsistencyModifier() != ConsistencyModifier.FORK) {
+        StandardJanusGraphTx stx = (StandardJanusGraphTx) tx;
+        InternalRelationType internalType = (InternalRelationType) stx.getExistingRelationType(type.longId());
+        if (internalType.getConsistencyModifier() != ConsistencyModifier.FORK) {
             query.has(ImplicitKey.JANUSGRAPHID.name(), rId.getRelationId());
+        }
+        if (sortKeyValues != null) {
+            long[] sortKey = internalType.getSortKey();
+            for (int i = 0; i < sortKey.length; i++) {
+                query.has(stx.getExistingPropertyKey(sortKey[i]).name(), sortKeyValues[i]);
+            }
         }
         return query.edges();
     }
 
     public static JanusGraphEdge findEdge(RelationIdentifier rId, JanusGraphTransaction tx) {
-        JanusGraphRelation r = findRelation(rId, tx);
+        return findEdge(rId, null, tx);
+    }
+
+    // sortKey: see findRelation(RelationIdentifier, String, JanusGraphTransaction)
+    public static JanusGraphEdge findEdge(RelationIdentifier rId, String sortKey, JanusGraphTransaction tx) {
+        JanusGraphRelation r = findRelation(rId, sortKey, tx);
         if (r == null) return null;
         else if (r instanceof JanusGraphEdge) return (JanusGraphEdge) r;
         else throw new UnsupportedOperationException("Referenced relation is a property not an edge");

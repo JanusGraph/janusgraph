@@ -643,6 +643,28 @@ parallel, raise the reindex thread count and, if Elasticsearch becomes the new
 bottleneck, scale its side (shards, replicas during rebuild, refresh interval)
 as described above.
 
+### Edge Sort Keys
+
+An edge of a `MULTI` label with a sort key is stored under a column which starts with its sort-key values. With
+`index.[X].store-edge-sort-key` enabled, the document of such an edge carries these values in the field
+`jg_system____sortkey`, which a query reads from the `_source` of each hit, so that the edge is read with a single
+column lookup instead of reading every edge of its label on the vertex. Before the first edge document is written,
+JanusGraph maps the field as
+
+```json
+"jg_system____sortkey": {"type": "keyword", "index": false, "doc_values": false}
+```
+
+With `use-external-mappings`, JanusGraph adds the field to a dynamic mapping if `allow-mapping-update` is enabled, and
+uses it unmapped under `"dynamic": false`. Where the mapping can't hold the field, because it's strict and doesn't
+have it, it's dynamic and may not be updated, or it maps the field as something other than a `keyword` or `text`,
+the edge documents are written without the field and their edges are read as before; JanusGraph logs a warning once.
+After fixing the mapping, restart the JanusGraph instances to use it.
+
+JanusGraph decides once per index and instance whether the field can be used. After dropping an edge index and
+creating one under the same name, restart the other JanusGraph instances, so that they read the new mapping.
+Documents written before the option was enabled are read as before until the index is reindexed.
+
 ### Further Reading
 
 -   Please refer to the [Elasticsearch homepage](https://www.elastic.co)

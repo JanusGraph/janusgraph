@@ -60,6 +60,7 @@ import org.janusgraph.core.attribute.Text;
 import org.janusgraph.core.log.LogProcessorFramework;
 import org.janusgraph.core.log.TransactionRecovery;
 import org.janusgraph.core.schema.CompositeIndexInfo;
+import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.Mapping;
@@ -74,12 +75,15 @@ import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
+import org.janusgraph.diskstorage.indexing.IndexHit;
 import org.janusgraph.diskstorage.indexing.IndexInformation;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.IndexTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJobFuture;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
+import org.janusgraph.diskstorage.util.MetricInstrumentedStore;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -96,6 +100,7 @@ import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.janusgraph.graphdb.predicate.OrJanusPredicate;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.query.index.ApproximateIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.BruteForceIndexSelectionStrategy;
 import org.janusgraph.graphdb.query.index.ThresholdBasedIndexSelectionStrategy;
@@ -115,11 +120,13 @@ import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.testutil.TestGraphConfigs;
+import org.janusgraph.util.stats.MetricManager;
 import org.javatuples.Pair;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,16 +158,19 @@ import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.asc;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.desc;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.FORCE_INDEX_USAGE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.HARD_MAX_LIMIT;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CDC_ENABLED;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_SELECT_STRATEGY;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_STORE_EDGE_SORT_KEY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_WRITE_WAITTIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_LOG_TRANSACTIONS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
@@ -177,11 +187,13 @@ import static org.janusgraph.testutil.JanusGraphAssert.assertTraversalAndIndexUs
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -8748,5 +8760,221 @@ public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
             }
         }
 
+    }
+
+    private static final String SORT_KEY_LABEL = "calls";
+    private static final String SORT_KEY_INDEX = "callsByTag";
+
+    // A MULTI label sorted by the given keys, and a mixed edge index of its tag
+    private void makeSortKeyedEdgeSchema(Order sortOrder, String... sortKeys) {
+        mgmt.makePropertyKey("version").dataType(Long.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("region").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey tag = mgmt.makePropertyKey("tag").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey[] keys = Arrays.stream(sortKeys).map(mgmt::getPropertyKey).toArray(PropertyKey[]::new);
+        ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel(SORT_KEY_LABEL).multiplicity(Multiplicity.MULTI))
+            .sortKey(keys).sortOrder(sortOrder).make();
+        mgmt.buildIndex(SORT_KEY_INDEX, Edge.class).addKey(tag, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+    }
+
+    // The hits of the sort-key test index whose tag field equals the given value, with their sort keys
+    private List<IndexHit> sortKeyIndexHits(String tagValue) throws BackendException {
+        JanusGraphTransaction rawTx = graph.newTransaction();
+        ManagementSystem managementSystem = (ManagementSystem) graph.openManagement();
+        try {
+            MixedIndexType index = (MixedIndexType) managementSystem
+                .getSchemaVertex(managementSystem.getGraphIndex(SORT_KEY_INDEX)).asIndexType();
+            String field = IndexRecordUtil.key2Field(index, managementSystem.getPropertyKey("tag"));
+            IndexTransaction indexTx = ((StandardJanusGraphTx) rawTx).getTxHandle()
+                .getIndexTransaction(index.getBackingIndexName());
+            return indexTx.queryHits(new IndexQuery(index.getStoreName(),
+                PredicateCondition.of(field, Cmp.EQUAL, tagValue)), true).collect(Collectors.toList());
+        } finally {
+            managementSystem.rollback();
+            rawTx.rollback();
+        }
+    }
+
+    // The edgestore entries which the lookup reads, in a transaction of its own
+    private long edgestoreEntriesRead(String group, Function<JanusGraphTransaction, Object> lookup) {
+        JanusGraphTransaction lookupTx = graph.buildTransaction().groupName(group).start();
+        try {
+            assertNotNull(lookup.apply(lookupTx));
+        } finally {
+            lookupTx.rollback();
+        }
+        return MetricManager.INSTANCE.getCounter(group, Backend.EDGESTORE_NAME,
+            MetricInstrumentedStore.M_GET_SLICE, MetricInstrumentedStore.M_ENTRIES_COUNT).getCount();
+    }
+
+    // degree edges from one vertex, tagged "hay" but for the one with version 42, tagged "needle". More edges to the
+    // needle's neighbour are told apart from it only by their sort key and relation id
+    private void addSortKeyedEdges(int degree) {
+        JanusGraphVertex source = tx.addVertex();
+        JanusGraphVertex needleTarget = null;
+        for (int i = 0; i < degree; i++) {
+            JanusGraphVertex target = tx.addVertex();
+            if (i == 42) needleTarget = target;
+            source.addEdge(SORT_KEY_LABEL, target, "version", (long) i, "region", "r" + (i % 3),
+                "tag", i == 42 ? "needle" : "hay");
+        }
+        source.addEdge(SORT_KEY_LABEL, needleTarget, "version", 1000L, "region", "r0", "tag", "hay");
+        source.addEdge(SORT_KEY_LABEL, needleTarget, "version", 1001L, "region", "r0", "tag", "hay");
+        newTx();
+    }
+
+    private boolean supportsEdgeSortKeyField() {
+        return indexFeatures.supportsEdgeSortKeyField();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Order.class, names = {"ASC", "DESC"})
+    public void testMixedIndexEdgeHitWithSortKeyReadsOneColumn(Order sortOrder) throws BackendException {
+        clopen(option(INDEX_STORE_EDGE_SORT_KEY, INDEX), true, option(BASIC_METRICS), true,
+            option(METRICS_MERGE_STORES), false);
+        assumeTrue(supportsEdgeSortKeyField());
+        makeSortKeyedEdgeSchema(sortOrder, "version");
+        final int degree = 200;
+        addSortKeyedEdges(degree);
+
+        Edge needle = tx.traversal().E().has("tag", "needle").next();
+        assertEquals(42L, (long) needle.value("version"));
+        // the document id is the plain edge id, and the document carries the sort key
+        List<IndexHit> hits = sortKeyIndexHits("needle");
+        assertEquals(1, hits.size());
+        assertEquals(needle.id().toString(), hits.get(0).getId());
+        assertNotNull(hits.get(0).getSortKey());
+        newTx();
+
+        String group = "mixedSortKey" + sortOrder;
+        assertEquals(1, edgestoreEntriesRead(group + "Hit", t -> t.traversal().E().has("tag", "needle").next()));
+        assertEquals(1, edgestoreEntriesRead(group + "Raw",
+            t -> t.indexQuery(SORT_KEY_INDEX, "e.tag:needle").edgeStream().findFirst().orElse(null)));
+        long byId = edgestoreEntriesRead(group + "ById", t -> t.traversal().E(needle.id()).next());
+        assertTrue(byId >= degree, "an edge id alone reads the label's adjacency: " + byId);
+    }
+
+    @Test
+    public void testMixedIndexEdgeHitWithTwoKeySortKeyReadsOneColumn() throws BackendException {
+        clopen(option(INDEX_STORE_EDGE_SORT_KEY, INDEX), true, option(BASIC_METRICS), true,
+            option(METRICS_MERGE_STORES), false);
+        assumeTrue(supportsEdgeSortKeyField());
+        makeSortKeyedEdgeSchema(Order.ASC, "region", "version");
+        addSortKeyedEdges(100);
+        assertEquals(1, edgestoreEntriesRead("mixedTwoKeySortKey", t -> t.traversal().E().has("tag", "needle").next()));
+        assertEquals(42L, (long) tx.traversal().E().has("tag", "needle").next().value("version"));
+    }
+
+    @Test
+    public void testMixedIndexEdgeHitWithoutStoredSortKeyReadsTheAdjacency() throws BackendException {
+        clopen(option(BASIC_METRICS), true, option(METRICS_MERGE_STORES), false);
+        makeSortKeyedEdgeSchema(Order.DESC, "version");
+        final int degree = 100;
+        addSortKeyedEdges(degree);
+        assertNull(sortKeyIndexHits("needle").get(0).getSortKey());
+        long read = edgestoreEntriesRead("mixedNoSortKey", t -> t.traversal().E().has("tag", "needle").next());
+        assertTrue(read >= degree, "without the option a hit reads the label's adjacency: " + read);
+    }
+
+    // The sort key of an edge changes with its sort-key property, and the document follows it
+    @Test
+    public void testMixedIndexEdgeHitAfterSortKeyChangeReadsOneColumn() throws BackendException {
+        clopen(option(INDEX_STORE_EDGE_SORT_KEY, INDEX), true, option(BASIC_METRICS), true,
+            option(METRICS_MERGE_STORES), false);
+        assumeTrue(supportsEdgeSortKeyField());
+        makeSortKeyedEdgeSchema(Order.DESC, "version");
+        addSortKeyedEdges(100);
+        String before = sortKeyIndexHits("needle").get(0).getSortKey();
+        tx.traversal().E().has("tag", "needle").next().property("version", 4242L);
+        newTx();
+
+        String after = sortKeyIndexHits("needle").get(0).getSortKey();
+        assertNotNull(after);
+        assertNotEquals(before, after);
+        assertEquals(1, edgestoreEntriesRead("mixedChangedSortKey", t -> t.traversal().E().has("tag", "needle").next()));
+        assertEquals(4242L, (long) tx.traversal().E().has("tag", "needle").next().value("version"));
+    }
+
+    // A document whose sort key no longer matches its edge, as one an instance without the option left behind, finds
+    // the edge all the same
+    @Test
+    public void testMixedIndexEdgeHitWithStaleSortKeyFindsTheEdge() throws BackendException {
+        clopen(option(INDEX_STORE_EDGE_SORT_KEY, INDEX), true);
+        assumeTrue(supportsEdgeSortKeyField());
+        makeSortKeyedEdgeSchema(Order.ASC, "version");
+        addSortKeyedEdges(50);
+
+        clopen(option(INDEX_STORE_EDGE_SORT_KEY, INDEX), false);
+        tx.traversal().E().has("tag", "needle").next().property("version", 4242L);
+        newTx();
+
+        clopen(option(INDEX_STORE_EDGE_SORT_KEY, INDEX), true);
+        List<Edge> found = tx.traversal().E().has("tag", "needle").toList();
+        assertEquals(1, found.size());
+        assertEquals(4242L, (long) found.get(0).value("version"));
+    }
+
+    @Test
+    public void testMixedIndexEdgeReindexStoresSortKey() throws Exception {
+        clopen(option(INDEX_STORE_EDGE_SORT_KEY, INDEX), false);
+        makeSortKeyedEdgeSchema(Order.DESC, "version");
+        tx.addVertex().addEdge(SORT_KEY_LABEL, tx.addVertex(), "version", 7L, "tag", "reindexed");
+        newTx();
+        assertNull(sortKeyIndexHits("reindexed").get(0).getSortKey());
+
+        clopen(option(INDEX_STORE_EDGE_SORT_KEY, INDEX), true);
+        assumeTrue(supportsEdgeSortKeyField());
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex(SORT_KEY_INDEX), SchemaAction.REINDEX).get();
+        finishSchema();
+        List<IndexHit> hits = sortKeyIndexHits("reindexed");
+        assertEquals(1, hits.size(), hits.toString());
+        assertNotNull(hits.get(0).getSortKey());
+        assertEquals(7L, (long) tx.traversal().E().has("tag", "reindexed").next().value("version"));
+    }
+
+    // A hit of the mixed index carries its sort key, a hit of the composite one does not: the intersection of both
+    // finds the edge either way round
+    @Test
+    public void testMixedAndCompositeEdgeIndexIntersection() throws BackendException {
+        clopen(option(INDEX_STORE_EDGE_SORT_KEY, INDEX), true);
+        assumeTrue(supportsEdgeSortKeyField());
+        PropertyKey kind = mgmt.makePropertyKey("kind").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("callsByKind", Edge.class).addKey(kind).buildCompositeIndex();
+        makeSortKeyedEdgeSchema(Order.ASC, "version");
+        JanusGraphVertex source = tx.addVertex();
+        for (int i = 0; i < 20; i++) {
+            source.addEdge(SORT_KEY_LABEL, tx.addVertex(), "version", (long) i, "tag", i % 2 == 0 ? "even" : "odd",
+                "kind", i % 4 == 0 ? "quad" : "other");
+        }
+        newTx();
+        assertEquals(5, tx.traversal().E().has("tag", "even").has("kind", "quad").count().next());
+        assertEquals(5, tx.traversal().E().has("kind", "quad").has("tag", "even").count().next());
+        assertEquals(0, tx.traversal().E().has("tag", "odd").has("kind", "quad").count().next());
+    }
+
+    @Test
+    public void testMixedIndexEdgeOfForkLabelCarriesNoSortKey() throws BackendException {
+        clopen(option(INDEX_STORE_EDGE_SORT_KEY, INDEX), true);
+        PropertyKey version = mgmt.makePropertyKey("version").dataType(Long.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey tag = mgmt.makePropertyKey("tag").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        EdgeLabel forked = ((StandardEdgeLabelMaker) mgmt.makeEdgeLabel(SORT_KEY_LABEL).multiplicity(Multiplicity.MULTI))
+            .sortKey(version).make();
+        mgmt.setConsistency(forked, ConsistencyModifier.FORK);
+        mgmt.buildIndex(SORT_KEY_INDEX, Edge.class).addKey(tag, getStringMapping()).buildMixedIndex(INDEX);
+        finishSchema();
+        tx.addVertex().addEdge(SORT_KEY_LABEL, tx.addVertex(), "version", 3L, "tag", "forked");
+        newTx();
+        assertNull(sortKeyIndexHits("forked").get(0).getSortKey());
+        assertEquals(3L, (long) tx.traversal().E().has("tag", "forked").next().value("version"));
+    }
+
+    //The name only clashes where the sort-key field is written: Solr, for one, gives its field names a type suffix
+    @Test
+    public void testIndexFieldNamedLikeTheSortKeyFieldIsRejected() {
+        assumeTrue(supportsEdgeSortKeyField());
+        PropertyKey reserved = mgmt.makePropertyKey(IndexProvider.EDGE_SORT_KEY_FIELD).dataType(String.class).make();
+        assertThrows(IllegalArgumentException.class,
+            () -> mgmt.buildIndex("reservedField", Edge.class).addKey(reserved).buildMixedIndex(INDEX));
     }
 }

@@ -21,6 +21,7 @@ import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.BaseTransactionConfigurable;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
+import org.janusgraph.diskstorage.indexing.IndexHit;
 import org.janusgraph.diskstorage.indexing.IndexMutation;
 import org.janusgraph.diskstorage.indexing.IndexProvider;
 import org.janusgraph.diskstorage.indexing.IndexQuery;
@@ -90,6 +91,20 @@ public class MetricInstrumentedIndexProvider implements IndexProvider {
     public Stream<RawQuery.Result<String>> query(final RawQuery query, final KeyInformation.IndexRetriever information,
                                                  final BaseTransaction tx) throws BackendException {
         return runWithMetrics((BaseTransactionConfigurable) tx, M_RAW_QUERY, () -> indexProvider.query(query, information, tx));
+    }
+
+    @Override
+    public Stream<IndexHit> queryHits(final IndexQuery query, final KeyInformation.IndexRetriever information,
+                                      final BaseTransaction tx, final boolean withSortKey) throws BackendException {
+        return runWithMetrics((BaseTransactionConfigurable) tx, M_QUERY,
+            () -> indexProvider.queryHits(query, information, tx, withSortKey));
+    }
+
+    @Override
+    public Stream<RawQuery.Result<IndexHit>> queryHits(final RawQuery query, final KeyInformation.IndexRetriever information,
+                                                       final BaseTransaction tx, final boolean withSortKey) throws BackendException {
+        return runWithMetrics((BaseTransactionConfigurable) tx, M_RAW_QUERY,
+            () -> indexProvider.queryHits(query, information, tx, withSortKey));
     }
 
     @Override

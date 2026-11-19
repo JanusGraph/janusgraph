@@ -37,6 +37,7 @@ import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.graphdb.database.index.IndexInfoRetriever;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.And;
@@ -76,9 +77,11 @@ import java.util.stream.Stream;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -215,6 +218,81 @@ public abstract class IndexProviderTest {
     @Test
     public void openClose() {
 
+    }
+
+    // The hits of the documents whose name field equals the given value, by document id, with their sort keys
+    private Map<String, String> sortKeyHits(String store, String name, boolean withSortKey) throws BackendException {
+        final Map<String, String> hits = new HashMap<>();
+        tx.queryHits(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, name)), withSortKey)
+            .forEach(hit -> hits.put(hit.getId(), hit.getSortKey()));
+        return hits;
+    }
+
+    // The sort-key field is not a key of the index: the core describes it to the provider where an edge document
+    // carries it, see IndexInfoRetriever
+    private void describeSortKeyField() {
+        allKeys.put(IndexProvider.EDGE_SORT_KEY_FIELD, IndexInfoRetriever.EDGE_SORT_KEY_INFORMATION);
+    }
+
+    @Test
+    public void testEdgeSortKeyFieldIsReturnedWithEachHit() throws Exception {
+        assumeTrue(indexFeatures.supportsEdgeSortKeyField());
+        final String store = "edge";
+        initialize(store);
+        describeSortKeyField();
+        tx.add(store, "doc1", new IndexEntry(NAME, "needle"), true);
+        tx.add(store, "doc1", new IndexEntry(IndexProvider.EDGE_SORT_KEY_FIELD, "0a0b"), true);
+        tx.add(store, "doc2", new IndexEntry(NAME, "needle"), true);
+        clopen();
+        describeSortKeyField();
+
+        final Map<String, String> expected = new HashMap<>();
+        expected.put("doc1", "0a0b");
+        expected.put("doc2", null);
+        assertEquals(expected, sortKeyHits(store, "needle", true));
+        expected.put("doc1", null);
+        assertEquals(expected, sortKeyHits(store, "needle", false));
+        if (supportsLuceneStyleQueries()) {
+            final Map<String, String> raw = new HashMap<>();
+            tx.queryHits(new RawQuery(store, NAME + ":needle", NO_PARAS), true)
+                .forEach(hit -> raw.put(hit.getResult().getId(), hit.getResult().getSortKey()));
+            assertEquals("0a0b", raw.get("doc1"));
+            assertTrue(raw.containsKey("doc2"));
+            assertNull(raw.get("doc2"));
+        }
+
+        // An update replaces the sort key, and a removal takes it out
+        tx.delete(store, "doc1", IndexProvider.EDGE_SORT_KEY_FIELD, "0a0b", false);
+        tx.add(store, "doc1", new IndexEntry(IndexProvider.EDGE_SORT_KEY_FIELD, "0c0d"), false);
+        tx.add(store, "doc2", new IndexEntry(IndexProvider.EDGE_SORT_KEY_FIELD, "0e0f"), false);
+        clopen();
+        describeSortKeyField();
+        expected.put("doc1", "0c0d");
+        expected.put("doc2", "0e0f");
+        assertEquals(expected, sortKeyHits(store, "needle", true));
+
+        tx.delete(store, "doc2", IndexProvider.EDGE_SORT_KEY_FIELD, "0e0f", false);
+        clopen();
+        describeSortKeyField();
+        expected.put("doc2", null);
+        assertEquals(expected, sortKeyHits(store, "needle", true));
+
+        // A restore writes it with the rest of the document
+        index.restore(Collections.singletonMap(store, Collections.singletonMap("doc3",
+            Arrays.asList(new IndexEntry(NAME, "needle"), new IndexEntry(IndexProvider.EDGE_SORT_KEY_FIELD, "1011")))),
+            indexRetriever, tx);
+        clopen();
+        describeSortKeyField();
+        expected.put("doc3", "1011");
+        assertEquals(expected, sortKeyHits(store, "needle", true));
+
+        // It cannot be searched
+        try {
+            assertEquals(0, tx.queryStream(new IndexQuery(store,
+                PredicateCondition.of(IndexProvider.EDGE_SORT_KEY_FIELD, Cmp.EQUAL, "0c0d"))).count());
+        } catch (BackendException | RuntimeException e) {
+            //A backend may refuse a query of a field which is not indexed instead
+        }
     }
 
     @Test

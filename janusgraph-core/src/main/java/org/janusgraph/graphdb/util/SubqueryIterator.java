@@ -25,6 +25,7 @@ import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.query.BackendLimitAware;
 import org.janusgraph.graphdb.query.graph.JointIndexQuery;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.relations.EdgeIdWithSortKey;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.subquerycache.SubqueryCache;
 import org.slf4j.Logger;
@@ -155,7 +156,7 @@ public class SubqueryIterator extends CloseableAbstractIterator<JanusGraphElemen
             collect(id);
             if (skipped < toSkip) {
                 skipped++;
-            } else if (otherResultSet == null || otherResultSet.contains(id)) {
+            } else if (otherResultSet == null || otherResultSet.contains(EdgeIdWithSortKey.unwrap(id))) {
                 final JanusGraphElement element = function.apply(id);
                 if (element != null) {
                     return element;

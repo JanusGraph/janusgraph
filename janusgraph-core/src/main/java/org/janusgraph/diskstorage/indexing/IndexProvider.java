@@ -40,6 +40,11 @@ public interface IndexProvider extends IndexInformation {
      */
     char REPLACEMENT_CHAR = '\u2022';
 
+    // Name of the retrieval-only field that holds the encoded sort-key values of an edge document. It is written
+    // only to edge indexes with index.[X].store-edge-sort-key enabled, and only by providers whose features report
+    // supportsEdgeSortKeyField(). It must not be searchable.
+    String EDGE_SORT_KEY_FIELD = "jg_system____sortkey";
+
     static void checkKeyValidity(String key) {
         Preconditions.checkArgument(!StringUtils.containsAny(key, new char[]{ IndexProvider.REPLACEMENT_CHAR }),
             "Invalid key name containing reserved character %c provided: %s", IndexProvider.REPLACEMENT_CHAR, key);
@@ -126,6 +131,19 @@ public interface IndexProvider extends IndexInformation {
      * @see RawQuery
      */
     Stream<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException;
+
+    // Like query(IndexQuery, ...), and also returns each document's EDGE_SORT_KEY_FIELD value when withSortKey is
+    // set. Providers that do not support that field return hits without it.
+    default Stream<IndexHit> queryHits(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx,
+                                       boolean withSortKey) throws BackendException {
+        return query(query, information, tx).map(id -> new IndexHit(id, null));
+    }
+
+    // Like query(RawQuery, ...), and also returns each document's EDGE_SORT_KEY_FIELD value when withSortKey is set.
+    default Stream<RawQuery.Result<IndexHit>> queryHits(RawQuery query, KeyInformation.IndexRetriever information,
+                                                        BaseTransaction tx, boolean withSortKey) throws BackendException {
+        return query(query, information, tx).map(r -> new RawQuery.Result<>(new IndexHit(r.getResult(), null), r.getScore()));
+    }
 
     /**
      * Executes the given raw query against the index and returns the total hits after specified offset and in limit scope if specified.
